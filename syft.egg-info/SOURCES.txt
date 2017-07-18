@@ -1,0 +1,7 @@
+setup.py
+syft/__init__.py
+syft/scalar.py
+syft.egg-info/PKG-INFO
+syft.egg-info/SOURCES.txt
+syft.egg-info/dependency_links.txt
+syft.egg-info/top_level.txt
