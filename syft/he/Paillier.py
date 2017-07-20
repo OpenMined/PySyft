@@ -1,4 +1,5 @@
 import phe as paillier
+import numpy as np
 
 class SecretKey():
 
@@ -14,6 +15,19 @@ class PublicKey():
         self.pk = pk
 
     def encrypt(self,x):
+        if(type(x) == int):
+            return PaillierInteger(self,x)
+        elif(type(x) == np.ndarray):
+            sh = x.shape
+            x_ = x.reshape(-1)
+            out = list()
+            for v in x_:
+                out.append(PaillierInteger(self,int(v)))
+            return np.array(out).reshape(sh)
+
+        else:
+            print("format not recognized")
+
         return self.pk.encrypt(x)
 
 class KeyPair():
@@ -33,31 +47,42 @@ class PaillierInteger():
     def __init__(self,public_key,data=None):
 
         self.public_key = public_key
-        self.data = data
+        if(data is not None):
+            self.data = self.public_key.pk.encrypt(data)
 
     def __add__(self,y):
-        out = PaillierInteger(self.public_key,self.data + y.data)
+        out = PaillierInteger(self.public_key,None)
+        out.data = self.data + y.data
         return out
 
     def __sub__(self,y):
-        out = PaillierInteger(self.public_key, self.data - y.data)
+        out = PaillierInteger(self.public_key, None)
+        out.data = self.data - y.data
         return out
 
     def __mul__(self,y):
 
         if(type(y) == type(self)):
-            return PaillierInteger(self.public_key, self.data * y.data)
+            out = PaillierInteger(self.public_key, None)
+            out.data = self.data * y.data
+            return out
         elif(type(y) == int):
-            return PaillierInteger(self.public_key, self.data * y)
+            out = PaillierInteger(self.public_key, None)
+            out.data = self.data * y
+            return out
         else:
             return None
 
     def __truediv__(self,y):
 
         if(type(y) == type(self)):
-            return PaillierInteger(self.public_key, self.data / y.data)
+            out = PaillierInteger(self.public_key, None)
+            out.data = self.data / y.data
+            return out
         elif(type(y) == int):
-            return PaillierInteger(self.public_key, self.data / y)
+            out = PaillierInteger(self.public_key, None)
+            out.data = self.data / y
+            return out
         else:
             return None
 
