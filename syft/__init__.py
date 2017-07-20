@@ -19,5 +19,5 @@ def import_submodules(package, recursive=True):
             results.update(import_submodules(full_name))
     return results
 
-# Alternatively, from scripts.__init__.py
+# import submodules recursively
 import_submodules(__name__)
