@@ -8,7 +8,7 @@ class SecretKey():
         self.sk = sk
 
     def decrypt(self,x):
-        if(type(x) == PaillierInteger):
+        if(type(x) == PaillierFloat):
             return self.sk.decrypt(x)
         elif(type(x) == np.ndarray):
             sh = x.shape
@@ -28,13 +28,13 @@ class PublicKey():
 
     def encrypt(self,x):
         if(type(x) == int):
-            return PaillierInteger(self,x)
+            return PaillierFloat(self,x)
         elif(type(x) == np.ndarray):
             sh = x.shape
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(PaillierInteger(self,v))
+                out.append(PaillierFloat(self,v))
             return np.array(out).reshape(sh)
 
         else:
@@ -71,23 +71,23 @@ class PaillierFloat():
             self.data = self.public_key.pk.encrypt(data)
 
     def __add__(self,y):
-        out = PaillierInteger(self.public_key,None)
+        out = PaillierFloat(self.public_key,None)
         out.data = self.data + y.data
         return out
 
     def __sub__(self,y):
-        out = PaillierInteger(self.public_key, None)
+        out = PaillierFloat(self.public_key, None)
         out.data = self.data - y.data
         return out
 
     def __mul__(self,y):
 
         if(type(y) == type(self)):
-            out = PaillierInteger(self.public_key, None)
+            out = PaillierFloat(self.public_key, None)
             out.data = self.data * y.data
             return out
         elif(type(y) == int):
-            out = PaillierInteger(self.public_key, None)
+            out = PaillierFloat(self.public_key, None)
             out.data = self.data * y
             return out
         else:
@@ -96,11 +96,11 @@ class PaillierFloat():
     def __truediv__(self,y):
 
         if(type(y) == type(self)):
-            out = PaillierInteger(self.public_key, None)
+            out = PaillierFloat(self.public_key, None)
             out.data = self.data / y.data
             return out
         elif(type(y) == int):
-            out = PaillierInteger(self.public_key, None)
+            out = PaillierFloat(self.public_key, None)
             out.data = self.data / y
             return out
         else:
