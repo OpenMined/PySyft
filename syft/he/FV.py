@@ -55,7 +55,7 @@ class PublicKey():
 
 
 class KeyPair():
-    def __init__(self,conn=None,var_name=None,file_path=None):
+    def __init__(self,conn=None):
         if(conn is None):
             self.conn = pyRserve.connect()
         else:

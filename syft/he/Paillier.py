@@ -1,5 +1,6 @@
 from syft.he.interface import HEAlgo
 
-class Paillier(HEAlgo):
+class KeyPair():
+
     def __init__(self):
-        print("Initializing Paillier Homomorphic Encryption")
+        ""
