@@ -33,13 +33,13 @@ class PublicKey():
 
     def encrypt(self,x=4):
         if(type(x) == int):
-            return Integer(self.conn,self,x)
+            return FVInteger(self.conn,self,x)
         elif(type(x) == np.ndarray):
             sh = x.shape
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(Integer(self.conn,self,int(v)))
+                out.append(FVInteger(self.conn,self,int(v)))
             return np.array(out).reshape(sh)
 
         else:
@@ -142,7 +142,7 @@ class KeyPair():
         os.remove(tmp_file)
         return (self.public_key,self.secret_key)
 
-class Integer():
+class FVInteger():
 
     def __init__(self,conn,public_key,data=None):
 
@@ -155,19 +155,19 @@ class Integer():
 
     def __add__(self,y):
         vector_name='c'+str(random.randint(0,2**32))
-        out = Integer(self.conn,self.public_key)
+        out = FVInteger(self.conn,self.public_key)
         self.conn.eval(out.vector_name+' <- '+self.vector_name+' + '+y.vector_name)
         return out
 
     def __sub__(self,y):
         vector_name='c'+str(random.randint(0,2**32))
-        out = Integer(self.conn,self.public_key)
+        out = FVInteger(self.conn,self.public_key)
         self.conn.eval(out.vector_name+' <- '+self.vector_name+' - '+y.vector_name)
         return out
 
     def __mul__(self,y):
         vector_name='c'+str(random.randint(0,2**32))
-        out = Integer(self.conn,self.public_key)
+        out = FVInteger(self.conn,self.public_key)
         if(type(y) == type(self)):
             self.conn.eval(out.vector_name+' <- '+self.vector_name+' * '+y.vector_name)
         elif(type(y) == int):
