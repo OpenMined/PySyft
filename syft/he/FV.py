@@ -1,6 +1,7 @@
 import pyRserve,os
 import random
 import numpy as np
+import json
 import tempfile
 
 class SecretKey():
@@ -13,6 +14,14 @@ class SecretKey():
 
     def decrypt(self,x):
         return self.conn.eval('dec('+str(self.sk_str)+', '+str(x.vector_name)+')')
+
+    def serialize(self):
+        ser_seckey = {}
+        ser_seckey['params'] = self.params
+        ser_seckey['sk_data'] = self.sk_data
+        ser_seckey['sk_str'] = self.sk_str
+        ser_seckey['r1k_data'] = self.r1k_data
+        return json.dumps(ser_seckey)
 
 class PublicKey():
     def __init__(self,conn,pk_str,params,r1k_data,pk_data):
@@ -36,6 +45,15 @@ class PublicKey():
         else:
             print("format not recognized")
 
+    def serialize(self):
+        ser_pubkey = {}
+        ser_pubkey['params'] = self.params
+        ser_pubkey['pk_data'] = self.pk_data
+        ser_pubkey['pk_str'] = self.pk_str
+        ser_pubkey['r1k_data'] = self.r1k_data
+        return json.dumps(ser_pubkey)
+
+
 class KeyPair():
     def __init__(self,conn=None,var_name=None,file_path=None):
         if(conn is None):
@@ -44,8 +62,56 @@ class KeyPair():
             self.conn = conn
         self.conn.r('library("HomomorphicEncryption")',void=True)
 
+    def deserialize(self,pubkey_json,seckey_json=None):
 
-    def generate(self,lambd=90,L=10):
+        pubkey_obj = json.loads(pubkey_json)
+        self.public_key = PublicKey(self.conn,pubkey_obj['pk_str'],pubkey_obj['params'],pubkey_obj['r1k_data'],pubkey_obj['pk_data'])
+
+        if(seckey_json is not None):
+            seckey_obj = json.loads(seckey_json)
+            self.secret_key = SecretKey(self.conn,seckey_obj['sk_str'],seckey_obj['params'],seckey_obj['r1k_data'],seckey_obj['sk_data'])
+            filepath = self.create_file(self.public_key.params,self.public_key.r1k_data,self.public_key.pk_data,self.secret_key.sk_data)
+        else:
+            self.secret_key = None
+            filepath = self.create_file(self.public_key.params,self.public_key.r1k_data,self.public_key.pk_data)
+
+        self.conn.eval(self.public_key.pk_str[:-3]+' <- loadFHE(file="'+filepath+'")')
+        os.remove(filepath)
+        return (self.public_key,self.secret_key)
+
+
+
+    def create_file(self,params,r1k,pk,sk=None):
+        boiler = ['=> FHE pkg obj <=\n',
+         'FandV_keys\n',
+         '=> FHE pkg obj <=\n',
+         'Rcpp_FandV_par\n']
+        boiler2 = ['=> FHE pkg obj <=\n', 'Rcpp_FandV_rlk\n']
+        boiler3 = ['=> FHE package object <=\n', 'Rcpp_FandV_pk\n']
+        boiler4 = ['=> FHE package object <=\n', 'Rcpp_FandV_sk\n']
+
+        # if no secret key is deserialized, make a fake one
+        if(sk is None):
+            out = "4097  "
+            for x in (np.random.rand(4097)>0.5).astype('int'):
+                out += str(x) + " "
+            out[:-1]+"\n"
+            sk = [out]
+
+        raw = boiler + params + boiler2 + r1k + boiler3 + pk + boiler4 + sk
+
+        tmp_file = tempfile.mktemp()
+        f = open(tmp_file,'w')
+        f.writelines(raw)
+        f.close()
+
+        return tmp_file
+
+
+    def generate(self):
+
+        lambd=90
+        L=10
 
         k_str = 'k'+str(random.randint(0,2**32))
 
@@ -73,7 +139,6 @@ class KeyPair():
 
         os.remove(tmp_file)
         return (self.public_key,self.secret_key)
-
 
 class Scalar():
 
