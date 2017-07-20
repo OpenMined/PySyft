@@ -1,5 +1,6 @@
 import phe as paillier
 import numpy as np
+import pickle
 
 class SecretKey():
 
@@ -16,6 +17,9 @@ class SecretKey():
             for v in x_:
                 out.append(self.sk.decrypt(v.data))
             return np.array(out).reshape(sh)
+
+    def serialize(self):
+        return pickle.dumps(self.sk)
 
 class PublicKey():
 
@@ -38,10 +42,18 @@ class PublicKey():
 
         return self.pk.encrypt(x)
 
+    def serialize(self):
+        return pickle.dumps(self.pk)
+
 class KeyPair():
 
     def __init__(self):
         ""
+
+    def deserialize(self,pubkey,seckey):
+        self.public_key = PublicKey(pickle.loads(pubkey))
+        self.secret_key = SecretKey(pickle.loads(seckey))
+        return (self.public_key, self.secret_key)
 
     def generate(self):
         pubkey, prikey = paillier.generate_paillier_keypair(n_length=2048*2)
