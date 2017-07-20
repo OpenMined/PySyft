@@ -64,12 +64,14 @@ class KeyPair():
 
     def deserialize(self,pubkey_json,seckey_json=None):
 
+        k_str = 'k'+str(random.randint(0,2**32))
+
         pubkey_obj = json.loads(pubkey_json)
-        self.public_key = PublicKey(self.conn,pubkey_obj['pk_str'],pubkey_obj['params'],pubkey_obj['r1k_data'],pubkey_obj['pk_data'])
+        self.public_key = PublicKey(self.conn,k_str+'$pk',pubkey_obj['params'],pubkey_obj['r1k_data'],pubkey_obj['pk_data'])
 
         if(seckey_json is not None):
             seckey_obj = json.loads(seckey_json)
-            self.secret_key = SecretKey(self.conn,seckey_obj['sk_str'],seckey_obj['params'],seckey_obj['r1k_data'],seckey_obj['sk_data'])
+            self.secret_key = SecretKey(self.conn,k_str+'$sk',seckey_obj['params'],seckey_obj['r1k_data'],seckey_obj['sk_data'])
             filepath = self.create_file(self.public_key.params,self.public_key.r1k_data,self.public_key.pk_data,self.secret_key.sk_data)
         else:
             self.secret_key = None
