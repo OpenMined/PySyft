@@ -36,28 +36,28 @@ class PaillierInteger():
         self.data = data
 
     def __add__(self,y):
-        out = FVInteger(self.public_key,self.data + y.data)
+        out = PaillierInteger(self.public_key,self.data + y.data)
         return out
 
     def __sub__(self,y):
-        out = FVInteger(self.public_key, self.data - y.data)
+        out = PaillierInteger(self.public_key, self.data - y.data)
         return out
 
     def __mul__(self,y):
 
         if(type(y) == type(self)):
-            return FVInteger(self.public_key, self.data * y.data)
+            return PaillierInteger(self.public_key, self.data * y.data)
         elif(type(y) == int):
-            return FVInteger(self.public_key, self.data * y)
+            return PaillierInteger(self.public_key, self.data * y)
         else:
             return None
 
     def __truediv__(self,y):
 
         if(type(y) == type(self)):
-            return FVInteger(self.public_key, self.data / y.data)
+            return PaillierInteger(self.public_key, self.data / y.data)
         elif(type(y) == int):
-            return FVInteger(self.public_key, self.data / y)
+            return PaillierInteger(self.public_key, self.data / y)
         else:
             return None
 
