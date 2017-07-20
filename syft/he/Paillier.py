@@ -62,7 +62,7 @@ class KeyPair():
 
         return (self.public_key,self.secret_key)
 
-class PaillierInteger():
+class PaillierFloat():
 
     def __init__(self,public_key,data=None):
 
