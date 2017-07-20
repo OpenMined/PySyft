@@ -7,7 +7,15 @@ class SecretKey():
         self.sk = sk
 
     def decrypt(self,x):
-        return self.sk.decrypt(x)
+        if(type(x) == PaillierInteger):
+            return self.sk.decrypt(x)
+        elif(type(x) == np.ndarray):
+            sh = x.shape
+            x_ = x.reshape(-1)
+            out = list()
+            for v in x_:
+                out.append(self.sk.decrypt(v.data))
+            return np.array(out).reshape(sh)
 
 class PublicKey():
 
@@ -22,7 +30,7 @@ class PublicKey():
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(PaillierInteger(self,int(v)))
+                out.append(PaillierInteger(self,v))
             return np.array(out).reshape(sh)
 
         else:
