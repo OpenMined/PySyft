@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup,find_packages
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -16,7 +16,8 @@ setup(
     description = ("A library for Homomorphically Encrypted Deep Learning Algorithms"),
     license = "Apache-2.0",
     keywords = "deep learning machine artificial intelligence homomorphic encryption",
-    packages=['syft', 'test'],
+    packages=find_packages(exclude=['notebooks', 'test*','dist']),
+    include_package_data=True,
     long_description=read('README.md'),
     classifiers=[
         "Development Status :: 1 - Alpha",

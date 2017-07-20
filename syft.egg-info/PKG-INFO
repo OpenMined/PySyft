@@ -3,8 +3,8 @@ Name: syft
 Version: 0.1.0
 Summary: A library for Homomorphically Encrypted Deep Learning Algorithms
 Home-page: UNKNOWN
-Author: Andrew Trask
-Author-email: andrew@openmined.com
+Author: Amber Trask
+Author-email: contact@openmined.com
 License: Apache-2.0
 Description: # syft
         Homomorphically Encrypted Deep Learning Library
