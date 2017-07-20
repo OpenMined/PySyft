@@ -13,7 +13,18 @@ class SecretKey():
         self.sk_str = sk_str
 
     def decrypt(self,x):
-        return self.conn.eval('dec('+str(self.sk_str)+', '+str(x.vector_name)+')')
+        if(type(x) == FVInteger):
+            return self.conn.eval('dec('+str(self.sk_str)+', '+str(x.vector_name)+')')
+        elif(type(x) == np.ndarray):
+            sh = x.shape
+            x_ = x.reshape(-1)
+            out = list()
+            for v in x_:
+                out.append(self.conn.eval('dec('+str(self.sk_str)+', '+str(v.vector_name)+')'))
+            return np.array(out).reshape(sh)
+        else:
+            return None
+
 
     def serialize(self):
         ser_seckey = {}
