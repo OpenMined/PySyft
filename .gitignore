@@ -2,3 +2,4 @@ build/
 dist/
 syft.egg-info/
 */**/__pycache__
+.ipynb_checkpoints/
