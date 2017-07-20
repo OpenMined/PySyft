@@ -92,6 +92,12 @@ class Scalar():
         self.conn.eval(out.vector_name+' <- '+self.vector_name+' + '+y.vector_name)
         return out
 
+    def __sub__(self,y):
+        vector_name='c'+str(random.randint(0,2**32))
+        out = Scalar(self.conn,self.public_key)
+        self.conn.eval(out.vector_name+' <- '+self.vector_name+' - '+y.vector_name)
+        return out
+
     def __mul__(self,y):
         vector_name='c'+str(random.randint(0,2**32))
         out = Scalar(self.conn,self.public_key)
