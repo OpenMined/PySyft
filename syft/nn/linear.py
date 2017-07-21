@@ -64,3 +64,9 @@ class LinearClassifier():
                 "doesn't matter... input == 0"
 
         return grad
+
+    def __str__(self):
+        return "Linear Model ("+str(self.n_inputs)+","+str(self.n_labels)+"): " + str(self.desc)
+
+    def __repr__(self):
+        return self.__str__()
