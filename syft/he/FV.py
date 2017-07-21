@@ -123,8 +123,8 @@ class KeyPair():
 
     def generate(self):
 
-        lambd=90
-        L=10
+        lambd=80
+        L=4
 
         k_str = 'k'+str(random.randint(0,2**32))
 
