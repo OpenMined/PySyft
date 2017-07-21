@@ -69,6 +69,8 @@ class PaillierFloat():
         self.public_key = public_key
         if(data is not None):
             self.data = self.public_key.pk.encrypt(data)
+        else:
+            self.data = None
 
     def __add__(self,y):
         out = PaillierFloat(self.public_key,None)
@@ -86,7 +88,7 @@ class PaillierFloat():
             out = PaillierFloat(self.public_key, None)
             out.data = self.data * y.data
             return out
-        elif(type(y) == int):
+        elif(type(y) == int or type(y) == float):
             out = PaillierFloat(self.public_key, None)
             out.data = self.data * y
             return out
