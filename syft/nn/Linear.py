@@ -28,7 +28,7 @@ class LinearClassifier():
             self.weights[i] = seckey.decrypt(w)
         return self
 
-    def forward(self,input=np.array([0,1,1,0])):
+    def forward(self,input):
 
         pred = self.weights[0] * input[0]
         for j,each_inp in enumerate(input[1:]):
@@ -39,7 +39,7 @@ class LinearClassifier():
 
         return pred
 
-    def learn(self,input=np.array([0,1,1,0]),target=np.array([0,1]),alpha=0.5):
+    def learn(self,input,target,alpha=0.5):
 
         target = np.array(target).astype('float64')
         pred = self.forward(input)
