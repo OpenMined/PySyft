@@ -16,14 +16,17 @@ class LinearClassifier():
             self.weights.append(np.zeros(n_labels).astype('float64'))
 
         self.pubkey = None
+        self.encrypted = False
 
     def encrypt(self,pubkey):
+        self.encrypted = True
         self.pubkey = pubkey
         for i,w in enumerate(self.weights):
             self.weights[i] = self.pubkey.encrypt(w)
         return self
 
     def decrypt(self,seckey):
+        self.encrypted = False
         for i,w in enumerate(self.weights):
             self.weights[i] = seckey.decrypt(w)
         return self
@@ -46,7 +49,7 @@ class LinearClassifier():
 
         target_v = target
 
-        if(self.pubkey is not None):
+        if(self.pubkey is not None and self.encrypted == True):
             target_v = self.pubkey.encrypt(target_v)
 
         grad = (pred - target_v) * alpha
