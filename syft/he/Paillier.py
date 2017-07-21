@@ -55,8 +55,8 @@ class KeyPair():
         self.secret_key = SecretKey(pickle.loads(seckey))
         return (self.public_key, self.secret_key)
 
-    def generate(self):
-        pubkey, prikey = paillier.generate_paillier_keypair(n_length=2048*2)
+    def generate(self,n_length=1024):
+        pubkey, prikey = paillier.generate_paillier_keypair(n_length=n_length)
         self.public_key = PublicKey(pubkey)
         self.secret_key = SecretKey(prikey)
 
