@@ -3,11 +3,16 @@ Homomorphically Encrypted Deep Learning Library
 
 See `notebooks` folder for tutorials.
 
-Recommended Reading (to get up to speed with the concepts of this library):
+Encrypted Deep Learning - Recommended Reading:
 - http://iamtrask.github.io/2017/03/17/safe-ai/
 - https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/
 - http://iamtrask.github.io/2017/06/05/homomorphic-surveillance/
+- https://www.microsoft.com/en-us/research/wp-content/uploads/2015/11/ManualHE-3.pdf
 
+Homomorphic Encryption - Recommended Reading:
+- https://eprint.iacr.org/2014/062.pdf
+- http://heat-h2020-project.blogspot.co.uk/2017/02/homomorphic-encryption-api-software.html
+- http://heat-h2020-project.blogspot.co.uk/2017/
 
 Relevant Papers:
 - http://proceedings.mlr.press/v54/esperanca17a/esperanca17a.pdf
