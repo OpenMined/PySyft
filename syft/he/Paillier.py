@@ -8,6 +8,7 @@ class SecretKey():
         self.sk = sk
 
     def decrypt(self,x):
+        """Decrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
         if(type(x) == PaillierFloat):
             return self.sk.decrypt(x)
         elif(type(x) == np.ndarray):
@@ -27,6 +28,7 @@ class PublicKey():
         self.pk = pk
 
     def encrypt(self,x):
+        """Encrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
         if(type(x) == int):
             return PaillierFloat(self,x)
         elif(type(x) == np.ndarray):
@@ -65,6 +67,7 @@ class KeyPair():
 class PaillierFloat():
 
     def __init__(self,public_key,data=None):
+        """Wraps pointer to encrypted integer with an interface that numpy can use."""
 
         self.public_key = public_key
         if(data is not None):
@@ -73,16 +76,21 @@ class PaillierFloat():
             self.data = None
 
     def __add__(self,y):
+        """Adds two encrypted integers together."""
+
         out = PaillierFloat(self.public_key,None)
         out.data = self.data + y.data
         return out
 
     def __sub__(self,y):
+        """Subtracts two encrypted integers."""
+
         out = PaillierFloat(self.public_key, None)
         out.data = self.data - y.data
         return out
 
     def __mul__(self,y):
+        """Multiplies two integers. y may be encrypted or a simple integer."""
 
         if(type(y) == type(self)):
             out = PaillierFloat(self.public_key, None)
@@ -109,7 +117,11 @@ class PaillierFloat():
             return None
 
     def __repr__(self):
+        """This is kindof a boring/uninformative __repr__"""
+
         return 'e'
 
     def __str__(self):
+        """This is kindof a boring/uninformative __str__"""
+
         return 'e'
