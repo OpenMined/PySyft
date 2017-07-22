@@ -2,6 +2,17 @@ from syft import he
 import numpy as np
 
 class LinearClassifier():
+"""This class is a basic linear classifier with functionality to encrypt/decrypt
+weights according to any of the homomorphic encryption schemes in syft.he. It also
+contains the logic to make predictions when in an encrypted state.
+
+TODO: create a generic interface for ML models that this class implements.
+
+TODO: minibatching in the "learn" API. The greater the batch size, the more
+iterations should be doable before the homomorphic encryption noise grows too
+much to be decrypted.
+"""
+
 
     def __init__(self,n_inputs=4,n_labels=2,desc=""):
         super(type(LinearClassifier))
