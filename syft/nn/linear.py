@@ -15,7 +15,6 @@ much to be decrypted.
 
 
     def __init__(self,n_inputs=4,n_labels=2,desc=""):
-        super(type(LinearClassifier))
 
         self.desc = desc
 
@@ -30,6 +29,12 @@ much to be decrypted.
         self.encrypted = False
 
     def encrypt(self,pubkey):
+        """iterates through each weight and encrypts it
+
+        TODO: check that weights are actually decrypted
+
+        """
+
         self.encrypted = True
         self.pubkey = pubkey
         for i,w in enumerate(self.weights):
@@ -37,12 +42,20 @@ much to be decrypted.
         return self
 
     def decrypt(self,seckey):
+        """iterates through each weight and decrypts it
+
+        TODO: check that weights are actually encrypted
+
+        """
         self.encrypted = False
         for i,w in enumerate(self.weights):
             self.weights[i] = seckey.decrypt(w)
         return self
 
     def forward(self,input):
+
+        """Makes a prediction based on input. If the network is encrypted, the
+        prediction is also encrypted and vise versa."""
 
         pred = self.weights[0] * input[0]
         for j,each_inp in enumerate(input[1:]):
@@ -54,6 +67,15 @@ much to be decrypted.
         return pred
 
     def learn(self,input,target,alpha=0.5):
+        """Updates weights based on input and target prediction. Note, updating
+        weights increases the noise in the encrypted weights and will eventually
+        require the weights to be re-encrypted.
+
+        TODO: minibatching
+        TODO: instead of storing weights, store aggregated weight updates (and
+        optionally use them in "forward").
+
+        """
 
         target = np.array(target).astype('float64')
         pred = self.forward(input)
