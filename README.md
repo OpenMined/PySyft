@@ -3,7 +3,7 @@ Homomorphically Encrypted Deep Learning Library
 
 See `notebooks` folder for tutorials.
 
-Recommended Reading:
+Recommended Reading (to get up to speed with the concepts of this library):
 - http://iamtrask.github.io/2017/03/17/safe-ai/
 - https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/
 - http://iamtrask.github.io/2017/06/05/homomorphic-surveillance/
