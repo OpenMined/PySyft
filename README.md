@@ -1,7 +1,9 @@
 # syft
 Homomorphically Encrypted Deep Learning Library
 
-See `notebooks` folder for tutorials.
+The goal of this library is to give the user the ability to train Deep Learning models in a homomorphically encrypted state without needing to be an expert in either. See `notebooks` folder for tutorials on how to use the library.
+
+As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
 
 Encrypted Deep Learning - Recommended Reading:
 - http://iamtrask.github.io/2017/03/17/safe-ai/
