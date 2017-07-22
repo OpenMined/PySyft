@@ -13,6 +13,8 @@ class SecretKey():
         self.sk_str = sk_str
 
     def decrypt(self,x):
+        """Decrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
+
         if(type(x) == FVInteger):
             return self.conn.eval('dec('+str(self.sk_str)+', '+str(x.vector_name)+')')
         elif(type(x) == np.ndarray):
@@ -27,6 +29,8 @@ class SecretKey():
 
 
     def serialize(self):
+        """Store all the unique information about this key to a json object."""
+
         ser_seckey = {}
         ser_seckey['params'] = self.params
         ser_seckey['sk_data'] = self.sk_data
@@ -43,6 +47,8 @@ class PublicKey():
         self.pk_str = pk_str
 
     def encrypt(self,x=4):
+        """Encrypts x. X can be either an int or a numpy vector/matrix/tensor."""
+
         if(type(x) == int):
             return FVInteger(self.conn,self,x)
         elif(type(x) == np.ndarray):
@@ -57,6 +63,8 @@ class PublicKey():
             print("format not recognized")
 
     def serialize(self):
+        """Store all the unique information about this key to a json object."""
+
         ser_pubkey = {}
         ser_pubkey['params'] = self.params
         ser_pubkey['pk_data'] = self.pk_data
@@ -67,6 +75,8 @@ class PublicKey():
 
 class KeyPair():
     def __init__(self,conn=None):
+        """Creates connection to R server and loads HE library containing FV."""
+
         if(conn is None):
             self.conn = pyRserve.connect()
         else:
@@ -74,6 +84,8 @@ class KeyPair():
         self.conn.r('library("HomomorphicEncryption")',void=True)
 
     def deserialize(self,pubkey_json,seckey_json=None):
+        """Converts json objects into public and private keys. If no secret key
+        json is provided, it only initializes a public one."""
 
         k_str = 'k'+str(random.randint(0,2**32))
 
@@ -95,6 +107,13 @@ class KeyPair():
 
 
     def create_file(self,params,r1k,pk,sk=None):
+        """ Saves keypair to file. If there is no secret key, it saves a random one.
+
+        Because we're only wrapping FV instead of re-implementing it (long term
+        plan), we need to use the filesystem to save/load or serialize/deserialize
+        keys objects."""
+
+
         boiler = ['=> FHE pkg obj <=\n',
          'FandV_keys\n',
          '=> FHE pkg obj <=\n',
@@ -122,6 +141,7 @@ class KeyPair():
 
 
     def generate(self):
+        """Using connection created in __init__, it initializes a new keypair."""
 
         lambd=80
         L=4
@@ -138,6 +158,7 @@ class KeyPair():
         raw = f.readlines()
         f.close()
 
+        # boilerplate code is all the "boiler" variables
         boiler = raw[0:4]
         params = raw[4:10]
         boiler2 = raw[10:12]
@@ -156,6 +177,7 @@ class KeyPair():
 class FVInteger():
 
     def __init__(self,conn,public_key,data=None):
+        """Wraps pointer to encrypted integer with an interface that numpy can use."""
 
         self.conn = conn
         self.vector_name ='c'+str(random.randint(0,2**32))
@@ -165,22 +187,32 @@ class FVInteger():
             self.conn.eval(self.vector_name+' <- enc('+str(self.public_key.pk_str)+', c('+str(data)+'))')
 
     def __add__(self,y):
+        """Adds two encrypted integers together."""
+
         vector_name='c'+str(random.randint(0,2**32))
         out = FVInteger(self.conn,self.public_key)
         self.conn.eval(out.vector_name+' <- '+self.vector_name+' + '+y.vector_name)
         return out
 
     def __sub__(self,y):
+        """Subtracts two encrypted integers."""
+
         vector_name='c'+str(random.randint(0,2**32))
         out = FVInteger(self.conn,self.public_key)
         self.conn.eval(out.vector_name+' <- '+self.vector_name+' - '+y.vector_name)
         return out
 
     def __mul__(self,y):
+        """Multiplies two integers. y may be encrypted or a simple integer."""
+
         vector_name='c'+str(random.randint(0,2**32))
         out = FVInteger(self.conn,self.public_key)
+
+        # if y is encrypted
         if(type(y) == type(self)):
             self.conn.eval(out.vector_name+' <- '+self.vector_name+' * '+y.vector_name)
+
+        # if y is an integer.
         elif(type(y) == int):
             adds = '+'+self.vector_name
 
@@ -188,7 +220,11 @@ class FVInteger():
         return out
 
     def __repr__(self):
+        """This is kindof a boring/uninformative __repr__"""
+
         return 'e'
 
     def __str__(self):
+        """This is kindof a boring/uninformative __str__"""
+
         return 'e'
