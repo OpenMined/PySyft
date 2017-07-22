@@ -104,6 +104,7 @@ class PaillierFloat():
             return None
 
     def __truediv__(self,y):
+        """Divides two integers. y may be encrypted or a simple integer."""
 
         if(type(y) == type(self)):
             out = PaillierFloat(self.public_key, None)
