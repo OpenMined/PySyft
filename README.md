@@ -1,22 +1,36 @@
 # syft
-Homomorphically Encrypted Deep Learning Library
 
-The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find very performant combinations of the two.  See `notebooks` folder for tutorials on how to use the library.
+> Homomorphically Encrypted Deep Learning Library
+
+The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find very performant combinations of the two.  See [notebooks](./notebooks) folder for tutorials on how to use the library.
+
+## installation
+
+You need to install this library locally before running any of the notebooks this repository or the [main demonstration](https://github.com/OpenMined/sonar):
+
+```sh
+# Get dependencies ready
+pip install -r requirements.txt
+# install the lib locally
+python setup.py install
+```
+
+## literature
 
 As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
 
-Encrypted Deep Learning - Recommended Reading:
+### Encrypted Deep Learning - Recommended Reading:
 - http://iamtrask.github.io/2017/03/17/safe-ai/
 - https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/
 - http://iamtrask.github.io/2017/06/05/homomorphic-surveillance/
 - https://www.microsoft.com/en-us/research/wp-content/uploads/2015/11/ManualHE-3.pdf
 
-Homomorphic Encryption - Recommended Reading:
+### Homomorphic Encryption - Recommended Reading:
 - https://eprint.iacr.org/2014/062.pdf
 - http://heat-h2020-project.blogspot.co.uk/2017/02/homomorphic-encryption-api-software.html
 - http://heat-h2020-project.blogspot.co.uk/2017/
 
-Relevant Papers:
+### Relevant Papers:
 - http://proceedings.mlr.press/v54/esperanca17a/esperanca17a.pdf
 - https://sites.google.com/view/psml/program/abstracts
 - https://arxiv.org/pdf/1508.06845.pdf
@@ -24,12 +38,12 @@ Relevant Papers:
 - https://eprint.iacr.org/2016/892
 - https://www1.cs.fau.de/filepool/publications/octavian_securescm/secfp-fc10.pdf
 
-Related Libraries:
+### Related Libraries:
 - http://www.louisaslett.com/HomomorphicEncryption/#details
 - https://github.com/iamtrask/linreg-mpc
 - https://github.com/dask/dask-tutorial
 
-Related Blogs:
+### Related Blogs:
 - https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/
 - https://mortendahl.github.io/2017/06/04/secret-sharing-part1/
 - https://mortendahl.github.io/2017/06/24/secret-sharing-part2/
