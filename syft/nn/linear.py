@@ -66,6 +66,33 @@ class LinearClassifier():
 
         return pred
 
+    def generate_gradient(self,input,target):
+        target = np.array(target).astype('float64')
+        pred = self.forward(input)
+
+        target_v = target
+
+        if(self.pubkey is not None and self.encrypted == True):
+            target_v = self.pubkey.encrypt(target_v)
+
+        output_grad = (pred - target_v)
+
+        weight_grad = np.zeros_like(self.weights)
+
+        if(self.encrypted):
+            weight_grad = self.pubkey.encrypt(weight_grad)
+
+        for i in range(len(input)):
+            if(input[i] != 1 and input[i] != 0):
+                weight_grad[i] += (output_grad * input[i])
+            elif(input[i] == 1):
+                weight_grad[i] += output_grad
+            else:
+                "doesn't matter... input == 0"
+
+        return weight_grad
+
+
     def learn(self,input,target,alpha=0.5):
         """Updates weights based on input and target prediction. Note, updating
         weights increases the noise in the encrypted weights and will eventually
@@ -77,40 +104,27 @@ class LinearClassifier():
 
         """
 
-        target = np.array(target).astype('float64')
-        pred = self.forward(input)
+        weight_update = self.generate_gradient(input,target)
+        self.weights -= weight_update * alpha
 
-        target_v = target
-
-        if(self.pubkey is not None and self.encrypted == True):
-            target_v = self.pubkey.encrypt(target_v)
-
-        grad = (pred - target_v) * alpha
-
-
-        for i in range(len(input)):
-            if(input[i] != 1 and input[i] != 0):
-                self.weights[i] = self.weights[i] - (grad * input[i])
-            elif(input[i] == 1):
-                self.weights[i] = self.weights[i] - grad
-            else:
-                "doesn't matter... input == 0"
-
-        return grad
+        return weight_update
 
     def evaluate(self,inputs,targets):
         """accepts a list of inputs and a list of targets - returns the mean squared
-        error."""
+        error scaled by a fixed amount and converted to an integer."""
+
+        scale = 1000
+
         if(self.encrypted == True):
             return "not yet supported... but will in the future"
         else:
 
             loss = 0
             for i,row in enumerate(inputs):
-                pred = diabetes_model.forward(row)
+                pred = self.forward(row)
                 true = targets[i]
                 loss += (pred - true)**2
-            return loss/float(len(inputs))
+            return int((loss[0]*scale)/float(len(inputs)))
 
 
     def __str__(self):
