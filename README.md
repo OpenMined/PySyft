@@ -15,6 +15,12 @@ pip install -r requirements.txt
 python setup.py install
 ```
 
+### For anaconda users:
+
+```
+bash install_for_anaconda_users.sh
+```
+
 ## literature
 
 As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
