@@ -1,0 +1,4 @@
+-r ./requirements.txt
+
+# Everything for testing purposes
+line_profiler
