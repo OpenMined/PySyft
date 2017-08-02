@@ -1,4 +1,4 @@
-conda create -n openmined python=3.4
+conda create -n openmined python=3.6
 source activate openmined
 conda install -c anaconda mpc
 conda install -c anaconda gmp
