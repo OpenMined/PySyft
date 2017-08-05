@@ -27,5 +27,6 @@ setup(
     classifiers=[
         "Development Status :: 1 - Alpha",
     ],
+    scripts=['bin/syft_cmd'],
     install_requires=requirements,
 )
