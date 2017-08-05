@@ -1,3 +1,4 @@
+#!python
 import syft
 import pickle
 import sys
