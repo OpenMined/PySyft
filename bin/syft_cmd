@@ -20,7 +20,7 @@ with indent(4, quote='>>>'):
     # puts(colored.red('NOT Files detected: ') + str(args.not_files))
     # puts(colored.red('Grouped Arguments: ') + str(dict(args.grouped)))
 
-    command = str(args.all[0])
+    command = str(args.all[0] if len(args.all) else '')
     puts(colored.blue('Command: ') + command)
 
     if(command == 'create_model'):
