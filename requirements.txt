@@ -3,3 +3,4 @@ numpy
 phe
 line_profiler
 jupyter
+clint
