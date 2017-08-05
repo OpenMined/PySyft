@@ -8,6 +8,10 @@ from setuptools import setup,find_packages
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+requirements = read('requirements.txt').split()
+
+
+
 setup(
     name = "syft",
     version = "0.1.0",
@@ -19,7 +23,9 @@ setup(
     packages=find_packages(exclude=['notebooks', 'test*','dist']),
     include_package_data=True,
     long_description=read('README.md'),
+    url='github.com/OpenMined/Syft',
     classifiers=[
         "Development Status :: 1 - Alpha",
     ],
+    install_requires=requirements,
 )
