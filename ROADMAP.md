@@ -5,7 +5,7 @@
     - [x] Initial Homomorphic Encryption Support (syft/he)
     - [x] Basic Linear Model (syft/nn/linear.py)
     - [x] Initial Benchmark Testing Suite
-- [ ] Beta Release
+- [ ] Pre-Alpha Release
     - [ ] Homomorphic Encryption (syft/he)
       - [ ] Add Generic Tensor as Basic Type (ISSUE #)
       - [ ] Add Additive/Multiplicative Depth Tracking (ISSUE #)
