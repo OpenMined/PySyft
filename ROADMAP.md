@@ -1,11 +1,11 @@
 # Syft Project Roadmap
 
 
-- [ ] Proof of Concept
+- [ ] Demo
     - [x] Initial Homomorphic Encryption Support (syft/he)
     - [x] Basic Linear Model (syft/nn/linear.py)
     - [x] Initial Benchmark Testing Suite
-- [ ] Pre-Alpha Release
+- [ ] Proof of Concept
     - [ ] Homomorphic Encryption (syft/he)
       - [ ] Add Generic Tensor as Basic Type ([ISSUE 10](https://github.com/OpenMined/Syft/issues/10))
       - [ ] Add Additive/Multiplicative Depth Tracking ([ISSUE 11](https://github.com/OpenMined/Syft/issues/11))
@@ -18,6 +18,7 @@
       - [ ] Full Unit-Testing Suite for All Features (ISSUE #)
       - [ ] Benchmarking Suite for All Operations & Encryptions (ISSUE #)
       - [ ] Development server for Fast Decryption/Re-Encryption
+      - [ ] RESEARCH: whether https://eprint.iacr.org/2016/870.pdf can be used to speedup YASHE/FV bootstrapping.
     - [ ] Neural Networks
       - [ ] Components
         - [ ] Full Unit-Testing Suite for All Components (ISSUE #)

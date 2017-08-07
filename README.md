@@ -21,11 +21,9 @@ python setup.py install
 bash install_for_anaconda_users.sh
 ```
 
-### For Contributors
+## For Contributors
 
-If you are interested in contributing to Syft, please checkout our Product Roadmap and sign into our Slack Team channel #syft.
-
-Product Roadmap: https://github.com/OpenMined/Syft/blob/master/ROADMAP.md
+If you are interested in contributing to Syft, please checkout our [Project Roadmap](https://github.com/OpenMined/Syft/blob/master/ROADMAP.md) and sign into our Slack Team channel #syft.
 
 ## literature
 
