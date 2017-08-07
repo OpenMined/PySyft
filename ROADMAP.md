@@ -1,11 +1,11 @@
 # Syft Project Roadmap
 
 
-- [ ] Proof of Concept
+- [ ] Demo
     - [x] Initial Homomorphic Encryption Support (syft/he)
     - [x] Basic Linear Model (syft/nn/linear.py)
     - [x] Initial Benchmark Testing Suite
-- [ ] Pre-Alpha Release
+- [ ] Proof of Concept
     - [ ] Homomorphic Encryption (syft/he)
       - [ ] Add Generic Tensor as Basic Type ([ISSUE 10](https://github.com/OpenMined/Syft/issues/10))
       - [ ] Add Additive/Multiplicative Depth Tracking (ISSUE #)
