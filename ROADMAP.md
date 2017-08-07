@@ -19,6 +19,7 @@
       - [ ] Full Unit-Testing Suite for All Features (ISSUE #)
       - [ ] Benchmarking Suite for All Operations & Encryptions (ISSUE #)
       - [ ] Development server for Fast Decryption/Re-Encryption
+      - [ ] RESEARCH: whether https://eprint.iacr.org/2016/870.pdf can be used to speedup YASHE/FV bootstrapping.
     - [ ] Neural Networks
       - [ ] Components
         - [ ] Full Unit-Testing Suite for All Components (ISSUE #)
