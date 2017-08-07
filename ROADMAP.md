@@ -12,7 +12,7 @@
       - [ ] Abstract Fixed Point Precision ([ISSUE 12](https://github.com/OpenMined/Syft/issues/12))
       - [ ] CPU YASHE Support (ISSUE #)
       - [ ] Initial Wrap of cuYASHE Support (ISSUE #)
-      - [ ] Internal, faster "from scratch" rebuild of Paillier (ISSUE #)
+      - [ ] Internal, faster "from scratch" rebuild of Paillier ([ISSUE 12](https://github.com/OpenMined/Syft/issues/13))
       - [ ] Key-Rotation Support for Additive HE (ISSUE #)
       - [ ] Key-Rotation Support for Add+Mul HE (ISSUE #)
       - [ ] Full Unit-Testing Suite for All Features (ISSUE #)
