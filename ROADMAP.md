@@ -7,7 +7,7 @@
     - [x] Initial Benchmark Testing Suite
 - [ ] Pre-Alpha Release
     - [ ] Homomorphic Encryption (syft/he)
-      - [ ] Add Generic Tensor as Basic Type (ISSUE #)
+      - [ ] Add Generic Tensor as Basic Type ([ISSUE 10](https://github.com/OpenMined/Syft/issues/10))
       - [ ] Add Additive/Multiplicative Depth Tracking (ISSUE #)
       - [ ] Add Automatic Bootstrapping Support (either via server or local)
       - [ ] Abstract Fixed Point Precision (ISSUE #)
