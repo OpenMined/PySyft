@@ -8,8 +8,7 @@
 - [ ] Pre-Alpha Release
     - [ ] Homomorphic Encryption (syft/he)
       - [ ] Add Generic Tensor as Basic Type ([ISSUE 10](https://github.com/OpenMined/Syft/issues/10))
-      - [ ] Add Additive/Multiplicative Depth Tracking (ISSUE #)
-      - [ ] Add Automatic Bootstrapping Support (either via server or local)
+      - [ ] Add Additive/Multiplicative Depth Tracking ([ISSUE 11](https://github.com/OpenMined/Syft/issues/11))
       - [ ] Abstract Fixed Point Precision (ISSUE #)
       - [ ] CPU YASHE Support (ISSUE #)
       - [ ] Initial Wrap of cuYASHE Support (ISSUE #)
