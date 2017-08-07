@@ -1,0 +1,51 @@
+# Syft Project Roadmap
+
+
+- [ ] Proof of Concept
+    - [x] Initial Homomorphic Encryption Support (syft/he)
+    - [x] Basic Linear Model (syft/nn/linear.py)
+    - [x] Initial Benchmark Testing Suite
+- [ ] Beta Release
+    - [ ] Homomorphic Encryption (syft/he)
+      - [ ] Add Generic Tensor as Basic Type (ISSUE #)
+      - [ ] Add Additive/Multiplicative Depth Tracking (ISSUE #)
+      - [ ] Add Automatic Bootstrapping Support (either via server or local)
+      - [ ] Abstract Fixed Point Precision (ISSUE #)
+      - [ ] CPU YASHE Support (ISSUE #)
+      - [ ] Initial Wrap of cuYASHE Support (ISSUE #)
+      - [ ] Internal, faster "from scratch" rebuild of Paillier (ISSUE #)
+      - [ ] Key-Rotation Support for Additive HE (ISSUE #)
+      - [ ] Key-Rotation Support for Add+Mul HE (ISSUE #)
+      - [ ] Full Unit-Testing Suite for All Features (ISSUE #)
+      - [ ] Benchmarking Suite for All Operations & Encryptions (ISSUE #)
+      - [ ] Development server for Fast Decryption/Re-Encryption
+    - [ ] Neural Networks
+      - [ ] Components
+        - [ ] Full Unit-Testing Suite for All Components (ISSUE #)
+        - [ ] Develop Abstraction for Encrypted vs Unencrypted Logic in a Layer (ISSUE #)
+        - [ ] Layers
+          - [ ] Linear Layer (ISSUE #)
+          - [ ] Convolutional Layer (ISSUE #)
+          - [ ] Embedding Layer (ISSUE #)
+          - [ ] Hashed Embedding Layer (variable length vocab) (ISSUE #)  
+          - [ ] Softmax Layer (ISSUE #)
+          - [ ] Sparsemax Layer (ISSUE #)
+          - [ ] Hierarchical Layer (softmax/sparsemax) (ISSUE #)
+          - [ ] Vanilla Recurrent Layer (ISSUE #)
+          - [ ] LSTM Layer (ISSUE #)
+        - [ ] Nonlinearities
+          - [ ] Add Support for ReLU (ISSUE #)
+          - [ ] Add Support for Sigmoid (ISSUE #)
+          - [ ] Add Support for Tanh (ISSUE #)
+          - [ ] Add Support for Hard Tanh (ISSUE #)
+          - [ ] Add Experimental Support for x**2 and x**3 (ISSUE #)
+        - [ ] Losses
+          - [ ] MSE Loss (ISSUE #)
+          - [ ] Cross Entropy Loss (ISSUE #)
+      - [ ] Pre-fab Classifiers
+        - Linear Classifier (ISSUE #)
+        - Convolutional Neural Network (ISSUE #)
+        - Word2vec Classifier (ISSUE #)
+        - FastText Classifier (ISSUE #)
+        - LSTM Classifier (ISSUE #)
+        - RL Model (ISSUE #)
