@@ -21,6 +21,12 @@ python setup.py install
 bash install_for_anaconda_users.sh
 ```
 
+### For Contributors
+
+If you are interested in contributing to Syft, please checkout our Product Roadmap and sign into our Slack Team channel #syft.
+
+Product Roadmap: https://github.com/OpenMined/Syft/blob/master/ROADMAP.md
+
 ## literature
 
 As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
