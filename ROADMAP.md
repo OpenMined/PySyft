@@ -9,7 +9,7 @@
     - [ ] Homomorphic Encryption (syft/he)
       - [ ] Add Generic Tensor as Basic Type ([ISSUE 10](https://github.com/OpenMined/Syft/issues/10))
       - [ ] Add Additive/Multiplicative Depth Tracking ([ISSUE 11](https://github.com/OpenMined/Syft/issues/11))
-      - [ ] Abstract Fixed Point Precision (ISSUE #)
+      - [ ] Abstract Fixed Point Precision ([ISSUE 12](https://github.com/OpenMined/Syft/issues/12))
       - [ ] CPU YASHE Support (ISSUE #)
       - [ ] Initial Wrap of cuYASHE Support (ISSUE #)
       - [ ] Internal, faster "from scratch" rebuild of Paillier (ISSUE #)
