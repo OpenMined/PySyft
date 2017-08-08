@@ -14,7 +14,8 @@ def import_submodules(package, recursive=True):
         package = importlib.import_module(package)
     results = {}
     for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
-        if(name not in ignore_packages):
+        # test submodule names are 'syft.test.*', so this matches the 'ignore_packages' above
+        if name.split('.')[1] not in ignore_packages:
             full_name = package.__name__ + '.' + name
             results[full_name] = importlib.import_module(full_name)
             if recursive and is_pkg:
