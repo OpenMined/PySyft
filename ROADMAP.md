@@ -13,7 +13,7 @@
       - [ ] CPU YASHE Support (ISSUE #)
       - [ ] Initial Wrap of cuYASHE Support (ISSUE #)
       - [ ] Internal, faster "from scratch" rebuild of Paillier ([ISSUE 13](https://github.com/OpenMined/Syft/issues/13))
-      - [ ] Key-Rotation Support for Additive HE (ISSUE #)
+      - [ ] Key-Rotation Support for Additive HE ([ISSUE 14](https://github.com/OpenMined/Syft/issues/14))
       - [ ] Key-Rotation Support for Add+Mul HE (ISSUE #)
       - [ ] Full Unit-Testing Suite for All Features (ISSUE #)
       - [ ] Benchmarking Suite for All Operations & Encryptions (ISSUE #)
