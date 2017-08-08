@@ -1,10 +1,10 @@
-# syft
+# Syft
 
 > Homomorphically Encrypted Deep Learning Library
 
 The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find very performant combinations of the two.  See [notebooks](./notebooks) folder for tutorials on how to use the library.
 
-## installation
+## Installation
 
 You need to install this library locally before running any of the notebooks this repository or the [main demonstration](https://github.com/OpenMined/sonar):
 
@@ -15,7 +15,7 @@ pip install -r requirements.txt
 python setup.py install
 ```
 
-### For anaconda users:
+### For Anaconda Users:
 
 ```
 bash install_for_anaconda_users.sh
@@ -23,7 +23,7 @@ bash install_for_anaconda_users.sh
 
 ## For Contributors
 
-If you are interested in contributing to Syft, please checkout our [Project Roadmap](https://github.com/OpenMined/Syft/blob/master/ROADMAP.md) and sign into our Slack Team channel #syft.
+If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributor_quickstart.md) and then checkout our [Project Roadmap](https://github.com/OpenMined/Syft/blob/master/ROADMAP.md) and sign into our Slack Team channel #syft to let us know which projects sound interesting to you! (or propose your own!).
 
 ## literature
 
