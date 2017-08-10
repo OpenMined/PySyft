@@ -1,4 +1,10 @@
--r ./requirements.txt
-
-# Everything for testing purposes
+pyRserve
+numpy
+phe
 line_profiler
+jupyter
+clint
+pytest
+pep8
+pytest-pep8
+autopep8

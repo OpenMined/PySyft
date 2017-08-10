@@ -1,0 +1,36 @@
+FROM ubuntu:latest
+
+# add ubuntu user
+RUN useradd -ms /bin/bash ubuntu
+
+# install dependencies and tools
+RUN apt-get update && apt-get install -y \
+  wget \
+  git \
+  build-essential \
+  tree \
+  vim \
+  python3 \
+  python3-pip \
+  libgmp-dev \
+  libmpfr-dev \
+  libmpc-dev \
+  && rm -rf /var/lib/apt/lists/* \
+  && cd /home/ubuntu \
+  && git clone https://github.com/OpenMined/PySyft.git \
+  && cd PySyft \
+  && pip3 install --upgrade pip && pip3 install -r requirements.txt \
+  && python3 setup.py install \
+  && chown -R ubuntu:ubuntu /home/ubuntu
+
+# expose jupyter notebook default port
+EXPOSE 8888
+
+# start container as ubuntu user
+USER ubuntu
+
+# set working directory to ubuntu user home
+WORKDIR /home/ubuntu
+
+# launch container with notebook command
+CMD jupyter notebook --port=8888 --ip=0.0.0.0

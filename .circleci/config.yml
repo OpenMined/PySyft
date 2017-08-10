@@ -1,0 +1,32 @@
+version: 2
+jobs:
+  build:
+    working_directory: /pysyft
+    docker:
+      - image: docker:latest
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --no-cache \
+              py-pip
+            pip install \
+              docker-compose
+      - run:
+          name: Build application Docker image
+          command: |
+            docker build -t pysyft .
+      - run:
+          name: Run tests
+          command: |
+            docker run -it pysyft pytest PySyft/tests/test_linear_classifier.py
+      - deploy:
+          name: Push application Docker image
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              docker login -e "${DOCKERHUB_EMAIL}" -u "${DOCKERHUB_USER}" -p "${DOCKERHUB_PASS}"
+              docker tag pysyft "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+              docker push "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+            fi
