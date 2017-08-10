@@ -4,3 +4,6 @@ syft.egg-info/
 */**/__pycache__
 .ipynb_checkpoints/
 *.pickle
+lastfailed
+pytest_runner*
+.eggs/
