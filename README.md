@@ -30,10 +30,14 @@ If you are interested in contributing to Syft, first check out our [Contributor 
 As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
 
 ### Encrypted Deep Learning - Recommended Reading:
-- http://iamtrask.github.io/2017/03/17/safe-ai/
-- https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/
-- http://iamtrask.github.io/2017/06/05/homomorphic-surveillance/
-- https://www.microsoft.com/en-us/research/wp-content/uploads/2015/11/ManualHE-3.pdf
+- How to build a fully encrypted AI model (trained on unencrypted data):  
+  - http://iamtrask.github.io/2017/03/17/safe-ai/
+- Simple secure protocol for federated machine learning (using a python-paillier library):  
+  - https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/
+- Prototype for using encrypted AI to preserve user privacy (in python):  
+  - http://iamtrask.github.io/2017/06/05/homomorphic-surveillance/
+- Manual for Using Homomorphic Encryption for Bioinformatics (paper):  
+  - https://www.microsoft.com/en-us/research/wp-content/uploads/2015/11/ManualHE-3.pdf
 
 ### Homomorphic Encryption - Recommended Reading:
 - https://eprint.iacr.org/2014/062.pdf
