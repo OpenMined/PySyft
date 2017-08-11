@@ -10,8 +10,6 @@ def read(fname):
 
 requirements = read('requirements.txt').split()
 
-
-
 setup(
     name = "syft",
     version = "0.1.0",
@@ -29,4 +27,6 @@ setup(
     ],
     scripts=['bin/syft_cmd'],
     install_requires=requirements,
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest']
 )
