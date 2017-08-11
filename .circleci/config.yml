@@ -1,7 +1,7 @@
 version: 2
 jobs:
   build:
-    working_directory: /pysyft
+    working_directory: /PySyft
     docker:
       - image: docker:latest
     steps:
@@ -21,7 +21,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            docker run -it pysyft pytest PySyft/tests/test_linear_classifier.py
+            docker run -it pysyft pytest tests/test_tensor.py
       - deploy:
           name: Push application Docker image
           command: |
