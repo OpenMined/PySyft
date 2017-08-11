@@ -21,6 +21,19 @@ python setup.py install
 bash install_for_anaconda_users.sh
 ```
 
+### For Docker Users
+
+Install Docker from https://www.docker.com/
+For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask install docker`
+
+Then, run:
+
+```sh
+git clone https://github.com/OpenMined/PySyft.git
+cd PySyft/notebooks/
+docker run --rm -it -v $PWD:/notebooks -w /notebooks -p 8888:8888 openmined/pysyft jupyter notebook --ip=0.0.0.0 --allow-root
+```
+
 ## For Contributors
 
 If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributor_quickstart.md) and then checkout our [Project Roadmap](https://github.com/OpenMined/Syft/blob/master/ROADMAP.md) and sign into our Slack Team channel #syft to let us know which projects sound interesting to you! (or propose your own!).
