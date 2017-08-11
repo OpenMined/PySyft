@@ -1,10 +1,4 @@
-pyRserve
-numpy
-phe
+-r ./requirements.txt
+
+# Everything for testing purposes
 line_profiler
-jupyter
-clint
-pytest
-pep8
-pytest-pep8
-autopep8
