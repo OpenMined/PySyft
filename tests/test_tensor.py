@@ -58,6 +58,14 @@ class DivTests(unittest.TestCase):
     def testScalar(self):
         t = TensorBase(np.array([2,4,6]))
         self.assertTrue(np.array_equal(t / 2, [1, 2, 3]))
+class absTests(unittest.TestCase):
+       
+    def testabs(self):
+        t = TensorBase(np.array([-1,-2,3]))
+        self.assertTrue(np.array_equal(t.abs(),[1,2,3]))
+    def testabs_(self):
+        t = TensorBase(np.array([-1,-2,3]))
+        self.assertTrue(np.array_equal(t.abs_(),t.data))  
     
 def main():
     unittest.main()
