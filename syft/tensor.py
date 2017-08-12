@@ -8,7 +8,7 @@ def _ensure_ndarray(arr):
 
 class TensorBase(object):
     """
-    A base tensor class that perform basic element-wise operation such as 
+    A base tensor class that perform basic element-wise operation such as
     addition, subtraction, multiplication and division
     """
 
@@ -83,3 +83,20 @@ class TensorBase(object):
         arr_like = _ensure_ndarray(arr_like)
         self.data = self.data / arr_like
         return self.data
+
+    def shape(self):
+        """Returns a tuple of input array dimensions."""
+        if self.encrypted:
+            return NotImplemented
+
+        return self.data.shape
+
+    def sum(self, dim=None):
+        """Returns the sum of all elements in the input array."""
+        if self.encrypted:
+            return NotImplemented
+
+        if dim is None:
+            return self.data.sum()
+        else:
+            return self.data.sum(axis=dim)
