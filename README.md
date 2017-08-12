@@ -21,19 +21,36 @@ python setup.py install
 bash install_for_anaconda_users.sh
 ```
 
+### For Docker Users
+
+Install Docker from https://www.docker.com/
+For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask install docker`
+
+Then, run:
+
+```sh
+git clone https://github.com/OpenMined/PySyft.git
+cd PySyft/notebooks/
+docker run --rm -it -v $PWD:/notebooks -w /notebooks -p 8888:8888 openmined/pysyft jupyter notebook --ip=0.0.0.0 --allow-root
+```
+
 ## For Contributors
 
-If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributor_quickstart.md) and then checkout our [Project Roadmap](https://github.com/OpenMined/Syft/blob/master/ROADMAP.md) and sign into our Slack Team channel #syft to let us know which projects sound interesting to you! (or propose your own!).
+If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then checkout our [Project Roadmap](https://github.com/OpenMined/Syft/blob/master/ROADMAP.md) and sign into our Slack Team channel #syft to let us know which projects sound interesting to you! (or propose your own!).
 
 ## Relevant Literature
 
 As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
 
 ### Encrypted Deep Learning - Recommended Reading:
-- http://iamtrask.github.io/2017/03/17/safe-ai/
-- https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/
-- http://iamtrask.github.io/2017/06/05/homomorphic-surveillance/
-- https://www.microsoft.com/en-us/research/wp-content/uploads/2015/11/ManualHE-3.pdf
+- How to build a fully encrypted AI model (trained on unencrypted data):  
+  - http://iamtrask.github.io/2017/03/17/safe-ai/
+- Simple secure protocol for federated machine learning (using a python-paillier library):  
+  - https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/
+- Prototype for using encrypted AI to preserve user privacy (in python):  
+  - http://iamtrask.github.io/2017/06/05/homomorphic-surveillance/
+- Manual for Using Homomorphic Encryption for Bioinformatics (paper):  
+  - https://www.microsoft.com/en-us/research/wp-content/uploads/2015/11/ManualHE-3.pdf
 
 ### Homomorphic Encryption - Recommended Reading:
 - https://eprint.iacr.org/2014/062.pdf

@@ -7,7 +7,7 @@ class AddTests(unittest.TestCase):
     def testSimple(self):
         t = TensorBase(np.array([1,2,3]))
         self.assertTrue(np.array_equal(t + np.array([1,2,3]), [2,4,6]))
-    
+
     def testInplace(self):
         t = TensorBase(np.array([1,2,3]))
         t += np.array([1,2,3])
@@ -21,7 +21,7 @@ class SubTests(unittest.TestCase):
     def testSimple(self):
         t = TensorBase(np.array([1,2,3]))
         self.assertTrue(np.array_equal(t - np.array([1,2,3]), [0,0,0]))
-    
+
     def testInplace(self):
         t = TensorBase(np.array([1,2,3]))
         t -= np.array([1,2,3])
@@ -58,7 +58,8 @@ class DivTests(unittest.TestCase):
     def testScalar(self):
         t = TensorBase(np.array([2,4,6]))
         self.assertTrue(np.array_equal(t / 2, [1, 2, 3]))
-class absTests(unittest.TestCase):
+
+class AbsTests(unittest.TestCase):
        
     def testabs(self):
         t = TensorBase(np.array([-1,-2,3]))
@@ -66,7 +67,21 @@ class absTests(unittest.TestCase):
     def testabs_(self):
         t = TensorBase(np.array([-1,-2,3]))
         self.assertTrue(np.array_equal(t.abs_(),t.data))  
-    
+
+class ShapeTests(unittest.TestCase):
+    def testShape(self):
+        t = TensorBase(np.array([[0, 1], [0, 5]]))
+        self.assertTrue(np.array_equal(t.shape(), (2, 2)))
+
+class SumTests(unittest.TestCase):
+    def testDimNoneInt(self):
+        t = TensorBase(np.array([1,2,3]))
+        self.assertTrue(np.array_equal(t.sum(), 6))
+
+    def testDimIsNotNoneInt(self):
+        t = TensorBase(np.array([[0, 1], [0, 5]]))
+        self.assertTrue(np.array_equal(t.sum(dim=1), [1, 5]))
+
 def main():
     unittest.main()
 
