@@ -1,5 +1,5 @@
 FROM alpine:edge
-RUN ["apk", "add", "--no-cache", "python3", "python3-dev", "musl-dev", "linux-headers", "g++", "gmp-dev", "mpfr-dev", "mpc1-dev"]
+RUN ["apk", "add", "--no-cache", "python3", "python3-dev", "musl-dev", "linux-headers", "g++", "gmp-dev", "mpfr-dev", "mpc1-dev", "ca-certificates"]
 
 RUN ["mkdir", "/syft"]
 COPY requirements.txt /syft
