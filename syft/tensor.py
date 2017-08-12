@@ -83,3 +83,15 @@ class TensorBase(object):
         arr_like = _ensure_ndarray(arr_like)
         self.data = self.data / arr_like
         return self.data
+    def abs(self):
+        """Returns absolute value of tensor as a new tensor"""
+        if self.encrypted:
+            return NotImplemented
+        return np.absolute(self.data)
+    
+    def abs_(self):
+        """Replaces tensor values with its absolute value"""
+        if self.encrypted:
+            return NotImplemented
+        self.data=np.absolute(self.data)
+        return self.data
