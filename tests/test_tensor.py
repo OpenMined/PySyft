@@ -1,8 +1,15 @@
 from syft import TensorBase
+import syft
 import unittest
 import numpy as np
 
 # Here's our "unit tests".
+class DimTests(unittest.TestCase):
+    def testDimOne(self):
+        t = TensorBase(np.array([1,2,3]))
+        self.assertTrue(t.dim() == 1)
+
+
 class AddTests(unittest.TestCase):
     def testSimple(self):
         t = TensorBase(np.array([1,2,3]))

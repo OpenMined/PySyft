@@ -91,6 +91,15 @@ class TensorBase(object):
 
         return self.data.shape
 
+
+    def dim(self):
+        """Returns an integer of the number of dimensions of this tensor."""
+        if self.encrypted:
+            return NotImplemented
+
+        return self.data.ndim
+
+
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
         if self.encrypted:
