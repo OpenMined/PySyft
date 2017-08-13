@@ -80,6 +80,20 @@ class SumTests(unittest.TestCase):
         t = TensorBase(np.array([[0, 1], [0, 5]]))
         self.assertTrue(np.array_equal(t.sum(dim=1), [1, 5]))
 
+
+class DotTests(unittest.TestCase):
+    def testDotInt(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = TensorBase(np.array([4, 5, 6]))
+        self.assertTrue(syft.dot(t1, t2), 32)
+
+
+    def testDotFloat(self):
+        t1 = TensorBase(np.array([1.3, 2.5, 3.7]))
+        t2 = TensorBase(np.array([4.9, 5.8, 6.5]))
+        self.assertTrue(syft.dot(t1, t2), 43.07)
+
+
 def main():
     unittest.main()
 

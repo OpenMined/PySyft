@@ -1,10 +1,28 @@
 import numpy as np
+import syft
+
+__all__ = [
+    'dot', 'matmul',
+]
 
 def _ensure_ndarray(arr):
     if not isinstance(arr, np.ndarray):
         arr = np.array(arr)
 
     return arr
+
+
+def dot(tensor1, tensor2):
+    """Returns inner product of two tensors.
+
+    N-dimensional tensors are flattened into 1-D vectors, therefore this method should only be used on vectors.
+    """
+
+    if tensor1.encrypted is True or tensor2.encrypted is True:
+        return NotImplemented
+
+    return TensorBase(np.vdot(tensor1.data, tensor2.data))
+
 
 class TensorBase(object):
     """
@@ -49,6 +67,15 @@ class TensorBase(object):
         arr_like = _ensure_ndarray(arr_like)
         self.data = self.data - arr_like
         return self.data
+
+
+
+    def dot(self, tensor):
+        """Returns inner product of two tensors"""
+        if self.encrypted:
+            return NotImplemented
+
+        return syft.dot(self, tensor)
 
     def __mul__(self, arr_like):
         """Performs element-wise multiplication between two array like objects"""
