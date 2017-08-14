@@ -20,6 +20,12 @@ python setup.py install
 ```
 bash install_for_anaconda_users.sh
 ```
+**Windows**
+```sh
+conda install -c conda-forge gmpy2
+pip install -r requirements.txt
+python setup.py install
+```
 
 ### For Docker Users
 
