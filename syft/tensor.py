@@ -11,12 +11,22 @@ def _ensure_ndarray(arr):
 
     return arr
 
+def _ensure_tensorbase(tensor):
+    if not isinstance(tensor, TensorBase):
+        tensor = TensorBase(tensor)
+
+    return tensor
+
+
 
 def dot(tensor1, tensor2):
     """Returns inner product of two tensors.
 
     N-dimensional tensors are flattened into 1-D vectors, therefore this method should only be used on vectors.
     """
+
+    tensor1 = _ensure_tensorbase(tensor1)
+    tensor2 = _ensure_tensorbase(tensor2)
 
     if tensor1.encrypted is True or tensor2.encrypted is True:
         return NotImplemented
@@ -34,6 +44,10 @@ def matmul(tensor1, tensor2):
     * If tensor1 is 1-dimensional, it is converted to a matrix by prepending a 1 to its dimensions. This prepended dimension is removed after the matrix multiplication.
     * If tensor2 is 1-dimensional, it is converted to a matrix by prepending a 1 to its dimensions. This prepended dimension is removed after the matrix multiplication.
     """
+
+    tensor1 = _ensure_tensorbase(tensor1)
+    tensor2 = _ensure_tensorbase(tensor2)
+
     if tensor1.encrypted is True or tensor2.encrypted is True:
         return NotImplemented
 
@@ -53,39 +67,39 @@ class TensorBase(object):
         self.data = _ensure_ndarray(arr_like)
         self.encrypted = encrypted
 
-    def __add__(self, arr_like):
-        """Performs element-wise addition between two array like objects"""
+    def __add__(self, tensor):
+        """Performs element-wise addition between two tensors"""
         if self.encrypted:
             return NotImplemented
 
-        arr_like = _ensure_ndarray(arr_like)
-        return self.data + arr_like
+        tensor = _ensure_tensorbase(tensor)
+        return TensorBase(self.data + tensor.data)
 
-    def __iadd__(self, arr_like):
-        """Performs in place element-wise addition between two array like objects"""
+    def __iadd__(self, tensor):
+        """Performs in place element-wise addition between two tensors"""
         if self.encrypted:
             return NotImplemented
 
-        arr_like = _ensure_ndarray(arr_like)
-        self.data = self.data + arr_like
-        return self.data
+        tensor = _ensure_tensorbase(tensor)
+        self.data = self.data + tensor.data
+        return self
 
-    def __sub__(self, arr_like):
-        """Performs element-wise subtraction between two array like objects"""
+    def __sub__(self, tensor):
+        """Performs element-wise subtraction between two tensors"""
         if self.encrypted:
             return NotImplemented
 
-        arr_like = _ensure_ndarray(arr_like)
-        return self.data - arr_like
+        tensor = _ensure_tensorbase(tensor)
+        return TensorBase(self.data - tensor.data)
 
-    def __isub__(self, arr_like):
-        """Performs in place element-wise subtraction between two array like objects"""
+    def __isub__(self, tensor):
+        """Performs in place element-wise subtraction between two tensors"""
         if self.encrypted:
             return NotImplemented
 
-        arr_like = _ensure_ndarray(arr_like)
-        self.data = self.data - arr_like
-        return self.data
+        tensor = _ensure_tensorbase(tensor)
+        self.data = self.data - tensor.data
+        return self
 
 
 
@@ -96,44 +110,46 @@ class TensorBase(object):
 
         return syft.dot(self, tensor)
 
-    def __matmul__(self, arr_like):
+    def __matmul__(self, tensor):
         """Performs matrix multiplication between two tensors"""
-        return syft.matmul(self, arr_like)
-
-
-    def __mul__(self, arr_like):
-        """Performs element-wise multiplication between two array like objects"""
         if self.encrypted:
             return NotImplemented
 
-        arr_like = _ensure_ndarray(arr_like)
-        return self.data * arr_like
+        return syft.matmul(self, tensor)
 
-    def __imul__(self, arr_like):
-        """Performs in place element-wise multiplication between two array like objects"""
+    def __mul__(self, tensor):
+        """Performs element-wise multiplication between two tensors"""
         if self.encrypted:
             return NotImplemented
 
-        arr_like = _ensure_ndarray(arr_like)
-        self.data = self.data * arr_like
-        return self.data
+        tensor = _ensure_tensorbase(tensor)
+        return TensorBase(self.data * tensor.data)
 
-    def __truediv__(self, arr_like):
-        """Performs element-wise division between two array like objects"""
+    def __imul__(self, tensor):
+        """Performs in place element-wise multiplication between two tensors"""
         if self.encrypted:
             return NotImplemented
 
-        arr_like = _ensure_ndarray(arr_like)
-        return self.data / arr_like
+        tensor = _ensure_tensorbase(tensor)
+        self.data = self.data * tensor.data
+        return self
 
-    def __itruediv__(self, arr_like):
-        """Performs in place element-wise subtraction between two array like objects"""
+    def __truediv__(self, tensor):
+        """Performs element-wise division between two tensors"""
         if self.encrypted:
             return NotImplemented
 
-        arr_like = _ensure_ndarray(arr_like)
-        self.data = self.data / arr_like
-        return self.data
+        tensor = _ensure_tensorbase(tensor)
+        return TensorBase(self.data / tensor.data)
+
+    def __itruediv__(self, tensor):
+        """Performs in place element-wise subtraction between two tensors"""
+        if self.encrypted:
+            return NotImplemented
+
+        tensor = _ensure_tensorbase(tensor)
+        self.data = self.data / tensor.data
+        return self
 
     def shape(self):
         """Returns a tuple of input array dimensions."""
