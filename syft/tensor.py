@@ -77,8 +77,8 @@ def matmul(tensor1, tensor2):
 
 class TensorBase(object):
     """
-    A base tensor class that perform basic element-wise operation such as
-    addition, subtraction, multiplication and division
+    A base tensor class that performs basic element-wise operation such as
+    addition, subtraction, multiplication and division, and also dot and matrix products.
     """
 
     def __init__(self, arr_like, encrypted=False):
