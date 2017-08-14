@@ -5,11 +5,13 @@ __all__ = [
     'equal', 'dot', 'matmul',
 ]
 
+
 def _ensure_ndarray(arr):
     if not isinstance(arr, np.ndarray):
         arr = np.array(arr)
 
     return arr
+
 
 def _ensure_tensorbase(tensor):
     if not isinstance(tensor, TensorBase):
@@ -59,8 +61,10 @@ def matmul(tensor1, tensor2):
     * If both tensors are 1-dimensional, their dot product is returned.
     * If both tensors are 2-dimensional, their matrix-matrix product is returned.
     * If either tensor has dimensionality > 2, the last 2 dimensions are treated as matrices and multiplied.
-    * If tensor1 is 1-dimensional, it is converted to a matrix by prepending a 1 to its dimensions. This prepended dimension is removed after the matrix multiplication.
-    * If tensor2 is 1-dimensional, it is converted to a matrix by prepending a 1 to its dimensions. This prepended dimension is removed after the matrix multiplication.
+    * If tensor1 is 1-dimensional, it is converted to a matrix by prepending a 1 to its dimensions.
+      This prepended dimension is removed after the matrix multiplication.
+    * If tensor2 is 1-dimensional, it is converted to a matrix by prepending a 1 to its dimensions.
+      This prepended dimension is removed after the matrix multiplication.
     """
 
     tensor1 = _ensure_tensorbase(tensor1)
@@ -181,14 +185,12 @@ class TensorBase(object):
 
         return self.data.shape
 
-
     def dim(self):
         """Returns an integer of the number of dimensions of this tensor."""
         if self.encrypted:
             return NotImplemented
 
         return self.data.ndim
-
 
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
