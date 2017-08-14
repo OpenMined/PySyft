@@ -81,6 +81,7 @@ class SumTests(unittest.TestCase):
     def testDimIsNotNoneInt(self):
         t = TensorBase(np.array([[0, 1], [0, 5]]))
         self.assertTrue(np.array_equal(t.sum(dim=1), [1, 5]))
+
 class addmm(unittest.TestCase):
     def testaddmm1d(self):
         t1=TensorBase(np.array([1,2,3]))
