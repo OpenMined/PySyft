@@ -2,7 +2,7 @@ import numpy as np
 import syft
 
 __all__ = [
-    'dot', 'matmul',
+    'equal', 'dot', 'matmul',
 ]
 
 def _ensure_ndarray(arr):
@@ -17,6 +17,24 @@ def _ensure_tensorbase(tensor):
 
     return tensor
 
+
+def equal(tensor1, tensor2):
+    """Checks if two tensors are equal.
+
+    Two tensors are considered equal if they are the same size and contain the same elements.
+
+    Assumption:
+    tensor1 and tensor2 are of type TensorBase.
+    Non-TensorBase objects will be converted to TensorBase objects.
+    """
+
+    tensor1 = _ensure_tensorbase(tensor1)
+    tensor2 = _ensure_tensorbase(tensor2)
+
+    if tensor1.encrypted is True or tensor2.encrypted is True:
+        return NotImplemented
+
+    return tensor1.data.shape == tensor2.data.shape and np.allclose(tensor1.data, tensor2.data)
 
 
 def dot(tensor1, tensor2):
@@ -101,7 +119,12 @@ class TensorBase(object):
         self.data = self.data - tensor.data
         return self
 
+    def __eq__(self, tensor):
+        """Checks if two tensors are equal"""
+        if self.encrypted:
+            return NotImplemented
 
+        return syft.equal(self, tensor)
 
     def dot(self, tensor):
         """Returns inner product of two tensors"""
