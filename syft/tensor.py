@@ -33,7 +33,7 @@ def equal(tensor1, tensor2):
     tensor1 = _ensure_tensorbase(tensor1)
     tensor2 = _ensure_tensorbase(tensor2)
 
-    if tensor1.encrypted is True or tensor2.encrypted is True:
+    if tensor1.encrypted or tensor2.encrypted:
         return NotImplemented
 
     return tensor1.data.shape == tensor2.data.shape and np.allclose(tensor1.data, tensor2.data)
@@ -63,7 +63,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data = self.data + tensor.data
+        self.data += tensor.data
         return self
 
     def __sub__(self, tensor):
@@ -80,7 +80,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data = self.data - tensor.data
+        self.data -= tensor.data
         return self
 
     def __eq__(self, tensor):
@@ -118,7 +118,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data = self.data * tensor.data
+        self.data *= tensor.data
         return self
 
     def __truediv__(self, tensor):
@@ -135,7 +135,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data = self.data / tensor.data
+        self.data /= tensor.data
         return self
 
     def abs(self):
@@ -206,7 +206,7 @@ def ceil(self):
             *If the first argument is 1-D, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
             *If the second argument is 1-D, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
             """
-        if self.encrypted is True or tensor2.encrypted is True or mat.encrypted is True:
+        if self.encrypted or tensor2.encrypted or mat.encrypted:
             return NotImplemented
         else:
             self.data=np.array((mat*beta)+((np.matmul(self.data,tensor2.data))*alpha))
