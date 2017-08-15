@@ -1,10 +1,10 @@
 import numpy as np
 
-from syft import TensorBase
+from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
-    'dot', 'matmul',
+    'cumsum','ceil','dot', 'matmul',
 ]
 
 
@@ -45,3 +45,41 @@ def matmul(tensor1, tensor2):
         return dot(tensor1, tensor2)
     else:
         return TensorBase(np.matmul(tensor1.data, tensor2.data))
+
+
+def ceil(tensor):
+    """
+    Returns the ceilling input tensor,element wise .
+
+    Ceilling of an input scalar is the smallest integer such as :
+    for each floating pount number x : a >= x
+
+    Behavior is independent of a tensor's shape.  
+
+    :input: TensorBase tensor\n
+    :return: TensorBase tensor    
+    """
+
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True :
+        return NotImplemented
+    return TensorBase(np.ceil(tensor))
+
+
+def cumsum(tensor,dim=0):
+    """
+    Returns the cumulative sum of the elements along a given dimension
+
+    **Parameters**:
+    * TensorBase tensor
+    * Dimension on which the operation is done
+
+    **returns**  A new 1D Tensor holding the result
+    """
+    
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    if dim < 0:
+        raise "Dimension must be zero at least"
+    return TensorBase(np.cumsum(tensor.data,dim))

@@ -174,6 +174,14 @@ class TensorBase(object):
             return self.data.sum()
         else:
             return self.data.sum(axis=dim)
+
+def ceil(self):
+    """Returns the ceilling of the input tensor elementwise."""
+    
+        if self.encrypted:
+            return NotImplemented
+        return np.ceil(self.data)
+
      
      def addmm(self,tensor2,mat,beta=1,alpha=1):
         """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the result as a Tensor
@@ -203,4 +211,5 @@ class TensorBase(object):
         else:
             self.data=np.array((mat*beta)+((np.matmul(self.data,tensor2.data))*alpha))
             return self
+
 
