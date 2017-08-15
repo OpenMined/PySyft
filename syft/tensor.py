@@ -63,7 +63,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data = self.data + tensor.data
+        self.data += tensor.data
         return self
 
     def __sub__(self, tensor):
@@ -80,7 +80,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data = self.data - tensor.data
+        self.data -= tensor.data
         return self
 
     def __eq__(self, tensor):
@@ -118,7 +118,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data = self.data * tensor.data
+        self.data *= tensor.data
         return self
 
     def __truediv__(self, tensor):
@@ -135,7 +135,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data = self.data / tensor.data
+        self.data /= tensor.data
         return self
 
     def abs(self):
