@@ -59,6 +59,7 @@ def ceil(tensor):
     :input: TensorBase tensor\n
     :return: TensorBase tensor    
     """
+
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True :
         return NotImplemented
@@ -75,6 +76,7 @@ def cumsum(tensor,dim=0):
 
     **returns**  A new 1D Tensor holding the result
     """
+    
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented

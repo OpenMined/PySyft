@@ -138,6 +138,19 @@ class TensorBase(object):
         self.data = self.data / tensor.data
         return self
 
+    def abs(self):
+        """Returns absolute value of tensor as a new tensor"""
+        if self.encrypted:
+            return NotImplemented
+        return np.absolute(self.data)
+    
+    def abs_(self):
+        """Replaces tensor values with its absolute value"""
+        if self.encrypted:
+            return NotImplemented
+        self.data=np.absolute(self.data)
+        return self.data
+
     def shape(self):
         """Returns a tuple of input array dimensions."""
         if self.encrypted:
@@ -162,8 +175,41 @@ class TensorBase(object):
         else:
             return self.data.sum(axis=dim)
 
-    def ceil(self):
-        """Returns the ceilling of the input tensor elementwise."""
+def ceil(self):
+    """Returns the ceilling of the input tensor elementwise."""
+    
         if self.encrypted:
             return NotImplemented
         return np.ceil(self.data)
+
+     
+     def addmm(self,tensor2,mat,beta=1,alpha=1):
+        """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the result as a Tensor
+            Tensor1.Tensor2 is performed as Matrix product of two array The behavior depends on the arguments in the following way.
+            *If both tensors are 1-dimensional, their dot product is returned.
+            *If both arguments are 2-D they are multiplied like conventional matrices.
+            *If either argument is N-D, N > 2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
+            *If the first argument is 1-D, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
+            *If the second argument is 1-D, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
+            """
+        if self.encrypted or tensor2.encrypted or mat.encrypted:
+            return NotImplemented
+        else:
+            return TensorBase(np.array((mat*beta)+((np.matmul(self.data,tensor2.data))*alpha)))
+
+    def addmm_(self,tensor2,mat,beta=1,alpha=1):
+        """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and updates Tensor1 with result and reurns it
+            Tensor1.Tensor2 is performed as Matrix product of two array The behavior depends on the arguments in the following way.
+            *If both tensors are 1-dimensional, their dot product is returned.
+            *If both arguments are 2-D they are multiplied like conventional matrices.
+            *If either argument is N-D, N > 2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
+            *If the first argument is 1-D, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
+            *If the second argument is 1-D, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
+            """
+        if self.encrypted is True or tensor2.encrypted is True or mat.encrypted is True:
+            return NotImplemented
+        else:
+            self.data=np.array((mat*beta)+((np.matmul(self.data,tensor2.data))*alpha))
+            return self
+
+
