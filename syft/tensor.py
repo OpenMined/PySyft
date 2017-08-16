@@ -138,6 +138,13 @@ class TensorBase(object):
         self.data /= tensor.data
         return self
 
+    def __getitem__(self, position):
+        """Get value at a specific index."""
+        if self.encrypted:
+            return NotImplemented
+
+        return self.data[position]
+
     def abs(self):
         """Returns absolute value of tensor as a new tensor"""
         if self.encrypted:
