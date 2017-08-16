@@ -36,8 +36,8 @@ Then, run:
 
 ```sh
 git clone https://github.com/OpenMined/PySyft.git
-cd PySyft/notebooks/
-docker run --rm -it -v $PWD:/notebooks -w /notebooks -p 8888:8888 openmined/pysyft jupyter notebook --ip=0.0.0.0 --allow-root
+cd PySyft
+make run
 ```
 
 ## For Contributors
