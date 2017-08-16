@@ -175,13 +175,14 @@ class TensorBase(object):
         else:
             return self.data.sum(axis=dim)
 
-    def ceil_(self):
-        """Returns the ceilling of the input tensor elementwise."""
-        
+
+  def ceil(self):
+    """Returns the ceilling of the input tensor elementwise."""
+    
         if self.encrypted:
             return NotImplemented
-        self.data = np.ceil(self.data)
-        return self
+        return np.ceil(self.data)
+
 
      
     def addmm(self,tensor2,mat,beta=1,alpha=1):

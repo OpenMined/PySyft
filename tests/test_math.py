@@ -36,7 +36,6 @@ class CumprodTests(unittest.TestCase):
         t1 = TensorBase(np.array([1,2,3]))
         self.assertTrue(syft.equal(syft.cumprod(t1),TensorBase([1,2,6])))
 
-
 class MatmulTests(unittest.TestCase):
     def testMatmul1DInt(self):
         t1 = TensorBase(np.array([1, 2, 3]))

@@ -4,6 +4,7 @@ from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
+
     'cumprod','cumsum','ceil','dot', 'matmul',
 ]
 
@@ -66,6 +67,7 @@ def ceil(tensor):
     return TensorBase(np.ceil(tensor.data))
 
 
+
 def cumsum(tensor,dim=0):
     """
     Returns the cumulative sum of the elements along a given dimension
@@ -97,4 +99,5 @@ def cumprod(tensor,dim=0):
     if tensor.encrypted is True:
         return NotImplemented
     return TensorBase(np.cumprod(tensor.data,dim))
+
 
