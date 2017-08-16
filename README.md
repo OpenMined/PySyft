@@ -47,6 +47,7 @@ If you are interested in contributing to Syft, first check out our [Contributor 
 ## Running tests
 
 ```sh
+cd PySyft
 pytest
 ```
 
