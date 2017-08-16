@@ -25,6 +25,11 @@ class AddTests(unittest.TestCase):
         t = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(syft.equal(t + 2, [3, 4, 5]))
 
+class CeilTests(unittest.TestCase):
+    def testCeil(self):
+        t = TensorBase(np.array([1.4,2.7,6.2]))
+        self.assertTrue(syft.equal(t.ceil_(),[2,3,7]))
+
 
 class SubTests(unittest.TestCase):
     def testSimple(self):

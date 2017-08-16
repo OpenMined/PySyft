@@ -4,7 +4,7 @@ from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
-    'cumsum','ceil','dot', 'matmul',
+    'cumprod','cumsum','ceil','dot', 'matmul',
 ]
 
 
@@ -63,7 +63,7 @@ def ceil(tensor):
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True :
         return NotImplemented
-    return TensorBase(np.ceil(tensor))
+    return TensorBase(np.ceil(tensor.data))
 
 
 def cumsum(tensor,dim=0):
@@ -80,6 +80,21 @@ def cumsum(tensor,dim=0):
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
-    if dim < 0:
-        raise "Dimension must be zero at least"
     return TensorBase(np.cumsum(tensor.data,dim))
+
+def cumprod(tensor,dim=0):
+    """
+    Returns the cumulative product of the elements along a given axis
+
+    **Parameters**:
+    * TensorBase tensor
+    * Dimension on which the operation is done
+
+    **returns** A new 1D Tensor holding the result
+    """
+
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    return TensorBase(np.cumprod(tensor.data,dim))
+
