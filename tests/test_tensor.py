@@ -151,10 +151,3 @@ class addmm(unittest.TestCase):
         mat=TensorBase(np.array([[2,3],[3,4]]))
         t1.addmm_(t2,mat,beta=2,alpha=2)
         self.assertTrue(np.array_equal(t1.data,[[10,18],[12,20]]))
-
-def main():
-    unittest.main()
-
-
-if __name__ == '__main__':
-    main()

@@ -71,11 +71,3 @@ class MatmulTests(unittest.TestCase):
         self.assertTrue(syft.equal(syft.matmul(t1, t2), [[27.04, 30.7],
                                                          [54.82, 62.15]]))
 
-    
-
-def main():
-    unittest.main()
-
-
-if __name__ == '__main__':
-    main()
