@@ -143,7 +143,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        return self.data[position]
+        return TensorBase(self.data[position], self.encrypted)
 
     def abs(self):
         """Returns absolute value of tensor as a new tensor"""
