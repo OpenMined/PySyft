@@ -18,6 +18,24 @@ class DotTests(unittest.TestCase):
         self.assertEqual(syft.dot(t1, t2), 44.92)
 
 
+class CeilTests(unittest.TestCase):
+    def testCeil(self):
+            t1 = TensorBase(np.array([[2.3, 4.1],[7.4, 8.3]]))
+            
+            self.assertTrue(syft.equal(syft.ceil(t1),TensorBase([[ 3.,  5.],[ 8.,  9.]])))
+         
+
+class CumsumTests(unittest.TestCase):
+     def testCumsum(self):
+        t1 = TensorBase(np.array([1,2,3]))
+        self.assertTrue(syft.equal(syft.cumsum(t1),TensorBase([1,3,6])))
+
+
+class CumprodTests(unittest.TestCase):
+     def testCumprod(self):
+        t1 = TensorBase(np.array([1,2,3]))
+        self.assertTrue(syft.equal(syft.cumprod(t1),TensorBase([1,2,6])))
+
 class MatmulTests(unittest.TestCase):
     def testMatmul1DInt(self):
         t1 = TensorBase(np.array([1, 2, 3]))
@@ -52,3 +70,4 @@ class MatmulTests(unittest.TestCase):
                                   [7.8, 8.9]]))
         self.assertTrue(syft.equal(syft.matmul(t1, t2), [[27.04, 30.7],
                                                          [54.82, 62.15]]))
+
