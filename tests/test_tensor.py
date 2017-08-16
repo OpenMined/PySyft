@@ -123,6 +123,13 @@ class EqualTests(unittest.TestCase):
         self.assertTrue(t1 != t2)
 
 
+class IndexTests(unittest.TestCase):
+    def testIndexing(self):
+        t1 = TensorBase(np.array([1.2, 2, 3]))
+        self.assertEqual(1.2, t1[0].data)
+        self.assertEqual(3, t1[-1].data)
+
+
 class addmm(unittest.TestCase):
     def testaddmm1d(self):
         t1=TensorBase(np.array([1,2,3]))
