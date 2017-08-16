@@ -182,16 +182,12 @@ class TensorBase(object):
         else:
             return self.data.sum(axis=dim)
 
-
-  def ceil(self):
-    """Returns the ceilling of the input tensor elementwise."""
-    
+    def ceil(self):
+        """Returns the ceilling of the input tensor elementwise."""
         if self.encrypted:
             return NotImplemented
         return np.ceil(self.data)
 
-
-     
     def addmm(self,tensor2,mat,beta=1,alpha=1):
         """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the result as a Tensor
             Tensor1.Tensor2 is performed as Matrix product of two array The behavior depends on the arguments in the following way.
