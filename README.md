@@ -44,6 +44,13 @@ docker run --rm -it -v $PWD:/notebooks -w /notebooks -p 8888:8888 openmined/pysy
 
 If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then checkout our [Project Roadmap](https://github.com/OpenMined/Syft/blob/master/ROADMAP.md) and sign into our Slack Team channel #syft to let us know which projects sound interesting to you! (or propose your own!).
 
+## Running tests
+
+```sh
+cd PySyft
+pytest
+```
+
 ## Relevant Literature
 
 As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
