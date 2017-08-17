@@ -25,8 +25,12 @@ jobs:
       - deploy:
           name: Push application Docker image
           command: |
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+            if [ "${CIRCLE_BRANCH}" == "develop" ]; then
               docker login -e "${DOCKERHUB_EMAIL}" -u "${DOCKERHUB_USER}" -p "${DOCKERHUB_PASS}"
-              docker tag pysyft "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
-              docker push "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+              docker tag pysyft "${DOCKERHUB_REPO}:edge"
+              docker push "${DOCKERHUB_REPO}:edge"
+            elif [ "${CIRCLE_BRANCH}" == "master" ]; then
+              docker login -e "${DOCKERHUB_EMAIL}" -u "${DOCKERHUB_USER}" -p "${DOCKERHUB_PASS}"
+              docker tag pysyft "${DOCKERHUB_REPO}:latest"
+              docker push "${DOCKERHUB_REPO}:latest"
             fi
