@@ -25,11 +25,6 @@ class AddTests(unittest.TestCase):
         t = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(syft.equal(t + 2, [3, 4, 5]))
 
-class CeilTests(unittest.TestCase):
-    def testCeil(self):
-        t = TensorBase(np.array([1.4,2.7,6.2]))
-        self.assertTrue(syft.equal(t.ceil_(),[2,3,7]))
-
 
 class SubTests(unittest.TestCase):
     def testSimple(self):
@@ -72,89 +67,202 @@ class DivTests(unittest.TestCase):
         self.assertTrue(syft.equal(t.data, [1, 4, 9]))
 
     def testScalar(self):
-        t = TensorBase(np.array([2, 4, 6]))
-        self.assertTrue(syft.equal(t / 2, [1, 2, 3]))
+        t = TensorBase(np.array([2, 4, 8]))
+        self.assertTrue(syft.equal(t / 2, [1, 2, 4]))
 
 
 class AbsTests(unittest.TestCase):
-       
     def testabs(self):
-        t = TensorBase(np.array([-1,-2,3]))
-        self.assertTrue(np.array_equal(t.abs(),[1,2,3]))
+        t = TensorBase(np.array([-1, -2, 3]))
+        self.assertTrue(np.array_equal(t.abs(), [1, 2, 3]))
+    
     def testabs_(self):
-        t = TensorBase(np.array([-1,-2,3]))
-        self.assertTrue(np.array_equal(t.abs_(),t.data))  
+        t = TensorBase(np.array([-1, -2, 3]))
+        self.assertTrue(np.array_equal(t.abs_(), t.data))
+
 
 class ShapeTests(unittest.TestCase):
     def testShape(self):
-        t = TensorBase(np.array([[0, 1], [0, 5]]))
-        self.assertTrue(syft.equal(t.shape(), (2, 2)))
+        t = TensorBase(np.array([[0,  1],  [0,  5]]))
+        self.assertTrue(syft.equal(t.shape(),  (2,  2)))
 
 
 class SumTests(unittest.TestCase):
     def testDimNoneInt(self):
-        t = TensorBase(np.array([1, 2, 3]))
-        self.assertTrue(syft.equal(t.sum(), 6))
+        t = TensorBase(np.array([1,  2,  3]))
+        self.assertTrue(syft.equal(t.sum(),  6))
 
     def testDimIsNotNoneInt(self):
-        t = TensorBase(np.array([[0, 1], [0, 5]]))
-        self.assertTrue(syft.equal(t.sum(dim=1), [1, 5]))
+        t = TensorBase(np.array([[0,  1],  [0,  5]]))
+        self.assertTrue(syft.equal(t.sum(dim=1),  [1,  5]))
 
 
 class EqualTests(unittest.TestCase):
     def testEqual(self):
-        t1 = TensorBase(np.array([1.2, 2, 3]))
-        t2 = TensorBase(np.array([1.2, 2, 3]))
-        self.assertTrue(syft.equal(t1, t2))
+        t1 = TensorBase(np.array([1.2,  2,  3]))
+        t2 = TensorBase(np.array([1.2,  2,  3]))
+        self.assertTrue(syft.equal(t1,  t2))
 
     def testEqOp(self):
-        t1 = TensorBase(np.array([1, 2.4, 3]))
-        t2 = TensorBase(np.array([1, 2.4, 3]))
+        t1 = TensorBase(np.array([1,  2.4,  3]))
+        t2 = TensorBase(np.array([1,  2.4,  3]))
         self.assertTrue(t1 == t2)
 
     def testNotEqual(self):
-        t1 = TensorBase(np.array([1, 2, 3]))
-        t2 = TensorBase(np.array([1, 4, 3]))
-        self.assertFalse(syft.equal(t1, t2))
+        t1 = TensorBase(np.array([1,  2,  3]))
+        t2 = TensorBase(np.array([1,  4,  3]))
+        self.assertFalse(syft.equal(t1,  t2))
 
     def testIneqOp(self):
-        t1 = TensorBase(np.array([1, 2, 3]))
-        t2 = TensorBase(np.array([1, 4, 5]))
+        t1 = TensorBase(np.array([1,  2,  3]))
+        t2 = TensorBase(np.array([1,  4,  5]))
         self.assertTrue(t1 != t2)
-
-
-class IndexTests(unittest.TestCase):
-    def testIndexing(self):
-        t1 = TensorBase(np.array([1.2, 2, 3]))
-        self.assertEqual(1.2, t1[0].data)
-        self.assertEqual(3, t1[-1].data)
 
 
 class addmm(unittest.TestCase):
     def testaddmm1d(self):
-        t1=TensorBase(np.array([1,2,3]))
-        t2=TensorBase(np.array([2,3,4]))
-        mat=TensorBase(np.array([5]))
-        out=t1.addmm(t2,mat,beta=2,alpha=2)
-        self.assertTrue(np.array_equal(out.data,[50]))
-    
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = TensorBase(np.array([2, 3, 4]))
+        mat = TensorBase(np.array([5]))
+        out = t1.addmm(t2, mat, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(out.data, [50]))
+
     def testaddmm2d(self):
-        t1=TensorBase(np.array([[1,2],[1,2]]))
-        t2=TensorBase(np.array([[1,2],[1,2]]))
-        mat=TensorBase(np.array([[2,3],[3,4]]))
-        out=t1.addmm(t2,mat,beta=2,alpha=2)
-        self.assertTrue(np.array_equal(out.data,[[10,18],[12,20]]))
-    
+        t1 = TensorBase(np.array([[1, 2], [1, 2]]))
+        t2 = TensorBase(np.array([[1, 2], [1, 2]]))
+        mat = TensorBase(np.array([[2, 3], [3, 4]]))
+        out = t1.addmm(t2, mat, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(out.data, [[10, 18], [12, 20]]))
+
     def testaddmm_1d(self):
-        t1=TensorBase(np.array([1,2,3]))
-        t2=TensorBase(np.array([2,3,4]))
-        mat=TensorBase(np.array([5]))
-        t1.addmm_(t2,mat,beta=2,alpha=2)
-        self.assertTrue(np.array_equal(t1.data,[50]))
-    
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = TensorBase(np.array([2, 3, 4]))
+        mat = TensorBase(np.array([5]))
+        t1.addmm_(t2, mat, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(t1.data, [50]))
+
     def testaddmm_2d(self):
-        t1=TensorBase(np.array([[1,2],[1,2]]))
-        t2=TensorBase(np.array([[1,2],[1,2]]))
-        mat=TensorBase(np.array([[2,3],[3,4]]))
-        t1.addmm_(t2,mat,beta=2,alpha=2)
-        self.assertTrue(np.array_equal(t1.data,[[10,18],[12,20]]))
+        t1 = TensorBase(np.array([[1, 2], [1, 2]]))
+        t2 = TensorBase(np.array([[1, 2], [1, 2]]))
+        mat = TensorBase(np.array([[2, 3], [3, 4]]))
+        t1.addmm_(t2, mat, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(t1.data, [[10, 18], [12, 20]]))
+
+
+class addcmulTests(unittest.TestCase):
+    def testaddcmul1d(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = TensorBase(np.array([2, 3, 4]))
+        mat = TensorBase(np.array([5]))
+        out = t1.addcmul(t2, mat, value=2)
+        self.assertTrue(np.array_equal(out.data, [9, 17, 29]))
+
+    def testaddcmul2d(self):
+        t1 = TensorBase(np.array([[1, 2], [1, 2]]))
+        t2 = TensorBase(np.array([[1, 2], [1, 2]]))
+        mat = TensorBase(np.array([[2, 3], [3, 4]]))
+        out = t1.addcmul(t2, mat, value=2)
+        self.assertTrue(np.array_equal(out.data, [[4, 11], [5, 12]]))
+
+    def testaddcmul_1d(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = TensorBase(np.array([2, 3, 4]))
+        mat = TensorBase(np.array([5]))
+        t1.addcmul_(t2, mat, value=2)
+        self.assertTrue(np.array_equal(t1.data, [9, 17, 29]))
+
+    def testaddcmul_2d(self):
+        t1 = TensorBase(np.array([[1, 2], [1, 2]]))
+        t2 = TensorBase(np.array([[1, 2], [1, 2]]))
+        mat = TensorBase(np.array([[2, 3], [3, 4]]))
+        t1.addcmul_(t2, mat, value=2)
+        self.assertTrue(np.array_equal(t1.data, [[4, 11], [5, 12]]))
+
+
+class addcdivTests(unittest.TestCase):
+    def testaddcdiv1d(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = TensorBase(np.array([2, 5, 4]))
+        mat = TensorBase(np.array([5]))
+        out = t1.addcdiv(t2, mat, value=2)
+        self.assertTrue(np.array_equal(out.data, [6., 5.8, 6.5]))
+
+    def testaddcdiv2d(self):
+        t1 = TensorBase(np.array([[1, 2], [1, 2]]))
+        t2 = TensorBase(np.array([[1, 2], [1, 2]]))
+        mat = TensorBase(np.array([[2, 3], [3, 4]]))
+        out = t1.addcdiv(t2, mat, value=2)
+        self.assertTrue(np.array_equal(out.data, [[4., 5.], [5., 6.]]))
+
+    def testaddcdiv_1d(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = TensorBase(np.array([2, 5, 4]))
+        mat = TensorBase(np.array([5]))
+        t1.addcdiv_(t2, mat, value=2)
+        self.assertTrue(np.array_equal(t1.data, [6., 5.8, 6.5]))
+
+    def testaddcdiv_2d(self):
+        t1 = TensorBase(np.array([[1, 2], [1, 2]]))
+        t2 = TensorBase(np.array([[1, 2], [1, 2]]))
+        mat = TensorBase(np.array([[2, 3], [3, 4]]))
+        t1.addcdiv_(t2, mat, value=2)
+        self.assertTrue(np.array_equal(t1.data, [[4., 5.], [5., 6.]]))
+
+
+class addmvTests(unittest.TestCase):
+    def testaddmv(self):
+        t1 = TensorBase(np.array([1, 2]))
+        vec = TensorBase(np.array([1, 2, 3, 4]))
+        mat = TensorBase(np.array([[2, 3, 3, 4], [5, 6, 6, 7]]))
+        out = t1.addmv(mat, vec, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(out.data, [68, 130]))
+
+    def testaddmv_(self):
+        t1 = TensorBase(np.array([1, 2]))
+        vec = TensorBase(np.array([1, 2, 3, 4]))
+        mat = TensorBase(np.array([[2, 3, 3, 4], [5, 6, 6, 7]]))
+        t1.addmv_(mat, vec, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(t1.data, [68, 130]))
+
+
+class addbmmTests(unittest.TestCase):
+    def testaddbmm(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
+        mat = TensorBase(np.array([[2, 3], [3, 4]]))
+        out = t1.addbmm(t2, mat, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(out.data, [[176,  266], [114,  172]]))
+
+    def testaddbmm_(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
+        mat = TensorBase(np.array([[2, 3], [3, 4]]))
+        t1.addbmm_(t2, mat, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(t1.data, [[176,  266], [114,  172]]))
+
+
+class baddbmmTests(unittest.TestCase):
+    def testbaddbmm(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
+        mat = TensorBase(np.array([[[2, 3], [3, 4]], [[4, 5], [5, 6]]]))
+        out = t1.baddbmm(t2, mat, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(out.data, [[[62,   92], [96,  142]], [[122,  184], [28,   42]]]))
+
+    def testbaddbmm_(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
+        mat = TensorBase(np.array([[[2, 3], [3, 4]], [[4, 5], [5, 6]]]))
+        t1.baddbmm_(t2, mat, beta=2, alpha=2)
+        self.assertTrue(np.array_equal(t1.data, [[[62,   92], [96,  142]], [[122,  184], [28,   42]]]))
+
+
+
+
+
+def main():
+    unittest.main()
+
+
+if __name__ == '__main__':
+    main()
