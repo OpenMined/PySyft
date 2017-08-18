@@ -150,7 +150,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         return np.absolute(self.data)
-    
+
     def abs_(self):
         """Replaces tensor values with its absolute value"""
         if self.encrypted:
@@ -276,7 +276,7 @@ class TensorBase(object):
             return self
 
     def addbmm(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a batch matrix-matrix product of matrices stored in batch1(tensor1) and batch2(tensor2), 
+        """Performs a batch matrix-matrix product of matrices stored in batch1(tensor1) and batch2(tensor2),
          with a reduced add step (all matrix multiplications get accumulated along the first dimension).
          mat is added to the final result.
          res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b))
@@ -285,7 +285,7 @@ class TensorBase(object):
 
 
     def  addbmm_(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a inplace batch matrix-matrix product of matrices stored in batch1(tensor1) and batch2(tensor2), 
+        """Performs a inplace batch matrix-matrix product of matrices stored in batch1(tensor1) and batch2(tensor2),
          with a reduced add step (all matrix multiplications get accumulated along the first dimension).
          mat is added to the final result.
          res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b)
@@ -329,8 +329,3 @@ class TensorBase(object):
             self.data *= alpha
             self.data += (mat.data*beta)
             return self
-
-     
-   
-
-

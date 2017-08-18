@@ -1,2 +1,2 @@
-from .tensor import *
-from .math import *
+from syft.tensor import *
+from syft.math import *
