@@ -1,10 +1,10 @@
 FROM alpine:edge
 RUN ["apk", "add", "--no-cache", "python3", "python3-dev", "musl-dev", "linux-headers", "g++", "gmp-dev", "mpfr-dev", "mpc1-dev", "ca-certificates"]
 
-RUN ["mkdir", "/syft"]
-COPY requirements.txt /syft
+RUN ["mkdir", "/PySyft"]
+COPY requirements.txt /PySyft
 
-WORKDIR /syft
+WORKDIR /PySyft
 RUN ["pip3", "install", "-r", "requirements.txt"]
-COPY . /syft
+COPY . /PySyft
 RUN ["python3", "setup.py", "install"]

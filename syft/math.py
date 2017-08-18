@@ -4,7 +4,9 @@ from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
-    'cumprod','cumsum','ceil','dot', 'matmul',
+
+    'cumprod','cumsum','ceil','dot', 'matmul','addmm','addcmul','addcdiv',
+    'addmv','addbmm','baddbmm',
 ]
 
 
@@ -54,16 +56,17 @@ def ceil(tensor):
     Ceilling of an input scalar is the smallest integer such as :
     for each floating pount number x : a >= x
 
-    Behavior is independent of a tensor's shape.  
+    Behavior is independent of a tensor's shape.
 
     :input: TensorBase tensor\n
-    :return: TensorBase tensor    
+    :return: TensorBase tensor
     """
 
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True :
         return NotImplemented
     return TensorBase(np.ceil(tensor.data))
+
 
 
 def cumsum(tensor,dim=0):
@@ -76,7 +79,7 @@ def cumsum(tensor,dim=0):
 
     **returns**  A new 1D Tensor holding the result
     """
-    
+
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
@@ -98,3 +101,107 @@ def cumprod(tensor,dim=0):
         return NotImplemented
     return TensorBase(np.cumprod(tensor.data,dim))
 
+
+def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
+        """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the result as a Tensor
+            Tensor1.Tensor2 is performed as Matrix product of two array The behavior depends on the arguments in the following way.
+            *If both tensors are 1-dimensional, their dot product is returned.
+            *If both arguments are 2-D they are multiplied like conventional matrices.
+            *If either argument is N-D, N > 2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
+            *If the first argument is 1-D, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
+            *If the second argument is 1-D, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
+            """
+        _ensure_tensorbase(tensor1)
+        _ensure_tensorbase(tensor2)
+        _ensure_tensorbase(mat)
+        if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
+            return NotImplemented
+        else:
+            return TensorBase(np.array(((mat.data)*beta)+((np.matmul(tensor1.data, tensor2.data))*alpha)))
+
+
+def addcmul(tensor1, tensor2, mat, value=1):
+
+    """Performs the element-wise multiplication of tensor1 by tensor2,  multiply the result by the scalar value and add it to mat."""
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+    _ensure_tensorbase(mat)
+    if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
+        return NotImplemented
+    else:
+        out = (mat.data)+((tensor1.data*tensor2.data)*value)
+        return TensorBase(out)
+
+def addcdiv(tensor1, tensor2, mat, value=1):
+    """Performs the element-wise division of tensor1 by tensor2,  multiply the result by the scalar value and add it to mat."""
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+    _ensure_tensorbase(mat)
+    if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
+        return NotImplemented
+    else:
+        out = (mat.data)+((tensor1.data/tensor2.data)*value)
+        return TensorBase(out)
+
+
+def addmv(tensor1, mat, vec, beta=1, alpha=1):
+    """"Performs a matrix-vector product of the matrix mat and the vector vec. The vector tensor is added to the final result.
+          tensor1 and vec are 1d tensors
+          out=(beta∗tensor)+(alpha∗(mat@vec2))"""
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(vec)
+    _ensure_tensorbase(mat)
+    if vec.data.ndim != 1:
+        print("dimension of vec is not 1")
+    elif tensor1.data.ndim != 1:
+        print("dimension of vec is not 1")
+    elif tensor1.encrypted or vec.encrypted or mat.encrypted:
+        return NotImplemented
+    else:
+        out =( tensor1.data*beta)+(np.matmul(mat.data, vec.data)*alpha)
+        return TensorBase(out)
+
+
+def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
+    """Performs a batch matrix-matrix product of matrices stored in batch1(tensor1) and batch2(tensor2),
+     with a reduced add step (all matrix multiplications get accumulated along the first dimension).
+     mat is added to the final result.
+     res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b))
+    * batch1 and batch2 must be 3D Tensors each containing the same number of matrices."""
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+    _ensure_tensorbase(mat)
+    if tensor2.data.ndim != 3:
+        print("dimension of tensor2 is not 3")
+    elif tensor1.data.ndim != 3:
+        print("dimension of tensor1 is not 3")
+    elif tensor1.encrypted or tensor2.encrypted or mat.encrypted:
+        return NotImplemented
+    else:
+        mm = np.matmul(tensor1.data, tensor2.data)
+        sum = 0
+        for i in range(len(mm)):
+            sum += mm[i]
+        out = (mat.data * beta) + (alpha * sum)
+        return TensorBase(out)
+
+
+def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
+    """Performs a batch matrix-matrix product of matrices in batch1(tensor1) and batch2(tensor2). mat is added to the final result.
+      resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
+      *batch1 and batch2 must be 3D Tensors each containing the same number of matrices."""
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+    _ensure_tensorbase(mat)
+    if tensor2.data.ndim != 3:
+        print("dimension of tensor2 is not 3")
+    elif tensor1.data.ndim != 3:
+        print("dimension of tensor1 is not 3")
+    elif mat.data.ndim != 3:
+        print("dimension of mat is not 3")
+    elif tensor1.encrypted or tensor2.encrypted or mat.encrypted:
+        return NotImplemented
+    else:
+        mm = np.matmul(tensor1.data, tensor2.data)
+        out = (mat.data*beta)+(mm*alpha)
+        return TensorBase(out)

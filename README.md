@@ -1,5 +1,7 @@
 # Syft
 
+[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/)
+
 > Homomorphically Encrypted Deep Learning Library
 
 The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find very performant combinations of the two.  See [notebooks](./notebooks) folder for tutorials on how to use the library.
@@ -36,13 +38,20 @@ Then, run:
 
 ```sh
 git clone https://github.com/OpenMined/PySyft.git
-cd PySyft/notebooks/
-docker run --rm -it -v $PWD:/notebooks -w /notebooks -p 8888:8888 openmined/pysyft jupyter notebook --ip=0.0.0.0 --allow-root
+cd PySyft
+make run
 ```
 
 ## For Contributors
 
 If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then checkout our [Project Roadmap](https://github.com/OpenMined/Syft/blob/master/ROADMAP.md) and sign into our Slack Team channel #syft to let us know which projects sound interesting to you! (or propose your own!).
+
+## Running tests
+
+```sh
+cd PySyft
+make test
+```
 
 ## Relevant Literature
 
