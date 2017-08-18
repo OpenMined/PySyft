@@ -101,7 +101,7 @@ def cumprod(tensor,dim=0):
     return TensorBase(np.cumprod(tensor.data,dim))
 
 
-ef addmm(tensor1, tensor2, mat, beta=1, alpha=1):
+def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
         """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the result as a Tensor
             Tensor1.Tensor2 is performed as Matrix product of two array The behavior depends on the arguments in the following way.
             *If both tensors are 1-dimensional, their dot product is returned.
