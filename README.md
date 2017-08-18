@@ -1,5 +1,7 @@
 # Syft
 
+[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/)
+
 > Homomorphically Encrypted Deep Learning Library
 
 The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find very performant combinations of the two.  See [notebooks](./notebooks) folder for tutorials on how to use the library.
@@ -48,7 +50,7 @@ If you are interested in contributing to Syft, first check out our [Contributor 
 
 ```sh
 cd PySyft
-pytest
+make test
 ```
 
 ## Relevant Literature
