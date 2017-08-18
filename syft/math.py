@@ -5,7 +5,8 @@ from .tensor import _ensure_tensorbase
 
 __all__ = [
 
-    'cumprod','cumsum','ceil','dot', 'matmul',
+    'cumprod','cumsum','ceil','dot', 'matmul','addmm','addcmul','addcdiv',
+    'addmv','addbmm','baddbmm',
 ]
 
 
@@ -55,10 +56,10 @@ def ceil(tensor):
     Ceilling of an input scalar is the smallest integer such as :
     for each floating pount number x : a >= x
 
-    Behavior is independent of a tensor's shape.  
+    Behavior is independent of a tensor's shape.
 
     :input: TensorBase tensor\n
-    :return: TensorBase tensor    
+    :return: TensorBase tensor
     """
 
     tensor = _ensure_tensorbase(tensor)
@@ -78,7 +79,7 @@ def cumsum(tensor,dim=0):
 
     **returns**  A new 1D Tensor holding the result
     """
-    
+
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
@@ -120,7 +121,7 @@ def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
 
 
 def addcmul(tensor1, tensor2, mat, value=1):
-    
+
     """Performs the element-wise multiplication of tensor1 by tensor2,  multiply the result by the scalar value and add it to mat."""
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
@@ -162,7 +163,7 @@ def addmv(tensor1, mat, vec, beta=1, alpha=1):
 
 
 def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
-    """Performs a batch matrix-matrix product of matrices stored in batch1(tensor1) and batch2(tensor2), 
+    """Performs a batch matrix-matrix product of matrices stored in batch1(tensor1) and batch2(tensor2),
      with a reduced add step (all matrix multiplications get accumulated along the first dimension).
      mat is added to the final result.
      res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b))
@@ -204,5 +205,3 @@ def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
         mm = np.matmul(tensor1.data, tensor2.data)
         out = (mat.data*beta)+(mm*alpha)
         return TensorBase(out)
-
-
