@@ -3,9 +3,9 @@ import numpy as np
 import pickle
 from .basic import Float,PaillierTensor
 from ...tensor import TensorBase
-# from ..abstract.keys import AbstractSecretKey, AbstractPublicKey, AbstractKeyPair
+from ..abstract.keys import AbstractSecretKey, AbstractPublicKey, AbstractKeyPair
 
-class SecretKey():
+class SecretKey(AbstractSecretKey):
 
     def __init__(self,sk):
         self.sk = sk
@@ -32,7 +32,7 @@ class SecretKey():
     def serialize(self):
         return pickle.dumps(self.sk)
 
-class PublicKey():
+class PublicKey(AbstractPublicKey):
 
     def __init__(self,pk):
         self.pk = pk
@@ -66,7 +66,7 @@ class PublicKey():
     def serialize(self):
         return pickle.dumps(self.pk)
 
-class KeyPair():
+class KeyPair(AbstractKeyPair):
 
     def __init__(self):
         ""
