@@ -13,8 +13,8 @@ class SecretKey(AbstractSecretKey):
     def decrypt(self,x):
         """Decrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
         if(type(x) == Float):
-            return self.sk.decrypt(list(x.data))
-        elif(type(x) == TensorBase):
+            return self.sk.decrypt(x.data)
+        elif(type(x) == TensorBase or type(x) == PaillierTensor):
             if(x.encrypted):
                 return TensorBase(self.decrypt(x.data),encrypted=False)
             else:

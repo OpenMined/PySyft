@@ -123,9 +123,10 @@ class TensorBase(object):
         """Performs element-wise multiplication between two tensors"""
         if self.encrypted:
             return NotImplemented
-
-        tensor = _ensure_tensorbase(tensor)
-        return TensorBase(self.data * tensor.data)
+        if(type(tensor) != type(self)):
+            return tensor * self
+        else:
+            return TensorBase(tensor.data * self.data)
 
     def __imul__(self, tensor):
         """Performs in place element-wise multiplication between two tensors"""

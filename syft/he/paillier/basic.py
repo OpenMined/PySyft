@@ -4,14 +4,40 @@ from ...tensor import TensorBase
 
 class PaillierTensor(TensorBase):
 
-    def __init__(self,public_key,data=None):
+    def __init__(self,public_key,data=None,input_is_decrypted=True):
         self.encrypted = True
 
         self.public_key = public_key
-        if(type(data) == np.ndarray):
+        if(type(data) == np.ndarray and input_is_decrypted):
             self.data = public_key.encrypt(data,True)
         else:
             self.data = data
+
+    def __add__(self, tensor):
+        """Performs element-wise addition between two tensors"""
+
+        if(type(tensor) != type(self)):
+            # try encrypting it
+            tensor = self.public_key.encrypt(tensor)
+        return PaillierTensor(self.public_key, self.data + tensor.data,False)
+
+    def __mul__(self, tensor):
+        """Performs element-wise addition between two tensors"""
+
+        if(tensor.encrypted == False):
+            return PaillierTensor(self.public_key, self.data * tensor.data,False)
+        else:
+            return NotImplemented
+
+    def sum(self, dim=None):
+        """Returns the sum of all elements in the input array."""
+        if not self.encrypted:
+            return NotImplemented
+
+        if dim is None:
+            return self.data.sum()
+        else:
+            return self.data.sum(axis=dim)
 
 
 class Float():
@@ -24,6 +50,9 @@ class Float():
             self.data = self.public_key.pk.encrypt(data)
         else:
             self.data = None
+
+    def decrypt(self,secret_key):
+        return secret_key.decrypt(self)
 
     def __add__(self,y):
         """Adds two encrypted Floats together."""
