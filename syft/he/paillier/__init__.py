@@ -1,2 +1,1 @@
-from basic import *
-from keys import *
+from . import *
