@@ -138,8 +138,12 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        self.data *= tensor.data
+        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            self.data = tensor.data * self.data
+            self.encrypted = tensor.encrypted
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            self.data *= tensor.data
         return self
 
     def __truediv__(self, tensor):

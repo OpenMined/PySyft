@@ -16,18 +16,26 @@ class PaillierTensor(TensorBase):
     def __add__(self, tensor):
         """Performs element-wise addition between two tensors"""
 
-        if(type(tensor) != type(self)):
+        if(not isinstance(tensor, TensorBase)):
             # try encrypting it
             tensor = self.public_key.encrypt(tensor)
+            return PaillierTensor(self.public_key, self.data + tensor,False)
+
+        if(type(tensor) == TensorBase):
+            tensor = PaillierTensor(self.public_key,tensor.data)
+
         return PaillierTensor(self.public_key, self.data + tensor.data,False)
 
     def __mul__(self, tensor):
         """Performs element-wise addition between two tensors"""
 
-        if(tensor.encrypted == False):
-            return PaillierTensor(self.public_key, self.data * tensor.data,False)
+        if(isinstance(tensor, TensorBase)):
+            if(tensor.encrypted == False):
+                return PaillierTensor(self.public_key, self.data * tensor.data,False)
+            else:
+                return NotImplemented
         else:
-            return NotImplemented
+            return PaillierTensor(self.public_key, self.data * tensor,False)
 
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
