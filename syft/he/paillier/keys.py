@@ -2,7 +2,8 @@ import phe as paillier
 import numpy as np
 import pickle
 from .basic import Integer
-from ..abstract.keys import AbstractSecretKey, AbstractPublicKey, AbstractKeyPair
+from ...tensor import TensorBase
+# from ..abstract.keys import AbstractSecretKey, AbstractPublicKey, AbstractKeyPair
 
 class SecretKey():
 
@@ -13,6 +14,11 @@ class SecretKey():
         """Decrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
         if(type(x) == Integer):
             return self.sk.decrypt(list(x.data))
+        elif(type(x) == TensorBase):
+            if(x.encrypted):
+                return TensorBase(self.decrypt(x.data),encrypted=False)
+            else:
+                return NotImplemented
         elif(type(x) == np.ndarray):
             sh = x.shape
             x_ = x.reshape(-1)
@@ -33,6 +39,11 @@ class PublicKey():
         """Encrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
         if(type(x) == int):
             return Integer(self,x)
+        elif(type(x) == TensorBase):
+            if(x.encrypted):
+                return NotImplemented
+
+            return TensorBase(self.encrypt(x.data),encrypted=True)
         elif(type(x) == np.ndarray):
             sh = x.shape
             x_ = x.reshape(-1)

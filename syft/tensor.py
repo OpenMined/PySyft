@@ -50,6 +50,20 @@ class TensorBase(object):
         self.data = _ensure_ndarray(arr_like)
         self.encrypted = encrypted
 
+    def encrypt(self,pubkey):
+        """Encrypts the Tensor using a Public Key"""
+        if(self.encrypted):
+            return NotImplemented
+        else:
+            return pubkey.encrypt(self)
+
+    def decrypt(self,seckey):
+        """Decrypts the tensor using a Secret Key"""
+        if(self.encrypted):
+            return seckey.decrypt(self)
+        else:
+            return self
+
     def __add__(self, tensor):
         """Performs element-wise addition between two tensors"""
         if self.encrypted:
