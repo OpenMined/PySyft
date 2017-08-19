@@ -128,8 +128,8 @@ class EqualTests(unittest.TestCase):
 class IndexTests(unittest.TestCase):
     def testIndexing(self):
         t1 = TensorBase(np.array([1.2, 2, 3]))
-        self.assertEqual(1.2, t1[0].data)
-        self.assertEqual(3, t1[-1].data)
+        self.assertEqual(1.2, t1[0])
+        self.assertEqual(3, t1[-1])
 
 
 class addmm(unittest.TestCase):
