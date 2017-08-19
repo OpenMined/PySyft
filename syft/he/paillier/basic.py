@@ -1,10 +1,23 @@
 import phe as paillier
 import numpy as np
+from ...tensor import TensorBase
 
-class Integer():
+class PaillierTensor(TensorBase):
 
     def __init__(self,public_key,data=None):
-        """Wraps pointer to encrypted integer with an interface that numpy can use."""
+        self.encrypted = True
+
+        self.public_key = public_key
+        if(type(data) == np.ndarray):
+            self.data = public_key.encrypt(data,True)
+        else:
+            self.data = data
+
+
+class Float():
+
+    def __init__(self,public_key,data=None):
+        """Wraps pointer to encrypted Float with an interface that numpy can use."""
 
         self.public_key = public_key
         if(data is not None):
@@ -13,42 +26,42 @@ class Integer():
             self.data = None
 
     def __add__(self,y):
-        """Adds two encrypted integers together."""
+        """Adds two encrypted Floats together."""
 
-        out = Integer(self.public_key,None)
+        out = Float(self.public_key,None)
         out.data = self.data + y.data
         return out
 
     def __sub__(self,y):
-        """Subtracts two encrypted integers."""
+        """Subtracts two encrypted Floats."""
 
-        out = Integer(self.public_key, None)
+        out = Float(self.public_key, None)
         out.data = self.data - y.data
         return out
 
     def __mul__(self,y):
-        """Multiplies two integers. y may be encrypted or a simple integer."""
+        """Multiplies two Floats. y may be encrypted or a simple Float."""
 
         if(type(y) == type(self)):
-            out = Integer(self.public_key, None)
+            out = Float(self.public_key, None)
             out.data = self.data * y.data
             return out
         elif(type(y) == int or type(y) == float):
-            out = Integer(self.public_key, None)
+            out = Float(self.public_key, None)
             out.data = self.data * y
             return out
         else:
             return None
 
     def __truediv__(self,y):
-        """Divides two integers. y may be encrypted or a simple integer."""
+        """Divides two Floats. y may be encrypted or a simple Float."""
 
         if(type(y) == type(self)):
-            out = Integer(self.public_key, None)
+            out = Float(self.public_key, None)
             out.data = self.data / y.data
             return out
         elif(type(y) == int):
-            out = Integer(self.public_key, None)
+            out = Float(self.public_key, None)
             out.data = self.data / y
             return out
         else:

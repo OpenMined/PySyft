@@ -1,7 +1,7 @@
 import phe as paillier
 import numpy as np
 import pickle
-from .basic import Integer
+from .basic import Float,PaillierTensor
 from ...tensor import TensorBase
 # from ..abstract.keys import AbstractSecretKey, AbstractPublicKey, AbstractKeyPair
 
@@ -12,7 +12,7 @@ class SecretKey():
 
     def decrypt(self,x):
         """Decrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
-        if(type(x) == Integer):
+        if(type(x) == Float):
             return self.sk.decrypt(list(x.data))
         elif(type(x) == TensorBase):
             if(x.encrypted):
@@ -26,6 +26,8 @@ class SecretKey():
             for v in x_:
                 out.append(self.sk.decrypt(v.data))
             return np.array(out).reshape(sh)
+        else:
+            return NotImplemented
 
     def serialize(self):
         return pickle.dumps(self.sk)
@@ -35,25 +37,29 @@ class PublicKey():
     def __init__(self,pk):
         self.pk = pk
 
-    def encrypt(self,x):
+    def encrypt(self,x,same_type=False):
         """Encrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
         if(type(x) == int):
-            return Integer(self,x)
-        elif(type(x) == TensorBase):
-            if(x.encrypted):
+            if(same_type):
                 return NotImplemented
-
-            return TensorBase(self.encrypt(x.data),encrypted=True)
+            return Float(self,x)
+        elif(type(x) == TensorBase):
+            if(x.encrypted or same_type):
+                return NotImplemented
+            return PaillierTensor(self,x.data)
         elif(type(x) == np.ndarray):
             sh = x.shape
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(Integer(self,v))
-            return np.array(out).reshape(sh)
-
+                out.append(Float(self,v))
+            if(same_type):
+                return np.array(out).reshape(sh)
+            else:
+                return PaillierTensor(self,np.array(out).reshape(sh))
         else:
             print("format not recognized")
+            return NotImplemented
 
         return self.pk.encrypt(x)
 
