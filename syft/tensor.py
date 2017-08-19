@@ -334,3 +334,9 @@ class TensorBase(object):
             self.data *= alpha
             self.data += (mat.data*beta)
             return self
+
+    def __str__(self):
+        return str(self.data)
+
+    def __repr__(self):
+        return repr(self.data)
