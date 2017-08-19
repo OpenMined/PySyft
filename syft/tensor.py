@@ -23,7 +23,7 @@ def _ensure_tensorbase(tensor):
 def equal(tensor1, tensor2):
     """Checks if two tensors are equal.
 
-    Two tensors are considered equal if they are the same size and contain the 
+    Two tensors are considered equal if they are the same size and contain the
     same elements.
 
     Assumption:
@@ -143,8 +143,12 @@ class TensorBase(object):
         """Get value at a specific index."""
         if self.encrypted:
             return NotImplemented
-
-        return TensorBase(self.data[position], self.encrypted)
+        else:
+            out = self.data[position]
+            if(len(self.shape()) == 1):
+                return out
+            else:
+                return TensorBase(self.data[position], self.encrypted)
 
     def abs(self):
         """Returns absolute value of tensor as a new tensor"""
