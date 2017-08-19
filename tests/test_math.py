@@ -20,21 +20,22 @@ class DotTests(unittest.TestCase):
 
 class CeilTests(unittest.TestCase):
     def testCeil(self):
-            t1 = TensorBase(np.array([[2.3, 4.1],[7.4, 8.3]]))
-            
-            self.assertTrue(syft.equal(syft.ceil(t1),TensorBase([[ 3.,  5.],[ 8.,  9.]])))
-         
+            t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
+            self.assertTrue(syft.equal(syft.ceil(t1), TensorBase([[3.,  5.],
+                                                                 [8.,  9.]])))
+
 
 class CumsumTests(unittest.TestCase):
-     def testCumsum(self):
-        t1 = TensorBase(np.array([1,2,3]))
-        self.assertTrue(syft.equal(syft.cumsum(t1),TensorBase([1,3,6])))
+    def testCumsum(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        self.assertTrue(syft.equal(syft.cumsum(t1), TensorBase([1, 3, 6])))
 
 
 class CumprodTests(unittest.TestCase):
-     def testCumprod(self):
-        t1 = TensorBase(np.array([1,2,3]))
-        self.assertTrue(syft.equal(syft.cumprod(t1),TensorBase([1,2,6])))
+    def testCumprod(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        self.assertTrue(syft.equal(syft.cumprod(t1), TensorBase([1, 2, 6])))
+
 
 class MatmulTests(unittest.TestCase):
     def testMatmul1DInt(self):
@@ -70,7 +71,7 @@ class MatmulTests(unittest.TestCase):
                                   [7.8, 8.9]]))
         self.assertTrue(syft.equal(syft.matmul(t1, t2), [[27.04, 30.7],
                                                          [54.82, 62.15]]))
-    
+
 
 class admmTests(unittest.TestCase):
     def testaddmm1d(self):
@@ -79,7 +80,7 @@ class admmTests(unittest.TestCase):
         mat = TensorBase(np.array([5]))
         out = syft.addmm(t1, t2, mat, beta=2, alpha=2)
         self.assertTrue(np.array_equal(out.data, [50]))
-    
+
     def testaddmm2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[1, 2], [1, 2]]))
@@ -95,14 +96,14 @@ class addcmulTests(unittest.TestCase):
         mat = TensorBase(np.array([5]))
         out = syft.addcmul(t1, t2, mat, value=2)
         self.assertTrue(np.array_equal(out.data, [9, 17, 29]))
-    
+
     def testaddcmul2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[1, 2], [1, 2]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
         out = syft.addcmul(t1, t2, mat, value=2)
         self.assertTrue(np.array_equal(out.data, [[4, 11], [5, 12]]))
-        
+
 
 class addcdivTests(unittest.TestCase):
     def testaddcdiv1d(self):
@@ -111,7 +112,7 @@ class addcdivTests(unittest.TestCase):
         mat = TensorBase(np.array([5]))
         out = syft.addcdiv(t1, t2, mat, value=2)
         self.assertTrue(np.array_equal(out.data, [6., 5.8, 6.5]))
-    
+
     def testaddcdiv2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[1, 2], [1, 2]]))
@@ -144,4 +145,5 @@ class baddbmmTests(unittest.TestCase):
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
         mat = TensorBase(np.array([[[2, 3], [3, 4]], [[4, 5], [5, 6]]]))
         out = syft.baddbmm(t1, t2, mat, beta=2, alpha=2)
-        self.assertTrue(np.array_equal(out.data, [[[62,   92], [96,  142]], [[122,  184], [28,   42]]]))
+        self.assertTrue(np.array_equal(out.data, [[[62,   92], [96,  142]],
+                                                  [[122,  184], [28,   42]]]))

@@ -63,13 +63,13 @@ def ceil(tensor):
     """
 
     tensor = _ensure_tensorbase(tensor)
-    if tensor.encrypted is True :
+    if tensor.encrypted is True:
         return NotImplemented
     return TensorBase(np.ceil(tensor.data))
 
 
 
-def cumsum(tensor,dim=0):
+def cumsum(tensor, dim=0):
     """
     Returns the cumulative sum of the elements along a given dimension
 
@@ -79,13 +79,13 @@ def cumsum(tensor,dim=0):
 
     **returns**  A new 1D Tensor holding the result
     """
-
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
-    return TensorBase(np.cumsum(tensor.data,dim))
+    return TensorBase(np.cumsum(tensor.data, dim))
 
-def cumprod(tensor,dim=0):
+
+def cumprod(tensor, dim=0):
     """
     Returns the cumulative product of the elements along a given axis
 
@@ -99,7 +99,7 @@ def cumprod(tensor,dim=0):
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
-    return TensorBase(np.cumprod(tensor.data,dim))
+    return TensorBase(np.cumprod(tensor.data, dim))
 
 
 def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
@@ -132,6 +132,7 @@ def addcmul(tensor1, tensor2, mat, value=1):
         out = (mat.data)+((tensor1.data*tensor2.data)*value)
         return TensorBase(out)
 
+
 def addcdiv(tensor1, tensor2, mat, value=1):
     """Performs the element-wise division of tensor1 by tensor2,  multiply the result by the scalar value and add it to mat."""
     _ensure_tensorbase(tensor1)
@@ -158,7 +159,7 @@ def addmv(tensor1, mat, vec, beta=1, alpha=1):
     elif tensor1.encrypted or vec.encrypted or mat.encrypted:
         return NotImplemented
     else:
-        out =( tensor1.data*beta)+(np.matmul(mat.data, vec.data)*alpha)
+        out = (tensor1.data*beta)+(np.matmul(mat.data, vec.data)*alpha)
         return TensorBase(out)
 
 
