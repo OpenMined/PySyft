@@ -121,11 +121,16 @@ class TensorBase(object):
 
     def __mul__(self, tensor):
         """Performs element-wise multiplication between two tensors"""
+
         if self.encrypted:
             return NotImplemented
-        if(type(tensor) != type(self)):
+
+        # if it's a sub-class of TensorBase, use the multiplication of that
+        # subclass not this one.
+        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             return tensor * self
         else:
+            tensor = _ensure_tensorbase(tensor)
             return TensorBase(tensor.data * self.data)
 
     def __imul__(self, tensor):
@@ -187,8 +192,6 @@ class TensorBase(object):
 
     def dim(self):
         """Returns an integer of the number of dimensions of this tensor."""
-        if self.encrypted:
-            return NotImplemented
 
         return self.data.ndim
 
