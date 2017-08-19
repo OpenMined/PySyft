@@ -23,7 +23,8 @@ def _ensure_tensorbase(tensor):
 def equal(tensor1, tensor2):
     """Checks if two tensors are equal.
 
-    Two tensors are considered equal if they are the same size and contain the same elements.
+    Two tensors are considered equal if they are the same size and contain the 
+    same elements.
 
     Assumption:
     tensor1 and tensor2 are of type TensorBase.
@@ -155,7 +156,7 @@ class TensorBase(object):
         """Replaces tensor values with its absolute value"""
         if self.encrypted:
             return NotImplemented
-        self.data=np.absolute(self.data)
+        self.data = np.absolute(self.data)
         return self.data
 
     def shape(self):
@@ -188,7 +189,7 @@ class TensorBase(object):
             return NotImplemented
         return np.ceil(self.data)
 
-    def addmm(self,tensor2,mat,beta=1,alpha=1):
+    def addmm(self, tensor2, mat, beta=1, alpha=1):
         """Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and  returns the result as a Tensor
             Tensor1.Tensor2 is performed as Matrix product of two array The behavior depends on the arguments in the following way.
             *If both tensors are 1-dimensional, their dot product is returned.
@@ -312,7 +313,7 @@ class TensorBase(object):
           *batch1 and batch2 must be 3D Tensors each containing the same number of matrices."""
         return syft.baddbmm(self, tensor2, mat, beta, alpha)
 
-    def  baddbmm_(self, tensor2, mat, beta=1, alpha=1):
+    def baddbmm_(self, tensor2, mat, beta=1, alpha=1):
         """Performs a batch matrix-matrix product of matrices in batch1(tensor1) and batch2(tensor2). mat is added to the final result.
           resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
           *batch1 and batch2 must be 3D Tensors each containing the same number of matrices."""
