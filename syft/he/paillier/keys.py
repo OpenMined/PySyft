@@ -1,7 +1,7 @@
 import phe as paillier
 import numpy as np
 import pickle
-from basic import Integer
+from .basic import Integer
 
 class SecretKey():
 

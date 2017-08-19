@@ -12,14 +12,14 @@ class Integer():
     def __add__(self,y):
         """Adds two encrypted integers together."""
 
-        out = PaillierFloat(self.public_key,None)
+        out = Integer(self.public_key,None)
         out.data = self.data + y.data
         return out
 
     def __sub__(self,y):
         """Subtracts two encrypted integers."""
 
-        out = PaillierFloat(self.public_key, None)
+        out = Integer(self.public_key, None)
         out.data = self.data - y.data
         return out
 
@@ -27,11 +27,11 @@ class Integer():
         """Multiplies two integers. y may be encrypted or a simple integer."""
 
         if(type(y) == type(self)):
-            out = PaillierFloat(self.public_key, None)
+            out = Integer(self.public_key, None)
             out.data = self.data * y.data
             return out
         elif(type(y) == int or type(y) == float):
-            out = PaillierFloat(self.public_key, None)
+            out = Integer(self.public_key, None)
             out.data = self.data * y
             return out
         else:
@@ -41,11 +41,11 @@ class Integer():
         """Divides two integers. y may be encrypted or a simple integer."""
 
         if(type(y) == type(self)):
-            out = PaillierFloat(self.public_key, None)
+            out = Integer(self.public_key, None)
             out.data = self.data / y.data
             return out
         elif(type(y) == int):
-            out = PaillierFloat(self.public_key, None)
+            out = Integer(self.public_key, None)
             out.data = self.data / y
             return out
         else:
