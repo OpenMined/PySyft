@@ -1,3 +1,6 @@
+import phe as paillier
+import numpy as np
+
 class Integer():
 
     def __init__(self,public_key,data=None):

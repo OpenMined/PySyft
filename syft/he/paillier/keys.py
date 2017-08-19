@@ -2,6 +2,7 @@ import phe as paillier
 import numpy as np
 import pickle
 from .basic import Integer
+from ..abstract.keys import AbstractSecretKey, AbstractPublicKey, AbstractKeyPair
 
 class SecretKey():
 
@@ -10,8 +11,8 @@ class SecretKey():
 
     def decrypt(self,x):
         """Decrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
-        if(type(x) == PaillierFloat):
-            return self.sk.decrypt(x)
+        if(type(x) == Integer):
+            return self.sk.decrypt(list(x.data))
         elif(type(x) == np.ndarray):
             sh = x.shape
             x_ = x.reshape(-1)
@@ -31,13 +32,13 @@ class PublicKey():
     def encrypt(self,x):
         """Encrypts x. X can be either an encrypted int or a numpy vector/matrix/tensor."""
         if(type(x) == int):
-            return PaillierFloat(self,x)
+            return Integer(self,x)
         elif(type(x) == np.ndarray):
             sh = x.shape
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(PaillierFloat(self,v))
+                out.append(Integer(self,v))
             return np.array(out).reshape(sh)
 
         else:
