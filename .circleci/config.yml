@@ -8,20 +8,14 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-          name: Install dependencies
-          command: |
-            apk add --no-cache \
-              py-pip
-            pip install \
-              docker-compose
-      - run:
           name: Build application Docker image
           command: |
-            docker build -t pysyft .
+            docker build --force-rm -t pysyft .
       - run:
           name: Run tests
           command: |
-            docker run -it pysyft pytest && py.test --flake8
+            docker run --rm pysyft pytest
+            docker run --rm  pysyft py.test --flake8
       - deploy:
           name: Push application Docker image
           command: |
