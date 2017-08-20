@@ -21,8 +21,8 @@ class DotTests(unittest.TestCase):
 class CeilTests(unittest.TestCase):
     def testCeil(self):
             t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
-            self.assertTrue(syft.equal(syft.ceil(t1), TensorBase([[3.,  5.],
-                                                                 [8.,  9.]])))
+            self.assertTrue(syft.equal(syft.ceil(t1), TensorBase([[3., 5.],
+                                                                 [8., 9.]])))
 
 
 class CumsumTests(unittest.TestCase):
@@ -136,7 +136,7 @@ class addbmmTests(unittest.TestCase):
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
         out = syft.addbmm(t1, t2, mat, beta=2, alpha=2)
-        self.assertTrue(np.array_equal(out.data, [[176,  266], [114,  172]]))
+        self.assertTrue(np.array_equal(out.data, [[176, 266], [114, 172]]))
 
 
 class baddbmmTests(unittest.TestCase):
@@ -145,5 +145,5 @@ class baddbmmTests(unittest.TestCase):
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
         mat = TensorBase(np.array([[[2, 3], [3, 4]], [[4, 5], [5, 6]]]))
         out = syft.baddbmm(t1, t2, mat, beta=2, alpha=2)
-        self.assertTrue(np.array_equal(out.data, [[[62,   92], [96,  142]],
-                                                  [[122,  184], [28,   42]]]))
+        self.assertTrue(np.array_equal(out.data, [[[62, 92], [96, 142]],
+                                                  [[122, 184], [28, 42]]]))
