@@ -13,7 +13,8 @@ __all__ = [
 def dot(tensor1, tensor2):
     """Returns inner product of two tensors.
 
-    N-dimensional tensors are flattened into 1-D vectors, therefore this method should only be used on vectors.
+    N-dimensional tensors are flattened into 1-D vectors, therefore this
+    method should only be used on vectors.
     """
 
     tensor1 = _ensure_tensorbase(tensor1)
@@ -29,12 +30,19 @@ def matmul(tensor1, tensor2):
 
     Exact behavior depends on the input tensors' dimensionality like so:
     * If both tensors are 1-dimensional, their dot product is returned.
-    * If both tensors are 2-dimensional, their matrix-matrix product is returned.
-    * If either tensor has dimensionality > 2, the last 2 dimensions are treated as matrices and multiplied.
-    * If tensor1 is 1-dimensional, it is converted to a matrix by prepending a 1 to its dimensions.
-      This prepended dimension is removed after the matrix multiplication.
-    * If tensor2 is 1-dimensional, it is converted to a matrix by prepending a 1 to its dimensions.
-      This prepended dimension is removed after the matrix multiplication.
+    * If both tensors are 2-dimensional, their matrix-matrix product is
+    returned.
+
+    * If either tensor has dimensionality > 2, the last 2 dimensions are
+    treated as matrices and multiplied.
+
+    * If tensor1 is 1-dimensional, it is converted to a matrix by prepending
+    a 1 to its dimensions. This prepended dimension is removed after the
+    matrix multiplication.
+
+    * If tensor2 is 1-dimensional, it is converted to a matrix by prepending
+    a 1 to its dimensions. This prepended dimension is removed after the
+    matrix multiplication.
     """
 
     tensor1 = _ensure_tensorbase(tensor1)
@@ -103,13 +111,25 @@ def cumprod(tensor, dim=0):
 
 
 def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
-        """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the result as a Tensor
-            Tensor1.Tensor2 is performed as Matrix product of two array The behavior depends on the arguments in the following way.
+        """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the
+        result as a Tensor
+            Tensor1.Tensor2 is performed as Matrix product of two array
+            The behavior depends on the arguments in the following way.
             *If both tensors are 1-dimensional, their dot product is returned.
-            *If both arguments are 2-D they are multiplied like conventional matrices.
-            *If either argument is N-D, N > 2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
-            *If the first argument is 1-D, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
-            *If the second argument is 1-D, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
+            *If both arguments are 2-D they are multiplied like conventional
+            matrices.
+
+            *If either argument is N-D, N > 2, it is treated as a stack of
+            matrices residing in the last two indexes and broadcast
+            accordingly.
+
+            *If the first argument is 1-D, it is promoted to a matrix by
+            prepending a 1 to its dimensions. After matrix multiplication
+            the prepended 1 is removed.
+
+            *If the second argument is 1-D, it is promoted to a matrix by
+            appending a 1 to its dimensions. After matrix multiplication
+            the appended 1 is removed.
             """
         _ensure_tensorbase(tensor1)
         _ensure_tensorbase(tensor2)
@@ -117,36 +137,40 @@ def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
         if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
             return NotImplemented
         else:
-            return TensorBase(np.array(((mat.data)*beta)+((np.matmul(tensor1.data, tensor2.data))*alpha)))
+            return TensorBase(np.array(((mat.data) * beta) +
+                ((np.matmul(tensor1.data, tensor2.data)) * alpha)))
 
 
 def addcmul(tensor1, tensor2, mat, value=1):
 
-    """Performs the element-wise multiplication of tensor1 by tensor2,  multiply the result by the scalar value and add it to mat."""
+    """Performs the element-wise multiplication of tensor1 by tensor2,
+    multiply the result by the scalar value and add it to mat."""
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     _ensure_tensorbase(mat)
     if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
         return NotImplemented
     else:
-        out = (mat.data)+((tensor1.data*tensor2.data)*value)
+        out = (mat.data) + ((tensor1.data * tensor2.data) * value)
         return TensorBase(out)
 
 
 def addcdiv(tensor1, tensor2, mat, value=1):
-    """Performs the element-wise division of tensor1 by tensor2,  multiply the result by the scalar value and add it to mat."""
+    """Performs the element-wise division of tensor1 by tensor2, multiply
+    the result by the scalar value and add it to mat."""
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     _ensure_tensorbase(mat)
     if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
         return NotImplemented
     else:
-        out = (mat.data)+((tensor1.data/tensor2.data)*value)
+        out = (mat.data) + ((tensor1.data / tensor2.data) * value)
         return TensorBase(out)
 
 
 def addmv(tensor1, mat, vec, beta=1, alpha=1):
-    """"Performs a matrix-vector product of the matrix mat and the vector vec. The vector tensor is added to the final result.
+    """"Performs a matrix-vector product of the matrix mat and the vector vec.
+    The vector tensor is added to the final result.
           tensor1 and vec are 1d tensors
           out=(beta∗tensor)+(alpha∗(mat@vec2))"""
     _ensure_tensorbase(tensor1)
@@ -159,16 +183,19 @@ def addmv(tensor1, mat, vec, beta=1, alpha=1):
     elif tensor1.encrypted or vec.encrypted or mat.encrypted:
         return NotImplemented
     else:
-        out = (tensor1.data*beta)+(np.matmul(mat.data, vec.data)*alpha)
+        out = (tensor1.data * beta) + (np.matmul(mat.data, vec.data) * alpha)
         return TensorBase(out)
 
 
 def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
-    """Performs a batch matrix-matrix product of matrices stored in batch1(tensor1) and batch2(tensor2),
-     with a reduced add step (all matrix multiplications get accumulated along the first dimension).
+    """Performs a batch matrix-matrix product of matrices stored in
+    batch1(tensor1) and batch2(tensor2),
+     with a reduced add step (all matrix multiplications get accumulated along
+     the first dimension).
      mat is added to the final result.
      res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b))
-    * batch1 and batch2 must be 3D Tensors each containing the same number of matrices."""
+    * batch1 and batch2 must be 3D Tensors each containing the same number of
+    matrices."""
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     _ensure_tensorbase(mat)
@@ -188,9 +215,11 @@ def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
 
 
 def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
-    """Performs a batch matrix-matrix product of matrices in batch1(tensor1) and batch2(tensor2). mat is added to the final result.
+    """Performs a batch matrix-matrix product of matrices in batch1(tensor1)
+    and batch2(tensor2). mat is added to the final result.
       resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
-      *batch1 and batch2 must be 3D Tensors each containing the same number of matrices."""
+      *batch1 and batch2 must be 3D Tensors each containing the same number
+      of matrices."""
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     _ensure_tensorbase(mat)
@@ -204,5 +233,5 @@ def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
         return NotImplemented
     else:
         mm = np.matmul(tensor1.data, tensor2.data)
-        out = (mat.data*beta)+(mm*alpha)
+        out = (mat.data * beta) + (mm * alpha)
         return TensorBase(out)

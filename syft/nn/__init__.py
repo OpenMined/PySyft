@@ -1,1 +1,3 @@
-from . import *
+from . import linear
+n = linear.LinearClassifier()
+n.weights = list()
