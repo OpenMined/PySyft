@@ -128,8 +128,8 @@ class EqualTests(unittest.TestCase):
 class IndexTests(unittest.TestCase):
     def testIndexing(self):
         t1 = TensorBase(np.array([1.2, 2, 3]))
-        self.assertEqual(1.2, t1[0].data)
-        self.assertEqual(3, t1[-1].data)
+        self.assertEqual(1.2, t1[0])
+        self.assertEqual(3, t1[-1])
 
 
 class addmm(unittest.TestCase):
@@ -244,14 +244,14 @@ class addbmmTests(unittest.TestCase):
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
         out = t1.addbmm(t2, mat, beta=2, alpha=2)
-        self.assertTrue(np.array_equal(out.data, [[176,  266], [114,  172]]))
+        self.assertTrue(np.array_equal(out.data, [[176, 266], [114, 172]]))
 
     def testaddbmm_(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
         t1.addbmm_(t2, mat, beta=2, alpha=2)
-        self.assertTrue(np.array_equal(t1.data, [[176,  266], [114,  172]]))
+        self.assertTrue(np.array_equal(t1.data, [[176, 266], [114, 172]]))
 
 
 class baddbmmTests(unittest.TestCase):
@@ -260,13 +260,13 @@ class baddbmmTests(unittest.TestCase):
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
         mat = TensorBase(np.array([[[2, 3], [3, 4]], [[4, 5], [5, 6]]]))
         out = t1.baddbmm(t2, mat, beta=2, alpha=2)
-        self.assertTrue(np.array_equal(out.data, [[[62,   92], [96,  142]],
-                                                  [[122,  184], [28,   42]]]))
+        self.assertTrue(np.array_equal(out.data, [[[62, 92], [96, 142]],
+                                                  [[122, 184], [28, 42]]]))
 
     def testbaddbmm_(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
         mat = TensorBase(np.array([[[2, 3], [3, 4]], [[4, 5], [5, 6]]]))
         t1.baddbmm_(t2, mat, beta=2, alpha=2)
-        self.assertTrue(np.array_equal(t1.data, [[[62,   92], [96,  142]],
-                                                 [[122,  184], [28,   42]]]))
+        self.assertTrue(np.array_equal(t1.data, [[[62, 92], [96, 142]],
+                                                 [[122, 184], [28, 42]]]))

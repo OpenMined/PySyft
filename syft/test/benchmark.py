@@ -1,10 +1,12 @@
 from time import time
 from line_profiler import LineProfiler
 
+
 class Benchmark():
     """
     This is a testing class for the benchmarking of functions.
-    Input of the Benchmark class should be the function to test and the params (optional)
+    Input of the Benchmark class should be the function to test
+    and the params (optional)
     """
 
     def __init__(self, function, **params):
@@ -21,7 +23,6 @@ class Benchmark():
             self.function(**self.params)
             t1 = time()
             results.append(t1 - t0)
-        
         return results
 
     def profile_lines(self):
@@ -33,4 +34,3 @@ class Benchmark():
         lp_wrapper = lp(self.function)
         lp_wrapper(**self.params)
         lp.print_stats()
-    
