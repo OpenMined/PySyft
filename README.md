@@ -6,7 +6,19 @@
 
 The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find very performant combinations of the two.  See [notebooks](./notebooks) folder for tutorials on how to use the library.
 
-## Installation
+- [Setup](#setup-install-instructions)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [Usage](#usage)
+  - [Start](#start)
+  - [Tests](#tests)
+- [For Contributors](#for-contributors)
+- [Relevant Literature](#relevant-literature)
+- [License](#license)
+
+## Setup
+
+### Prerequisites
 
 You need to install this library locally before running any of the notebooks this repository or the [main demonstration](https://github.com/OpenMined/sonar):
 
@@ -17,13 +29,15 @@ pip install -r requirements.txt
 python setup.py install
 ```
 
-### For Anaconda Users:
+### Installation
+
+#### For Anaconda Users
 
 ```
 bash install_for_anaconda_users.sh
 ```
 
-**Windows**
+##### Windows
 
 ```sh
 conda install -c conda-forge gmpy2
@@ -31,10 +45,14 @@ pip install -r requirements.txt
 python setup.py install
 ```
 
-### For Docker Users
+#### For Docker Users
 
-Install Docker from [its website](https://www.docker.com/)
+Install Docker from [its website](https://www.docker.com/).
 For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask install docker`
+
+## Usage
+
+### Start
 
 Then, run:
 
@@ -44,16 +62,16 @@ cd PySyft
 make run
 ```
 
-## For Contributors
-
-If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then sign into our [Slack Team](https://openmined.slack.com/) channel #syft to let us know which projects sound interesting to you! (or propose your own!).
-
-## Running tests
+### Tests
 
 ```sh
 cd PySyft
 make test
 ```
+
+## For Contributors
+
+If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then sign into our [Slack Team](https://openmined.slack.com/) channel #syft to let us know which projects sound interesting to you! (or propose your own!).
 
 ## Relevant Literature
 
@@ -91,3 +109,7 @@ tools for encrypted statistical machine learning](https://arxiv.org/pdf/1508.065
 - [Secret Sharing, Part 2 - Efficient Sharing with the Fast Fourier Transform](https://mortendahl.github.io/2017/06/24/secret-sharing-part2/)
 - [Distributed machine learning and partially homomorphic encryption (Part 1)](https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/)
 - [Tutorial: How to verify crowdsourced training data using a Known Answer Review Policy](https://blog.mturk.com/tutorial-how-to-verify-crowdsourced-training-data-using-a-known-answer-review-policy-85596fb55ed)
+
+## License
+
+[Apache-2.0](https://github.com/OpenMined/PySyft/blob/develop/LICENSE) by OpenMined contributors
