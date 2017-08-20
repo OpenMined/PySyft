@@ -5,8 +5,8 @@ from .tensor import _ensure_tensorbase
 
 __all__ = [
 
-    'cumprod','cumsum','ceil','dot', 'matmul','addmm','addcmul','addcdiv',
-    'addmv','addbmm','baddbmm',
+    'cumprod', 'cumsum', 'ceil', 'dot', 'matmul', 'addmm', 'addcmul',
+    'addcdiv', 'addmv', 'addbmm', 'baddbmm',
 ]
 
 
@@ -76,7 +76,6 @@ def ceil(tensor):
     return TensorBase(np.ceil(tensor.data))
 
 
-
 def cumsum(tensor, dim=0):
     """
     Returns the cumulative sum of the elements along a given dimension
@@ -137,8 +136,8 @@ def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
         if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
             return NotImplemented
         else:
-            return TensorBase(np.array(((mat.data) * beta) +
-                ((np.matmul(tensor1.data, tensor2.data)) * alpha)))
+            delta = (np.matmul(tensor1.data, tensor2.data))
+            return TensorBase(np.array(((mat.data) * beta) + (delta * alpha)))
 
 
 def addcmul(tensor1, tensor2, mat, value=1):
