@@ -21,7 +21,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            docker run -it pysyft pytest && py.test --flake8
+            docker run -it pysyft /bin/sh -c 'pytest && pytest --flake8'
       - deploy:
           name: Push application Docker image
           command: |
