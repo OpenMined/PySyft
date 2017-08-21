@@ -20,9 +20,9 @@ class DotTests(unittest.TestCase):
 
 class CeilTests(unittest.TestCase):
     def testCeil(self):
-            t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
-            self.assertTrue(syft.equal(syft.ceil(t1), TensorBase([[3., 5.],
-                                                                 [8., 9.]])))
+        t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
+        self.assertTrue(syft.equal(syft.ceil(t1), TensorBase([[3., 5.],
+                                                              [8., 9.]])))
 
 
 class CumsumTests(unittest.TestCase):
@@ -32,12 +32,25 @@ class CumsumTests(unittest.TestCase):
 
 
 class CumprodTests(unittest.TestCase):
+    """Cumultative Product test"""
+
     def testCumprod(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(syft.equal(syft.cumprod(t1), TensorBase([1, 2, 6])))
 
 
+class SigmoidTests(unittest.TestCase):
+    """Sigmoid Test"""
+
+    def testSigmoid(self):
+        t1 = TensorBase(np.array([1.2, 3.3, 4]))
+        self.assertTrue(syft.equal(syft.math.sigmoid(t1), TensorBase(
+            [0.76852478,  0.96442881,  0.98201379])))
+
+
 class MatmulTests(unittest.TestCase):
+    """Matmul Tests"""
+
     def testMatmul1DInt(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([4, 5, 6]))
