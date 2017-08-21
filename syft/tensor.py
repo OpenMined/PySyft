@@ -197,6 +197,19 @@ class TensorBase(object):
 
         return self.data.shape
 
+    def sqrt(self):
+        """Returns the squared tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return np.sqrt(self.data)
+
+    def sqrt_(self):
+        """Inline squared tensor."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.sqrt(self.data)
+        return self.data
+
     def dim(self):
         """Returns an integer of the number of dimensions of this tensor."""
 
