@@ -144,6 +144,13 @@ class IndexTests(unittest.TestCase):
         self.assertEqual(3, t1[-1])
 
 
+class sigmoidTests(unittest.TestCase):
+    def testSigmoid(self):
+        t1 = TensorBase(np.array([1.2, 3.3, 4]))
+        self.assertTrue(syft.equal(t1.sigmoid_(), TensorBase(
+            [0.76852478,  0.96442881,  0.98201379])))
+
+
 class addmm(unittest.TestCase):
     def testaddmm1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
