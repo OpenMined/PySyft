@@ -421,7 +421,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = syft.math.sigmoid(self).data
-        #self.data = np.array((1 / (1 + np.exp(np.array(-self.data)))))
+        # self.data = np.array((1 / (1 + np.exp(np.array(-self.data)))))
         return self
 
     def __str__(self):
