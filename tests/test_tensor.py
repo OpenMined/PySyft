@@ -93,6 +93,18 @@ class ShapeTests(unittest.TestCase):
         self.assertTrue(syft.equal(t.shape(), (2, 2)))
 
 
+class SqrtTests(unittest.TestCase):
+    def testSqrt(self):
+        t = TensorBase(np.array([[0, 4], [9, 16]]))
+
+        self.assertTrue(syft.equal(t.sqrt(), ([[0, 2], [3, 4]])))
+
+    def testSqrt_(self):
+        t = TensorBase(np.array([[0, 4], [9, 16]]))
+        t.sqrt_()
+        self.assertTrue(syft.equal(t, ([[0, 2], [3, 4]])))
+
+
 class SumTests(unittest.TestCase):
     def testDimNoneInt(self):
         t = TensorBase(np.array([1, 2, 3]))
