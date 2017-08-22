@@ -290,7 +290,6 @@ class baddbmmTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t1.data, [[[62, 92], [96, 142]],
                                                  [[122, 184], [28, 42]]]))
 
-<<<<<<< f3c993eccaf609e21ff6b010b20159f170c2eaa5
 
 class expTests(unittest.TestCase):
     def testexp(self):

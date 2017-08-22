@@ -458,8 +458,17 @@ class TensorBase(object):
     def __repr__(self):
         return repr(self.data)
 
+<<<<<<< 65277fc537f17caa801059918846738431f1006a
     def numpy(self):
 	"""Returns the tensor as numpy.ndarray"""
 	if self.encrypted:
             return NotImplemented
 	return np.array(self.data)
+=======
+	def numpy(self):
+    	"""Returns the tensor as numpy.ndarray"""
+    	if self.encrypted:
+    		return NotImplemented
+
+    	return np.array(self.data)
+>>>>>>> Implemented default numpy functionality for BaseTensor Object
