@@ -290,6 +290,7 @@ class baddbmmTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t1.data, [[[62, 92], [96, 142]],
                                                  [[122, 184], [28, 42]]]))
 
+<<<<<<< f3c993eccaf609e21ff6b010b20159f170c2eaa5
 
 class expTests(unittest.TestCase):
     def testexp(self):
@@ -317,3 +318,8 @@ class fracTests(unittest.TestCase):
         t3 = TensorBase(np.array([1.23, 4.56, 7.89]))
         t3.frac_()
         self.assertTrue(np.allclose(t3.data, [0.23, 0.56, 0.89]))
+
+class numpyTests(unittest.TestCase):
+    def testnumpy(self):
+        t1 = TensorBase(np.array([[1,2],[3,4]]))
+        self.assertEqual(t1.numpy(),np.array([[1,2],[3,4]]))
