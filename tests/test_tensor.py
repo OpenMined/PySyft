@@ -289,3 +289,8 @@ class baddbmmTests(unittest.TestCase):
         t1.baddbmm_(t2, mat, beta=2, alpha=2)
         self.assertTrue(np.array_equal(t1.data, [[[62, 92], [96, 142]],
                                                  [[122, 184], [28, 42]]]))
+
+class numpyTests(unittest.TestCase):
+    def testnumpy(self):
+        t1 = TensorBase(np.array([[1,2],[3,4]]))
+        self.assertEqual(t1.numpy(),np.array([[1,2],[3,4]]))
