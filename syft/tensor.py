@@ -433,8 +433,7 @@ class TensorBase(object):
         else:
             axes[dim0] = dim1
             axes[dim1] = dim0
-            np.transpose(self.data, axes=axes)
-            self.data = TensorBase(self.data)
+            self.data = np.transpose(self.data, axes=tuple(axes))
 
     def t(self):
         """
