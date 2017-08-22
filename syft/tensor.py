@@ -428,7 +428,7 @@ class TensorBase(object):
             print("dimension 0 out of range")
         elif dim1 >= num_dims:
             print("dimension 1 out of range")
-        elif tensor1.encrypted:
+        elif self.encrypted:
             raise NotImplemented
         else:
             axes[dim0] = dim1

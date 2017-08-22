@@ -242,7 +242,7 @@ def transpose(tensor1, dim0, dim1):
     Returns a tranposed TensorBase.
     """
     tensor1 = _ensure_tensorbase(tensor1)
-    num_dims = len(tensor1.shape)
+    num_dims = len(tensor1.data.shape)
     axes = list(range(num_dims))
 
     if dim0 >= num_dims:
