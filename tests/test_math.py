@@ -154,10 +154,10 @@ class transposeTests(unittest.TestCase):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         out1 = syft.transpose(t1, 0, 1)
         self.assertTrue(np.array_equal(out1.data, np.array([[[3, 4], [7, 8]],
-                                                [[5, 6], [1, 2]]])))
+                                                            [[5, 6], [1, 2]]])))
         out2 = syft.transpose(t1, 0, 2)
         self.assertTrue(np.array_equal(out2.data, np.array([[[3, 7], [5, 1]],
-                                                [[4, 8], [6, 2]]])))
+                                                            [[4, 8], [6, 2]]])))
         out3 = syft.transpose(t1, 1, 2)
         self.assertTrue(np.array_equal(out3.data, np.array([[[3, 5], [4, 6]],
-                                                [[7, 1], [8, 2]]])))
+                                                            [[7, 1], [8, 2]]])))
