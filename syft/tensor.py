@@ -411,6 +411,43 @@ class TensorBase(object):
             self.data += (mat.data * beta)
             return self
 
+    def transpose(self, dim0, dim1):
+        """
+        Returns the transpose along the dimensions in a new Tensor.
+        """
+        return syft.transpose(self.data, dim0, dim1)
+
+    def transpose_(self, dim0, dim1):
+        """
+        Replaces the Tensor with its transpose along the dimensions.
+        """
+        num_dims = len(self.data.shape)
+        axes = list(range(num_dims))
+
+        if dim0 >= num_dims:
+            print("dimension 0 out of range")
+        elif dim1 >= num_dims:
+            print("dimension 1 out of range")
+        elif tensor1.encrypted:
+            raise NotImplemented
+        else:
+            axes[dim0] = dim1
+            axes[dim1] = dim0
+            np.transpose(self.data, axes=axes)
+            self.data = TensorBase(self.data)
+
+    def t(self):
+        """
+        Returns the transpose along dimensions 0, 1 in a new Tensor.
+        """
+        return self.transpose(0, 1)
+
+    def t_(self):
+        """
+        Replaces the Tensor with its transpose along dimensions 0, 1.
+        """
+        self.transpose_(0, 1)
+
     def __str__(self):
         return str(self.data)
 
