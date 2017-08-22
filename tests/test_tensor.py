@@ -315,7 +315,7 @@ class transposeTests(unittest.TestCase):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         out1 = t1.t()
         self.assertTrue(np.array_equal(out1.data, [[[3, 4], [7, 8]],
-                                                [[5, 6], [1, 2]]]))
+                                                  [[5, 6], [1, 2]]]))
 
     def testT_(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
