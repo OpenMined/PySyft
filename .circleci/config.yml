@@ -8,25 +8,23 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-          name: Install dependencies
-          command: |
-            apk add --no-cache \
-              py-pip
-            pip install \
-              docker-compose
-      - run:
           name: Build application Docker image
           command: |
             docker build -t pysyft .
       - run:
           name: Run tests
           command: |
-            docker run -it pysyft pytest tests/test_tensor.py
+            docker run --rm pysyft pytest
+            docker run --rm pysyft pytest --flake8
       - deploy:
           name: Push application Docker image
           command: |
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              docker login -e "${DOCKERHUB_EMAIL}" -u "${DOCKERHUB_USER}" -p "${DOCKERHUB_PASS}"
-              docker tag pysyft "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
-              docker push "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+            if [ "${CIRCLE_BRANCH}" == "develop" ]; then
+              docker login -u "${DOCKERHUB_USER}" -p "${DOCKERHUB_PASS}"
+              docker tag pysyft "${DOCKERHUB_REPO}:edge"
+              docker push "${DOCKERHUB_REPO}:edge"
+            elif [ "${CIRCLE_BRANCH}" == "master" ]; then
+              docker login -u "${DOCKERHUB_USER}" -p "${DOCKERHUB_PASS}"
+              docker tag pysyft "${DOCKERHUB_REPO}:latest"
+              docker push "${DOCKERHUB_REPO}:latest"
             fi
