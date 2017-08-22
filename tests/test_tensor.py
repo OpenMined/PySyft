@@ -282,3 +282,43 @@ class baddbmmTests(unittest.TestCase):
         t1.baddbmm_(t2, mat, beta=2, alpha=2)
         self.assertTrue(np.array_equal(t1.data, [[[62, 92], [96, 142]],
                                                  [[122, 184], [28, 42]]]))
+
+
+class transposeTests(unittest.TestCase):
+    def testTranspose(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        out1 = t1.transpose(0, 1)
+        self.assertTrue(np.array_equal(out1.data, np.array([[[3, 4], [7, 8]],
+                                                [[5, 6], [1, 2]]])))
+        out2 = t1.transpose(0, 2)
+        self.assertTrue(np.array_equal(out2.data, np.array([[[3, 7], [5, 1]],
+                                                [[4, 8], [6, 2]]])))
+        out3 = t1.transpose(1, 2)
+        self.assertTrue(np.array_equal(out3.data, np.array([[[3, 5], [4, 6]],
+                                                [[7, 1], [8, 2]]])))
+
+    def testTranspose_(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t1.transpose_(0, 1)
+        self.assertTrue(np.array_equal(t1.data, np.array([[[3, 4], [7, 8]],
+                                                [[5, 6], [1, 2]]])))
+        t2 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t2.transpose_(0, 2)
+        self.assertTrue(np.array_equal(t2.data, np.array([[[3, 7], [5, 1]],
+                                                [[4, 8], [6, 2]]])))
+        t3 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t3.transpose_(1, 2)
+        self.assertTrue(np.array_equal(t3.data, np.array([[[3, 5], [4, 6]],
+                                                [[7, 1], [8, 2]]])))
+
+    def testT(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        out1 = t1.t()
+        self.assertTrue(np.array_equal(out1.data, np.array([[[3, 4], [7, 8]],
+                                                [[5, 6], [1, 2]]])))
+
+    def testT_(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t1.transpose_(0, 1)
+        self.assertTrue(np.array_equal(t1.data, np.array([[[3, 4], [7, 8]],
+                                                [[5, 6], [1, 2]]])))
