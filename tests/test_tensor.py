@@ -322,4 +322,4 @@ class fracTests(unittest.TestCase):
 class numpyTests(unittest.TestCase):
     def testnumpy(self):
         t1 = TensorBase(np.array([[1,2],[3,4]]))
-        self.assertEqual(t1.numpy(),np.array([[1,2],[3,4]]))
+        self.assertTrue(np.array_equal(t1.numpy(),np.array([[1,2],[3,4]])))
