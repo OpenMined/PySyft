@@ -459,7 +459,7 @@ class TensorBase(object):
         return repr(self.data)
 
     def numpy(self):
-	    """Returns the tensor as numpy.ndarray"""
-	    if self.encrypted:
+        """Returns the tensor as numpy.ndarray"""
+        if self.encrypted:
             return NotImplemented
-	    return np.array(self.data)
+        return np.array(self.data)
