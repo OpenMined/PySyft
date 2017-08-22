@@ -410,6 +410,34 @@ class TensorBase(object):
             self.data += (mat.data * beta)
             return self
 
+    def exp(self):
+        """Computes the exponential of each element in tensor."""
+        if self.encrypted:
+            return NotImplemented
+        out = np.exp(self.data)
+        return TensorBase(out)
+
+    def exp_(self):
+        """Computes the exponential of each element inplace."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.exp(self.data)
+        return self
+
+    def frac(self):
+        """"Computes the fractional portion of each element in tensor."""
+        if self.encrypted:
+            return NotImplemented
+        out = np.modf(self.data)[0]
+        return TensorBase(out)
+
+    def frac_(self):
+        """"Computes the fractional portion of each element inplace."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.modf(self.data)[0]
+        return self
+
     def sigmoid_(self):
         """
             Performs inline sigmoid function on the Tensor elementwise

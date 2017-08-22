@@ -289,3 +289,31 @@ class baddbmmTests(unittest.TestCase):
         t1.baddbmm_(t2, mat, beta=2, alpha=2)
         self.assertTrue(np.array_equal(t1.data, [[[62, 92], [96, 142]],
                                                  [[122, 184], [28, 42]]]))
+
+
+class expTests(unittest.TestCase):
+    def testexp(self):
+        t3 = TensorBase(np.array([[[1, 3], [3, 5]],
+                                 [[5, 7], [9, 1]]]))
+        out = t3.exp()
+        self.assertTrue(np.allclose(out.data, [[[2.71828183e+00, 2.00855369e+01], [2.00855369e+01, 1.48413159e+02]],
+                                               [[1.48413159e+02, 1.09663316e+03], [8.10308393e+03, 2.71828183e+00]]]))
+
+    def testexp_(self):
+        t3 = TensorBase(np.array([[[1, 3], [3, 5]],
+                                 [[5, 7], [9, 1]]]))
+        t3.exp_()
+        self.assertTrue(np.allclose(t3.data, [[[2.71828183e+00, 2.00855369e+01], [2.00855369e+01, 1.48413159e+02]],
+                                              [[1.48413159e+02, 1.09663316e+03], [8.10308393e+03, 2.71828183e+00]]]))
+
+
+class fracTests(unittest.TestCase):
+    def testfrac(self):
+        t3 = TensorBase(np.array([1.23, 4.56, 7.89]))
+        out = t3.frac()
+        self.assertTrue(np.allclose(out.data, [0.23, 0.56, 0.89]))
+
+    def testfrac_(self):
+        t3 = TensorBase(np.array([1.23, 4.56, 7.89]))
+        t3.frac_()
+        self.assertTrue(np.allclose(t3.data, [0.23, 0.56, 0.89]))
