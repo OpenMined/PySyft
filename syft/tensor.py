@@ -183,9 +183,8 @@ class TensorBase(object):
             return self.data.sum(axis=dim)
 
 
-  def ceil(self):
-    """Returns the ceilling of the input tensor elementwise."""
-    
+    def ceil(self):
+        """Returns the ceilling of the input tensor elementwise."""
         if self.encrypted:
             return NotImplemented
         return np.ceil(self.data)
