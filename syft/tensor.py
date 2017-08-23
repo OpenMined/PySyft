@@ -458,7 +458,6 @@ class TensorBase(object):
     def __repr__(self):
         return repr(self.data)
 
-<<<<<<< 8c501e51bf1758f994b2f6ce6c3cd6f7dc66a699
     def rsqrt(self):
         """Returns reciprocal of square root of Tensor element wise"""
         if self.encrypted:
