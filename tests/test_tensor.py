@@ -329,3 +329,15 @@ class rsqrtTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 3, 4]))
         t1.rsqrt_()
         self.assertTrue(np.allclose(t1.data, [0.70710678, 0.57735027, 0.5]))
+
+
+class signTests(unittest.TestCase):
+    def testsign(self):
+        t1 = TensorBase(np.array([1, 2, -1, -2]))
+        out = t1.sign()
+        self.assertTrue(np.array_equal(out.data, [1, 1, -1, -1]))
+
+    def testsign_(self):
+        t1 = TensorBase(np.array([1, 2, -1, -2]))
+        t1.testfrac_()
+        self.assertTrue(np.array_equal(t1.data, [1, 1, -1, -1]))
