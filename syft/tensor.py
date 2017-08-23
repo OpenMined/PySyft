@@ -430,7 +430,7 @@ class TensorBase(object):
         elif self.encrypted:
             raise NotImplemented
         else:
-            self.data = np.expand_dims(tensor1.data, dim)
+            self.data = np.expand_dims(self.data, dim)
 
     def __str__(self):
         return str(self.data)
