@@ -330,7 +330,7 @@ class transposeTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t1.data, [[[3, 4], [7, 8]],
                                                  [[5, 6], [1, 2]]]))
 
-        
+
 class expTests(unittest.TestCase):
     def testexp(self):
         t3 = TensorBase(np.array([[[1, 3], [3, 5]],
@@ -369,4 +369,3 @@ class rsqrtTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 3, 4]))
         t1.rsqrt_()
         self.assertTrue(np.allclose(t1.data, [0.70710678, 0.57735027, 0.5]))
-
