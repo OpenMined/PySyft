@@ -151,7 +151,7 @@ class baddbmmTests(unittest.TestCase):
 
 class unsqueezeTests(unittest.TestCase):
     def testUnsqueeze(self):
-        t1 = TensorBase(np.arange(3*4*5).reshape((3, 4, 5)))
+        t1 = TensorBase(np.arange(3 * 4 * 5).reshape((3, 4, 5)))
         for i in range(len(t1.data.shape)):
             out = syft.unsqueeze(t1, i)
             expected_shape = list(t1.data.shape)
