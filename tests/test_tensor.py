@@ -309,7 +309,7 @@ class unsqueezeTests(unittest.TestCase):
             t1.unsqueeze_(i)
             self.assertTrue(np.array_equal(t1.data.shape, expected_shape))
 
-            
+
 class expTests(unittest.TestCase):
     def testexp(self):
         t3 = TensorBase(np.array([[[1, 3], [3, 5]],
