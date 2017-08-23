@@ -471,6 +471,7 @@ class TensorBase(object):
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
 
+<<<<<<< 4b0f632d731d0a1bf4f13b71e11e661116789404
     def reciprocal(self):
         """Computes element wise reciprocal"""
         if self.encrypted:
@@ -484,6 +485,8 @@ class TensorBase(object):
             return NotImplemented
         self.data = 1 / np.array(self.data)
 
+=======
+>>>>>>> Implemented Sign functionality on BaseTensor Object#95
     def sign(self):
         """Return a tensor that contains sign of each element """
         if self.encrypted:
