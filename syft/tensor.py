@@ -55,14 +55,14 @@ class TensorBase(object):
 
     def encrypt(self, pubkey):
         """Encrypts the Tensor using a Public Key"""
-        if(self.encrypted):
+        if self.encrypted:
             return NotImplemented
         else:
             return pubkey.encrypt(self)
 
     def decrypt(self, seckey):
         """Decrypts the tensor using a Secret Key"""
-        if(self.encrypted):
+        if self.encrypted:
             return seckey.decrypt(self)
         else:
             return self
@@ -208,7 +208,6 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = np.sqrt(self.data)
-        return self.data
 
     def dim(self):
         """Returns an integer of the number of dimensions of this tensor."""
@@ -377,10 +376,10 @@ class TensorBase(object):
             return NotImplemented
         else:
             self.data = np.matmul(self.data, tensor2.data)
-            sum = 0
+            sum_ = 0  # sum is a python built in function a keyword !
             for i in range(len(self.data)):
-                sum += self.data[i]
-            self.data = (mat.data * beta) + (alpha * sum)
+                sum_ += self.data[i]
+            self.data = (mat.data * beta) + (alpha * sum_)
             return self
 
     def baddbmm(self, tensor2, mat, beta=1, alpha=1):
@@ -447,8 +446,63 @@ class TensorBase(object):
         """
         self.transpose_(0, 1)
 
+    def exp(self):
+        """Computes the exponential of each element in tensor."""
+        if self.encrypted:
+            return NotImplemented
+        out = np.exp(self.data)
+        return TensorBase(out)
+
+    def exp_(self):
+        """Computes the exponential of each element inplace."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.exp(self.data)
+        return self
+
+    def frac(self):
+        """"Computes the fractional portion of each element in tensor."""
+        if self.encrypted:
+            return NotImplemented
+        out = np.modf(self.data)[0]
+        return TensorBase(out)
+
+    def frac_(self):
+        """"Computes the fractional portion of each element inplace."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.modf(self.data)[0]
+        return self
+
+    def sigmoid_(self):
+        """
+            Performs inline sigmoid function on the Tensor elementwise
+            Implementation details:
+            Because of the way syft.math.sigmoid operates on a Tensor Object
+            calling it on self.data will cause an input error thus we call
+            sigmoid on the tensor object and we take the member 'data' from the returned Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.sigmoid(self).data
+        # self.data = np.array((1 / (1 + np.exp(np.array(-self.data)))))
+        return self
+
     def __str__(self):
         return str(self.data)
 
     def __repr__(self):
         return repr(self.data)
+
+    def rsqrt(self):
+        """Returns reciprocal of square root of Tensor element wise"""
+        if self.encrypted:
+            return NotImplemented
+        out = 1 / np.sqrt(self.data)
+        return TensorBase(out)
+
+    def rsqrt_(self):
+        """Computes reciprocal of square root of Tensor elements inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = 1 / np.sqrt(self.data)
