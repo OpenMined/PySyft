@@ -317,3 +317,14 @@ class fracTests(unittest.TestCase):
         t3 = TensorBase(np.array([1.23, 4.56, 7.89]))
         t3.frac_()
         self.assertTrue(np.allclose(t3.data, [0.23, 0.56, 0.89]))
+
+class signTests(unittest.TestCase):
+    def testsign(self):
+        t1 = TensorBase(np.array([1, 2, -1, -2]))
+        out = t1.sign()
+        self.assertTrue(np.array_equal(out.data, [1, 1, -1, -1]))
+
+    def testsign_(self):
+        t1 = TensorBase(np.array([1, 2, -1, -2]))
+        t1.testfrac_()
+        self.assertTrue(np.array_equal(t1.data, [1, 1, -1, -1]))
