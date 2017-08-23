@@ -411,6 +411,27 @@ class TensorBase(object):
             self.data += (mat.data * beta)
             return self
 
+    def unsqueeze(self, dim):
+        """
+        Returns expanded Tensor. An additional dimension of size one is added
+        to at index 'dim'.
+        """
+        return syft.unsqueeze(self.data, dim)
+
+    def unsqueeze_(self, dim):
+        """
+        Replaces with an expanded Tensor. An additional dimension of size one
+        is added to at index 'dim'.
+        """
+        num_dims = len(self.data.shape)
+
+        if dim >= num_dims or dim < 0:
+            print("dimension out of range")
+        elif tensor1.encrypted:
+            raise NotImplemented
+        else:
+            self.data = np.expand_dims(tensor1.data, dim)
+
     def __str__(self):
         return str(self.data)
 

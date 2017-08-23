@@ -6,7 +6,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
 
     'cumprod', 'cumsum', 'ceil', 'dot', 'matmul', 'addmm', 'addcmul',
-    'addcdiv', 'addmv', 'addbmm', 'baddbmm',
+    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'unsqueeze'
 ]
 
 
@@ -234,3 +234,19 @@ def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
         mm = np.matmul(tensor1.data, tensor2.data)
         out = (mat.data * beta) + (mm * alpha)
         return TensorBase(out)
+
+
+def unsqueeze(tensor1, dim):
+    """
+    Performs 'unsqueeze' operation, returning a new tensor with a dimension
+    of size one inserted at the specified position.
+    """
+    _ensure_tensorbase(tensor1)
+    num_dims = len(tensor1.data.shape)
+
+    if dim >= num_dims or dim < 0:
+        print("dimension out of range")
+    elif tensor1.encrypted:
+        raise NotImplemented
+    else:
+        return TensorBase(np.expand_dims(tensor1.data, dim))

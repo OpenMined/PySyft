@@ -282,3 +282,22 @@ class baddbmmTests(unittest.TestCase):
         t1.baddbmm_(t2, mat, beta=2, alpha=2)
         self.assertTrue(np.array_equal(t1.data, [[[62, 92], [96, 142]],
                                                  [[122, 184], [28, 42]]]))
+
+
+class unsqueezeTests(unittest.TestCase):
+    def testUnsqueeze(self):
+        t1 = TensorBase(np.arange(3*4*5).reshape((3, 4, 5)))
+        for i in range(len(t1.data.shape)):
+            out = t1.unsqueeze(i)
+            expected_shape = list(t1.data.shape)
+            expected_shape.insert(i, 1)
+            self.assertTrue(np.array_equal(out.data.shape, expected_shape))
+
+    def testUnsqueeze_(self):
+        test_shape = (3, 4, 5)
+        for i in range(len(test_shape)):
+            t1 = TensorBase(np.arange(3*4*5).reshape(test_shape))
+            expected_shape = list(t1.data.shape)
+            expected_shape.insert(i, 1)
+            t1.unsqueeze_(i)
+            self.assertTrue(np.array_equal(t1.data.shape, expected_shape))
