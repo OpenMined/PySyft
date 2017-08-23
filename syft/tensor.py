@@ -458,6 +458,7 @@ class TensorBase(object):
     def __repr__(self):
         return repr(self.data)
 
+<<<<<<< 8c501e51bf1758f994b2f6ce6c3cd6f7dc66a699
     def rsqrt(self):
         """Returns reciprocal of square root of Tensor element wise"""
         if self.encrypted:
@@ -483,3 +484,17 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.array(self.data)
+
+    def sign(self):
+        """Return a tensor that contains sign of each element """
+        if self.encrypted:
+            return NotImplemented
+        out = np.sign(self.data)
+        return TensorBase(out)
+
+    def sign_(self):
+        """Computes the sign of each element of the Tensor inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.sign(self.data)
+
