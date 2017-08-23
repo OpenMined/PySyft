@@ -241,7 +241,7 @@ def unsqueeze(tensor1, dim):
     Performs 'unsqueeze' operation, returning a new tensor with a dimension
     of size one inserted at the specified position.
     """
-    _ensure_tensorbase(tensor1)
+    tensor1 = _ensure_tensorbase(tensor1)
     num_dims = len(tensor1.data.shape)
 
     if dim >= num_dims or dim < 0:

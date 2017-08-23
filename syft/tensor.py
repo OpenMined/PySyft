@@ -427,7 +427,7 @@ class TensorBase(object):
 
         if dim >= num_dims or dim < 0:
             print("dimension out of range")
-        elif tensor1.encrypted:
+        elif self.encrypted:
             raise NotImplemented
         else:
             self.data = np.expand_dims(tensor1.data, dim)
