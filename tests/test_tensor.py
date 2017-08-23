@@ -144,6 +144,13 @@ class IndexTests(unittest.TestCase):
         self.assertEqual(3, t1[-1])
 
 
+class sigmoidTests(unittest.TestCase):
+    def testSigmoid(self):
+        t1 = TensorBase(np.array([1.2, 3.3, 4]))
+        self.assertTrue(syft.equal(t1.sigmoid_(), TensorBase(
+            [0.76852478, 0.96442881, 0.98201379])))
+
+
 class addmm(unittest.TestCase):
     def testaddmm1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
@@ -301,3 +308,43 @@ class unsqueezeTests(unittest.TestCase):
             expected_shape.insert(i, 1)
             t1.unsqueeze_(i)
             self.assertTrue(np.array_equal(t1.data.shape, expected_shape))
+
+            
+class expTests(unittest.TestCase):
+    def testexp(self):
+        t3 = TensorBase(np.array([[[1, 3], [3, 5]],
+                                 [[5, 7], [9, 1]]]))
+        out = t3.exp()
+        self.assertTrue(np.allclose(out.data, [[[2.71828183e+00, 2.00855369e+01], [2.00855369e+01, 1.48413159e+02]],
+                                               [[1.48413159e+02, 1.09663316e+03], [8.10308393e+03, 2.71828183e+00]]]))
+
+    def testexp_(self):
+        t3 = TensorBase(np.array([[[1, 3], [3, 5]],
+                                 [[5, 7], [9, 1]]]))
+        t3.exp_()
+        self.assertTrue(np.allclose(t3.data, [[[2.71828183e+00, 2.00855369e+01], [2.00855369e+01, 1.48413159e+02]],
+                                              [[1.48413159e+02, 1.09663316e+03], [8.10308393e+03, 2.71828183e+00]]]))
+
+
+class fracTests(unittest.TestCase):
+    def testfrac(self):
+        t3 = TensorBase(np.array([1.23, 4.56, 7.89]))
+        out = t3.frac()
+        self.assertTrue(np.allclose(out.data, [0.23, 0.56, 0.89]))
+
+    def testfrac_(self):
+        t3 = TensorBase(np.array([1.23, 4.56, 7.89]))
+        t3.frac_()
+        self.assertTrue(np.allclose(t3.data, [0.23, 0.56, 0.89]))
+
+
+class rsqrtTests(unittest.TestCase):
+    def testrsqrt(self):
+        t1 = TensorBase(np.array([2, 3, 4]))
+        out = t1.rsqrt()
+        self.assertTrue(np.allclose(out.data, [0.70710678, 0.57735027, 0.5]))
+
+    def testrsqrt_(self):
+        t1 = TensorBase(np.array([2, 3, 4]))
+        t1.rsqrt_()
+        self.assertTrue(np.allclose(t1.data, [0.70710678, 0.57735027, 0.5]))

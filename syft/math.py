@@ -1,3 +1,6 @@
+"""
+    Module math implements mathematical primitives for tensor objects
+"""
 import numpy as np
 
 from .tensor import TensorBase
@@ -6,7 +9,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
 
     'cumprod', 'cumsum', 'ceil', 'dot', 'matmul', 'addmm', 'addcmul',
-    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'unsqueeze'
+    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze'
 ]
 
 
@@ -109,39 +112,48 @@ def cumprod(tensor, dim=0):
     return TensorBase(np.cumprod(tensor.data, dim))
 
 
+def sigmoid(tensor):
+    """ Returns a new tensor holding element wise values of Sigmoid function
+        Sigmoid(x) = 1 / 1+exp(-x)
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    return TensorBase(1 / (1 + np.exp(np.array(-tensor.data))))
+
+
 def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
-        """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the
-        result as a Tensor
-            Tensor1.Tensor2 is performed as Matrix product of two array
-            The behavior depends on the arguments in the following way.
-            *If both tensors are 1-dimensional, their dot product is returned.
-            *If both arguments are 2-D they are multiplied like conventional
-            matrices.
+    """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the
+    result as a Tensor
+        Tensor1.Tensor2 is performed as Matrix product of two array
+        The behavior depends on the arguments in the following way.
+        *If both tensors are 1-dimensional, their dot product is returned.
+        *If both arguments are 2-D they are multiplied like conventional
+        matrices.
 
-            *If either argument is N-D, N > 2, it is treated as a stack of
-            matrices residing in the last two indexes and broadcast
-            accordingly.
+        *If either argument is N-D, N > 2, it is treated as a stack of
+        matrices residing in the last two indexes and broadcast
+        accordingly.
 
-            *If the first argument is 1-D, it is promoted to a matrix by
-            prepending a 1 to its dimensions. After matrix multiplication
-            the prepended 1 is removed.
+        *If the first argument is 1-D, it is promoted to a matrix by
+        prepending a 1 to its dimensions. After matrix multiplication
+        the prepended 1 is removed.
 
-            *If the second argument is 1-D, it is promoted to a matrix by
-            appending a 1 to its dimensions. After matrix multiplication
-            the appended 1 is removed.
-            """
-        _ensure_tensorbase(tensor1)
-        _ensure_tensorbase(tensor2)
-        _ensure_tensorbase(mat)
-        if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
-            return NotImplemented
-        else:
-            delta = (np.matmul(tensor1.data, tensor2.data))
-            return TensorBase(np.array(((mat.data) * beta) + (delta * alpha)))
+        *If the second argument is 1-D, it is promoted to a matrix by
+        appending a 1 to its dimensions. After matrix multiplication
+        the appended 1 is removed.
+        """
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+    _ensure_tensorbase(mat)
+    if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
+        return NotImplemented
+    else:
+        delta = (np.matmul(tensor1.data, tensor2.data))
+        return TensorBase(np.array(((mat.data) * beta) + (delta * alpha)))
 
 
 def addcmul(tensor1, tensor2, mat, value=1):
-
     """Performs the element-wise multiplication of tensor1 by tensor2,
     multiply the result by the scalar value and add it to mat."""
     _ensure_tensorbase(tensor1)
@@ -205,11 +217,11 @@ def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
     elif tensor1.encrypted or tensor2.encrypted or mat.encrypted:
         return NotImplemented
     else:
-        mm = np.matmul(tensor1.data, tensor2.data)
-        sum = 0
-        for i in range(len(mm)):
-            sum += mm[i]
-        out = (mat.data * beta) + (alpha * sum)
+        mmul = np.matmul(tensor1.data, tensor2.data)
+        sum_ = 0  # sum is a built in python function
+        for i, _ in enumerate(mmul):
+            sum_ += mmul[i]
+        out = (mat.data * beta) + (alpha * sum_)
         return TensorBase(out)
 
 
@@ -231,8 +243,8 @@ def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
     elif tensor1.encrypted or tensor2.encrypted or mat.encrypted:
         return NotImplemented
     else:
-        mm = np.matmul(tensor1.data, tensor2.data)
-        out = (mat.data * beta) + (mm * alpha)
+        mmul = np.matmul(tensor1.data, tensor2.data)
+        out = (mat.data * beta) + (mmul * alpha)
         return TensorBase(out)
 
 
