@@ -353,3 +353,4 @@ class signTests(unittest.TestCase):
         t1 = TensorBase(np.array([1, 2, -1, -2]))
         t1.sign_()
         self.assertTrue(np.array_equal(t1.data, [1, 1, -1, -1]))
+
