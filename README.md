@@ -31,6 +31,13 @@ python setup.py install
 
 ### Installation
 
+The recommended method is using Docker (works on all major operating systems).
+
+#### For Docker Users
+
+Install Docker from [its website](https://www.docker.com/).
+For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask install docker`.
+
 #### For Anaconda Users
 
 ```
@@ -44,11 +51,6 @@ conda install -c conda-forge gmpy2
 pip install -r requirements.txt
 python setup.py install
 ```
-
-#### For Docker Users
-
-Install Docker from [its website](https://www.docker.com/).
-For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask install docker`
 
 ## Usage
 
