@@ -470,3 +470,9 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
+
+    def to_numpy(self):
+        """Returns the tensor as numpy.ndarray"""
+        if self.encrypted:
+            return NotImplemented
+        return np.array(self.data)
