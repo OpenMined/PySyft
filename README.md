@@ -99,17 +99,23 @@ preserving methods](https://arxiv.org/pdf/1508.06845.pdf)
 tools for encrypted statistical machine learning](https://arxiv.org/pdf/1508.06574.pdf)
 - [Privacy-Preserving Distributed Linear Regression on High-Dimensional Data](https://eprint.iacr.org/2016/892)
 - [Secure Computation With Fixed-Point Numbers](https://www1.cs.fau.de/filepool/publications/octavian_securescm/secfp-fc10.pdf)
+- [Scalable and secure logistic regression via homomorphic encryption](https://pdfs.semanticscholar.org/d24c/81f1e2904ba6ec3f341161865ef93247855b.pdf)
+- [ML Confidential: Machine Learning on Encrypted Data](https://eprint.iacr.org/2012/323.pdf)
+- [CryptoNets: Applying Neural Networks to Encrypted Data with High Throughput and Accuracy](http://proceedings.mlr.press/v48/gilad-bachrach16.pdf)
+- [Privacy-Preserving Visual Learning Using Doubly Permuted Homomorphic Encryption](https://arxiv.org/pdf/1704.02203.pdf)
 
 ### Related Libraries:
 - [HomomorphicEncryption - An R package for fully homomorphic encryption](http://www.louisaslett.com/HomomorphicEncryption/#details)
 - [A Secure Multiparty Computation (MPC) protocol for computing linear regression on vertically distributed datasets](https://github.com/iamtrask/linreg-mpc)
 - [Dask Tutorial](https://github.com/dask/dask-tutorial)
+- [Charm-crypto](http://charm-crypto.io/)
 
 ### Related Blogs:
 - [Private Deep Learning with MPC - A Simple Tutorial from Scratch](https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/)
 - [Secret Sharing, Part 1 - Distributing Trust and Work](https://mortendahl.github.io/2017/06/04/secret-sharing-part1/)
 - [Secret Sharing, Part 2 - Efficient Sharing with the Fast Fourier Transform](https://mortendahl.github.io/2017/06/24/secret-sharing-part2/)
 - [Distributed machine learning and partially homomorphic encryption (Part 1)](https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/)
+- [Distributed machine learning and partially homomorphic encryption (Part 2)](https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-2/)
 - [Tutorial: How to verify crowdsourced training data using a Known Answer Review Policy](https://blog.mturk.com/tutorial-how-to-verify-crowdsourced-training-data-using-a-known-answer-review-policy-85596fb55ed)
 
 ## License
