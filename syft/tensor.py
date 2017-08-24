@@ -230,6 +230,16 @@ class TensorBase(object):
             return NotImplemented
         return np.ceil(self.data)
 
+    def ceil_(self):
+        """Replaces tensor values with the ceilling of its values."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.ceil(self.data)
+        return self.data
+
+
+
+
     def addmm(self, tensor2, mat, beta=1, alpha=1):
         """Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and  returns the
         result as a Tensor
