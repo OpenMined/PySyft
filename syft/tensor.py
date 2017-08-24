@@ -483,4 +483,3 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = np.sign(self.data)
-
