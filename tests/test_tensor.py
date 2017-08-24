@@ -38,6 +38,15 @@ class CeilTests(unittest.TestCase):
         self.assertTrue(syft.equal(t.ceil_(), [2, 3, 7]))
         self.assertTrue(syft.equal(t.data, [2, 3, 7]))
 
+class ZeroTests(unittest.TestCase):
+    def testZero(self):
+        t = TensorBase(np.array([13, 42, 1024]))
+        self.assertTrue(syft.equal(t.zero_(), [0, 0, 0]) )
+
+        t = TensorBase(np.array([13.1, 42.2, 1024.4]))
+        self.assertTrue(syft.equal(t.zero_(), [0.0, 0.0, 0.0]) )
+
+
 class SubTests(unittest.TestCase):
     def testSimple(self):
         t = TensorBase(np.array([1, 2, 3]))

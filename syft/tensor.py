@@ -237,7 +237,13 @@ class TensorBase(object):
         self.data = np.ceil(self.data)
         return self.data
 
+    def zero_(self):
+        """Replaces tensor values with zeros"""
+        if self.encrypted:
+            return NotImplemented
 
+        self.data.fill(0)
+        return self.data
 
 
     def addmm(self, tensor2, mat, beta=1, alpha=1):
