@@ -483,3 +483,16 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = np.sign(self.data)
+
+    def reciprocal(self):
+        """Computes element wise reciprocal"""
+        if self.encrypted:
+            return NotImplemented
+        out = 1 / np.array(self.data)
+        return TensorBase(out)
+
+    def reciprocal_(self):
+        """Computes element wise reciprocal"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = 1 / np.array(self.data)
