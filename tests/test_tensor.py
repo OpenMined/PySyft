@@ -336,7 +336,7 @@ class numpyTests(unittest.TestCase):
         t1 = TensorBase(np.array([[1, 2], [3, 4]]))
         self.assertTrue(np.array_equal(t1.to_numpy(), np.array([[1, 2], [3, 4]])))
 
-        
+
 class reciprocalTests(unittest.TestCase):
     def testreciprocal(self):
         t1 = TensorBase(np.array([2, 3, 4]))
@@ -347,3 +347,4 @@ class reciprocalTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 3, 4]))
         t1.reciprocal_()
         self.assertTrue(np.allclose(t1.data, [0.5, 0.33333333, 0.25]))
+        
