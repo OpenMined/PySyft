@@ -245,7 +245,6 @@ class TensorBase(object):
         self.data.fill(0)
         return self.data
 
-
     def addmm(self, tensor2, mat, beta=1, alpha=1):
         """Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and  returns the
         result as a Tensor
