@@ -337,5 +337,6 @@ class rsqrtTests(unittest.TestCase):
         t1.rsqrt_()
         self.assertTrue(np.allclose(t1.data, [0.70710678, 0.57735027, 0.5]))
 
+
 if __name__ == '__main__':
     unittest.main()
