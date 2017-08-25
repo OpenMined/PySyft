@@ -471,6 +471,19 @@ class TensorBase(object):
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
 
+    def sign(self):
+        """Return a tensor that contains sign of each element """
+        if self.encrypted:
+            return NotImplemented
+        out = np.sign(self.data)
+        return TensorBase(out)
+
+    def sign_(self):
+        """Computes the sign of each element of the Tensor inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.sign(self.data)
+
     def reciprocal(self):
         """Computes element wise reciprocal"""
         if self.encrypted:
@@ -496,4 +509,3 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = np.sign(self.data)
-
