@@ -343,7 +343,7 @@ class reciprocalTests(unittest.TestCase):
         t1.reciprocal_()
         self.assertTrue(np.allclose(t1.data, [0.5, 0.33333333, 0.25]))
 
-   
+
 class logTests(unittest.TestCase):
     def testLog(self):
         t1 = TensorBase(np.array([math.exp(1), math.exp(2), math.exp(3)]))
