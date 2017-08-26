@@ -2,6 +2,7 @@ from syft import TensorBase
 import syft
 import unittest
 import numpy as np
+import math
 
 
 # Here's our "unit tests".
