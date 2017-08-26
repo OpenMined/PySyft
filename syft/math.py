@@ -8,7 +8,7 @@ from .tensor import _ensure_tensorbase
 
 __all__ = [
 
-    'cumprod', 'cumsum', 'ceil', 'dot', 'matmul', 'addmm', 'addcmul',
+    'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid',
 ]
 
@@ -65,7 +65,7 @@ def ceil(tensor):
     Returns the ceilling input tensor,element wise .
 
     Ceilling of an input scalar is the smallest integer such as :
-    for each floating pount number x : a >= x
+    for each floating point number x : a >= x
 
     Behavior is independent of a tensor's shape.
 
@@ -77,6 +77,22 @@ def ceil(tensor):
     if tensor.encrypted is True:
         return NotImplemented
     return TensorBase(np.ceil(tensor.data))
+
+
+def floor(tensor):
+    """
+    Returns the floored input tensor,element wise.
+    Floor of an input scalar is the largest integer such as:
+    for each floating point number x : a <= x
+
+    Behavior is independent of a tensor's shape
+    :input: TensorBase tensor\n
+    :return: TensorBase tensor of floored elements .
+    """"
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    return TensorBase(np.floor(tensor.data))
 
 
 def cumsum(tensor, dim=0):
