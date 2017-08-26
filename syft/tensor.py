@@ -457,3 +457,29 @@ class TensorBase(object):
 
     def __repr__(self):
         return repr(self.data)
+
+    def rsqrt(self):
+        """Returns reciprocal of square root of Tensor element wise"""
+        if self.encrypted:
+            return NotImplemented
+        out = 1 / np.sqrt(self.data)
+        return TensorBase(out)
+
+    def rsqrt_(self):
+        """Computes reciprocal of square root of Tensor elements inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = 1 / np.sqrt(self.data)
+
+    def reciprocal(self):
+        """Computes element wise reciprocal"""
+        if self.encrypted:
+            return NotImplemented
+        out = 1 / np.array(self.data)
+        return TensorBase(out)
+
+    def reciprocal_(self):
+        """Computes element wise reciprocal"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = 1 / np.array(self.data)
