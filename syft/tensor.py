@@ -484,9 +484,9 @@ class TensorBase(object):
             return NotImplemented
         self.data = 1 / np.array(self.data)
 
-        def log(self):
+    def log(self):
         """performs elementwise logarithm operation
-        and returns new tensor"""
+        and returns a new Tensor"""
         if self.encrypted:
             return NotImplemented
         out = np.log(self.data)
