@@ -25,6 +25,13 @@ class CeilTests(unittest.TestCase):
                                                               [8., 9.]])))
 
 
+class FloorTests(unittest.TestCase):
+    def testFloor(self):
+        t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
+        self.assertTrue(syft.equal(syft.math.floor(t1), TensorBase([[2., 4.],
+                                                                    [7., 8.]])))
+
+
 class CumsumTests(unittest.TestCase):
     def testCumsum(self):
         t1 = TensorBase(np.array([1, 2, 3]))
