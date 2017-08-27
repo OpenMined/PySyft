@@ -88,7 +88,8 @@ def floor(tensor):
     Behavior is independent of a tensor's shape
     :input: TensorBase tensor\n
     :return: TensorBase tensor of floored elements .
-    """"
+    """
+
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
