@@ -2,6 +2,7 @@ from syft import TensorBase
 import syft
 import unittest
 import numpy as np
+import math
 
 
 # Here's our "unit tests".
@@ -374,3 +375,21 @@ class reciprocalTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 3, 4]))
         t1.reciprocal_()
         self.assertTrue(np.allclose(t1.data, [0.5, 0.33333333, 0.25]))
+
+
+class logTests(unittest.TestCase):
+    def testLog(self):
+        t1 = TensorBase(np.array([math.exp(1), math.exp(2), math.exp(3)]))
+        self.assertTrue(np.array_equal((t1.log()).data, [1., 2., 3.]))
+
+    def testLog_(self):
+        t1 = TensorBase(np.array([math.exp(1), math.exp(2), math.exp(3)]))
+        self.assertTrue(np.array_equal((t1.log_()).data, [1., 2., 3.]))
+
+    def testLog1p(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        self.assertTrue(np.allclose((t1.log1p()).data, [0.69314718, 1.09861229, 1.38629436]))
+
+    def testLog1p_(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        self.assertTrue(np.allclose((t1.log1p_()).data, [0.69314718, 1.09861229, 1.38629436]))

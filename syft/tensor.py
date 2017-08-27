@@ -518,3 +518,41 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.array(self.data)
+
+    def log(self):
+        """performs elementwise logarithm operation
+        and returns a new Tensor"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.log(self.data)
+        return TensorBase(out)
+
+    def log_(self):
+        """performs elementwise logarithm operation inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.log(self.data)
+        return self
+
+    def log1p(self):
+        """performs elementwise log(1+x) operation
+        and returns new tensor"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.log1p(self.data)
+        return TensorBase(out)
+
+    def log1p_(self):
+        """performs elementwise log(1+x) operation inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.log1p(self.data)
+        return self
+
+    def log_normal_(self, mean=0, stdev=1.0):
+        """Fills give tensor with samples from a lognormal distribution
+        with given mean and stdev"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.random.lognormal(mean, stdev, self.shape())
+        return self
