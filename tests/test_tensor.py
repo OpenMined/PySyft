@@ -27,9 +27,17 @@ class AddTests(unittest.TestCase):
 
 
 class CeilTests(unittest.TestCase):
-    def testCeil(self):
+    def testCeil_(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))
-        self.assertTrue(syft.equal(t.ceil(), [2, 3, 7]))
+        t.ceil_()
+        self.assertTrue(syft.equal(t.data, TensorBase([2, 3, 7])))
+
+
+class FloorTests(unittest.TestCase):
+    def testFloor_(self):
+        t = TensorBase(np.array([1.4, 2.7, 6.2]))
+        t.floor_()
+        self.assertTrue(syft.equal(t.data, TensorBase([1., 2., 6.])))
 
 
 class SubTests(unittest.TestCase):
@@ -334,14 +342,14 @@ class transposeTests(unittest.TestCase):
 class expTests(unittest.TestCase):
     def testexp(self):
         t3 = TensorBase(np.array([[[1, 3], [3, 5]],
-                                 [[5, 7], [9, 1]]]))
+                                  [[5, 7], [9, 1]]]))
         out = t3.exp()
         self.assertTrue(np.allclose(out.data, [[[2.71828183e+00, 2.00855369e+01], [2.00855369e+01, 1.48413159e+02]],
                                                [[1.48413159e+02, 1.09663316e+03], [8.10308393e+03, 2.71828183e+00]]]))
 
     def testexp_(self):
         t3 = TensorBase(np.array([[[1, 3], [3, 5]],
-                                 [[5, 7], [9, 1]]]))
+                                  [[5, 7], [9, 1]]]))
         t3.exp_()
         self.assertTrue(np.allclose(t3.data, [[[2.71828183e+00, 2.00855369e+01], [2.00855369e+01, 1.48413159e+02]],
                                               [[1.48413159e+02, 1.09663316e+03], [8.10308393e+03, 2.71828183e+00]]]))
