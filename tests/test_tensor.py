@@ -27,9 +27,17 @@ class AddTests(unittest.TestCase):
 
 
 class CeilTests(unittest.TestCase):
-    def testCeil(self):
+    def testCeil_(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))
-        self.assertTrue(syft.equal(t.ceil(), [2, 3, 7]))
+        t.ceil_()
+        self.assertTrue(syft.equal(t.data, TensorBase([2, 3, 7])))
+
+
+class FloorTests(unittest.TestCase):
+    def testFloor_(self):
+        t = TensorBase(np.array([1.4, 2.7, 6.2]))
+        t.floor_()
+        self.assertTrue(syft.equal(t.data, TensorBase([1., 2., 6.])))
 
         # Original t unmodified?
         self.assertTrue(syft.equal(t.data, [1.4, 2.7, 6.2]))
@@ -310,14 +318,14 @@ class baddbmmTests(unittest.TestCase):
 class expTests(unittest.TestCase):
     def testexp(self):
         t3 = TensorBase(np.array([[[1, 3], [3, 5]],
-                                 [[5, 7], [9, 1]]]))
+                                  [[5, 7], [9, 1]]]))
         out = t3.exp()
         self.assertTrue(np.allclose(out.data, [[[2.71828183e+00, 2.00855369e+01], [2.00855369e+01, 1.48413159e+02]],
                                                [[1.48413159e+02, 1.09663316e+03], [8.10308393e+03, 2.71828183e+00]]]))
 
     def testexp_(self):
         t3 = TensorBase(np.array([[[1, 3], [3, 5]],
-                                 [[5, 7], [9, 1]]]))
+                                  [[5, 7], [9, 1]]]))
         t3.exp_()
         self.assertTrue(np.allclose(t3.data, [[[2.71828183e+00, 2.00855369e+01], [2.00855369e+01, 1.48413159e+02]],
                                               [[1.48413159e+02, 1.09663316e+03], [8.10308393e+03, 2.71828183e+00]]]))
@@ -345,7 +353,18 @@ class rsqrtTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 3, 4]))
         t1.rsqrt_()
         self.assertTrue(np.allclose(t1.data, [0.70710678, 0.57735027, 0.5]))
+        
+        
+class reciprocalTests(unittest.TestCase):
+    def testreciprocal(self):
+        t1 = TensorBase(np.array([2, 3, 4]))
+        out = t1.reciprocal()
+        self.assertTrue(np.allclose(out.data, [0.5, 0.33333333, 0.25]))
 
+    def testrsqrt_(self):
+        t1 = TensorBase(np.array([2, 3, 4]))
+        t1.reciprocal_()
+        self.assertTrue(np.allclose(t1.data, [0.5, 0.33333333, 0.25]))
 
 if __name__ == '__main__':
     unittest.main()
