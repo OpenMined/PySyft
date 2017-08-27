@@ -7,9 +7,8 @@ from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
-
-    'cumprod', 'cumsum', 'ceil', 'dot', 'matmul', 'addmm', 'addcmul',
-    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid',
+    'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
+    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze'
 ]
 
 
@@ -65,7 +64,7 @@ def ceil(tensor):
     Returns the ceilling input tensor,element wise .
 
     Ceilling of an input scalar is the smallest integer such as :
-    for each floating pount number x : a >= x
+    for each floating point number x : a >= x
 
     Behavior is independent of a tensor's shape.
 
@@ -77,6 +76,23 @@ def ceil(tensor):
     if tensor.encrypted is True:
         return NotImplemented
     return TensorBase(np.ceil(tensor.data))
+
+
+def floor(tensor):
+    """
+    Returns the floored input tensor,element wise.
+    Floor of an input scalar is the largest integer such as:
+    for each floating point number x : a <= x
+
+    Behavior is independent of a tensor's shape
+    :input: TensorBase tensor\n
+    :return: TensorBase tensor of floored elements .
+    """
+
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    return TensorBase(np.floor(tensor.data))
 
 
 def cumsum(tensor, dim=0):
@@ -246,3 +262,19 @@ def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
         mmul = np.matmul(tensor1.data, tensor2.data)
         out = (mat.data * beta) + (mmul * alpha)
         return TensorBase(out)
+
+
+def unsqueeze(tensor1, dim):
+    """
+    Performs 'unsqueeze' operation, returning a new tensor with a dimension
+    of size one inserted at the specified position.
+    """
+    tensor1 = _ensure_tensorbase(tensor1)
+    num_dims = len(tensor1.data.shape)
+
+    if dim >= num_dims or dim < 0:
+        print("dimension out of range")
+    elif tensor1.encrypted:
+        raise NotImplemented
+    else:
+        return TensorBase(np.expand_dims(tensor1.data, dim))
