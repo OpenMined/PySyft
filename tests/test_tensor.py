@@ -358,6 +358,12 @@ class rsqrtTests(unittest.TestCase):
         self.assertTrue(np.allclose(t1.data, [0.70710678, 0.57735027, 0.5]))
 
 
+class numpyTests(unittest.TestCase):
+    def testnumpy(self):
+        t1 = TensorBase(np.array([[1, 2], [3, 4]]))
+        self.assertTrue(np.array_equal(t1.to_numpy(), np.array([[1, 2], [3, 4]])))
+
+
 class reciprocalTests(unittest.TestCase):
     def testreciprocal(self):
         t1 = TensorBase(np.array([2, 3, 4]))

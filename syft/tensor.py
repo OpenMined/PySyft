@@ -500,6 +500,12 @@ class TensorBase(object):
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
 
+    def to_numpy(self):
+        """Returns the tensor as numpy.ndarray"""
+        if self.encrypted:
+            return NotImplemented
+        return np.array(self.data)
+
     def reciprocal(self):
         """Computes element wise reciprocal"""
         if self.encrypted:
