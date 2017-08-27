@@ -353,3 +353,15 @@ class reciprocalTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 3, 4]))
         t1.reciprocal_()
         self.assertTrue(np.allclose(t1.data, [0.5, 0.33333333, 0.25]))
+
+
+class signTests(unittest.TestCase):
+    def testsign(self):
+        t1 = TensorBase(np.array([1, 2, -1, -2]))
+        out = t1.sign()
+        self.assertTrue(np.array_equal(out.data, [1, 1, -1, -1]))
+
+    def testsign_(self):
+        t1 = TensorBase(np.array([1, 2, -1, -2]))
+        t1.sign_()
+        self.assertTrue(np.array_equal(t1.data, [1, 1, -1, -1]))
