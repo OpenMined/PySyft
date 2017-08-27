@@ -224,11 +224,19 @@ class TensorBase(object):
         else:
             return self.data.sum(axis=dim)
 
-    def ceil(self):
+    def ceil_(self):
         """Returns the ceilling of the input tensor elementwise."""
         if self.encrypted:
             return NotImplemented
-        return np.ceil(self.data)
+        self.data = syft.math.ceil(self.data)
+        return self
+
+    def floor_(self):
+        """Inplace floor method"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.floor(self.data)
+        return self
 
     def ceil_(self):
         """Replaces tensor values with the ceilling of its values."""
