@@ -54,7 +54,7 @@ with indent(4, quote='>>>'):
         folder_path = str(dict(args.grouped)['-path'][0])
 
         if(encryption == 'paillier'):
-            from syft.he.Paillier import KeyPair
+            from syft.he.paillier import KeyPair
             puts(colored.blue('Generating Keys...'))
             pubkey,prikey = KeyPair().generate(n_length=int(keylen))
             puts('DONE!')
