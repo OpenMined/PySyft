@@ -2,5 +2,6 @@ pyRserve
 numpy
 phe
 line_profiler
-jupyter
 clint
+pytest-flake8
+pytest
