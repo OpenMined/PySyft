@@ -7,9 +7,8 @@ from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
-
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
-    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid',
+    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze'
 ]
 
 
@@ -284,3 +283,19 @@ def transpose(tensor1, dim0, dim1):
         axes[dim0] = dim1
         axes[dim1] = dim0
         return TensorBase(np.transpose(tensor1.data, axes=axes))
+
+
+def unsqueeze(tensor1, dim):
+    """
+    Performs 'unsqueeze' operation, returning a new tensor with a dimension
+    of size one inserted at the specified position.
+    """
+    tensor1 = _ensure_tensorbase(tensor1)
+    num_dims = len(tensor1.data.shape)
+
+    if dim >= num_dims or dim < 0:
+        print("dimension out of range")
+    elif tensor1.encrypted:
+        raise NotImplemented
+    else:
+        return TensorBase(np.expand_dims(tensor1.data, dim))

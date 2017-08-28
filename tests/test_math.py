@@ -181,3 +181,12 @@ class transposeTests(unittest.TestCase):
         out3 = syft.transpose(t1, 1, 2)
         self.assertTrue(np.array_equal(out3.data, np.array([[[3, 5], [4, 6]],
                                                             [[7, 1], [8, 2]]])))
+
+class unsqueezeTests(unittest.TestCase):
+    def testUnsqueeze(self):
+        t1 = TensorBase(np.arange(3 * 4 * 5).reshape((3, 4, 5)))
+        for i in range(len(t1.data.shape)):
+            out = syft.unsqueeze(t1, i)
+            expected_shape = list(t1.data.shape)
+            expected_shape.insert(i, 1)
+            self.assertTrue(np.array_equal(out.data.shape, expected_shape))

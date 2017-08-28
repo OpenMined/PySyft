@@ -2,6 +2,7 @@ from syft import TensorBase
 import syft
 import unittest
 import numpy as np
+import math
 
 
 # Here's our "unit tests".
@@ -339,6 +340,25 @@ class transposeTests(unittest.TestCase):
                                                  [[5, 6], [1, 2]]]))
 
 
+class unsqueezeTests(unittest.TestCase):
+    def testUnsqueeze(self):
+        t1 = TensorBase(np.arange(3 * 4 * 5).reshape((3, 4, 5)))
+        for i in range(len(t1.data.shape)):
+            out = t1.unsqueeze(i)
+            expected_shape = list(t1.data.shape)
+            expected_shape.insert(i, 1)
+            self.assertTrue(np.array_equal(out.data.shape, expected_shape))
+
+    def testUnsqueeze_(self):
+        test_shape = (3, 4, 5)
+        for i in range(len(test_shape)):
+            t1 = TensorBase(np.arange(3 * 4 * 5).reshape(test_shape))
+            expected_shape = list(t1.data.shape)
+            expected_shape.insert(i, 1)
+            t1.unsqueeze_(i)
+            self.assertTrue(np.array_equal(t1.data.shape, expected_shape))
+
+
 class expTests(unittest.TestCase):
     def testexp(self):
         t3 = TensorBase(np.array([[[1, 3], [3, 5]],
@@ -379,6 +399,12 @@ class rsqrtTests(unittest.TestCase):
         self.assertTrue(np.allclose(t1.data, [0.70710678, 0.57735027, 0.5]))
 
 
+class numpyTests(unittest.TestCase):
+    def testnumpy(self):
+        t1 = TensorBase(np.array([[1, 2], [3, 4]]))
+        self.assertTrue(np.array_equal(t1.to_numpy(), np.array([[1, 2], [3, 4]])))
+
+
 class reciprocalTests(unittest.TestCase):
     def testreciprocal(self):
         t1 = TensorBase(np.array([2, 3, 4]))
@@ -389,3 +415,21 @@ class reciprocalTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 3, 4]))
         t1.reciprocal_()
         self.assertTrue(np.allclose(t1.data, [0.5, 0.33333333, 0.25]))
+
+
+class logTests(unittest.TestCase):
+    def testLog(self):
+        t1 = TensorBase(np.array([math.exp(1), math.exp(2), math.exp(3)]))
+        self.assertTrue(np.array_equal((t1.log()).data, [1., 2., 3.]))
+
+    def testLog_(self):
+        t1 = TensorBase(np.array([math.exp(1), math.exp(2), math.exp(3)]))
+        self.assertTrue(np.array_equal((t1.log_()).data, [1., 2., 3.]))
+
+    def testLog1p(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        self.assertTrue(np.allclose((t1.log1p()).data, [0.69314718, 1.09861229, 1.38629436]))
+
+    def testLog1p_(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        self.assertTrue(np.allclose((t1.log1p_()).data, [0.69314718, 1.09861229, 1.38629436]))
