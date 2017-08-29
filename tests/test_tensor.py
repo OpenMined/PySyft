@@ -38,6 +38,7 @@ class CeilTests(unittest.TestCase):
         self.assertTrue(syft.equal(t.ceil(), TensorBase([2, 3, 7])))
         self.assertTrue(syft.equal(t.data, TensorBase([1.4, 2.7, 6.2])))
 
+
 class FloorTests(unittest.TestCase):
     def testFloor_(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))

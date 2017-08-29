@@ -228,7 +228,7 @@ class TensorBase(object):
         """Returns the ceilling of the input tensor elementwise."""
         if self.encrypted:
             return NotImplemented
-        return  syft.math.ceil(self.data)
+        return syft.math.ceil(self.data)
 
     def ceil_(self):
         """Returns the ceilling of the input tensor elementwise."""
