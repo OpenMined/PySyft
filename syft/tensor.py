@@ -163,7 +163,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data /= tensor.data
+        self.data = self.data / tensor.data
         return self
 
     def __getitem__(self, position):
@@ -234,7 +234,7 @@ class TensorBase(object):
         """Returns the ceilling of the input tensor elementwise."""
         if self.encrypted:
             return NotImplemented
-        self.data = syft.math.ceil(self.data)
+        self.data = syft.math.ceil(self.data).data
         return self
 
     def floor_(self):
@@ -243,6 +243,14 @@ class TensorBase(object):
             return NotImplemented
         self.data = syft.math.floor(self.data).data
         return self
+
+    def zero_(self):
+        """Replaces tensor values with zeros"""
+        if self.encrypted:
+            return NotImplemented
+
+        self.data.fill(0)
+        return self.data
 
     def addmm(self, tensor2, mat, beta=1, alpha=1):
         """Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and  returns the

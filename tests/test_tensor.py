@@ -28,10 +28,25 @@ class AddTests(unittest.TestCase):
 
 
 class CeilTests(unittest.TestCase):
+    def testCeil(self):
+        t = TensorBase(np.array([1.4, 2.7, 6.2]))
+        tdash = t.ceil()
+        self.assertTrue(syft.equal(tdash.data, TensorBase([2, 3, 7])))
+        self.assertTrue(syft.equal(t.data, TensorBase([1.4, 2.7, 6.2])))
+
     def testCeil_(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))
-        t.ceil_()
-        self.assertTrue(syft.equal(t.data, TensorBase([2, 3, 7])))
+        self.assertTrue(syft.equal(t.ceil_(), [2, 3, 7]))
+        self.assertTrue(syft.equal(t.data, [2, 3, 7]))
+
+
+class ZeroTests(unittest.TestCase):
+    def testZero(self):
+        t = TensorBase(np.array([13, 42, 1024]))
+        self.assertTrue(syft.equal(t.zero_(), [0, 0, 0]))
+
+        t = TensorBase(np.array([13.1, 42.2, 1024.4]))
+        self.assertTrue(syft.equal(t.zero_(), [0.0, 0.0, 0.0]))
 
     def testCeil(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))
@@ -42,8 +57,6 @@ class CeilTests(unittest.TestCase):
 class FloorTests(unittest.TestCase):
     def testFloor_(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))
-
-        # Now we test in-place
         self.assertTrue(syft.equal(t.floor_(), [1., 2., 6.]))
         self.assertTrue(syft.equal(t.data, [1., 2., 6.]))
 
@@ -84,9 +97,13 @@ class DivTests(unittest.TestCase):
         self.assertTrue(syft.equal(t / np.array([2, 2, 2]), [1, 2, 4]))
 
     def testInplace(self):
-        t = TensorBase(np.array([1, 2, 3]))
-        t *= np.array([1, 2, 3])
-        self.assertTrue(syft.equal(t.data, [1, 4, 9]))
+        t = TensorBase(np.array([2, 4, 8]))
+        t /= np.array([2, 2, 2])
+        self.assertTrue(syft.equal(t.data, [1, 2, 4]))
+
+        t = TensorBase(np.array([1, 7, 11]))
+        t /= np.array([3, 2, 9])
+        self.assertTrue(syft.equal(t, [1 / 3, 7 / 2, 11 / 9]))
 
     def testScalar(self):
         t = TensorBase(np.array([2, 4, 6]))
@@ -443,5 +460,4 @@ class logTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    if __name__ == '__main__':
-        unittest.main()
+    unittest.main()
