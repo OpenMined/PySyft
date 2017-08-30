@@ -163,7 +163,7 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data /= tensor.data
+        self.data = self.data / tensor.data
         return self
 
     def __getitem__(self, position):
@@ -224,26 +224,25 @@ class TensorBase(object):
         else:
             return self.data.sum(axis=dim)
 
+    def ceil(self):
+        """Returns the ceilling of the input tensor elementwise."""
+        if self.encrypted:
+            return NotImplemented
+        return syft.math.ceil(self.data)
+
     def ceil_(self):
         """Returns the ceilling of the input tensor elementwise."""
         if self.encrypted:
             return NotImplemented
-        self.data = syft.math.ceil(self.data)
+        self.data = syft.math.ceil(self.data).data
         return self
 
     def floor_(self):
         """Inplace floor method"""
         if self.encrypted:
             return NotImplemented
-        self.data = syft.math.floor(self.data)
+        self.data = syft.math.floor(self.data).data
         return self
-
-    def ceil_(self):
-        """Replaces tensor values with the ceilling of its values."""
-        if self.encrypted:
-            return NotImplemented
-        self.data = np.ceil(self.data)
-        return self.data
 
     def zero_(self):
         """Replaces tensor values with zeros"""

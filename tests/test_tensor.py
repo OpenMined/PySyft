@@ -48,12 +48,17 @@ class ZeroTests(unittest.TestCase):
         t = TensorBase(np.array([13.1, 42.2, 1024.4]))
         self.assertTrue(syft.equal(t.zero_(), [0.0, 0.0, 0.0]))
 
+    def testCeil(self):
+        t = TensorBase(np.array([1.4, 2.7, 6.2]))
+        self.assertTrue(syft.equal(t.ceil(), TensorBase([2, 3, 7])))
+        self.assertTrue(syft.equal(t.data, TensorBase([1.4, 2.7, 6.2])))
+
 
 class FloorTests(unittest.TestCase):
     def testFloor_(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))
-        t.floor_()
-        self.assertTrue(syft.equal(t.data, TensorBase([1., 2., 6.])))
+        self.assertTrue(syft.equal(t.floor_(), [1., 2., 6.]))
+        self.assertTrue(syft.equal(t.data, [1., 2., 6.]))
 
 
 class SubTests(unittest.TestCase):
@@ -98,10 +103,7 @@ class DivTests(unittest.TestCase):
 
         t = TensorBase(np.array([1, 7, 11]))
         t /= np.array([3, 2, 9])
-        self.assertTrue(abs(t[0] - 0.3333333333) < 0.000000001)
-        self.assertTrue(abs(t[1] - 3.5) < 0.000000001)
-        self.assertTrue(abs(t[2] - 1.22222222) < 0.000001)
-
+        self.assertTrue(syft.equal(t, [1 / 3, 7 / 2, 11 / 9]))
 
     def testScalar(self):
         t = TensorBase(np.array([2, 4, 6]))
@@ -417,5 +419,5 @@ class logTests(unittest.TestCase):
         self.assertTrue(np.allclose((t1.log1p_()).data, [0.69314718, 1.09861229, 1.38629436]))
 
 
-unittest.main()
-
+if __name__ == "__main__":
+    unittest.main()
