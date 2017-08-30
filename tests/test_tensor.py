@@ -33,12 +33,19 @@ class CeilTests(unittest.TestCase):
         t.ceil_()
         self.assertTrue(syft.equal(t.data, TensorBase([2, 3, 7])))
 
+    def testCeil(self):
+        t = TensorBase(np.array([1.4, 2.7, 6.2]))
+        self.assertTrue(syft.equal(t.ceil(), TensorBase([2, 3, 7])))
+        self.assertTrue(syft.equal(t.data, TensorBase([1.4, 2.7, 6.2])))
+
 
 class FloorTests(unittest.TestCase):
     def testFloor_(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))
-        t.floor_()
-        self.assertTrue(syft.equal(t.data, TensorBase([1., 2., 6.])))
+
+        # Now we test in-place
+        self.assertTrue(syft.equal(t.floor_(), [1., 2., 6.]))
+        self.assertTrue(syft.equal(t.data, [1., 2., 6.]))
 
 
 class SubTests(unittest.TestCase):
@@ -433,3 +440,8 @@ class logTests(unittest.TestCase):
     def testLog1p_(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(np.allclose((t1.log1p_()).data, [0.69314718, 1.09861229, 1.38629436]))
+
+
+if __name__ == "__main__":
+    if __name__ == '__main__':
+        unittest.main()

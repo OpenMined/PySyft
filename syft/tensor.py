@@ -224,6 +224,12 @@ class TensorBase(object):
         else:
             return self.data.sum(axis=dim)
 
+    def ceil(self):
+        """Returns the ceilling of the input tensor elementwise."""
+        if self.encrypted:
+            return NotImplemented
+        return syft.math.ceil(self.data)
+
     def ceil_(self):
         """Returns the ceilling of the input tensor elementwise."""
         if self.encrypted:
@@ -235,7 +241,7 @@ class TensorBase(object):
         """Inplace floor method"""
         if self.encrypted:
             return NotImplemented
-        self.data = syft.math.floor(self.data)
+        self.data = syft.math.floor(self.data).data
         return self
 
     def addmm(self, tensor2, mat, beta=1, alpha=1):
