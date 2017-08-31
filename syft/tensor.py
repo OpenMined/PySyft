@@ -355,14 +355,14 @@ class TensorBase(object):
             return self
 
     def addmv(self, mat, vec, beta=1, alpha=1):
-        """"Performs a matrix-vector product of the matrix mat and the vector
+        """Performs a matrix-vector product of the matrix mat and the vector
          vec. The vector tensor is added to the final result.
               tensor1 and vec are 1d tensors
               out=(beta∗tensor)+(alpha∗(mat@vec2))"""
         return syft.addmv(self, mat, vec, beta, alpha)
 
     def addmv_(self, mat, vec, beta=1, alpha=1):
-        """"Performs a inplace matrix-vector product of the matrix mat and the
+        """Performs a inplace matrix-vector product of the matrix mat and the
          vector vec. The vector tensor is added to the final result.
               tensor1 and vec are 1d tensors
               out=(beta∗tensor)+(alpha∗(mat@vec2))"""
