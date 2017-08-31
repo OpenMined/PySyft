@@ -169,7 +169,7 @@ class TensorBase(object):
         self.data = self.data / tensor.data
         return self
 
-    def __setitem__(self,key,value):
+    def __setitem__(self, key, value):
         if(self.encrypted):
             return NotImplemented
         else:

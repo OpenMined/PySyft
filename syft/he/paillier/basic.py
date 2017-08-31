@@ -13,19 +13,20 @@ class PaillierTensor(TensorBase):
         else:
             self.data = data
 
-    def __setitem__(self,key,value):
+    def __setitem__(self, key, value):
         self.data[key] = value.data
         return self
 
-    def __getitem__(self,i):
-        return PaillierTensor(self.public_key,self.data[i], False)
+    def __getitem__(self, i):
+        return PaillierTensor(self.public_key, self.data[i], False)
 
     def __add__(self, tensor):
         """Performs element-wise addition between two tensors"""
 
         if(not isinstance(tensor, TensorBase)):
             # try encrypting it
-            tensor = tensor.encrypt(self.public_key)
+            tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'))
+
             return PaillierTensor(self.public_key, self.data + tensor.data, False)
 
         if(type(tensor) == TensorBase):
