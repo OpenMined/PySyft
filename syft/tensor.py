@@ -355,14 +355,14 @@ class TensorBase(object):
             return self
 
     def addmv(self, mat, vec, beta=1, alpha=1):
-        """"Performs a matrix-vector product of the matrix mat and the vector
+        """Performs a matrix-vector product of the matrix mat and the vector
          vec. The vector tensor is added to the final result.
               tensor1 and vec are 1d tensors
               out=(beta∗tensor)+(alpha∗(mat@vec2))"""
         return syft.addmv(self, mat, vec, beta, alpha)
 
     def addmv_(self, mat, vec, beta=1, alpha=1):
-        """"Performs a inplace matrix-vector product of the matrix mat and the
+        """Performs a inplace matrix-vector product of the matrix mat and the
          vector vec. The vector tensor is added to the final result.
               tensor1 and vec are 1d tensors
               out=(beta∗tensor)+(alpha∗(mat@vec2))"""
@@ -514,14 +514,14 @@ class TensorBase(object):
         return self
 
     def frac(self):
-        """"Computes the fractional portion of each element in tensor."""
+        """Computes the fractional portion of each element in tensor."""
         if self.encrypted:
             return NotImplemented
         out = np.modf(self.data)[0]
         return TensorBase(out)
 
     def frac_(self):
-        """"Computes the fractional portion of each element inplace."""
+        """Computes the fractional portion of each element inplace."""
         if self.encrypted:
             return NotImplemented
         self.data = np.modf(self.data)[0]
@@ -539,6 +539,16 @@ class TensorBase(object):
             return NotImplemented
         self.data = syft.math.sigmoid(self).data
         # self.data = np.array((1 / (1 + np.exp(np.array(-self.data)))))
+        return self
+
+    def tanh_(self):
+        """
+            Performs tanh (hyperbolic tangent) function on the Tensor elementwise
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.tanh(self).data
+        # self.data = np.array(np.tanh(np.array(-self.data)))
         return self
 
     def __str__(self):
