@@ -137,6 +137,15 @@ def sigmoid(tensor):
         return NotImplemented
     return TensorBase(1 / (1 + np.exp(np.array(-tensor.data))))
 
+def tanh(tensor):
+    """ Returns a new tensor holding element wise values of tanh function
+        tanh(x) = (e^(x) - e^(-x))/(e^(x) + e^(-x))
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    return TensorBase(np.tanh(np.array(tensor.data)))
+
 
 def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
     """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the
