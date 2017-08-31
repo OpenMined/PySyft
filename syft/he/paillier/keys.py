@@ -45,7 +45,7 @@ class PublicKey(AbstractPublicKey):
     def encrypt(self, x, same_type=False):
         """Encrypts x. X can be either an encrypted int or a numpy
         vector/matrix/tensor."""
-        if(type(x) == int):
+        if(type(x) == int or type(x) == float or type(x) == np.float64):
             if(same_type):
                 return NotImplemented
             return Float(self, x)
@@ -64,7 +64,7 @@ class PublicKey(AbstractPublicKey):
             else:
                 return PaillierTensor(self, np.array(out).reshape(sh))
         else:
-            print("format not recognized")
+            print("format not recognized:" + str(type(x)))
             return NotImplemented
 
         return self.pk.encrypt(x)

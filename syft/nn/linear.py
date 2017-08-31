@@ -1,3 +1,7 @@
+from syft.he.paillier import PaillierTensor
+from syft.tensor import TensorBase
+from syft.he.paillier.keys import KeyPair
+
 import numpy as np
 
 
@@ -21,9 +25,7 @@ class LinearClassifier():
         self.n_inputs = n_inputs
         self.n_labels = n_labels
 
-        self.weights = list()
-        for i in range(n_inputs):
-            self.weights.append(np.zeros(n_labels).astype('float64'))
+        self.weights = TensorBase(np.zeros((n_inputs,n_labels)))
 
         self.pubkey = None
         self.encrypted = False
@@ -37,8 +39,7 @@ class LinearClassifier():
 
         self.encrypted = True
         self.pubkey = pubkey
-        for i, w in enumerate(self.weights):
-            self.weights[i] = self.pubkey.encrypt(w)
+        self.weights = self.weights.encrypt(pubkey)
         return self
 
     def decrypt(self, seckey):
@@ -48,8 +49,7 @@ class LinearClassifier():
 
         """
         self.encrypted = False
-        for i, w in enumerate(self.weights):
-            self.weights[i] = seckey.decrypt(w)
+        self.weights = self.weights.decrypt(seckey)
         return self
 
     def forward(self, input):
@@ -66,31 +66,7 @@ class LinearClassifier():
 
         return pred
 
-    def generate_gradient(self, input, target):
-        target = np.array(target).astype('float64')
-        pred = self.forward(input)
 
-        target_v = target
-
-        if(self.pubkey is not None and self.encrypted):
-            target_v = self.pubkey.encrypt(target_v)
-
-        output_grad = (pred - target_v)
-
-        weight_grad = np.zeros_like(self.weights)
-
-        if(self.encrypted):
-            weight_grad = self.pubkey.encrypt(weight_grad)
-
-        for i in range(len(input)):
-            if(input[i] != 1 and input[i] != 0):
-                weight_grad[i] += (output_grad * input[i])
-            elif(input[i] == 1):
-                weight_grad[i] += output_grad
-            else:
-                "doesn't matter... input == 0"
-
-        return weight_grad
 
     def learn(self, input, target, alpha=0.5):
         """Updates weights based on input and target prediction. Note, updating
@@ -122,7 +98,8 @@ class LinearClassifier():
             for i, row in enumerate(inputs):
                 pred = self.forward(row)
                 true = targets[i]
-                loss += (pred - true)**2
+                diff = (pred - true)
+                loss += (diff * diff).to_numpy()
             return int((loss[0] * scale) / float(len(inputs)))
 
     def __str__(self):
@@ -131,3 +108,30 @@ class LinearClassifier():
 
     def __repr__(self):
         return self.__str__()
+
+    def generate_gradient(self, input, target):
+        target = TensorBase(np.array(target).astype('float64'))
+        input = TensorBase(np.array(input).astype('float64'))
+        pred = self.forward(input)
+
+        target_v = target
+
+        if(self.pubkey is not None and self.encrypted):
+            target_v = self.pubkey.encrypt(target_v)
+
+        output_grad = (pred - target_v)
+
+        weight_grad = TensorBase(np.zeros_like(self.weights.data))
+
+        if(self.encrypted):
+            weight_grad = weight_grad.encrypt(self.pubkey)
+
+        for i in range(len(input)):
+            if(input[i] != 1 and input[i] != 0):
+                weight_grad[i] += (output_grad[0] * input[i])
+            elif(input[i] == 1):
+                weight_grad[i] += output_grad[0]
+            else:
+                "doesn't matter... input == 0"
+
+        return weight_grad

@@ -67,6 +67,9 @@ class TensorBase(object):
         else:
             return self
 
+    def __len__(self):
+        return len(self.data)
+
     def __add__(self, tensor):
         """Performs element-wise addition between two tensors"""
         if self.encrypted:
@@ -165,6 +168,13 @@ class TensorBase(object):
         tensor = _ensure_tensorbase(tensor)
         self.data = self.data / tensor.data
         return self
+
+    def __setitem__(self,key,value):
+        if(self.encrypted):
+            return NotImplemented
+        else:
+            self.data[key] = value
+            return self
 
     def __getitem__(self, position):
         """Get value at a specific index."""
