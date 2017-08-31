@@ -514,14 +514,14 @@ class TensorBase(object):
         return self
 
     def frac(self):
-        """"Computes the fractional portion of each element in tensor."""
+        """Computes the fractional portion of each element in tensor."""
         if self.encrypted:
             return NotImplemented
         out = np.modf(self.data)[0]
         return TensorBase(out)
 
     def frac_(self):
-        """"Computes the fractional portion of each element inplace."""
+        """Computes the fractional portion of each element inplace."""
         if self.encrypted:
             return NotImplemented
         self.data = np.modf(self.data)[0]
