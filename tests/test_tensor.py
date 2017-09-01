@@ -458,6 +458,30 @@ class logTests(unittest.TestCase):
         t1 = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(np.allclose((t1.log1p_()).data, [0.69314718, 1.09861229, 1.38629436]))
 
+class clampTests(unittest.TestCase):
+    def testClampInt(self):
+        t1 = TensorBase(np.arange(10))
+        t2 = t1.clamp(minimum=2, maximum=7)
+        expected_tensor = TensorBase(np.array([2, 2, 2, 3, 4, 5, 6, 7, 7, 7]))
+        self.assertEqual(t2, expected_tensor)
+    
+    def testClampFloat(self):
+        t1 = TensorBase(np.arange(1, step=0.1))
+        t2 = t1.clamp(minimum=0.2, maximum=0.7)
+        expected_tensor = TensorBase(np.array([0.2, 0.2, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.7, 0.7]))
+        self.assertEqual(t2, expected_tensor)
+
+    def testClampIntInPlace(self):
+        t1 = TensorBase(np.arange(10))
+        t1.clamp_(minimum=2, maximum=7)
+        expected_tensor = TensorBase(np.array([2, 2, 2, 3, 4, 5, 6, 7, 7, 7]))
+        self.assertEqual(t1, expected_tensor)
+    
+    def testClampFloatInPlace(self):
+        t1 = TensorBase(np.arange(1, step=0.1))
+        t1.clamp_(minimum=0.2, maximum=0.7)
+        expected_tensor = TensorBase(np.array([0.2, 0.2, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.7, 0.7]))
+        self.assertEqual(t1, expected_tensor)
 
 if __name__ == "__main__":
     unittest.main()
