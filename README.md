@@ -20,6 +20,8 @@ The goal of this library is to give the user the ability to efficiently train De
 
 ### Prerequisites
 
+Install base libraries first - https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries
+
 You need to install this library locally before running any of the notebooks this repository or the [main demonstration](https://github.com/OpenMined/sonar):
 
 ```sh
