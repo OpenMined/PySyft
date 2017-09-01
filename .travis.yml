@@ -2,10 +2,16 @@ language: python
 python:
   - "3.6"
 
-# command to install dependencies
+# install server dependencies
+before_install:
+  - "sudo apt-get install musl-dev g++ libgmp3-dev libmpfr-dev ca-certificates"
+
+# install dependencies
 install:
   - "pip install -r requirements.txt"
-# command to run tests
+  - "python setup.py install"
+
+# run tests
 script:
   - pytest && pytest --flake8
 
