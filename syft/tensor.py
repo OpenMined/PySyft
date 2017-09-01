@@ -641,8 +641,38 @@ class TensorBase(object):
             return NotImplemented
         self.data.fill(value)
         return self
+    
+    def tolist(self):
+        """Returns a new tensor as (possibly a nested) list"""
+        if self.encrypted:
+            return NotImplemented
+        out = self.data.tolist()
+        return out
         
+    def topk(self, k, largest = True):
+        """Returns a new tensor with the sorted k largest (or smallest) values"""
+        if self.encrypted:
+            return NotImplemented
         
+        out_sort = np.sort(self.data)
+        if self.data.ndim > 1:
+            out = np.partition(out_sort, kth=k)
+            out = out[:,-k:] if largest else out[:,:k]
+        else:
+            out = np.partition(out_sort, kth=k)
+            out = out[-k:] if largest else  out[:k]
+        return TensorBase(out)
+    
+    def trace(self,axis1=None,axis2=None):
+        """Returns a new tenosr with the sum along diagonals of a 2D tensor. 
+           Axis1 and Axis2 are used to extract 2D subarray for sum calculation 
+           along diagonals, if tensor has more than two dimensions. """
+        if self.encrypted:
+            return NotImplemented
         
-        
+        if axis1 != None and axis2 != None and self.data.ndim > 2:
+            out = np.trace(a=self.data, axis1=axis1, axis2=axis2)
+        else:
+            out = np.trace(a=self.data)
+        return TensorBase(out)
 

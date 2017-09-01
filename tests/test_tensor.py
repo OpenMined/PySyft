@@ -461,20 +461,37 @@ class logTests(unittest.TestCase):
 
 class uniformTests(unittest.TestCase):
     def testUniform(self):
-        t1 = tensor.TensorBase(np.zeros(4))
+        t1 = TensorBase(np.zeros(4))
         out = t1.uniform(low = 0, high = 3)
         self.assertTrue(np.all(out.data > 0) and np.all(out.data < 3))
 
     def testUniform_(self):
-        t1 = tensor.TensorBase(np.zeros(4))
+        t1 = TensorBase(np.zeros(4))
         t1.uniform_(low = 0, high = 3)
-        self.assertTrue(np.all(out.data > 0) and np.all(out.data < 3))
+        self.assertTrue(np.all(t1.data > 0) and np.all(t1.data < 3))
         
 class fillTests(unittest.TestCase):
     def testFill_(self):
-        t1 = tensor.TensorBase(np.array([1,2,3,4]))
+        t1 = TensorBase(np.array([1,2,3,4]))
         t1.fill_(5)
         self.assertTrue(np.all(t1.data == 5))
-
+        
+class topkTests(unittest.TestCase):
+    def testTopK(self):
+        t1 = TensorBase(np.array([[900,800,1000,2000,5,10,20,40,50],[10,11,12,13,5,6,7,8,9],[30,40,50,10,8,1,2,3,4]])) 
+        t2 = t1.topk(3,largest=True)
+        self.assertTrue(np.array_equal(t2.data,np.array([[900,1000,2000],[11,12,13],[30,40,50]])))
+        
+class tolistTests(unittest.TestCase):
+    def testToList(self):
+        t1 = TensorBase(np.array([200,300,90,100,600]))
+        t1_list = t1.tolist()
+        self.assertTrue(isinstance(t1_list,list))
+        
+class traceTests(unittest.TestCase):
+    def testTrace(self):
+        t1 = TensorBase(np.arange(1, 10).reshape(3,3)) 
+        self.assertTrue(np.equal(t1.trace(),15))
+        
 if __name__ == "__main__":
     unittest.main()
