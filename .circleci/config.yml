@@ -5,6 +5,8 @@ jobs:
     docker:
       - image: docker:latest
     steps:
+      # Ensure your image has git, otherwise the checkout step will fail
+      - run: apt-get -qq update; apt-get -y install git
       - checkout
       - setup_remote_docker
       - run:
