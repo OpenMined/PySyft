@@ -632,3 +632,27 @@ class TensorBase(object):
             return NotImplemented
         else:
             return self.view(tensor.shape())
+
+    def resize_(self, *size):
+        input_size = np.prod(size)
+        extension = input_size - self.data.size
+        flattened = self.data.flatten()
+        if input_size >= 0:
+            if extension > 0:
+                data = np.append(flattened, np.zeros(extension))
+                self.data = data.reshape(*size)
+                print(self.data)
+            elif extension < 0:
+                size_ = self.data.size + extension
+                self.data = flattened[:size_]
+                self.data = self.data.reshape(*size)
+                print(self.data)
+            else:
+                self.data = self.data.reshape(*size)
+                print(self.data)
+        else:
+            raise ValueError('negative dimension not allowed')
+
+    def resize_as_(self, tensor):
+        size = tensor.data.shape
+        self.resize_(size)

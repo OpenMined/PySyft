@@ -1,0 +1,19 @@
+language: python
+python:
+  - "3.6"
+
+# install server dependencies
+before_install:
+  - "sudo apt-get install musl-dev g++ libgmp3-dev libmpfr-dev ca-certificates"
+
+# install dependencies
+install:
+  - "pip install -r requirements.txt"
+  - "python setup.py install"
+
+# run tests
+script:
+  - pytest && pytest --flake8
+
+notifications:
+    slack: openmined:vOUE1d9jSb6V7R1r6zrjRD4E
