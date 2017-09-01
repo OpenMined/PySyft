@@ -4,7 +4,7 @@ python:
 
 # install server dependencies
 before_install:
-  - "sudo apt-get install musl-dev g++ libgmp3-dev libmpfr-dev ca-certificates"
+        - "sudo apt-get install musl-dev g++ libgmp3-dev libmpfr-dev libmpc-dev ca-certificates"
 
 # install dependencies
 install:
