@@ -616,3 +616,33 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.random.lognormal(mean, stdev, self.shape())
         return self
+
+
+    def  uniform_(self, low=0, high=1):
+        """Fills the tensor in-place with numbers sampled unifromly 
+        over the half-open interval [low,high) or from the uniform distribution"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.random.uniform(low = low, high = high, size = self.shape())
+        return self
+
+
+    def uniform(self, low=0, high=1):
+        """Returns a new tensor filled with numbers sampled unifromly 
+        over the half-open interval [low,high) or from the uniform distribution"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.random.uniform(low = low, high = high, size = self.shape())
+        return TensorBase(out)
+    
+    def fill_(self, value):
+        """Fills the tensor in-place with the specified value"""
+        if self.encrypted:
+            return NotImplemented
+        self.data.fill(value)
+        return self
+        
+        
+        
+        
+

@@ -459,5 +459,22 @@ class logTests(unittest.TestCase):
         self.assertTrue(np.allclose((t1.log1p_()).data, [0.69314718, 1.09861229, 1.38629436]))
 
 
+class uniformTests(unittest.TestCase):
+    def testUniform(self):
+        t1 = tensor.TensorBase(np.zeros(4))
+        out = t1.uniform(low = 0, high = 3)
+        self.assertTrue(np.all(out.data > 0) and np.all(out.data < 3))
+
+    def testUniform_(self):
+        t1 = tensor.TensorBase(np.zeros(4))
+        t1.uniform_(low = 0, high = 3)
+        self.assertTrue(np.all(out.data > 0) and np.all(out.data < 3))
+        
+class fillTests(unittest.TestCase):
+    def testFill_(self):
+        t1 = tensor.TensorBase(np.array([1,2,3,4]))
+        t1.fill_(5)
+        self.assertTrue(np.all(t1.data == 5))
+
 if __name__ == "__main__":
     unittest.main()
