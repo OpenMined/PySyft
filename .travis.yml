@@ -1,0 +1,13 @@
+language: python
+python:
+  - "3.6"
+
+# command to install dependencies
+install:
+  - "pip install -r requirements.txt"
+# command to run tests
+script:
+  - pytest && pytest --flake8
+
+notifications:
+    slack: openmined:vOUE1d9jSb6V7R1r6zrjRD4E
