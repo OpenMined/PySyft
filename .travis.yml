@@ -1,0 +1,14 @@
+language: python
+
+python:
+- "3.6.1"
+
+install: 
+- pip install -r requirements.txt
+- pip install flake8
+- pip install flake8_docstrings
+
+before_script:
+- flake8 .
+
+script: pytest
