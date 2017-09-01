@@ -541,6 +541,16 @@ class TensorBase(object):
         # self.data = np.array((1 / (1 + np.exp(np.array(-self.data)))))
         return self
 
+    def tanh_(self):
+        """
+            Performs tanh (hyperbolic tangent) function on the Tensor elementwise
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.tanh(self).data
+        # self.data = np.array(np.tanh(np.array(self.data)))
+        return self
+
     def __str__(self):
         return str(self.data)
 
