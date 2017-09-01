@@ -1,6 +1,4 @@
-from syft.he.paillier import PaillierTensor
 from syft.tensor import TensorBase
-from syft.he.paillier.keys import KeyPair
 
 import numpy as np
 
@@ -25,7 +23,7 @@ class LinearClassifier():
         self.n_inputs = n_inputs
         self.n_labels = n_labels
 
-        self.weights = TensorBase(np.zeros((n_inputs,n_labels)))
+        self.weights = TensorBase(np.zeros((n_inputs, n_labels)))
 
         self.pubkey = None
         self.encrypted = False
@@ -66,8 +64,6 @@ class LinearClassifier():
 
         return pred
 
-
-
     def learn(self, input, target, alpha=0.5):
         """Updates weights based on input and target prediction. Note, updating
         weights increases the noise in the encrypted weights and will
@@ -76,7 +72,6 @@ class LinearClassifier():
         TODO: minibatching
         TODO: instead of storing weights, store aggregated weight updates (and
         optionally use them in "forward").
-
         """
 
         weight_update = self.generate_gradient(input, target)
