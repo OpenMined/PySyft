@@ -28,17 +28,37 @@ class AddTests(unittest.TestCase):
 
 
 class CeilTests(unittest.TestCase):
+    def testCeil(self):
+        t = TensorBase(np.array([1.4, 2.7, 6.2]))
+        tdash = t.ceil()
+        self.assertTrue(syft.equal(tdash.data, TensorBase([2, 3, 7])))
+        self.assertTrue(syft.equal(t.data, TensorBase([1.4, 2.7, 6.2])))
+
     def testCeil_(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))
-        t.ceil_()
-        self.assertTrue(syft.equal(t.data, TensorBase([2, 3, 7])))
+        self.assertTrue(syft.equal(t.ceil_(), [2, 3, 7]))
+        self.assertTrue(syft.equal(t.data, [2, 3, 7]))
+
+
+class ZeroTests(unittest.TestCase):
+    def testZero(self):
+        t = TensorBase(np.array([13, 42, 1024]))
+        self.assertTrue(syft.equal(t.zero_(), [0, 0, 0]))
+
+        t = TensorBase(np.array([13.1, 42.2, 1024.4]))
+        self.assertTrue(syft.equal(t.zero_(), [0.0, 0.0, 0.0]))
+
+    def testCeil(self):
+        t = TensorBase(np.array([1.4, 2.7, 6.2]))
+        self.assertTrue(syft.equal(t.ceil(), TensorBase([2, 3, 7])))
+        self.assertTrue(syft.equal(t.data, TensorBase([1.4, 2.7, 6.2])))
 
 
 class FloorTests(unittest.TestCase):
     def testFloor_(self):
         t = TensorBase(np.array([1.4, 2.7, 6.2]))
-        t.floor_()
-        self.assertTrue(syft.equal(t.data, TensorBase([1., 2., 6.])))
+        self.assertTrue(syft.equal(t.floor_(), [1., 2., 6.]))
+        self.assertTrue(syft.equal(t.data, [1., 2., 6.]))
 
 
 class SubTests(unittest.TestCase):
@@ -77,9 +97,13 @@ class DivTests(unittest.TestCase):
         self.assertTrue(syft.equal(t / np.array([2, 2, 2]), [1, 2, 4]))
 
     def testInplace(self):
-        t = TensorBase(np.array([1, 2, 3]))
-        t *= np.array([1, 2, 3])
-        self.assertTrue(syft.equal(t.data, [1, 4, 9]))
+        t = TensorBase(np.array([2, 4, 8]))
+        t /= np.array([2, 2, 2])
+        self.assertTrue(syft.equal(t.data, [1, 2, 4]))
+
+        t = TensorBase(np.array([1, 7, 11]))
+        t /= np.array([3, 2, 9])
+        self.assertTrue(syft.equal(t, [1 / 3, 7 / 2, 11 / 9]))
 
     def testScalar(self):
         t = TensorBase(np.array([2, 4, 6]))
@@ -300,6 +324,46 @@ class baddbmmTests(unittest.TestCase):
                                                  [[122, 184], [28, 42]]]))
 
 
+class transposeTests(unittest.TestCase):
+    def testTranspose(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        out1 = t1.transpose(0, 1)
+        self.assertTrue(np.array_equal(out1.data, [[[3, 4], [7, 8]],
+                                                   [[5, 6], [1, 2]]]))
+        out2 = t1.transpose(0, 2)
+        self.assertTrue(np.array_equal(out2.data, [[[3, 7], [5, 1]],
+                                                   [[4, 8], [6, 2]]]))
+        out3 = t1.transpose(1, 2)
+        self.assertTrue(np.array_equal(out3.data, [[[3, 5], [4, 6]],
+                                                   [[7, 1], [8, 2]]]))
+
+    def testTranspose_(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t1.transpose_(0, 1)
+        self.assertTrue(np.array_equal(t1.data, [[[3, 4], [7, 8]],
+                                                 [[5, 6], [1, 2]]]))
+        t2 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t2.transpose_(0, 2)
+        self.assertTrue(np.array_equal(t2.data, [[[3, 7], [5, 1]],
+                                                 [[4, 8], [6, 2]]]))
+        t3 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t3.transpose_(1, 2)
+        self.assertTrue(np.array_equal(t3.data, [[[3, 5], [4, 6]],
+                                                 [[7, 1], [8, 2]]]))
+
+    def testT(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        out1 = t1.t()
+        self.assertTrue(np.array_equal(out1.data, [[[3, 4], [7, 8]],
+                                                   [[5, 6], [1, 2]]]))
+
+    def testT_(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t1.transpose_(0, 1)
+        self.assertTrue(np.array_equal(t1.data, [[[3, 4], [7, 8]],
+                                                 [[5, 6], [1, 2]]]))
+
+
 class unsqueezeTests(unittest.TestCase):
     def testUnsqueeze(self):
         t1 = TensorBase(np.arange(3 * 4 * 5).reshape((3, 4, 5)))
@@ -405,3 +469,7 @@ class logTests(unittest.TestCase):
     def testLog1p_(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(np.allclose((t1.log1p_()).data, [0.69314718, 1.09861229, 1.38629436]))
+
+
+if __name__ == "__main__":
+    unittest.main()

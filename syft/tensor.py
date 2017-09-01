@@ -67,6 +67,9 @@ class TensorBase(object):
         else:
             return self
 
+    def __len__(self):
+        return len(self.data)
+
     def __add__(self, tensor):
         """Performs element-wise addition between two tensors"""
         if self.encrypted:
@@ -163,8 +166,15 @@ class TensorBase(object):
             return NotImplemented
 
         tensor = _ensure_tensorbase(tensor)
-        self.data /= tensor.data
+        self.data = self.data / tensor.data
         return self
+
+    def __setitem__(self, key, value):
+        if(self.encrypted):
+            return NotImplemented
+        else:
+            self.data[key] = value
+            return self
 
     def __getitem__(self, position):
         """Get value at a specific index."""
@@ -224,19 +234,33 @@ class TensorBase(object):
         else:
             return self.data.sum(axis=dim)
 
+    def ceil(self):
+        """Returns the ceilling of the input tensor elementwise."""
+        if self.encrypted:
+            return NotImplemented
+        return syft.math.ceil(self.data)
+
     def ceil_(self):
         """Returns the ceilling of the input tensor elementwise."""
         if self.encrypted:
             return NotImplemented
-        self.data = syft.math.ceil(self.data)
+        self.data = syft.math.ceil(self.data).data
         return self
 
     def floor_(self):
         """Inplace floor method"""
         if self.encrypted:
             return NotImplemented
-        self.data = syft.math.floor(self.data)
+        self.data = syft.math.floor(self.data).data
         return self
+
+    def zero_(self):
+        """Replaces tensor values with zeros"""
+        if self.encrypted:
+            return NotImplemented
+
+        self.data.fill(0)
+        return self.data
 
     def addmm(self, tensor2, mat, beta=1, alpha=1):
         """Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and  returns the
@@ -417,6 +441,42 @@ class TensorBase(object):
             self.data *= alpha
             self.data += (mat.data * beta)
             return self
+
+    def transpose(self, dim0, dim1):
+        """
+        Returns the transpose along the dimensions in a new Tensor.
+        """
+        return syft.transpose(self.data, dim0, dim1)
+
+    def transpose_(self, dim0, dim1):
+        """
+        Replaces the Tensor with its transpose along the dimensions.
+        """
+        num_dims = len(self.data.shape)
+        axes = list(range(num_dims))
+
+        if dim0 >= num_dims:
+            print("dimension 0 out of range")
+        elif dim1 >= num_dims:
+            print("dimension 1 out of range")
+        elif self.encrypted:
+            raise NotImplemented
+        else:
+            axes[dim0] = dim1
+            axes[dim1] = dim0
+            self.data = np.transpose(self.data, axes=tuple(axes))
+
+    def t(self):
+        """
+        Returns the transpose along dimensions 0, 1 in a new Tensor.
+        """
+        return self.transpose(0, 1)
+
+    def t_(self):
+        """
+        Replaces the Tensor with its transpose along dimensions 0, 1.
+        """
+        self.transpose_(0, 1)
 
     def unsqueeze(self, dim):
         """

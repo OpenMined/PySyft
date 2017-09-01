@@ -169,6 +169,20 @@ class baddbmmTests(unittest.TestCase):
                                                   [[122, 184], [28, 42]]]))
 
 
+class transposeTests(unittest.TestCase):
+    def testTranspose(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        out1 = syft.transpose(t1, 0, 1)
+        self.assertTrue(np.array_equal(out1.data, np.array([[[3, 4], [7, 8]],
+                                                            [[5, 6], [1, 2]]])))
+        out2 = syft.transpose(t1, 0, 2)
+        self.assertTrue(np.array_equal(out2.data, np.array([[[3, 7], [5, 1]],
+                                                            [[4, 8], [6, 2]]])))
+        out3 = syft.transpose(t1, 1, 2)
+        self.assertTrue(np.array_equal(out3.data, np.array([[[3, 5], [4, 6]],
+                                                            [[7, 1], [8, 2]]])))
+
+
 class unsqueezeTests(unittest.TestCase):
     def testUnsqueeze(self):
         t1 = TensorBase(np.arange(3 * 4 * 5).reshape((3, 4, 5)))
@@ -176,4 +190,5 @@ class unsqueezeTests(unittest.TestCase):
             out = syft.unsqueeze(t1, i)
             expected_shape = list(t1.data.shape)
             expected_shape.insert(i, 1)
+
             self.assertTrue(np.array_equal(out.data.shape, expected_shape))
