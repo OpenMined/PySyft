@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import syft
 
@@ -617,7 +618,7 @@ class TensorBase(object):
         self.data = np.random.lognormal(mean, stdev, self.shape())
         return self
 
-    def uniform_(self, low=0, high=1):
+      def uniform_(self, low=0, high=1):
         """Fills the tensor in-place with numbers sampled unifromly
         over the half-open interval [low,high) or from the uniform distribution"""
         if self.encrypted:
@@ -671,3 +672,18 @@ class TensorBase(object):
         else:
             out = np.trace(a=self.data)
         return TensorBase(out)
+
+    def view(self, *args):
+        """View the tensor."""
+        if self.encrypted:
+            return NotImplemented
+        else:
+            dt = np.copy(self.data)
+            return TensorBase(dt.reshape(*args))
+
+    def view_as(self, tensor):
+        """ View as another tensor's shape """
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return self.view(tensor.shape())

@@ -11,6 +11,16 @@ class DimTests(unittest.TestCase):
         t = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(t.dim() == 1)
 
+    def testView(self):
+        t = TensorBase([1.0, 2.0, 3.0])
+        self.assertTrue(syft.equal(t.view(-1, 1), TensorBase(np.array([[1], [2], [3]]))))
+
+    def testAsView(self):
+        t = TensorBase(np.array([1.0, 2.0, 3.0]))
+        t1 = t.view([-1, 1])
+        print(t.data.dtype)
+        self.assertTrue(syft.equal(t.view_as(t1), TensorBase(np.array([[1.0], [2.0], [3.0]]))))
+
 
 class AddTests(unittest.TestCase):
     def testSimple(self):
