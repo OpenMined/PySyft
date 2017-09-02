@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import syft
 
@@ -629,3 +630,18 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.clip(self.data, a_min=minimum, a_max=maximum)
         return self
+
+    def view(self, *args):
+        """View the tensor."""
+        if self.encrypted:
+            return NotImplemented
+        else:
+            dt = np.copy(self.data)
+            return TensorBase(dt.reshape(*args))
+
+    def view_as(self, tensor):
+        """ View as another tensor's shape """
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return self.view(tensor.shape())
