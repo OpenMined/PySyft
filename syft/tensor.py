@@ -617,8 +617,8 @@ class TensorBase(object):
         self.data = np.random.lognormal(mean, stdev, self.shape())
         return self
 
-    def  uniform_(self, low=0, high=1):
-        """Fills the tensor in-place with numbers sampled unifromly 
+    def uniform_(self, low=0, high=1):
+        """Fills the tensor in-place with numbers sampled unifromly
         over the half-open interval [low,high) or from the uniform distribution"""
         if self.encrypted:
             return NotImplemented
@@ -626,7 +626,7 @@ class TensorBase(object):
         return self
 
     def uniform(self, low=0, high=1):
-        """Returns a new tensor filled with numbers sampled unifromly 
+        """Returns a new tensor filled with numbers sampled unifromly
         over the half-open interval [low,high) or from the uniform distribution"""
         if self.encrypted:
             return NotImplemented
@@ -654,15 +654,15 @@ class TensorBase(object):
         out_sort = np.sort(self.data)
         if self.data.ndim > 1:
             out = np.partition(out_sort, kth=k)
-            out = out[:,-k:] if largest else out[:,:k]
+            out = out[:, -k:] if largest else out[:, :k]
         else:
             out = np.partition(out_sort, kth=k)
             out = out[-k:] if largest else out[:k]
         return TensorBase(out)
 
     def trace(self, axis1=None, axis2=None):
-        """Returns a new tenosr with the sum along diagonals of a 2D tensor. 
-           Axis1 and Axis2 are used to extract 2D subarray for sum calculation 
+        """Returns a new tenosr with the sum along diagonals of a 2D tensor.
+           Axis1 and Axis2 are used to extract 2D subarray for sum calculation
            along diagonals, if tensor has more than two dimensions. """
         if self.encrypted:
             return NotImplemented
