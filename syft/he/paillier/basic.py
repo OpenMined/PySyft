@@ -35,7 +35,7 @@ class PaillierTensor(TensorBase):
         return PaillierTensor(self.public_key, self.data + tensor.data, False)
 
     def __sub__(self, tensor):
-        """Performs element-wise addition between two tensors"""
+        """Performs element-wise subtraction between two tensors"""
 
         if(not isinstance(tensor, TensorBase)):
             # try encrypting it
@@ -48,12 +48,12 @@ class PaillierTensor(TensorBase):
         return PaillierTensor(self.public_key, self.data - tensor.data, False)
 
     def __isub__(self, tensor):
-        """Performs element-wise addition between two tensors"""
+        """Performs inline, element-wise subtraction between two tensors"""
         self.data -= tensor.data
         return self
 
     def __mul__(self, tensor):
-        """Performs element-wise addition between two tensors"""
+        """Performs element-wise multiplication between two tensors"""
 
         if(isinstance(tensor, TensorBase)):
             if(not tensor.encrypted):
@@ -64,6 +64,19 @@ class PaillierTensor(TensorBase):
                 return NotImplemented
         else:
             return PaillierTensor(self.public_key, self.data * float(tensor), False)
+
+    def __truediv__(self, tensor):
+        """Performs element-wise division between two tensors"""
+
+        if(isinstance(tensor, TensorBase)):
+            if(not tensor.encrypted):
+                result = self.data * (1 / tensor.data)
+                o = PaillierTensor(self.public_key, result, False)
+                return o
+            else:
+                return NotImplemented
+        else:
+            return PaillierTensor(self.public_key, self.data * (1 / float(tensor)), False)
 
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
