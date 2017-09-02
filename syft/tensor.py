@@ -621,6 +621,19 @@ class TensorBase(object):
         self.data = np.random.lognormal(mean, stdev, self.shape())
         return self
 
+    def clamp(self, minimum=None, maximum=None):
+        """Returns a clamped tensor into the range [min, max], elementwise"""
+        if self.encrypted:
+            return NotImplemented
+        return TensorBase(np.clip(self.data, a_min=minimum, a_max=maximum))
+
+    def clamp_(self, minimum=None, maximum=None):
+        """Clamp the tensor, in-place, elementwise into the range [min, max]"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.clip(self.data, a_min=minimum, a_max=maximum)
+        return self
+
     def uniform_(self, low=0, high=1):
         """Fills the tensor in-place with numbers sampled unifromly
         over the half-open interval [low,high) or from the uniform distribution"""
