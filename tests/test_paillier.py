@@ -122,3 +122,32 @@ class MulTests(unittest.TestCase):
 
         x *= 2
         self.assertTrue(s.decrypt(x) == np.array([2., 4., 6., 8., 10.]))
+
+class DivTests(unittest.TestCase):
+
+    def testBasic(self):
+        p, s = KeyPair().generate()
+
+        x = PaillierTensor(p, np.array([3., 8., 15., 24., 35.]))
+        x2 = TensorBase(np.array([3, 4, 5, 6, 7.]))
+
+        y = x / x2
+        print(y.decrypt(s))
+        self.assertTrue(y.decrypt(s) == np.array([1., 2., 3., 4., 5.]))
+
+    def testInline(self):
+        p, s = KeyPair().generate()
+
+        x = PaillierTensor(p, np.array([3., 8., 15., 24., 35.]))
+        x2 = TensorBase(np.array([3, 4, 5, 6, 7.]))
+
+        x /= x2
+        self.assertTrue(x.decrypt(s) == np.array([1., 2., 3., 4., 5.]))
+
+    def testScalar(self):
+        p, s = KeyPair().generate()
+
+        x = PaillierTensor(p, np.array([2., 4., 6., 8., 10.]))
+
+        x /= 2
+        self.assertTrue(s.decrypt(x) == np.array([1, 2, 3, 4, 5.]))

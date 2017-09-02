@@ -65,6 +65,19 @@ class PaillierTensor(TensorBase):
         else:
             return PaillierTensor(self.public_key, self.data * float(tensor), False)
 
+    def __truediv__(self, tensor):
+        """Performs element-wise addition between two tensors"""
+
+        if(isinstance(tensor, TensorBase)):
+            if(not tensor.encrypted):
+                result = self.data * (1 / tensor.data)
+                o = PaillierTensor(self.public_key, result, False)
+                return o
+            else:
+                return NotImplemented
+        else:
+            return PaillierTensor(self.public_key, self.data * (1 / float(tensor)), False)
+
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
         if not self.encrypted:
