@@ -88,16 +88,16 @@ class SubTests(unittest.TestCase):
 
 class MaxTests(unittest.TestCase):
     def testNoDim(self):
-        t = TensorBase(np.array([[ 0.77937768,  0.51022484,  0.49155195,  0.02769902],[ 0.03777148,  0.13020167,  0.02155692,  0.69574893]]))
-        self.assertTrue(t.max() ==  0.77937768)
-
-    def testDim(self):
         t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
-        result = t.max(dim = 1)
+        self.assertTrue(t.max() == 0.77937768)
+
+    def testAxis(self):
+        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
+        result = t.max(axis=1)
         self.assertTrue(syft.equal(result, [0.77937768, 0.69574893]))
-        result = t.max(dim=0)
+        result = t.max(axis=0)
         self.assertTrue(syft.equal(result, [0.77937768, 0.51022484, 0.49155195, 0.69574893]))
-        
+
 
 class MultTests(unittest.TestCase):
     def testSimple(self):
