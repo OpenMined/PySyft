@@ -158,8 +158,11 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        return TensorBase(self.data / tensor.data)
+        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            return NotImplemented  # it's not clear that this can be done
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            return TensorBase(self.data / tensor.data)
 
     def __itruediv__(self, tensor):
         """Performs in place element-wise subtraction between two tensors"""
