@@ -1,6 +1,6 @@
 # Syft
 
-[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/)
+[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
 [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=master)](https://travis-ci.org/OpenMined/PySyft)
 
 > Homomorphically Encrypted Deep Learning Library
@@ -20,6 +20,8 @@ The goal of this library is to give the user the ability to efficiently train De
 ## Setup
 
 ### Prerequisites
+
+Install base libraries first - https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries
 
 You need to install this library locally before running any of the notebooks this repository or the [main demonstration](https://github.com/OpenMined/sonar):
 
