@@ -264,6 +264,27 @@ def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
         return TensorBase(out)
 
 
+def transpose(tensor1, dim0, dim1):
+    """
+    Performs tensor transpose operation, tranposing dim0 and dim1.
+    Returns a tranposed TensorBase.
+    """
+    tensor1 = _ensure_tensorbase(tensor1)
+    num_dims = len(tensor1.data.shape)
+    axes = list(range(num_dims))
+
+    if dim0 >= num_dims:
+        print("dimension 0 out of range")
+    elif dim1 >= num_dims:
+        print("dimension 1 out of range")
+    elif tensor1.encrypted:
+        raise NotImplemented
+    else:
+        axes[dim0] = dim1
+        axes[dim1] = dim0
+        return TensorBase(np.transpose(tensor1.data, axes=axes))
+
+
 def unsqueeze(tensor1, dim):
     """
     Performs 'unsqueeze' operation, returning a new tensor with a dimension
