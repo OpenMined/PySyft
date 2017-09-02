@@ -558,7 +558,7 @@ class powTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 4, 6]))
         t2 = t1.pow(2)
         self.assertTrue(np.array_equal(t2.data, np.array([4, 16, 36])))
-        
+
     def testPow_(self):
         t1 = TensorBase(np.array([2, 4, 6]))
         t1.pow_(2)
@@ -584,7 +584,7 @@ class nonzeroTests(unittest.TestCase):
     def testNonZero(self):
         t1 = TensorBase(np.array([[1, 0, 0], [0, 2, 5]]))
         t2 = t1.nonzero()
-        self.assertTrue(np.array_equal(t2.data, np.array([[0, 1, 1],[0, 1, 2]])))
+        self.assertTrue(np.array_equal(t2.data, np.array([[0, 1, 1], [0, 1, 2]])))
 
 
 if __name__ == "__main__":

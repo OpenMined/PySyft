@@ -726,8 +726,8 @@ class TensorBase(object):
         return TensorBase(out)
 
     def pow(self, exponent):
-        """Return a new tensor by raising elements to the given exponent. 
-        If exponent is an array, each element of the tensor is raised positionally to the 
+        """Return a new tensor by raising elements to the given exponent.
+        If exponent is an array, each element of the tensor is raised positionally to the
         element of the exponent"""
         if self.encrypted:
             return NotImplemented
@@ -735,7 +735,7 @@ class TensorBase(object):
         return TensorBase(out)
 
     def pow_(self, exponent):
-        """Raise elements to the given exponent in-place. If exponent is an array, 
+        """Raise elements to the given exponent in-place. If exponent is an array,
         each element of the tensor is raised positionally to the element of the exponent"""
         if self.encrypted:
             return NotImplemented
