@@ -534,5 +534,58 @@ class traceTests(unittest.TestCase):
         self.assertTrue(np.equal(t1.trace().data, 15))
 
 
+class roundTests(unittest.TestCase):
+    def testRound(self):
+        t1 = TensorBase(np.array([10.4, 9.6, 100.12, 4.0]))
+        t2 = t1.round(0)
+        self.assertTrue(np.array_equal(t2.data, np.array([10., 10., 100., 4.])))
+
+    def testRound_(self):
+        t1 = TensorBase(np.array([10.4, 9.6, 100.12, 4.0]))
+        t1.round_(0)
+        self.assertTrue(np.array_equal(t1.data, np.array([10., 10., 100., 4.])))
+
+
+class repeatTests(unittest.TestCase):
+    def testRepeat(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = t1.repeat(reps=(4, 2))
+        self.assertTrue(np.array_equal(t2.data, np.array([[1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3]])))
+
+
+class powTests(unittest.TestCase):
+    def testPow(self):
+        t1 = TensorBase(np.array([2, 4, 6]))
+        t2 = t1.pow(2)
+        self.assertTrue(np.array_equal(t2.data, np.array([4, 16, 36])))
+        
+    def testPow_(self):
+        t1 = TensorBase(np.array([2, 4, 6]))
+        t1.pow_(2)
+        self.assertTrue(np.array_equal(t1.data, np.array([4, 16, 36])))
+
+
+class prodTests(unittest.TestCase):
+    def testProd(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = t1.prod()
+        self.assertTrue(np.equal(t2.data, 6))
+
+
+class randomTests(unittest.TestCase):
+    def testRandom_(self):
+        np.random.seed(0)
+        t1 = TensorBase(np.zeros(4))
+        t1.random_(low=0, high=5, size=4)
+        self.assertTrue(np.array_equal(t1.data, np.array([4, 0, 3, 3])))
+
+
+class nonzeroTests(unittest.TestCase):
+    def testNonZero(self):
+        t1 = TensorBase(np.array([[1, 0, 0], [0, 2, 5]]))
+        t2 = t1.nonzero()
+        self.assertTrue(np.array_equal(t2.data, np.array([[0, 1, 1],[0, 1, 2]])))
+
+
 if __name__ == "__main__":
     unittest.main()
