@@ -123,6 +123,7 @@ class MulTests(unittest.TestCase):
         x *= 2
         self.assertTrue(s.decrypt(x) == np.array([2., 4., 6., 8., 10.]))
 
+
 class DivTests(unittest.TestCase):
 
     def testBasic(self):
