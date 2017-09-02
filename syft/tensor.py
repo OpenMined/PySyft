@@ -224,6 +224,12 @@ class TensorBase(object):
         else:
             return self.data.sum(axis=dim)
 
+    def ceil(self):
+        """Returns the ceilling of the input tensor elementwise."""
+        if self.encrypted:
+            return NotImplemented
+        return syft.math.ceil(self.data)
+
     def ceil_(self):
         """Returns the ceilling of the input tensor elementwise."""
         if self.encrypted:
