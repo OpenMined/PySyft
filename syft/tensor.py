@@ -618,7 +618,7 @@ class TensorBase(object):
         self.data = np.random.lognormal(mean, stdev, self.shape())
         return self
 
-      def uniform_(self, low=0, high=1):
+    def uniform_(self, low=0, high=1):
         """Fills the tensor in-place with numbers sampled unifromly
         over the half-open interval [low,high) or from the uniform distribution"""
         if self.encrypted:
