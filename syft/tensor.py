@@ -703,3 +703,10 @@ class TensorBase(object):
             return NotImplemented
         else:
             return self.view(tensor.shape())
+
+    def size(self):
+        """Size of tensor"""
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return self.data.size
