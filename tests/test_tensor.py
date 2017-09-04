@@ -625,9 +625,10 @@ class splitTests(unittest.TestCase):
 
 class squeezeTests(unittest.TestCase):
     def testSqueeze(self):
-        t1 = TensorBase(np.zeros((2,1,2,1,2)))
+        t1 = TensorBase(np.zeros((2, 1, 2, 1, 2)))
         t2 = t1.squeeze()
         self.assertTrue(np.array_equal(t2.data, np.array([[[0., 0.], [0., 0.]], [[0., 0.], [0., 0.]]])))
+
 
 if __name__ == "__main__":
     unittest.main()
