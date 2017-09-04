@@ -32,6 +32,11 @@ class DimTests(unittest.TestCase):
         t.resize_as_(t2)
         self.assertEqual(t.data.shape, (2, 1))
 
+    def testSize(self):
+        t = TensorBase([1, 2, 3])
+        t1 = TensorBase([1.0, 2.0, 3.0])
+        self.assertEqual(t.size(), t1.size())
+
 
 class AddTests(unittest.TestCase):
     def testSimple(self):
@@ -69,11 +74,6 @@ class ZeroTests(unittest.TestCase):
         t = TensorBase(np.array([13.1, 42.2, 1024.4]))
         self.assertTrue(syft.equal(t.zero_(), [0.0, 0.0, 0.0]))
 
-    def testCeil(self):
-        t = TensorBase(np.array([1.4, 2.7, 6.2]))
-        self.assertTrue(syft.equal(t.ceil(), TensorBase([2, 3, 7])))
-        self.assertTrue(syft.equal(t.data, TensorBase([1.4, 2.7, 6.2])))
-
 
 class FloorTests(unittest.TestCase):
     def testFloor_(self):
@@ -95,6 +95,19 @@ class SubTests(unittest.TestCase):
     def testScalar(self):
         t = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(syft.equal(t - 1, [0, 1, 2]))
+
+
+class MaxTests(unittest.TestCase):
+    def testNoDim(self):
+        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
+        self.assertTrue(t.max() == 0.77937768)
+
+    def testAxis(self):
+        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
+        result = t.max(axis=1)
+        self.assertTrue(syft.equal(result, [0.77937768, 0.69574893]))
+        result = t.max(axis=0)
+        self.assertTrue(syft.equal(result, [0.77937768, 0.51022484, 0.49155195, 0.69574893]))
 
 
 class MultTests(unittest.TestCase):
@@ -506,6 +519,22 @@ class clampTests(unittest.TestCase):
         self.assertEqual(t1, expected_tensor)
 
 
+class bernoulliTests(unittest.TestCase):
+    def testBernoulli(self):
+        p = TensorBase(np.random.uniform(size=(3, 2)))
+        t1 = TensorBase(np.zeros((5, 5)))
+        t2 = t1.bernoulli(p)
+        self.assertTupleEqual((3, 2), t2.shape())
+        self.assertTrue(np.all(t2.data >= 0) and np.all(t2.data <= 1))
+
+    def testBernoulli_(self):
+        p = TensorBase(np.random.uniform(size=(3, 2)))
+        t1 = TensorBase(np.zeros((5, 5)))
+        t1.bernoulli_(p)
+        self.assertTupleEqual((3, 2), t1.shape())
+        self.assertTrue(np.all(t1.data >= 0) and np.all(t1.data <= 1))
+
+
 class uniformTests(unittest.TestCase):
     def testUniform(self):
         t1 = TensorBase(np.zeros(4))
@@ -543,6 +572,59 @@ class traceTests(unittest.TestCase):
     def testTrace(self):
         t1 = TensorBase(np.arange(1, 10).reshape(3, 3))
         self.assertTrue(np.equal(t1.trace().data, 15))
+
+
+class roundTests(unittest.TestCase):
+    def testRound(self):
+        t1 = TensorBase(np.array([10.4, 9.6, 100.12, 4.0]))
+        t2 = t1.round(0)
+        self.assertTrue(np.array_equal(t2.data, np.array([10., 10., 100., 4.])))
+
+    def testRound_(self):
+        t1 = TensorBase(np.array([10.4, 9.6, 100.12, 4.0]))
+        t1.round_(0)
+        self.assertTrue(np.array_equal(t1.data, np.array([10., 10., 100., 4.])))
+
+
+class repeatTests(unittest.TestCase):
+    def testRepeat(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = t1.repeat(reps=(4, 2))
+        self.assertTrue(np.array_equal(t2.data, np.array([[1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3]])))
+
+
+class powTests(unittest.TestCase):
+    def testPow(self):
+        t1 = TensorBase(np.array([2, 4, 6]))
+        t2 = t1.pow(2)
+        self.assertTrue(np.array_equal(t2.data, np.array([4, 16, 36])))
+
+    def testPow_(self):
+        t1 = TensorBase(np.array([2, 4, 6]))
+        t1.pow_(2)
+        self.assertTrue(np.array_equal(t1.data, np.array([4, 16, 36])))
+
+
+class prodTests(unittest.TestCase):
+    def testProd(self):
+        t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = t1.prod()
+        self.assertTrue(np.equal(t2.data, 6))
+
+
+class randomTests(unittest.TestCase):
+    def testRandom_(self):
+        np.random.seed(0)
+        t1 = TensorBase(np.zeros(4))
+        t1.random_(low=0, high=5, size=4)
+        self.assertTrue(np.array_equal(t1.data, np.array([4, 0, 3, 3])))
+
+
+class nonzeroTests(unittest.TestCase):
+    def testNonZero(self):
+        t1 = TensorBase(np.array([[1, 0, 0], [0, 2, 5]]))
+        t2 = t1.nonzero()
+        self.assertTrue(np.array_equal(t2.data, np.array([[0, 1, 1], [0, 1, 2]])))
 
 
 if __name__ == "__main__":
