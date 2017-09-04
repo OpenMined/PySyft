@@ -630,5 +630,13 @@ class squeezeTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t2.data, np.array([[[0., 0.], [0., 0.]], [[0., 0.], [0., 0.]]])))
 
 
+class expandAsTests(unittest.TestCase):
+    def testExpandAs(self):
+        t1 = TensorBase(np.array([[1], [2], [3]]))
+        t2 = TensorBase(np.zeros((3, 4)))
+        t3 = t1.expand_as(t2)
+        self.assertTrue(np.array_equal(t2.data.shape, t3.data.shape))
+
+
 if __name__ == "__main__":
     unittest.main()

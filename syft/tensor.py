@@ -825,3 +825,14 @@ class TensorBase(object):
             return NotImplemented
         out = np.squeeze(self.data, axis=axis)
         return TensorBase(out)
+
+    def expand_as(self, tensor):
+        """Returns a new tensor with the expanded size as of the specified (input) tensor"""
+        if self.encrypted:
+            return NotImplemented
+        shape = tensor.data.shape
+        neg_shapes = np.where(shape == -1)[0]
+        if len(neg_shapes) > 1:
+            shape[neg_shapes] = self.data.shape[neg_shapes]
+        out = np.broadcast_to(self.data, shape)
+        return TensorBase(out)
