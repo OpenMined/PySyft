@@ -446,6 +446,17 @@ class TensorBase(object):
             self.data += (mat.data * beta)
             return self
 
+    def max(self, axis=None):
+        """ If axis is not specified, finds the largest element in the tensor. Otherwise, reduces along the specified axis.
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if axis is None:
+            return _ensure_tensorbase(np.max(self.data))
+
+        return _ensure_tensorbase(np.max(self.data, axis))
+
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
@@ -762,3 +773,10 @@ class TensorBase(object):
             return NotImplemented
         out = np.array(np.nonzero(self.data))
         return TensorBase(out)
+
+    def size(self):
+        """Size of tensor"""
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return self.data.size
