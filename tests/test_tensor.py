@@ -21,6 +21,11 @@ class DimTests(unittest.TestCase):
         print(t.data.dtype)
         self.assertTrue(syft.equal(t.view_as(t1), TensorBase(np.array([[1.0], [2.0], [3.0]]))))
 
+    def testSize(self):
+        t = TensorBase([1, 2, 3])
+        t1 = TensorBase([1.0, 2.0, 3.0])
+        self.assertEqual(t.size(), t1.size())
+
 
 class AddTests(unittest.TestCase):
     def testSimple(self):
