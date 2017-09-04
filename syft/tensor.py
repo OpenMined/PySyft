@@ -645,6 +645,33 @@ class TensorBase(object):
         self.data = np.clip(self.data, a_min=minimum, a_max=maximum)
         return self
 
+    def bernoulli(self, p):
+        """
+        Returns a Tensor filled with binary random numbers (0 or 1) from a bernoulli distribution
+        with probability and shape specified by p(arr_like).
+
+        The p Tensor should be a tensor containing probabilities to be used for drawing the
+        binary random number. Hence, all values in p have to be in the range: 0<=p<=1
+        """
+        if self.encrypted:
+            return NotImplemented
+        p = _ensure_tensorbase(p)
+        return TensorBase(np.random.binomial(1, p.data))
+
+    def bernoulli_(self, p):
+        """
+        Fills the Tensor in-place with binary random numbers (0 or 1) from a bernoulli distribution
+        with probability and shape specified by p(arr_like)
+
+        The p Tensor should be a tensor containing probabilities to be used for drawing the
+        binary random number. Hence, all values in p have to be in the range: 0<=p<=1
+        """
+        if self.encrypted:
+            return NotImplemented
+        p = _ensure_tensorbase(p)
+        self.data = np.random.binomial(1, p.data)
+        return self
+
     def uniform_(self, low=0, high=1):
         """Fills the tensor in-place with numbers sampled unifromly
         over the half-open interval [low,high) or from the uniform distribution"""

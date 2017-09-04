@@ -508,6 +508,22 @@ class clampTests(unittest.TestCase):
         self.assertEqual(t1, expected_tensor)
 
 
+class bernoulliTests(unittest.TestCase):
+    def testBernoulli(self):
+        p = TensorBase(np.random.uniform(size=(3, 2)))
+        t1 = TensorBase(np.zeros((5, 5)))
+        t2 = t1.bernoulli(p)
+        self.assertTupleEqual((3, 2), t2.shape())
+        self.assertTrue(np.all(t2.data >= 0) and np.all(t2.data <= 1))
+
+    def testBernoulli_(self):
+        p = TensorBase(np.random.uniform(size=(3, 2)))
+        t1 = TensorBase(np.zeros((5, 5)))
+        t1.bernoulli_(p)
+        self.assertTupleEqual((3, 2), t1.shape())
+        self.assertTrue(np.all(t1.data >= 0) and np.all(t1.data <= 1))
+
+
 class uniformTests(unittest.TestCase):
     def testUniform(self):
         t1 = TensorBase(np.zeros(4))
