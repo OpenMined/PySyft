@@ -63,11 +63,6 @@ class ZeroTests(unittest.TestCase):
         t = TensorBase(np.array([13.1, 42.2, 1024.4]))
         self.assertTrue(syft.equal(t.zero_(), [0.0, 0.0, 0.0]))
 
-    def testCeil(self):
-        t = TensorBase(np.array([1.4, 2.7, 6.2]))
-        self.assertTrue(syft.equal(t.ceil(), TensorBase([2, 3, 7])))
-        self.assertTrue(syft.equal(t.data, TensorBase([1.4, 2.7, 6.2])))
-
 
 class FloorTests(unittest.TestCase):
     def testFloor_(self):
