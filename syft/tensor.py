@@ -446,6 +446,17 @@ class TensorBase(object):
             self.data += (mat.data * beta)
             return self
 
+    def max(self, axis=None):
+        """ If axis is not specified, finds the largest element in the tensor. Otherwise, reduces along the specified axis.
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if axis is None:
+            return _ensure_tensorbase(np.max(self.data))
+
+        return _ensure_tensorbase(np.max(self.data, axis))
+
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
@@ -730,3 +741,69 @@ class TensorBase(object):
             return NotImplemented
         else:
             return self.view(tensor.shape())
+
+    def round(self, decimals=0):
+        """Returns a new tensor with elements rounded off to a nearest decimal place"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.round(self.data, decimals=decimals)
+        return TensorBase(out)
+
+    def round_(self, decimals=0):
+        """Round the elements of tensor in-place to a nearest decimal place"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.round(self.data, decimals=decimals)
+        return self
+
+    def repeat(self, reps):
+        """Return a new tensor by repeating the values given by reps"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.tile(self.data, reps=reps)
+        return TensorBase(out)
+
+    def pow(self, exponent):
+        """Return a new tensor by raising elements to the given exponent.
+        If exponent is an array, each element of the tensor is raised positionally to the
+        element of the exponent"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.power(self.data, exponent)
+        return TensorBase(out)
+
+    def pow_(self, exponent):
+        """Raise elements to the given exponent in-place. If exponent is an array,
+        each element of the tensor is raised positionally to the element of the exponent"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.power(self.data, exponent)
+        return self
+
+    def prod(self, axis=None):
+        """Returns a new tensor with the product of (specified axis) all the elements"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.prod(self.data, axis=axis)
+        return TensorBase(out)
+
+    def random_(self, low, high=None, size=None):
+        """Fill the tensor in-place with random integers from [low to high)"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.random.randint(low=low, high=high, size=size)
+        return self
+
+    def nonzero(self):
+        """Returns a new tensor with the indices of non-zero elements"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.array(np.nonzero(self.data))
+        return TensorBase(out)
+
+    def size(self):
+        """Size of tensor"""
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return self.data.size
