@@ -457,6 +457,19 @@ class TensorBase(object):
 
         return _ensure_tensorbase(np.max(self.data, axis))
 
+    def permute(self, dims):
+        """
+        Permute the dimensions of this tensor.
+        Parameters:	*dims (int...) – The desired ordering of dimensions
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if dims is None:
+            raise ValueError("dims cannot be none")
+
+        return _ensure_tensorbase(np.transpose(self.data, dims))
+
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
