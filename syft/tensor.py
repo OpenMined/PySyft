@@ -807,3 +807,21 @@ class TensorBase(object):
             return NotImplemented
         else:
             return self.data.size
+        
+    def split(self, split_size, dim=0):
+        """Returns tuple of tensors of equally sized tensor/chunks (if possible)"""
+        if self.encrypted:
+            return NotImplemented
+        splits = np.array_split(self.data, split_size, axis=0)
+        tensors = list()
+        for s in splits: 
+            tensors.append(TensorBase(s))
+        tensors_tuple = tuple(tensors)
+        return tensors_tuple
+    
+    def squeeze(self, axis=None):
+        """Returns a new tensor with all the single-dimensional entries removed"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.squeeze(self.data, axis=axis)
+        return TensorBase(out)
