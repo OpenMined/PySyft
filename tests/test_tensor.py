@@ -647,5 +647,27 @@ class nonzeroTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t2.data, np.array([[0, 1, 1], [0, 1, 2]])))
 
 
+class splitTests(unittest.TestCase):
+    def testSplit(self):
+        t1 = TensorBase(np.arange(8.0))
+        t2 = t1.split(4)
+        self.assertTrue(np.array_equal(t2, tuple((np.array([0., 1.]), np.array([2., 3.]), np.array([4., 5.]), np.array([6., 7.])))))
+
+
+class squeezeTests(unittest.TestCase):
+    def testSqueeze(self):
+        t1 = TensorBase(np.zeros((2, 1, 2, 1, 2)))
+        t2 = t1.squeeze()
+        self.assertTrue(np.array_equal(t2.data, np.array([[[0., 0.], [0., 0.]], [[0., 0.], [0., 0.]]])))
+
+
+class expandAsTests(unittest.TestCase):
+    def testExpandAs(self):
+        t1 = TensorBase(np.array([[1], [2], [3]]))
+        t2 = TensorBase(np.zeros((3, 4)))
+        t3 = t1.expand_as(t2)
+        self.assertTrue(np.array_equal(t2.data.shape, t3.data.shape))
+
+
 if __name__ == "__main__":
     unittest.main()
