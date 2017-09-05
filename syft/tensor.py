@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import syft
 
@@ -157,8 +158,11 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        return TensorBase(self.data / tensor.data)
+        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            return NotImplemented  # it's not clear that this can be done
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            return TensorBase(self.data / tensor.data)
 
     def __itruediv__(self, tensor):
         """Performs in place element-wise subtraction between two tensors"""
@@ -442,6 +446,30 @@ class TensorBase(object):
             self.data += (mat.data * beta)
             return self
 
+    def max(self, axis=None):
+        """ If axis is not specified, finds the largest element in the tensor. Otherwise, reduces along the specified axis.
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if axis is None:
+            return _ensure_tensorbase(np.max(self.data))
+
+        return _ensure_tensorbase(np.max(self.data, axis))
+
+    def permute(self, dims):
+        """
+        Permute the dimensions of this tensor.
+        Parameters:	*dims (int...) – The desired ordering of dimensions
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if dims is None:
+            raise ValueError("dims cannot be none")
+
+        return _ensure_tensorbase(np.transpose(self.data, dims))
+
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
@@ -570,6 +598,19 @@ class TensorBase(object):
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
 
+    def sign(self):
+        """Return a tensor that contains sign of each element """
+        if self.encrypted:
+            return NotImplemented
+        out = np.sign(self.data)
+        return TensorBase(out)
+
+    def sign_(self):
+        """Computes the sign of each element of the Tensor inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.sign(self.data)
+
     def to_numpy(self):
         """Returns the tensor as numpy.ndarray"""
         if self.encrypted:
@@ -626,3 +667,232 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.random.lognormal(mean, stdev, self.shape())
         return self
+
+    def clamp(self, minimum=None, maximum=None):
+        """Returns a clamped tensor into the range [min, max], elementwise"""
+        if self.encrypted:
+            return NotImplemented
+        return TensorBase(np.clip(self.data, a_min=minimum, a_max=maximum))
+
+    def clamp_(self, minimum=None, maximum=None):
+        """Clamp the tensor, in-place, elementwise into the range [min, max]"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.clip(self.data, a_min=minimum, a_max=maximum)
+        return self
+
+    def bernoulli(self, p):
+        """
+        Returns a Tensor filled with binary random numbers (0 or 1) from a bernoulli distribution
+        with probability and shape specified by p(arr_like).
+
+        The p Tensor should be a tensor containing probabilities to be used for drawing the
+        binary random number. Hence, all values in p have to be in the range: 0<=p<=1
+        """
+        if self.encrypted:
+            return NotImplemented
+        p = _ensure_tensorbase(p)
+        return TensorBase(np.random.binomial(1, p.data))
+
+    def bernoulli_(self, p):
+        """
+        Fills the Tensor in-place with binary random numbers (0 or 1) from a bernoulli distribution
+        with probability and shape specified by p(arr_like)
+
+        The p Tensor should be a tensor containing probabilities to be used for drawing the
+        binary random number. Hence, all values in p have to be in the range: 0<=p<=1
+        """
+        if self.encrypted:
+            return NotImplemented
+        p = _ensure_tensorbase(p)
+        self.data = np.random.binomial(1, p.data)
+        return self
+
+    def uniform_(self, low=0, high=1):
+        """Fills the tensor in-place with numbers sampled unifromly
+        over the half-open interval [low,high) or from the uniform distribution"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.random.uniform(low=low, high=high, size=self.shape())
+        return self
+
+    def uniform(self, low=0, high=1):
+        """Returns a new tensor filled with numbers sampled unifromly
+        over the half-open interval [low,high) or from the uniform distribution"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.random.uniform(low=low, high=high, size=self.shape())
+        return TensorBase(out)
+
+    def fill_(self, value):
+        """Fills the tensor in-place with the specified value"""
+        if self.encrypted:
+            return NotImplemented
+        self.data.fill(value)
+        return self
+
+    def tolist(self):
+        """Returns a new tensor as (possibly a nested) list"""
+        if self.encrypted:
+            return NotImplemented
+        out = self.data.tolist()
+        return out
+
+    def topk(self, k, largest=True):
+        """Returns a new tensor with the sorted k largest (or smallest) values"""
+        if self.encrypted:
+            return NotImplemented
+        out_sort = np.sort(self.data)
+        if self.data.ndim > 1:
+            out = np.partition(out_sort, kth=k)
+            out = out[:, -k:] if largest else out[:, :k]
+        else:
+            out = np.partition(out_sort, kth=k)
+            out = out[-k:] if largest else out[:k]
+        return TensorBase(out)
+
+    def trace(self, axis1=None, axis2=None):
+        """Returns a new tenosr with the sum along diagonals of a 2D tensor.
+           Axis1 and Axis2 are used to extract 2D subarray for sum calculation
+           along diagonals, if tensor has more than two dimensions. """
+        if self.encrypted:
+            return NotImplemented
+        if axis1 is not None and axis2 is not None and self.data.ndim > 2:
+            out = np.trace(a=self.data, axis1=axis1, axis2=axis2)
+        else:
+            out = np.trace(a=self.data)
+        return TensorBase(out)
+
+    def view(self, *args):
+        """View the tensor."""
+        if self.encrypted:
+            return NotImplemented
+        else:
+            dt = np.copy(self.data)
+            return TensorBase(dt.reshape(*args))
+
+    def view_as(self, tensor):
+        """ View as another tensor's shape """
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return self.view(tensor.shape())
+
+    def resize_(self, *size):
+        input_size = np.prod(size)
+        extension = input_size - self.data.size
+        flattened = self.data.flatten()
+        if input_size >= 0:
+            if extension > 0:
+                data = np.append(flattened, np.zeros(extension))
+                self.data = data.reshape(*size)
+                print(self.data)
+            elif extension < 0:
+                size_ = self.data.size + extension
+                self.data = flattened[:size_]
+                self.data = self.data.reshape(*size)
+                print(self.data)
+            else:
+                self.data = self.data.reshape(*size)
+                print(self.data)
+        else:
+            raise ValueError('negative dimension not allowed')
+
+    def resize_as_(self, tensor):
+        size = tensor.data.shape
+        self.resize_(size)
+
+    def round(self, decimals=0):
+        """Returns a new tensor with elements rounded off to a nearest decimal place"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.round(self.data, decimals=decimals)
+        return TensorBase(out)
+
+    def round_(self, decimals=0):
+        """Round the elements of tensor in-place to a nearest decimal place"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.round(self.data, decimals=decimals)
+        return self
+
+    def repeat(self, reps):
+        """Return a new tensor by repeating the values given by reps"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.tile(self.data, reps=reps)
+        return TensorBase(out)
+
+    def pow(self, exponent):
+        """Return a new tensor by raising elements to the given exponent.
+        If exponent is an array, each element of the tensor is raised positionally to the
+        element of the exponent"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.power(self.data, exponent)
+        return TensorBase(out)
+
+    def pow_(self, exponent):
+        """Raise elements to the given exponent in-place. If exponent is an array,
+        each element of the tensor is raised positionally to the element of the exponent"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.power(self.data, exponent)
+        return self
+
+    def prod(self, axis=None):
+        """Returns a new tensor with the product of (specified axis) all the elements"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.prod(self.data, axis=axis)
+        return TensorBase(out)
+
+    def random_(self, low, high=None, size=None):
+        """Fill the tensor in-place with random integers from [low to high)"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.random.randint(low=low, high=high, size=size)
+        return self
+
+    def nonzero(self):
+        """Returns a new tensor with the indices of non-zero elements"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.array(np.nonzero(self.data))
+        return TensorBase(out)
+
+    def size(self):
+        """Size of tensor"""
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return self.data.size
+
+    def split(self, split_size, dim=0):
+        """Returns tuple of tensors of equally sized tensor/chunks (if possible)"""
+        if self.encrypted:
+            return NotImplemented
+        splits = np.array_split(self.data, split_size, axis=0)
+        tensors = list()
+        for s in splits:
+            tensors.append(TensorBase(s))
+        tensors_tuple = tuple(tensors)
+        return tensors_tuple
+
+    def squeeze(self, axis=None):
+        """Returns a new tensor with all the single-dimensional entries removed"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.squeeze(self.data, axis=axis)
+        return TensorBase(out)
+
+    def expand_as(self, tensor):
+        """Returns a new tensor with the expanded size as of the specified (input) tensor"""
+        if self.encrypted:
+            return NotImplemented
+        shape = tensor.data.shape
+        neg_shapes = np.where(shape == -1)[0]
+        if len(neg_shapes) > 1:
+            shape[neg_shapes] = self.data.shape[neg_shapes]
+        out = np.broadcast_to(self.data, shape)
+        return TensorBase(out)
