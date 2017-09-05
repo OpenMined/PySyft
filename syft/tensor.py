@@ -457,6 +457,19 @@ class TensorBase(object):
 
         return _ensure_tensorbase(np.max(self.data, axis))
 
+    def permute(self, dims):
+        """
+        Permute the dimensions of this tensor.
+        Parameters:	*dims (int...) – The desired ordering of dimensions
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if dims is None:
+            raise ValueError("dims cannot be none")
+
+        return _ensure_tensorbase(np.transpose(self.data, dims))
+
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
@@ -574,6 +587,19 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
+
+    def sign(self):
+        """Return a tensor that contains sign of each element """
+        if self.encrypted:
+            return NotImplemented
+        out = np.sign(self.data)
+        return TensorBase(out)
+
+    def sign_(self):
+        """Computes the sign of each element of the Tensor inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.sign(self.data)
 
     def to_numpy(self):
         """Returns the tensor as numpy.ndarray"""

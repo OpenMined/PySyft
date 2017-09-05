@@ -347,6 +347,14 @@ class baddbmmTests(unittest.TestCase):
                                                  [[122, 184], [28, 42]]]))
 
 
+class PermuteTests(unittest.TestCase):
+    def dest3d(self):
+        t = TensorBase(np.ones((2, 3, 5)))
+        tdash = t.permute((2, 0, 1))
+        self.assertTrue(tdash.data.shape == [5, 2, 3])
+        self.assertTrue(t.data.shape == [2, 3, 5])
+
+
 class transposeTests(unittest.TestCase):
     def testTranspose(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
@@ -444,6 +452,18 @@ class rsqrtTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 3, 4]))
         t1.rsqrt_()
         self.assertTrue(np.allclose(t1.data, [0.70710678, 0.57735027, 0.5]))
+
+
+class signTests(unittest.TestCase):
+    def testsign(self):
+        t1 = TensorBase(np.array([1, 2, -1, -2]))
+        out = t1.sign()
+        self.assertTrue(np.array_equal(out.data, [1, 1, -1, -1]))
+
+    def testsign_(self):
+        t1 = TensorBase(np.array([1, 2, -1, -2]))
+        t1.sign_()
+        self.assertTrue(np.array_equal(t1.data, [1, 1, -1, -1]))
 
 
 class numpyTests(unittest.TestCase):
