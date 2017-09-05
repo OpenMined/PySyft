@@ -137,6 +137,7 @@ def sigmoid(tensor):
         return NotImplemented
     return TensorBase(1 / (1 + np.exp(np.array(-tensor.data))))
 
+
 def tanh(tensor):
     """ Returns a new tensor holding element wise values of tanh function
         tanh(x) = (e^(x) - e^(-x))/(e^(x) + e^(-x))
