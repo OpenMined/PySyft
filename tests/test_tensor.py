@@ -698,5 +698,6 @@ class notEqualTests(unittest.TestCase):
         t1.ne_(t2)
         self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
 
+
 if __name__ == "__main__":
     unittest.main()

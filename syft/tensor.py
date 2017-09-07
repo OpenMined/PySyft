@@ -910,20 +910,6 @@ class TensorBase(object):
         out = np.broadcast_to(self.data, shape)
         return TensorBase(out)
 
-<<<<<<< HEAD
-    def neg(self):
-        """Returns negative of the elements of tensor"""
-        if self.encrypted:
-            return NotImplemented
-        out = -1 * np.array(self.data)
-        return TensorBase(out)
-
-    def neg_(self):
-        """Returns negative of the elements of tensor inplace"""
-        if self.encrypted:
-            return NotImplemented
-        self.data = -1 * np.array(self.data)
-        return self
 
     def normal(self, mu, sigma):
         """Returns a Tensor of random numbers drawn from separate
