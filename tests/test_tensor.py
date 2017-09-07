@@ -663,7 +663,7 @@ class cumprodTest(unittest.TestCase):
         t1 = TensorBase(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]))
         self.assertTrue(np.equal(t1.cumprod_(dim=1), t3).all())
 
-        
+
 class splitTests(unittest.TestCase):
     def testSplit(self):
         t1 = TensorBase(np.arange(8.0))
