@@ -910,6 +910,7 @@ class TensorBase(object):
         out = np.broadcast_to(self.data, shape)
         return TensorBase(out)
 
+<<<<<<< HEAD
     def neg(self):
         """Returns negative of the elements of tensor"""
         if self.encrypted:
