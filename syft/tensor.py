@@ -768,6 +768,30 @@ class TensorBase(object):
         else:
             return self.view(tensor.shape())
 
+    def resize_(self, *size):
+        input_size = np.prod(size)
+        extension = input_size - self.data.size
+        flattened = self.data.flatten()
+        if input_size >= 0:
+            if extension > 0:
+                data = np.append(flattened, np.zeros(extension))
+                self.data = data.reshape(*size)
+                print(self.data)
+            elif extension < 0:
+                size_ = self.data.size + extension
+                self.data = flattened[:size_]
+                self.data = self.data.reshape(*size)
+                print(self.data)
+            else:
+                self.data = self.data.reshape(*size)
+                print(self.data)
+        else:
+            raise ValueError('negative dimension not allowed')
+
+    def resize_as_(self, tensor):
+        size = tensor.data.shape
+        self.resize_(size)
+
     def round(self, decimals=0):
         """Returns a new tensor with elements rounded off to a nearest decimal place"""
         if self.encrypted:
@@ -846,3 +870,32 @@ class TensorBase(object):
             return NotImplemented
         self.data = syft.math.cumprod(self, dim).data
         return self
+
+    def split(self, split_size, dim=0):
+        """Returns tuple of tensors of equally sized tensor/chunks (if possible)"""
+        if self.encrypted:
+            return NotImplemented
+        splits = np.array_split(self.data, split_size, axis=0)
+        tensors = list()
+        for s in splits:
+            tensors.append(TensorBase(s))
+        tensors_tuple = tuple(tensors)
+        return tensors_tuple
+
+    def squeeze(self, axis=None):
+        """Returns a new tensor with all the single-dimensional entries removed"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.squeeze(self.data, axis=axis)
+        return TensorBase(out)
+
+    def expand_as(self, tensor):
+        """Returns a new tensor with the expanded size as of the specified (input) tensor"""
+        if self.encrypted:
+            return NotImplemented
+        shape = tensor.data.shape
+        neg_shapes = np.where(shape == -1)[0]
+        if len(neg_shapes) > 1:
+            shape[neg_shapes] = self.data.shape[neg_shapes]
+        out = np.broadcast_to(self.data, shape)
+        return TensorBase(out)
