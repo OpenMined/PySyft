@@ -181,7 +181,7 @@ class TensorBase(object):
             return self
 
     def __getitem__(self, position):
-        """Get value at a specific index."""
+        """Get value at a specific index"""
         if self.encrypted:
             return NotImplemented
         else:
@@ -205,31 +205,32 @@ class TensorBase(object):
         return self.data
 
     def shape(self):
-        """Returns a tuple of input array dimensions."""
+        """Returns a tuple of input array dimensions"""
         if self.encrypted:
             return NotImplemented
 
         return self.data.shape
 
     def sqrt(self):
-        """Returns the squared tensor."""
+        """Returns the squared tensor"""
         if self.encrypted:
             return NotImplemented
         return np.sqrt(self.data)
 
     def sqrt_(self):
-        """Inline squared tensor."""
+        """Inline squared tensor"""
         if self.encrypted:
             return NotImplemented
         self.data = np.sqrt(self.data)
 
     def dim(self):
-        """Returns an integer of the number of dimensions of this tensor."""
-
+        """Returns an integer of the number of dimensions of this tensor"""
+        if self.encrypted:
+            return NotImplemented
         return self.data.ndim
 
     def sum(self, dim=None):
-        """Returns the sum of all elements in the input array."""
+        """Returns the sum of all elements in the input array"""
         if self.encrypted:
             return NotImplemented
 
@@ -239,13 +240,13 @@ class TensorBase(object):
             return self.data.sum(axis=dim)
 
     def ceil(self):
-        """Returns the ceilling of the input tensor elementwise."""
+        """Returns the ceilling of the input tensor elementwise"""
         if self.encrypted:
             return NotImplemented
         return syft.math.ceil(self.data)
 
     def ceil_(self):
-        """Returns the ceilling of the input tensor elementwise."""
+        """Returns the ceilling of the input tensor elementwise"""
         if self.encrypted:
             return NotImplemented
         self.data = syft.math.ceil(self.data).data
@@ -589,7 +590,7 @@ class TensorBase(object):
         self.data = 1 / np.sqrt(self.data)
 
     def sign(self):
-        """Return a tensor that contains sign of each element """
+        """Return a tensor that contains sign of each element"""
         if self.encrypted:
             return NotImplemented
         out = np.sign(self.data)
