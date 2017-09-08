@@ -569,6 +569,16 @@ class TensorBase(object):
         # self.data = np.array((1 / (1 + np.exp(np.array(-self.data)))))
         return self
 
+    def tanh_(self):
+        """
+            Performs tanh (hyperbolic tangent) function on the Tensor elementwise
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.tanh(self).data
+        # self.data = np.array(np.tanh(np.array(self.data)))
+        return self
+
     def __str__(self):
         return str(self.data)
 
@@ -899,3 +909,33 @@ class TensorBase(object):
             shape[neg_shapes] = self.data.shape[neg_shapes]
         out = np.broadcast_to(self.data, shape)
         return TensorBase(out)
+
+    def neg(self):
+        """Returns negative of the elements of tensor"""
+        if self.encrypted:
+            return NotImplemented
+        out = -1 * np.array(self.data)
+        return TensorBase(out)
+
+    def neg_(self):
+        """Returns negative of the elements of tensor inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = -1 * np.array(self.data)
+        return self
+
+    def normal(self, mu, sigma):
+        """Returns a Tensor of random numbers drawn from separate
+        normal distributions who’s mean and standard deviation are given."""
+        if self.encrypted:
+            return NotImplemented
+        out = np.random.normal(mu, sigma, self.data.shape)
+        return TensorBase(out)
+
+    def normal_(self, mu, sigma):
+        """Returns a Tensor of random numbers in-place drawn from separate
+        normal distributions who’s mean and standard deviation are given."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.random.normal(mu, sigma, self.data.shape)
+        return self
