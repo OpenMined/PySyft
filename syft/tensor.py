@@ -886,3 +886,10 @@ class TensorBase(object):
             shape[neg_shapes] = self.data.shape[neg_shapes]
         out = np.broadcast_to(self.data, shape)
         return TensorBase(out)
+
+    def mean(self, dim=None, keepdim=False):
+        """Return the mean of the tensor elements"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.mean(self, axis=dim, keepdims=keepdim)
+        return TensorBase(out)
