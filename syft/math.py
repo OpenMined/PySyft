@@ -309,4 +309,3 @@ def unsqueeze(tensor1, dim):
         raise NotImplemented
     else:
         return TensorBase(np.expand_dims(tensor1.data, dim))
-        
