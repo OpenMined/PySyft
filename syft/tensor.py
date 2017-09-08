@@ -868,6 +868,19 @@ class TensorBase(object):
         else:
             return self.data.size
 
+    def cumprod(self, dim=0):
+        """Returns the cumulative product of elements in the dimension dim."""
+        if self.encrypted:
+            return NotImplemented
+        return syft.math.cumprod(self, dim)
+
+    def cumprod_(self, dim=0):
+        """calculate in-place the cumulative product of elements in the dimension dim."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.cumprod(self, dim).data
+        return self
+
     def split(self, split_size, dim=0):
         """Returns tuple of tensors of equally sized tensor/chunks (if possible)"""
         if self.encrypted:
