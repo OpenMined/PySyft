@@ -896,3 +896,17 @@ class TensorBase(object):
             shape[neg_shapes] = self.data.shape[neg_shapes]
         out = np.broadcast_to(self.data, shape)
         return TensorBase(out)
+
+    def neg(self):
+        """Returns negative of the elements of tensor"""
+        if self.encrypted:
+            return NotImplemented
+        out = -1*np.array(self.data)
+        return TensorBase(out)
+
+    def neg_(self):
+        """Returns negative of the elements of tensor inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = -1*np.array(self.data)
+        return self
