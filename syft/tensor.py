@@ -891,5 +891,5 @@ class TensorBase(object):
         """Return the mean of the tensor elements"""
         if self.encrypted:
             return NotImplemented
-        out = np.mean(self, axis=dim, keepdims=keepdim)
+        out = np.mean(self.data, axis=dim, keepdims=keepdim)
         return TensorBase(out)
