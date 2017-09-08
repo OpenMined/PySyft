@@ -901,12 +901,12 @@ class TensorBase(object):
         """Returns negative of the elements of tensor"""
         if self.encrypted:
             return NotImplemented
-        out = -1*np.array(self.data)
+        out = -1 * np.array(self.data)
         return TensorBase(out)
 
     def neg_(self):
         """Returns negative of the elements of tensor inplace"""
         if self.encrypted:
             return NotImplemented
-        self.data = -1*np.array(self.data)
+        self.data = -1 * np.array(self.data)
         return self
