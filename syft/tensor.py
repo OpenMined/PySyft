@@ -911,7 +911,7 @@ class TensorBase(object):
         self.data = -1 * np.array(self.data)
         return self
 
-    def normal(self,mu,sigma):
+    def normal(self, mu, sigma):
         """Returns a Tensor of random numbers drawn from separate 
         normal distributions who’s mean and standard deviation are given."""
         if self.encrypted:
@@ -919,7 +919,7 @@ class TensorBase(object):
         out = np.random.normal(mu, sigma, self.data.shape)
         return TensorBase(out)
 
-    def normal_(self,mu,sigma):
+    def normal_(self, mu, sigma):
         """Returns a Tensor of random numbers in-place drawn from separate 
         normal distributions who’s mean and standard deviation are given."""
         if self.encrypted:
