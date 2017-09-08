@@ -912,7 +912,7 @@ class TensorBase(object):
         return self
 
     def normal(self, mu, sigma):
-        """Returns a Tensor of random numbers drawn from separate 
+        """Returns a Tensor of random numbers drawn from separate
         normal distributions who’s mean and standard deviation are given."""
         if self.encrypted:
             return NotImplemented
@@ -920,7 +920,7 @@ class TensorBase(object):
         return TensorBase(out)
 
     def normal_(self, mu, sigma):
-        """Returns a Tensor of random numbers in-place drawn from separate 
+        """Returns a Tensor of random numbers in-place drawn from separate
         normal distributions who’s mean and standard deviation are given."""
         if self.encrypted:
             return NotImplemented
