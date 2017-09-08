@@ -672,7 +672,7 @@ class expandAsTests(unittest.TestCase):
 class meanTests(unittest.TestCase):
     def testMean(self):
         t1 = TensorBase(np.arange(8).reshape(2, 2, 2))
-        t2 = t1.mean(1,True)
+        t2 = t1.mean(1, True)
         self.assertTrue(np.array_equal(t2.data, np.array([[[1., 2.]], [[5., 6.]]])))
 
 
