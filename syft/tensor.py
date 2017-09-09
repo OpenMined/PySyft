@@ -956,3 +956,10 @@ class TensorBase(object):
             return NotImplemented
         out = scipy.stats.mode(np.array(self.data), axis=axis)
         return TensorBase(out)
+
+    def inverse(self):
+        """Returns inverse of a square matrix"""
+        if self.encrypted:
+            return NotImplemented
+        inv = np.linalg.inv(np.matrix(np.array(self.data)))
+        return TensorBase(inv)
