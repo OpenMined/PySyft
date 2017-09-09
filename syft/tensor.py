@@ -939,3 +939,10 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.random.normal(mu, sigma, self.data.shape)
         return self
+
+    def median(self, axis=1, keepdims=False):
+        """Returns median of tensor as per specified axis"""
+        if self.encrypted:
+            return NotImplemented
+        out = np.median(np.array(self.data), axis=axis, keepdims=keepdims)
+        return TensorBase(out)
