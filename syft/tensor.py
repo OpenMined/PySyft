@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import syft
+import scipy
 
 __all__ = [
     'equal', 'TensorBase',
@@ -941,8 +942,17 @@ class TensorBase(object):
         return self
 
     def median(self, axis=1, keepdims=False):
-        """Returns median of tensor as per specified axis"""
+        """Returns median of tensor as per specified axis. By default median is calculated along rows.
+        axis=None can be used get median of whole tensor."""
         if self.encrypted:
             return NotImplemented
         out = np.median(np.array(self.data), axis=axis, keepdims=keepdims)
+        return TensorBase(out)
+
+    def mode(self, axis=1):
+        """Returns mode of tensor as per specified axis. By default mode is calculated along rows.
+        To get mode of whole tensor, specify axis=None"""
+        if self.encrypted:
+            return NotImplemented
+        out = scipy.stats.mode(np.array(self.data), axis=axis)
         return TensorBase(out)
