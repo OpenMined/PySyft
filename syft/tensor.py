@@ -938,7 +938,7 @@ class TensorBase(object):
                 result = tensor2.reshape(self.data.shape)
                 return TensorBase(result)
             else:
-                raise ValueError('inconsistent dimensions {} and {}'.format(self.shape() , tensor.shape()))
+                raise ValueError('inconsistent dimensions {} and {}'.format(self.shape(), tensor.shape()))
 
     def ne_(self, tensor):
         """
