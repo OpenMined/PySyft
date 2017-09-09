@@ -971,3 +971,10 @@ class TensorBase(object):
             return NotImplemented
         min = np.matrix(np.array(self.data)).min(axis=axis, keepdims=keepdims)
         return TensorBase(min)
+
+    def histc(self, bins=10, min=0, max=0):
+        """Computes the histogram of a tensor and Returns it"""
+        if self.encrypted:
+            return NotImplemented
+        hist, edges = np.histogram(np.array(self.data), bins=bins, range=(min, max))
+        return hist
