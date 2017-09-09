@@ -910,7 +910,6 @@ class TensorBase(object):
         out = np.broadcast_to(self.data, shape)
         return TensorBase(out)
 
-
     def normal(self, mu, sigma):
         """Returns a Tensor of random numbers drawn from separate
         normal distributions who’s mean and standard deviation are given."""
@@ -926,3 +925,27 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.random.normal(mu, sigma, self.data.shape)
         return self
+
+    def ne(self, tensor):
+        """Checks element-wise equality with the given tensor and returns
+        a boolean result with same dimension as the input matrix"""
+        if self.encrypted:
+            return NotImplemented
+        else:
+            if tensor.shape() == self.shape():
+
+                tensor2 = np.array([1 if x else 0 for x in np.equal(tensor.data.flatten(), self.data.flatten()).tolist()])
+                result = tensor2.reshape(self.data.shape)
+                return TensorBase(result)
+            else:
+                raise ValueError('inconsistent dimensions {} and {}'.format(self.shape() , tensor.shape()))
+
+    def ne_(self, tensor):
+        """
+         Checks in place element wise equality and updates the data matrix to the equality matrix
+        """
+        if self.encrypted:
+            return NotImplemented
+        else:
+            value = self.ne(tensor)
+            self.data = value.data
