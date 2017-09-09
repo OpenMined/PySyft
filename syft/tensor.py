@@ -963,3 +963,11 @@ class TensorBase(object):
             return NotImplemented
         inv = np.linalg.inv(np.matrix(np.array(self.data)))
         return TensorBase(inv)
+
+    def min(self, axis=1, keepdims=False):
+        """Returns minimum value in tensor along rows by default
+        but if axis=None it will return minimum value in tensor"""
+        if self.encrypted:
+            return NotImplemented
+        min = np.matrix(np.array(self.data)).min(axis=axis, keepdims=keepdims)
+        return TensorBase(min)
