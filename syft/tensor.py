@@ -977,4 +977,4 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         hist, edges = np.histogram(np.array(self.data), bins=bins, range=(min, max))
-        return hist
+        return TensorBase(hist)
