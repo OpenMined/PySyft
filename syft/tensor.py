@@ -964,6 +964,30 @@ class TensorBase(object):
         self.data = np.random.normal(mu, sigma, self.data.shape)
         return self
 
+    def ne(self, tensor):
+        """Checks element-wise equality with the given tensor and returns
+        a boolean result with same dimension as the input matrix"""
+        if self.encrypted:
+            return NotImplemented
+        else:
+            if tensor.shape() == self.shape():
+
+                tensor2 = np.array([1 if x else 0 for x in np.equal(tensor.data.flatten(), self.data.flatten()).tolist()])
+                result = tensor2.reshape(self.data.shape)
+                return TensorBase(result)
+            else:
+                raise ValueError('inconsistent dimensions {} and {}'.format(self.shape(), tensor.shape()))
+
+    def ne_(self, tensor):
+        """
+         Checks in place element wise equality and updates the data matrix to the equality matrix
+        """
+        if self.encrypted:
+            return NotImplemented
+        else:
+            value = self.ne(tensor)
+            self.data = value.data
+
     def median(self, axis=1, keepdims=False):
         """Returns median of tensor as per specified axis. By default median is calculated along rows.
         axis=None can be used get median of whole tensor."""
