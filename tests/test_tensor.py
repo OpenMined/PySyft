@@ -539,6 +539,26 @@ class clampTests(unittest.TestCase):
         self.assertEqual(t1, expected_tensor)
 
 
+class cloneTests(unittest.TestCase):
+    def testClone(self):
+        t1 = TensorBase(np.random.randint(0, 10, size=(5, 10)))
+        t2 = t1.clone()
+        self.assertEqual(t1, t2)
+        self.assertIsNot(t1, t2)
+
+
+class chunkTests(unittest.TestCase):
+    def testChunk(self):
+        t1 = TensorBase(np.random.randint(0, 10, size=(5, 10)))
+        t2, t3 = t1.chunk(2, 0)
+        self.assertNotEqual(t2.shape(), t3.shape())
+
+    def testChunkSameSize(self):
+        t1 = TensorBase(np.random.randint(0, 10, size=(4, 10)))
+        t2, t3 = t1.chunk(2, 0, same_size=True)
+        self.assertEqual(t2.shape(), t3.shape())
+
+
 class bernoulliTests(unittest.TestCase):
     def testBernoulli(self):
         p = TensorBase(np.random.uniform(size=(3, 2)))

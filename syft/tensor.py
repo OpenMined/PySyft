@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import syft
+import scipy
 
 __all__ = [
     'equal', 'TensorBase',
@@ -681,6 +682,22 @@ class TensorBase(object):
         self.data = np.clip(self.data, a_min=minimum, a_max=maximum)
         return self
 
+    def clone(self):
+        """Returns a copy of the tensor. The copy has the same size and data type as the original tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return TensorBase(np.copy(self.data))
+
+    def chunk(self, n, dim=0, same_size=False):
+        """Returns a list of tensors by splitting the tensor into a number of chunks along a given dimension.
+        Raises an exception if same_size is set to True and given tensor can't be split in n same-size chunks along dim."""
+        if self.encrypted:
+            return NotImplemented
+        if same_size:
+            return [TensorBase(x) for x in np.split(self.data, n, dim)]
+        else:
+            return [TensorBase(x) for x in np.array_split(self.data, n, dim)]
+
     def bernoulli(self, p):
         """
         Returns a Tensor filled with binary random numbers (0 or 1) from a bernoulli distribution
@@ -949,3 +966,41 @@ class TensorBase(object):
         else:
             value = self.ne(tensor)
             self.data = value.data
+
+    def median(self, axis=1, keepdims=False):
+        """Returns median of tensor as per specified axis. By default median is calculated along rows.
+        axis=None can be used get median of whole tensor."""
+        if self.encrypted:
+            return NotImplemented
+        out = np.median(np.array(self.data), axis=axis, keepdims=keepdims)
+        return TensorBase(out)
+
+    def mode(self, axis=1):
+        """Returns mode of tensor as per specified axis. By default mode is calculated along rows.
+        To get mode of whole tensor, specify axis=None"""
+        if self.encrypted:
+            return NotImplemented
+        out = scipy.stats.mode(np.array(self.data), axis=axis)
+        return TensorBase(out)
+
+    def inverse(self):
+        """Returns inverse of a square matrix"""
+        if self.encrypted:
+            return NotImplemented
+        inv = np.linalg.inv(np.matrix(np.array(self.data)))
+        return TensorBase(inv)
+
+    def min(self, axis=1, keepdims=False):
+        """Returns minimum value in tensor along rows by default
+        but if axis=None it will return minimum value in tensor"""
+        if self.encrypted:
+            return NotImplemented
+        min = np.matrix(np.array(self.data)).min(axis=axis, keepdims=keepdims)
+        return TensorBase(min)
+
+    def histc(self, bins=10, min=0, max=0):
+        """Computes the histogram of a tensor and Returns it"""
+        if self.encrypted:
+            return NotImplemented
+        hist, edges = np.histogram(np.array(self.data), bins=bins, range=(min, max))
+        return TensorBase(hist)
