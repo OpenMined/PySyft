@@ -667,6 +667,23 @@ class nonzeroTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t2.data, np.array([[0, 1, 1], [0, 1, 2]])))
 
 
+class cumprodTest(unittest.TestCase):
+    def testCumprod(self):
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
+        t2 = TensorBase(np.array([[1.0, 2.0, 3.0], [4.0, 10.0, 18.0]]))
+        t3 = TensorBase(np.array([[1, 2, 6], [4, 20, 120]]))
+        self.assertTrue(np.equal(t1.cumprod(dim=0), t2).all())
+        self.assertTrue(np.equal(t1.cumprod(dim=1), t3).all())
+
+    def testCumprod_(self):
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
+        t2 = TensorBase(np.array([[1.0, 2.0, 3.0], [4.0, 10.0, 18.0]]))
+        t3 = TensorBase(np.array([[1, 2, 6], [4, 20, 120]]))
+        self.assertTrue(np.equal(t1.cumprod_(dim=0), t2).all())
+        t1 = TensorBase(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]))
+        self.assertTrue(np.equal(t1.cumprod_(dim=1), t3).all())
+
+
 class splitTests(unittest.TestCase):
     def testSplit(self):
         t1 = TensorBase(np.arange(8.0))
