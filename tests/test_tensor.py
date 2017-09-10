@@ -539,6 +539,26 @@ class clampTests(unittest.TestCase):
         self.assertEqual(t1, expected_tensor)
 
 
+class cloneTests(unittest.TestCase):
+    def testClone(self):
+        t1 = TensorBase(np.random.randint(0, 10, size=(5, 10)))
+        t2 = t1.clone()
+        self.assertEqual(t1, t2)
+        self.assertIsNot(t1, t2)
+
+
+class chunkTests(unittest.TestCase):
+    def testChunk(self):
+        t1 = TensorBase(np.random.randint(0, 10, size=(5, 10)))
+        t2, t3 = t1.chunk(2, 0)
+        self.assertNotEqual(t2.shape(), t3.shape())
+
+    def testChunkSameSize(self):
+        t1 = TensorBase(np.random.randint(0, 10, size=(4, 10)))
+        t2, t3 = t1.chunk(2, 0, same_size=True)
+        self.assertEqual(t2.shape(), t3.shape())
+
+
 class bernoulliTests(unittest.TestCase):
     def testBernoulli(self):
         p = TensorBase(np.random.uniform(size=(3, 2)))
@@ -645,6 +665,23 @@ class nonzeroTests(unittest.TestCase):
         t1 = TensorBase(np.array([[1, 0, 0], [0, 2, 5]]))
         t2 = t1.nonzero()
         self.assertTrue(np.array_equal(t2.data, np.array([[0, 1, 1], [0, 1, 2]])))
+
+
+class cumprodTest(unittest.TestCase):
+    def testCumprod(self):
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
+        t2 = TensorBase(np.array([[1.0, 2.0, 3.0], [4.0, 10.0, 18.0]]))
+        t3 = TensorBase(np.array([[1, 2, 6], [4, 20, 120]]))
+        self.assertTrue(np.equal(t1.cumprod(dim=0), t2).all())
+        self.assertTrue(np.equal(t1.cumprod(dim=1), t3).all())
+
+    def testCumprod_(self):
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
+        t2 = TensorBase(np.array([[1.0, 2.0, 3.0], [4.0, 10.0, 18.0]]))
+        t3 = TensorBase(np.array([[1, 2, 6], [4, 20, 120]]))
+        self.assertTrue(np.equal(t1.cumprod_(dim=0), t2).all())
+        t1 = TensorBase(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]))
+        self.assertTrue(np.equal(t1.cumprod_(dim=1), t3).all())
 
 
 class splitTests(unittest.TestCase):
