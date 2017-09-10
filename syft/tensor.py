@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import syft
+import scipy
 
 __all__ = [
     'equal', 'TensorBase',
@@ -939,3 +940,41 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.random.normal(mu, sigma, self.data.shape)
         return self
+
+    def median(self, axis=1, keepdims=False):
+        """Returns median of tensor as per specified axis. By default median is calculated along rows.
+        axis=None can be used get median of whole tensor."""
+        if self.encrypted:
+            return NotImplemented
+        out = np.median(np.array(self.data), axis=axis, keepdims=keepdims)
+        return TensorBase(out)
+
+    def mode(self, axis=1):
+        """Returns mode of tensor as per specified axis. By default mode is calculated along rows.
+        To get mode of whole tensor, specify axis=None"""
+        if self.encrypted:
+            return NotImplemented
+        out = scipy.stats.mode(np.array(self.data), axis=axis)
+        return TensorBase(out)
+
+    def inverse(self):
+        """Returns inverse of a square matrix"""
+        if self.encrypted:
+            return NotImplemented
+        inv = np.linalg.inv(np.matrix(np.array(self.data)))
+        return TensorBase(inv)
+
+    def min(self, axis=1, keepdims=False):
+        """Returns minimum value in tensor along rows by default
+        but if axis=None it will return minimum value in tensor"""
+        if self.encrypted:
+            return NotImplemented
+        min = np.matrix(np.array(self.data)).min(axis=axis, keepdims=keepdims)
+        return TensorBase(min)
+
+    def histc(self, bins=10, min=0, max=0):
+        """Computes the histogram of a tensor and Returns it"""
+        if self.encrypted:
+            return NotImplemented
+        hist, edges = np.histogram(np.array(self.data), bins=bins, range=(min, max))
+        return TensorBase(hist)
