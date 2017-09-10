@@ -682,6 +682,22 @@ class TensorBase(object):
         self.data = np.clip(self.data, a_min=minimum, a_max=maximum)
         return self
 
+    def clone(self):
+        """Returns a copy of the tensor. The copy has the same size and data type as the original tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return TensorBase(np.copy(self.data))
+
+    def chunk(self, n, dim=0, same_size=False):
+        """Returns a list of tensors by splitting the tensor into a number of chunks along a given dimension.
+        Raises an exception if same_size is set to True and given tensor can't be split in n same-size chunks along dim."""
+        if self.encrypted:
+            return NotImplemented
+        if same_size:
+            return [TensorBase(x) for x in np.split(self.data, n, dim)]
+        else:
+            return [TensorBase(x) for x in np.array_split(self.data, n, dim)]
+
     def bernoulli(self, p):
         """
         Returns a Tensor filled with binary random numbers (0 or 1) from a bernoulli distribution
