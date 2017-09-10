@@ -706,5 +706,18 @@ class expandAsTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t2.data.shape, t3.data.shape))
 
 
+class notEqualTests(unittest.TestCase):
+    def testNe(self):
+        t1 = TensorBase([1, 2, 3, 4])
+        t2 = TensorBase([1., 2., 3., 5.])
+        self.assertEqual(t1.ne(t2), TensorBase([1, 1, 1, 0]))
+
+    def testNe_(self):
+        t1 = TensorBase([1, 2, 3, 4])
+        t2 = TensorBase([1., 2., 3., 5.])
+        t1.ne_(t2)
+        self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
+
+
 if __name__ == "__main__":
     unittest.main()
