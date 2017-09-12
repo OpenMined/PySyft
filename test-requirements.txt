@@ -2,3 +2,4 @@
 
 # Everything for testing purposes
 line_profiler
+pytest
