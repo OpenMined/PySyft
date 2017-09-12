@@ -1025,3 +1025,67 @@ class TensorBase(object):
             return NotImplemented
         hist, edges = np.histogram(np.array(self.data), bins=bins, range=(min, max))
         return TensorBase(hist)
+
+    def scatter_(self, dim, index, src):
+        """
+        Writes all values from the Tensor src into self at the indices specified in the index Tensor.
+        The indices are specified with respect to the given dimension, dim, in the manner described in gather().
+
+        :param dim: The axis along which to index
+        :param index: The indices of elements to scatter
+        :param src: The source element(s) to scatter
+        :return: self
+        """
+        index = _ensure_tensorbase(index)
+        if index.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The values of index must be integers")
+        if self.data.ndim != index.data.ndim:
+            raise ValueError("Index should have the same number of dimensions as output")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("dim is out of range")
+        if dim < 0:
+            # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
+            dim = self.data.ndim + dim
+        idx_xsection_shape = list(index.shape())
+        idx_xsection_shape.pop(dim)
+        self_xsection_shape = list(self.shape())
+        self_xsection_shape.pop(dim)
+        if idx_xsection_shape != self_xsection_shape:
+            raise ValueError("Except for dimension " + str(dim) +
+                             ", all dimensions of index and output should be the same size")
+        if (index.data >= self.shape()[dim]).any() or (index.data < 0).any():
+            raise IndexError("The values of index must be between 0 and (self.shape()[dim] -1)")
+
+        def make_slice(arr, dim, i):
+            slc = [slice(None)] * arr.ndim
+            slc[dim] = i
+            return slc
+
+        # We use index and dim parameters to create idx
+        # idx is in a form that can be used as a NumPy advanced index for scattering of src param. in self.data
+        idx = [[*np.indices(idx_xsection_shape).reshape(index.data.ndim - 1, -1),
+                index.data[make_slice(index.data, dim, i)].reshape(1, -1)[0]] for i in range(index.data.shape[dim])]
+        idx = list(np.concatenate(idx, axis=1))
+        idx.insert(dim, idx.pop())
+
+        if not np.isscalar(src):
+            src = _ensure_tensorbase(src)
+            if index.shape()[dim] > src.shape()[dim]:
+                raise IndexError("Dimension " + str(dim) + "of index can not be bigger than that of src ")
+            src_shape = list(src.shape())
+            src_shape.pop(dim)
+            if idx_xsection_shape != src_shape:
+                raise ValueError("Except for dimension " +
+                                 str(dim) + ", all dimensions of index and src should be the same size")
+            # src_idx is a NumPy advanced index for indexing of elements in the src
+            src_idx = list(idx)
+            src_idx.pop(dim)
+            src_idx.insert(dim, np.repeat(np.arange(index.data.shape[dim]), np.prod(idx_xsection_shape)))
+            self.data[idx] = src.data[src_idx]
+
+        else:
+            self.data[idx] = src
+
+        return self
