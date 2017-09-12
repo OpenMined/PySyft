@@ -22,10 +22,14 @@ def ones(dim):
 
 
 def rand(dim):
+    """Returns a tensor with numbers initialized according to a uniform
+    distribution from 0 to 1"""
     return TensorBase(np.random.rand(dim))
 
 
 def randn(dim):
+    """Returns a tensor with initial numbers sampled from a standard normal
+    distribution"""
     return TensorBase(np.random.randn(dim))
 
 

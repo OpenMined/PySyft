@@ -1,6 +1,7 @@
 import phe as paillier
 import numpy as np
 import pickle
+import syft
 from .basic import Float, PaillierTensor
 from ...tensor import TensorBase
 from ..abstract.keys import AbstractSecretKey, AbstractPublicKey
@@ -41,6 +42,18 @@ class PublicKey(AbstractPublicKey):
 
     def __init__(self, pk):
         self.pk = pk
+
+    def zeros(self,dim):
+        return syft.zeros(dim).encrypt(self)
+
+    def ones(self,dim):
+        return syft.ones(dim).encrypt(self)
+
+    def rand(self,dim):
+        return syft.rand(dim).encrypt(self)
+
+    def randn(self,dim):
+        return syft.randn(dim).encrypt(self)
 
     def encrypt(self, x, same_type=False):
         """Encrypts x. X can be either an encrypted int or a numpy
