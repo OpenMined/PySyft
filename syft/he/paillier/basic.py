@@ -89,10 +89,10 @@ class PaillierTensor(TensorBase):
             return self.data.sum(axis=dim)
 
     def __str__(self):
-        return str(self.data)
+        return "PaillierTensor: " + str(self.data)
 
     def __repr__(self):
-        return repr(self.data)
+        return "PaillierTensor: " + repr(self.data)
 
 
 class Float():

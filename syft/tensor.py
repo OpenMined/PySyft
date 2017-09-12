@@ -60,7 +60,11 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         else:
-            return pubkey.encrypt(self)
+            if(type(pubkey) == syft.he.paillier.keys.PublicKey):
+                out = syft.he.paillier.PaillierTensor(pubkey, self.data)
+                return out
+            else:
+                return NotImplemented
 
     def decrypt(self, seckey):
         """Decrypts the tensor using a Secret Key"""
@@ -581,10 +585,10 @@ class TensorBase(object):
         return self
 
     def __str__(self):
-        return str(self.data)
+        return "BaseTensor: " + str(self.data)
 
     def __repr__(self):
-        return repr(self.data)
+        return "BaseTensor: " + repr(self.data)
 
     def rsqrt(self):
         """Returns reciprocal of square root of Tensor element wise"""

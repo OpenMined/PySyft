@@ -8,8 +8,25 @@ from .tensor import _ensure_tensorbase
 
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
-    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh'
+    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh',
+    'zeros', 'ones', 'rand', 'randn'
 ]
+
+
+def zeros(dim):
+    return TensorBase(np.zeros(dim))
+
+
+def ones(dim):
+    return TensorBase(np.ones(dim))
+
+
+def rand(dim):
+    return TensorBase(np.random.rand(dim))
+
+
+def randn(dim):
+    return TensorBase(np.random.randn(dim))
 
 
 def dot(tensor1, tensor2):

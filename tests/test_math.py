@@ -6,6 +6,21 @@ import syft
 from syft import TensorBase
 
 
+class ConvenienceTests(unittest.TestCase):
+    def testZeros(self):
+        self.assertTrue((syft.zeros(5).data == np.zeros(5)).all())
+
+    def testOnes(self):
+        self.assertTrue((syft.ones(5).data == np.ones(5)).all())
+
+    def testRand(self):
+        np.random.seed(0)
+        x = syft.rand(5).data
+        np.random.seed(0)
+        y = np.random.rand(5)
+        self.assertTrue((x == y).all())
+
+
 class DotTests(unittest.TestCase):
     def testDotInt(self):
         t1 = TensorBase(np.array([1, 2, 3]))
