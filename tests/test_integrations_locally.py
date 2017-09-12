@@ -1,12 +1,15 @@
 import unittest
 
-from syft.he.paillier import KeyPair
+import numpy as np
+
 from syft.nn.linear import LinearClassifier
+from syft.he.paillier import KeyPair, PaillierTensor
 
 
 class PySonarNotebooks(unittest.TestCase):
-    def hydrogeDemoNotebook(self):
-        """If this method fails, you probably broke the demo notebook located at
+
+    def modelTrainingDemoNotebook(self):
+        """If this test fails, you probably broke the demo notebook located at
         PySonar/notebooks/Sonar - Decentralized Model Training Simulation
         (local blockchain).ipynb """
 
@@ -15,3 +18,28 @@ class PySonarNotebooks(unittest.TestCase):
         d.encrypt(pubkey)
 
         self.assertTrue(True)
+
+
+class PySyftNotebooks(unittest.TestCase):
+
+    def paillierHEExampleNotebook(self):
+        """If this test fails, you probably broke the demo notebook located at
+        PySyft/notebooks/Syft - Paillier Homomorphic Encryption Example.ipynb
+        """
+
+        pubkey, prikey = KeyPair().generate()
+        x = PaillierTensor(pubkey, np.array([1, 2, 3, 4, 5.]))
+
+        out1 = x.decrypt(prikey)
+        self.assertEqual(out1, np.array([1., 2., 3., 4., 5.]))
+
+        out2 = (x + x[0]).decrypt(prikey)
+        self.assertEqual(out2, np.array([2., 3., 4., 5., 6.]))
+
+        out3 = (x * 5).decrypt(prikey)
+        self.assertEqual(out3, np.array([5., 10., 15., 20., 25.]))
+
+        out4 = (x + x / 5).decrypt(prikey)
+        self.assertEqual(out4, np.array([1.2, 2.4, 3.6, 4.8, 6.]))
+
+    
