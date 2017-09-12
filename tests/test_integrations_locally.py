@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import pickle
 
 from syft.nn.linear import LinearClassifier
 from syft.he.paillier import KeyPair, PaillierTensor
@@ -45,11 +46,16 @@ class PySyftNotebooks(unittest.TestCase):
         pubkey_str = pubkey.serialize()
         prikey_str = prikey.serialize()
 
-        pubkey2,prikey2 = KeyPair().deserialize(pubkey_str,prikey_str)
+        pubkey2, prikey2 = KeyPair().deserialize(pubkey_str, prikey_str)
 
         out5 = prikey2.decrypt(x)
         self.assertEqual(out5, np.array([1., 2., 3., 4., 5.]))
 
-        y = PaillierTensor(pubkey,(np.ones(5))/2)
+        y = PaillierTensor(pubkey, (np.ones(5)) / 2)
         out6 = prikey.decrypt(y)
         self.assertEqual(out6, np.array([.5, .5, .5, .5, .5]))
+
+        y_str = pickle.dumps(y)
+        y2 = pickle.loads(y_str)
+        out7 = prikey.decrypt(y2)
+        self.assertEqual(out7, np.array([.5, .5, .5, .5, .5]))
