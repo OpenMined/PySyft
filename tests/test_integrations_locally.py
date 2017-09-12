@@ -42,4 +42,14 @@ class PySyftNotebooks(unittest.TestCase):
         out4 = (x + x / 5).decrypt(prikey)
         self.assertEqual(out4, np.array([1.2, 2.4, 3.6, 4.8, 6.]))
 
-    
+        pubkey_str = pubkey.serialize()
+        prikey_str = prikey.serialize()
+
+        pubkey2,prikey2 = KeyPair().deserialize(pubkey_str,prikey_str)
+
+        out5 = prikey2.decrypt(x)
+        self.assertEqual(out5, np.array([1., 2., 3., 4., 5.]))
+
+        y = PaillierTensor(pubkey,(np.ones(5))/2)
+        out6 = prikey.decrypt(y)
+        self.assertEqual(out6, np.array([.5, .5, .5, .5, .5]))
