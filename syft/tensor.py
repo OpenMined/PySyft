@@ -54,7 +54,7 @@ class TensorBase(object):
     def __init__(self, arr_like, encrypted=False):
         self.data = _ensure_ndarray(arr_like)
         self.encrypted = encrypted
-        
+
     def encrypt(self, pubkey):
         """Encrypts the Tensor using a Public Key"""
         if self.encrypted:
