@@ -14,10 +14,12 @@ __all__ = [
 
 
 def zeros(dim):
+    """Returns a tensor of zeros"""
     return TensorBase(np.zeros(dim))
 
 
 def ones(dim):
+    """Returns a tensor of ones"""
     return TensorBase(np.ones(dim))
 
 

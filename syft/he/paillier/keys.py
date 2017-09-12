@@ -43,16 +43,22 @@ class PublicKey(AbstractPublicKey):
     def __init__(self, pk):
         self.pk = pk
 
-    def zeros(self,dim):
+    def zeros(self, dim):
+        """Returns an encrypted tensor of zeros"""
         return syft.zeros(dim).encrypt(self)
 
-    def ones(self,dim):
+    def ones(self, dim):
+        """Returns an encrypted tensor of ones"""
         return syft.ones(dim).encrypt(self)
 
-    def rand(self,dim):
+    def rand(self, dim):
+        """Returns an encrypted tensor with initial numbers sampled from a
+        uniform distribution from 0 to 1."""
         return syft.rand(dim).encrypt(self)
 
-    def randn(self,dim):
+    def randn(self, dim):
+        """Returns an encrypted tensor with initial numbers sampled from a
+        standard normal distribution"""
         return syft.randn(dim).encrypt(self)
 
     def encrypt(self, x, same_type=False):

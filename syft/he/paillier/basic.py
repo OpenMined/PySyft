@@ -88,6 +88,12 @@ class PaillierTensor(TensorBase):
         else:
             return self.data.sum(axis=dim)
 
+    def dot(self, plaintext_x):
+        if(not plaintext_x.encrypted):
+            return (self * plaintext_x).sum()
+        else:
+            return NotImplemented
+
     def __str__(self):
         return "PaillierTensor: " + str(self.data)
 
