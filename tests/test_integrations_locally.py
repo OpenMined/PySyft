@@ -59,3 +59,22 @@ class PySyftNotebooks(unittest.TestCase):
         y2 = pickle.loads(y_str)
         out7 = prikey.decrypt(y2)
         self.assertEqual(out7, np.array([.5, .5, .5, .5, .5]))
+
+    def paillierLinearClassifierNotebook(self):
+        """If this test fails, you probably broke the demo notebook located at
+        PySyft/notebooks/Syft - Paillier Homomorphic Encryption Example.ipynb
+        """
+
+        pubkey, prikey = KeyPair().generate(n_length=1024)
+        model = LinearClassifier(n_inputs=4, n_labels=2).encrypt(pubkey)
+        input = np.array([[0, 0, 1, 1], [0, 0, 1, 0],
+                          [1, 0, 1, 1], [0, 0, 1, 0]])
+        target = np.array([[0, 1], [0, 0], [1, 1], [0, 0]])
+
+        for iter in range(3):
+            for i in range(len(input)):
+                model.learn(input=input[i], target=target[i], alpha=0.5)
+
+        model = model.decrypt(prikey)
+        for i in range(len(input)):
+            model.forward(input[i])
