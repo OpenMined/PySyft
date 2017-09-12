@@ -1037,7 +1037,7 @@ class TensorBase(object):
         :return: self
         """
         index = _ensure_tensorbase(index)
-        if index.encrypted:
+        if self.encrypted or index.encrypted:
             return NotImplemented
         if index.data.dtype != np.dtype('int_'):
             raise TypeError("The values of index must be integers")
@@ -1048,15 +1048,15 @@ class TensorBase(object):
         if dim < 0:
             # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
             dim = self.data.ndim + dim
-        idx_xsection_shape = list(index.shape())
+        idx_xsection_shape = list(index.data.shape)
         idx_xsection_shape.pop(dim)
-        self_xsection_shape = list(self.shape())
+        self_xsection_shape = list(self.data.shape)
         self_xsection_shape.pop(dim)
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
                              ", all dimensions of index and output should be the same size")
-        if (index.data >= self.shape()[dim]).any() or (index.data < 0).any():
-            raise IndexError("The values of index must be between 0 and (self.shape()[dim] -1)")
+        if (index.data >= self.data.shape[dim]).any() or (index.data < 0).any():
+            raise IndexError("The values of index must be between 0 and (self.data.shape[dim] -1)")
 
         def make_slice(arr, dim, i):
             slc = [slice(None)] * arr.ndim
@@ -1072,9 +1072,9 @@ class TensorBase(object):
 
         if not np.isscalar(src):
             src = _ensure_tensorbase(src)
-            if index.shape()[dim] > src.shape()[dim]:
+            if index.data.shape[dim] > src.data.shape[dim]:
                 raise IndexError("Dimension " + str(dim) + "of index can not be bigger than that of src ")
-            src_shape = list(src.shape())
+            src_shape = list(src.data.shape)
             src_shape.pop(dim)
             if idx_xsection_shape != src_shape:
                 raise ValueError("Except for dimension " +
