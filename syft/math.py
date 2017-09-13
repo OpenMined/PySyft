@@ -8,8 +8,31 @@ from .tensor import _ensure_tensorbase
 
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
-    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh'
+    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh',
+    'zeros', 'ones', 'rand', 'randn'
 ]
+
+
+def zeros(dim):
+    """Returns a tensor of zeros"""
+    return TensorBase(np.zeros(dim))
+
+
+def ones(dim):
+    """Returns a tensor of ones"""
+    return TensorBase(np.ones(dim))
+
+
+def rand(dim):
+    """Returns a tensor with numbers initialized according to a uniform
+    distribution from 0 to 1"""
+    return TensorBase(np.random.rand(dim))
+
+
+def randn(dim):
+    """Returns a tensor with initial numbers sampled from a standard normal
+    distribution"""
+    return TensorBase(np.random.randn(dim))
 
 
 def dot(tensor1, tensor2):
