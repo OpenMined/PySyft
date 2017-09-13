@@ -697,6 +697,21 @@ class TensorBase(object):
         else:
             return [TensorBase(x) for x in np.array_split(self.data, n, dim)]
 
+    def gt(self, t):
+        """Returns a new Tensor having boolean True values where an element of the calling tensor is greater than the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return TensorBase(np.greater(self.data, _ensure_tensorbase(t).data))
+
+    def gt_(self, t):
+        """Writes in-place, boolean True values where an element of the calling tensor is greater than the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.greater(self.data, _ensure_tensorbase(t).data)
+        return self
+
     def bernoulli(self, p):
         """
         Returns a Tensor filled with binary random numbers (0 or 1) from a bernoulli distribution

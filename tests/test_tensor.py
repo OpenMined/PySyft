@@ -559,6 +559,30 @@ class chunkTests(unittest.TestCase):
         self.assertEqual(t2.shape(), t3.shape())
 
 
+class gtTests(unittest.TestCase):
+    def testGtWithTensor(self):
+        t1 = TensorBase(np.arange(10))
+        t2 = TensorBase(np.arange(10)[-1::-1])
+        truth_values = t1.gt(t2)
+        self.assertEqual(truth_values, [False, False, False, False, False, True, True, True, True, True])
+
+    def testGtWithNumber(self):
+        t1 = TensorBase(np.arange(10))
+        truth_values = t1.gt(-1)
+        self.assertEqual(truth_values, [True] * 10)
+
+    def testGtInPlaceWithTensor(self):
+        t1 = TensorBase(np.arange(10))
+        t2 = TensorBase(np.arange(10)[-1::-1])
+        t1.gt_(t2)
+        self.assertEqual(t1, [False, False, False, False, False, True, True, True, True, True])
+
+    def testGtInPlaceWithNumber(self):
+        t1 = TensorBase(np.arange(10))
+        t1.gt_(-1)
+        self.assertEqual(t1, [True] * 10)
+
+
 class bernoulliTests(unittest.TestCase):
     def testBernoulli(self):
         p = TensorBase(np.random.uniform(size=(3, 2)))
