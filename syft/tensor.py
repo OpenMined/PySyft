@@ -1048,10 +1048,8 @@ class TensorBase(object):
         if dim < 0:
             # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
             dim = self.data.ndim + dim
-        idx_xsection_shape = list(index.data.shape)
-        idx_xsection_shape.pop(dim)
-        self_xsection_shape = list(self.data.shape)
-        self_xsection_shape.pop(dim)
+        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
+        self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
                              ", all dimensions of index and output should be the same size")
@@ -1074,8 +1072,7 @@ class TensorBase(object):
             src = _ensure_tensorbase(src)
             if index.data.shape[dim] > src.data.shape[dim]:
                 raise IndexError("Dimension " + str(dim) + "of index can not be bigger than that of src ")
-            src_shape = list(src.data.shape)
-            src_shape.pop(dim)
+            src_shape = src.data.shape[:dim] + src.data.shape[dim + 1:]
             if idx_xsection_shape != src_shape:
                 raise ValueError("Except for dimension " +
                                  str(dim) + ", all dimensions of index and src should be the same size")
