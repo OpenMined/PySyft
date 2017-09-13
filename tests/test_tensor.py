@@ -726,5 +726,13 @@ class notEqualTests(unittest.TestCase):
         self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
 
 
+class equalTests(unittest.TestCase):
+
+    def testEqual(self):
+        t1 = TensorBase([1, 2, 3])
+        t2 = TensorBase([1., 2., 3.])
+        self.assertTrue(t1.equal(t2))
+
+
 if __name__ == "__main__":
     unittest.main()
