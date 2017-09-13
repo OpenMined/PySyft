@@ -1066,4 +1066,3 @@ class TensorBase(object):
 
     def deserialize(b):
         return pickle.loads(b)
-
