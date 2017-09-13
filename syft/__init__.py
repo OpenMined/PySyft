@@ -1,5 +1,6 @@
 from syft import he
 from syft import nn
+from syft import test
 
 from syft.tensor import equal, TensorBase
 from syft.math import cumprod, cumsum, ceil, dot, matmul, addmm, addcmul
@@ -8,6 +9,7 @@ from syft.math import unsqueeze
 
 s = str(he)
 s += str(nn)
+s += str(test)
 
 s += str(equal) + str(TensorBase) + str(cumprod) + str(cumsum) + str(ceil)
 s += str(dot) + str(matmul) + str(addmm) + str(addcmul) + str(addcdiv)
