@@ -1,6 +1,7 @@
 import phe as paillier
 import numpy as np
 import pickle
+import syft
 from .basic import Float, PaillierTensor
 from ...tensor import TensorBase
 from ..abstract.keys import AbstractSecretKey, AbstractPublicKey
@@ -36,11 +37,32 @@ class SecretKey(AbstractSecretKey):
     def serialize(self):
         return pickle.dumps(self.sk)
 
+    def deserialize(b):
+        return SecretKey(pickle.loads(b))
+
 
 class PublicKey(AbstractPublicKey):
 
     def __init__(self, pk):
         self.pk = pk
+
+    def zeros(self, dim):
+        """Returns an encrypted tensor of zeros"""
+        return syft.zeros(dim).encrypt(self)
+
+    def ones(self, dim):
+        """Returns an encrypted tensor of ones"""
+        return syft.ones(dim).encrypt(self)
+
+    def rand(self, dim):
+        """Returns an encrypted tensor with initial numbers sampled from a
+        uniform distribution from 0 to 1."""
+        return syft.rand(dim).encrypt(self)
+
+    def randn(self, dim):
+        """Returns an encrypted tensor with initial numbers sampled from a
+        standard normal distribution"""
+        return syft.randn(dim).encrypt(self)
 
     def encrypt(self, x, same_type=False):
         """Encrypts x. X can be either an encrypted int or a numpy
@@ -71,6 +93,9 @@ class PublicKey(AbstractPublicKey):
 
     def serialize(self):
         return pickle.dumps(self.pk)
+
+    def deserialize(b):
+        return PublicKey(pickle.loads(b))
 
 
 class KeyPair(AbstractKeyPair):

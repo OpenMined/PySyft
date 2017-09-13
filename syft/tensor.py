@@ -2,6 +2,7 @@
 import numpy as np
 import syft
 import scipy
+import pickle
 
 __all__ = [
     'equal', 'TensorBase',
@@ -60,7 +61,11 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         else:
-            return pubkey.encrypt(self)
+            if(type(pubkey) == syft.he.paillier.keys.PublicKey):
+                out = syft.he.paillier.PaillierTensor(pubkey, self.data)
+                return out
+            else:
+                return NotImplemented
 
     def decrypt(self, seckey):
         """Decrypts the tensor using a Secret Key"""
@@ -117,6 +122,9 @@ class TensorBase(object):
         """Returns inner product of two tensors"""
         if self.encrypted:
             return NotImplemented
+
+        if tensor.encrypted:
+            return tensor.dot(self)
 
         return syft.dot(self, tensor)
 
@@ -581,10 +589,10 @@ class TensorBase(object):
         return self
 
     def __str__(self):
-        return str(self.data)
+        return "BaseTensor: " + str(self.data)
 
     def __repr__(self):
-        return repr(self.data)
+        return "BaseTensor: " + repr(self.data)
 
     def rsqrt(self):
         """Returns reciprocal of square root of Tensor element wise"""
@@ -1025,3 +1033,9 @@ class TensorBase(object):
             return NotImplemented
         hist, edges = np.histogram(np.array(self.data), bins=bins, range=(min, max))
         return TensorBase(hist)
+
+    def serialize(self):
+        return pickle.dumps(self)
+
+    def deserialize(b):
+        return pickle.loads(b)
