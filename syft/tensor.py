@@ -1039,3 +1039,9 @@ class TensorBase(object):
 
     def deserialize(b):
         return pickle.loads(b)
+
+    def equal(self, tensor):
+        if self.encrypted:
+            return NotImplemented
+
+        return np.array_equal(self.data, tensor.data)
