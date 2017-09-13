@@ -1041,10 +1041,8 @@ class TensorBase(object):
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
             return NotImplemented
-        idx_xsection_shape = list(index.data.shape)
-        idx_xsection_shape.pop(dim)
-        self_xsection_shape = list(self.data.shape)
-        self_xsection_shape.pop(dim)
+        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim+1:]
+        self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim+1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
                              ", all dimensions of index and self should be the same size")
