@@ -8,3 +8,4 @@ WORKDIR /PySyft
 RUN ["pip3", "install", "-r", "requirements.txt"]
 COPY . /PySyft
 RUN ["python3", "setup.py", "install"]
+RUN ["pip3", "install", "jupyter"]
