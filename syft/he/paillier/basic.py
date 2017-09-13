@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 from ...tensor import TensorBase
 
 
@@ -63,7 +64,8 @@ class PaillierTensor(TensorBase):
             else:
                 return NotImplemented
         else:
-            return PaillierTensor(self.public_key, self.data * float(tensor), False)
+            op = self.data * float(tensor)
+            return PaillierTensor(self.public_key, op, False)
 
     def __truediv__(self, tensor):
         """Performs element-wise division between two tensors"""
@@ -76,7 +78,8 @@ class PaillierTensor(TensorBase):
             else:
                 return NotImplemented
         else:
-            return PaillierTensor(self.public_key, self.data * (1 / float(tensor)), False)
+            op = self.data * (1 / float(tensor))
+            return PaillierTensor(self.public_key, op, False)
 
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
@@ -84,13 +87,14 @@ class PaillierTensor(TensorBase):
             return NotImplemented
 
         if dim is None:
-            return self.data.sum()
+            return PaillierTensor(self.public_key, self.data.sum(), False)
         else:
-            return self.data.sum(axis=dim)
+            op = self.data.sum(axis=dim)
+            return PaillierTensor(self.public_key, op, False)
 
     def dot(self, plaintext_x):
         if(not plaintext_x.encrypted):
-            return (self * plaintext_x).sum()
+            return (self * plaintext_x).sum(plaintext_x.dim() - 1)
         else:
             return NotImplemented
 
@@ -167,3 +171,9 @@ class Float():
         """This is kindof a boring/uninformative __str__"""
 
         return 'e'
+
+    def serialize(self):
+        return pickle.dumps(self)
+
+    def deserialize(b):
+        return pickle.loads(b)

@@ -37,6 +37,9 @@ class SecretKey(AbstractSecretKey):
     def serialize(self):
         return pickle.dumps(self.sk)
 
+    def deserialize(b):
+        return SecretKey(pickle.loads(b))
+
 
 class PublicKey(AbstractPublicKey):
 
@@ -90,6 +93,9 @@ class PublicKey(AbstractPublicKey):
 
     def serialize(self):
         return pickle.dumps(self.pk)
+
+    def deserialize(b):
+        return PublicKey(pickle.loads(b))
 
 
 class KeyPair(AbstractKeyPair):

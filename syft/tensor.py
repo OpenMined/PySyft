@@ -2,6 +2,7 @@
 import numpy as np
 import syft
 import scipy
+import pickle
 
 __all__ = [
     'equal', 'TensorBase',
@@ -121,6 +122,9 @@ class TensorBase(object):
         """Returns inner product of two tensors"""
         if self.encrypted:
             return NotImplemented
+
+        if tensor.encrypted:
+            return tensor.dot(self)
 
         return syft.dot(self, tensor)
 
@@ -1029,3 +1033,9 @@ class TensorBase(object):
             return NotImplemented
         hist, edges = np.histogram(np.array(self.data), bins=bins, range=(min, max))
         return TensorBase(hist)
+
+    def serialize(self):
+        return pickle.dumps(self)
+
+    def deserialize(b):
+        return pickle.loads(b)
