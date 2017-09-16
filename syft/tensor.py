@@ -1048,7 +1048,7 @@ class TensorBase(object):
             return NotImplemented
         hist, edges = np.histogram(np.array(self.data), bins=bins, range=(min, max))
         return TensorBase(hist)
-      
+
     def scatter_(self, dim, index, src):
         """
         Writes all values from the Tensor ``src`` into ``self`` at the indices specified in the ``index`` Tensor.
@@ -1106,9 +1106,9 @@ class TensorBase(object):
 
         else:
             self.data[idx] = src
-            
+
         return self
-      
+
     def gather(self, dim, index):
         """
         Gathers values along an axis specified by ``dim``.
@@ -1134,7 +1134,7 @@ class TensorBase(object):
         index_swaped = np.swapaxes(index, 0, dim)
         gathered = np.choose(index_swaped, data_swaped)
         return TensorBase(np.swapaxes(gathered, 0, dim))
-      
+
     def serialize(self):
         return pickle.dumps(self)
 

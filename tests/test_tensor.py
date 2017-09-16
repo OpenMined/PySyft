@@ -765,8 +765,8 @@ class gatherTests(unittest.TestCase):
         result = t.gather(dim=dim, index=idx)
         expexted = [[47, 74, 37], [56, 9, 44.], [47, 9, 44]]
         self.assertTrue(np.array_equal(result.data, np.array(expexted)))
-        
-        
+
+
 class scatterTests(unittest.TestCase):
     def testScatter_Numerical0(self):
         t = TensorBase(np.zeros((3, 5)))
