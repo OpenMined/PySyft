@@ -750,6 +750,23 @@ class notEqualTests(unittest.TestCase):
         self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
 
 
+class gatherTests(unittest.TestCase):
+    def testGatherNumerical1(self):
+        t = TensorBase(np.array([[65, 17], [14, 25], [76, 22]]))
+        idx = TensorBase(np.array([[0], [1], [0]]))
+        dim = 1
+        result = t.gather(dim=dim, index=idx)
+        self.assertTrue(np.array_equal(result.data, np.array([[65], [25], [76]])))
+
+    def testGatherNumerical2(self):
+        t = TensorBase(np.array([[47, 74, 44], [56, 9, 37]]))
+        idx = TensorBase(np.array([[0, 0, 1], [1, 1, 0], [0, 1, 0]]))
+        dim = 0
+        result = t.gather(dim=dim, index=idx)
+        expexted = [[47, 74, 37], [56, 9, 44.], [47, 9, 44]]
+        self.assertTrue(np.array_equal(result.data, np.array(expexted)))
+
+
 class scatterTests(unittest.TestCase):
     def testScatter_Numerical0(self):
         t = TensorBase(np.zeros((3, 5)))

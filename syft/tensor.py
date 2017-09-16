@@ -1051,9 +1051,8 @@ class TensorBase(object):
 
     def scatter_(self, dim, index, src):
         """
-        Writes all values from the Tensor src into self at the indices specified in the index Tensor.
-        The indices are specified with respect to the given dimension, dim, in the manner described in gather().
-
+        Writes all values from the Tensor ``src`` into ``self`` at the indices specified in the ``index`` Tensor.
+        The indices are specified with respect to the given dimension, ``dim``, in the manner described in gather().
         :param dim: The axis along which to index
         :param index: The indices of elements to scatter
         :param src: The source element(s) to scatter
@@ -1109,6 +1108,32 @@ class TensorBase(object):
             self.data[idx] = src
 
         return self
+
+    def gather(self, dim, index):
+        """
+        Gathers values along an axis specified by ``dim``.
+        For a 3-D tensor the output is specified by:
+            out[i][j][k] = input[index[i][j][k]][j][k]  # if dim == 0
+            out[i][j][k] = input[i][index[i][j][k]][k]  # if dim == 1
+            out[i][j][k] = input[i][j][index[i][j][k]]  # if dim == 2
+        :param dim: The axis along which to index
+        :param index: A tensor of indices of elements to gather
+        :return: tensor of gathered values
+        """
+        index = _ensure_tensorbase(index)
+        if self.encrypted or index.encrypted:
+            return NotImplemented
+        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
+        self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
+        if idx_xsection_shape != self_xsection_shape:
+            raise ValueError("Except for dimension " + str(dim) +
+                             ", all dimensions of index and self should be the same size")
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The values of index must be integers")
+        data_swaped = np.swapaxes(self.data, 0, dim)
+        index_swaped = np.swapaxes(index, 0, dim)
+        gathered = np.choose(index_swaped, data_swaped)
+        return TensorBase(np.swapaxes(gathered, 0, dim))
 
     def serialize(self):
         return pickle.dumps(self)
