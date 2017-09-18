@@ -1140,3 +1140,34 @@ class TensorBase(object):
 
     def deserialize(b):
         return pickle.loads(b)
+
+    def remainder(self, divisor):
+        """
+        Computes the element-wise remainder of division.
+        The divisor and dividend may contain both for integer and floating point numbers.
+        The remainder has the same sign as the divisor.
+        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
+        :param divisor:  The divisor. This may be either a number or a tensor.
+        :return: result tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+        if not np.isscalar(divisor):
+            divisor = _ensure_tensorbase(divisor)
+        return TensorBase(np.remainder(self.data, divisor))
+
+    def remainder_(self, divisor):
+        """
+        Computes the element-wise remainder of division.
+        The divisor and dividend may contain both for integer and floating point numbers.
+        The remainder has the same sign as the divisor.
+        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
+        :param divisor:  The divisor. This may be either a number or a tensor.
+        :return: self
+        """
+        if self.encrypted:
+            return NotImplemented
+        if not np.isscalar(divisor):
+            divisor = _ensure_tensorbase(divisor)
+        self.data = np.remainder(self.data, divisor)
+        return self
