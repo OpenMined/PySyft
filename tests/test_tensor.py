@@ -1,6 +1,7 @@
 from syft import TensorBase
 import syft
 import unittest
+from syft import tensor
 import numpy as np
 import math
 
@@ -860,6 +861,13 @@ class scatterTests(unittest.TestCase):
         dim = 1
         with self.assertRaises(Exception):
             t.scatter_(dim=dim, index=idx, src=src)
+
+
+class testMv(unittest.TestCase):
+    def mvTest(self):
+        mat = TensorBase([[1, 2, 3], [2, 3, 4], [4, 5, 6]])
+        vector = TensorBase([[1, 2, 3]])
+        self.assertEqual(tensor.mv(mat, vector), TensorBase([[17, 23, 29]]))
 
 
 if __name__ == "__main__":
