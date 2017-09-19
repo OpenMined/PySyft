@@ -866,8 +866,13 @@ class scatterTests(unittest.TestCase):
 class testMv(unittest.TestCase):
     def mvTest(self):
         mat = TensorBase([[1, 2, 3], [2, 3, 4], [4, 5, 6]])
-        vector = TensorBase([[1, 2, 3]])
-        self.assertEqual(tensor.mv(mat, vector), TensorBase([[17, 23, 29]]))
+        vector = TensorBase([1, 2, 3])
+        self.assertEqual(tensor.mv(mat, vector), TensorBase([14, 20, 32]))
+
+    def mvTensorTest(self):
+        mat = TensorBase([[1, 2, 3], [1, 2, 3]])
+        vec = TensorBase([1, 2, 3])
+        self.assertEqual(mat.mv(vec), TensorBase([14, 14]))
 
 
 if __name__ == "__main__":
