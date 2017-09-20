@@ -1140,3 +1140,21 @@ class TensorBase(object):
 
     def deserialize(b):
         return pickle.loads(b)
+
+    def mv(self, tensorvector):
+        if self.encrypted:
+            raise NotImplemented
+        return mv(self, tensorvector)
+
+
+def mv(tensormat, tensorvector):
+    """ matrix and vector multiplication """
+    if tensormat.encrypted or tensorvector.encrypted:
+        raise NotImplemented
+    elif not len(tensorvector.data.shape) == 1:
+        raise ValueError('Vector dimensions not correct {}'.format(tensorvector.data.shape))
+    elif tensorvector.data.shape[0] != tensormat.data.shape[1]:
+        raise ValueError('vector dimensions {} not  \
+            compatible with matrix {} '.format(tensorvector.data.shape, tensormat.data.shape))
+    else:
+        return TensorBase(np.matmul(tensormat.data, tensorvector.data))
