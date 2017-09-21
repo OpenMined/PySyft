@@ -1,6 +1,7 @@
 from syft import TensorBase
 import syft
 import unittest
+from syft import tensor
 import numpy as np
 import math
 
@@ -559,6 +560,30 @@ class chunkTests(unittest.TestCase):
         self.assertEqual(t2.shape(), t3.shape())
 
 
+class gtTests(unittest.TestCase):
+    def testGtWithTensor(self):
+        t1 = TensorBase(np.arange(10))
+        t2 = TensorBase(np.arange(10)[-1::-1])
+        truth_values = t1.gt(t2)
+        self.assertEqual(truth_values, [False, False, False, False, False, True, True, True, True, True])
+
+    def testGtWithNumber(self):
+        t1 = TensorBase(np.arange(10))
+        truth_values = t1.gt(-1)
+        self.assertEqual(truth_values, [True] * 10)
+
+    def testGtInPlaceWithTensor(self):
+        t1 = TensorBase(np.arange(10))
+        t2 = TensorBase(np.arange(10)[-1::-1])
+        t1.gt_(t2)
+        self.assertEqual(t1, [False, False, False, False, False, True, True, True, True, True])
+
+    def testGtInPlaceWithNumber(self):
+        t1 = TensorBase(np.arange(10))
+        t1.gt_(-1)
+        self.assertEqual(t1, [True] * 10)
+
+
 class bernoulliTests(unittest.TestCase):
     def testBernoulli(self):
         p = TensorBase(np.random.uniform(size=(3, 2)))
@@ -704,6 +729,150 @@ class expandAsTests(unittest.TestCase):
         t2 = TensorBase(np.zeros((3, 4)))
         t3 = t1.expand_as(t2)
         self.assertTrue(np.array_equal(t2.data.shape, t3.data.shape))
+
+
+class meanTests(unittest.TestCase):
+    def testMean(self):
+        t1 = TensorBase(np.arange(8).reshape(2, 2, 2))
+        t2 = t1.mean(1, True)
+        self.assertTrue(np.array_equal(t2.data, np.array([[[1., 2.]], [[5., 6.]]])))
+
+
+class notEqualTests(unittest.TestCase):
+    def testNe(self):
+        t1 = TensorBase([1, 2, 3, 4])
+        t2 = TensorBase([1., 2., 3., 5.])
+        self.assertEqual(t1.ne(t2), TensorBase([1, 1, 1, 0]))
+
+    def testNe_(self):
+        t1 = TensorBase([1, 2, 3, 4])
+        t2 = TensorBase([1., 2., 3., 5.])
+        t1.ne_(t2)
+        self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
+
+
+class gatherTests(unittest.TestCase):
+    def testGatherNumerical1(self):
+        t = TensorBase(np.array([[65, 17], [14, 25], [76, 22]]))
+        idx = TensorBase(np.array([[0], [1], [0]]))
+        dim = 1
+        result = t.gather(dim=dim, index=idx)
+        self.assertTrue(np.array_equal(result.data, np.array([[65], [25], [76]])))
+
+    def testGatherNumerical2(self):
+        t = TensorBase(np.array([[47, 74, 44], [56, 9, 37]]))
+        idx = TensorBase(np.array([[0, 0, 1], [1, 1, 0], [0, 1, 0]]))
+        dim = 0
+        result = t.gather(dim=dim, index=idx)
+        expexted = [[47, 74, 37], [56, 9, 44.], [47, 9, 44]]
+        self.assertTrue(np.array_equal(result.data, np.array(expexted)))
+
+
+class scatterTests(unittest.TestCase):
+    def testScatter_Numerical0(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[0, 0, 0, 0, 0]]))
+        src = 1.0
+        dim = 0
+        t.scatter_(dim=dim, index=idx, src=src)
+        self.assertTrue(np.array_equal(t.data, np.array([[1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
+
+    def testScatter_Numerical1(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[0], [0], [0]]))
+        src = 1.0
+        dim = 1
+        t.scatter_(dim=dim, index=idx, src=src)
+        self.assertTrue(np.array_equal(t.data, np.array([[1, 0, 0, 0, 0], [1, 0, 0, 0, 0], [1, 0, 0, 0, 0]])))
+
+    def testScatter_Numerical2(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[0], [0], [0]]))
+        src = 1.0
+        dim = -1
+        t.scatter_(dim=dim, index=idx, src=src)
+        self.assertTrue(np.array_equal(t.data, np.array([[1, 0, 0, 0, 0], [1, 0, 0, 0, 0], [1, 0, 0, 0, 0]])))
+
+    def testScatter_Numerical3(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[0, 0, 0, 0, 0]]))
+        src = TensorBase(np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]))
+        dim = 0
+        t.scatter_(dim=dim, index=idx, src=src)
+        self.assertTrue(np.array_equal(t.data, np.array([[1, 2, 3, 4, 5], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
+
+    def testScatter_Numerical4(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[0, 0, 0, 0, 0]]))
+        src = TensorBase(np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]))
+        dim = -2
+        t.scatter_(dim=dim, index=idx, src=src)
+        self.assertTrue(np.array_equal(t.data, np.array([[1, 2, 3, 4, 5], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
+
+    def testScatter_Numerical5(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]))
+        src = TensorBase(np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]))
+        dim = 0
+        t.scatter_(dim=dim, index=idx, src=src)
+        self.assertTrue(np.array_equal(t.data, np.array([[6, 7, 8, 9, 10], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
+
+    def testScatter_Numerical6(self):
+        t = TensorBase(np.zeros((3, 4, 5)))
+        idx = [[[3, 0, 1, 1, 2], [0, 3, 3, 3, 3]], [[2, 0, 0, 0, 0], [2, 1, 0, 2, 0]],
+               [[0, 0, 1, 0, 2], [1, 3, 2, 2, 2]]]
+        src = [[[7, 84, 99, 71, 44], [79, 57, 2, 37, 62]], [[31, 44, 43, 54, 56], [72, 52, 21, 89, 95]],
+               [[5, 3, 99, 4, 52], [32, 88, 58, 62, 9]]]
+        dim = 1
+        t.scatter_(dim=dim, index=idx, src=src)
+        expected = [[[79, 84, 0, 0, 0], [0, 0, 99, 71, 0], [0, 0, 0, 0, 44], [7, 57, 2, 37, 62]],
+                    [[0, 44, 21, 54, 95], [0, 52, 0, 0, 0], [72, 0, 0, 89, 0], [0, 0, 0, 0, 0]],
+                    [[5, 3, 0, 4, 0], [32, 0, 99, 0, 0], [0, 0, 58, 62, 9], [0, 88, 0, 0, 0]]]
+        self.assertTrue(np.array_equal(t.data, np.array(expected)))
+
+    def testScatter_IndexType(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[0.0, 0.0, 0.0, 0.0, 0.0]]))
+        src = TensorBase(np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]))
+        dim = 0
+        with self.assertRaises(Exception):
+            t.scatter_(dim=dim, index=idx, src=src)
+
+    def testScatter_IndexOutOfRange(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[5, 0, 0, 0, 0]]))
+        src = TensorBase(np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]))
+        dim = 0
+        with self.assertRaises(Exception):
+            t.scatter_(dim=dim, index=idx, src=src)
+
+    def testScatter_DimOutOfRange(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[0, 0, 0, 0, 0]]))
+        src = TensorBase(np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]))
+        dim = 4
+        with self.assertRaises(Exception):
+            t.scatter_(dim=dim, index=idx, src=src)
+
+    def testScatter_index_src_dimension_mismatch(self):
+        t = TensorBase(np.zeros((3, 5)))
+        idx = TensorBase(np.array([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]))
+        src = TensorBase(np.array([[1, 2, 3, 4, 5]]))
+        dim = 1
+        with self.assertRaises(Exception):
+            t.scatter_(dim=dim, index=idx, src=src)
+
+
+class testMv(unittest.TestCase):
+    def mvTest(self):
+        mat = TensorBase([[1, 2, 3], [2, 3, 4], [4, 5, 6]])
+        vector = TensorBase([1, 2, 3])
+        self.assertEqual(tensor.mv(mat, vector), TensorBase([14, 20, 32]))
+
+    def mvTensorTest(self):
+        mat = TensorBase([[1, 2, 3], [1, 2, 3]])
+        vec = TensorBase([1, 2, 3])
+        self.assertEqual(mat.mv(vec), TensorBase([14, 14]))
 
 
 if __name__ == "__main__":
