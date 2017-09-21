@@ -1198,7 +1198,7 @@ class TensorBase(object):
         mask_self_iter = np.nditer([mask.data, self.data])
         source_iter = np.nditer(source.data)
         out_flat = [s if m == 0 else source_iter.__next__().item() for m, s in mask_self_iter]
-        self.data = np.array(out_flat).reshape(self.data.shape)
+        self.data = np.reshape(out_flat, self.data.shape)
 
 
 def mv(tensormat, tensorvector):
