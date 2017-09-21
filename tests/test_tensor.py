@@ -751,6 +751,16 @@ class notEqualTests(unittest.TestCase):
         self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
 
 
+class index_selectTests(unittest.TestCase):
+    def testIndex_select(self):
+        t = TensorBase(np.reshape(np.arange(0, 2 * 3 * 4), (2, 3, 4)))
+        idx = np.array([1, 0])
+        dim = 2
+        result = t.index_select(dim=dim, index=idx)
+        expected = np.array([[[1, 0], [5, 4], [9, 8]], [[13, 12], [17, 16], [21, 20]]])
+        self.assertTrue(np.array_equal(result.data, expected))
+
+
 class gatherTests(unittest.TestCase):
     def testGatherNumerical1(self):
         t = TensorBase(np.array([[65, 17], [14, 25], [76, 22]]))

@@ -1160,6 +1160,22 @@ class TensorBase(object):
     def deserialize(b):
         return pickle.loads(b)
 
+    def index_select(self, dim, index):
+        """
+        Returns a new Tensor which indexes the ``input`` Tensor along
+        dimension ``dim`` using the entries in ``index``.
+
+        :param dim: dimension in which to index
+        :param index: 1D tensor containing the indices to index
+        :return: Tensor of selected indices
+        """
+        index = _ensure_tensorbase(index)
+        if self.encrypted or index.encrypted:
+            return NotImplemented
+        if index.data.ndim > 1:
+            raise ValueError("Index is supposed to be 1D")
+        return TensorBase(self.data.take(index, axis=dim))
+
     def mv(self, tensorvector):
         if self.encrypted:
             raise NotImplemented
