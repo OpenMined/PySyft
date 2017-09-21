@@ -170,6 +170,14 @@ def tanh(tensor):
         return NotImplemented
     return TensorBase(np.tanh(np.array(tensor.data)))
 
+def relu(tensor):
+        """ Returns a new tensor holding element wise values of relu function
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    return TensorBase(np.maximum(tensor.data,0,tensor.data))
+
 
 def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
     """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the
