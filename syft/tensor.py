@@ -52,9 +52,28 @@ class TensorBase(object):
     matrix products.
     """
 
+    _mul_depth = 0
+    _add_depth = 0
+
     def __init__(self, arr_like, encrypted=False):
         self.data = _ensure_ndarray(arr_like)
         self.encrypted = encrypted
+
+    def _calc_mul_depth(self, tensor1, tensor2):
+        if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
+            self._mul_depth = max(tensor1._mul_depth, tensor2._mul_depth) + 1
+        elif isinstance(tensor1, TensorBase):
+            self._mul_depth = tensor1._mul_depth + 1
+        elif isinstance(tensor2, TensorBase):
+            self._mul_depth = tensor2._mul_depth + 1
+
+    def _calc_add_depth(self, tensor1, tensor2):
+        if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
+            self._add_depth = max(tensor1._add_depth, tensor2._add_depth) + 1
+        elif isinstance(tensor1, TensorBase):
+            self._add_depth = tensor1._add_depth + 1
+        elif isinstance(tensor2, TensorBase):
+            self._add_depth = tensor2._add_depth + 1
 
     def encrypt(self, pubkey):
         """Encrypts the Tensor using a Public Key"""
