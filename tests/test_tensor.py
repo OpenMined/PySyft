@@ -885,5 +885,28 @@ class testMv(unittest.TestCase):
         self.assertEqual(mat.mv(vec), TensorBase([14, 14]))
 
 
+class masked_scatter_Tests(unittest.TestCase):
+    def testMasked_scatter_1(self):
+        t = TensorBase(np.ones((2, 3)))
+        source = TensorBase([1, 2, 3, 4, 5, 6])
+        mask = TensorBase([[0, 1, 0], [1, 0, 1]])
+        t.masked_scatter_(mask, source)
+        self.assertTrue(np.array_equal(t, TensorBase([[1, 1, 1], [2, 1, 3]])))
+
+    def testMasked_scatter_braodcasting1(self):
+        t = TensorBase(np.ones((2, 3)))
+        source = TensorBase([1, 2, 3, 4, 5, 6])
+        mask = TensorBase([0, 1, 0])
+        t.masked_scatter_(mask, source)
+        self.assertTrue(np.array_equal(t, TensorBase([[1, 1, 1], [1, 2, 1]])))
+
+    def testMasked_scatter_braodcasting2(self):
+        t = TensorBase(np.ones((2, 3)))
+        source = TensorBase([1, 2, 3, 4, 5, 6])
+        mask = TensorBase([[1], [0]])
+        t.masked_scatter_(mask, source)
+        self.assertTrue(np.array_equal(t, TensorBase([[1, 2, 3], [1, 1, 1]])))
+
+
 if __name__ == "__main__":
     unittest.main()

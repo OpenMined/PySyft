@@ -1181,6 +1181,25 @@ class TensorBase(object):
             raise NotImplemented
         return mv(self, tensorvector)
 
+    def masked_scatter_(self, mask, source):
+        """
+        Copies elements from ``source`` into this tensor at positions where the ``mask`` is one.
+        The shape of ``mask`` must be broadcastable with the shape of the this tensor.
+        The ``source`` should have at least as many elements as the number of ones in ``mask``.
+
+        :param mask: The binary mask (non-zero is treated as true)
+        :param source: The tensor to copy from
+        :return:
+        """
+        mask = _ensure_tensorbase(mask)
+        source = _ensure_tensorbase(source)
+        if self.encrypted or mask.encrypted or source.encrypted:
+            return NotImplemented
+        mask_self_iter = np.nditer([mask.data, self.data])
+        source_iter = np.nditer(source.data)
+        out_flat = [s if m == 0 else source_iter.__next__().item() for m, s in mask_self_iter]
+        self.data = np.reshape(out_flat, self.data.shape)
+
 
 def mv(tensormat, tensorvector):
     """ matrix and vector multiplication """
