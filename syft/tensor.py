@@ -1200,6 +1200,21 @@ class TensorBase(object):
         out_flat = [s if m == 0 else source_iter.__next__().item() for m, s in mask_self_iter]
         self.data = np.reshape(out_flat, self.data.shape)
 
+    def eq(self, t):
+        """Returns a new Tensor having boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return TensorBase(np.equal(self.data, _ensure_tensorbase(t).data))
+
+    def eq_(self, t):
+        """Writes in-place, boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.equal(self.data, _ensure_tensorbase(t).data)
+        return self
+
 
 def mv(tensormat, tensorvector):
     """ matrix and vector multiplication """

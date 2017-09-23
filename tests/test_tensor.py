@@ -908,5 +908,29 @@ class masked_scatter_Tests(unittest.TestCase):
         self.assertTrue(np.array_equal(t, TensorBase([[1, 2, 3], [1, 1, 1]])))
 
 
+class eqTests(unittest.TestCase):
+    def testEqWithTensor(self):
+        t1 = TensorBase(np.arange(5))
+        t2 = TensorBase(np.arange(5)[-1::-1])
+        truth_values = t1.eq(t2)
+        self.assertEqual(truth_values, [False, False, True, False, False])
+
+    def testEqWithNumber(self):
+        t1 = TensorBase(np.arange(5))
+        truth_values = t1.eq(1)
+        self.assertEqual(truth_values, [False, True, False, False, False])
+
+    def testEqInPlaceWithTensor(self):
+        t1 = TensorBase(np.arange(5))
+        t2 = TensorBase(np.arange(5)[-1::-1])
+        t1.eq_(t2)
+        self.assertEqual(t1, [False, False, True, False, False])
+
+    def testEqInPlaceWithNumber(self):
+        t1 = TensorBase(np.arange(5))
+        t1.eq_(1)
+        self.assertEqual(t1, [False, True, False, False, False])
+
+
 if __name__ == "__main__":
     unittest.main()
