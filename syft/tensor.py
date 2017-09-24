@@ -1160,6 +1160,37 @@ class TensorBase(object):
     def deserialize(b):
         return pickle.loads(b)
 
+    def remainder(self, divisor):
+        """
+        Computes the element-wise remainder of division.
+        The divisor and dividend may contain both for integer and floating point numbers.
+        The remainder has the same sign as the divisor.
+        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
+        :param divisor:  The divisor. This may be either a number or a tensor.
+        :return: result tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+        if not np.isscalar(divisor):
+            divisor = _ensure_tensorbase(divisor)
+        return TensorBase(np.remainder(self.data, divisor))
+
+    def remainder_(self, divisor):
+        """
+        Computes the element-wise remainder of division.
+        The divisor and dividend may contain both for integer and floating point numbers.
+        The remainder has the same sign as the divisor.
+        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
+        :param divisor:  The divisor. This may be either a number or a tensor.
+        :return: self
+        """
+        if self.encrypted:
+            return NotImplemented
+        if not np.isscalar(divisor):
+            divisor = _ensure_tensorbase(divisor)
+        self.data = np.remainder(self.data, divisor)
+        return self
+
     def index_select(self, dim, index):
         """
         Returns a new Tensor which indexes the ``input`` Tensor along
@@ -1218,6 +1249,21 @@ class TensorBase(object):
         mask_broadcasted = np.broadcast_to(mask.data, self.data.shape)
         indices = np.where(mask_broadcasted)
         self.data[indices] = value
+        return self
+
+    def eq(self, t):
+        """Returns a new Tensor having boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return TensorBase(np.equal(self.data, _ensure_tensorbase(t).data))
+
+    def eq_(self, t):
+        """Writes in-place, boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.equal(self.data, _ensure_tensorbase(t).data)
         return self
 
 
