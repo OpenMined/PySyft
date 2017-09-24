@@ -873,6 +873,23 @@ class scatterTests(unittest.TestCase):
             t.scatter_(dim=dim, index=idx, src=src)
 
 
+class remainderTests(unittest.TestCase):
+    def testRemainder(self):
+        t = TensorBase([[-2, -3], [4, 1]])
+        result = t.remainder(1.5)
+        self.assertTrue(np.array_equal(result.data, np.array([[1, 0], [1, 1]])))
+
+    def testRemainder_broadcasting(self):
+        t = TensorBase([[-2, -3], [4, 1]])
+        result = t.remainder([2, -3])
+        self.assertTrue(np.array_equal(result.data, np.array([[0, 0], [0, -2]])))
+
+    def testRemainder_(self):
+        t = TensorBase([[-2, -3], [4, 1]])
+        t.remainder_(2)
+        self.assertTrue(np.array_equal(t.data, np.array([[0, 1], [0, 1]])))
+
+
 class testMv(unittest.TestCase):
     def mvTest(self):
         mat = TensorBase([[1, 2, 3], [2, 3, 4], [4, 5, 6]])
