@@ -52,9 +52,28 @@ class TensorBase(object):
     matrix products.
     """
 
+    _mul_depth = 0
+    _add_depth = 0
+
     def __init__(self, arr_like, encrypted=False):
         self.data = _ensure_ndarray(arr_like)
         self.encrypted = encrypted
+
+    def _calc_mul_depth(self, tensor1, tensor2):
+        if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
+            self._mul_depth = max(tensor1._mul_depth, tensor2._mul_depth) + 1
+        elif isinstance(tensor1, TensorBase):
+            self._mul_depth = tensor1._mul_depth + 1
+        elif isinstance(tensor2, TensorBase):
+            self._mul_depth = tensor2._mul_depth + 1
+
+    def _calc_add_depth(self, tensor1, tensor2):
+        if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
+            self._add_depth = max(tensor1._add_depth, tensor2._add_depth) + 1
+        elif isinstance(tensor1, TensorBase):
+            self._add_depth = tensor1._add_depth + 1
+        elif isinstance(tensor2, TensorBase):
+            self._add_depth = tensor2._add_depth + 1
 
     def encrypt(self, pubkey):
         """Encrypts the Tensor using a Public Key"""
@@ -1171,3 +1190,71 @@ class TensorBase(object):
             divisor = _ensure_tensorbase(divisor)
         self.data = np.remainder(self.data, divisor)
         return self
+
+    def index_select(self, dim, index):
+        """
+        Returns a new Tensor which indexes the ``input`` Tensor along
+        dimension ``dim`` using the entries in ``index``.
+
+        :param dim: dimension in which to index
+        :param index: 1D tensor containing the indices to index
+        :return: Tensor of selected indices
+        """
+        index = _ensure_tensorbase(index)
+        if self.encrypted or index.encrypted:
+            return NotImplemented
+        if index.data.ndim > 1:
+            raise ValueError("Index is supposed to be 1D")
+        return TensorBase(self.data.take(index, axis=dim))
+
+    def mv(self, tensorvector):
+        if self.encrypted:
+            raise NotImplemented
+        return mv(self, tensorvector)
+
+    def masked_scatter_(self, mask, source):
+        """
+        Copies elements from ``source`` into this tensor at positions where the ``mask`` is one.
+        The shape of ``mask`` must be broadcastable with the shape of the this tensor.
+        The ``source`` should have at least as many elements as the number of ones in ``mask``.
+
+        :param mask: The binary mask (non-zero is treated as true)
+        :param source: The tensor to copy from
+        :return:
+        """
+        mask = _ensure_tensorbase(mask)
+        source = _ensure_tensorbase(source)
+        if self.encrypted or mask.encrypted or source.encrypted:
+            return NotImplemented
+        mask_self_iter = np.nditer([mask.data, self.data])
+        source_iter = np.nditer(source.data)
+        out_flat = [s if m == 0 else source_iter.__next__().item() for m, s in mask_self_iter]
+        self.data = np.reshape(out_flat, self.data.shape)
+
+    def eq(self, t):
+        """Returns a new Tensor having boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return TensorBase(np.equal(self.data, _ensure_tensorbase(t).data))
+
+    def eq_(self, t):
+        """Writes in-place, boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.equal(self.data, _ensure_tensorbase(t).data)
+        return self
+
+
+def mv(tensormat, tensorvector):
+    """ matrix and vector multiplication """
+    if tensormat.encrypted or tensorvector.encrypted:
+        raise NotImplemented
+    elif not len(tensorvector.data.shape) == 1:
+        raise ValueError('Vector dimensions not correct {}'.format(tensorvector.data.shape))
+    elif tensorvector.data.shape[0] != tensormat.data.shape[1]:
+        raise ValueError('vector dimensions {} not  \
+            compatible with matrix {} '.format(tensorvector.data.shape, tensormat.data.shape))
+    else:
+        return TensorBase(np.matmul(tensormat.data, tensorvector.data))
