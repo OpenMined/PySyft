@@ -39,7 +39,7 @@ The recommended method is using Docker (works on all major operating systems).
 #### For Docker Users
 
 Install Docker from [its website](https://www.docker.com/).
-For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask install docker`.
+For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask install docker`. Once installed, launch the Docker application. Ensure that docker is installed and running properly by checking the version: `docker -v`.
 
 #### For Anaconda Users
 
