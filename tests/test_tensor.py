@@ -1,6 +1,7 @@
 from syft import TensorBase
 import syft
 import unittest
+from syft import tensor
 import numpy as np
 import math
 
@@ -750,6 +751,16 @@ class notEqualTests(unittest.TestCase):
         self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
 
 
+class index_selectTests(unittest.TestCase):
+    def testIndex_select(self):
+        t = TensorBase(np.reshape(np.arange(0, 2 * 3 * 4), (2, 3, 4)))
+        idx = np.array([1, 0])
+        dim = 2
+        result = t.index_select(dim=dim, index=idx)
+        expected = np.array([[[1, 0], [5, 4], [9, 8]], [[13, 12], [17, 16], [21, 20]]])
+        self.assertTrue(np.array_equal(result.data, expected))
+
+
 class gatherTests(unittest.TestCase):
     def testGatherNumerical1(self):
         t = TensorBase(np.array([[65, 17], [14, 25], [76, 22]]))
@@ -860,6 +871,65 @@ class scatterTests(unittest.TestCase):
         dim = 1
         with self.assertRaises(Exception):
             t.scatter_(dim=dim, index=idx, src=src)
+
+
+class testMv(unittest.TestCase):
+    def mvTest(self):
+        mat = TensorBase([[1, 2, 3], [2, 3, 4], [4, 5, 6]])
+        vector = TensorBase([1, 2, 3])
+        self.assertEqual(tensor.mv(mat, vector), TensorBase([14, 20, 32]))
+
+    def mvTensorTest(self):
+        mat = TensorBase([[1, 2, 3], [1, 2, 3]])
+        vec = TensorBase([1, 2, 3])
+        self.assertEqual(mat.mv(vec), TensorBase([14, 14]))
+
+
+class masked_scatter_Tests(unittest.TestCase):
+    def testMasked_scatter_1(self):
+        t = TensorBase(np.ones((2, 3)))
+        source = TensorBase([1, 2, 3, 4, 5, 6])
+        mask = TensorBase([[0, 1, 0], [1, 0, 1]])
+        t.masked_scatter_(mask, source)
+        self.assertTrue(np.array_equal(t, TensorBase([[1, 1, 1], [2, 1, 3]])))
+
+    def testMasked_scatter_braodcasting1(self):
+        t = TensorBase(np.ones((2, 3)))
+        source = TensorBase([1, 2, 3, 4, 5, 6])
+        mask = TensorBase([0, 1, 0])
+        t.masked_scatter_(mask, source)
+        self.assertTrue(np.array_equal(t, TensorBase([[1, 1, 1], [1, 2, 1]])))
+
+    def testMasked_scatter_braodcasting2(self):
+        t = TensorBase(np.ones((2, 3)))
+        source = TensorBase([1, 2, 3, 4, 5, 6])
+        mask = TensorBase([[1], [0]])
+        t.masked_scatter_(mask, source)
+        self.assertTrue(np.array_equal(t, TensorBase([[1, 2, 3], [1, 1, 1]])))
+
+
+class eqTests(unittest.TestCase):
+    def testEqWithTensor(self):
+        t1 = TensorBase(np.arange(5))
+        t2 = TensorBase(np.arange(5)[-1::-1])
+        truth_values = t1.eq(t2)
+        self.assertEqual(truth_values, [False, False, True, False, False])
+
+    def testEqWithNumber(self):
+        t1 = TensorBase(np.arange(5))
+        truth_values = t1.eq(1)
+        self.assertEqual(truth_values, [False, True, False, False, False])
+
+    def testEqInPlaceWithTensor(self):
+        t1 = TensorBase(np.arange(5))
+        t2 = TensorBase(np.arange(5)[-1::-1])
+        t1.eq_(t2)
+        self.assertEqual(t1, [False, False, True, False, False])
+
+    def testEqInPlaceWithNumber(self):
+        t1 = TensorBase(np.arange(5))
+        t1.eq_(1)
+        self.assertEqual(t1, [False, True, False, False, False])
 
 
 if __name__ == "__main__":
