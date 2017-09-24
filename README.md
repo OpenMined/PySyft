@@ -47,6 +47,14 @@ For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask inst
 bash install_for_anaconda_users.sh
 ```
 
+Note: If you are having trouble with installation, after you run the above script, while you try to import Syft in your Jupyter notebook, try this: 
+
+```
+source activate openmined  # activate your env, if you haven't already
+pip install ipykernel
+python -m ipykernel install --user --name=openmined
+```
+
 ##### Windows
 
 ```sh
