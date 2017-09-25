@@ -925,6 +925,22 @@ class masked_scatter_Tests(unittest.TestCase):
         self.assertTrue(np.array_equal(t, TensorBase([[1, 2, 3], [1, 1, 1]])))
 
 
+class masked_fill_Tests(unittest.TestCase):
+    def testMasked_fill_(self):
+        t = TensorBase(np.ones((2, 3)))
+        value = 2.0
+        mask = TensorBase([[0, 0, 0], [1, 1, 0]])
+        t.masked_fill_(mask, value)
+        self.assertTrue(np.array_equal(t, TensorBase([[1.0, 1.0, 1.0], [2.0, 2.0, 1.0]])))
+
+    def testMasked_fill_broadcasting(self):
+        t = TensorBase(np.ones((2, 3)))
+        value = 2
+        mask = TensorBase([[1], [0]])
+        t.masked_fill_(mask, value)
+        self.assertTrue(np.array_equal(t, TensorBase([[2, 2, 2], [1, 1, 1]])))
+
+
 class eqTests(unittest.TestCase):
     def testEqWithTensor(self):
         t1 = TensorBase(np.arange(5))

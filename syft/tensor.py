@@ -1214,7 +1214,7 @@ class TensorBase(object):
 
     def masked_scatter_(self, mask, source):
         """
-        Copies elements from ``source`` into this tensor at positions where the ``mask`` is one.
+        Copies elements from ``source`` into this tensor at positions where the ``mask`` is true.
         The shape of ``mask`` must be broadcastable with the shape of the this tensor.
         The ``source`` should have at least as many elements as the number of ones in ``mask``.
 
@@ -1230,6 +1230,26 @@ class TensorBase(object):
         source_iter = np.nditer(source.data)
         out_flat = [s if m == 0 else source_iter.__next__().item() for m, s in mask_self_iter]
         self.data = np.reshape(out_flat, self.data.shape)
+        return self
+
+    def masked_fill_(self, mask, value):
+        """
+        Fills elements of this ``tensor`` with value where ``mask`` is true.
+        The shape of mask must be broadcastable with the shape of the underlying tensor.
+
+        :param mask: The binary mask (non-zero is treated as true)
+        :param value: value to fill
+        :return:
+        """
+        mask = _ensure_tensorbase(mask)
+        if self.encrypted or mask.encrypted:
+            return NotImplemented
+        if not np.isscalar(value):
+            raise ValueError("'value' should be scalar")
+        mask_broadcasted = np.broadcast_to(mask.data, self.data.shape)
+        indices = np.where(mask_broadcasted)
+        self.data[indices] = value
+        return self
 
     def eq(self, t):
         """Returns a new Tensor having boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
