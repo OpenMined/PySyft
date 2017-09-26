@@ -771,7 +771,7 @@ class getItemTests(unittest.TestCase):
         self.assertEqual(t1[:-1], [-3, -2, -1, 1, 2])
         self.assertEqual(t2[0], [[3, 5], [4, 6]])
         self.assertEqual(t2[0][1], [4, 6])
-=======
+
 class meanTests(unittest.TestCase):
     def testMean(self):
         t1 = TensorBase(np.arange(8).reshape(2, 2, 2))
