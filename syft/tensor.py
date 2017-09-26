@@ -191,11 +191,11 @@ class TensorBase(object):
             else:
                 return TensorBase(self.data[position], self.encrypted)
     """
-    
+
     def __getitem__(self, key):
         """
         Overloaded [] operator we are inheriting .data from numpy array so we can
-        pass the key value which is a slice (beg,end,step) to data member directly 
+        pass the key value which is a slice (beg,end,step) to data member directly
         """
         if self.encrypted:
             return NotImplemented
@@ -565,8 +565,6 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.modf(self.data)[0]
         return self
-
-        out = np.fmod(self.data)
 
     def fmod(self, x):
         """Computes the element wise remainder of divison by x"""
