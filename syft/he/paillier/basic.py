@@ -33,7 +33,9 @@ class PaillierTensor(TensorBase):
         if(type(tensor) == TensorBase):
             tensor = PaillierTensor(self.public_key, tensor.data)
 
-        return PaillierTensor(self.public_key, self.data + tensor.data, False)
+        ptensor = PaillierTensor(self.public_key, self.data + tensor.data, False)
+        ptensor._calc_add_depth(self, tensor)
+        return ptensor
 
     def __sub__(self, tensor):
         """Performs element-wise subtraction between two tensors"""
@@ -60,12 +62,15 @@ class PaillierTensor(TensorBase):
             if(not tensor.encrypted):
                 result = self.data * tensor.data
                 o = PaillierTensor(self.public_key, result, False)
+                o._calc_mul_depth(self, tensor)
                 return o
             else:
                 return NotImplemented
         else:
             op = self.data * float(tensor)
-            return PaillierTensor(self.public_key, op, False)
+            ptensor = PaillierTensor(self.public_key, op, False)
+            ptensor._calc_mul_depth(self, tensor)
+            return ptensor
 
     def __truediv__(self, tensor):
         """Performs element-wise division between two tensors"""
