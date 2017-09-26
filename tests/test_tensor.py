@@ -947,10 +947,15 @@ class masked_select_Tests(unittest.TestCase):
         mask = TensorBase([[0, 0, 0], [1, 1, 0]])
         self.assertTrue(np.array_equal(tensor.masked_select(t, mask), TensorBase([3, 4])))
 
-    def testMasked_select_broadcasting(self):
+    def testMasked_select_broadcasting1(self):
         t = TensorBase(np.arange(0, 6).reshape(2, 3))
         mask = TensorBase([[1, 1, 0]])
         self.assertTrue(np.array_equal(tensor.masked_select(t, mask), TensorBase([0, 1, 3, 4])))
+
+    def testMasked_select_broadcasting2(self):
+        t = TensorBase([2.0])
+        mask = TensorBase([[1, 1, 0]])
+        self.assertTrue(np.array_equal(tensor.masked_select(t, mask), TensorBase([2.0, 2.0])))
 
     def testTensorBase_Masked_select(self):
         t = TensorBase(np.arange(0, 6).reshape(2, 3))

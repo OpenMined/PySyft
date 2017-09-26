@@ -1299,6 +1299,6 @@ def masked_select(tensor, mask):
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted or mask.encrypted:
         raise NotImplemented
-    mask_broadcasted = np.broadcast_to(mask.data, tensor.data.shape)
+    mask_broadcasted, data_broadcasted = np.broadcast_arrays(mask.data, tensor.data)
     indices = np.where(mask_broadcasted)
-    return tensor.data[indices]
+    return data_broadcasted[indices]
