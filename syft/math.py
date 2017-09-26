@@ -171,8 +171,7 @@ def tanh(tensor):
     return TensorBase(np.tanh(np.array(tensor.data)))
 
 def relu(tensor):
-        """ Returns a new tensor holding element wise values of relu function
-    """
+        """ Returns a new tensor holding element wise values of relu function"""
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
