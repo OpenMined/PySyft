@@ -952,6 +952,23 @@ class scatterTests(unittest.TestCase):
             t.scatter_(dim=dim, index=idx, src=src)
 
 
+class remainderTests(unittest.TestCase):
+    def testRemainder(self):
+        t = TensorBase([[-2, -3], [4, 1]])
+        result = t.remainder(1.5)
+        self.assertTrue(np.array_equal(result.data, np.array([[1, 0], [1, 1]])))
+
+    def testRemainder_broadcasting(self):
+        t = TensorBase([[-2, -3], [4, 1]])
+        result = t.remainder([2, -3])
+        self.assertTrue(np.array_equal(result.data, np.array([[0, 0], [0, -2]])))
+
+    def testRemainder_(self):
+        t = TensorBase([[-2, -3], [4, 1]])
+        t.remainder_(2)
+        self.assertTrue(np.array_equal(t.data, np.array([[0, 1], [0, 1]])))
+
+
 class testMv(unittest.TestCase):
     def mvTest(self):
         mat = TensorBase([[1, 2, 3], [2, 3, 4], [4, 5, 6]])
@@ -985,6 +1002,46 @@ class masked_scatter_Tests(unittest.TestCase):
         mask = TensorBase([[1], [0]])
         t.masked_scatter_(mask, source)
         self.assertTrue(np.array_equal(t, TensorBase([[1, 2, 3], [1, 1, 1]])))
+
+
+class masked_fill_Tests(unittest.TestCase):
+    def testMasked_fill_(self):
+        t = TensorBase(np.ones((2, 3)))
+        value = 2.0
+        mask = TensorBase([[0, 0, 0], [1, 1, 0]])
+        t.masked_fill_(mask, value)
+        self.assertTrue(np.array_equal(t, TensorBase([[1.0, 1.0, 1.0], [2.0, 2.0, 1.0]])))
+
+    def testMasked_fill_broadcasting(self):
+        t = TensorBase(np.ones((2, 3)))
+        value = 2
+        mask = TensorBase([[1], [0]])
+        t.masked_fill_(mask, value)
+        self.assertTrue(np.array_equal(t, TensorBase([[2, 2, 2], [1, 1, 1]])))
+
+
+class eqTests(unittest.TestCase):
+    def testEqWithTensor(self):
+        t1 = TensorBase(np.arange(5))
+        t2 = TensorBase(np.arange(5)[-1::-1])
+        truth_values = t1.eq(t2)
+        self.assertEqual(truth_values, [False, False, True, False, False])
+
+    def testEqWithNumber(self):
+        t1 = TensorBase(np.arange(5))
+        truth_values = t1.eq(1)
+        self.assertEqual(truth_values, [False, True, False, False, False])
+
+    def testEqInPlaceWithTensor(self):
+        t1 = TensorBase(np.arange(5))
+        t2 = TensorBase(np.arange(5)[-1::-1])
+        t1.eq_(t2)
+        self.assertEqual(t1, [False, False, True, False, False])
+
+    def testEqInPlaceWithNumber(self):
+        t1 = TensorBase(np.arange(5))
+        t1.eq_(1)
+        self.assertEqual(t1, [False, True, False, False, False])
 
 
 if __name__ == "__main__":
