@@ -560,28 +560,107 @@ class chunkTests(unittest.TestCase):
         self.assertEqual(t2.shape(), t3.shape())
 
 
-class gtTests(unittest.TestCase):
+class inequalityTest(unittest.TestCase):
+    def setUp(self):
+        self.a1 = np.array([-2, -1, 0, 1, 2])
+        self.a2 = np.array([-4, -1, 5, 2, 2])
+
+        self.t1 = TensorBase(self.a1)
+        self.t2 = TensorBase(self.a2)
+
+        self.enc = TensorBase(self.a1, encrypted=True)
+
+
+class gtTests(inequalityTest):
     def testGtWithTensor(self):
-        t1 = TensorBase(np.arange(10))
-        t2 = TensorBase(np.arange(10)[-1::-1])
-        truth_values = t1.gt(t2)
-        self.assertEqual(truth_values, [False, False, False, False, False, True, True, True, True, True])
+        self.assertEqual(self.t1.gt(self.t2), self.a1 > self.a2)
 
     def testGtWithNumber(self):
-        t1 = TensorBase(np.arange(10))
-        truth_values = t1.gt(-1)
-        self.assertEqual(truth_values, [True] * 10)
+        self.assertEqual(self.t1.gt(1), self.a1 > 1)
 
     def testGtInPlaceWithTensor(self):
-        t1 = TensorBase(np.arange(10))
-        t2 = TensorBase(np.arange(10)[-1::-1])
-        t1.gt_(t2)
-        self.assertEqual(t1, [False, False, False, False, False, True, True, True, True, True])
+        self.t1.gt_(self.t2)
+        self.assertEqual(self.t1, self.a1 > self.a2)
 
     def testGtInPlaceWithNumber(self):
-        t1 = TensorBase(np.arange(10))
-        t1.gt_(-1)
-        self.assertEqual(t1, [True] * 10)
+        self.t1.gt_(1)
+        self.assertEqual(self.t1, self.a1 > 1)
+
+    def testWithEncrypted(self):
+        res = self.t1.gt(self.enc)
+        self.assertEqual(res, NotImplemented)
+
+        res = self.enc.gt(self.t1)
+        self.assertEqual(res, NotImplemented)
+
+
+class geTests(inequalityTest):
+    def testGeWithTensor(self):
+        self.assertEqual(self.t1.ge(self.t2), self.a1 >= self.a2)
+
+    def testGeWithNumber(self):
+        self.assertEqual(self.t1.ge(1), self.a1 >= 1)
+
+    def testGeInPlaceWithTensor(self):
+        self.t1.ge_(self.t2)
+        self.assertEqual(self.t1, self.a1 >= self.a2)
+
+    def testGeInPlaceWithNumber(self):
+        self.t1.ge_(1)
+        self.assertEqual(self.t1, self.a1 >= 1)
+
+    def testWithEncrypted(self):
+        res = self.t1.ge(self.enc)
+        self.assertEqual(res, NotImplemented)
+
+        res = self.enc.ge(self.t1)
+        self.assertEqual(res, NotImplemented)
+
+
+class ltTests(inequalityTest):
+    def testLtWithTensor(self):
+        self.assertEqual(self.t1.lt(self.t2), self.a1 < self.a2)
+
+    def testLtWithNumber(self):
+        self.assertEqual(self.t1.lt(1), self.a1 < 1)
+
+    def testLtInPlaceWithTensor(self):
+        self.t1.lt_(self.t2)
+        self.assertEqual(self.t1, self.a1 < self.a2)
+
+    def testLtInPlaceWithNumber(self):
+        self.t1.lt_(1)
+        self.assertEqual(self.t1, self.a1 < 1)
+
+    def testWithEncrypted(self):
+        res = self.t1.lt(self.enc)
+        self.assertEqual(res, NotImplemented)
+
+        res = self.enc.lt(self.t1)
+        self.assertEqual(res, NotImplemented)
+
+
+class leTests(inequalityTest):
+    def testLeWithTensor(self):
+        self.assertEqual(self.t1.le(self.t2), self.a1 <= self.a2)
+
+    def testLeWithNumber(self):
+        self.assertEqual(self.t1.le(1), self.a1 <= 1)
+
+    def testLeInPlaceWithTensor(self):
+        self.t1.le_(self.t2)
+        self.assertEqual(self.t1, self.a1 <= self.a2)
+
+    def testLeInPlaceWithNumber(self):
+        self.t1.le_(1)
+        self.assertEqual(self.t1, self.a1 <= 1)
+
+    def testWithEncrypted(self):
+        res = self.t1.le(self.enc)
+        self.assertEqual(res, NotImplemented)
+
+        res = self.enc.le(self.t1)
+        self.assertEqual(res, NotImplemented)
 
 
 class bernoulliTests(unittest.TestCase):
