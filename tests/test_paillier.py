@@ -1,7 +1,9 @@
 from syft.he.paillier import KeyPair, PaillierTensor
+from syft.he.keys import Paillier
 from syft import TensorBase
 import unittest
 import numpy as np
+import syft as sy
 
 
 # Here's our "unit tests".
@@ -10,6 +12,21 @@ class DimTests(unittest.TestCase):
         p, s = KeyPair().generate()
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
         self.assertTrue(x.dim() == 1)
+
+
+class DotTests(unittest.TestCase):
+    def testDotProduct(self):
+
+        pk, sk = Paillier()
+
+        x = pk.ones(10)
+        y = sy.ones(10)
+
+        out1 = y.dot(x).decrypt(sk)
+        out2 = x.dot(y).decrypt(sk)
+
+        self.assertEqual(out1, 10)
+        self.assertEqual(out2, 10)
 
 
 class AddTests(unittest.TestCase):
@@ -76,6 +93,15 @@ class AddTests(unittest.TestCase):
         x += x2
         self.assertTrue(s.decrypt(x) == np.array([4., 6., 8., 10., 12.]))
 
+    def testAddDepth(self):
+        p, s = KeyPair().generate()
+
+        x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
+        x2 = TensorBase(np.array([3, 4, 5, 6, 7.]))
+
+        x += x2
+        self.assertEqual(x._add_depth, 1)
+
 
 class MulTests(unittest.TestCase):
 
@@ -122,6 +148,15 @@ class MulTests(unittest.TestCase):
 
         x *= 2
         self.assertTrue(s.decrypt(x) == np.array([2., 4., 6., 8., 10.]))
+
+    def testMulDepth(self):
+        p, s = KeyPair().generate()
+
+        x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
+        x2 = TensorBase(np.array([3, 4, 5, 6, 7.]))
+
+        x *= x2
+        self.assertEqual(x._mul_depth, 1)
 
 
 class DivTests(unittest.TestCase):

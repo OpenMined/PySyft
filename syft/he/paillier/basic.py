@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 from ...tensor import TensorBase
 
 
@@ -32,7 +33,9 @@ class PaillierTensor(TensorBase):
         if(type(tensor) == TensorBase):
             tensor = PaillierTensor(self.public_key, tensor.data)
 
-        return PaillierTensor(self.public_key, self.data + tensor.data, False)
+        ptensor = PaillierTensor(self.public_key, self.data + tensor.data, False)
+        ptensor._calc_add_depth(self, tensor)
+        return ptensor
 
     def __sub__(self, tensor):
         """Performs element-wise subtraction between two tensors"""
@@ -59,11 +62,15 @@ class PaillierTensor(TensorBase):
             if(not tensor.encrypted):
                 result = self.data * tensor.data
                 o = PaillierTensor(self.public_key, result, False)
+                o._calc_mul_depth(self, tensor)
                 return o
             else:
                 return NotImplemented
         else:
-            return PaillierTensor(self.public_key, self.data * float(tensor), False)
+            op = self.data * float(tensor)
+            ptensor = PaillierTensor(self.public_key, op, False)
+            ptensor._calc_mul_depth(self, tensor)
+            return ptensor
 
     def __truediv__(self, tensor):
         """Performs element-wise division between two tensors"""
@@ -76,7 +83,8 @@ class PaillierTensor(TensorBase):
             else:
                 return NotImplemented
         else:
-            return PaillierTensor(self.public_key, self.data * (1 / float(tensor)), False)
+            op = self.data * (1 / float(tensor))
+            return PaillierTensor(self.public_key, op, False)
 
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
@@ -84,15 +92,22 @@ class PaillierTensor(TensorBase):
             return NotImplemented
 
         if dim is None:
-            return self.data.sum()
+            return PaillierTensor(self.public_key, self.data.sum(), False)
         else:
-            return self.data.sum(axis=dim)
+            op = self.data.sum(axis=dim)
+            return PaillierTensor(self.public_key, op, False)
+
+    def dot(self, plaintext_x):
+        if(not plaintext_x.encrypted):
+            return (self * plaintext_x).sum(plaintext_x.dim() - 1)
+        else:
+            return NotImplemented
 
     def __str__(self):
-        return str(self.data)
+        return "PaillierTensor: " + str(self.data)
 
     def __repr__(self):
-        return repr(self.data)
+        return "PaillierTensor: " + repr(self.data)
 
 
 class Float():
@@ -161,3 +176,9 @@ class Float():
         """This is kindof a boring/uninformative __str__"""
 
         return 'e'
+
+    def serialize(self):
+        return pickle.dumps(self)
+
+    def deserialize(b):
+        return pickle.loads(b)
