@@ -1301,4 +1301,4 @@ def masked_select(tensor, mask):
         raise NotImplemented
     mask_broadcasted, data_broadcasted = np.broadcast_arrays(mask.data, tensor.data)
     indices = np.where(mask_broadcasted)
-    return data_broadcasted[indices]
+    return TensorBase(data_broadcasted[indices])
