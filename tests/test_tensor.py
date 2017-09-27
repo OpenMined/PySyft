@@ -1020,6 +1020,28 @@ class masked_fill_Tests(unittest.TestCase):
         self.assertTrue(np.array_equal(t, TensorBase([[2, 2, 2], [1, 1, 1]])))
 
 
+class masked_select_Tests(unittest.TestCase):
+    def testMasked_select(self):
+        t = TensorBase(np.arange(0, 6).reshape(2, 3))
+        mask = TensorBase([[0, 0, 0], [1, 1, 0]])
+        self.assertTrue(np.array_equal(tensor.masked_select(t, mask), TensorBase([3, 4])))
+
+    def testMasked_select_broadcasting1(self):
+        t = TensorBase(np.arange(0, 6).reshape(2, 3))
+        mask = TensorBase([[1, 1, 0]])
+        self.assertTrue(np.array_equal(tensor.masked_select(t, mask), TensorBase([0, 1, 3, 4])))
+
+    def testMasked_select_broadcasting2(self):
+        t = TensorBase([2.0])
+        mask = TensorBase([[1, 1, 0]])
+        self.assertTrue(np.array_equal(tensor.masked_select(t, mask), TensorBase([2.0, 2.0])))
+
+    def testTensorBase_Masked_select(self):
+        t = TensorBase(np.arange(0, 6).reshape(2, 3))
+        mask = TensorBase([[1, 1, 0]])
+        self.assertTrue(np.array_equal(t.masked_select(mask), TensorBase([0, 1, 3, 4])))
+
+
 class eqTests(unittest.TestCase):
     def testEqWithTensor(self):
         t1 = TensorBase(np.arange(5))

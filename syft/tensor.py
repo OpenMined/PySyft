@@ -1304,6 +1304,12 @@ class TensorBase(object):
         self.data[indices] = value
         return self
 
+    def masked_select(self, mask):
+        """
+        See :func:`tensor.masked_select`
+        """
+        return masked_select(self, mask)
+
     def eq(self, t):
         """Returns a new Tensor having boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
         The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
@@ -1331,3 +1337,21 @@ def mv(tensormat, tensorvector):
             compatible with matrix {} '.format(tensorvector.data.shape, tensormat.data.shape))
     else:
         return TensorBase(np.matmul(tensormat.data, tensorvector.data))
+
+
+def masked_select(tensor, mask):
+    """
+    Returns a new 1D Tensor which indexes the ``input`` Tensor according to the binary mask ``mask``.
+    The shapes of the ``mask`` tensor and the ``input`` tensor don’t need to match, but they must be broadcastable.
+
+    :param tensor: Input tensor
+    :param mask: The binary mask (non-zero is treated as true)
+    :return: 1D output tensor
+    """
+    mask = _ensure_tensorbase(mask)
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted or mask.encrypted:
+        raise NotImplemented
+    mask_broadcasted, data_broadcasted = np.broadcast_arrays(mask.data, tensor.data)
+    indices = np.where(mask_broadcasted)
+    return TensorBase(data_broadcasted[indices])
