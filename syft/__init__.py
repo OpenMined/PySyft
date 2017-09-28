@@ -1,6 +1,7 @@
 from syft import he
 from syft import nn
 from syft import test
+# from syft import mpc
 
 from syft.tensor import equal, TensorBase
 from syft.math import cumprod, cumsum, ceil, dot, matmul, addmm, addcmul

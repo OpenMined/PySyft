@@ -8,7 +8,7 @@ from .tensor import _ensure_tensorbase
 
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
-    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh',
+    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh', 'relu',
     'zeros', 'ones', 'rand', 'randn'
 ]
 
@@ -169,6 +169,15 @@ def tanh(tensor):
     if tensor.encrypted is True:
         return NotImplemented
     return TensorBase(np.tanh(np.array(tensor.data)))
+
+
+def relu(tensor):
+    """ Return relu function
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    return TensorBase(np.maximum(0, tensor.data))
 
 
 def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
