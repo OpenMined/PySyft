@@ -9,7 +9,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh', 'relu',
-    'zeros', 'ones', 'rand', 'randn'
+    'zeros', 'ones', 'rand', 'randn', 'mm'
 ]
 
 
@@ -341,3 +341,23 @@ def unsqueeze(tensor1, dim):
         raise NotImplemented
     else:
         return TensorBase(np.expand_dims(tensor1.data, dim))
+
+
+def mm(tensor1, tensor2):
+    """
+    Performs a matrix multiplication of :attr:`tensor1` and :attr:`tensor2`.
+
+    If :attr:`tensor1` is a `n x m` Tensor, :attr:`tensor2` is a `m x p` Tensor,
+    output will be a `n x p` Tensor.
+
+    Args:
+        tensor1 (Tensor): First Tensor to be multiplied
+        tensor2 (Tensor): Second Tensor to be multiplied"""
+
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+
+    if tensor1.encrypted or tensor2.encrypted:
+        return NotImplemented
+    else:
+        return TensorBase(np.array(np.matmul(tensor1.data, tensor2.data)))

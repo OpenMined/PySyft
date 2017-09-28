@@ -1067,11 +1067,13 @@ class TensorBase(object):
         else:
             if tensor.shape() == self.shape():
 
-                tensor2 = np.array([1 if x else 0 for x in np.equal(tensor.data.flatten(), self.data.flatten()).tolist()])
+                tensor2 = np.array([1 if x else 0 for x in np.equal(
+                    tensor.data.flatten(), self.data.flatten()).tolist()])
                 result = tensor2.reshape(self.data.shape)
                 return TensorBase(result)
             else:
-                raise ValueError('inconsistent dimensions {} and {}'.format(self.shape(), tensor.shape()))
+                raise ValueError('inconsistent dimensions {} and {}'.format(
+                    self.shape(), tensor.shape()))
 
     def ne_(self, tensor):
         """
@@ -1118,7 +1120,8 @@ class TensorBase(object):
         """Computes the histogram of a tensor and Returns it"""
         if self.encrypted:
             return NotImplemented
-        hist, edges = np.histogram(np.array(self.data), bins=bins, range=(min, max))
+        hist, edges = np.histogram(
+            np.array(self.data), bins=bins, range=(min, max))
         return TensorBase(hist)
 
     def scatter_(self, dim, index, src):
@@ -1136,19 +1139,22 @@ class TensorBase(object):
         if index.data.dtype != np.dtype('int_'):
             raise TypeError("The values of index must be integers")
         if self.data.ndim != index.data.ndim:
-            raise ValueError("Index should have the same number of dimensions as output")
+            raise ValueError(
+                "Index should have the same number of dimensions as output")
         if dim >= self.data.ndim or dim < -self.data.ndim:
             raise IndexError("dim is out of range")
         if dim < 0:
             # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
             dim = self.data.ndim + dim
-        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + \
+            index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
                              ", all dimensions of index and output should be the same size")
         if (index.data >= self.data.shape[dim]).any() or (index.data < 0).any():
-            raise IndexError("The values of index must be between 0 and (self.data.shape[dim] -1)")
+            raise IndexError(
+                "The values of index must be between 0 and (self.data.shape[dim] -1)")
 
         def make_slice(arr, dim, i):
             slc = [slice(None)] * arr.ndim
@@ -1165,7 +1171,8 @@ class TensorBase(object):
         if not np.isscalar(src):
             src = _ensure_tensorbase(src)
             if index.data.shape[dim] > src.data.shape[dim]:
-                raise IndexError("Dimension " + str(dim) + "of index can not be bigger than that of src ")
+                raise IndexError("Dimension " + str(dim) +
+                                 "of index can not be bigger than that of src ")
             src_shape = src.data.shape[:dim] + src.data.shape[dim + 1:]
             if idx_xsection_shape != src_shape:
                 raise ValueError("Except for dimension " +
@@ -1173,7 +1180,8 @@ class TensorBase(object):
             # src_idx is a NumPy advanced index for indexing of elements in the src
             src_idx = list(idx)
             src_idx.pop(dim)
-            src_idx.insert(dim, np.repeat(np.arange(index.data.shape[dim]), np.prod(idx_xsection_shape)))
+            src_idx.insert(dim, np.repeat(
+                np.arange(index.data.shape[dim]), np.prod(idx_xsection_shape)))
             self.data[idx] = src.data[src_idx]
 
         else:
@@ -1195,7 +1203,8 @@ class TensorBase(object):
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
             return NotImplemented
-        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + \
+            index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
@@ -1281,7 +1290,8 @@ class TensorBase(object):
             return NotImplemented
         mask_self_iter = np.nditer([mask.data, self.data])
         source_iter = np.nditer(source.data)
-        out_flat = [s if m == 0 else source_iter.__next__().item() for m, s in mask_self_iter]
+        out_flat = [s if m == 0 else source_iter.__next__().item()
+                    for m, s in mask_self_iter]
         self.data = np.reshape(out_flat, self.data.shape)
         return self
 
@@ -1325,13 +1335,26 @@ class TensorBase(object):
         self.data = np.equal(self.data, _ensure_tensorbase(t).data)
         return self
 
+    def mm(self, tensor2):
+        """Performs a matrix multiplication of :attr:`tensor1` and :attr:`tensor2`.
+
+        If :attr:`tensor1` is a `n x m` Tensor, :attr:`tensor2` is a `m x p` Tensor,
+        output will be a `n x p` Tensor.
+
+        Args:
+            tensor1 (Tensor): First Tensor to be multiplied
+            tensor2 (Tensor): Second Tensor to be multiplied"""
+
+        return syft.mm(self, tensor2)
+
 
 def mv(tensormat, tensorvector):
     """ matrix and vector multiplication """
     if tensormat.encrypted or tensorvector.encrypted:
         raise NotImplemented
     elif not len(tensorvector.data.shape) == 1:
-        raise ValueError('Vector dimensions not correct {}'.format(tensorvector.data.shape))
+        raise ValueError('Vector dimensions not correct {}'.format(
+            tensorvector.data.shape))
     elif tensorvector.data.shape[0] != tensormat.data.shape[1]:
         raise ValueError('vector dimensions {} not  \
             compatible with matrix {} '.format(tensorvector.data.shape, tensormat.data.shape))
@@ -1352,6 +1375,7 @@ def masked_select(tensor, mask):
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted or mask.encrypted:
         raise NotImplemented
-    mask_broadcasted, data_broadcasted = np.broadcast_arrays(mask.data, tensor.data)
+    mask_broadcasted, data_broadcasted = np.broadcast_arrays(
+        mask.data, tensor.data)
     indices = np.where(mask_broadcasted)
     return TensorBase(data_broadcasted[indices])
