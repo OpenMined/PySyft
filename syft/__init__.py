@@ -11,6 +11,7 @@ from syft.math import unsqueeze, zeros, ones, rand, randn
 s = str(he)
 s += str(nn)
 s += str(test)
+s += str(mpc)
 
 s += str(equal) + str(TensorBase) + str(cumprod) + str(cumsum) + str(ceil)
 s += str(dot) + str(matmul) + str(addmm) + str(addcmul) + str(addcdiv)
