@@ -226,5 +226,4 @@ class mmtest(unittest.TestCase):
         t1 = TensorBase(np.array([[1, 2], [2, 3], [3, 4]]))
         t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
         out = syft.mm(t1, t2)
-        self.assertTrue(np.alltrue(
-            out.data == [[5,  8, 11], [8, 13, 18], [11, 18, 25]]))
+        self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
