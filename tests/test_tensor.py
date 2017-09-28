@@ -14,13 +14,15 @@ class DimTests(unittest.TestCase):
 
     def testView(self):
         t = TensorBase([1.0, 2.0, 3.0])
-        self.assertTrue(syft.equal(t.view(-1, 1), TensorBase(np.array([[1], [2], [3]]))))
+        self.assertTrue(syft.equal(
+            t.view(-1, 1), TensorBase(np.array([[1], [2], [3]]))))
 
     def testAsView(self):
         t = TensorBase(np.array([1.0, 2.0, 3.0]))
         t1 = t.view([-1, 1])
         print(t.data.dtype)
-        self.assertTrue(syft.equal(t.view_as(t1), TensorBase(np.array([[1.0], [2.0], [3.0]]))))
+        self.assertTrue(syft.equal(t.view_as(t1), TensorBase(
+            np.array([[1.0], [2.0], [3.0]]))))
 
     def testResize(self):
         t = TensorBase(np.array([1.0, 2.0, 3.0]))
@@ -100,15 +102,18 @@ class SubTests(unittest.TestCase):
 
 class MaxTests(unittest.TestCase):
     def testNoDim(self):
-        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
+        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [
+                       0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
         self.assertTrue(t.max() == 0.77937768)
 
     def testAxis(self):
-        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
+        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [
+                       0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
         result = t.max(axis=1)
         self.assertTrue(syft.equal(result, [0.77937768, 0.69574893]))
         result = t.max(axis=0)
-        self.assertTrue(syft.equal(result, [0.77937768, 0.51022484, 0.49155195, 0.69574893]))
+        self.assertTrue(syft.equal(
+            result, [0.77937768, 0.51022484, 0.49155195, 0.69574893]))
 
 
 class MultTests(unittest.TestCase):
@@ -481,7 +486,8 @@ class signTests(unittest.TestCase):
 class numpyTests(unittest.TestCase):
     def testnumpy(self):
         t1 = TensorBase(np.array([[1, 2], [3, 4]]))
-        self.assertTrue(np.array_equal(t1.to_numpy(), np.array([[1, 2], [3, 4]])))
+        self.assertTrue(np.array_equal(
+            t1.to_numpy(), np.array([[1, 2], [3, 4]])))
 
 
 class reciprocalTests(unittest.TestCase):
@@ -507,11 +513,13 @@ class logTests(unittest.TestCase):
 
     def testLog1p(self):
         t1 = TensorBase(np.array([1, 2, 3]))
-        self.assertTrue(np.allclose((t1.log1p()).data, [0.69314718, 1.09861229, 1.38629436]))
+        self.assertTrue(np.allclose((t1.log1p()).data, [
+                        0.69314718, 1.09861229, 1.38629436]))
 
     def testLog1p_(self):
         t1 = TensorBase(np.array([1, 2, 3]))
-        self.assertTrue(np.allclose((t1.log1p_()).data, [0.69314718, 1.09861229, 1.38629436]))
+        self.assertTrue(np.allclose((t1.log1p_()).data, [
+                        0.69314718, 1.09861229, 1.38629436]))
 
 
 class clampTests(unittest.TestCase):
@@ -524,7 +532,8 @@ class clampTests(unittest.TestCase):
     def testClampFloat(self):
         t1 = TensorBase(np.arange(1, step=0.1))
         t2 = t1.clamp(minimum=0.2, maximum=0.7)
-        expected_tensor = TensorBase(np.array([0.2, 0.2, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.7, 0.7]))
+        expected_tensor = TensorBase(
+            np.array([0.2, 0.2, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.7, 0.7]))
         self.assertEqual(t2, expected_tensor)
 
     def testClampIntInPlace(self):
@@ -536,7 +545,8 @@ class clampTests(unittest.TestCase):
     def testClampFloatInPlace(self):
         t1 = TensorBase(np.arange(1, step=0.1))
         t1.clamp_(minimum=0.2, maximum=0.7)
-        expected_tensor = TensorBase(np.array([0.2, 0.2, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.7, 0.7]))
+        expected_tensor = TensorBase(
+            np.array([0.2, 0.2, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.7, 0.7]))
         self.assertEqual(t1, expected_tensor)
 
 
@@ -700,9 +710,11 @@ class fillTests(unittest.TestCase):
 
 class topkTests(unittest.TestCase):
     def testTopK(self):
-        t1 = TensorBase(np.array([[900, 800, 1000, 2000, 5, 10, 20, 40, 50], [10, 11, 12, 13, 5, 6, 7, 8, 9], [30, 40, 50, 10, 8, 1, 2, 3, 4]]))
+        t1 = TensorBase(np.array([[900, 800, 1000, 2000, 5, 10, 20, 40, 50], [
+                        10, 11, 12, 13, 5, 6, 7, 8, 9], [30, 40, 50, 10, 8, 1, 2, 3, 4]]))
         t2 = t1.topk(3, largest=True)
-        self.assertTrue(np.array_equal(t2.data, np.array([[900, 1000, 2000], [11, 12, 13], [30, 40, 50]])))
+        self.assertTrue(np.array_equal(t2.data, np.array(
+            [[900, 1000, 2000], [11, 12, 13], [30, 40, 50]])))
 
 
 class tolistTests(unittest.TestCase):
@@ -722,19 +734,22 @@ class roundTests(unittest.TestCase):
     def testRound(self):
         t1 = TensorBase(np.array([10.4, 9.6, 100.12, 4.0]))
         t2 = t1.round(0)
-        self.assertTrue(np.array_equal(t2.data, np.array([10., 10., 100., 4.])))
+        self.assertTrue(np.array_equal(
+            t2.data, np.array([10., 10., 100., 4.])))
 
     def testRound_(self):
         t1 = TensorBase(np.array([10.4, 9.6, 100.12, 4.0]))
         t1.round_(0)
-        self.assertTrue(np.array_equal(t1.data, np.array([10., 10., 100., 4.])))
+        self.assertTrue(np.array_equal(
+            t1.data, np.array([10., 10., 100., 4.])))
 
 
 class repeatTests(unittest.TestCase):
     def testRepeat(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = t1.repeat(reps=(4, 2))
-        self.assertTrue(np.array_equal(t2.data, np.array([[1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3]])))
+        self.assertTrue(np.array_equal(t2.data, np.array([[1, 2, 3, 1, 2, 3], [
+                        1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3], [1, 2, 3, 1, 2, 3]])))
 
 
 class powTests(unittest.TestCase):
@@ -768,7 +783,8 @@ class nonzeroTests(unittest.TestCase):
     def testNonZero(self):
         t1 = TensorBase(np.array([[1, 0, 0], [0, 2, 5]]))
         t2 = t1.nonzero()
-        self.assertTrue(np.array_equal(t2.data, np.array([[0, 1, 1], [0, 1, 2]])))
+        self.assertTrue(np.array_equal(
+            t2.data, np.array([[0, 1, 1], [0, 1, 2]])))
 
 
 class cumprodTest(unittest.TestCase):
@@ -792,14 +808,16 @@ class splitTests(unittest.TestCase):
     def testSplit(self):
         t1 = TensorBase(np.arange(8.0))
         t2 = t1.split(4)
-        self.assertTrue(np.array_equal(t2, tuple((np.array([0., 1.]), np.array([2., 3.]), np.array([4., 5.]), np.array([6., 7.])))))
+        self.assertTrue(np.array_equal(t2, tuple((np.array([0., 1.]), np.array(
+            [2., 3.]), np.array([4., 5.]), np.array([6., 7.])))))
 
 
 class squeezeTests(unittest.TestCase):
     def testSqueeze(self):
         t1 = TensorBase(np.zeros((2, 1, 2, 1, 2)))
         t2 = t1.squeeze()
-        self.assertTrue(np.array_equal(t2.data, np.array([[[0., 0.], [0., 0.]], [[0., 0.], [0., 0.]]])))
+        self.assertTrue(np.array_equal(t2.data, np.array(
+            [[[0., 0.], [0., 0.]], [[0., 0.], [0., 0.]]])))
 
 
 class expandAsTests(unittest.TestCase):
@@ -814,7 +832,8 @@ class meanTests(unittest.TestCase):
     def testMean(self):
         t1 = TensorBase(np.arange(8).reshape(2, 2, 2))
         t2 = t1.mean(1, True)
-        self.assertTrue(np.array_equal(t2.data, np.array([[[1., 2.]], [[5., 6.]]])))
+        self.assertTrue(np.array_equal(
+            t2.data, np.array([[[1., 2.]], [[5., 6.]]])))
 
 
 class notEqualTests(unittest.TestCase):
@@ -836,7 +855,8 @@ class index_selectTests(unittest.TestCase):
         idx = np.array([1, 0])
         dim = 2
         result = t.index_select(dim=dim, index=idx)
-        expected = np.array([[[1, 0], [5, 4], [9, 8]], [[13, 12], [17, 16], [21, 20]]])
+        expected = np.array(
+            [[[1, 0], [5, 4], [9, 8]], [[13, 12], [17, 16], [21, 20]]])
         self.assertTrue(np.array_equal(result.data, expected))
 
 
@@ -846,7 +866,8 @@ class gatherTests(unittest.TestCase):
         idx = TensorBase(np.array([[0], [1], [0]]))
         dim = 1
         result = t.gather(dim=dim, index=idx)
-        self.assertTrue(np.array_equal(result.data, np.array([[65], [25], [76]])))
+        self.assertTrue(np.array_equal(
+            result.data, np.array([[65], [25], [76]])))
 
     def testGatherNumerical2(self):
         t = TensorBase(np.array([[47, 74, 44], [56, 9, 37]]))
@@ -864,7 +885,8 @@ class scatterTests(unittest.TestCase):
         src = 1.0
         dim = 0
         t.scatter_(dim=dim, index=idx, src=src)
-        self.assertTrue(np.array_equal(t.data, np.array([[1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
+        self.assertTrue(np.array_equal(t.data, np.array(
+            [[1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
 
     def testScatter_Numerical1(self):
         t = TensorBase(np.zeros((3, 5)))
@@ -872,7 +894,8 @@ class scatterTests(unittest.TestCase):
         src = 1.0
         dim = 1
         t.scatter_(dim=dim, index=idx, src=src)
-        self.assertTrue(np.array_equal(t.data, np.array([[1, 0, 0, 0, 0], [1, 0, 0, 0, 0], [1, 0, 0, 0, 0]])))
+        self.assertTrue(np.array_equal(t.data, np.array(
+            [[1, 0, 0, 0, 0], [1, 0, 0, 0, 0], [1, 0, 0, 0, 0]])))
 
     def testScatter_Numerical2(self):
         t = TensorBase(np.zeros((3, 5)))
@@ -880,7 +903,8 @@ class scatterTests(unittest.TestCase):
         src = 1.0
         dim = -1
         t.scatter_(dim=dim, index=idx, src=src)
-        self.assertTrue(np.array_equal(t.data, np.array([[1, 0, 0, 0, 0], [1, 0, 0, 0, 0], [1, 0, 0, 0, 0]])))
+        self.assertTrue(np.array_equal(t.data, np.array(
+            [[1, 0, 0, 0, 0], [1, 0, 0, 0, 0], [1, 0, 0, 0, 0]])))
 
     def testScatter_Numerical3(self):
         t = TensorBase(np.zeros((3, 5)))
@@ -888,7 +912,8 @@ class scatterTests(unittest.TestCase):
         src = TensorBase(np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]))
         dim = 0
         t.scatter_(dim=dim, index=idx, src=src)
-        self.assertTrue(np.array_equal(t.data, np.array([[1, 2, 3, 4, 5], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
+        self.assertTrue(np.array_equal(t.data, np.array(
+            [[1, 2, 3, 4, 5], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
 
     def testScatter_Numerical4(self):
         t = TensorBase(np.zeros((3, 5)))
@@ -896,7 +921,8 @@ class scatterTests(unittest.TestCase):
         src = TensorBase(np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]))
         dim = -2
         t.scatter_(dim=dim, index=idx, src=src)
-        self.assertTrue(np.array_equal(t.data, np.array([[1, 2, 3, 4, 5], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
+        self.assertTrue(np.array_equal(t.data, np.array(
+            [[1, 2, 3, 4, 5], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
 
     def testScatter_Numerical5(self):
         t = TensorBase(np.zeros((3, 5)))
@@ -904,7 +930,8 @@ class scatterTests(unittest.TestCase):
         src = TensorBase(np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]))
         dim = 0
         t.scatter_(dim=dim, index=idx, src=src)
-        self.assertTrue(np.array_equal(t.data, np.array([[6, 7, 8, 9, 10], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
+        self.assertTrue(np.array_equal(t.data, np.array(
+            [[6, 7, 8, 9, 10], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])))
 
     def testScatter_Numerical6(self):
         t = TensorBase(np.zeros((3, 4, 5)))
@@ -915,7 +942,8 @@ class scatterTests(unittest.TestCase):
         dim = 1
         t.scatter_(dim=dim, index=idx, src=src)
         expected = [[[79, 84, 0, 0, 0], [0, 0, 99, 71, 0], [0, 0, 0, 0, 44], [7, 57, 2, 37, 62]],
-                    [[0, 44, 21, 54, 95], [0, 52, 0, 0, 0], [72, 0, 0, 89, 0], [0, 0, 0, 0, 0]],
+                    [[0, 44, 21, 54, 95], [0, 52, 0, 0, 0],
+                        [72, 0, 0, 89, 0], [0, 0, 0, 0, 0]],
                     [[5, 3, 0, 4, 0], [32, 0, 99, 0, 0], [0, 0, 58, 62, 9], [0, 88, 0, 0, 0]]]
         self.assertTrue(np.array_equal(t.data, np.array(expected)))
 
@@ -956,12 +984,14 @@ class remainderTests(unittest.TestCase):
     def testRemainder(self):
         t = TensorBase([[-2, -3], [4, 1]])
         result = t.remainder(1.5)
-        self.assertTrue(np.array_equal(result.data, np.array([[1, 0], [1, 1]])))
+        self.assertTrue(np.array_equal(
+            result.data, np.array([[1, 0], [1, 1]])))
 
     def testRemainder_broadcasting(self):
         t = TensorBase([[-2, -3], [4, 1]])
         result = t.remainder([2, -3])
-        self.assertTrue(np.array_equal(result.data, np.array([[0, 0], [0, -2]])))
+        self.assertTrue(np.array_equal(
+            result.data, np.array([[0, 0], [0, -2]])))
 
     def testRemainder_(self):
         t = TensorBase([[-2, -3], [4, 1]])
@@ -1010,7 +1040,8 @@ class masked_fill_Tests(unittest.TestCase):
         value = 2.0
         mask = TensorBase([[0, 0, 0], [1, 1, 0]])
         t.masked_fill_(mask, value)
-        self.assertTrue(np.array_equal(t, TensorBase([[1.0, 1.0, 1.0], [2.0, 2.0, 1.0]])))
+        self.assertTrue(np.array_equal(
+            t, TensorBase([[1.0, 1.0, 1.0], [2.0, 2.0, 1.0]])))
 
     def testMasked_fill_broadcasting(self):
         t = TensorBase(np.ones((2, 3)))
@@ -1024,22 +1055,26 @@ class masked_select_Tests(unittest.TestCase):
     def testMasked_select(self):
         t = TensorBase(np.arange(0, 6).reshape(2, 3))
         mask = TensorBase([[0, 0, 0], [1, 1, 0]])
-        self.assertTrue(np.array_equal(tensor.masked_select(t, mask), TensorBase([3, 4])))
+        self.assertTrue(np.array_equal(
+            tensor.masked_select(t, mask), TensorBase([3, 4])))
 
     def testMasked_select_broadcasting1(self):
         t = TensorBase(np.arange(0, 6).reshape(2, 3))
         mask = TensorBase([[1, 1, 0]])
-        self.assertTrue(np.array_equal(tensor.masked_select(t, mask), TensorBase([0, 1, 3, 4])))
+        self.assertTrue(np.array_equal(
+            tensor.masked_select(t, mask), TensorBase([0, 1, 3, 4])))
 
     def testMasked_select_broadcasting2(self):
         t = TensorBase([2.0])
         mask = TensorBase([[1, 1, 0]])
-        self.assertTrue(np.array_equal(tensor.masked_select(t, mask), TensorBase([2.0, 2.0])))
+        self.assertTrue(np.array_equal(
+            tensor.masked_select(t, mask), TensorBase([2.0, 2.0])))
 
     def testTensorBase_Masked_select(self):
         t = TensorBase(np.arange(0, 6).reshape(2, 3))
         mask = TensorBase([[1, 1, 0]])
-        self.assertTrue(np.array_equal(t.masked_select(mask), TensorBase([0, 1, 3, 4])))
+        self.assertTrue(np.array_equal(
+            t.masked_select(mask), TensorBase([0, 1, 3, 4])))
 
 
 class eqTests(unittest.TestCase):
@@ -1064,6 +1099,27 @@ class eqTests(unittest.TestCase):
         t1 = TensorBase(np.arange(5))
         t1.eq_(1)
         self.assertEqual(t1, [False, True, False, False, False])
+
+
+class mm_test(unittest.TestCase):
+    def testmm1d(self):
+        t1 = TensorBase(np.array([2, 3, 4]))
+        t2 = TensorBase(np.array([3, 4, 5]))
+        out = t1.mm(t2)
+        self.assertTrue(np.alltrue(out.data == [38]))
+
+    def testmm2d(self):
+        t1 = TensorBase(np.array([[1, 2], [1, 2]]))
+        t2 = TensorBase(np.array([[2, 3], [2, 3]]))
+        out = t1.mm(t2)
+        self.assertTrue(np.alltrue(out.data == [[6, 9], [6, 9]]))
+
+    def testmm3d(self):
+        t1 = TensorBase(np.array([[1, 2], [2, 3], [3, 4]]))
+        t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
+        out = t1.mm(t2)
+        self.assertTrue(np.alltrue(
+            out.data == [[5,  8, 11], [8, 13, 18], [11, 18, 25]]))
 
 
 if __name__ == "__main__":
