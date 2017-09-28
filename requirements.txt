@@ -6,3 +6,4 @@ line_profiler
 clint
 pytest-flake8
 pytest
+sklearn
