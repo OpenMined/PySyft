@@ -1065,7 +1065,7 @@ class eqTests(unittest.TestCase):
         t1.eq_(1)
         self.assertEqual(t1, [False, True, False, False, False])
 
-        
+
 class mm_test(unittest.TestCase):
     def testmm1d(self):
         t1 = TensorBase(np.array([2, 3, 4]))
