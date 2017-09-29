@@ -67,6 +67,16 @@ class CeilTests(unittest.TestCase):
         self.assertTrue(syft.equal(t.data, [2, 3, 7]))
 
 
+class DiagTests(unittest.TestCase):
+    def testDiagIntTensor(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertEqual(t.diag([1, 2, 3, 4]).shape, (4, 4))
+    
+    def testDiagFloatTensor(self):
+        t = TensorBase(np.array([1.4, 2.5, 3.2]))
+        self.assertEqual(t.diag([1.4, 2.5, 3.2]).shape, (3, 3))
+
+
 class ZeroTests(unittest.TestCase):
     def testZero(self):
         t = TensorBase(np.array([13, 42, 1024]))

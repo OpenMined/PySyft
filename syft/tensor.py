@@ -498,6 +498,14 @@ class TensorBase(object):
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
 
+    def diag(self, tenosr):
+        """ When input tensor is a vector (1D Tensor), returns a 2D square Tensor
+            with the elements of input as the diagonal.
+        """
+        if self.encrypted:
+            return NotImplemented
+        return np.diag(tenosr)
+
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
