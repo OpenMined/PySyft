@@ -33,6 +33,24 @@ class DotTests(unittest.TestCase):
         self.assertEqual(syft.dot(t1, t2), 44.92)
 
 
+class DiagTests(unittest.TestCase):
+    def test_one_dim_tensor_input_to_two_dim_tensor(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertEqual(syft.diag(t).shape, (4, 4))
+
+    def test_two_dim_tensor_input_with_zero_diag_to_one_dim_tensor(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        self.assertTrue(syft.equal(syft.diag(t, 0), TensorBase([0, 3])))
+
+    def test_two_dim_tensor_input_with_one_diag_up_to_one_dim_tensor(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        self.assertTrue(syft.equal(syft.diag(t, 1), TensorBase([1])))
+
+    def test_two_dim_tensor_input_with_one_diag_down_to_one_dim_tensor(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        self.assertTrue(syft.equal(syft.diag(t, -1), TensorBase([2])))
+
+
 class CeilTests(unittest.TestCase):
     def testCeil(self):
         t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))

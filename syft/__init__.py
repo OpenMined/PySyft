@@ -6,7 +6,7 @@ from syft import mpc
 from syft.tensor import equal, TensorBase
 from syft.math import cumprod, cumsum, ceil, dot, matmul, addmm, addcmul
 from syft.math import addcdiv, addmv, addbmm, baddbmm, transpose
-from syft.math import unsqueeze, zeros, ones, rand, randn, mm
+from syft.math import unsqueeze, zeros, ones, rand, randn, mm, diag
 
 s = str(he)
 s += str(nn)

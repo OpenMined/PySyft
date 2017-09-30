@@ -9,7 +9,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh', 'relu',
-    'zeros', 'ones', 'rand', 'randn', 'mm'
+    'zeros', 'ones', 'rand', 'randn', 'mm', 'diag'
 ]
 
 
@@ -48,6 +48,26 @@ def dot(tensor1, tensor2):
     if tensor1.encrypted is True or tensor2.encrypted is True:
         return NotImplemented
     return np.vdot(tensor1.data, tensor2.data)
+
+def diag(tensor, diagonal=0):
+        """ 
+        1. If input is a vector (1D Tensor),
+           then returns a 2D square Tensor with the elements of input as the diagonal.
+
+        2. If input is a matrix (2D Tensor),
+           then returns a 1D Tensor with the diagonal elements of input
+
+        The argument diagonal controls which diagonal to consider.
+        - diagonal = 0, is the main diagonal. (default)
+        - diagonal > 0, is above the main diagonal.
+        - diagonal < 0, is below the main diagonal.
+        """
+        tensor = _ensure_tensorbase(tensor)
+        dim = tensor.dim()
+        if dim == 1:
+            return np.diag(tensor)
+        else:
+            return np.diagonal(tensor, diagonal)
 
 
 def matmul(tensor1, tensor2):
