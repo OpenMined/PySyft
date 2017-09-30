@@ -498,6 +498,12 @@ class TensorBase(object):
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
 
+    def diag(self, tenosr):
+        """ When input tensor is a vector (1D Tensor), returns a 2D square Tensor
+            with the elements of input as the diagonal.
+        """
+        return np.diag(tenosr)
+
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
@@ -725,19 +731,72 @@ class TensorBase(object):
         else:
             return [TensorBase(x) for x in np.array_split(self.data, n, dim)]
 
-    def gt(self, t):
+    def gt(self, other):
         """Returns a new Tensor having boolean True values where an element of the calling tensor is greater than the second Tensor, False otherwise.
         The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
-        if self.encrypted:
+        other = _ensure_tensorbase(other)
+        if self.encrypted or other.encrypted:
             return NotImplemented
-        return TensorBase(np.greater(self.data, _ensure_tensorbase(t).data))
+        return TensorBase(np.greater(self.data, other.data))
 
-    def gt_(self, t):
+    def gt_(self, other):
         """Writes in-place, boolean True values where an element of the calling tensor is greater than the second Tensor, False otherwise.
         The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
-        if self.encrypted:
+        other = _ensure_tensorbase(other)
+        if self.encrypted or other.encrypted:
             return NotImplemented
-        self.data = np.greater(self.data, _ensure_tensorbase(t).data)
+        self.data = np.greater(self.data, other.data)
+        return self
+
+    def lt(self, other):
+        """Returns a new Tensor having boolean True values where an element of the calling tensor is less than the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        other = _ensure_tensorbase(other)
+        if self.encrypted or other.encrypted:
+            return NotImplemented
+        return TensorBase(np.less(self.data, other.data))
+
+    def lt_(self, other):
+        """Writes in-place, boolean True values where an element of the calling tensor is less than the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        other = _ensure_tensorbase(other)
+        if self.encrypted or other.encrypted:
+            return NotImplemented
+        self.data = np.less(self.data, other.data)
+        return self
+
+    def ge(self, other):
+        """Returns a new Tensor having boolean True values where an element of the calling tensor is greater or equal than the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        other = _ensure_tensorbase(other)
+        if self.encrypted or other.encrypted:
+            return NotImplemented
+        return TensorBase(np.greater_equal(self.data, other.data))
+
+    def ge_(self, other):
+        """Writes in-place, boolean True values where an element of the calling tensor is greater or equal than the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        other = _ensure_tensorbase(other)
+        if self.encrypted or other.encrypted:
+            return NotImplemented
+        self.data = np.greater_equal(self.data, other.data)
+        return self
+
+    def le(self, other):
+        """Returns a new Tensor having boolean True values where an element of the calling tensor is less or equal than the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        other = _ensure_tensorbase(other)
+        if self.encrypted or other.encrypted:
+            return NotImplemented
+        return TensorBase(np.less_equal(self.data, other.data))
+
+    def le_(self, other):
+        """Writes in-place, boolean True values where an element of the calling tensor is less or equal than the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        other = _ensure_tensorbase(other)
+        if self.encrypted or other.encrypted:
+            return NotImplemented
+        self.data = np.less_equal(self.data, other.data)
         return self
 
     def bernoulli(self, p):
@@ -1261,6 +1320,12 @@ class TensorBase(object):
         self.data[indices] = value
         return self
 
+    def masked_select(self, mask):
+        """
+        See :func:`tensor.masked_select`
+        """
+        return masked_select(self, mask)
+
     def eq(self, t):
         """Returns a new Tensor having boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
         The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
@@ -1276,6 +1341,18 @@ class TensorBase(object):
         self.data = np.equal(self.data, _ensure_tensorbase(t).data)
         return self
 
+    def mm(self, tensor2):
+        """Performs a matrix multiplication of :attr:`tensor1` and :attr:`tensor2`.
+
+        If :attr:`tensor1` is a `n x m` Tensor, :attr:`tensor2` is a `m x p` Tensor,
+        output will be a `n x p` Tensor.
+
+        Args:
+            tensor1 (Tensor): First Tensor to be multiplied
+            tensor2 (Tensor): Second Tensor to be multiplied"""
+
+        return syft.mm(self, tensor2)
+
 
 def mv(tensormat, tensorvector):
     """ matrix and vector multiplication """
@@ -1289,3 +1366,22 @@ def mv(tensormat, tensorvector):
             compatible with matrix {} '.format(tensorvector.data.shape, tensormat.data.shape))
     else:
         return TensorBase(np.matmul(tensormat.data, tensorvector.data))
+
+
+def masked_select(tensor, mask):
+    """
+    Returns a new 1D Tensor which indexes the ``input`` Tensor according to the binary mask ``mask``.
+    The shapes of the ``mask`` tensor and the ``input`` tensor don’t need to match, but they must be broadcastable.
+
+    :param tensor: Input tensor
+    :param mask: The binary mask (non-zero is treated as true)
+    :return: 1D output tensor
+    """
+    mask = _ensure_tensorbase(mask)
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted or mask.encrypted:
+        raise NotImplemented
+    mask_broadcasted, data_broadcasted = np.broadcast_arrays(
+        mask.data, tensor.data)
+    indices = np.where(mask_broadcasted)
+    return TensorBase(data_broadcasted[indices])

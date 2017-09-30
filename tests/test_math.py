@@ -207,3 +207,23 @@ class unsqueezeTests(unittest.TestCase):
             expected_shape.insert(i, 1)
 
             self.assertTrue(np.array_equal(out.data.shape, expected_shape))
+
+
+class mmtest(unittest.TestCase):
+    def testmm1d(self):
+        t1 = TensorBase(np.array([2, 3, 4]))
+        t2 = TensorBase(np.array([3, 4, 5]))
+        out = syft.mm(t1, t2)
+        self.assertTrue(np.alltrue(out.data == [38]))
+
+    def testmm2d(self):
+        t1 = TensorBase(np.array([[1, 2], [1, 2]]))
+        t2 = TensorBase(np.array([[2, 3], [2, 3]]))
+        out = syft.mm(t1, t2)
+        self.assertTrue(np.alltrue(out.data == [[6, 9], [6, 9]]))
+
+    def testmm3d(self):
+        t1 = TensorBase(np.array([[1, 2], [2, 3], [3, 4]]))
+        t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
+        out = syft.mm(t1, t2)
+        self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
