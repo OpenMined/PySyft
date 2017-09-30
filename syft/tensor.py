@@ -208,8 +208,8 @@ class TensorBase(object):
             self.data[key] = value
             return self
 
-    def __getitem__(self, position):
-        """Get value at a specific index."""
+    """def __getitem__(self, position):
+        #
         if self.encrypted:
             return NotImplemented
         else:
@@ -218,6 +218,17 @@ class TensorBase(object):
                 return out
             else:
                 return TensorBase(self.data[position], self.encrypted)
+    """
+
+    def __getitem__(self, key):
+        """
+        Overloaded [] operator we are inheriting .data from numpy array so we can
+        pass the key value which is a slice (beg,end,step) to data member directly
+        """
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return TensorBase(self.data[key])
 
     def abs(self):
         """Returns absolute value of tensor as a new tensor"""
@@ -581,6 +592,20 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = np.modf(self.data)[0]
+        return self
+
+    def fmod(self, x):
+        """Computes the element wise remainder of divison by x"""
+        if self.encrypted:
+            return NotImplemented
+        ret = np.fmod(self.data, x)
+        return TensorBase(ret)
+
+    def fmod_(self, x):
+        """Computes the element wise remaind of division by x inplace"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.fmod(self.data, x)
         return self
 
     def sigmoid_(self):
