@@ -44,10 +44,10 @@ class DiagTests(unittest.TestCase):
     def test_1D_tensor_upper_diag(self):
         t = TensorBase(np.array([1, 2, 3, 4]))
         self.assertTrue(syft.equal(syft.diag(t, 1), TensorBase([[0, 1, 0, 0, 0],
-                                                            [0, 0, 2, 0, 0],
-                                                            [0, 0, 0, 3, 0],
-                                                            [0, 0, 0, 0, 4],
-                                                            [0, 0, 0, 0, 0]])))
+                                                                [0, 0, 2, 0, 0],
+                                                                [0, 0, 0, 3, 0],
+                                                                [0, 0, 0, 0, 4],
+                                                                [0, 0, 0, 0, 0]])))
 
     def test_1D_tensor_below_diag(self):
         t = TensorBase(np.array([1, 2, 3, 4]))
