@@ -233,10 +233,10 @@ class TensorBase(object):
         return self.data
 
     def nelement(self):
-    	"""Returns the total number of elements in the tensor."""
-    	if self.encrypted:
-    		return NotImplemented
-    	return self.data.size
+        """Returns the total number of elements in the tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return self.data.size
 
     def shape(self):
         """Returns a tuple of input array dimensions."""
