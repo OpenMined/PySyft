@@ -255,6 +255,21 @@ def addmv(tensor1, mat, vec, beta=1, alpha=1):
         out = (tensor1.data * beta) + (np.matmul(mat.data, vec.data) * alpha)
         return TensorBase(out)
 
+def bmm(tensor1, tensor2):
+    """Performs a batch matrix-matrix product of matrices stored in batch1 and batch2.
+    batch1 and batch2 must be 3D Tensors each containing the same number of matrices."""
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+    if tensor2.data.ndim != 3:
+        print("dimension of tensor2 is not 3")
+    elif tensor1.data.ndim != 3:
+        print("dimension of tensor1 is not 3")
+    elif tensor1.encrypted or tensor2.encrypted:
+        return NotImplemented
+    else:
+        out = np.matmul(tensor1.data, tensor2.data)
+        return TensorBase(out)
+
 
 def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
     """Performs a batch matrix-matrix product of matrices stored in
