@@ -400,12 +400,6 @@ class transposeTests(unittest.TestCase):
         self.assertTrue(np.array_equal(out1.data, [[[3, 4], [7, 8]],
                                                    [[5, 6], [1, 2]]]))
 
-    def test_transpose_(self):
-        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
-        t1.transpose_(0, 1)
-        self.assertTrue(np.array_equal(t1.data, [[[3, 4], [7, 8]],
-                                                 [[5, 6], [1, 2]]]))
-
 
 class unsqueezeTests(unittest.TestCase):
     def test_unsqueeze(self):
