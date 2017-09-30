@@ -223,7 +223,7 @@ class TensorBase(object):
         """Returns absolute value of tensor as a new tensor"""
         if self.encrypted:
             return NotImplemented
-        return np.absolute(self.data)
+        return TensorBase(np.absolute(self.data))
 
     def abs_(self):
         """Replaces tensor values with its absolute value"""
@@ -497,7 +497,6 @@ class TensorBase(object):
             raise ValueError("dims cannot be none")
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
-
 
     def transpose(self, dim0, dim1):
         """
