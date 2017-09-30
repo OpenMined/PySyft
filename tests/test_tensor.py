@@ -360,6 +360,7 @@ class baddbmmTests(unittest.TestCase):
 
 
 class PermuteTests(unittest.TestCase):
+    # WARNING: don't change the name of this function
     def dest3d(self):
         t = TensorBase(np.ones((2, 3, 5)))
         tdash = t.permute((2, 0, 1))
@@ -555,7 +556,7 @@ class chunkTests(unittest.TestCase):
 
 
 class inequalityTest(unittest.TestCase):
-    # this is an ovverriden function from unittest.Testcase.
+    # WARNING: this is an ovverriden function from unittest.Testcase.
     # never change the name of this function.
     def setUp(self):
         self.a1 = np.array([-2, -1, 0, 1, 2])
