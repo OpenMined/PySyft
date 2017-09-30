@@ -1061,9 +1061,15 @@ class TensorBase(object):
         Returns a Tensor of random numbers drawn from separate
         normal distributions who’s mean and standard deviation are given.
 
-        :param mu:
-        :param sigma:
-        :return: Tensor of Random Numbers
+        Parameters
+        ----------
+        mu:
+
+        sigma:
+
+        Returns
+        ----------
+        Tensor of Random Numbers
         """
 
         if self.encrypted:
@@ -1078,9 +1084,15 @@ class TensorBase(object):
         Returns a Tensor of random numbers in-place drawn from separate
         normal distributions who’s mean and standard deviation are given.
 
-        :param mu:
-        :param sigma:
-        :return: Tensor of Random Numbers
+        Parameters
+        ----------
+        mu:
+
+        sigma:
+
+        Returns
+        ----------
+        Tensor of Random Numbers
         """
 
         if self.encrypted:
@@ -1090,10 +1102,14 @@ class TensorBase(object):
 
     def ne(self, tensor):
         """
-        Checks element-wise equality with the given tensor and
+        Checks element-wise equality with the given tensor
 
-        :param tensor:
-        :return:Boolean result with same dimension as the input matrix
+        Parameters
+        ----------
+        tensor:
+
+        Returns
+        ----------Boolean result with dimension of the input matrix
         """
         if self.encrypted:
             return NotImplemented
@@ -1113,8 +1129,12 @@ class TensorBase(object):
         Checks in place element wise equality and updates the data matrix
         to the equality matrix.
 
-        :param tensor:
-        :return:
+        Parameters
+        ----------
+        tensor:
+
+        Returns
+        ----------
         """
         if self.encrypted:
             return NotImplemented
@@ -1130,9 +1150,16 @@ class TensorBase(object):
         axis=None can be used get median of whole tensor.
 
 
-        :param axis: To get median of whole tensor, specify axis=None
-        :param keepdims:
-        :return:
+        Parameters
+        ----------
+        axis:
+            To get median of whole tensor, specify axis=None
+
+        keepdims:
+
+        Returns
+        ----------
+        output median
         """
         if self.encrypted:
             return NotImplemented
@@ -1146,8 +1173,14 @@ class TensorBase(object):
         By default mode is calculated along rows.
         To get mode of whole tensor, specify axis=None
 
-        :param axis: axis ; To get mode of whole tensor, specify axis=None
-        :return:
+        Parameters
+        ----------
+        axis :
+            To get mode of whole tensor, specify axis=None
+
+        Returns
+        ----------
+        output mode
         """
         if self.encrypted:
             return NotImplemented
@@ -1155,15 +1188,21 @@ class TensorBase(object):
         return TensorBase(out)
 
     def inverse(self):
-        """"""
         """
         Returns inverse of a square matrix.
 
         If axis=None it will return minimum value in tensor
 
-        :param axis: Axis
-        :param keepdims:
-        :return: Histogram
+        Parameters
+        ----------
+        axis:
+            axis=None will return minimum value in tensor
+
+        keepdims:
+
+        Returns
+        ----------
+        Minimum valuein tensor
         """
 
         if self.encrypted:
@@ -1177,9 +1216,16 @@ class TensorBase(object):
 
         If axis=None it will return minimum value in tensor
 
-        :param axis: Axis
-        :param keepdims
-        :return: minimum value in tensor
+        Parameters
+        ----------
+        axis:
+            axis=None will return minimum value
+
+        keepdims:
+
+        Returns
+        ----------
+        minimum value in tensor
         """
 
         if self.encrypted:
@@ -1191,10 +1237,18 @@ class TensorBase(object):
         """
         Computes the histogram of a tensor.
 
-        :param bins: The bin range
-        :param min: Minimum of the Hist.
-        :param max: Maximum of the Hist.
-        :return: Historgram
+        Parameters
+        ----------
+        bins:
+            The bin range
+        min:
+            Minimum of the Hist.
+        max:
+            Maximum of the Hist.
+
+        Returns
+        ----------
+        Output Historgram
         """
         if self.encrypted:
             return NotImplemented
@@ -1210,10 +1264,18 @@ class TensorBase(object):
         The indices are specified with respect to the given dimension,
         ``dim``, in the manner described in gather().
 
-        :param dim: The axis along which to index
-        :param index: The indices of elements to scatter
-        :param src: The source element(s) to scatter
-        :return: self
+        Parameters
+        ----------
+        dim:
+            The axis along which to index
+        index:
+            The indices of elements to scatter
+        src:
+            The source element(s) to scatter
+
+        Returns
+        ----------
+        The calling object
         """
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
@@ -1280,9 +1342,16 @@ class TensorBase(object):
             out[i][j][k] = input[i][index[i][j][k]][k]  # if dim == 1
             out[i][j][k] = input[i][j][index[i][j][k]]  # if dim == 2
 
-        :param dim: The axis along which to index
-        :param index: A tensor of indices of elements to gather
-        :return: tensor of gathered values
+        Parameters
+        ----------
+        dim:
+            The axis along which to index
+        index:
+            A tensor of indices of elements to gather
+
+        Returns
+        ----------
+        tensor of gathered values
         """
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
@@ -1304,7 +1373,13 @@ class TensorBase(object):
         """
         Serializes Object to a pickle.
 
-        :return: pickle dumps
+        Parameters
+        ----------
+
+
+        Returns
+        ----------
+        pickle dumps
         """
         return pickle.dumps(self)
 
@@ -1312,8 +1387,14 @@ class TensorBase(object):
         """
         Deserializes an Object from a Pickle
 
-        :param b:pickled Object
-        :return: Object loaded from Pickle
+        Parameters
+        ----------
+        b: Obj
+            pickled Object
+
+        Returns
+        ----------
+        Object loaded from Pickle
         """
         return pickle.loads(b)
 
@@ -1326,8 +1407,15 @@ class TensorBase(object):
         The remainder has the same sign as the divisor.
         When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor``
         must be broadcastable.
-        :param divisor:  The divisor. This may be either a number or a tensor.
-        :return: result tensor
+
+        Parameters
+        ----------
+        divisor:
+            This may be either a number or a tensor.
+
+        Returns
+        ----------
+        Resultant tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1345,8 +1433,15 @@ class TensorBase(object):
         When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor``
         must be broadcastable.
 
-        :param divisor:  The divisor. This may be either a number or a tensor.
-        :return: self
+        Parameters
+        ----------
+        divisor:
+            The divisor. This may be either a number or a tensor.
+
+        Returns
+        ----------
+        The calling object
+
         """
         if self.encrypted:
             return NotImplemented
