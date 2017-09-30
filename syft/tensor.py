@@ -1113,22 +1113,47 @@ class TensorBase(object):
         return TensorBase(out)
 
     def inverse(self):
-        """Returns inverse of a square matrix"""
+        """"""
+        """
+        Returns inverse of a square matrix.
+
+        If axis=None it will return minimum value in tensor
+
+        :param axis: Axis
+        :param keepdims:
+        :return: Histogram
+        """
+
         if self.encrypted:
             return NotImplemented
         inv = np.linalg.inv(np.matrix(np.array(self.data)))
         return TensorBase(inv)
 
     def min(self, axis=1, keepdims=False):
-        """Returns minimum value in tensor along rows by default
-        but if axis=None it will return minimum value in tensor"""
+        """
+        Returns minimum value in tensor along rows by default.
+
+        If axis=None it will return minimum value in tensor
+
+        :param axis: Axis
+        :param keepdims
+        :return: minimum value in tensor
+        """
+
         if self.encrypted:
             return NotImplemented
         min = np.matrix(np.array(self.data)).min(axis=axis, keepdims=keepdims)
         return TensorBase(min)
 
     def histc(self, bins=10, min=0, max=0):
-        """Computes the histogram of a tensor and Returns it"""
+        """
+        Computes the histogram of a tensor.
+
+        :param bins: The bin range
+        :param min: Minimum of the Hist.
+        :param max: Maximum of the Hist.
+        :return: Historgram
+        """
         if self.encrypted:
             return NotImplemented
         hist, edges = np.histogram(
@@ -1139,6 +1164,7 @@ class TensorBase(object):
         """
         Writes all values from the Tensor ``src`` into ``self`` at the
         indices specified in the ``index`` Tensor.
+
         The indices are specified with respect to the given dimension,
         ``dim``, in the manner described in gather().
 
@@ -1408,7 +1434,14 @@ class TensorBase(object):
 
 
 def mv(tensormat, tensorvector):
-    """ matrix and vector multiplication """
+
+    """
+    Matrix and Vector multiplication is performed.
+
+    :param tensormat: Input tensor matrix
+    :param tensorvector: Input tensor vector
+    :return: Output tensor
+    """
     if tensormat.encrypted or tensorvector.encrypted:
         raise NotImplemented
     elif not len(tensorvector.data.shape) == 1:
