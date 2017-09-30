@@ -164,6 +164,7 @@ class addmv(unittest.TestCase):
         out = syft.addmv(t1, mat, vec, beta=2, alpha=2)
         self.assertTrue(np.array_equal(out.data, [68, 130]))
 
+
 class addbmmTests(unittest.TestCase):
     def test_addbmm(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
