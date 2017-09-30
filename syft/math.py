@@ -9,7 +9,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh', 'relu',
-    'zeros', 'ones', 'rand', 'randn', 'mm', 'diag'
+    'zeros', 'ones', 'rand', 'randn', 'mm'
 ]
 
 
@@ -51,7 +51,7 @@ def dot(tensor1, tensor2):
 
 
 def diag(tensor, diagonal=0):
-    """ 
+    """
     1. If input is a vector (1D Tensor),
         then returns a 2D square Tensor with the elements of input as the diagonal.
 
