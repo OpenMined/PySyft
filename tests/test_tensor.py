@@ -360,7 +360,7 @@ class baddbmmTests(unittest.TestCase):
 
 
 class PermuteTests(unittest.TestCase):
-    def test_3d(self):
+    def dest3d(self):
         t = TensorBase(np.ones((2, 3, 5)))
         tdash = t.permute((2, 0, 1))
         self.assertTrue(tdash.data.shape == [5, 2, 3])
