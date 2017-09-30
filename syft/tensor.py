@@ -1360,9 +1360,16 @@ class TensorBase(object):
         Returns a new Tensor which indexes the ``input`` Tensor along
         dimension ``dim`` using the entries in ``index``.
 
-        :param dim: dimension in which to index
-        :param index: 1D tensor containing the indices to index
-        :return: Tensor of selected indices
+        Parameters
+        ----------
+        dim:
+            dimension in which to index
+        index:
+            1D tensor containing the indices to index
+
+        Returns
+        ----------
+        Tensor of selected indices
         """
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
@@ -1386,9 +1393,16 @@ class TensorBase(object):
         The ``source`` should have at least as many elements as the number
         of ones in ``mask``.
 
-        :param mask: The binary mask (non-zero is treated as true)
-        :param source: The tensor to copy from
-        :return: self
+        Parameters
+        ----------
+        mask: TensorBase
+            The binary mask (non-zero is treated as true)
+        source: TensorBase
+            The tensor to copy from
+
+        Returns
+        ----------
+        Output Tensor
         """
         mask = _ensure_tensorbase(mask)
         source = _ensure_tensorbase(source)
@@ -1406,9 +1420,16 @@ class TensorBase(object):
         Fills elements of this ``tensor`` with value where ``mask`` is true.
         The shape of mask must be broadcastable with the shape of the underlying tensor.
 
-        :param mask: The binary mask (non-zero is treated as true)
-        :param value: value to fill
-        :return: self
+        Parameters
+        ----------
+        mask: TensorBase
+            The binary mask (non-zero is treated as true)
+        value:
+            value to fill
+
+        Returns
+        ----------
+        Output Tensor
         """
         mask = _ensure_tensorbase(mask)
         if self.encrypted or mask.encrypted:
@@ -1435,8 +1456,14 @@ class TensorBase(object):
         The second Tensor can be a number or a tensor whose shape is
         broadcastable with the calling Tensor.
 
-        :param t: Input tensor
-        :return: Output tensor;
+        Parameters
+        ----------
+        t: Tensor
+            Input tensor
+
+        Returns
+        ----------
+        Output tensor;
         """
         if self.encrypted:
             return NotImplemented
@@ -1451,8 +1478,14 @@ class TensorBase(object):
         The second Tensor can be a number or a tensor whose shape is
         broadcastable with the calling Tensor.
 
-        :param t: Input tensor
-        :return: Output tensor;
+        Parameters
+        ----------
+        t: Tensor
+            Input Tensor
+
+        Returns
+        ----------
+        Output tensor;
         """
         if self.encrypted:
             return NotImplemented
@@ -1466,23 +1499,35 @@ class TensorBase(object):
         If :attr:`tensor1` is a `n x m` Tensor, :attr:`tensor2` is a `m x p` Tensor,
         output will be a `n x p` Tensor.
 
-        Args:
-            tensor (Tensor): Second Tensor to be multiplied
+        Parameters
+        ----------
+        tensor: Tensor
+            Second Tensor to be multiplied
 
-        :return: n x m Output tensor
+        Returns
+        ----------
+        n x m Output tensor
         """
 
         return syft.mm(self, tensor)
 
 
 def mv(tensormat, tensorvector):
-
     """
     Matrix and Vector multiplication is performed.
 
-    :param tensormat: Input tensor matrix
-    :param tensorvector: Input tensor vector
-    :return: Output tensor
+
+    Parameters
+    ----------
+    tensormat: TensorBase
+        Input tensor matrix
+    tensorvector: TensorBase
+        Input tensor vector
+
+
+    Returns
+    ----------
+    Output tensor
     """
     if tensormat.encrypted or tensorvector.encrypted:
         raise NotImplemented
@@ -1498,12 +1543,21 @@ def mv(tensormat, tensorvector):
 
 def masked_select(tensor, mask):
     """
-    Returns a new 1D Tensor which indexes the ``input`` Tensor according to the binary mask ``mask``.
-    The shapes of the ``mask`` tensor and the ``input`` tensor don’t need to match, but they must be broadcastable.
+    Returns a new 1D Tensor which indexes the ``input`` Tensor according to
+    the binary mask ``mask``.
+    The shapes of the ``mask`` tensor and the ``input`` tensor don’t need
+    to match, but they must be broadcastable.
 
-    :param tensor: Input tensor
-    :param mask: The binary mask (non-zero is treated as true)
-    :return: 1D output tensor
+    Parameters
+    ----------
+    tensor: TensorBase
+        The input Tensor
+    mask: TensorBase
+        The binary mask (non-zero is treated as true)
+
+    Returns
+    -------
+    1D output tensor
     """
     mask = _ensure_tensorbase(mask)
     tensor = _ensure_tensorbase(tensor)
