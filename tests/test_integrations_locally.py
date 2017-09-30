@@ -9,7 +9,7 @@ from syft.he.paillier import KeyPair, PaillierTensor
 
 class PySonarNotebooks(unittest.TestCase):
 
-    def modelTrainingDemoNotebook(self):
+    def model_Training_DemoNotebook(self):
         """If this test fails, you probably broke the demo notebook located at
         PySonar/notebooks/Sonar - Decentralized Model Training Simulation
         (local blockchain).ipynb """
@@ -23,7 +23,7 @@ class PySonarNotebooks(unittest.TestCase):
 
 class PySyftNotebooks(unittest.TestCase):
 
-    def paillierHEExampleNotebook(self):
+    def paillier_HEExampleNotebook(self):
         """If this test fails, you probably broke the demo notebook located at
         PySyft/notebooks/Syft - Paillier Homomorphic Encryption Example.ipynb
         """
@@ -60,7 +60,7 @@ class PySyftNotebooks(unittest.TestCase):
         out7 = prikey.decrypt(y2)
         self.assertEqual(out7, np.array([.5, .5, .5, .5, .5]))
 
-    def paillierLinearClassifierNotebook(self):
+    def paillier_LinearClassifierNotebook(self):
         """If this test fails, you probably broke the demo notebook located at
         PySyft/notebooks/Syft - Paillier Homomorphic Encryption Example.ipynb
         """
