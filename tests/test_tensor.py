@@ -234,14 +234,14 @@ class addmm(unittest.TestCase):
         out = t1.addmm(t2, mat, beta=2, alpha=2)
         self.assertTrue(np.array_equal(out.data, [[10, 18], [12, 20]]))
 
-    def test_addmm_1d(self):
+    def test_addmm__1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 3, 4]))
         mat = TensorBase(np.array([5]))
         t1.addmm_(t2, mat, beta=2, alpha=2)
         self.assertTrue(np.array_equal(t1.data, [50]))
 
-    def test_addmm_2d(self):
+    def test_addmm__2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[1, 2], [1, 2]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
@@ -264,14 +264,14 @@ class addcmulTests(unittest.TestCase):
         out = t1.addcmul(t2, mat, value=2)
         self.assertTrue(np.array_equal(out.data, [[4, 11], [5, 12]]))
 
-    def test_addcmul_1d(self):
+    def test_addcmul__1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 3, 4]))
         mat = TensorBase(np.array([5]))
         t1.addcmul_(t2, mat, value=2)
         self.assertTrue(np.array_equal(t1.data, [9, 17, 29]))
 
-    def test_addcmul_2d(self):
+    def test_addcmul__2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[1, 2], [1, 2]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
@@ -294,14 +294,14 @@ class addcdivTests(unittest.TestCase):
         out = t1.addcdiv(t2, mat, value=2)
         self.assertTrue(np.array_equal(out.data, [[4., 5.], [5., 6.]]))
 
-    def test_addcdiv_1d(self):
+    def test_addcdiv__1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 5, 4]))
         mat = TensorBase(np.array([5]))
         t1.addcdiv_(t2, mat, value=2)
         self.assertTrue(np.array_equal(t1.data, [6., 5.8, 6.5]))
 
-    def test_addcdiv_2d(self):
+    def test_addcdiv__2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[1, 2], [1, 2]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
@@ -580,7 +580,7 @@ class gtTests(inequalityTest):
     def test_gt_with_number(self):
         self.assertEqual(self.t1.gt(1), self.a1 > 1)
 
-    def test_gt__in_place_with_number(self):
+    def test_gt__in_place_with_tensor(self):
         self.t1.gt_(self.t2)
         self.assertEqual(self.t1, self.a1 > self.a2)
 
@@ -653,7 +653,7 @@ class leTests(inequalityTest):
         self.t1.le_(self.t2)
         self.assertEqual(self.t1, self.a1 <= self.a2)
 
-    def test_le__in_place_with_tensor(self):
+    def test_le__in_place_with_number(self):
         self.t1.le_(1)
         self.assertEqual(self.t1, self.a1 <= 1)
 
