@@ -1055,24 +1055,46 @@ class TensorBase(object):
         return self
 
     def normal(self, mu, sigma):
-        """Returns a Tensor of random numbers drawn from separate
-        normal distributions who’s mean and standard deviation are given."""
+        """
+        Returns a Tensor of Random numbers
+
+        Returns a Tensor of random numbers drawn from separate
+        normal distributions who’s mean and standard deviation are given.
+
+        :param mu:
+        :param sigma:
+        :return: Tensor of Random Numbers
+        """
+
         if self.encrypted:
             return NotImplemented
         out = np.random.normal(mu, sigma, self.data.shape)
         return TensorBase(out)
 
     def normal_(self, mu, sigma):
-        """Returns a Tensor of random numbers in-place drawn from separate
-        normal distributions who’s mean and standard deviation are given."""
+        """
+        Returns a Tensor of random numbers
+
+        Returns a Tensor of random numbers in-place drawn from separate
+        normal distributions who’s mean and standard deviation are given.
+
+        :param mu:
+        :param sigma:
+        :return: Tensor of Random Numbers
+        """
+
         if self.encrypted:
             return NotImplemented
         self.data = np.random.normal(mu, sigma, self.data.shape)
         return self
 
     def ne(self, tensor):
-        """Checks element-wise equality with the given tensor and returns
-        a boolean result with same dimension as the input matrix"""
+        """
+        Checks element-wise equality with the given tensor and
+
+        :param tensor:
+        :return:Boolean result with same dimension as the input matrix
+        """
         if self.encrypted:
             return NotImplemented
         else:
@@ -1088,7 +1110,11 @@ class TensorBase(object):
 
     def ne_(self, tensor):
         """
-         Checks in place element wise equality and updates the data matrix to the equality matrix
+        Checks in place element wise equality and updates the data matrix
+        to the equality matrix.
+
+        :param tensor:
+        :return:
         """
         if self.encrypted:
             return NotImplemented
@@ -1097,16 +1123,32 @@ class TensorBase(object):
             self.data = value.data
 
     def median(self, axis=1, keepdims=False):
-        """Returns median of tensor as per specified axis. By default median is calculated along rows.
-        axis=None can be used get median of whole tensor."""
+        """
+        Returns median of tensor as per specified axis.
+
+        By default median is calculated along rows.
+        axis=None can be used get median of whole tensor.
+
+
+        :param axis: To get median of whole tensor, specify axis=None
+        :param keepdims:
+        :return:
+        """
         if self.encrypted:
             return NotImplemented
         out = np.median(np.array(self.data), axis=axis, keepdims=keepdims)
         return TensorBase(out)
 
     def mode(self, axis=1):
-        """Returns mode of tensor as per specified axis. By default mode is calculated along rows.
-        To get mode of whole tensor, specify axis=None"""
+        """
+        Returns mode of tensor as per specified axis.
+
+        By default mode is calculated along rows.
+        To get mode of whole tensor, specify axis=None
+
+        :param axis: axis ; To get mode of whole tensor, specify axis=None
+        :return:
+        """
         if self.encrypted:
             return NotImplemented
         out = scipy.stats.mode(np.array(self.data), axis=axis)
