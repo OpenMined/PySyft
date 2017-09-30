@@ -561,7 +561,7 @@ class chunkTests(unittest.TestCase):
 
 
 class inequalityTest(unittest.TestCase):
-    def set_up(self):
+    def setUp(self):
         self.a1 = np.array([-2, -1, 0, 1, 2])
         self.a2 = np.array([-4, -1, 5, 2, 2])
 
