@@ -223,7 +223,7 @@ class TensorBase(object):
         """Returns absolute value of tensor as a new tensor"""
         if self.encrypted:
             return NotImplemented
-        return np.absolute(self.data)
+        return TensorBase(np.absolute(self.data))
 
     def abs_(self):
         """Replaces tensor values with its absolute value"""
