@@ -17,6 +17,11 @@ def _ensure_ndarray(arr):
 
 
 def _ensure_tensorbase(tensor):
+    """Ensures the tensor passed is of type TensorBase
+
+    Args:
+            tensor (object):Tensor to be checked
+    """
     if not isinstance(tensor, TensorBase):
         tensor = TensorBase(tensor)
 
@@ -80,7 +85,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         else:
-            if(type(pubkey) == syft.he.paillier.keys.PublicKey):
+            if (type(pubkey) == syft.he.paillier.keys.PublicKey):
                 out = syft.he.paillier.PaillierTensor(pubkey, self.data)
                 return out
             else:
@@ -162,7 +167,7 @@ class TensorBase(object):
 
         # if it's a sub-class of TensorBase, use the multiplication of that
         # subclass not this one.
-        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             return tensor * self
         else:
             tensor = _ensure_tensorbase(tensor)
@@ -173,7 +178,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             self.data = tensor.data * self.data
             self.encrypted = tensor.encrypted
         else:
@@ -186,7 +191,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             return NotImplemented  # it's not clear that this can be done
         else:
             tensor = _ensure_tensorbase(tensor)
@@ -202,7 +207,7 @@ class TensorBase(object):
         return self
 
     def __setitem__(self, key, value):
-        if(self.encrypted):
+        if (self.encrypted):
             return NotImplemented
         else:
             self.data[key] = value
@@ -214,7 +219,7 @@ class TensorBase(object):
             return NotImplemented
         else:
             out = self.data[position]
-            if(len(self.shape()) == 1):
+            if (len(self.shape()) == 1):
                 return out
             else:
                 return TensorBase(self.data[position], self.encrypted)
@@ -1132,8 +1137,11 @@ class TensorBase(object):
 
     def scatter_(self, dim, index, src):
         """
-        Writes all values from the Tensor ``src`` into ``self`` at the indices specified in the ``index`` Tensor.
-        The indices are specified with respect to the given dimension, ``dim``, in the manner described in gather().
+        Writes all values from the Tensor ``src`` into ``self`` at the
+        indices specified in the ``index`` Tensor.
+        The indices are specified with respect to the given dimension,
+        ``dim``, in the manner described in gather().
+
         :param dim: The axis along which to index
         :param index: The indices of elements to scatter
         :param src: The source element(s) to scatter
@@ -1153,7 +1161,7 @@ class TensorBase(object):
             # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
             dim = self.data.ndim + dim
         idx_xsection_shape = index.data.shape[:dim] + \
-            index.data.shape[dim + 1:]
+                             index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
@@ -1198,10 +1206,12 @@ class TensorBase(object):
     def gather(self, dim, index):
         """
         Gathers values along an axis specified by ``dim``.
+
         For a 3-D tensor the output is specified by:
             out[i][j][k] = input[index[i][j][k]][j][k]  # if dim == 0
             out[i][j][k] = input[i][index[i][j][k]][k]  # if dim == 1
             out[i][j][k] = input[i][j][index[i][j][k]]  # if dim == 2
+
         :param dim: The axis along which to index
         :param index: A tensor of indices of elements to gather
         :return: tensor of gathered values
@@ -1210,7 +1220,7 @@ class TensorBase(object):
         if self.encrypted or index.encrypted:
             return NotImplemented
         idx_xsection_shape = index.data.shape[:dim] + \
-            index.data.shape[dim + 1:]
+                             index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
@@ -1223,17 +1233,31 @@ class TensorBase(object):
         return TensorBase(np.swapaxes(gathered, 0, dim))
 
     def serialize(self):
+        """
+        Serializes Object to a pickle.
+
+        :return: pickle dumps
+        """
         return pickle.dumps(self)
 
     def deserialize(b):
+        """
+        Deserializes an Object from a Pickle
+
+        :param b:pickled Object
+        :return: Object loaded from Pickle
+        """
         return pickle.loads(b)
 
     def remainder(self, divisor):
         """
         Computes the element-wise remainder of division.
-        The divisor and dividend may contain both for integer and floating point numbers.
+
+        The divisor & dividend may contain both for integer and floating point
+        numbers.
         The remainder has the same sign as the divisor.
-        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
+        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor``
+        must be broadcastable.
         :param divisor:  The divisor. This may be either a number or a tensor.
         :return: result tensor
         """
@@ -1246,9 +1270,13 @@ class TensorBase(object):
     def remainder_(self, divisor):
         """
         Computes the element-wise remainder of division.
-        The divisor and dividend may contain both for integer and floating point numbers.
+
+        The divisor and dividend may contain both for integer and floating
+        point numbers.
         The remainder has the same sign as the divisor.
-        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
+        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor``
+        must be broadcastable.
+
         :param divisor:  The divisor. This may be either a number or a tensor.
         :return: self
         """
@@ -1282,13 +1310,17 @@ class TensorBase(object):
 
     def masked_scatter_(self, mask, source):
         """
-        Copies elements from ``source`` into this tensor at positions where the ``mask`` is true.
-        The shape of ``mask`` must be broadcastable with the shape of the this tensor.
-        The ``source`` should have at least as many elements as the number of ones in ``mask``.
+        Copies elements from ``source`` into this tensor at positions
+        where the ``mask`` is true.
+
+        The shape of ``mask`` must be broadcastable with the shape of the this
+        tensor.
+        The ``source`` should have at least as many elements as the number
+        of ones in ``mask``.
 
         :param mask: The binary mask (non-zero is treated as true)
         :param source: The tensor to copy from
-        :return:
+        :return: self
         """
         mask = _ensure_tensorbase(mask)
         source = _ensure_tensorbase(source)
@@ -1308,7 +1340,7 @@ class TensorBase(object):
 
         :param mask: The binary mask (non-zero is treated as true)
         :param value: value to fill
-        :return:
+        :return: self
         """
         mask = _ensure_tensorbase(mask)
         if self.encrypted or mask.encrypted:
@@ -1327,31 +1359,52 @@ class TensorBase(object):
         return masked_select(self, mask)
 
     def eq(self, t):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Checks if two Tensors are equal.
+
+        Returns a new Tensor having boolean True values where an element of the
+        calling tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        :param t: Input tensor
+        :return: Output tensor;
+        """
         if self.encrypted:
             return NotImplemented
         return TensorBase(np.equal(self.data, _ensure_tensorbase(t).data))
 
     def eq_(self, t):
-        """Writes in-place, boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Checks if two Tensors are equal.
+
+        Writes in-place, boolean True values where an element of the calling
+        tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        :param t: Input tensor
+        :return: Output tensor;
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.equal(self.data, _ensure_tensorbase(t).data)
         return self
 
-    def mm(self, tensor2):
-        """Performs a matrix multiplication of :attr:`tensor1` and :attr:`tensor2`.
+    def mm(self, tensor):
+        """
+        Performs a matrix multiplication of two Tensors.
 
         If :attr:`tensor1` is a `n x m` Tensor, :attr:`tensor2` is a `m x p` Tensor,
         output will be a `n x p` Tensor.
 
         Args:
-            tensor1 (Tensor): First Tensor to be multiplied
-            tensor2 (Tensor): Second Tensor to be multiplied"""
+            tensor (Tensor): Second Tensor to be multiplied
 
-        return syft.mm(self, tensor2)
+        :return: n x m Output tensor
+        """
+
+        return syft.mm(self, tensor)
 
 
 def mv(tensormat, tensorvector):
