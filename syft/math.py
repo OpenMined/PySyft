@@ -52,23 +52,20 @@ def dot(tensor1, tensor2):
 
 def diag(tensor, diagonal=0):
     """
-    1. If input is a vector (1D Tensor),
-        then returns a 2D square Tensor with the elements of input as the diagonal.
+    * If input tensor is 1D, returns a new 2D square Tensor with the elements of input as the diagonal.
+    * If input tensor is 2D, returns a new 1D Tensor with the diagonal elements of input
 
-    2. If input is a matrix (2D Tensor),
-        then returns a 1D Tensor with the diagonal elements of input
-
-    The argument diagonal controls which diagonal to consider.
-    - diagonal = 0, is the main diagonal. (default)
-    - diagonal > 0, is above the main diagonal.
-    - diagonal < 0, is below the main diagonal.
+    * Optional argument diagonal, returns the n-th diagonal of input 2D tensor,
+    if n = 0 => main diagonal,
+    if n > 0 => above the main diagonal,
+    if n < 0 => below the main diagonal.
     """
     tensor = _ensure_tensorbase(tensor)
     dim = tensor.dim()
     if dim == 1:
-        return np.diag(tensor)
+        return TensorBase(np.diag(tensor, diagonal))
     else:
-        return np.diagonal(tensor, diagonal)
+        return TensorBase(np.diagonal(tensor, diagonal))
 
 
 def matmul(tensor1, tensor2):

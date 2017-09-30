@@ -34,19 +34,38 @@ class DotTests(unittest.TestCase):
 
 
 class DiagTests(unittest.TestCase):
-    def test_one_dim_tensor_input_to_two_dim_tensor(self):
+    def test_1D_tensor_main_diag(self):
         t = TensorBase(np.array([1, 2, 3, 4]))
-        self.assertEqual(syft.diag(t).shape, (4, 4))
+        self.assertTrue(syft.equal(syft.diag(t), TensorBase([[1, 0, 0, 0],
+                                                            [0, 2, 0, 0],
+                                                            [0, 0, 3, 0],
+                                                            [0, 0, 0, 4]])))
 
-    def test_two_dim_tensor_input_with_zero_diag_to_one_dim_tensor(self):
+    def test_1D_tensor_upper_diag(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertTrue(syft.equal(syft.diag(t, 1), TensorBase([[0, 1, 0, 0, 0],
+                                                            [0, 0, 2, 0, 0],
+                                                            [0, 0, 0, 3, 0],
+                                                            [0, 0, 0, 0, 4],
+                                                            [0, 0, 0, 0, 0]])))
+
+    def test_1D_tensor_below_diag(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertTrue(syft.equal(syft.diag(t, -1), TensorBase([[0, 0, 0, 0, 0],
+                                                                [1, 0, 0, 0, 0],
+                                                                [0, 2, 0, 0, 0],
+                                                                [0, 0, 3, 0, 0],
+                                                                [0, 0, 0, 4, 0]])))
+
+    def test_2D_tensor_main_diag(self):
         t = TensorBase(np.array([[0, 1], [2, 3]]))
         self.assertTrue(syft.equal(syft.diag(t, 0), TensorBase([0, 3])))
 
-    def test_two_dim_tensor_input_with_one_diag_up_to_one_dim_tensor(self):
+    def test_2D_tensor_upper_diag(self):
         t = TensorBase(np.array([[0, 1], [2, 3]]))
         self.assertTrue(syft.equal(syft.diag(t, 1), TensorBase([1])))
 
-    def test_two_dim_tensor_input_with_one_diag_down_to_one_dim_tensor(self):
+    def test_2D_tensor_below_diag(self):
         t = TensorBase(np.array([[0, 1], [2, 3]]))
         self.assertTrue(syft.equal(syft.diag(t, -1), TensorBase([2])))
 

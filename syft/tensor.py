@@ -256,6 +256,11 @@ class TensorBase(object):
 
         return self.data.ndim
 
+    def diag(self):
+        """ Returns a diagonal of tensor."""
+
+        return syft.math.diag(self.data)
+
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
         if self.encrypted:
