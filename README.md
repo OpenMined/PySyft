@@ -48,7 +48,7 @@ make run image=pysyft
 
 ### Prerequisites
 
-- Make sure Python 3 in installed on your machine
+- Make sure Python 3.5+ in installed on your machine
 - Install the base libraries listed [here](https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries)
 
 ### Python Requirements

@@ -1,8 +1,21 @@
-.PHONY: test run local
+.PHONY: install test docker-build docker-run
 
-test:
-	pytest
+install:
+	python3 setup.py install
+
+test: install
+	pytest && pytest --flake8
+
+notebook:
+	jupyter notebook --allow-root --ip=0.0.0.0
+
+dockerfile = Dockerfile
+docker-build:
+	docker build -f "$(dockerfile)" -t "pysyft" .
 
 image = openmined/pysyft
-run:
-	docker run --rm -it -v $(PWD)/notebooks:/notebooks -w /notebooks -p 8888:8888 $(image) jupyter notebook --ip=0.0.0.0 --allow-root
+docker-run:
+	docker run -it --rm \
+		-v "$(PWD)":/PySyft \
+		-p 8888:8888 \
+		$(image) sh
