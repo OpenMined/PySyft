@@ -73,17 +73,17 @@ class SigmoidTests(unittest.TestCase):
 class MatmulTests(unittest.TestCase):
     """Matmul Tests"""
 
-    def test_mat_mul_1d_int(self):
+    def test_matmul_1d_int(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([4, 5, 6]))
         self.assertEqual(syft.matmul(t1, t2), syft.dot(t1, t2))
 
-    def test_mat_mul_1d_float(self):
+    def test_matmul_1d_float(self):
         t1 = TensorBase(np.array([1.3, 2.5, 3.7]))
         t2 = TensorBase(np.array([4.9, 5.8, 6.5]))
         self.assertEqual(syft.matmul(t1, t2), syft.dot(t1, t2))
 
-    def test_mat_mul_2d_identity(self):
+    def test_matmul_2d_identity(self):
         t1 = TensorBase(np.array([[1, 0],
                                   [0, 1]]))
         t2 = TensorBase(np.array([[5.8, 6.5],
@@ -91,7 +91,7 @@ class MatmulTests(unittest.TestCase):
         self.assertTrue(syft.equal(syft.matmul(t1, t2), [[5.8, 6.5],
                                                          [7.8, 8.9]]))
 
-    def test_mat_mul_2d_int(self):
+    def test_matmul_2d_int(self):
         t1 = TensorBase(np.array([[1, 2],
                                   [3, 4]]))
         t2 = TensorBase(np.array([[5, 6],
@@ -99,7 +99,7 @@ class MatmulTests(unittest.TestCase):
         self.assertTrue(syft.equal(syft.matmul(t1, t2), [[19, 22],
                                                          [43, 50]]))
 
-    def test_mat_mul_2d_float(self):
+    def test_matmul_2d_float(self):
         t1 = TensorBase(np.array([[1.3, 2.5],
                                   [3.4, 4.5]]))
         t2 = TensorBase(np.array([[5.8, 6.5],
