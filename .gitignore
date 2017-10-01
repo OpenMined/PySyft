@@ -113,5 +113,9 @@ lastfailed
 !.vscode/extensions.json
 .history
 
+<<<<<<< HEAD
 # for some Temporary objects created by some extensions in vscode
+=======
+# for some Temporary objects created by some extension in vscode
+>>>>>>> add .DS_Store to .gitignore
 .DS_Store
