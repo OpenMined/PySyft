@@ -1907,7 +1907,7 @@ class TensorBase(object):
         tensor:
 
         Returns
-        ----------
+        -------
 
 
         """
@@ -1923,7 +1923,7 @@ class TensorBase(object):
         decimals:
 
         Returns
-        ----------
+        -------
         Output Tensor
         """
         if self.encrypted:
@@ -1940,7 +1940,7 @@ class TensorBase(object):
         decimal:
 
         Returns
-        ----------
+        -------
         calling Tensor
         """
         if self.encrypted:
@@ -1958,7 +1958,7 @@ class TensorBase(object):
             Number of Repeats
 
         Returns
-        ----------
+        -------
         Output Tensor
         """
         if self.encrypted:
@@ -1978,7 +1978,7 @@ class TensorBase(object):
         exponent:
 
         Returns
-        ----------
+        -------
         Output Tensor
 
         """
@@ -1999,7 +1999,7 @@ class TensorBase(object):
         exponent
 
         Returns
-        ----------
+        -------
         Calling object
         """
         if self.encrypted:
@@ -2016,7 +2016,7 @@ class TensorBase(object):
         axis:
 
         Returns
-        ----------
+        -------
         Output Tensor
         """
         if self.encrypted:
@@ -2037,7 +2037,7 @@ class TensorBase(object):
         size: ,optional
 
         Returns
-        ----------
+        -------
         Calling Object
         """
         if self.encrypted:
@@ -2053,7 +2053,7 @@ class TensorBase(object):
         ----------
 
         Returns
-        ----------
+        -------
         Output Tensor
         """
         if self.encrypted:
@@ -2069,7 +2069,7 @@ class TensorBase(object):
         ----------
 
         Returns
-        ----------
+        -------
         Size of the Tensor
 
         """
@@ -2087,7 +2087,7 @@ class TensorBase(object):
         dim:
 
         Returns
-        ----------
+        -------
         compund product of the Input
         """
         if self.encrypted:
@@ -2103,7 +2103,7 @@ class TensorBase(object):
         dim: ,optional
 
         Returns
-        ----------
+        -------
         Called Object
         """
         if self.encrypted:
@@ -2122,7 +2122,7 @@ class TensorBase(object):
         dim:
 
         Returns
-        ----------
+        -------
         Tuple of Tensors
 
         """
@@ -2144,7 +2144,7 @@ class TensorBase(object):
         axis
 
         Returns
-        ----------
+        -------
         Output tensor
 
         """
@@ -2163,7 +2163,7 @@ class TensorBase(object):
         tensor: TensorBase
 
         Returns
-        ----------
+        -------
         Output Tensor
 
         """
@@ -2187,7 +2187,7 @@ class TensorBase(object):
         keepdim:
 
         Returns
-        ----------
+        -------
         Mean of the Tensor Elements
         """
         if self.encrypted:
@@ -2203,7 +2203,7 @@ class TensorBase(object):
         ----------
 
         Returns
-        ----------
+        -------
         Negative of elements of tensor
 
         """
@@ -2220,7 +2220,7 @@ class TensorBase(object):
         ----------
 
         Returns
-        ----------
+        -------
         Calling object
 
 
@@ -2244,7 +2244,7 @@ class TensorBase(object):
         sigma:
 
         Returns
-        ----------
+        -------
         Tensor of Random Numbers
         """
 
@@ -2267,7 +2267,7 @@ class TensorBase(object):
         sigma:
 
         Returns
-        ----------
+        -------
         Tensor of Random Numbers
         """
 
@@ -2285,7 +2285,8 @@ class TensorBase(object):
         tensor:
 
         Returns
-        ----------Boolean result with dimension of the input matrix
+        -------
+        Boolean result with dimension of the input matrix
         """
         if self.encrypted:
             return NotImplemented
@@ -2310,7 +2311,7 @@ class TensorBase(object):
         tensor:
 
         Returns
-        ----------
+        -------
         """
         if self.encrypted:
             return NotImplemented
@@ -2334,7 +2335,7 @@ class TensorBase(object):
         keepdims:
 
         Returns
-        ----------
+        -------
         output median
         """
         if self.encrypted:
@@ -2355,7 +2356,7 @@ class TensorBase(object):
             To get mode of whole tensor, specify axis=None
 
         Returns
-        ----------
+        -------
         output mode
         """
         if self.encrypted:
@@ -2377,7 +2378,7 @@ class TensorBase(object):
         keepdims:
 
         Returns
-        ----------
+        -------
         Minimum valuein tensor
         """
 
@@ -2400,7 +2401,7 @@ class TensorBase(object):
         keepdims:
 
         Returns
-        ----------
+        -------
         minimum value in tensor
         """
 
@@ -2423,7 +2424,7 @@ class TensorBase(object):
             Maximum of the Hist.
 
         Returns
-        ----------
+        -------
         Output Historgram
         """
         if self.encrypted:
@@ -2450,7 +2451,7 @@ class TensorBase(object):
             The source element(s) to scatter
 
         Returns
-        ----------
+        -------
         The calling object
         """
         index = _ensure_tensorbase(index)
@@ -2526,7 +2527,7 @@ class TensorBase(object):
             A tensor of indices of elements to gather
 
         Returns
-        ----------
+        -------
         tensor of gathered values
         """
         index = _ensure_tensorbase(index)
@@ -2554,7 +2555,7 @@ class TensorBase(object):
 
 
         Returns
-        ----------
+        -------
         pickle dumps
         """
         return pickle.dumps(self)
@@ -2569,7 +2570,7 @@ class TensorBase(object):
             pickled Object
 
         Returns
-        ----------
+        -------
         Object loaded from Pickle
         """
         return pickle.loads(b)
@@ -2590,7 +2591,7 @@ class TensorBase(object):
             This may be either a number or a tensor.
 
         Returns
-        ----------
+        -------
         Resultant tensor
         """
         if self.encrypted:
@@ -2615,7 +2616,7 @@ class TensorBase(object):
             The divisor. This may be either a number or a tensor.
 
         Returns
-        ----------
+        -------
         The calling object
 
         """
@@ -2639,7 +2640,7 @@ class TensorBase(object):
             1D tensor containing the indices to index
 
         Returns
-        ----------
+        -------
         Tensor of selected indices
         """
         index = _ensure_tensorbase(index)
@@ -2672,7 +2673,7 @@ class TensorBase(object):
             The tensor to copy from
 
         Returns
-        ----------
+        -------
         Output Tensor
         """
         mask = _ensure_tensorbase(mask)
@@ -2699,7 +2700,7 @@ class TensorBase(object):
             value to fill
 
         Returns
-        ----------
+        -------
         Output Tensor
         """
         mask = _ensure_tensorbase(mask)
@@ -2733,7 +2734,7 @@ class TensorBase(object):
             Input tensor
 
         Returns
-        ----------
+        -------
         Output tensor;
         """
         if self.encrypted:
@@ -2755,7 +2756,7 @@ class TensorBase(object):
             Input Tensor
 
         Returns
-        ----------
+        -------
         Output tensor;
         """
         if self.encrypted:
@@ -2776,7 +2777,7 @@ class TensorBase(object):
             Second Tensor to be multiplied
 
         Returns
-        ----------
+        -------
         n x m Output tensor
         """
 
@@ -2797,7 +2798,7 @@ def mv(tensormat, tensorvector):
 
 
     Returns
-    ----------
+    -------
     Output tensor
     """
     if tensormat.encrypted or tensorvector.encrypted:
