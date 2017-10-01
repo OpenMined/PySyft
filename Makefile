@@ -1,4 +1,4 @@
-.PHONY: install test docker-build docker-run
+.PHONY: install test notebook docker-build docker-run
 
 install:
 	python3 setup.py install

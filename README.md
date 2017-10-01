@@ -9,6 +9,8 @@ The goal of this library is to give the user the ability to efficiently train De
 
 - [Setup with Docker](#setup-with-doker)
 - [Local setup](#local-setup)
+- [Notebooks](#notebooks)
+- [Testing](#testing)
 - [For Contributors](#for-contributors)
 - [Relevant Literature](#relevant-literature)
 - [License](#license)
@@ -34,15 +36,16 @@ cd PySyft
 
 Now, start a container based on [openmined/pysyft](https://hub.docker.com/r/openmined/pysyft/):
 ```sh
-# Won't run because it tries to start Jupyter
-make run
+make docker-run
 ```
 
 If you want to use Jupyter and try the provided notebooks, create a development image:
 ```sh
-docker build -f Development-Dockerfile -t "pysyft" .
-make run image=pysyft
+make docker-build dockerfile=Development-Dockerfile
+make docker-run image=pysyft
 ```
+
+Inside the container you can run all the other make targets such as `test` or `notebook`.
 
 ## Local setup
 
@@ -87,9 +90,14 @@ pip install -r requirements.txt
 python setup.py install
 ```
 
-### Tests
+## Notebooks
+The make target `notebook` will launch a Jupyter server (either locally or in the container).
+```sh
+make notebook
+```
 
-The make target `test` will run all tests with `pytest`.
+## Testing
+The make target `test` will run all tests with `pytest` and `flake8` (either locally or in the container).
 ```sh
 make test
 ```
