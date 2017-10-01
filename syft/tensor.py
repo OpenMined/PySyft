@@ -793,6 +793,26 @@ class TensorBase(object):
         self.data = np.less_equal(self.data, other.data)
         return self
 
+    def lerp(self, start, end, weight):
+        """Returns a new Tensor which is the linear interpolation of two tensors start and end based a scalar weight. 
+        The returned tensor out is equal to start + weight * (end - start). Start and end tensors must broadcastable."""
+
+        if self.encrypted:
+            return NotImplemented
+        out = start + weight * (end - start)
+        return TensorBase(out)
+
+    def lerp_(self, start, end, weight):
+        """Writes in-place, the linear interpolation of two tensors start and end based a scalar weight. 
+        The returned tensor out is equal to start + weight * (end - start). Start and end tensors must broadcastable."""
+
+        if self.encrypted:
+            return NotImplemented
+        out = start + weight * (end - start)
+        self.data = out
+        return self
+
+
     def bernoulli(self, p):
         """
         Returns a Tensor filled with binary random numbers (0 or 1) from a bernoulli distribution
