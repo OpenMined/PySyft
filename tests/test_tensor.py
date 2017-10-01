@@ -38,6 +38,11 @@ class DimTests(unittest.TestCase):
         t1 = TensorBase([1.0, 2.0, 3.0])
         self.assertEqual(t.size(), t1.size())
 
+    def test_nelement(self):
+        t = TensorBase(np.array([[1, 2], [3, 4]]))
+        t1 = TensorBase(np.array([[5.0, 6.0], [7.0, 8.0]]))
+        self.assertEqual(t.nelement(), t1.nelement())
+
 
 class AddTests(unittest.TestCase):
     def test_simple(self):
