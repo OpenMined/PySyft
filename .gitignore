@@ -114,3 +114,4 @@ lastfailed
 .history
 
 # for some Temporary objects created by some extension in vscode
+.DS_Store
