@@ -1348,7 +1348,16 @@ class TensorBase(object):
         return syft.mm(self, tensor2)
 
     def half(self):
-        """cast the tensor to half-precision float type."""
+                """
+        casts the tensor to half-precision float type
+ 
+        ----------
+ 
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
 
         if self.encrypted:
             return NotImplemented
