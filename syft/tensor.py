@@ -875,9 +875,11 @@ class TensorBase(object):
         return TensorBase(out)
 
     def trace(self, axis1=None, axis2=None):
-        """Returns a new tenosr with the sum along diagonals of a 2D tensor.
-           Axis1 and Axis2 are used to extract 2D subarray for sum calculation
-           along diagonals, if tensor has more than two dimensions. """
+        """
+        Returns a new tenosr with the sum along diagonals of a 2D tensor.
+        Axis1 and Axis2 are used to extract 2D subarray for sum calculation
+        along diagonals, if tensor has more than two dimensions.
+        """
         if self.encrypted:
             return NotImplemented
         if axis1 is not None and axis2 is not None and self.data.ndim > 2:
@@ -887,7 +889,18 @@ class TensorBase(object):
         return TensorBase(out)
 
     def view(self, *args):
-        """View the tensor."""
+        """
+        View the tensor.
+
+        Parameters
+        ----------
+        args:
+            Arguments to view
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         else:
@@ -895,13 +908,33 @@ class TensorBase(object):
             return TensorBase(dt.reshape(*args))
 
     def view_as(self, tensor):
-        """ View as another tensor's shape """
+        """
+        View as another tensor's shape
+
+        Parameters
+        ----------
+        tensor:
+            Input tensor
+
+        Returns
+        -------
+        View of another tensor
+        """
         if self.encrypted:
             return NotImplemented
         else:
             return self.view(tensor.shape())
 
     def resize_(self, *size):
+        """
+        Resizes the input object.
+
+        Parameters
+        ----------
+        size:
+
+
+        """
         input_size = np.prod(size)
         extension = input_size - self.data.size
         flattened = self.data.flatten()
@@ -922,90 +955,233 @@ class TensorBase(object):
             raise ValueError('negative dimension not allowed')
 
     def resize_as_(self, tensor):
+        """
+        Resize Tensor
+
+        Parameters
+        ----------
+        tensor:
+
+        Returns
+        ----------
+
+
+        """
         size = tensor.data.shape
         self.resize_(size)
 
     def round(self, decimals=0):
-        """Returns a new tensor with elements rounded off to a nearest decimal place"""
+        """
+        Returns a new tensor with elements rounded off to a nearest decimal place
+
+        Parameters
+        ----------
+        decimals:
+
+        Returns
+        ----------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.round(self.data, decimals=decimals)
         return TensorBase(out)
 
     def round_(self, decimals=0):
-        """Round the elements of tensor in-place to a nearest decimal place"""
+        """
+        Round the elements of tensor in-place to a nearest decimal place
+
+        Parameters
+        ----------
+        decimal:
+
+        Returns
+        ----------
+        calling Tensor
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.round(self.data, decimals=decimals)
         return self
 
     def repeat(self, reps):
-        """Return a new tensor by repeating the values given by reps"""
+        """
+        Return a new tensor by repeating the values given by reps
+
+        Parameters
+        ----------
+        reps:
+            Number of Repeats
+
+        Returns
+        ----------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.tile(self.data, reps=reps)
         return TensorBase(out)
 
     def pow(self, exponent):
-        """Return a new tensor by raising elements to the given exponent.
+        """
+        Return a new tensor by raising elements to the given exponent.
+
         If exponent is an array, each element of the tensor is raised positionally to the
-        element of the exponent"""
+        element of the exponent
+
+        Parameters
+        ----------
+        exponent:
+
+        Returns
+        ----------
+        Output Tensor
+
+        """
         if self.encrypted:
             return NotImplemented
         out = np.power(self.data, exponent)
         return TensorBase(out)
 
     def pow_(self, exponent):
-        """Raise elements to the given exponent in-place. If exponent is an array,
-        each element of the tensor is raised positionally to the element of the exponent"""
+        """
+        Raise elements to the given exponent in-place.
+
+        If exponent is an array, each element of the tensor is raised
+        positionally to the element of the exponent
+
+        Parameters
+        ----------
+        exponent
+
+        Returns
+        ----------
+        Calling object
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.power(self.data, exponent)
         return self
 
     def prod(self, axis=None):
-        """Returns a new tensor with the product of (specified axis) all the elements"""
+        """
+        Returns a new tensor with the product of (specified axis) all the elements
+
+        Parameters
+        ----------
+        axis:
+
+        Returns
+        ----------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.prod(self.data, axis=axis)
         return TensorBase(out)
 
     def random_(self, low, high=None, size=None):
-        """Fill the tensor in-place with random integers from [low to high)"""
+        """
+        Fill the tensor in-place with random integers from [low to high)
+
+        Parameters
+        ----------
+        low:
+
+        high: ,optional
+
+        size: ,optional
+
+        Returns
+        ----------
+        Calling Object
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.random.randint(low=low, high=high, size=size)
         return self
 
     def nonzero(self):
-        """Returns a new tensor with the indices of non-zero elements"""
+        """
+        Returns a new tensor with the indices of non-zero elements
+
+        Parameters
+        ----------
+
+        Returns
+        ----------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.array(np.nonzero(self.data))
         return TensorBase(out)
 
     def size(self):
-        """Size of tensor"""
+        """
+        Size of tensor
+
+        Parameters
+        ----------
+
+        Returns
+        ----------
+        Size of the Tensor
+
+        """
         if self.encrypted:
             return NotImplemented
         else:
             return self.data.size
 
     def cumprod(self, dim=0):
-        """Returns the cumulative product of elements in the dimension dim."""
+        """
+        Returns the cumulative product of elements in the dimension dim.
+
+        Parameters
+        ----------
+        dim:
+
+        Returns
+        ----------
+        compund product of the Input
+        """
         if self.encrypted:
             return NotImplemented
         return syft.math.cumprod(self, dim)
 
     def cumprod_(self, dim=0):
-        """calculate in-place the cumulative product of elements in the dimension dim."""
+        """
+        calculate in-place the cumulative product of elements in the dimension dim.
+
+        Parameters
+        ----------
+        dim: ,optional
+
+        Returns
+        ----------
+        Called Object
+        """
         if self.encrypted:
             return NotImplemented
         self.data = syft.math.cumprod(self, dim).data
         return self
 
     def split(self, split_size, dim=0):
-        """Returns tuple of tensors of equally sized tensor/chunks (if possible)"""
+        """
+        Returns tuple of tensors of equally sized tensor/chunks (if possible)
+
+        Parameters
+        ----------
+        split_size:
+
+        dim:
+
+        Returns
+        ----------
+        Tuple of Tensors
+
+        """
         if self.encrypted:
             return NotImplemented
         splits = np.array_split(self.data, split_size, axis=0)
@@ -1016,14 +1192,37 @@ class TensorBase(object):
         return tensors_tuple
 
     def squeeze(self, axis=None):
-        """Returns a new tensor with all the single-dimensional entries removed"""
+        """
+        Returns a new tensor with all the single-dimensional entries removed
+
+        Parameters
+        ----------
+        axis
+
+        Returns
+        ----------
+        Output tensor
+
+        """
         if self.encrypted:
             return NotImplemented
         out = np.squeeze(self.data, axis=axis)
         return TensorBase(out)
 
     def expand_as(self, tensor):
-        """Returns a new tensor with the expanded size as of the specified (input) tensor"""
+        """
+        Returns a new tensor with the expanded size as of the specified
+        (input) tensor
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        Returns
+        ----------
+        Output Tensor
+
+        """
         if self.encrypted:
             return NotImplemented
         shape = tensor.data.shape
@@ -1034,21 +1233,54 @@ class TensorBase(object):
         return TensorBase(out)
 
     def mean(self, dim=None, keepdim=False):
-        """Return the mean of the tensor elements"""
+        """
+        Returns the mean of the tensor elements
+
+        Parameters
+        ----------
+        dim:
+
+        keepdim:
+
+        Returns
+        ----------
+        Mean of the Tensor Elements
+        """
         if self.encrypted:
             return NotImplemented
         out = np.mean(self.data, axis=dim, keepdims=keepdim)
         return TensorBase(out)
 
     def neg(self):
-        """Returns negative of the elements of tensor"""
+        """
+        Returns negative of the elements of tensor
+
+        Parameters
+        ----------
+
+        Returns
+        ----------
+        Negative of elements of tensor
+
+        """
         if self.encrypted:
             return NotImplemented
         out = -1 * np.array(self.data)
         return TensorBase(out)
 
     def neg_(self):
-        """Returns negative of the elements of tensor inplace"""
+        """
+        Sets negative of the elements of tensor inplace
+
+        Parameters
+        ----------
+
+        Returns
+        ----------
+        Calling object
+
+
+        """
         if self.encrypted:
             return NotImplemented
         self.data = -1 * np.array(self.data)
