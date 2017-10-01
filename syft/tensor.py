@@ -452,19 +452,62 @@ class TensorBase(object):
             return self
 
     def baddbmm(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a batch matrix-matrix product of matrices in
+        """
+        Performs a batch matrix-matrix product of matrices in
         batch1(tensor1) and batch2(tensor2). mat is added to the final result.
-          resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
-          *batch1 and batch2 must be 3D Tensors each containing the same number
-          of matrices."""
+
+        resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
+        *batch1 and batch2 must be 3D Tensors each containing the same number
+        of matrices.
+
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            input Matrix
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+
+        """
         return syft.baddbmm(self, tensor2, mat, beta, alpha)
 
     def baddbmm_(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a batch matrix-matrix product of matrices in
+        """
+        Performs a batch matrix-matrix product of matrices in
         batch1(tensor1) and batch2(tensor2). mat is added to the final result.
-          resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
-          *batch1 and batch2 must be 3D Tensors each containing the same number
-          of matrices."""
+
+        resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
+        *batch1 and batch2 must be 3D Tensors each containing the same number
+        of matrices.
+
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            input Matrix
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        Caller with values inplace
+
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if tensor2.data.ndim != 3:
@@ -480,7 +523,22 @@ class TensorBase(object):
             return self
 
     def max(self, axis=None):
-        """ If axis is not specified, finds the largest element in the tensor. Otherwise, reduces along the specified axis.
+        """
+        If axis is not specified, finds the largest element in the tensor.
+
+        Otherwise, reduces along the specified axis.
+
+
+        Parameters
+        ----------
+        axis: ,optional
+
+
+        Returns
+        -------
+        TensorBase:
+            Output tensor
+
         """
         if self.encrypted:
             return NotImplemented
@@ -494,6 +552,16 @@ class TensorBase(object):
         """
         Permute the dimensions of this tensor.
         Parameters:	*dims (int...) – The desired ordering of dimensions
+
+        Parameters
+        ----------
+        dims:
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+
         """
         if self.encrypted:
             return NotImplemented
@@ -503,21 +571,57 @@ class TensorBase(object):
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
 
-    def diag(self, tenosr):
-        """ When input tensor is a vector (1D Tensor), returns a 2D square Tensor
-            with the elements of input as the diagonal.
+    def diag(self, tensor):
         """
-        return np.diag(tenosr)
+        When input tensor is a vector (1D Tensor), returns a 2D square
+        Tensor with the elements of input as the diagonal.
+
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        Returns
+        -------
+        Numpy Array
+
+        """
+        return np.diag(tensor)
 
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
+
+        Parameters
+        ----------
+        dim0:
+            Dimension0
+
+        dim1:
+            Dimension1
+
+        Returns
+        -------
+        Output tensor
+
         """
         return syft.transpose(self.data, dim0, dim1)
 
     def transpose_(self, dim0, dim1):
         """
         Replaces the Tensor with its transpose along the dimensions.
+
+        Parameters
+        ----------
+        dim0:
+            Dimension0
+
+        dim1:
+            Dimension1
+
+        Returns
+        -------
+
         """
         num_dims = len(self.data.shape)
         axes = list(range(num_dims))
@@ -536,26 +640,59 @@ class TensorBase(object):
     def t(self):
         """
         Returns the transpose along dimensions 0, 1 in a new Tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
         """
         return self.transpose(0, 1)
 
     def t_(self):
         """
         Replaces the Tensor with its transpose along dimensions 0, 1.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
         """
         self.transpose_(0, 1)
 
     def unsqueeze(self, dim):
         """
-        Returns expanded Tensor. An additional dimension of size one is added
+        Returns expanded Tensor.
+
+        An additional dimension of size one is added
         to at index 'dim'.
+
+        Parameters
+        ----------
+        dim:
+
+        Returns
+        -------
+        Output Tensor
+
         """
         return syft.unsqueeze(self.data, dim)
 
     def unsqueeze_(self, dim):
         """
-        Replaces with an expanded Tensor. An additional dimension of size one
-        is added to at index 'dim'.
+        Replaces with an expanded Tensor. An additional dimension of
+        size one is added to at index 'dim'.
+
+        Parameters
+        ----------
+        dim:
+
+        Returns
+        -------
+
         """
         num_dims = len(self.data.shape)
 
@@ -567,28 +704,64 @@ class TensorBase(object):
             self.data = np.expand_dims(self.data, dim)
 
     def exp(self):
-        """Computes the exponential of each element in tensor."""
+        """
+        Computes the exponential of each element in tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensors
+        """
         if self.encrypted:
             return NotImplemented
         out = np.exp(self.data)
         return TensorBase(out)
 
     def exp_(self):
-        """Computes the exponential of each element inplace."""
+        """
+        Computes the exponential of each element inplace.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.exp(self.data)
         return self
 
     def frac(self):
-        """"Computes the fractional portion of each element in tensor."""
+        """"
+        Computes the fractional portion of each element in tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.modf(self.data)[0]
         return TensorBase(out)
 
     def frac_(self):
-        """"Computes the fractional portion of each element inplace."""
+        """"
+        Computes the fractional portion of each element inplace.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.modf(self.data)[0]
@@ -596,11 +769,20 @@ class TensorBase(object):
 
     def sigmoid_(self):
         """
-            Performs inline sigmoid function on the Tensor elementwise
-            Implementation details:
-            Because of the way syft.math.sigmoid operates on a Tensor Object
-            calling it on self.data will cause an input error thus we call
-            sigmoid on the tensor object and we take the member 'data' from the returned Tensor
+        Performs inline sigmoid function on the Tensor elementwise
+
+        Implementation details:
+        Because of the way syft.math.sigmoid operates on a Tensor Object
+        calling it on self.data will cause an input error thus we call
+        sigmoid on the tensor object and we take the member 'data' from
+        the returned Tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values inplace
         """
         if self.encrypted:
             return NotImplemented
@@ -610,7 +792,15 @@ class TensorBase(object):
 
     def tanh_(self):
         """
-            Performs tanh (hyperbolic tangent) function on the Tensor elementwise
+        Performs tanh (hyperbolic tangent) function on the Tensor
+        elementwise
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values inplace
         """
         if self.encrypted:
             return NotImplemented
