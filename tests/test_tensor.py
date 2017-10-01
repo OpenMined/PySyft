@@ -659,6 +659,22 @@ class leTests(inequalityTest):
         res = self.enc.le(self.t1)
         self.assertEqual(res, NotImplemented)
 
+class lerpTests(unittest.TestCase):
+    def test_lerp(self):
+        t1 = TensorBase(np.array([1,2,3,4]))
+        start = np.array([1,2,3,4])
+        end = np.array([10,10,10,10])
+        weight = 0.5
+        out = t1.lerp(start,end,weight)
+        self.assertTrue(np.array_equal(out,np.array([5.5,6.,6.5,7.])))
+
+    def test_lerp_(self):
+        t1 = TensorBase(np.array([1,2,3,4]))
+        start = np.array([1,2,3,4])
+        end = np.array([10,10,10,10])
+        weight = 0.5
+        t1.lerp_(start,end,weight)
+        self.assertTrue(np.array_equal(t1,np.array([5.5,6.,6.5,7.])))
 
 class bernoulliTests(unittest.TestCase):
     def test_bernoulli(self):
