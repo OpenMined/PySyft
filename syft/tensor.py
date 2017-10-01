@@ -625,110 +625,275 @@ class TensorBase(object):
         return "BaseTensor: " + repr(self.data)
 
     def rsqrt(self):
-        """Returns reciprocal of square root of Tensor element wise"""
+        """
+        Returns reciprocal of square root of Tensor element wise
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = 1 / np.sqrt(self.data)
         return TensorBase(out)
 
     def rsqrt_(self):
-        """Computes reciprocal of square root of Tensor elements inplace"""
+        """
+        Computes reciprocal of square root of Tensor elements inplace
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
 
     def sign(self):
-        """Return a tensor that contains sign of each element """
+        """
+        Return a tensor that contains sign of each element
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.sign(self.data)
         return TensorBase(out)
 
     def sign_(self):
-        """Computes the sign of each element of the Tensor inplace"""
+        """
+        Computes the sign of each element of the Tensor inplace
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.sign(self.data)
 
     def to_numpy(self):
-        """Returns the tensor as numpy.ndarray"""
+        """
+        Returns the tensor as numpy.ndarray
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output tensor
+
+        """
         if self.encrypted:
             return NotImplemented
         return np.array(self.data)
 
     def reciprocal(self):
-        """Computes element wise reciprocal"""
+        """
+        Computes element wise reciprocal
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Returns output tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = 1 / np.array(self.data)
         return TensorBase(out)
 
     def reciprocal_(self):
-        """Computes element wise reciprocal"""
+        """
+        Computes element wise reciprocal
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Returns caller with values in place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.array(self.data)
 
     def log(self):
-        """performs elementwise logarithm operation
-        and returns a new Tensor"""
+        """
+        Performs elementwise logarithm operation and returns a new Tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Returns Output tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.log(self.data)
         return TensorBase(out)
 
     def log_(self):
-        """performs elementwise logarithm operation inplace"""
+        """
+        Performs elementwise logarithm operation inplace
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Returns caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.log(self.data)
         return self
 
     def log1p(self):
-        """performs elementwise log(1+x) operation
-        and returns new tensor"""
+        """
+        Performs elementwise log(1+x) operation and returns new
+        tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Returns Output tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.log1p(self.data)
         return TensorBase(out)
 
     def log1p_(self):
-        """performs elementwise log(1+x) operation inplace"""
+        """
+        Performs element wise log(1+x) operation inplace
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Returns caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.log1p(self.data)
         return self
 
     def log_normal_(self, mean=0, stdev=1.0):
-        """Fills give tensor with samples from a lognormal distribution
-        with given mean and stdev"""
+        """
+        Fills given tensor with samples from a lognormal distribution
+        with given mean and stdev
+
+        Parameters
+        ----------
+        mean: ,optional
+
+        stdev: ,optional
+
+        Returns
+        -------
+        Output of caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.random.lognormal(mean, stdev, self.shape())
         return self
 
     def clamp(self, minimum=None, maximum=None):
-        """Returns a clamped tensor into the range [min, max], elementwise"""
+        """
+        Returns a clamped tensor into the range [min, max], elementwise
+
+        Parameters
+        ----------
+        minimum: ,optional
+
+        maximum: ,optional
+
+        Returns
+        -------
+        Returns clamped output tensor
+        """
         if self.encrypted:
             return NotImplemented
         return TensorBase(np.clip(self.data, a_min=minimum, a_max=maximum))
 
     def clamp_(self, minimum=None, maximum=None):
-        """Clamp the tensor, in-place, elementwise into the range [min, max]"""
+        """
+        Clamp the tensor, in-place, elementwise into the range [min, max]
+
+        Parameters
+        ----------
+        minimum: ,optional
+
+        maximum: ,optional
+
+        Returns
+        -------
+        Output of object called with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.clip(self.data, a_min=minimum, a_max=maximum)
         return self
 
     def clone(self):
-        """Returns a copy of the tensor. The copy has the same size and data type as the original tensor."""
+        """
+        Returns a copy of the tensor.
+
+        The copy has the same size and data type as the original tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        cloone of input Tensor
+        """
         if self.encrypted:
             return NotImplemented
         return TensorBase(np.copy(self.data))
 
     def chunk(self, n, dim=0, same_size=False):
-        """Returns a list of tensors by splitting the tensor into a number of chunks along a given dimension.
-        Raises an exception if same_size is set to True and given tensor can't be split in n same-size chunks along dim."""
+        """
+        Returns a list of Tensors by Splitting tensors into Chunks.
+
+        Returns a list of tensors by splitting the tensor into a number
+        of chunks along a given dimension.
+        Raises an exception if same_size is set to True and given
+        tensor can't be split in n same-size chunks along dim.
+
+        Parameters
+        ----------
+        n:
+
+        dim: ,optional
+
+        same_size: ,optional
+
+
+        Returns
+        -------
+        List of Output Tensors
+        """
         if self.encrypted:
             return NotImplemented
         if same_size:
@@ -737,16 +902,50 @@ class TensorBase(object):
             return [TensorBase(x) for x in np.array_split(self.data, n, dim)]
 
     def gt(self, other):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is greater than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Returns Boolean True if an Element calling is greater than second
+        tensor.
+
+        Returns a new Tensor having boolean True values where an element of
+        the calling tensor is greater than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Output Tensor
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
         return TensorBase(np.greater(self.data, other.data))
 
     def gt_(self, other):
-        """Writes in-place, boolean True values where an element of the calling tensor is greater than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Writes Boolean True if an Element calling is greater than second
+        tensor
+
+        Writes in-place, boolean True values where an element of the
+        calling tensor is greater than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        calling object with values in place
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
@@ -754,16 +953,51 @@ class TensorBase(object):
         return self
 
     def lt(self, other):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is less than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Returns Boolean True if an Element calling is less second
+        tensor.
+
+        Returns a new Tensor having boolean True values where an element
+        of the calling tensor is less than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Output Tensor
+
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
         return TensorBase(np.less(self.data, other.data))
 
     def lt_(self, other):
-        """Writes in-place, boolean True values where an element of the calling tensor is less than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Writes Boolean True if an Element calling is less second
+        tensor.
+
+        Writes in-place, boolean True values where an element of the
+        calling tensor is less than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        calling object with values in place
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
@@ -771,16 +1005,50 @@ class TensorBase(object):
         return self
 
     def ge(self, other):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is greater or equal than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Returns Boolean True if an Element calling is greater than or equal
+        to second tensor
+
+        Returns a new Tensor having boolean True values where an element of
+        the calling tensor is greater or equal than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Output Tensor
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
         return TensorBase(np.greater_equal(self.data, other.data))
 
     def ge_(self, other):
-        """Writes in-place, boolean True values where an element of the calling tensor is greater or equal than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Writes Boolean True if an Element calling is greater or equal
+        to second tensor
+
+        Writes in-place, boolean True values where an element of the
+        calling tensor is greater or equal than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        calling object with values in place
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
@@ -788,16 +1056,51 @@ class TensorBase(object):
         return self
 
     def le(self, other):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is less or equal than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Returns Boolean True if an Element calling is less  or equal to
+        second tensor
+
+        Returns a new Tensor having boolean True values where an element
+        of the calling tensor is less or equal than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Output Tensor
+
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
         return TensorBase(np.less_equal(self.data, other.data))
 
     def le_(self, other):
-        """Writes in-place, boolean True values where an element of the calling tensor is less or equal than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Writes Boolean True if an Element calling is less or equal to
+        second tensor
+
+        Writes in-place, boolean True values where an element of the
+        calling tensor is less or equal than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        calling object with values in place
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
@@ -806,11 +1109,24 @@ class TensorBase(object):
 
     def bernoulli(self, p):
         """
-        Returns a Tensor filled with binary random numbers (0 or 1) from a bernoulli distribution
-        with probability and shape specified by p(arr_like).
+        Returns Tensor with random Numbers from Bernoulli Distri.
 
-        The p Tensor should be a tensor containing probabilities to be used for drawing the
-        binary random number. Hence, all values in p have to be in the range: 0<=p<=1
+        Returns Tensor in-place with binary random numbers (0 or 1)
+        from a bernoulli distribution with probability and shape
+        specified by p(arr_like).
+
+        The p Tensor should be a tensor containing probabilities to
+        be used for drawing the binary random number.
+        Hence, all values in p have to be in the range: 0<=p<=1
+
+        Parameters
+        ----------
+        p:
+
+        Returns
+        -------
+        Output Tensor
+
         """
         if self.encrypted:
             return NotImplemented
@@ -819,11 +1135,23 @@ class TensorBase(object):
 
     def bernoulli_(self, p):
         """
-        Fills the Tensor in-place with binary random numbers (0 or 1) from a bernoulli distribution
-        with probability and shape specified by p(arr_like)
+        Fills the Tensor with random Numbers from Bernoulli Distri.
 
-        The p Tensor should be a tensor containing probabilities to be used for drawing the
-        binary random number. Hence, all values in p have to be in the range: 0<=p<=1
+        Fills the Tensor in-place with binary random numbers (0 or 1)
+        from a bernoulli distribution with probability and shape
+        specified by p(arr_like).
+
+        The p Tensor should be a tensor containing probabilities to
+        be used for drawing the binary random number.
+        Hence, all values in p have to be in the range: 0<=p<=1
+
+        Parameters
+        ----------
+        p:
+
+        Returns
+        -------
+        Called object with Values inPlace
         """
         if self.encrypted:
             return NotImplemented
@@ -832,37 +1160,96 @@ class TensorBase(object):
         return self
 
     def uniform_(self, low=0, high=1):
-        """Fills the tensor in-place with numbers sampled unifromly
-        over the half-open interval [low,high) or from the uniform distribution"""
+        """
+        Fills the tensor in-place with numbers sampled unifromly
+        over the half-open interval [low,high) or from the uniform distribution
+
+        Parameters
+        -----------
+        low: ,optional
+
+        high: ,optional
+
+        Returns
+        -------
+        Calling object with values inplace
+
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.random.uniform(low=low, high=high, size=self.shape())
         return self
 
     def uniform(self, low=0, high=1):
-        """Returns a new tensor filled with numbers sampled unifromly
-        over the half-open interval [low,high) or from the uniform distribution"""
+        """
+        Returns a new tensor filled with numbers sampled uniformly
+        over the half-open interval [low,high) or from the uniform distribution
+
+        Parameters
+        -----------
+        low: ,optional
+
+        high: ,optional
+
+        Returns
+        -------
+        Output Tensor
+
+        """
         if self.encrypted:
             return NotImplemented
         out = np.random.uniform(low=low, high=high, size=self.shape())
         return TensorBase(out)
 
     def fill_(self, value):
-        """Fills the tensor in-place with the specified value"""
+        """
+        Fills the tensor in-place with the specified value
+
+        Parameters
+        ----------
+        value:
+            Value to be filled
+
+        Returns
+        -------
+        Returns object with values in place
+        """
         if self.encrypted:
             return NotImplemented
         self.data.fill(value)
         return self
 
     def tolist(self):
-        """Returns a new tensor as (possibly a nested) list"""
+        """
+        Returns a new tensor as (possibly a nested) list
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output data in list of the tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = self.data.tolist()
         return out
 
     def topk(self, k, largest=True):
-        """Returns a new tensor with the sorted k largest (or smallest) values"""
+        """
+        Returns a new tensor with the sorted k largest (or smallest) values
+
+        Parameters
+        ----------
+        k:
+
+        largest: ,optional
+
+        Returns
+        -------
+        Output Tensor with sorted k largest Values
+
+        """
         if self.encrypted:
             return NotImplemented
         out_sort = np.sort(self.data)
@@ -877,8 +1264,21 @@ class TensorBase(object):
     def trace(self, axis1=None, axis2=None):
         """
         Returns a new tenosr with the sum along diagonals of a 2D tensor.
+
         Axis1 and Axis2 are used to extract 2D subarray for sum calculation
         along diagonals, if tensor has more than two dimensions.
+
+        Parameters
+        ----------
+        axis1: ,optional
+            Used to extract 2d subarray for sum calculation
+
+        axis2: ,optional
+            Used to extract 2d subarray for sum calculation
+
+        Returns
+        -------
+        Output tensor with sum along diagonals
         """
         if self.encrypted:
             return NotImplemented
