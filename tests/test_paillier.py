@@ -199,5 +199,5 @@ class SerializeTest(unittest.TestCase):
 
         pubkey2, seckey2 = KeyPair().deserialize(pk_serialized,
                                                  sk_serialized)
-        self.assertTrue(pubkey.pk == pubkey2.pk and \
+        self.assertTrue(pubkey.pk == pubkey2.pk and
                         seckey.sk == seckey2.sk)

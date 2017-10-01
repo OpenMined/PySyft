@@ -47,9 +47,9 @@ class SecretKey(AbstractSecretKey):
         seckey_dict = pickle.loads(b)
         sk_record = seckey_dict['secret_key']
         sk = paillier.PaillierPrivateKey(
-                public_key=paillier.PaillierPublicKey(n=int(sk_record['n'])),
-                p=sk_record['p'],
-                q=sk_record['q'])
+            public_key=paillier.PaillierPublicKey(n=int(sk_record['n'])),
+            p=sk_record['p'],
+            q=sk_record['q'])
         return SecretKey(sk)
 
 
