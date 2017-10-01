@@ -35,10 +35,17 @@ class SecretKey(AbstractSecretKey):
             return NotImplemented
 
     def serialize(self):
-        return pickle.dumps(self.sk)
+        seckey_dict = {}
+        seckey_dict['secret_key'] = {
+            'n': self.sk.n
+        }
+        return pickle.dumps(seckey_dict)
 
     def deserialize(b):
-        return SecretKey(pickle.loads(b))
+        seckey_dict = pickle.loads(b)
+        sk_record = seckey_dict['secret_key']
+        sk = paillier.PaillierPublicKey(n=int(sk_record['n']))
+        return PublicKey(sk)
 
 
 class PublicKey(AbstractPublicKey):
@@ -92,10 +99,17 @@ class PublicKey(AbstractPublicKey):
         return self.pk.encrypt(x)
 
     def serialize(self):
-        return pickle.dumps(self.pk)
+        pubkey_dict = {}
+        pubkey_dict['public_key'] = {
+            'n': self.pk.n
+        }
+        return pickle.dumps(pubkey_dict)
 
     def deserialize(b):
-        return PublicKey(pickle.loads(b))
+        pubkey_dict = pickle.loads(b)
+        pk_record = pubkey_dict['public_key']
+        pk = paillier.PaillierPublicKey(n=int(pk_record['n']))
+        return PublicKey(pk)
 
 
 class KeyPair(AbstractKeyPair):
@@ -104,8 +118,8 @@ class KeyPair(AbstractKeyPair):
         ""
 
     def deserialize(self, pubkey, seckey):
-        self.public_key = PublicKey(pickle.loads(pubkey))
-        self.secret_key = SecretKey(pickle.loads(seckey))
+        self.public_key = PublicKey.deserialize(pubkey)
+        self.secret_key = SecretKey.deserialize(seckey)
         return (self.public_key, self.secret_key)
 
     def generate(self, n_length=1024):
