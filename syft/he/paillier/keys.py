@@ -37,15 +37,20 @@ class SecretKey(AbstractSecretKey):
     def serialize(self):
         seckey_dict = {}
         seckey_dict['secret_key'] = {
-            'n': self.sk.n
+            'p': self.sk.p,
+            'q': self.sk.q,
+            'n': self.sk.public_key.n
         }
         return pickle.dumps(seckey_dict)
 
     def deserialize(b):
         seckey_dict = pickle.loads(b)
         sk_record = seckey_dict['secret_key']
-        sk = paillier.PaillierPublicKey(n=int(sk_record['n']))
-        return PublicKey(sk)
+        sk = paillier.PaillierPrivateKey(
+                public_key=paillier.PaillierPublicKey(n=int(sk_record['n'])),
+                p=sk_record['p'],
+                q=sk_record['q'])
+        return SecretKey(sk)
 
 
 class PublicKey(AbstractPublicKey):
