@@ -10,6 +10,19 @@ __all__ = [
 
 
 def _ensure_ndarray(arr):
+    """
+    Ensures the arr passed is of type np.ndarray
+
+    Parameters
+    ----------
+    arr:object
+    arr to be checked
+
+    Returns
+    -------
+    np.ndarray:
+        Output Array
+    """
     if not isinstance(arr, np.ndarray):
         arr = np.array(arr)
 
@@ -17,10 +30,18 @@ def _ensure_ndarray(arr):
 
 
 def _ensure_tensorbase(tensor):
-    """Ensures the tensor passed is of type TensorBase
+    """
+    Ensures the tensor passed is of type TensorBase
 
-    Args:
-            tensor (object):Tensor to be checked
+    Parameters
+    ----------
+    tensor:object
+        Tensor to be checked
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
     """
     if not isinstance(tensor, TensorBase):
         tensor = TensorBase(tensor)
@@ -81,7 +102,19 @@ class TensorBase(object):
             self._add_depth = tensor2._add_depth + 1
 
     def encrypt(self, pubkey):
-        """Encrypts the Tensor using a Public Key"""
+        """
+        Encrypts the Tensor using a Public Key
+
+        Parameters
+        ----------
+        pubkey:
+            Public Key
+
+        Returns
+        -------
+        Encrypted Caller
+
+        """
         if self.encrypted:
             return NotImplemented
         else:
@@ -92,7 +125,19 @@ class TensorBase(object):
                 return NotImplemented
 
     def decrypt(self, seckey):
-        """Decrypts the tensor using a Secret Key"""
+        """
+        Decrypts the tensor using a Secret Key
+
+        Parameters
+        ----------
+        seckey:
+            Secret Key
+
+        Returns
+        -------
+        Decrypted Caller
+        """
+
         if self.encrypted:
             return seckey.decrypt(self)
         else:
@@ -225,44 +270,113 @@ class TensorBase(object):
                 return TensorBase(self.data[position], self.encrypted)
 
     def abs(self):
-        """Returns absolute value of tensor as a new tensor"""
+        """
+        Returns absolute value of tensor as a new tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         return np.absolute(self.data)
 
     def abs_(self):
-        """Replaces tensor values with its absolute value"""
+        """
+        Replaces tensor values with its absolute value
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Tensor Data
+        """
+
         if self.encrypted:
             return NotImplemented
         self.data = np.absolute(self.data)
         return self.data
 
     def shape(self):
-        """Returns a tuple of input array dimensions."""
+        """
+        Returns a tuple of input array dimensions.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Shape of Tensor
+        """
+
         if self.encrypted:
             return NotImplemented
 
         return self.data.shape
 
     def sqrt(self):
-        """Returns the squared tensor."""
+        """
+        Returns the squared tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+
         if self.encrypted:
             return NotImplemented
         return np.sqrt(self.data)
 
     def sqrt_(self):
-        """Inline squared tensor."""
+        """
+        Inline squared tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.sqrt(self.data)
 
     def dim(self):
-        """Returns an integer of the number of dimensions of this tensor."""
+        """
+        Returns an integer of the number of dimensions of this tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
 
         return self.data.ndim
 
     def sum(self, dim=None):
-        """Returns the sum of all elements in the input array."""
+        """
+        Returns the sum of all elements in the input array.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output tensor
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -272,27 +386,63 @@ class TensorBase(object):
             return self.data.sum(axis=dim)
 
     def ceil(self):
-        """Returns the ceilling of the input tensor elementwise."""
+        """
+        Returns the ceilling of the input tensor elementwise.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output tensor
+        """
         if self.encrypted:
             return NotImplemented
         return syft.math.ceil(self.data)
 
     def ceil_(self):
-        """Returns the ceilling of the input tensor elementwise."""
+        """
+        Returns the ceilling of the input tensor elementwise.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = syft.math.ceil(self.data).data
         return self
 
     def floor_(self):
-        """Inplace floor method"""
+        """
+        Inplace floor method
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
         self.data = syft.math.floor(self.data).data
         return self
 
     def zero_(self):
-        """Replaces tensor values with zeros"""
+        """
+        Replaces tensor values with zeros
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values inplace
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -300,50 +450,84 @@ class TensorBase(object):
         return self.data
 
     def addmm(self, tensor2, mat, beta=1, alpha=1):
-        """Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and  returns the
+        """
+        Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and  returns the
         result as a Tensor
-            Tensor1.Tensor2 is performed as Matrix product of two array The
-            behavior depends on the arguments in the following way.
-            *If both tensors are 1-dimensional, their dot product is returned.
-            *If both arguments are 2-D they are multiplied like conventional
-            matrices.
 
-            *If either argument is N-D, N > 2, it is treated as a stack of
-            matrices residing in the last two indexes and broadcast
-            accordingly.
+        Tensor1.Tensor2 is performed as Matrix product of two array The
+        behavior depends on the arguments in the following way.
 
-            *If the first argument is 1-D, it is promoted to a matrix by
-            prepending a 1 to its dimensions. After matrix multiplication the
-            prepended 1 is removed.
-            *If the second argument is 1-D, it is promoted to a matrix by
-            appending a 1 to its dimensions. After matrix multiplication the
-            appended 1 is removed.
-            """
+        *If both tensors are 1-dimensional, their dot product is returned.
+        *If both arguments are 2-D they are multiplied like conventional
+         matrices.
+
+        *If either argument is N-D, N > 2, it is treated as a stack of
+         matrices residing in the last two indexes and broadcast
+         accordingly.
+
+        *If the first argument is 1-D, it is promoted to a matrix by
+         prepending a 1 to its dimensions. After matrix multiplication the
+         prepended 1 is removed.
+        *If the second argument is 1-D, it is promoted to a matrix by
+         appending a 1 to its dimensions. After matrix multiplication the
+          appended 1 is removed.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+
+        value: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+
+        """
         return syft.addmm(self, tensor2, mat, beta, alpha)
 
     def addmm_(self, tensor2, mat, beta=1, alpha=1):
-        """Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and updates Tensor1
-        with result and reurns it
-            Tensor1.Tensor2 is performed as Matrix product of two array The
-            behavior depends on the arguments in the following way.
+        """
+        Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and updates Tensor1
+        with result and returns it
 
-            *If both tensors are 1-dimensional, their dot product is returned.
+        Tensor1.Tensor2 is performed as Matrix product of two array The
+        behavior depends on the arguments in the following way.
 
-            *If both arguments are 2-D they are multiplied like conventional
-            matrices.
+        *If both tensors are 1-dimensional, their dot product is returned.
 
-            *If either argument is N-D, N > 2, it is treated as a stack of
-            matrices residing in the last two indexes and broadcast
-            accordingly.
+        *If both arguments are 2-D they are multiplied like conventional
+         matrices.
 
-            *If the first argument is 1-D, it is promoted to a matrix by
-            prepending a 1 to its dimensions. After matrix multiplication the
-            prepended 1 is removed.
+        *If either argument is N-D, N > 2, it is treated as a stack of
+         matrices residing in the last two indexes and broadcast
+         accordingly.
 
-            *If the second argument is 1-D, it is promoted to a matrix by
-            appending a 1 to its dimensions. After matrix multiplication the
-            appended 1 is removed.
-            """
+        *If the first argument is 1-D, it is promoted to a matrix by
+         prepending a 1 to its dimensions. After matrix multiplication the
+         prepended 1 is removed.
+
+        *If the second argument is 1-D, it is promoted to a matrix by
+         appending a 1 to its dimensions. After matrix multiplication the
+         appended 1 is removed.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+
+        value: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Caller with values inplace
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if self.encrypted or tensor2.encrypted or mat.encrypted:
@@ -356,13 +540,53 @@ class TensorBase(object):
             return self
 
     def addcmul(self, tensor2, mat, value=1):
-        """Performs the element-wise multiplication of tensor1 by tensor2,
-        multiply the result by the scalar value and add it to mat."""
+        """
+        Performs implace element-wise multiplication of tensors
+
+        Performs implace element-wise multiplication of tensor1 by tensor2,
+        multiply the result by the scalar value and add it to mat.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            matrix to be added to
+
+        value: ,optional
+            value to be multiplied with
+
+        Returns
+        -------
+        TensorBase:
+            Output tensor
+        """
         return syft.addcmul(self, tensor2, mat, value)
 
     def addcmul_(self, tensor2, mat, value=1):
-        """Performs implace element-wise multiplication of tensor1 by tensor2,
-        multiply the result by the scalar value and add it to mat."""
+        """
+        Performs implace element-wise multiplication of tensors
+
+        Performs implace element-wise multiplication of tensor1 by tensor2,
+        multiply the result by the scalar value and add it to mat.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            matrix to be added to
+
+        value: ,optional
+            value to be multiplied with
+
+        Returns
+        -------
+        TensorBase:
+            caller with values inplace
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if self.encrypted or tensor2.encrypted or mat.encrypted:
@@ -374,13 +598,52 @@ class TensorBase(object):
             return self
 
     def addcdiv(self, tensor2, mat, value=1):
-        """Performs the element-wise division of tensor1 by tensor2,
-        multiply the result by the scalar value and add it to mat."""
+        """
+        Performs implace element-wise division
+
+        Performs implace element-wise division of tensor1 by tensor2,
+        multiply the result by the scalar value and add it to mat.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            matrix to be added to
+
+        value: ,optional
+            value to be multiplied with
+
+        Returns
+        -------
+        TensorBase:
+            Output tensor
+        """
         return syft.addcdiv(self, tensor2, mat, value)
 
     def addcdiv_(self, tensor2, mat, value=1):
-        """Performs implace element-wise division of tensor1 by tensor2,
-        multiply the result by the scalar value and add it to mat."""
+        """
+        Performs implace element-wise division
+
+        Performs implace element-wise division of tensor1 by tensor2,
+        multiply the result by the scalar value and add it to mat.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            matrix to be added to
+
+        value: ,optional
+            value to be multiplied with
+
+        Returns
+        -------
+        Caller with values inplace
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if self.encrypted or tensor2.encrypted or mat.encrypted:
@@ -392,17 +655,63 @@ class TensorBase(object):
             return self
 
     def addmv(self, mat, vec, beta=1, alpha=1):
-        """"Performs a matrix-vector product of the matrix mat and the vector
-         vec. The vector tensor is added to the final result.
-              tensor1 and vec are 1d tensors
-              out=(beta∗tensor)+(alpha∗(mat@vec2))"""
+        """
+        Performs a matrix-vector product
+
+        Performs a inplace matrix-vector product of the matrix mat and the
+        vector vec.
+        The vector tensor is added to the final result. tensor1 and vec are
+        1d tensors
+              out=(beta∗tensor)+(alpha∗(mat@vec2))
+
+        Parameters
+        ----------
+        mat:
+            input Matrix
+
+        vec:
+            input vector
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Output tensor
+
+        """
         return syft.addmv(self, mat, vec, beta, alpha)
 
     def addmv_(self, mat, vec, beta=1, alpha=1):
-        """"Performs a inplace matrix-vector product of the matrix mat and the
-         vector vec. The vector tensor is added to the final result.
-              tensor1 and vec are 1d tensors
-              out=(beta∗tensor)+(alpha∗(mat@vec2))"""
+        """"
+        Performs a matrix-vector product
+
+        Performs a inplace matrix-vector product of the matrix mat and the
+        vector vec.
+        The vector tensor is added to the final result. tensor1 and vec are
+        1d tensors
+              out=(beta∗tensor)+(alpha∗(mat@vec2))
+
+        Parameters
+        ----------
+        mat:
+            input Matrix
+
+        vec:
+            input vector
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Caller with inplaced values
+
+        """
         _ensure_tensorbase(vec)
         _ensure_tensorbase(mat)
         if vec.data.ndim != 1:
@@ -418,23 +727,68 @@ class TensorBase(object):
             return self
 
     def addbmm(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a batch matrix-matrix product of matrices stored in
+        """
+        Perform batch matrix-matrix product of matrices
+
+        Performs a batch matrix-matrix product of matrices stored in
         batch1(tensor1) and batch2(tensor2), with a reduced add step (all
         matrix multiplications get accumulated along the first dimension).
          mat is added to the final result.
          res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b))
         * batch1 and batch2 must be 3D Tensors each containing the same
-        number of matrices."""
+        number of matrices.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            input Matrix
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+
+
+        """
         return syft.addbmm(self, tensor2, mat, beta, alpha)
 
     def addbmm_(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a inplace batch matrix-matrix product of matrices stored
+        """
+        Perform batch matrix-matrix product of matrices
+
+        Performs a inplace batch matrix-matrix product of matrices stored
         in batch1(tensor1) and batch2(tensor2), with a reduced add step
         (all matrix multiplications get accumulated along the first dimension).
          mat is added to the final result.
          res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b)
         * batch1 and batch2 must be 3D Tensors each containing the same number
-        of matrices.)"""
+        of matrices.)
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            input Matrix
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Caller with values inplace
+
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if tensor2.data.ndim != 3:
