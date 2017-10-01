@@ -52,15 +52,15 @@ def dot(tensor1, tensor2):
 
 def diag(tensor, diagonal=0):
     """
-    * If input tensor is 1D, returns a new 2D square Tensor with the elements of input as the diagonal.
-    * If input tensor is 2D, returns a new 1D Tensor with the diagonal elements of input
+    * Returns a new 2D square tensor with the elements of 1D input tensor as the diagonal.
+    * Returns a new 1D tensor with diagonal elements of 2D input tensor.
 
-    * Optional argument diagonal, returns the n-th diagonal of input 2D tensor,
-    if n = 0 => main diagonal,
-    if n > 0 => above the main diagonal,
-    if n < 0 => below the main diagonal.
+    * Optional argument diagonal value is about which diagonal to consider,
+    zero is for main, positive for upper and negative for below diagonal
     """
     tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
     dim = tensor.dim()
     if dim == 1:
         return TensorBase(np.diag(tensor, diagonal))

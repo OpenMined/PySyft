@@ -264,7 +264,8 @@ class TensorBase(object):
 
     def diag(self):
         """ Returns a diagonal of tensor."""
-
+        if self.encrypted:
+            return NotImplemented
         return syft.math.diag(self.data)
 
     def sum(self, dim=None):
