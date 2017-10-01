@@ -2778,7 +2778,7 @@ class TensorBase(object):
 
         Returns
         -------
-        n x m Output tensor
+        n x p Output tensor
         """
 
         return syft.mm(self, tensor)
