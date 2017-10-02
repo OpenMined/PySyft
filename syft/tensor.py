@@ -1375,7 +1375,7 @@ class TensorBase(object):
         return syft.mm(self, tensor2)
 
     def stride(self, dim=None):
-    """Returns the jump necessary to go from one element to the next one in the specified dimension dim."""
+        """Returns the jump necessary to go from one element to the next one in the specified dimension dim."""
         if self.encrypted:
             return NotImplemented
         tensor = np.array(self.data)
