@@ -113,5 +113,4 @@ lastfailed
 !.vscode/extensions.json
 .history
 
-# for some Temporary objects created by some extensions in vscode
-.DS_Store
+# for some Temporary objects created by some extension in vscode
