@@ -2859,7 +2859,9 @@ class TensorBase(object):
     def masked_fill_(self, mask, value):
         """
         Fills elements of this ``tensor`` with value where ``mask`` is true.
-        The shape of mask must be broadcastable with the shape of the underlying tensor.
+        in-place
+        The shape of mask must be broadcastable with the shape of the underlying
+        tensor.
 
         Parameters
         ----------
@@ -2870,7 +2872,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output Tensor
+        Caller with values in-place
         """
         mask = _ensure_tensorbase(mask)
         if self.encrypted or mask.encrypted:
@@ -2904,7 +2906,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output tensor;
+        Output tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -2912,7 +2914,7 @@ class TensorBase(object):
 
     def eq_(self, t):
         """
-        Checks if two Tensors are equal.
+        Checks if two Tensors are equal, in-place
 
         Writes in-place, boolean True values where an element of the calling
         tensor is equal to the second Tensor, False otherwise.
@@ -2921,12 +2923,12 @@ class TensorBase(object):
 
         Parameters
         ----------
-        t: Tensor
+        t: TensorBase
             Input Tensor
 
         Returns
         -------
-        Output tensor;
+        Caller
         """
         if self.encrypted:
             return NotImplemented
