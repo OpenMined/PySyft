@@ -1402,7 +1402,7 @@ class TensorBase(object):
     def stride(self, dim=None):
         """
         Returns the jump necessary to go from one element to the next one in the specified dimension dim.
-       
+
         :param dim: dimension
         :return: the stride of the tensor in tuple
         """
