@@ -413,7 +413,11 @@ class TensorBase(object):
             return self
 
     def bmm(self, tensor2):
-        """Performs a batch matrix-matrix product of 
+        """Performs a batch matrix-matrix product of this tesnor
+        and tensor2. Both tensors must be 3D containing equal number
+        of matrices.
+        If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
+        Result will be a (b x n x p) Tensor.
         """
         return syft.bmm(self, tensor2)
 

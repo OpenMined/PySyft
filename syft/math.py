@@ -8,7 +8,7 @@ from .tensor import _ensure_tensorbase
 
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
-    'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 
+    'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
     'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm'
 ]
 
@@ -254,7 +254,7 @@ def addmv(tensor1, mat, vec, beta=1, alpha=1):
     else:
         out = (tensor1.data * beta) + (np.matmul(mat.data, vec.data) * alpha)
         return TensorBase(out)
-  
+
 
 def bmm(tensor1, tensor2):
     """Performs a batch matrix-matrix product stored in batch1 and batch2.
