@@ -1353,11 +1353,40 @@ class TensorBase(object):
 
         return syft.mm(self, tensor2)
 
-    def index(self, m):
-        """Selects elements from this Tensor using a binary mask or along a given dimension."""
+    def fmod(self, divisor):
+        """
+        Computes the element-wise remainder of division and returns a new Tensor.
+        :param divisor: The divisor. This may be either a number or a tensor of the same shape as the dividend.
+        :return: a new Tensor
+        """
         if self.encrypted:
             return NotImplemented
-        return TensorBase(self.data[m])
+        
+        if isinstance(divisor, TensorBase):
+            divisor = divisor.data
+            if divisor.shape()[0] != self.shape()[0]:
+                raise ValueError("Divisor shape does not match dividend shape")
+        
+        return TensorBase(np.fmod(self.data, divisor))
+
+    def fmod_(self, divisor):
+        """
+        Computes the element-wise remainder of division inline.
+        :param divisor: The divisor. This may be either a number or a tensor of the same shape as the dividend.
+        :return: self
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if isinstance(divisor, TensorBase):
+            divisor = divisor.data
+            if divisor.shape()[0] != self.shape()[0]:
+                raise ValueError("Divisor shape does not match dividend shape")
+
+        self.data = np.fmod(self.data, divisor)
+
+        return self
+
 
 
 def mv(tensormat, tensorvector):
