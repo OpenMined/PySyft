@@ -15,7 +15,7 @@ s += str(mpc)
 
 s += str(equal) + str(TensorBase) + str(cumprod) + str(cumsum) + str(ceil)
 s += str(dot) + str(matmul) + str(addmm) + str(addcmul) + str(addcdiv)
-s += str(addmv) + str(addbmm) + str(baddbmm)
+s += str(addmv) + str(bmm) + str(addbmm) + str(baddbmm)
 s += str(transpose) + str(rand) + str(randn) + str(ones) + str(zeros)
 s += str(unsqueeze)
 s += str(mm)
