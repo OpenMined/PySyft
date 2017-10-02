@@ -1381,7 +1381,6 @@ class TensorBase(object):
         tensor = np.array(self.data)
         shp = tensor.shape
         ndim = len(shp)
- 
         def calculation(ndim, shp):
             out = []
             for i in range(1, ndim):
@@ -1390,7 +1389,7 @@ class TensorBase(object):
             out = tuple(out)
             return out
         if dim is None:
-            out = calculation(ndim, shp)   
+            out = calculation(ndim, shp)
             return out
         elif ((dim >= 0) and (dim < ndim)) or ((dim < 0) and (dim >= -ndim)):
             out = calculation(ndim, shp)
