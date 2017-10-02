@@ -325,6 +325,14 @@ class addmvTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t1.data, [68, 130]))
 
 
+class bmmTests(unittest.TestCase):
+    def test_bmm(self):
+        t1 = TensorBase(np.random.rand(4, 3, 2))
+        t2 = TensorBase(np.random.rand(4, 2, 1))
+        out = t1.bmm(t2)
+        self.assertTupleEqual(out.size(), (4, 3, 1))
+
+
 class addbmmTests(unittest.TestCase):
     def testaddbmm(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
