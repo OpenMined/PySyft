@@ -1087,6 +1087,19 @@ class mm_test(unittest.TestCase):
         out = t1.mm(t2)
         self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
 
+class index_test(unittest.TestCase):
+    def test_index_1d(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        result = t.index(1)
+        expected = 2
+        self.assertTrue(result.data, expected)
+    def test_index_2d(self):
+        t = TensorBase(np.array([[1., 2., 3.],[4., 5., 6.]]))
+        result = t.index(1)
+        expected = np.array([4., 5., 6.])
+        self.assertTrue(result, TensorBase(expected))
+
+
 
 if __name__ == "__main__":
     unittest.main()
