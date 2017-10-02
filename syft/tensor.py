@@ -411,10 +411,11 @@ class TensorBase(object):
             temp = np.matmul(mat.data, vec.data) * alpha
             self += temp
             return self
-    def bmm(self, parameter_list):
+
+    def bmm(self, tensor2):
         """Performs a batch matrix-matrix product of 
         """
-        return 
+        return syft.bmm(self, tensor2)
 
     def addbmm(self, tensor2, mat, beta=1, alpha=1):
         """Performs a batch matrix-matrix product of matrices stored in
