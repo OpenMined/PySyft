@@ -1381,6 +1381,7 @@ class TensorBase(object):
         tensor = np.array(self.data)
         shp = tensor.shape
         ndim = len(shp)
+        
         def calculation(ndim, shp):
             out = []
             for i in range(1, ndim):
