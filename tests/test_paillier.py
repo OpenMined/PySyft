@@ -8,14 +8,14 @@ import syft as sy
 
 # Here's our "unit tests".
 class DimTests(unittest.TestCase):
-    def test_dim_one(self):
+    def testDimOne(self):
         p, s = KeyPair().generate()
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
         self.assertTrue(x.dim() == 1)
 
 
 class DotTests(unittest.TestCase):
-    def test_dot_product(self):
+    def testDotProduct(self):
 
         pk, sk = Paillier()
 
@@ -31,7 +31,7 @@ class DotTests(unittest.TestCase):
 
 class AddTests(unittest.TestCase):
 
-    def test_simple(self):
+    def testSimple(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -40,7 +40,7 @@ class AddTests(unittest.TestCase):
         y = (x + x2).decrypt(s)
         self.assertTrue(y == np.array([4., 6., 8., 10., 12.]))
 
-    def test_simple_reversed(self):
+    def testSimpleReversed(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -49,7 +49,7 @@ class AddTests(unittest.TestCase):
         y = (x2 + x).decrypt(s)
         self.assertTrue(y == np.array([4., 6., 8., 10., 12.]))
 
-    def test_scalar_in_place(self):
+    def testScalarInplace(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -57,7 +57,7 @@ class AddTests(unittest.TestCase):
         x += 1
         self.assertTrue(s.decrypt(x) == np.array([2., 3., 4., 5., 6.]))
 
-    def test_in_place(self):
+    def testInplace(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -66,7 +66,7 @@ class AddTests(unittest.TestCase):
         x += x2
         self.assertTrue(s.decrypt(x) == np.array([4., 6., 8., 10., 12.]))
 
-    def test_in_place_reversed(self):
+    def testInplaceReversed(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -75,7 +75,7 @@ class AddTests(unittest.TestCase):
         x2 += x
         self.assertTrue(s.decrypt(x2) == np.array([4., 6., 8., 10., 12.]))
 
-    def test_scalar(self):
+    def testScalar(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -84,7 +84,7 @@ class AddTests(unittest.TestCase):
 
         self.assertTrue(s.decrypt(y) == np.array([41., 42., 43., 44., 45.]))
 
-    def test_in_place_plain_text(self):
+    def testInplacePlaintext(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -93,7 +93,7 @@ class AddTests(unittest.TestCase):
         x += x2
         self.assertTrue(s.decrypt(x) == np.array([4., 6., 8., 10., 12.]))
 
-    def test_add_depth(self):
+    def testAddDepth(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -105,7 +105,7 @@ class AddTests(unittest.TestCase):
 
 class MulTests(unittest.TestCase):
 
-    def test_basic(self):
+    def testBasic(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -114,7 +114,7 @@ class MulTests(unittest.TestCase):
         y = x * x2
         self.assertTrue(y.decrypt(s) == np.array([3., 8., 15., 24., 35.]))
 
-    def test_basic_reversed(self):
+    def testBasicReversed(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -123,7 +123,7 @@ class MulTests(unittest.TestCase):
         y = x2 * x
         self.assertTrue(y.decrypt(s) == np.array([3., 8., 15., 24., 35.]))
 
-    def test_inline(self):
+    def testInline(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -132,7 +132,7 @@ class MulTests(unittest.TestCase):
         x *= x2
         self.assertTrue(x.decrypt(s) == np.array([3., 8., 15., 24., 35.]))
 
-    def test_inline_reversed(self):
+    def testInlineReversed(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -141,7 +141,7 @@ class MulTests(unittest.TestCase):
         x2 *= x
         self.assertTrue(x2.decrypt(s) == np.array([3., 8., 15., 24., 35.]))
 
-    def test_scalar(self):
+    def testScalar(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -149,7 +149,7 @@ class MulTests(unittest.TestCase):
         x *= 2
         self.assertTrue(s.decrypt(x) == np.array([2., 4., 6., 8., 10.]))
 
-    def test_mul_depth(self):
+    def testMulDepth(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([1, 2, 3, 4, 5.]))
@@ -161,7 +161,7 @@ class MulTests(unittest.TestCase):
 
 class DivTests(unittest.TestCase):
 
-    def test_basic(self):
+    def testBasic(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([3., 8., 15., 24., 35.]))
@@ -171,7 +171,7 @@ class DivTests(unittest.TestCase):
         print(y.decrypt(s))
         self.assertTrue(y.decrypt(s) == np.array([1., 2., 3., 4., 5.]))
 
-    def test_inline(self):
+    def testInline(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([3., 8., 15., 24., 35.]))
@@ -180,7 +180,7 @@ class DivTests(unittest.TestCase):
         x /= x2
         self.assertTrue(x.decrypt(s) == np.array([1., 2., 3., 4., 5.]))
 
-    def test_scalar(self):
+    def testScalar(self):
         p, s = KeyPair().generate()
 
         x = PaillierTensor(p, np.array([2., 4., 6., 8., 10.]))

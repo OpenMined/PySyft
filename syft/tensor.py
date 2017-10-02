@@ -224,7 +224,7 @@ class TensorBase(object):
         """Returns absolute value of tensor as a new tensor"""
         if self.encrypted:
             return NotImplemented
-        return TensorBase(np.absolute(self.data))
+        return np.absolute(self.data)
 
     def abs_(self):
         """Replaces tensor values with its absolute value"""
@@ -524,6 +524,12 @@ class TensorBase(object):
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
 
+    def diag(self, tenosr):
+        """ When input tensor is a vector (1D Tensor), returns a 2D square Tensor
+            with the elements of input as the diagonal.
+        """
+        return np.diag(tenosr)
+
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
@@ -818,6 +824,26 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.less_equal(self.data, other.data)
         return self
+
+    def lerp(self, start, end, weight):
+        """Returns a new Tensor which is the linear interpolation of two tensors start and end based a scalar weight. 
+        The returned tensor out is equal to start + weight * (end - start). Start and end tensors must broadcastable."""
+
+        if self.encrypted:
+            return NotImplemented
+        out = start + weight * (end - start)
+        return TensorBase(out)
+
+    def lerp_(self, start, end, weight):
+        """Writes in-place, the linear interpolation of two tensors start and end based a scalar weight. 
+        The returned tensor out is equal to start + weight * (end - start). Start and end tensors must broadcastable."""
+
+        if self.encrypted:
+            return NotImplemented
+        out = start + weight * (end - start)
+        self.data = out
+        return self
+
 
     def bernoulli(self, p):
         """

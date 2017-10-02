@@ -7,10 +7,10 @@ from syft import TensorBase
 
 
 class ConvenienceTests(unittest.TestCase):
-    def test_zeros(self):
+    def testZeros(self):
         self.assertTrue((syft.zeros(5).data == np.zeros(5)).all())
 
-    def test_ones(self):
+    def testOnes(self):
         self.assertTrue((syft.ones(5).data == np.ones(5)).all())
 
     def testRand(self):
@@ -22,33 +22,33 @@ class ConvenienceTests(unittest.TestCase):
 
 
 class DotTests(unittest.TestCase):
-    def test_dot_int(self):
+    def testDotInt(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([4, 5, 6]))
         self.assertEqual(syft.dot(t1, t2), 32)
 
-    def test_dot_float(self):
+    def testDotFloat(self):
         t1 = TensorBase(np.array([1.3, 2.5, 3.7]))
         t2 = TensorBase(np.array([4.9, 5.8, 6.5]))
         self.assertEqual(syft.dot(t1, t2), 44.92)
 
 
 class CeilTests(unittest.TestCase):
-    def test_ceil(self):
+    def testCeil(self):
         t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
         self.assertTrue(syft.equal(syft.ceil(t1), TensorBase([[3., 5.],
                                                               [8., 9.]])))
 
 
 class FloorTests(unittest.TestCase):
-    def test_floor(self):
+    def testFloor(self):
         t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
         self.assertTrue(syft.equal(syft.math.floor(t1), TensorBase([[2., 4.],
                                                                     [7., 8.]])))
 
 
 class CumsumTests(unittest.TestCase):
-    def test_cumsum(self):
+    def testCumsum(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(syft.equal(syft.cumsum(t1), TensorBase([1, 3, 6])))
 
@@ -56,7 +56,7 @@ class CumsumTests(unittest.TestCase):
 class CumprodTests(unittest.TestCase):
     """Cumultative Product test"""
 
-    def test_cumprod(self):
+    def testCumprod(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         self.assertTrue(syft.equal(syft.cumprod(t1), TensorBase([1, 2, 6])))
 
@@ -64,7 +64,7 @@ class CumprodTests(unittest.TestCase):
 class SigmoidTests(unittest.TestCase):
     """Sigmoid Test"""
 
-    def test_sigmoid(self):
+    def testSigmoid(self):
         t1 = TensorBase(np.array([1.2, 3.3, 4]))
         self.assertTrue(syft.equal(syft.math.sigmoid(t1), TensorBase(
             [0.76852478, 0.96442881, 0.98201379])))
@@ -73,17 +73,17 @@ class SigmoidTests(unittest.TestCase):
 class MatmulTests(unittest.TestCase):
     """Matmul Tests"""
 
-    def test_matmul_1d_int(self):
+    def testMatmul1DInt(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([4, 5, 6]))
         self.assertEqual(syft.matmul(t1, t2), syft.dot(t1, t2))
 
-    def test_matmul_1d_float(self):
+    def testMatmul1DFloat(self):
         t1 = TensorBase(np.array([1.3, 2.5, 3.7]))
         t2 = TensorBase(np.array([4.9, 5.8, 6.5]))
         self.assertEqual(syft.matmul(t1, t2), syft.dot(t1, t2))
 
-    def test_matmul_2d_identity(self):
+    def testMatmul2DIdentity(self):
         t1 = TensorBase(np.array([[1, 0],
                                   [0, 1]]))
         t2 = TensorBase(np.array([[5.8, 6.5],
@@ -91,7 +91,7 @@ class MatmulTests(unittest.TestCase):
         self.assertTrue(syft.equal(syft.matmul(t1, t2), [[5.8, 6.5],
                                                          [7.8, 8.9]]))
 
-    def test_matmul_2d_int(self):
+    def testMatmul2DInt(self):
         t1 = TensorBase(np.array([[1, 2],
                                   [3, 4]]))
         t2 = TensorBase(np.array([[5, 6],
@@ -99,7 +99,7 @@ class MatmulTests(unittest.TestCase):
         self.assertTrue(syft.equal(syft.matmul(t1, t2), [[19, 22],
                                                          [43, 50]]))
 
-    def test_matmul_2d_float(self):
+    def testMatmul2DFloat(self):
         t1 = TensorBase(np.array([[1.3, 2.5],
                                   [3.4, 4.5]]))
         t2 = TensorBase(np.array([[5.8, 6.5],
@@ -109,14 +109,14 @@ class MatmulTests(unittest.TestCase):
 
 
 class admmTests(unittest.TestCase):
-    def test_addmm_1d(self):
+    def testaddmm1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 3, 4]))
         mat = TensorBase(np.array([5]))
         out = syft.addmm(t1, t2, mat, beta=2, alpha=2)
         self.assertTrue(np.array_equal(out.data, [50]))
 
-    def test_addmm_2d(self):
+    def testaddmm2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[1, 2], [1, 2]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
@@ -125,14 +125,14 @@ class admmTests(unittest.TestCase):
 
 
 class addcmulTests(unittest.TestCase):
-    def test_addcmul_1d(self):
+    def testaddcmul1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 3, 4]))
         mat = TensorBase(np.array([5]))
         out = syft.addcmul(t1, t2, mat, value=2)
         self.assertTrue(np.array_equal(out.data, [9, 17, 29]))
 
-    def test_addcmul_2d(self):
+    def testaddcmul2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[1, 2], [1, 2]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
@@ -141,14 +141,14 @@ class addcmulTests(unittest.TestCase):
 
 
 class addcdivTests(unittest.TestCase):
-    def test_addcdiv_1d(self):
+    def testaddcdiv1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 5, 4]))
         mat = TensorBase(np.array([5]))
         out = syft.addcdiv(t1, t2, mat, value=2)
         self.assertTrue(np.array_equal(out.data, [6., 5.8, 6.5]))
 
-    def test_addcdiv_2d(self):
+    def testaddcdiv2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[1, 2], [1, 2]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
@@ -157,7 +157,7 @@ class addcdivTests(unittest.TestCase):
 
 
 class addmv(unittest.TestCase):
-    def test_addmv(self):
+    def testaddmv(self):
         t1 = TensorBase(np.array([1, 2]))
         vec = TensorBase(np.array([1, 2, 3, 4]))
         mat = TensorBase(np.array([[2, 3, 3, 4], [5, 6, 6, 7]]))
@@ -181,7 +181,7 @@ class bmmTests(unittest.TestCase):
 
 
 class addbmmTests(unittest.TestCase):
-    def test_addbmm(self):
+    def testaddbmm(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
         mat = TensorBase(np.array([[2, 3], [3, 4]]))
@@ -190,7 +190,7 @@ class addbmmTests(unittest.TestCase):
 
 
 class baddbmmTests(unittest.TestCase):
-    def test_baddbmm(self):
+    def testbaddbmm(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
         mat = TensorBase(np.array([[[2, 3], [3, 4]], [[4, 5], [5, 6]]]))
@@ -200,7 +200,7 @@ class baddbmmTests(unittest.TestCase):
 
 
 class transposeTests(unittest.TestCase):
-    def test_transpose(self):
+    def testTranspose(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         out1 = syft.transpose(t1, 0, 1)
         self.assertTrue(np.array_equal(out1.data, np.array([[[3, 4], [7, 8]],
@@ -214,7 +214,7 @@ class transposeTests(unittest.TestCase):
 
 
 class unsqueezeTests(unittest.TestCase):
-    def test_unsqueeze(self):
+    def testUnsqueeze(self):
         t1 = TensorBase(np.arange(3 * 4 * 5).reshape((3, 4, 5)))
         for i in range(len(t1.data.shape)):
             out = syft.unsqueeze(t1, i)
@@ -225,19 +225,19 @@ class unsqueezeTests(unittest.TestCase):
 
 
 class mmtest(unittest.TestCase):
-    def test_mm_1d(self):
+    def testmm1d(self):
         t1 = TensorBase(np.array([2, 3, 4]))
         t2 = TensorBase(np.array([3, 4, 5]))
         out = syft.mm(t1, t2)
         self.assertTrue(np.alltrue(out.data == [38]))
 
-    def test_mm_2d(self):
+    def testmm2d(self):
         t1 = TensorBase(np.array([[1, 2], [1, 2]]))
         t2 = TensorBase(np.array([[2, 3], [2, 3]]))
         out = syft.mm(t1, t2)
         self.assertTrue(np.alltrue(out.data == [[6, 9], [6, 9]]))
 
-    def test_mm_3d(self):
+    def testmm3d(self):
         t1 = TensorBase(np.array([[1, 2], [2, 3], [3, 4]]))
         t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
         out = syft.mm(t1, t2)
