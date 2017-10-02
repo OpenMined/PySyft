@@ -1087,18 +1087,39 @@ class mm_test(unittest.TestCase):
         out = t1.mm(t2)
         self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
 
-class index_test(unittest.TestCase):
-    def test_index_1d(self):
-        t = TensorBase(np.array([1, 2, 3]))
-        result = t.index(1)
-        expected = 2
-        self.assertTrue(result.data, expected)
-    def test_index_2d(self):
-        t = TensorBase(np.array([[1., 2., 3.],[4., 5., 6.]]))
-        result = t.index(1)
-        expected = np.array([4., 5., 6.])
-        self.assertTrue(result, TensorBase(expected))
+class fmodTest(unittest.TestCase):
+    def test_fmod_number(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        self.assertTrue(np.array_equal(t1.fmod(2).data, np.array([-1,  0, -1,  1,  0,  1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        self.assertTrue(np.array_equal(t2.fmod(2.).data, np.array([-1.5, -0.5, -1.5,  1.5,  0.5,  1.5])))
 
+    def test_fmod_tensor(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        divisor = np.array([2] * 6)
+        self.assertTrue(np.array_equal(t1.fmod(divisor).data, np.array([-1,  0, -1,  1,  0,  1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        divisor = np.array([2.] * 6)
+        self.assertTrue(np.array_equal(t2.fmod(divisor).data, np.array([-1.5, -0.5, -1.5,  1.5,  0.5,  1.5])))
+
+class fmod_Test(unittest.TestCase):
+    def test_fmod_number(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        t1.fmod_(2)
+        self.assertTrue(np.array_equal(t1.data, np.array([-1,  0, -1,  1,  0,  1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        t2.fmod_(2.)
+        self.assertTrue(np.array_equal(t2.data, np.array([-1.5, -0.5, -1.5,  1.5,  0.5,  1.5])))
+
+    def test_fmod_tensor(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        divisor = np.array([2] * 6)
+        t1.fmod_(divisor)
+        self.assertTrue(np.array_equal(t1.data, np.array([-1,  0, -1,  1,  0,  1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        divisor = np.array([2.] * 6)
+        t2.fmod_(divisor)
+        self.assertTrue(np.array_equal(t2.data, np.array([-1.5, -0.5, -1.5,  1.5,  0.5,  1.5])))
 
 
 if __name__ == "__main__":
