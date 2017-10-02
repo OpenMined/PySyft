@@ -14,15 +14,13 @@ class DimTests(unittest.TestCase):
 
     def test_view(self):
         t = TensorBase([1.0, 2.0, 3.0])
-        self.assertTrue(syft.equal(
-            t.view(-1, 1), TensorBase(np.array([[1], [2], [3]]))))
+        self.assertTrue(syft.equal(t.view(-1, 1), TensorBase(np.array([[1], [2], [3]]))))
 
     def test_as_view(self):
         t = TensorBase(np.array([1.0, 2.0, 3.0]))
         t1 = t.view([-1, 1])
         print(t.data.dtype)
-        self.assertTrue(syft.equal(t.view_as(t1), TensorBase(
-            np.array([[1.0], [2.0], [3.0]]))))
+        self.assertTrue(syft.equal(t.view_as(t1), TensorBase(np.array([[1.0], [2.0], [3.0]]))))
 
     def test_resize(self):
         t = TensorBase(np.array([1.0, 2.0, 3.0]))
@@ -115,8 +113,7 @@ class MaxTests(unittest.TestCase):
         result = t.max(axis=1)
         self.assertTrue(syft.equal(result, [0.77937768, 0.69574893]))
         result = t.max(axis=0)
-        self.assertTrue(syft.equal(
-            result, [0.77937768, 0.51022484, 0.49155195, 0.69574893]))
+        self.assertTrue(syft.equal(result, [0.77937768, 0.51022484, 0.49155195, 0.69574893]))
 
 
 class MultTests(unittest.TestCase):
