@@ -165,6 +165,21 @@ class addmv(unittest.TestCase):
         self.assertTrue(np.array_equal(out.data, [68, 130]))
 
 
+class bmmTests(unittest.TestCase):
+    def test_bmm_for_correct_size_output(self):
+        t1 = TensorBase(np.random.rand(4, 3, 2))
+        t2 = TensorBase(np.random.rand(4, 2, 1))
+        out = syft.bmm(t1, t2)
+        self.assertTupleEqual(out.shape(), (4, 3, 1))
+
+    def test_bmm(self):
+        t1 = TensorBase(np.array([[[3, 1]], [[1, 2]]]))
+        t2 = TensorBase(np.array([[[1], [3]], [[4], [8]]]))
+        out = syft.bmm(t1, t2)
+        test_result = np.array([[[6]], [[20]]])
+        self.assertTrue(np.array_equal(out.data, test_result))
+
+
 class addbmmTests(unittest.TestCase):
     def test_addbmm(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
@@ -226,4 +241,5 @@ class mmtest(unittest.TestCase):
         t1 = TensorBase(np.array([[1, 2], [2, 3], [3, 4]]))
         t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
         out = syft.mm(t1, t2)
-        self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
+        self.assertTrue(np.alltrue(
+            out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))

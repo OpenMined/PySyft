@@ -330,6 +330,21 @@ class addmvTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t1.data, [68, 130]))
 
 
+class bmmTests(unittest.TestCase):
+    def test_bmm_size(self):
+        t1 = TensorBase(np.random.rand(4, 3, 2))
+        t2 = TensorBase(np.random.rand(4, 2, 1))
+        out = t1.bmm(t2)
+        self.assertTupleEqual(out.shape(), (4, 3, 1))
+
+    def test_bmm(self):
+        t1 = TensorBase(np.array([[[3, 1]], [[1, 2]]]))
+        t2 = TensorBase(np.array([[[1], [3]], [[4], [8]]]))
+        out = t1.bmm(t2)
+        test_result = np.array([[[6]], [[20]]])
+        self.assertTrue(np.array_equal(out.data, test_result))
+
+
 class addbmmTests(unittest.TestCase):
     def test_addbmm(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
@@ -679,6 +694,14 @@ class bernoulliTests(unittest.TestCase):
         t1.bernoulli_(p)
         self.assertTupleEqual((3, 2), t1.shape())
         self.assertTrue(np.all(t1.data >= 0) and np.all(t1.data <= 1))
+
+
+class cauchyTests(unittest.TestCase):
+    def test_cauchy_(self):
+        t = TensorBase(np.zeros([1, 2, 3, 4]))
+        t.cauchy_()
+        self.assertTupleEqual((1, 2, 3, 4), t.shape())
+        self.assertTrue(np.all(t.data != 0))
 
 
 class uniformTests(unittest.TestCase):
