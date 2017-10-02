@@ -166,7 +166,7 @@ class addmv(unittest.TestCase):
 
 
 class bmmTests(unittest.TestCase):
-    def test_bmm_for_correct_size_input(self):
+    def test_bmm_for_correct_size_output(self):
         t1 = TensorBase(np.random.rand(4, 3, 2))
         t2 = TensorBase(np.random.rand(4, 2, 1))
         out = syft.bmm(t1, t2)
