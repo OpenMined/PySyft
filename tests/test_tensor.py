@@ -14,13 +14,15 @@ class DimTests(unittest.TestCase):
 
     def testView(self):
         t = TensorBase([1.0, 2.0, 3.0])
-        self.assertTrue(syft.equal(t.view(-1, 1), TensorBase(np.array([[1], [2], [3]]))))
+        self.assertTrue(syft.equal(
+            t.view(-1, 1), TensorBase(np.array([[1], [2], [3]]))))
 
     def testAsView(self):
         t = TensorBase(np.array([1.0, 2.0, 3.0]))
         t1 = t.view([-1, 1])
         print(t.data.dtype)
-        self.assertTrue(syft.equal(t.view_as(t1), TensorBase(np.array([[1.0], [2.0], [3.0]]))))
+        self.assertTrue(syft.equal(t.view_as(t1), TensorBase(
+            np.array([[1.0], [2.0], [3.0]]))))
 
     def testResize(self):
         t = TensorBase(np.array([1.0, 2.0, 3.0]))
@@ -100,15 +102,18 @@ class SubTests(unittest.TestCase):
 
 class MaxTests(unittest.TestCase):
     def testNoDim(self):
-        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
+        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [
+                       0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
         self.assertTrue(t.max() == 0.77937768)
 
     def testAxis(self):
-        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
+        t = TensorBase(np.array([[0.77937768, 0.51022484, 0.49155195, 0.02769902], [
+                       0.03777148, 0.13020167, 0.02155692, 0.69574893]]))
         result = t.max(axis=1)
         self.assertTrue(syft.equal(result, [0.77937768, 0.69574893]))
         result = t.max(axis=0)
-        self.assertTrue(syft.equal(result, [0.77937768, 0.51022484, 0.49155195, 0.69574893]))
+        self.assertTrue(syft.equal(
+            result, [0.77937768, 0.51022484, 0.49155195, 0.69574893]))
 
 
 class MultTests(unittest.TestCase):
@@ -326,11 +331,15 @@ class addmvTests(unittest.TestCase):
 
 
 class bmmTests(unittest.TestCase):
-    def test_bmm(self):
+    def test_bmm_size(self):
         t1 = TensorBase(np.random.rand(4, 3, 2))
         t2 = TensorBase(np.random.rand(4, 2, 1))
         out = t1.bmm(t2)
-        self.assertTupleEqual(out.size(), (4, 3, 1))
+        self.assertTupleEqual(out.shape(), (4, 3, 1))
+
+    def test_bmm(self):
+        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
+        t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
 
 
 class addbmmTests(unittest.TestCase):

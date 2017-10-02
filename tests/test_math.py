@@ -170,7 +170,7 @@ class bmmTests(unittest.TestCase):
         t1 = TensorBase(np.random.rand(4, 3, 2))
         t2 = TensorBase(np.random.rand(4, 2, 1))
         out = syft.bmm(t1, t2)
-        self.assertTupleEqual(out.size(), (4, 3, 1))
+        self.assertTupleEqual(out.shape(), (4, 3, 1))
 
 
 class addbmmTests(unittest.TestCase):
