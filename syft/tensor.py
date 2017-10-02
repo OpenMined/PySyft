@@ -1388,6 +1388,7 @@ def masked_select(tensor, mask):
     indices = np.where(mask_broadcasted)
     return TensorBase(data_broadcasted[indices])
 
+
 def stride(self, dim=None):
     """
     Returns the jump necessary to go from one element to the next one in the specified dimension dim.
@@ -1415,4 +1416,3 @@ def stride(self, dim=None):
         return out[dim]
     else:
         raise RuntimeError( "dimension out of range of {}D tensor".format(ndim))
-
