@@ -232,6 +232,12 @@ class TensorBase(object):
         self.data = np.absolute(self.data)
         return self.data
 
+    def nelement(self):
+        """Returns the total number of elements in the tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return self.data.size
+
     def shape(self):
         """Returns a tuple of input array dimensions."""
         if self.encrypted:
