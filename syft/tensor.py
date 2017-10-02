@@ -2,6 +2,7 @@
 import numpy as np
 import syft
 import scipy
+from scipy import stats
 import pickle
 
 __all__ = [
@@ -841,6 +842,13 @@ class TensorBase(object):
             return NotImplemented
         out = np.random.uniform(low=low, high=high, size=self.shape())
         return TensorBase(out)
+
+    def cauchy_(self, median=0, sigma=1):
+        """Fills the tensor in-place with numbers drawn from the Cauchy distribution"""
+        if self.encrypted:
+            return NotImplemented
+        self.data = stats.cauchy.rvs(loc=median, scale=sigma, size=self.data.size).reshape(self.data.shape)
+        return self
 
     def fill_(self, value):
         """Fills the tensor in-place with the specified value"""
