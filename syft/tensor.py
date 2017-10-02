@@ -1374,6 +1374,35 @@ class TensorBase(object):
 
         return syft.mm(self, tensor2)
 
+    def stride(self, dim=None):
+    """
+    Returns the jump necessary to go from one element to the next one in the specified dimension dim.
+
+    :param dim: dimension
+    :return: 1D output tensor
+    """
+    if self.encrypted:
+        return NotImplemented
+    tensor = np.array(self.data)
+    shp = tensor.shape
+    ndim = len(shp)
+    
+    def calculation(ndim, shp):
+        out = []
+        for i in range(1, ndim):
+            out.append(reduce(mul, shp[i:]))
+        out.append(1)
+        out = tuple(out)
+        return out
+    if dim==None:
+        out = calculation(ndim, shp)    
+        return out
+    elif ((dim >= 0) and (dim < ndim)) or ((dim < 0) and (dim >= -ndim)):
+        out = calculation(ndim, shp)
+        return out[dim]
+    else:
+        raise RuntimeError("dimension out of range of {}D tensor".format(ndim))
+
 
 def mv(tensormat, tensorvector):
     """ matrix and vector multiplication """
@@ -1406,32 +1435,3 @@ def masked_select(tensor, mask):
         mask.data, tensor.data)
     indices = np.where(mask_broadcasted)
     return TensorBase(data_broadcasted[indices])
-
-
-def stride(self, dim=None):
-    """
-    Returns the jump necessary to go from one element to the next one in the specified dimension dim.
-
-    :param dim: dimension
-    :return: 1D output tensor
-    """
-    if self.encrypted:
-            return NotImplemented
-    tensor = np.array(self.data)
-    shp = tensor.shape
-    ndim = len(shp)
-    def calculation(ndim,shp):
-        out = []
-        for i in range(1,ndim):
-            out.append(reduce(mul,shp[i:]))
-        out.append(1)
-        out = tuple(out)
-        return out
-    if dim==None:
-        out = calculation(ndim,shp)    
-        return out
-    elif ((dim >= 0) and (dim < ndim)) or ((dim < 0) and (dim >= -ndim)):
-        out = calculation(ndim,shp)
-        return out[dim]
-    else:
-        raise RuntimeError( "dimension out of range of {}D tensor".format(ndim))
