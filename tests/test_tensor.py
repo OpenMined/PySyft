@@ -338,8 +338,11 @@ class bmmTests(unittest.TestCase):
         self.assertTupleEqual(out.shape(), (4, 3, 1))
 
     def test_bmm(self):
-        t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
-        t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
+        t1 = TensorBase(np.array([[[3,  1]], [[1,  2]]]))
+        t2 = TensorBase(np.array([[[1], [3]], [[4], [8]]]))
+        out = t1.bmm(t2)
+        test_result = np.array([[[6]], [[20]]])
+        self.assertTrue(np.array_equal(out.data, test_result))
 
 
 class addbmmTests(unittest.TestCase):
