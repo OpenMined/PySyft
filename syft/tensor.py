@@ -15,8 +15,8 @@ def _ensure_ndarray(arr):
 
     Parameters
     ----------
-    arr:object
-    arr to be checked
+    arr: object
+        arr to be checked
 
     Returns
     -------
@@ -50,7 +50,8 @@ def _ensure_tensorbase(tensor):
 
 
 def equal(tensor1, tensor2):
-    """Checks if two tensors are equal.
+    """
+    Checks if two tensors are equal.
 
     Two tensors are considered equal if they are the same size and contain the
     same elements.
@@ -58,6 +59,21 @@ def equal(tensor1, tensor2):
     Assumption:
     tensor1 and tensor2 are of type TensorBase.
     Non-TensorBase objects will be converted to TensorBase objects.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+        First Tensor to be compared
+
+    tensor2: TensorBase
+        Second Tensor to be compared
+
+    Returns
+    -------
+    bool
+
+    bool
+
     """
 
     tensor1 = _ensure_tensorbase(tensor1)
@@ -113,7 +129,6 @@ class TensorBase(object):
         Returns
         -------
         Encrypted Caller
-
         """
         if self.encrypted:
             return NotImplemented
@@ -144,10 +159,30 @@ class TensorBase(object):
             return self
 
     def __len__(self):
+        """
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Returns the len. of Caller
+        """
         return len(self.data)
 
     def __add__(self, tensor):
-        """Performs element-wise addition between two tensors"""
+        """
+        Performs element-wise addition between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Tensor to be Added
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -155,7 +190,20 @@ class TensorBase(object):
         return TensorBase(self.data + tensor.data)
 
     def __iadd__(self, tensor):
-        """Performs in place element-wise addition between two tensors"""
+        """
+        Performs in-place element-wise addition between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Tensor to be Added
+
+        Returns
+        -------
+        TensorBase:
+            Caller with values in-place
+
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -164,7 +212,20 @@ class TensorBase(object):
         return self
 
     def __sub__(self, tensor):
-        """Performs element-wise subtraction between two tensors"""
+        """
+        Performs element-wise subtraction between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Tensor to be Subtracted from Caller
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+
         if self.encrypted:
             return NotImplemented
 
@@ -172,7 +233,20 @@ class TensorBase(object):
         return TensorBase(self.data - tensor.data)
 
     def __isub__(self, tensor):
-        """Performs in place element-wise subtraction between two tensors"""
+        """
+        Performs in-place element-wise subtraction between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Tensor to be Subtracted from Caller
+
+        Returns
+        -------
+        TensorBase:
+            Caller with values in-place
+        """
+
         if self.encrypted:
             return NotImplemented
 
@@ -181,14 +255,38 @@ class TensorBase(object):
         return self
 
     def __eq__(self, tensor):
-        """Checks if two tensors are equal"""
+        """
+        Checks if two tensors are equal
+        
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        bool:
+        """
+        
         if self.encrypted:
             return NotImplemented
 
         return syft.equal(self, tensor)
 
     def dot(self, tensor):
-        """Returns inner product of two tensors"""
+        """
+        Returns inner product of two tensors
+        
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -198,14 +296,38 @@ class TensorBase(object):
         return syft.dot(self, tensor)
 
     def __matmul__(self, tensor):
-        """Performs matrix multiplication between two tensors"""
+        """
+        Performs matrix multiplication between two tensors
+        
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
         return syft.matmul(self, tensor)
 
     def __mul__(self, tensor):
-        """Performs element-wise multiplication between two tensors"""
+        """
+        Performs element-wise multiplication between two tensors
+        
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Output Tensor
+        """
 
         if self.encrypted:
             return NotImplemented
@@ -219,7 +341,19 @@ class TensorBase(object):
             return TensorBase(tensor.data * self.data)
 
     def __imul__(self, tensor):
-        """Performs in place element-wise multiplication between two tensors"""
+        """
+        Performs in-place element-wise multiplication between two tensors
+        
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -232,7 +366,19 @@ class TensorBase(object):
         return self
 
     def __truediv__(self, tensor):
-        """Performs element-wise division between two tensors"""
+        """
+        Performs element-wise division between two tensors
+        
+        Parameters
+        ----------
+        tensor: TensorBase
+            Divisor tensor
+
+        Returns
+        -------
+        TensorBase
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -243,7 +389,20 @@ class TensorBase(object):
             return TensorBase(self.data / tensor.data)
 
     def __itruediv__(self, tensor):
-        """Performs in place element-wise subtraction between two tensors"""
+        """
+        Performs in-place element-wise subtraction between two tensors
+        
+        
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -321,7 +480,7 @@ class TensorBase(object):
 
     def sqrt(self):
         """
-        Returns the squared tensor.
+        Performs square-root of tensor and returns a new tensor.
 
         Parameters
         ----------
@@ -338,7 +497,8 @@ class TensorBase(object):
 
     def sqrt_(self):
         """
-        Inline squared tensor.
+        Peforms square-root of the tensor, in-place
+
 
         Parameters
         ----------
@@ -394,7 +554,8 @@ class TensorBase(object):
 
         Returns
         -------
-        Output tensor
+        TensorBase:
+            Output tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -409,7 +570,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -418,14 +579,14 @@ class TensorBase(object):
 
     def floor_(self):
         """
-        Inplace floor method
+        in-place floor method
 
         Parameters
         ----------
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -441,7 +602,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -458,6 +619,7 @@ class TensorBase(object):
         behavior depends on the arguments in the following way.
 
         *If both tensors are 1-dimensional, their dot product is returned.
+
         *If both arguments are 2-D they are multiplied like conventional
          matrices.
 
@@ -468,9 +630,10 @@ class TensorBase(object):
         *If the first argument is 1-D, it is promoted to a matrix by
          prepending a 1 to its dimensions. After matrix multiplication the
          prepended 1 is removed.
+
         *If the second argument is 1-D, it is promoted to a matrix by
          appending a 1 to its dimensions. After matrix multiplication the
-          appended 1 is removed.
+         appended 1 is removed.
 
         Parameters
         ----------
@@ -478,8 +641,12 @@ class TensorBase(object):
             input tensor
 
         mat:
+            Input Matrix
 
-        value: ,optional
+        beta: ,optional
+
+        alpha: ,optional
+
 
         Returns
         -------
@@ -521,12 +688,14 @@ class TensorBase(object):
 
         mat:
 
-        value: ,optional
+        beta: ,optional
+
+        alpha: ,optional
 
         Returns
         -------
         TensorBase:
-            Caller with values inplace
+            Caller with values in-place
         """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
@@ -541,9 +710,9 @@ class TensorBase(object):
 
     def addcmul(self, tensor2, mat, value=1):
         """
-        Performs implace element-wise multiplication of tensors
+        Performs  element-wise multiplication of tensors
 
-        Performs implace element-wise multiplication of tensor1 by tensor2,
+        Performs element-wise multiplication of tensor1 by tensor2,
         multiply the result by the scalar value and add it to mat.
 
         Parameters
@@ -566,9 +735,9 @@ class TensorBase(object):
 
     def addcmul_(self, tensor2, mat, value=1):
         """
-        Performs implace element-wise multiplication of tensors
+        Performs in-place element-wise multiplication of tensors
 
-        Performs implace element-wise multiplication of tensor1 by tensor2,
+        Performs in-place element-wise multiplication of tensor1 by tensor2,
         multiply the result by the scalar value and add it to mat.
 
         Parameters
@@ -585,7 +754,7 @@ class TensorBase(object):
         Returns
         -------
         TensorBase:
-            caller with values inplace
+            Caller with values in-place
         """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
@@ -599,9 +768,9 @@ class TensorBase(object):
 
     def addcdiv(self, tensor2, mat, value=1):
         """
-        Performs implace element-wise division
+        Performs element-wise division
 
-        Performs implace element-wise division of tensor1 by tensor2,
+        Performs element-wise division of tensor1 by tensor2,
         multiply the result by the scalar value and add it to mat.
 
         Parameters
@@ -624,9 +793,9 @@ class TensorBase(object):
 
     def addcdiv_(self, tensor2, mat, value=1):
         """
-        Performs implace element-wise division
+        Performs in-place element-wise division
 
-        Performs implace element-wise division of tensor1 by tensor2,
+        Performs in-place element-wise division of tensor1 by tensor2,
         multiply the result by the scalar value and add it to mat.
 
         Parameters
@@ -642,7 +811,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
@@ -658,7 +827,7 @@ class TensorBase(object):
         """
         Performs a matrix-vector product
 
-        Performs a inplace matrix-vector product of the matrix mat and the
+        Performs a in-place matrix-vector product of the matrix mat and the
         vector vec.
         The vector tensor is added to the final result. tensor1 and vec are
         1d tensors
@@ -688,7 +857,7 @@ class TensorBase(object):
         """"
         Performs a matrix-vector product
 
-        Performs a inplace matrix-vector product of the matrix mat and the
+        Performs a in-place matrix-vector product of the matrix mat and the
         vector vec.
         The vector tensor is added to the final result. tensor1 and vec are
         1d tensors
@@ -709,7 +878,7 @@ class TensorBase(object):
         Returns
         -------
         TensorBase:
-            Caller with inplaced values
+            Caller with in-placed values
 
         """
         _ensure_tensorbase(vec)
@@ -763,7 +932,7 @@ class TensorBase(object):
         """
         Perform batch matrix-matrix product of matrices
 
-        Performs a inplace batch matrix-matrix product of matrices stored
+        Performs a in-place batch matrix-matrix product of matrices stored
         in batch1(tensor1) and batch2(tensor2), with a reduced add step
         (all matrix multiplications get accumulated along the first dimension).
          mat is added to the final result.
@@ -786,7 +955,7 @@ class TensorBase(object):
         Returns
         -------
         TensorBase:
-            Caller with values inplace
+            Caller with values in-place
 
         """
         _ensure_tensorbase(tensor2)
@@ -859,7 +1028,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
 
         """
         _ensure_tensorbase(tensor2)
@@ -1075,14 +1244,14 @@ class TensorBase(object):
 
     def exp_(self):
         """
-        Computes the exponential of each element inplace.
+        Computes the exponential of each element in-place.
 
         Parameters
         ----------
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1107,14 +1276,14 @@ class TensorBase(object):
 
     def frac_(self):
         """"
-        Computes the fractional portion of each element inplace.
+        Computes the fractional portion of each element in-place.
 
         Parameters
         ----------
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1123,7 +1292,7 @@ class TensorBase(object):
 
     def sigmoid_(self):
         """
-        Performs inline sigmoid function on the Tensor elementwise
+        Performs in-place sigmoid function on the Tensor elementwise
 
         Implementation details:
         Because of the way syft.math.sigmoid operates on a Tensor Object
@@ -1136,7 +1305,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1154,7 +1323,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1186,14 +1355,14 @@ class TensorBase(object):
 
     def rsqrt_(self):
         """
-        Computes reciprocal of square root of Tensor elements inplace
+        Computes reciprocal of square root of Tensor elements in-place
 
         Parameters
         ----------
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1217,14 +1386,14 @@ class TensorBase(object):
 
     def sign_(self):
         """
-        Computes the sign of each element of the Tensor inplace
+        Computes the sign of each element of the Tensor in-place
 
         Parameters
         ----------
 
         Returns
         -------
-        Caller with values inplace
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1271,7 +1440,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns caller with values in place
+        Returns Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1295,14 +1464,14 @@ class TensorBase(object):
 
     def log_(self):
         """
-        Performs elementwise logarithm operation inplace
+        Performs elementwise logarithm operation in-place
 
         Parameters
         ----------
 
         Returns
         -------
-        Returns caller with values inplace
+        Returns Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1328,14 +1497,14 @@ class TensorBase(object):
 
     def log1p_(self):
         """
-        Performs element wise log(1+x) operation inplace
+        Performs element wise log(1+x) operation in-place
 
         Parameters
         ----------
 
         Returns
         -------
-        Returns caller with values inplace
+        Returns Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1355,7 +1524,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output of caller with values inplace
+        Output of Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1392,7 +1561,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output of object called with values inplace
+        Output of object called with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1488,7 +1657,7 @@ class TensorBase(object):
 
         Returns
         -------
-        calling object with values in place
+        calling object with values in-place
         """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
@@ -1540,7 +1709,7 @@ class TensorBase(object):
 
         Returns
         -------
-        calling object with values in place
+        calling object with values in-place
         """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
@@ -1591,7 +1760,7 @@ class TensorBase(object):
 
         Returns
         -------
-        calling object with values in place
+        calling object with values in-place
         """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
@@ -1643,7 +1812,7 @@ class TensorBase(object):
 
         Returns
         -------
-        calling object with values in place
+        calling object with values in-place
         """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
@@ -1695,7 +1864,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Called object with Values inPlace
+        Called object with Values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1716,7 +1885,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Calling object with values inplace
+        Calling object with values in-place
 
         """
         if self.encrypted:
@@ -1756,7 +1925,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns object with values in place
+        Returns object with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -2214,7 +2383,7 @@ class TensorBase(object):
 
     def neg_(self):
         """
-        Sets negative of the elements of tensor inplace
+        Sets negative of the elements of tensor in-place
 
         Parameters
         ----------
@@ -2303,7 +2472,7 @@ class TensorBase(object):
 
     def ne_(self, tensor):
         """
-        Checks in place element wise equality and updates the data matrix
+        Checks in-place element wise equality and updates the data matrix
         to the equality matrix.
 
         Parameters
