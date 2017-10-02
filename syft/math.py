@@ -8,8 +8,8 @@ from .tensor import _ensure_tensorbase
 
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
-    'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh', 'relu',
-    'zeros', 'ones', 'rand', 'randn', 'mm'
+    'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
+    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm'
 ]
 
 
@@ -271,6 +271,38 @@ def addmv(tensor1, mat, vec, beta=1, alpha=1):
         return NotImplemented
     else:
         out = (tensor1.data * beta) + (np.matmul(mat.data, vec.data) * alpha)
+        return TensorBase(out)
+
+
+def bmm(tensor1, tensor2):
+    """Performs a batch matrix-matrix product of this tesnor
+        and tensor2. Both tensors must be 3D containing equal number
+        of matrices.
+        If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
+        Result will be a (b x n x p) Tensor.
+
+        Parameters
+        ----------
+        tensor1 : TensorBase
+            The first operand in the bmm operation
+        tensor2 : TensorBase
+            The second operand in the bmm operation
+
+        Returns
+        -------
+        TensorBase
+            Computed tensor result for bmm operation
+        """
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+    if tensor2.data.ndim != 3:
+        print("dimension of tensor2 is not 3")
+    elif tensor1.data.ndim != 3:
+        print("dimension of tensor1 is not 3")
+    elif tensor1.encrypted or tensor2.encrypted:
+        return NotImplemented
+    else:
+        out = np.matmul(tensor1.data, tensor2.data)
         return TensorBase(out)
 
 

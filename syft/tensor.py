@@ -2,6 +2,7 @@
 import numpy as np
 import syft
 import scipy
+from scipy import stats
 import pickle
 
 __all__ = [
@@ -423,6 +424,25 @@ class TensorBase(object):
             temp = np.matmul(mat.data, vec.data) * alpha
             self += temp
             return self
+
+    def bmm(self, tensor):
+        """Performs a batch matrix-matrix product of this tesnor
+        and tensor2. Both tensors must be 3D containing equal number
+        of matrices.
+        If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
+        Result will be a (b x n x p) Tensor.
+
+        Parameters
+        ----------
+        tensor : TensorBase
+            The second operand in the bmm operation
+
+        Returns
+        -------
+        TensorBase
+            Computed tensor result for bmm operation
+        """
+        return syft.bmm(self, tensor)
 
     def addbmm(self, tensor2, mat, beta=1, alpha=1):
         """Performs a batch matrix-matrix product of matrices stored in
@@ -847,6 +867,30 @@ class TensorBase(object):
             return NotImplemented
         out = np.random.uniform(low=low, high=high, size=self.shape())
         return TensorBase(out)
+
+    def cauchy_(self, median=0, sigma=1):
+        """Fills the tensor in-place with numbers drawn from the Cauchy distribution:
+
+        .. math:: P(x) = \frac{1}{\pi} \frac{\sigma}{(x - \textit{median})^2 + \sigma^2}
+
+        Parameters
+        ----------
+        self : tensor
+        median : scalar, optional
+            Also known as the location parameter. Specifies the location of the distribution's peak.
+        sigma : scalar, optional
+            Also known as the scale parameter. Specifies the half-width at half-maximum (HWHM).
+
+        Returns
+        -------
+        ret : tensor
+            `self`, filled with drawn numbers.
+
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = stats.cauchy.rvs(loc=median, scale=sigma, size=self.data.size).reshape(self.data.shape)
+        return self
 
     def fill_(self, value):
         """Fills the tensor in-place with the specified value"""
