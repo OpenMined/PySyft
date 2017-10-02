@@ -1403,8 +1403,14 @@ class TensorBase(object):
         """
         Returns the jump necessary to go from one element to the next one in the specified dimension dim.
 
-        :param dim: dimension
-        :return: the stride of the tensor in tuple
+        Parameters
+        ----------
+        dim : dimension
+            The first operand in the stride operation
+        Returns
+        -------
+        Tuple
+            Computed tuple result for stride operation
         """
         if self.encrypted:
             return NotImplemented
