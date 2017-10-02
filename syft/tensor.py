@@ -844,7 +844,24 @@ class TensorBase(object):
         return TensorBase(out)
 
     def cauchy_(self, median=0, sigma=1):
-        """Fills the tensor in-place with numbers drawn from the Cauchy distribution"""
+        """Fills the tensor in-place with numbers drawn from the Cauchy distribution:
+
+        .. math:: P(x) = \frac{1}{\pi} \frac{\sigma}{(x - \textit{median})^2 + \sigma^2}
+
+        Parameters
+        ----------
+        self : tensor
+        median : scalar, optional
+            Also known as the location parameter. Specifies the location of the distribution's peak.
+        sigma : scalar, optional
+            Also known as the scale parameter. Specifies the half-width at half-maximum (HWHM).
+
+        Returns
+        -------
+        ret : tensor
+            `self`, filled with drawn numbers.
+
+        """
         if self.encrypted:
             return NotImplemented
         self.data = stats.cauchy.rvs(loc=median, scale=sigma, size=self.data.size).reshape(self.data.shape)
