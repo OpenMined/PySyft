@@ -257,8 +257,24 @@ def addmv(tensor1, mat, vec, beta=1, alpha=1):
 
 
 def bmm(tensor1, tensor2):
-    """Performs a batch matrix-matrix product stored in batch1 and batch2.
-    They must be 3D Tensors each containing the same number of matrices."""
+    """Performs a batch matrix-matrix product of this tesnor
+        and tensor2. Both tensors must be 3D containing equal number
+        of matrices.
+        If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
+        Result will be a (b x n x p) Tensor.
+
+        Parameters
+        ----------
+        tensor1 : TensorBase
+            The first operand in the bmm operation
+        tensor2 : TensorBase
+            The second operand in the bmm operation
+
+        Returns
+        -------
+        TensorBase
+            Computed tensor result for bmm operation
+        """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     if tensor2.data.ndim != 3:
