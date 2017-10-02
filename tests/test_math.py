@@ -164,11 +164,12 @@ class addmv(unittest.TestCase):
         out = syft.addmv(t1, mat, vec, beta=2, alpha=2)
         self.assertTrue(np.array_equal(out.data, [68, 130]))
 
+
 class bmmTests(unittest.TestCase):
     def test_bmm_for_correct_size_input(self):
-        t1 = TensorBase(np.random.rand(4,3,2))
-        t2 = TensorBase(np.random.rand(4,2,1))
-        out = syf.bmm(t1, t2)
+        t1 = TensorBase(np.random.rand(4, 3, 2))
+        t2 = TensorBase(np.random.rand(4, 2, 1))
+        out = syft.bmm(t1, t2)
         print(out.shape())
 
 
