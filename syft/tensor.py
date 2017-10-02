@@ -1397,12 +1397,6 @@ class TensorBase(object):
 
         return syft.mm(self, tensor2)
 
-    def index(self, m):
-        """Selects elements from this Tensor using a binary mask or along a given dimension."""
-        if self.encrypted:
-            return NotImplemented
-        return TensorBase(self.data[m])
-
 
 def mv(tensormat, tensorvector):
     """ matrix and vector multiplication """
