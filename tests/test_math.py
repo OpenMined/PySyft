@@ -243,3 +243,19 @@ class mmtest(unittest.TestCase):
         out = syft.mm(t1, t2)
         self.assertTrue(np.alltrue(
             out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
+
+
+class fmodTest(unittest.TestCase):
+    def test_fmod_number(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        self.assertTrue(np.array_equal(syft.math.fmod(t1, 2).data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        self.assertTrue(np.array_equal(syft.math.fmod(t2, 2.).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
+
+    def test_fmod_tensor(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        divisor = np.array([2] * 6)
+        self.assertTrue(np.array_equal(syft.math.fmod(t1, divisor).data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        divisor = np.array([2.] * 6)
+        self.assertTrue(np.array_equal(syft.math.fmod(t2, divisor).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
