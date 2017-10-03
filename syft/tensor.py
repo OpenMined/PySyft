@@ -862,6 +862,16 @@ class TensorBase(object):
         out = np.random.uniform(low=low, high=high, size=self.shape())
         return TensorBase(out)
 
+    def geometric_(self, p=0.5):
+        """
+        Fills the given tensor in-place with samples from a geometric distribution
+        with given probability of success of an individual trial
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = np.random.geometric(p, size=self.shape())
+        return self
+
     def cauchy_(self, median=0, sigma=1):
         """Fills the tensor in-place with numbers drawn from the Cauchy distribution:
 
