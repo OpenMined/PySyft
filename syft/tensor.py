@@ -1432,7 +1432,6 @@ class TensorBase(object):
         return self
 
 
-
 def mv(tensormat, tensorvector):
     """matrix and vector multiplication"""
     if tensormat.encrypted or tensorvector.encrypted:
