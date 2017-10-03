@@ -1399,8 +1399,8 @@ class TensorBase(object):
 
     def half(self):
         """
-        casts the tensor to half-precision float type
-        
+        casts the tensor to half-precision float type.
+
         Parameters
         ----------
 
