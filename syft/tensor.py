@@ -132,7 +132,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         else:
-            if (type(pubkey) == syft.he.paillier.keys.PublicKey):
+            if type(pubkey) == syft.he.paillier.keys.PublicKey:
                 out = syft.he.paillier.PaillierTensor(pubkey, self.data)
                 return out
             else:
@@ -253,7 +253,7 @@ class TensorBase(object):
     def __eq__(self, tensor):
         """
         Checks if two tensors are equal
-        
+
         Parameters
         ----------
         tensor: TensorBase
@@ -271,7 +271,7 @@ class TensorBase(object):
     def dot(self, tensor):
         """
         Returns inner product of two tensors
-        
+
         Parameters
         ----------
         tensor: TensorBase
@@ -293,7 +293,7 @@ class TensorBase(object):
     def __matmul__(self, tensor):
         """
         Performs matrix multiplication between two tensors
-        
+
         Parameters
         ----------
         tensor: TensorBase
@@ -312,7 +312,7 @@ class TensorBase(object):
     def __mul__(self, tensor):
         """
         Performs element-wise multiplication between two tensors
-        
+
         Parameters
         ----------
         tensor: TensorBase
@@ -337,7 +337,7 @@ class TensorBase(object):
     def __imul__(self, tensor):
         """
         Performs in-place element-wise multiplication between two tensors
-        
+
         Parameters
         ----------
         tensor: TensorBase
@@ -362,7 +362,7 @@ class TensorBase(object):
     def __truediv__(self, tensor):
         """
         Performs element-wise division between two tensors
-        
+
         Parameters
         ----------
         tensor: TensorBase
@@ -385,8 +385,8 @@ class TensorBase(object):
     def __itruediv__(self, tensor):
         """
         Performs in-place element-wise subtraction between two tensors
-        
-        
+
+
         Parameters
         ----------
         tensor: TensorBase
@@ -1098,7 +1098,6 @@ class TensorBase(object):
             raise ValueError("dims cannot be none")
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
-
 
     def diag(self, tensor):
         """
