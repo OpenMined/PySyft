@@ -1220,7 +1220,7 @@ class TensorBase(object):
 
         :param mask: The binary mask (non-zero is treated as true)
         :param source: The tensor to copy from
-        :eturn:
+        :return:
         """
         mask = _ensure_tensorbase(mask)
         source = _ensure_tensorbase(source)
