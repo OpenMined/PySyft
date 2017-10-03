@@ -862,9 +862,20 @@ class TensorBase(object):
         out = np.random.uniform(low=low, high=high, size=self.shape())
         return TensorBase(out)
 
-    def geometric_(self, p=0.5):
+    def geometric_(self, p):
         """Fills the given tensor in-place with samples from a geometric distribution
-        with given probability of success of an individual trial"""
+        with given probability of success of an individual trial.
+
+        Parameters
+        ----------
+        p: float
+            Probability of success of an individual trial
+
+        Returns
+        -------
+        TensorBase
+            Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.random.geometric(p, size=self.shape())
