@@ -393,3 +393,24 @@ def mm(tensor1, tensor2):
         return NotImplemented
     else:
         return TensorBase(np.array(np.matmul(tensor1.data, tensor2.data)))
+
+
+def fmod(tensor, divisor):
+    """
+    Returns the element-wise remainder of division as a Tensor.
+    The divisor and dividend may contain integer and floating point numbers.
+    The remainder has the same sign as the divisor.
+    When ``divisor`` is a Tensor, the shapes of ``tensor`` and ``divisor`` must be broadcastable.
+    :param tensor: The dividend, a Tensor.
+    :param divisor:  The divisor, either a number or a Tensor.
+    :return: result Tensor.
+    """
+    if tensor.encrypted:
+        return NotImplemented
+
+    if isinstance(divisor, TensorBase):
+        if divisor.encrypted:
+            return NotImplemented
+        divisor = divisor.data
+
+    return TensorBase(np.fmod(tensor.data, divisor))
