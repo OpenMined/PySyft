@@ -1434,7 +1434,7 @@ class TensorBase(object):
 
 
 def mv(tensormat, tensorvector):
-    """ matrix and vector multiplication"""
+    """matrix and vector multiplication"""
     if tensormat.encrypted or tensorvector.encrypted:
         raise NotImplemented
     elif not len(tensorvector.data.shape) == 1:
