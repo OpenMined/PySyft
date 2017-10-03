@@ -2,6 +2,7 @@ from syft.tensor import TensorBase
 
 import numpy as np
 
+
 class LinearClassifier(object):
     """This class is a basic linear classifier with functionality to
     encrypt/decrypt weights according to any of the homomorphic encryption
@@ -35,7 +36,7 @@ class LinearClassifier(object):
 
     def decrypt(self):
         """iterates through each weight and decrypts it
-        
+
         TODO: check that weights are actually encrypted
         """
         self.encrypted = False
@@ -59,16 +60,15 @@ class LinearClassifier(object):
         """Updates weights based on input and target prediction. Note, updating
         weights increases the noise in the encrypted weights and will
         eventually require the weights to be re-encrypted.
-        
+
         TODO: instead of storing weights, store aggregated weight updates (and
         optionally use them in "forward").
         """
-        input_batches = [input[i:i+batchsize] for i in range(0, len(input), batchsize)]
-        target_batches = [target[i:i+batchsize] for i in range(0, len(target), batchsize)]
+        input_batches = [input[i:i + batchsize] for i in range(0, len(input), batchsize)]
+        target_batches = [target[i:i + batchsize] for i in range(0, len(target), batchsize)]
         for epoch_count, minibatch in enumerate(zip(input_batches, target_batches)):
             self.batch_update(minibatch, alpha)
-            if self.encrypted and (epoch_count > encrypt_interval)\
-            and (epoch_count % encrypt_interval == 0):
+            if self.encrypted and (epoch_count > encrypt_interval) and (epoch_count % encrypt_interval == 0):
                 self.weights = self.capsule.bootstrap(self.weights, self.pubkey.id)
 
     def batch_update(self, minibatch, alpha):
@@ -80,7 +80,7 @@ class LinearClassifier(object):
             weight_update = weight_update.encrypt(self.pubkey)
         for (x, y) in zip(*minibatch):
             weight_update += self.generate_gradient(x, y)
-        self.weights -= weight_update * (alpha/len(minibatch[0]))
+        self.weights -= weight_update * (alpha / len(minibatch[0]))
 
     def evaluate(self, inputs, targets):
         """accepts a list of inputs and a list of targets - returns the mean
