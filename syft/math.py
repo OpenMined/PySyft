@@ -1,5 +1,15 @@
+# coding=utf-8
 """
     Module math implements mathematical primitives for tensor objects
+
+    Note:The Documentation in this file follows the NumPy Doc. Style;
+         Hence, it is mandatory that future docs added here
+         strictly follow the same, to maintain readability and consistency
+         of the codebase.
+
+    NumPy Documentation Style-
+        http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html
+
 """
 import numpy as np
 
@@ -14,32 +24,91 @@ __all__ = [
 
 
 def zeros(dim):
-    """Returns a tensor of zeros"""
+    """
+    Returns a tensor of zeros
+
+    Parameters
+    ----------
+    dim:
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     return TensorBase(np.zeros(dim))
 
 
 def ones(dim):
-    """Returns a tensor of ones"""
+    """
+    Returns a tensor of ones
+
+    Parameters
+    ----------
+    dim:
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     return TensorBase(np.ones(dim))
 
 
 def rand(dim):
-    """Returns a tensor with numbers initialized according to a uniform
-    distribution from 0 to 1"""
+    """
+    Returns a tensor with numbers initialized according to a uniform
+    distribution from 0 to 1
+
+    Parameters
+    ----------
+    dim:
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     return TensorBase(np.random.rand(dim))
 
 
 def randn(dim):
-    """Returns a tensor with initial numbers sampled from a standard normal
-    distribution"""
+    """
+    Returns a tensor with initial numbers sampled from a standard normal
+    distribution
+
+    Parameters
+    ----------
+    dim:
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     return TensorBase(np.random.randn(dim))
 
 
 def dot(tensor1, tensor2):
-    """Returns inner product of two tensors.
+    """
+    Returns inner product of two tensors.
 
     N-dimensional tensors are flattened into 1-D vectors, therefore this
     method should only be used on vectors.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+        Tensor to be multiplied
+
+    tensor2: TensorBase
+        Tensor to be multiplied with
+
+    Returns
+    -------
+    ndarray:
+        Output N-Dimensional Array
+
     """
 
     tensor1 = _ensure_tensorbase(tensor1)
@@ -51,7 +120,8 @@ def dot(tensor1, tensor2):
 
 
 def matmul(tensor1, tensor2):
-    """Performs matrix multiplication between two tensors.
+    """
+    Performs matrix multiplication between two tensors.
 
     Exact behavior depends on the input tensors' dimensionality like so:
     * If both tensors are 1-dimensional, their dot product is returned.
@@ -68,6 +138,19 @@ def matmul(tensor1, tensor2):
     * If tensor2 is 1-dimensional, it is converted to a matrix by prepending
     a 1 to its dimensions. This prepended dimension is removed after the
     matrix multiplication.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+        Tensor to be multiplied
+
+    tensor2: TensorBase
+        Tensor to be multiplied with
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
     """
 
     tensor1 = _ensure_tensorbase(tensor1)
@@ -91,8 +174,15 @@ def ceil(tensor):
 
     Behavior is independent of a tensor's shape.
 
-    :input: TensorBase tensor\n
-    :return: TensorBase tensor
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
     """
 
     tensor = _ensure_tensorbase(tensor)
@@ -108,8 +198,16 @@ def floor(tensor):
     for each floating point number x : a <= x
 
     Behavior is independent of a tensor's shape
-    :input: TensorBase tensor\n
-    :return: TensorBase tensor of floored elements .
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor; floored values
     """
 
     tensor = _ensure_tensorbase(tensor)
@@ -122,11 +220,18 @@ def cumsum(tensor, dim=0):
     """
     Returns the cumulative sum of the elements along a given dimension
 
-    **Parameters**:
-    * TensorBase tensor
-    * Dimension on which the operation is done
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
 
-    **returns**  A new 1D Tensor holding the result
+    dim:
+        Dimension on which the operation is done
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor; 1D Tensor
     """
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
@@ -138,11 +243,18 @@ def cumprod(tensor, dim=0):
     """
     Returns the cumulative product of the elements along a given axis
 
-    **Parameters**:
-    * TensorBase tensor
-    * Dimension on which the operation is done
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
 
-    **returns** A new 1D Tensor holding the result
+    dim:
+        Dimension on which the operation is done
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor; 1D Tensor
     """
 
     tensor = _ensure_tensorbase(tensor)
@@ -152,8 +264,19 @@ def cumprod(tensor, dim=0):
 
 
 def sigmoid(tensor):
-    """ Returns a new tensor holding element wise values of Sigmoid function
-        Sigmoid(x) = 1 / 1+exp(-x)
+    """
+    Returns a new tensor holding element wise values of Sigmoid function
+    Sigmoid(x) = 1 / 1+exp(-x)
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor;
     """
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
@@ -162,8 +285,19 @@ def sigmoid(tensor):
 
 
 def tanh(tensor):
-    """ Returns a new tensor holding element wise values of tanh function
-        tanh(x) = (e^(x) - e^(-x))/(e^(x) + e^(-x))
+    """
+    Returns a new tensor holding element wise values of tanh function
+    tanh(x) = (e^(x) - e^(-x))/(e^(x) + e^(-x))
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor;
     """
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
@@ -172,7 +306,19 @@ def tanh(tensor):
 
 
 def relu(tensor):
-    """ Return relu function
+    """
+    Return relu function
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor;
+
     """
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
