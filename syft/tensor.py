@@ -70,12 +70,11 @@ def equal(tensor1, tensor2):
 
     Returns
     -------
-    bool
+    bool:
 
-    bool
+    bool:
 
     """
-
     tensor1 = _ensure_tensorbase(tensor1)
     tensor2 = _ensure_tensorbase(tensor2)
 
@@ -93,7 +92,6 @@ class TensorBase(object):
     addition, subtraction, multiplication and division, and also dot and
     matrix products.
     """
-
     _mul_depth = 0
     _add_depth = 0
 
@@ -152,7 +150,6 @@ class TensorBase(object):
         -------
         Decrypted Caller
         """
-
         if self.encrypted:
             return seckey.decrypt(self)
         else:
@@ -225,7 +222,6 @@ class TensorBase(object):
         TensorBase:
             Output Tensor
         """
-
         if self.encrypted:
             return NotImplemented
 
@@ -246,7 +242,6 @@ class TensorBase(object):
         TensorBase:
             Caller with values in-place
         """
-
         if self.encrypted:
             return NotImplemented
 
@@ -267,7 +262,6 @@ class TensorBase(object):
         -------
         bool:
         """
-        
         if self.encrypted:
             return NotImplemented
 
@@ -328,7 +322,6 @@ class TensorBase(object):
         TensorBase
             Output Tensor
         """
-
         if self.encrypted:
             return NotImplemented
 
@@ -455,7 +448,6 @@ class TensorBase(object):
         -------
         Tensor Data
         """
-
         if self.encrypted:
             return NotImplemented
         self.data = np.absolute(self.data)
@@ -472,7 +464,6 @@ class TensorBase(object):
         -------
         Shape of Tensor
         """
-
         if self.encrypted:
             return NotImplemented
 
@@ -490,7 +481,6 @@ class TensorBase(object):
         TensorBase:
             Output Tensor
         """
-
         if self.encrypted:
             return NotImplemented
         return np.sqrt(self.data)
@@ -498,7 +488,6 @@ class TensorBase(object):
     def sqrt_(self):
         """
         Peforms square-root of the tensor, in-place
-
 
         Parameters
         ----------
@@ -535,7 +524,7 @@ class TensorBase(object):
         Returns
         -------
         TensorBase:
-            Output tensor
+            Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -555,7 +544,7 @@ class TensorBase(object):
         Returns
         -------
         TensorBase:
-            Output tensor
+            Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -652,7 +641,6 @@ class TensorBase(object):
         -------
         TensorBase:
             Output Tensor
-
         """
         return syft.addmm(self, tensor2, mat, beta, alpha)
 
@@ -729,7 +717,7 @@ class TensorBase(object):
         Returns
         -------
         TensorBase:
-            Output tensor
+            Output Tensor
         """
         return syft.addcmul(self, tensor2, mat, value)
 
@@ -787,7 +775,7 @@ class TensorBase(object):
         Returns
         -------
         TensorBase:
-            Output tensor
+            Output Tensor
         """
         return syft.addcdiv(self, tensor2, mat, value)
 
@@ -848,8 +836,7 @@ class TensorBase(object):
         Returns
         -------
         TensorBase:
-            Output tensor
-
+            Output Tensor
         """
         return syft.addmv(self, mat, vec, beta, alpha)
 
@@ -879,7 +866,6 @@ class TensorBase(object):
         -------
         TensorBase:
             Caller with in-placed values
-
         """
         _ensure_tensorbase(vec)
         _ensure_tensorbase(mat)
@@ -923,8 +909,6 @@ class TensorBase(object):
         -------
         TensorBase:
             Output Tensor
-
-
         """
         return syft.addbmm(self, tensor2, mat, beta, alpha)
 
@@ -956,7 +940,6 @@ class TensorBase(object):
         -------
         TensorBase:
             Caller with values in-place
-
         """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
@@ -1000,7 +983,6 @@ class TensorBase(object):
         -------
         TensorBase:
             Output Tensor
-
         """
         return syft.baddbmm(self, tensor2, mat, beta, alpha)
 
@@ -1029,7 +1011,6 @@ class TensorBase(object):
         Returns
         -------
         Caller with values in-place
-
         """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
@@ -1060,8 +1041,7 @@ class TensorBase(object):
         Returns
         -------
         TensorBase:
-            Output tensor
-
+            Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1084,7 +1064,6 @@ class TensorBase(object):
         -------
         TensorBase:
             Output Tensor
-
         """
         if self.encrypted:
             return NotImplemented
@@ -1107,7 +1086,6 @@ class TensorBase(object):
         Returns
         -------
         Numpy Array
-
         """
         return np.diag(tensor)
 
@@ -1125,8 +1103,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output tensor
-
+        Output Tensor
         """
         return syft.transpose(self.data, dim0, dim1)
 
@@ -1144,7 +1121,6 @@ class TensorBase(object):
 
         Returns
         -------
-
         """
         num_dims = len(self.data.shape)
         axes = list(range(num_dims))
@@ -1182,7 +1158,6 @@ class TensorBase(object):
 
         Returns
         -------
-
         """
         self.transpose_(0, 1)
 
@@ -1215,7 +1190,6 @@ class TensorBase(object):
 
         Returns
         -------
-
         """
         num_dims = len(self.data.shape)
 
@@ -1377,7 +1351,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output tensor
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1408,8 +1382,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output tensor
-
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1424,7 +1397,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns output tensor
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1440,7 +1413,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns Caller with values in-place
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1455,7 +1428,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns Output tensor
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1471,7 +1444,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns Caller with values in-place
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1488,7 +1461,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns Output tensor
+        Returns Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1504,7 +1477,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns Caller with values in-place
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1524,7 +1497,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output of Caller with values in-place
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1543,7 +1516,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns clamped output tensor
+        Output Tensor; clamped
         """
         if self.encrypted:
             return NotImplemented
@@ -1561,7 +1534,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output of object called with values in-place
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1579,7 +1552,7 @@ class TensorBase(object):
 
         Returns
         -------
-        cloone of input Tensor
+        Output Tensor; clone of input Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1657,7 +1630,7 @@ class TensorBase(object):
 
         Returns
         -------
-        calling object with values in-place
+        Caller with values in-place
         """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
@@ -1709,7 +1682,7 @@ class TensorBase(object):
 
         Returns
         -------
-        calling object with values in-place
+        Caller with values in-place
         """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
@@ -1760,7 +1733,7 @@ class TensorBase(object):
 
         Returns
         -------
-        calling object with values in-place
+        Caller with values in-place
         """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
@@ -1787,7 +1760,6 @@ class TensorBase(object):
         Returns
         -------
         Output Tensor
-
         """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
@@ -1812,7 +1784,7 @@ class TensorBase(object):
 
         Returns
         -------
-        calling object with values in-place
+        Caller with values in-place
         """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
@@ -1839,7 +1811,6 @@ class TensorBase(object):
         Returns
         -------
         Output Tensor
-
         """
         if self.encrypted:
             return NotImplemented
@@ -1864,7 +1835,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Called object with Values in-place
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1885,8 +1856,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Calling object with values in-place
-
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1907,7 +1877,6 @@ class TensorBase(object):
         Returns
         -------
         Output Tensor
-
         """
         if self.encrypted:
             return NotImplemented
@@ -1925,7 +1894,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Returns object with values in-place
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -1950,7 +1919,8 @@ class TensorBase(object):
 
     def topk(self, k, largest=True):
         """
-        Returns a new tensor with the sorted k largest (or smallest) values
+        Returns a new tensor with the sorted k largest (or smallest)
+        values
 
         Parameters
         ----------
@@ -1960,8 +1930,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output Tensor with sorted k largest Values
-
+        Output Tensor; sorted k largest Values
         """
         if self.encrypted:
             return NotImplemented
@@ -1991,7 +1960,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output tensor with sum along diagonals
+        Output Tensor ; sum along diagonals
         """
         if self.encrypted:
             return NotImplemented
@@ -2031,7 +2000,7 @@ class TensorBase(object):
 
         Returns
         -------
-        View of another tensor
+        Output Tensor-View
         """
         if self.encrypted:
             return NotImplemented
@@ -2045,8 +2014,6 @@ class TensorBase(object):
         Parameters
         ----------
         size:
-
-
         """
         input_size = np.prod(size)
         extension = input_size - self.data.size
@@ -2077,8 +2044,6 @@ class TensorBase(object):
 
         Returns
         -------
-
-
         """
         size = tensor.data.shape
         self.resize_(size)
@@ -2110,7 +2075,7 @@ class TensorBase(object):
 
         Returns
         -------
-        calling Tensor
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -2149,7 +2114,6 @@ class TensorBase(object):
         Returns
         -------
         Output Tensor
-
         """
         if self.encrypted:
             return NotImplemented
@@ -2165,11 +2129,11 @@ class TensorBase(object):
 
         Parameters
         ----------
-        exponent
+        exponent:
 
         Returns
         -------
-        Calling object
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -2182,7 +2146,7 @@ class TensorBase(object):
 
         Parameters
         ----------
-        axis:
+        axis: ,optional
 
         Returns
         -------
@@ -2207,7 +2171,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Calling Object
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -2240,7 +2204,6 @@ class TensorBase(object):
         Returns
         -------
         Size of the Tensor
-
         """
         if self.encrypted:
             return NotImplemented
@@ -2313,7 +2276,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output tensor
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -2895,7 +2858,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output tensor
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -2938,7 +2901,7 @@ class TensorBase(object):
 
         Returns
         -------
-        n x p Output tensor
+        n x p Output Tensor
         """
 
         return syft.mm(self, tensor)
@@ -2959,7 +2922,7 @@ def mv(tensormat, tensorvector):
 
     Returns
     -------
-    Output tensor
+    Output Tensor
     """
     if tensormat.encrypted or tensorvector.encrypted:
         raise NotImplemented
@@ -2989,7 +2952,7 @@ def masked_select(tensor, mask):
 
     Returns
     -------
-    1D output tensor
+    Output Tensor; 1D
     """
     mask = _ensure_tensorbase(mask)
     tensor = _ensure_tensorbase(tensor)
