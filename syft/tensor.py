@@ -1220,7 +1220,7 @@ class TensorBase(object):
 
         :param mask: The binary mask (non-zero is treated as true)
         :param source: The tensor to copy from
-        :return:
+        :eturn:
         """
         mask = _ensure_tensorbase(mask)
         source = _ensure_tensorbase(source)
@@ -1244,6 +1244,54 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = np.equal(self.data, _ensure_tensorbase(t).data)
+        return self
+
+    def renorm(self, p, dim, maxnorm, out=None):
+        """ Returns a new tensor normalized along dimension dim if the p-norm of the sub-tensors 
+            along dim is lower than maxnorm
+        """
+        if self.encrypted:
+            return NotImplemented
+        elif self.data.ndim < 2:
+            raise ValueError("tensor must have at least 2 dims")
+        elif p < 1.0:
+            raise ValueError("p must be a float greater than or equal to 1")
+        else:
+            # solve for c in maxnorm = sqrt(sum((c*x)**p))
+            dim_2_sum = tuple(filter(lambda x : x != dim, range(self.data.ndim)))
+            norm = np.power(np.power(np.absolute(self.data), p).sum(dim_2_sum), 1.0 / p)
+            c = maxnorm / norm
+            # only renorm when norm > maxnorm
+            scalar =  np.where(norm > maxnorm, c, 1)
+            # broadcast along appropriate dim
+            dim_array = np.ones((1, self.data.ndim), int).ravel()
+            dim_array[dim] = -1
+            scalar_reshaped = scalar.reshape(dim_array)
+            out = self.data * scalar_reshaped
+        return TensorBase(out)
+
+    def renorm_(self, p, dim, maxnorm):
+        """ Returns a tensor in-place, normalized along dimension dim if the p-norm of the sub-tensors 
+            along dim is lower than maxnorm
+        """
+        if self.encrypted:
+            return NotImplemented
+        elif self.data.ndim < 2:
+            raise ValueError("tensor must have at least 2 dims")
+        elif p < 1.0:
+            raise ValueError("p must be a float greater than or equal to 1")
+        else:
+            # solve for c in maxnorm = sqrt(sum((c*x)**p))
+            dim_2_sum = tuple(filter(lambda x : x != dim, range(self.data.ndim)))
+            norm = np.power(np.power(np.absolute(self.data), p).sum(dim_2_sum), 1.0 / p)
+            c = maxnorm / norm
+            # only renorm when norm > maxnorm
+            scalar =  np.where(norm > maxnorm, c, 1)
+            # broadcast along appropriate dim
+            dim_array = np.ones((1, self.data.ndim), int).ravel()
+            dim_array[dim] = -1
+            scalar_reshaped = scalar.reshape(dim_array)
+            self.data = self.data * scalar_reshaped
         return self
 
 
