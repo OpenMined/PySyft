@@ -1397,37 +1397,23 @@ class TensorBase(object):
 
         return syft.mm(self, tensor2)
 
-    def fmod(self, divisor):
-        """
-        Computes the element-wise remainder of division and returns a new Tensor.
-        :param divisor: The divisor. This may be either a number or a tensor of the same shape as the dividend.
-        :return: a new Tensor
-        """
-        if self.encrypted:
-            return NotImplemented
-
-        if isinstance(divisor, TensorBase):
-            divisor = divisor.data
-            if divisor.shape()[0] != self.shape()[0]:
-                raise ValueError("Divisor shape does not match dividend shape")
-
-        return TensorBase(np.fmod(self.data, divisor))
-
     def fmod_(self, divisor):
         """
         Computes the element-wise remainder of division inline.
-        :param divisor: The divisor. This may be either a number or a tensor of the same shape as the dividend.
-        :return: self
+        The divisor and dividend may contain integer and floating point numbers.
+        The remainder has the same sign as the divisor.
+        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
+        :param divisor:  The divisor, either a number or a Tensor.
+        :return: self.
         """
         if self.encrypted:
             return NotImplemented
 
         if isinstance(divisor, TensorBase):
-            divisor = divisor.data
-            if divisor.shape()[0] != self.shape()[0]:
-                raise ValueError("Divisor shape does not match dividend shape")
+            if divisor.encrypted:
+                return NotImplemented
 
-        self.data = np.fmod(self.data, divisor)
+        self.data = syft.math.fmod(self, divisor)
 
         return self
 
