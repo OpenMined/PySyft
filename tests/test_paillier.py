@@ -187,3 +187,17 @@ class DivTests(unittest.TestCase):
 
         x /= 2
         self.assertTrue(s.decrypt(x) == np.array([1, 2, 3, 4, 5.]))
+
+
+class SerializeTest(unittest.TestCase):
+
+    def test_serialize(self):
+        pubkey, seckey = KeyPair().generate()
+
+        pk_serialized = pubkey.serialize()
+        sk_serialized = seckey.serialize()
+
+        pubkey2, seckey2 = KeyPair().deserialize(pk_serialized,
+                                                 sk_serialized)
+        self.assertTrue(pubkey.pk == pubkey2.pk and
+                        seckey.sk == seckey2.sk)
