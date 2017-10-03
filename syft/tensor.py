@@ -2257,7 +2257,7 @@ class TensorBase(object):
 
         Returns
         -------
-        compund product of the Input
+        compound product of the Input
         """
         if self.encrypted:
             return NotImplemented
@@ -2273,7 +2273,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Called Object
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -2293,7 +2293,6 @@ class TensorBase(object):
         Returns
         -------
         Tuple of Tensors
-
         """
         if self.encrypted:
             return NotImplemented
@@ -2315,7 +2314,6 @@ class TensorBase(object):
         Returns
         -------
         Output tensor
-
         """
         if self.encrypted:
             return NotImplemented
@@ -2334,7 +2332,6 @@ class TensorBase(object):
         Returns
         -------
         Output Tensor
-
         """
         if self.encrypted:
             return NotImplemented
@@ -2351,13 +2348,13 @@ class TensorBase(object):
 
         Parameters
         ----------
-        dim:
+        dim: ,optional
 
-        keepdim:
+        keepdim: ,optional
 
         Returns
         -------
-        Mean of the Tensor Elements
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -2374,7 +2371,6 @@ class TensorBase(object):
         Returns
         -------
         Negative of elements of tensor
-
         """
         if self.encrypted:
             return NotImplemented
@@ -2390,9 +2386,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Calling object
-
-
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -2477,7 +2471,7 @@ class TensorBase(object):
 
         Parameters
         ----------
-        tensor:
+        tensor: TensorBase
 
         Returns
         -------
@@ -2498,14 +2492,14 @@ class TensorBase(object):
 
         Parameters
         ----------
-        axis:
+        axis: ,optional
             To get median of whole tensor, specify axis=None
 
-        keepdims:
+        keepdims: ,optional
 
         Returns
         -------
-        output median
+        Outut Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -2521,12 +2515,12 @@ class TensorBase(object):
 
         Parameters
         ----------
-        axis :
+        axis : ,optional
             To get mode of whole tensor, specify axis=None
 
         Returns
         -------
-        output mode
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -2537,18 +2531,12 @@ class TensorBase(object):
         """
         Returns inverse of a square matrix.
 
-        If axis=None it will return minimum value in tensor
-
         Parameters
         ----------
-        axis:
-            axis=None will return minimum value in tensor
-
-        keepdims:
 
         Returns
         -------
-        Minimum valuein tensor
+        Output Tensor; with inverse values
         """
 
         if self.encrypted:
@@ -2564,14 +2552,14 @@ class TensorBase(object):
 
         Parameters
         ----------
-        axis:
+        axis: ,optional
             axis=None will return minimum value
 
-        keepdims:
+        keepdims: ,optional
 
         Returns
         -------
-        minimum value in tensor
+        Output Tensor; with minimum value
         """
 
         if self.encrypted:
@@ -2585,16 +2573,16 @@ class TensorBase(object):
 
         Parameters
         ----------
-        bins:
+        bins: ,optional
             The bin range
-        min:
+        min: ,optional
             Minimum of the Hist.
-        max:
+        max: ,optional
             Maximum of the Hist.
 
         Returns
         -------
-        Output Historgram
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -2621,7 +2609,7 @@ class TensorBase(object):
 
         Returns
         -------
-        The calling object
+        Caller with values in-place
         """
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
@@ -2697,7 +2685,7 @@ class TensorBase(object):
 
         Returns
         -------
-        tensor of gathered values
+        Output Tensor
         """
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
@@ -2761,7 +2749,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Resultant tensor
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -2786,7 +2774,7 @@ class TensorBase(object):
 
         Returns
         -------
-        The calling object
+        Caller with values in-place
 
         """
         if self.encrypted:
@@ -2838,6 +2826,7 @@ class TensorBase(object):
         ----------
         mask: TensorBase
             The binary mask (non-zero is treated as true)
+
         source: TensorBase
             The tensor to copy from
 
@@ -2901,7 +2890,7 @@ class TensorBase(object):
 
         Parameters
         ----------
-        t: Tensor
+        t: TensorBase
             Input tensor
 
         Returns
@@ -2928,7 +2917,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Caller
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
