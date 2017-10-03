@@ -108,7 +108,6 @@ def dot(tensor1, tensor2):
     -------
     ndarray:
         Output N-Dimensional Array
-
     """
 
     tensor1 = _ensure_tensorbase(tensor1)
@@ -209,7 +208,6 @@ def floor(tensor):
     TensorBase:
         Output Tensor; floored values
     """
-
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
@@ -256,7 +254,6 @@ def cumprod(tensor, dim=0):
     TensorBase:
         Output Tensor; 1D Tensor
     """
-
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
@@ -318,7 +315,6 @@ def relu(tensor):
     -------
     TensorBase:
         Output Tensor;
-
     """
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
@@ -331,42 +327,42 @@ def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
     Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the
     result as a Tensor
 
-        Tensor1.Tensor2 is performed as Matrix product of two array
-        The behavior depends on the arguments in the following way.
-        *If both tensors are 1-dimensional, their dot product is returned.
-        *If both arguments are 2-D they are multiplied like conventional
-        matrices.
+    Tensor1.Tensor2 is performed as Matrix product of two array
+    The behavior depends on the arguments in the following way.
+    *If both tensors are 1-dimensional, their dot product is returned.
+    *If both arguments are 2-D they are multiplied like conventional
+    matrices.
 
-        *If either argument is N-D, N > 2, it is treated as a stack of
-        matrices residing in the last two indexes and broadcast
-        accordingly.
+    *If either argument is N-D, N > 2, it is treated as a stack of
+    matrices residing in the last two indexes and broadcast
+    accordingly.
 
-        *If the first argument is 1-D, it is promoted to a matrix by
-        prepending a 1 to its dimensions. After matrix multiplication
-        the prepended 1 is removed.
+    *If the first argument is 1-D, it is promoted to a matrix by
+    prepending a 1 to its dimensions. After matrix multiplication
+    the prepended 1 is removed.
 
-        *If the second argument is 1-D, it is promoted to a matrix by
-        appending a 1 to its dimensions. After matrix multiplication
-        the appended 1 is removed.
+    *If the second argument is 1-D, it is promoted to a matrix by
+    appending a 1 to its dimensions. After matrix multiplication
+    the appended 1 is removed.
 
-        Parameters
-        ----------
-        tensor1: TensorBase
+    Parameters
+    ----------
+    tensor1: TensorBase
 
-        tensor2: TensorBase
+    tensor2: TensorBase
 
-        mat:
-            Matrix to the operation
+    mat:
+        Matrix to the operation
 
-        beta: ,optional
+    beta: ,optional
 
-        alpha: ,optional
+    alpha: ,optional
 
-        Returns
-        -------
-        TensorBase:
-            Output Tensor
-        """
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     _ensure_tensorbase(mat)
@@ -374,7 +370,7 @@ def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
         return NotImplemented
     else:
         delta = (np.matmul(tensor1.data, tensor2.data))
-        return TensorBase(np.array(((mat.data) * beta) + (delta * alpha)))
+        return TensorBase(np.array((mat.data * beta) + (delta * alpha)))
 
 
 def addcmul(tensor1, tensor2, mat, value=1):
@@ -404,7 +400,7 @@ def addcmul(tensor1, tensor2, mat, value=1):
     if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
         return NotImplemented
     else:
-        out = (mat.data) + ((tensor1.data * tensor2.data) * value)
+        out = mat.data + ((tensor1.data * tensor2.data) * value)
         return TensorBase(out)
 
 
@@ -435,7 +431,7 @@ def addcdiv(tensor1, tensor2, mat, value=1):
     if tensor1.encrypted or tensor2.encrypted or mat.encrypted:
         return NotImplemented
     else:
-        out = (mat.data) + ((tensor1.data / tensor2.data) * value)
+        out = mat.data + ((tensor1.data / tensor2.data) * value)
         return TensorBase(out)
 
 
@@ -499,8 +495,8 @@ def bmm(tensor1, tensor2):
 
     Returns
     -------
-    TensorBase
-            Output Tensor; with bmm operation
+    TensorBase:
+        Output Tensor; with bmm operation
     """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
@@ -655,8 +651,8 @@ def unsqueeze(tensor1, dim):
     ----------
     tensor1: TensorBase
 
-    dim0:
-        Dimension 0
+    dim:
+        Dimension
 
     Returns
     -------
@@ -692,7 +688,6 @@ def mm(tensor1, tensor2):
     TensorBase:
         Output Tensor
     """
-
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
 
