@@ -2,22 +2,16 @@ from syft.tensor import TensorBase
 
 import numpy as np
 
-
-class LinearClassifier():
+class LinearClassifier(object):
     """This class is a basic linear classifier with functionality to
     encrypt/decrypt weights according to any of the homomorphic encryption
     schemes in syft.he. It also contains the logic to make predictions when
     in an encrypted state.
 
     TODO: create a generic interface for ML models that this class implements.
-
-    TODO: minibatching in the "learn" API. The greater the batch size, the more
-    iterations should be doable before the homomorphic encryption noise grows
-    too much to be decrypted.
     """
 
-    def __init__(self, n_inputs=4, n_labels=2, desc=""):
-
+    def __init__(self, n_inputs=4, n_labels=2, desc="", capsule_client=None):
         self.desc = desc
 
         self.n_inputs = n_inputs
@@ -27,34 +21,31 @@ class LinearClassifier():
 
         self.pubkey = None
         self.encrypted = False
+        self.capsule = capsule_client
 
-    def encrypt(self, pubkey):
+    def encrypt(self):
         """iterates through each weight and encrypts it
 
         TODO: check that weights are actually decrypted
-
         """
-
         self.encrypted = True
-        self.pubkey = pubkey
-        self.weights = self.weights.encrypt(pubkey)
+        self.pubkey = self.capsule.keygen()
+        self.weights = self.weights.encrypt(self.pubkey)
         return self
 
-    def decrypt(self, seckey):
+    def decrypt(self):
         """iterates through each weight and decrypts it
-
+        
         TODO: check that weights are actually encrypted
-
         """
         self.encrypted = False
-        self.weights = self.weights.decrypt(seckey)
+        self.weights = self.capsule.decrypt(self.weights, self.pubkey.id)
         return self
 
     def forward(self, input):
-
         """Makes a prediction based on input. If the network is encrypted, the
-        prediction is also encrypted and vise versa."""
-
+        prediction is also encrypted and vise versa.
+        """
         pred = self.weights[0] * input[0]
         for j, each_inp in enumerate(input[1:]):
             if(each_inp == 1):
@@ -64,25 +55,37 @@ class LinearClassifier():
 
         return pred
 
-    def learn(self, input, target, alpha=0.5):
+    def learn(self, input, target, alpha=0.5, batchsize=32, encrypt_interval=16):
         """Updates weights based on input and target prediction. Note, updating
         weights increases the noise in the encrypted weights and will
         eventually require the weights to be re-encrypted.
-
-        TODO: minibatching
+        
         TODO: instead of storing weights, store aggregated weight updates (and
         optionally use them in "forward").
         """
+        input_batches = [input[i:i+batchsize] for i in range(0, len(input), batchsize)]
+        target_batches = [target[i:i+batchsize] for i in range(0, len(target), batchsize)]
+        for epoch_count, minibatch in enumerate(zip(input_batches, target_batches)):
+            self.batch_update(minibatch, alpha)
+            if self.encrypted and (epoch_count > encrypt_interval)\
+            and (epoch_count % encrypt_interval == 0):
+                self.weights = self.capsule.bootstrap(self.weights, self.pubkey.id)
 
-        weight_update = self.generate_gradient(input, target)
-        self.weights -= weight_update * alpha
-
-        return weight_update
+    def batch_update(self, minibatch, alpha):
+        """Updates a minibatch of input and target prediction. Should be called through
+        learn() for default parameters
+        """
+        weight_update = TensorBase(np.zeros(self.weights.data.shape))
+        if (self.encrypted):
+            weight_update = weight_update.encrypt(self.pubkey)
+        for (x, y) in zip(*minibatch):
+            weight_update += self.generate_gradient(x, y)
+        self.weights -= weight_update * (alpha/len(minibatch[0]))
 
     def evaluate(self, inputs, targets):
         """accepts a list of inputs and a list of targets - returns the mean
-        squared error scaled by a fixed amount and converted to an integer."""
-
+        squared error scaled by a fixed amount and converted to an integer.
+        """
         scale = 1000
 
         if(self.encrypted):
