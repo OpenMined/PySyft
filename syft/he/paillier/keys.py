@@ -2,7 +2,7 @@ import phe as paillier
 import numpy as np
 import pickle
 import syft
-from .basic import Float, PaillierTensor
+from .basic import FixedPoint, PaillierTensor
 from ...tensor import TensorBase
 from ..abstract.keys import AbstractSecretKey, AbstractPublicKey
 from ..abstract.keys import AbstractKeyPair
@@ -17,8 +17,8 @@ class SecretKey(AbstractSecretKey):
         """Decrypts x. X can be either an encrypted int or a numpy
         vector/matrix/tensor."""
 
-        if(type(x) == Float):
-            return self.sk.decrypt(x.data)
+        if(type(x) == FixedPoint):
+            return x.decrypt(self.sk)
         elif(type(x) == TensorBase or type(x) == PaillierTensor):
             if(x.encrypted):
                 return TensorBase(self.decrypt(x.data), encrypted=False)
@@ -29,7 +29,7 @@ class SecretKey(AbstractSecretKey):
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(self.sk.decrypt(v.data))
+                out.append(v.decrypt(self.sk))
             return np.array(out).reshape(sh)
         else:
             return NotImplemented
@@ -46,45 +46,45 @@ class PublicKey(AbstractPublicKey):
     def __init__(self, pk):
         self.pk = pk
 
-    def zeros(self, dim):
+    def zeros(self, dim, fixed_point_conf=None):
         """Returns an encrypted tensor of zeros"""
-        return syft.zeros(dim).encrypt(self)
+        return PaillierTensor(self, syft.zeros(dim), fixed_point_conf=fixed_point_conf)
 
-    def ones(self, dim):
+    def ones(self, dim, fixed_point_conf=None):
         """Returns an encrypted tensor of ones"""
-        return syft.ones(dim).encrypt(self)
+        return PaillierTensor(self, syft.ones(dim), fixed_point_conf=fixed_point_conf)
 
-    def rand(self, dim):
+    def rand(self, dim, fixed_point_conf=None):
         """Returns an encrypted tensor with initial numbers sampled from a
         uniform distribution from 0 to 1."""
-        return syft.rand(dim).encrypt(self)
+        return PaillierTensor(self, syft.rand(dim), fixed_point_conf=fixed_point_conf)
 
-    def randn(self, dim):
+    def randn(self, dim, fixed_point_conf=None):
         """Returns an encrypted tensor with initial numbers sampled from a
         standard normal distribution"""
-        return syft.randn(dim).encrypt(self)
+        return PaillierTensor(self, syft.randn(dim), fixed_point_conf=fixed_point_conf)
 
-    def encrypt(self, x, same_type=False):
+    def encrypt(self, x, same_type=False, fixed_point_conf=None):
         """Encrypts x. X can be either an encrypted int or a numpy
         vector/matrix/tensor."""
         if(type(x) == int or type(x) == float or type(x) == np.float64):
             if(same_type):
                 return NotImplemented
-            return Float(self, x)
+            return FixedPoint(self, x, config=fixed_point_conf)
         elif(type(x) == TensorBase):
             if(x.encrypted or same_type):
                 return NotImplemented
-            return PaillierTensor(self, x.data)
+            return PaillierTensor(self, x.data, fixed_point_conf=fixed_point_conf)
         elif(type(x) == np.ndarray):
             sh = x.shape
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(Float(self, v))
+                out.append(FixedPoint(self, v, config=fixed_point_conf))
             if(same_type):
                 return np.array(out).reshape(sh)
             else:
-                return PaillierTensor(self, np.array(out).reshape(sh))
+                return PaillierTensor(self, np.array(out).reshape(sh), fixed_point_conf=fixed_point_conf)
         else:
             print("format not recognized:" + str(type(x)))
             return NotImplemented
