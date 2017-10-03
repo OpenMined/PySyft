@@ -1,6 +1,6 @@
 import phe as paillier
 import numpy as np
-import pickle
+import json
 import syft
 from .basic import Float, PaillierTensor
 from ...tensor import TensorBase
@@ -41,10 +41,10 @@ class SecretKey(AbstractSecretKey):
             'q': self.sk.q,
             'n': self.sk.public_key.n
         }
-        return pickle.dumps(seckey_dict)
+        return json.dumps(seckey_dict)
 
     def deserialize(b):
-        seckey_dict = pickle.loads(b)
+        seckey_dict = json.loads(b)
         sk_record = seckey_dict['secret_key']
         sk = paillier.PaillierPrivateKey(
             public_key=paillier.PaillierPublicKey(n=int(sk_record['n'])),
@@ -108,10 +108,10 @@ class PublicKey(AbstractPublicKey):
         pubkey_dict['public_key'] = {
             'n': self.pk.n
         }
-        return pickle.dumps(pubkey_dict)
+        return json.dumps(pubkey_dict)
 
     def deserialize(b):
-        pubkey_dict = pickle.loads(b)
+        pubkey_dict = json.loads(b)
         pk_record = pubkey_dict['public_key']
         pk = paillier.PaillierPublicKey(n=int(pk_record['n']))
         return PublicKey(pk)
