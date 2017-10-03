@@ -2636,8 +2636,7 @@ class TensorBase(object):
         if dim < 0:
             # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
             dim = self.data.ndim + dim
-        idx_xsection_shape = index.data.shape[:dim] + \
-                             index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
@@ -2702,8 +2701,7 @@ class TensorBase(object):
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
             return NotImplemented
-        idx_xsection_shape = index.data.shape[:dim] + \
-                             index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
