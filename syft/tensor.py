@@ -1247,8 +1247,12 @@ class TensorBase(object):
         return self
 
     def renorm(self, p, dim, maxnorm, out=None):
-        """ Returns a new tensor normalized along dimension dim if the p-norm of the sub-tensors 
+        """ Normalizes a tensor along dimension dim if the p-norm of the sub-tensors 
             along dim is lower than maxnorm
+            :param p: power of the norm
+            :param dim: dimension that renorming will be applied to
+            :param maxnorm: max value the p-norm is allowed to take on 
+            :return: a renormalized tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1271,8 +1275,12 @@ class TensorBase(object):
         return TensorBase(out)
 
     def renorm_(self, p, dim, maxnorm):
-        """ Returns a tensor in-place, normalized along dimension dim if the p-norm of the sub-tensors 
+        """ Normalizes a tensor in-place along dimension dim if the p-norm of the sub-tensors 
             along dim is lower than maxnorm
+            :param p: power of the norm
+            :param dim: dimension that renorming will be applied to
+            :param maxnorm: max value the p-norm is allowed to take on 
+            :return: self
         """
         if self.encrypted:
             return NotImplemented
