@@ -696,6 +696,14 @@ class bernoulliTests(unittest.TestCase):
         self.assertTrue(np.all(t1.data >= 0) and np.all(t1.data <= 1))
 
 
+class cauchyTests(unittest.TestCase):
+    def test_cauchy_(self):
+        t = TensorBase(np.zeros([1, 2, 3, 4]))
+        t.cauchy_()
+        self.assertTupleEqual((1, 2, 3, 4), t.shape())
+        self.assertTrue(np.all(t.data != 0))
+
+
 class uniformTests(unittest.TestCase):
     def test_uniform(self):
         t1 = TensorBase(np.zeros(4))
