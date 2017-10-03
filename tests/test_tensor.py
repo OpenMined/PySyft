@@ -1126,6 +1126,7 @@ class fmodTest(unittest.TestCase):
         divisor = np.array([2.] * 6)
         self.assertTrue(np.array_equal(t2.fmod(divisor).data, np.array([-1.5, -0.5, -1.5,  1.5,  0.5,  1.5])))
 
+
 class fmod_Test(unittest.TestCase):
     def test_fmod_number(self):
         t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
