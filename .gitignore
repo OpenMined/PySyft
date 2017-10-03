@@ -103,3 +103,15 @@ ENV/
 
 *.pickle
 lastfailed
+
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history
+
+# for some Temporary objects created by some extensions in vscode
+.DS_Store

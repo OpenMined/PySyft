@@ -2,6 +2,7 @@
 import numpy as np
 import syft
 import scipy
+from scipy import stats
 import pickle
 
 __all__ = [
@@ -435,7 +436,7 @@ class TensorBase(object):
         """
         if self.encrypted:
             return NotImplemented
-        return np.absolute(self.data)
+        return TensorBase(np.absolute(self.data))
 
     def abs_(self):
         """
@@ -452,6 +453,12 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.absolute(self.data)
         return self.data
+
+    def nelement(self):
+        """Returns the total number of elements in the tensor."""
+        if self.encrypted:
+            return NotImplemented
+        return self.data.size
 
     def shape(self):
         """
@@ -881,6 +888,25 @@ class TensorBase(object):
             self += temp
             return self
 
+    def bmm(self, tensor):
+        """Performs a batch matrix-matrix product of this tesnor
+        and tensor2. Both tensors must be 3D containing equal number
+        of matrices.
+        If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
+        Result will be a (b x n x p) Tensor.
+
+        Parameters
+        ----------
+        tensor : TensorBase
+            The second operand in the bmm operation
+
+        Returns
+        -------
+        TensorBase
+            Computed tensor result for bmm operation
+        """
+        return syft.bmm(self, tensor)
+
     def addbmm(self, tensor2, mat, beta=1, alpha=1):
         """
         Perform batch matrix-matrix product of matrices
@@ -1073,11 +1099,11 @@ class TensorBase(object):
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
 
+
     def diag(self, tensor):
         """
         When input tensor is a vector (1D Tensor), returns a 2D square
         Tensor with the elements of input as the diagonal.
-
 
         Parameters
         ----------
@@ -1882,6 +1908,30 @@ class TensorBase(object):
             return NotImplemented
         out = np.random.uniform(low=low, high=high, size=self.shape())
         return TensorBase(out)
+
+    def cauchy_(self, median=0, sigma=1):
+        """Fills the tensor in-place with numbers drawn from the Cauchy distribution:
+
+        .. math:: P(x) = \frac{1}{\pi} \frac{\sigma}{(x - \textit{median})^2 + \sigma^2}
+
+        Parameters
+        ----------
+        self : tensor
+        median : scalar, optional
+            Also known as the location parameter. Specifies the location of the distribution's peak.
+        sigma : scalar, optional
+            Also known as the scale parameter. Specifies the half-width at half-maximum (HWHM).
+
+        Returns
+        -------
+        ret : tensor
+            `self`, filled with drawn numbers.
+
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = stats.cauchy.rvs(loc=median, scale=sigma, size=self.data.size).reshape(self.data.shape)
+        return self
 
     def fill_(self, value):
         """
