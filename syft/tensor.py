@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+    Note: The Documentation in this file follows the NumPy Doc. Style;
+          Hence, it is mandatory that future docs added here
+          strictly follow the same, to maintain readability and consistency
+          of the codebase.
+
+          NumPy Documentation Style-
+          http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html
+"""
 import numpy as np
 import syft
 import scipy
