@@ -327,8 +327,10 @@ def relu(tensor):
 
 
 def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
-    """Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the
+    """
+    Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the
     result as a Tensor
+
         Tensor1.Tensor2 is performed as Matrix product of two array
         The behavior depends on the arguments in the following way.
         *If both tensors are 1-dimensional, their dot product is returned.
@@ -346,6 +348,24 @@ def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
         *If the second argument is 1-D, it is promoted to a matrix by
         appending a 1 to its dimensions. After matrix multiplication
         the appended 1 is removed.
+
+        Parameters
+        ----------
+        tensor1: TensorBase
+
+        tensor2: TensorBase
+
+        mat:
+            Matrix to the operation
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
         """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
@@ -358,8 +378,26 @@ def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
 
 
 def addcmul(tensor1, tensor2, mat, value=1):
-    """Performs the element-wise multiplication of tensor1 by tensor2,
-    multiply the result by the scalar value and add it to mat."""
+    """
+    Performs the element-wise multiplication of tensor1 by tensor2,
+    multiply the result by the scalar value and add it to mat.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    tensor2: TensorBase
+
+    mat:
+        Matrix to the operation
+
+    value: ,optional
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     _ensure_tensorbase(mat)
@@ -371,8 +409,26 @@ def addcmul(tensor1, tensor2, mat, value=1):
 
 
 def addcdiv(tensor1, tensor2, mat, value=1):
-    """Performs the element-wise division of tensor1 by tensor2, multiply
-    the result by the scalar value and add it to mat."""
+    """
+    Performs the element-wise division of tensor1 by tensor2, multiply
+    the result by the scalar value and add it to mat.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    tensor2: TensorBase
+
+    mat:
+        Matrix to the operation
+
+    value: ,optional
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     _ensure_tensorbase(mat)
@@ -384,10 +440,32 @@ def addcdiv(tensor1, tensor2, mat, value=1):
 
 
 def addmv(tensor1, mat, vec, beta=1, alpha=1):
-    """"Performs a matrix-vector product of the matrix mat and the vector vec.
+    """
+    Performs a matrix-vector product of the matrix mat and the vector vec.
+
     The vector tensor is added to the final result.
-          tensor1 and vec are 1d tensors
-          out=(beta∗tensor)+(alpha∗(mat@vec2))"""
+    tensor1 and vec are 1d tensors
+    out=(beta∗tensor)+(alpha∗(mat@vec2))
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    mat:
+        Matrix for the operation
+
+    vec:
+        Vector
+
+    beta: ,optional
+
+    alpha: ,optional
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(vec)
     _ensure_tensorbase(mat)
@@ -403,24 +481,27 @@ def addmv(tensor1, mat, vec, beta=1, alpha=1):
 
 
 def bmm(tensor1, tensor2):
-    """Performs a batch matrix-matrix product of this tesnor
-        and tensor2. Both tensors must be 3D containing equal number
-        of matrices.
-        If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
-        Result will be a (b x n x p) Tensor.
+    """
+    Performs a batch matrix-matrix product of this tensor
+    and tensor2. Both tensors must be 3D containing equal number
+    of matrices.
 
-        Parameters
-        ----------
-        tensor1 : TensorBase
-            The first operand in the bmm operation
-        tensor2 : TensorBase
-            The second operand in the bmm operation
+    If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
+    Result will be a (b x n x p) Tensor.
 
-        Returns
-        -------
-        TensorBase
-            Computed tensor result for bmm operation
-        """
+    Parameters
+    ----------
+    tensor1 : TensorBase
+        The first operand in the bmm operation
+
+    tensor2 : TensorBase
+        The second operand in the bmm operation
+
+    Returns
+    -------
+    TensorBase
+            Output Tensor; with bmm operation
+    """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     if tensor2.data.ndim != 3:
@@ -435,14 +516,36 @@ def bmm(tensor1, tensor2):
 
 
 def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
-    """Performs a batch matrix-matrix product of matrices stored in
+    """
+    Performs a batch matrix-matrix product of matrices stored in
     batch1(tensor1) and batch2(tensor2),
-     with a reduced add step (all matrix multiplications get accumulated along
-     the first dimension).
-     mat is added to the final result.
-     res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b))
-    * batch1 and batch2 must be 3D Tensors each containing the same number of
-    matrices."""
+    with a reduced add step (all matrix multiplications get accumulated along
+    the first dimension).
+    mat is added to the final result.
+
+    res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b))
+
+    batch1 and batch2 must be 3D Tensors each containing the same number of
+    matrices.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    tensor2: TensorBase
+
+    mat:
+        Matrix to the operation
+
+    beta: ,optional
+
+    alpha: ,optional
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     _ensure_tensorbase(mat)
@@ -462,11 +565,33 @@ def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
 
 
 def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
-    """Performs a batch matrix-matrix product of matrices in batch1(tensor1)
+    """
+    Performs a batch matrix-matrix product of matrices in batch1(tensor1)
     and batch2(tensor2). mat is added to the final result.
-      resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
-      *batch1 and batch2 must be 3D Tensors each containing the same number
-      of matrices."""
+
+    resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
+
+    batch1 and batch2 must be 3D Tensors each containing the same number
+    of matrices.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    tensor2: TensorBase
+
+    mat:
+        Matrix to the operation
+
+    beta: ,optional
+
+    alpha: ,optional
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
     _ensure_tensorbase(mat)
@@ -487,7 +612,23 @@ def baddbmm(tensor1, tensor2, mat, beta=1, alpha=1):
 def transpose(tensor1, dim0, dim1):
     """
     Performs tensor transpose operation, tranposing dim0 and dim1.
+
     Returns a tranposed TensorBase.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    dim0:
+        Dimension 0
+
+    dim1:
+        Dimension 1
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
     """
     tensor1 = _ensure_tensorbase(tensor1)
     num_dims = len(tensor1.data.shape)
@@ -509,6 +650,18 @@ def unsqueeze(tensor1, dim):
     """
     Performs 'unsqueeze' operation, returning a new tensor with a dimension
     of size one inserted at the specified position.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    dim0:
+        Dimension 0
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
     """
     tensor1 = _ensure_tensorbase(tensor1)
     num_dims = len(tensor1.data.shape)
@@ -528,9 +681,17 @@ def mm(tensor1, tensor2):
     If :attr:`tensor1` is a `n x m` Tensor, :attr:`tensor2` is a `m x p` Tensor,
     output will be a `n x p` Tensor.
 
-    Args:
-        tensor1 (Tensor): First Tensor to be multiplied
-        tensor2 (Tensor): Second Tensor to be multiplied"""
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    tensor2: TensorBase
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
 
     _ensure_tensorbase(tensor1)
     _ensure_tensorbase(tensor2)
