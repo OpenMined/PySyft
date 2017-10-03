@@ -1405,12 +1405,12 @@ class TensorBase(object):
         """
         if self.encrypted:
             return NotImplemented
-        
+
         if isinstance(divisor, TensorBase):
             divisor = divisor.data
             if divisor.shape()[0] != self.shape()[0]:
                 raise ValueError("Divisor shape does not match dividend shape")
-        
+
         return TensorBase(np.fmod(self.data, divisor))
 
     def fmod_(self, divisor):
