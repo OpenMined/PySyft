@@ -57,6 +57,18 @@ def diag(tensor, diagonal=0):
 
     * Optional argument diagonal value is about which diagonal to consider,
     zero is for main, positive for upper and negative for below diagonal
+
+    Parameters
+    ----------
+    tensor : TensorBase
+        The first operand in the diag operation
+    diagonal : Integer
+        The second operand in the diag operation
+
+    Returns
+    -------
+    TensorBase
+        Computed tensor result for diag operation
     """
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
@@ -64,8 +76,10 @@ def diag(tensor, diagonal=0):
     dim = tensor.dim()
     if dim == 1:
         return TensorBase(np.diag(tensor, diagonal))
-    else:
+    elif dim == 2:
         return TensorBase(np.diagonal(tensor, diagonal))
+    else:
+        print("Error: Only 1D or 2D tensor are allowed")
 
 
 def matmul(tensor1, tensor2):

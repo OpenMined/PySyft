@@ -263,11 +263,22 @@ class TensorBase(object):
 
         return self.data.ndim
 
-    def diag(self):
-        """ Returns a diagonal of tensor."""
+    def diag(self, diagonal=0):
+        """ Returns square matrix or n-th diagonal of input tensor.
+
+        Parameters
+        ----------
+        diagonal : Integer
+            The second operand in the diag operation
+
+        Returns
+        -------
+        TensorBase
+            Computed tensor result for diag operation
+        """
         if self.encrypted:
             return NotImplemented
-        return syft.math.diag(self.data)
+        return syft.math.diag(self.data, diagonal)
 
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
