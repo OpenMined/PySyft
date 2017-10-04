@@ -716,6 +716,14 @@ class uniformTests(unittest.TestCase):
         self.assertTrue(np.all(t1.data > 0) and np.all(t1.data < 3))
 
 
+class geometricTests(unittest.TestCase):
+    def test_geometric_(self):
+        t1 = TensorBase(np.zeros((4, 4)))
+        out = t1.geometric_(p=0.5)
+        self.assertTupleEqual(t1.data.shape, out.data.shape)
+        self.assertTrue(np.all(out.data > 0))
+
+
 class fillTests(unittest.TestCase):
     def test_fill_(self):
         t1 = TensorBase(np.array([1, 2, 3, 4]))
@@ -1109,6 +1117,26 @@ class mm_test(unittest.TestCase):
         t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
         out = t1.mm(t2)
         self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
+
+
+class fmod_Test(unittest.TestCase):
+    def test_fmod_number(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        t1.fmod_(2)
+        self.assertTrue(np.array_equal(t1.data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        t2.fmod_(2.)
+        self.assertTrue(np.array_equal(t2.data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
+
+    def test_fmod_tensor(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        divisor = np.array([2] * 6)
+        t1.fmod_(divisor)
+        self.assertTrue(np.array_equal(t1.data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        divisor = np.array([2.] * 6)
+        t2.fmod_(divisor)
+        self.assertTrue(np.array_equal(t2.data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
 
 
 if __name__ == "__main__":

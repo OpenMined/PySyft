@@ -39,7 +39,7 @@ class MPCRepo(object):
     def create_share(self, id, share):
         if(id not in self.ints.keys()):
             self.ints[id] = share
-            return True  # everything is goodl
+            return True  # everything is good
         else:
             return False  # hmm... non-unique int id
 
