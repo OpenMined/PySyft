@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 from ...tensor import TensorBase
+import copy
 
 
 class PaillierTensor(TensorBase):
@@ -34,13 +35,13 @@ class PaillierTensor(TensorBase):
         if(not isinstance(tensor, TensorBase)):
             # try encrypting it
             tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'), fixed_point_conf=self.fixed_point_conf)
-
             return PaillierTensor(self.public_key, self.data + tensor.data, False, self.fixed_point_conf)
 
         if(type(tensor) == TensorBase):
             tensor = PaillierTensor(self.public_key, tensor.data, fixed_point_conf=self.fixed_point_conf)
 
-        ptensor = PaillierTensor(self.public_key, self.data + tensor.data, False, self.fixed_point_conf)
+        result_data = self.data + tensor.data
+        ptensor = PaillierTensor(self.public_key, result_data, False, result_data.flat[0].config)
         ptensor._calc_add_depth(self, tensor)
         return ptensor
 
@@ -49,13 +50,15 @@ class PaillierTensor(TensorBase):
 
         if(not isinstance(tensor, TensorBase)):
             # try encrypting it
-            tensor = self.public_key.encrypt(tensor)
+            tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'), fixed_point_conf=self.fixed_point_conf)
             return PaillierTensor(self.public_key, self.data - tensor.data, False, self.fixed_point_conf)
 
         if(type(tensor) == TensorBase):
             tensor = PaillierTensor(self.public_key, tensor.data, fixed_point_conf=self.fixed_point_conf)
 
-        return PaillierTensor(self.public_key, self.data - tensor.data, False, self.fixed_point_conf)
+        result_data = self.data - tensor.data
+        ptensor = PaillierTensor(self.public_key, result_data, False, result_data.flat[0].config)
+        return ptensor
 
     def __isub__(self, tensor):
         """Performs inline, element-wise subtraction between two tensors"""
@@ -124,8 +127,7 @@ class FixedPointConfig(object):
         self.PRECISION_INTEGRAL = precision_integral
         self.PRECISION_FRACTIONAL = precision_fractional
         self.Q = big_prime
-        self.PRECISION = self.PRECISION_INTEGRAL + self.PRECISION_FRACTIONAL
-        assert(self.Q > self.BASE**self.PRECISION)
+        assert(self.Q > self.BASE**(self.PRECISION_INTEGRAL + self.PRECISION_FRACTIONAL))
 
 
 class FixedPoint:
@@ -150,16 +152,38 @@ class FixedPoint:
 
     def __add__(self, y):
         """Adds two encrypted FixedPoints together."""
-
-        out = FixedPoint(self.public_key, None, config=self.config)
-        out.data = self.data + y.data
-        return out
+        shift = abs(y.config.PRECISION_FRACTIONAL - self.config.PRECISION_FRACTIONAL)
+        if self.config.PRECISION_FRACTIONAL < y.config.PRECISION_FRACTIONAL:
+            data_decimal_aligned = self.decrease_decimal_places(shift_by=shift)
+            out = FixedPoint(self.public_key, None, config=data_decimal_aligned.config)
+            out.data = data_decimal_aligned.data + y.data
+            return out
+        elif self.config.PRECISION_FRACTIONAL > y.config.PRECISION_FRACTIONAL:
+            data_decimal_aligned = y.decrease_decimal_places(shift_by=shift)
+            out = FixedPoint(self.public_key, None, config=data_decimal_aligned.config)
+            out.data = data_decimal_aligned.data + self.data
+            return out
+        else:
+            out = FixedPoint(self.public_key, None, config=self.config)
+            out.data = self.data + y.data
+            return out
 
     def __sub__(self, y):
         """Subtracts two encrypted FixedPoints."""
-
-        out = FixedPoint(self.public_key, None, config=self.config)
-        out.data = self.data - y.data
+        shift = abs(y.config.PRECISION_FRACTIONAL - self.config.PRECISION_FRACTIONAL)
+        if self.config.PRECISION_FRACTIONAL < y.config.PRECISION_FRACTIONAL:
+            data_decimal_aligned = self.decrease_decimal_places(shift_by=shift)
+            out = FixedPoint(self.public_key, None, config=data_decimal_aligned.config)
+            out.data = data_decimal_aligned.data - y.data
+            return out
+        elif self.config.PRECISION_FRACTIONAL > y.config.PRECISION_FRACTIONAL:
+            data_decimal_aligned = y.decrease_decimal_places(shift_by=shift)
+            out = FixedPoint(self.public_key, None, config=data_decimal_aligned.config)
+            out.data = self.data - data_decimal_aligned.data
+            return out
+        else:
+            out = FixedPoint(self.public_key, None, config=self.config)
+            out.data = self.data - y.data
         return out
 
     def __mul__(self, y):
@@ -201,14 +225,23 @@ class FixedPoint:
         return 'e'
 
     def encode(self, rational):
-        upscaled = np.array(rational * self.config.BASE ** self.config.PRECISION_FRACTIONAL).astype(np.uint)
+        """encodes the rational input to a natural number, so it is compatible Paillier encryption"""
+        upscaled = int(rational * self.config.BASE ** self.config.PRECISION_FRACTIONAL)
         field_element = upscaled % self.config.Q
         return field_element
 
     def decode(self, field_element):
+        """decodes the `field_element` (which is natural number) to a rational number"""
         upscaled = field_element if field_element <= self.config.Q / 2 else field_element - self.config.Q
         rational = upscaled / self.config.BASE ** self.config.PRECISION_FRACTIONAL
         return rational
+
+    def decrease_decimal_places(self, shift_by):
+        out = FixedPoint(self.public_key, None, config=copy.copy(self.config))
+        out.data = self.data * (self.config.BASE ** shift_by)
+        out.config.PRECISION_FRACTIONAL += shift_by
+        out.config.PRECISION_INTEGRAL -= shift_by
+        return out
 
     def serialize(self):
         return pickle.dumps(self)
