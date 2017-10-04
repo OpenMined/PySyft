@@ -3005,9 +3005,10 @@ class TensorBase(object):
 
         return syft.math.fmod(self, divisor)
 
+
     def fmod_(self, divisor):
         """
-        Performs the element-wise division of tensor by divisor inline.
+        Performs the element-wise division of tensor by divisor.
 
         Parameters
         ----------
