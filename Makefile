@@ -10,5 +10,5 @@ run:
 create-custom-image:
 	docker build -f Development-Dockerfile -t pysyft-dev:local .
 
-run-custom:
+run-custom: create-custom-image
 	docker run --rm -it -v $(PWD)/notebooks:/notebooks -w /notebooks -p 8888:8888 pysyft-dev:local jupyter notebook --ip=0.0.0.0 --allow-root
