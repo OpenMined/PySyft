@@ -143,11 +143,11 @@ def diag(tensor, diagonal=0):
         return NotImplemented
     dim = tensor.dim()
     if dim == 1:
-        return TensorBase(np.diag(tensor, diagonal))
+        return TensorBase(np.diag(tensor.data, diagonal))
     elif dim == 2:
-        return TensorBase(np.diagonal(tensor, diagonal))
+        return TensorBase(np.diagonal(tensor.data, diagonal))
     else:
-        print("Error: Only 1D or 2D tensor are allowed")
+        raise ValueError("Input must be 1- or 2-d tensor.")
 
 
 def matmul(tensor1, tensor2):
