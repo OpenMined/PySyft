@@ -397,13 +397,18 @@ def mm(tensor1, tensor2):
 
 def fmod(tensor, divisor):
     """
-    Returns the element-wise remainder of division as a Tensor.
-    The divisor and dividend may contain integer and floating point numbers.
-    The remainder has the same sign as the divisor.
-    When ``divisor`` is a Tensor, the shapes of ``tensor`` and ``divisor`` must be broadcastable.
-    :param tensor: The dividend, a Tensor.
-    :param divisor:  The divisor, either a number or a Tensor.
-    :return: result Tensor.
+    Performs the element-wise division of tensor by divisor.
+
+    Parameters
+    ----------
+    tensor: TensorBase
+
+    divisor: number or TensorBase
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
     """
     if tensor.encrypted:
         return NotImplemented
