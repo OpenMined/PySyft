@@ -695,3 +695,29 @@ def mm(tensor1, tensor2):
         return NotImplemented
     else:
         return TensorBase(np.array(np.matmul(tensor1.data, tensor2.data)))
+
+
+def fmod(tensor, divisor):
+    """
+    Performs the element-wise division of tensor by divisor.
+
+    Parameters
+    ----------
+    tensor: TensorBase
+
+    divisor: number or TensorBase
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
+    if tensor.encrypted:
+        return NotImplemented
+
+    if isinstance(divisor, TensorBase):
+        if divisor.encrypted:
+            return NotImplemented
+        divisor = divisor.data
+
+    return TensorBase(np.fmod(tensor.data, divisor))
