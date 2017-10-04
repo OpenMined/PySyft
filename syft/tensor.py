@@ -2981,9 +2981,33 @@ class TensorBase(object):
 
         return syft.mm(self, tensor)
 
+    def fmod(self, divisor):
+        """
+        Performs the element-wise division of tensor by divisor and returns
+        a new Tensor.
+
+        Parameters
+        ----------
+        divisor: number or TensorBase
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if isinstance(divisor, TensorBase):
+            if divisor.encrypted:
+                return NotImplemented
+            divisor = divisor.data
+
+        return syft.math.fmod(self, divisor)
+
     def fmod_(self, divisor):
         """
-        Performs the element-wise division of tensor by divisor.
+        Performs the element-wise division of tensor by divisor inline.
 
         Parameters
         ----------
@@ -3010,14 +3034,12 @@ def mv(tensormat, tensorvector):
     """
     Matrix and Vector multiplication is performed.
 
-
     Parameters
     ----------
     tensormat: TensorBase
         Input tensor matrix
     tensorvector: TensorBase
         Input tensor vector
-
 
     Returns
     -------
