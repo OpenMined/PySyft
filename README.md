@@ -10,6 +10,7 @@ The goal of this library is to give the user the ability to efficiently train De
 
 - [Setup](#setup)
 - [Usage](#usage)
+- [Advanced](#advanced)
 - [For Contributors](#for-contributors)
 - [Relevant Literature](#relevant-literature)
 - [License](#license)
@@ -28,7 +29,6 @@ It should return something like:
 ```
 Docker version 17.07.0-ce, build 87847530f7
 ```
-
 
 ## Usage
 
@@ -59,6 +59,21 @@ cd PySyft
 make test
 ```
 
+## Advanced
+
+If you want to install PySyft from source locally on your system you will need the following requirements:
+
+- Python 3.X
+- Install base libraries first - https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries- 
+- Install PySyft by running:
+```sh
+# Get dependencies ready
+pip install -r requirements.txt
+# install the lib locally
+python setup.py install
+```
+- To start the notebooks in the repository just run `jupyter notebook`
+- To execute the tests run `pytest --flake8`
 
 
 ## For Contributors
