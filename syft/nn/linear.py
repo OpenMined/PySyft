@@ -29,8 +29,8 @@ class LinearClassifier(object):
 
         TODO: check that weights are actually decrypted
         """
-        self.encrypted = True
         self.pubkey = self.capsule.keygen()
+        self.encrypted = True
         self.weights = self.weights.encrypt(self.pubkey)
         return self
 

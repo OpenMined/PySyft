@@ -69,7 +69,12 @@ class PySyftNotebooks(unittest.TestCase):
         model = LinearClassifier(capsule_client=capsule)
         assert(model.capsule == capsule)
 
-        model = model.encrypt()
+        try:
+            model = model.encrypt()
+            encrypted = True
+        except Exception as e:
+            encrypted = False
+            print('[!]', e)
 
         input = np.array([[0, 0, 1, 1], [0, 0, 1, 0],
                           [1, 0, 1, 1], [0, 0, 1, 0]])
@@ -78,6 +83,8 @@ class PySyftNotebooks(unittest.TestCase):
         for iter in range(3):
             model.learn(input, target, alpha=0.5)
 
-        model = model.decrypt()
+        if encrypted:
+            model = model.decrypt()
+
         for i in range(len(input)):
             model.forward(input[i])
