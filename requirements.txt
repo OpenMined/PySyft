@@ -7,3 +7,4 @@ clint
 pytest-flake8
 pytest
 sklearn
+jupyter

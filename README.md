@@ -1,3 +1,4 @@
+
 # Syft
 
 [![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
@@ -7,67 +8,33 @@
 
 The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find very performant combinations of the two.  See [notebooks](./notebooks) folder for tutorials on how to use the library.
 
-- [Setup](#setup-install-instructions)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
+- [Setup](#setup)
 - [Usage](#usage)
-  - [Start](#start)
-  - [Tests](#tests)
 - [For Contributors](#for-contributors)
 - [Relevant Literature](#relevant-literature)
 - [License](#license)
 
 ## Setup
 
-### Prerequisites
+- If you don't already have Docker, install it from [here](https://www.docker.com/community-edition).  
 
-- PySyft is based on Python 3.X.
-- Install base libraries first - https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries
-- You need to install this library locally before running any of the notebooks this repository or the [main demonstration](https://github.com/OpenMined/sonar):
+- Ensure that Docker is installed and running properly by checking the version: 
 
 ```sh
-# Get dependencies ready
-pip install -r requirements.txt
-# install the lib locally
-python setup.py install
+docker -v
 ```
 
-### Installation
-
-The recommended method is using Docker (works on all major operating systems).
-
-#### For Docker Users
-
-Install Docker from [its website](https://www.docker.com/).
-For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask install docker`. Once installed, launch the Docker application. Ensure that docker is installed and running properly by checking the version: `docker -v`.
-
-#### For Anaconda Users
-
+It should return something like:
 ```
-bash install_for_anaconda_users.sh
+Docker version 17.07.0-ce, build 87847530f7
 ```
 
-Note: If you are having trouble with installation, after you run the above script, while you try to import Syft in your Jupyter notebook, try this: 
-
-```
-source activate openmined  # activate your env, if you haven't already
-pip install ipykernel
-python -m ipykernel install --user --name=openmined
-```
-
-##### Windows
-
-```sh
-conda install -c conda-forge gmpy2
-pip install -r requirements.txt
-python setup.py install
-```
 
 ## Usage
 
-### Start
+#### Start Jupyter Notebook
 
-Then, run:
+Run:
 
 ```sh
 git clone https://github.com/OpenMined/PySyft.git
@@ -75,18 +42,24 @@ cd PySyft
 make run
 ```
 
-If you want create a local Docker with Jupyter:
+It you want to build a Docker image based on your changes, you can run the following:
+
 ```sh
-docker build -f Development-Dockerfile -t "pysyft" .
-make custom docker=pysyft
+# Create the image
+make create-custom-image
+
+# Use your image
+make run-custom 
 ```
 
-### Tests
+#### Tests
 
 ```sh
 cd PySyft
 make test
 ```
+
+
 
 ## For Contributors
 
