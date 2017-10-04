@@ -3034,14 +3034,12 @@ def mv(tensormat, tensorvector):
     """
     Matrix and Vector multiplication is performed.
 
-
     Parameters
     ----------
     tensormat: TensorBase
         Input tensor matrix
     tensorvector: TensorBase
         Input tensor vector
-
 
     Returns
     -------
