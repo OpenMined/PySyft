@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+    Note: The Documentation in this file follows the NumPy Doc. Style;
+          Hence, it is mandatory that future docs added here
+          strictly follow the same, to maintain readability and consistency
+          of the codebase.
+
+          NumPy Documentation Style-
+          http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html
+"""
 import numpy as np
 import syft
 import scipy
@@ -11,6 +20,19 @@ __all__ = [
 
 
 def _ensure_ndarray(arr):
+    """
+    Ensures the arr passed is of type np.ndarray
+
+    Parameters
+    ----------
+    arr: object
+        arr to be checked
+
+    Returns
+    -------
+    np.ndarray:
+        Output Array
+    """
     if not isinstance(arr, np.ndarray):
         arr = np.array(arr)
 
@@ -18,6 +40,19 @@ def _ensure_ndarray(arr):
 
 
 def _ensure_tensorbase(tensor):
+    """
+    Ensures the tensor passed is of type TensorBase
+
+    Parameters
+    ----------
+    tensor:object
+        Tensor to be checked
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
     if not isinstance(tensor, TensorBase):
         tensor = TensorBase(tensor)
 
@@ -25,7 +60,8 @@ def _ensure_tensorbase(tensor):
 
 
 def equal(tensor1, tensor2):
-    """Checks if two tensors are equal.
+    """
+    Checks if two tensors are equal.
 
     Two tensors are considered equal if they are the same size and contain the
     same elements.
@@ -33,8 +69,22 @@ def equal(tensor1, tensor2):
     Assumption:
     tensor1 and tensor2 are of type TensorBase.
     Non-TensorBase objects will be converted to TensorBase objects.
-    """
 
+    Parameters
+    ----------
+    tensor1: TensorBase
+        First Tensor to be compared
+
+    tensor2: TensorBase
+        Second Tensor to be compared
+
+    Returns
+    -------
+    bool:
+
+    bool:
+
+    """
     tensor1 = _ensure_tensorbase(tensor1)
     tensor2 = _ensure_tensorbase(tensor2)
 
@@ -52,7 +102,6 @@ class TensorBase(object):
     addition, subtraction, multiplication and division, and also dot and
     matrix products.
     """
-
     _mul_depth = 0
     _add_depth = 0
 
@@ -77,28 +126,70 @@ class TensorBase(object):
             self._add_depth = tensor2._add_depth + 1
 
     def encrypt(self, pubkey):
-        """Encrypts the Tensor using a Public Key"""
+        """
+        Encrypts the Tensor using a Public Key
+
+        Parameters
+        ----------
+        pubkey:
+            Public Key
+
+        Returns
+        -------
+        Encrypted Caller
+        """
         if self.encrypted:
             return NotImplemented
         else:
-            if(type(pubkey) == syft.he.paillier.keys.PublicKey):
+            if type(pubkey) == syft.he.paillier.keys.PublicKey:
                 out = syft.he.paillier.PaillierTensor(pubkey, self.data)
                 return out
             else:
                 return NotImplemented
 
     def decrypt(self, seckey):
-        """Decrypts the tensor using a Secret Key"""
+        """
+        Decrypts the tensor using a Secret Key
+
+        Parameters
+        ----------
+        seckey:
+            Secret Key
+
+        Returns
+        -------
+        Decrypted Caller
+        """
         if self.encrypted:
             return seckey.decrypt(self)
         else:
             return self
 
     def __len__(self):
+        """
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Returns the len. of Caller
+        """
         return len(self.data)
 
     def __add__(self, tensor):
-        """Performs element-wise addition between two tensors"""
+        """
+        Performs element-wise addition between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Tensor to be Added
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -106,7 +197,20 @@ class TensorBase(object):
         return TensorBase(self.data + tensor.data)
 
     def __iadd__(self, tensor):
-        """Performs in place element-wise addition between two tensors"""
+        """
+        Performs in-place element-wise addition between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Tensor to be Added
+
+        Returns
+        -------
+        TensorBase:
+            Caller with values in-place
+
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -115,7 +219,19 @@ class TensorBase(object):
         return self
 
     def __sub__(self, tensor):
-        """Performs element-wise subtraction between two tensors"""
+        """
+        Performs element-wise subtraction between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Tensor to be Subtracted from Caller
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -123,7 +239,19 @@ class TensorBase(object):
         return TensorBase(self.data - tensor.data)
 
     def __isub__(self, tensor):
-        """Performs in place element-wise subtraction between two tensors"""
+        """
+        Performs in-place element-wise subtraction between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Tensor to be Subtracted from Caller
+
+        Returns
+        -------
+        TensorBase:
+            Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -132,14 +260,37 @@ class TensorBase(object):
         return self
 
     def __eq__(self, tensor):
-        """Checks if two tensors are equal"""
+        """
+        Checks if two tensors are equal
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        bool:
+        """
         if self.encrypted:
             return NotImplemented
 
         return syft.equal(self, tensor)
 
     def dot(self, tensor):
-        """Returns inner product of two tensors"""
+        """
+        Returns inner product of two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -149,32 +300,67 @@ class TensorBase(object):
         return syft.dot(self, tensor)
 
     def __matmul__(self, tensor):
-        """Performs matrix multiplication between two tensors"""
+        """
+        Performs matrix multiplication between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
         return syft.matmul(self, tensor)
 
     def __mul__(self, tensor):
-        """Performs element-wise multiplication between two tensors"""
+        """
+        Performs element-wise multiplication between two tensors
 
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
         # if it's a sub-class of TensorBase, use the multiplication of that
         # subclass not this one.
-        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             return tensor * self
         else:
             tensor = _ensure_tensorbase(tensor)
             return TensorBase(tensor.data * self.data)
 
     def __imul__(self, tensor):
-        """Performs in place element-wise multiplication between two tensors"""
+        """
+        Performs in-place element-wise multiplication between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
 
-        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             self.data = tensor.data * self.data
             self.encrypted = tensor.encrypted
         else:
@@ -183,18 +369,43 @@ class TensorBase(object):
         return self
 
     def __truediv__(self, tensor):
-        """Performs element-wise division between two tensors"""
+        """
+        Performs element-wise division between two tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Divisor tensor
+
+        Returns
+        -------
+        TensorBase
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
-        if(type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             return NotImplemented  # it's not clear that this can be done
         else:
             tensor = _ensure_tensorbase(tensor)
             return TensorBase(self.data / tensor.data)
 
     def __itruediv__(self, tensor):
-        """Performs in place element-wise subtraction between two tensors"""
+        """
+        Performs in-place element-wise subtraction between two tensors
+
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            Second tensor
+
+        Returns
+        -------
+        TensorBase
+            Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -203,7 +414,7 @@ class TensorBase(object):
         return self
 
     def __setitem__(self, key, value):
-        if(self.encrypted):
+        if (self.encrypted):
             return NotImplemented
         else:
             self.data[key] = value
@@ -215,19 +426,38 @@ class TensorBase(object):
             return NotImplemented
         else:
             out = self.data[position]
-            if(len(self.shape()) == 1):
+            if (len(self.shape()) == 1):
                 return out
             else:
                 return TensorBase(self.data[position], self.encrypted)
 
     def abs(self):
-        """Returns absolute value of tensor as a new tensor"""
+        """
+        Returns absolute value of tensor as a new tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         return TensorBase(np.absolute(self.data))
 
     def abs_(self):
-        """Replaces tensor values with its absolute value"""
+        """
+        Replaces tensor values with its absolute value
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Tensor Data
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.absolute(self.data)
@@ -240,26 +470,63 @@ class TensorBase(object):
         return self.data.size
 
     def shape(self):
-        """Returns a tuple of input array dimensions."""
+        """
+        Returns a tuple of input array dimensions.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Shape of Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
         return self.data.shape
 
     def sqrt(self):
-        """Returns the squared tensor."""
+        """
+        Performs square-root of tensor and returns a new tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         return np.sqrt(self.data)
 
     def sqrt_(self):
-        """Inline squared tensor."""
+        """
+        Peforms square-root of the tensor, in-place
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.sqrt(self.data)
 
     def dim(self):
-        """Returns an integer of the number of dimensions of this tensor."""
+        """
+        Returns an integer of the number of dimensions of this tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
 
         return self.data.ndim
 
@@ -281,7 +548,17 @@ class TensorBase(object):
         return syft.math.diag(self.data, diagonal)
 
     def sum(self, dim=None):
-        """Returns the sum of all elements in the input array."""
+        """
+        Returns the sum of all elements in the input array.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -291,27 +568,64 @@ class TensorBase(object):
             return self.data.sum(axis=dim)
 
     def ceil(self):
-        """Returns the ceilling of the input tensor elementwise."""
+        """
+        Returns the ceilling of the input tensor elementwise.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         return syft.math.ceil(self.data)
 
     def ceil_(self):
-        """Returns the ceilling of the input tensor elementwise."""
+        """
+        Returns the ceilling of the input tensor elementwise.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = syft.math.ceil(self.data).data
         return self
 
     def floor_(self):
-        """Inplace floor method"""
+        """
+        in-place floor method
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = syft.math.floor(self.data).data
         return self
 
     def zero_(self):
-        """Replaces tensor values with zeros"""
+        """
+        Replaces tensor values with zeros
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
 
@@ -319,50 +633,91 @@ class TensorBase(object):
         return self.data
 
     def addmm(self, tensor2, mat, beta=1, alpha=1):
-        """Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and  returns the
+        """
+        Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and  returns the
         result as a Tensor
-            Tensor1.Tensor2 is performed as Matrix product of two array The
-            behavior depends on the arguments in the following way.
-            *If both tensors are 1-dimensional, their dot product is returned.
-            *If both arguments are 2-D they are multiplied like conventional
-            matrices.
 
-            *If either argument is N-D, N > 2, it is treated as a stack of
-            matrices residing in the last two indexes and broadcast
-            accordingly.
+        Tensor1.Tensor2 is performed as Matrix product of two array The
+        behavior depends on the arguments in the following way.
 
-            *If the first argument is 1-D, it is promoted to a matrix by
-            prepending a 1 to its dimensions. After matrix multiplication the
-            prepended 1 is removed.
-            *If the second argument is 1-D, it is promoted to a matrix by
-            appending a 1 to its dimensions. After matrix multiplication the
-            appended 1 is removed.
-            """
+        *If both tensors are 1-dimensional, their dot product is returned.
+
+        *If both arguments are 2-D they are multiplied like conventional
+         matrices.
+
+        *If either argument is N-D, N > 2, it is treated as a stack of
+         matrices residing in the last two indexes and broadcast
+         accordingly.
+
+        *If the first argument is 1-D, it is promoted to a matrix by
+         prepending a 1 to its dimensions. After matrix multiplication the
+         prepended 1 is removed.
+
+        *If the second argument is 1-D, it is promoted to a matrix by
+         appending a 1 to its dimensions. After matrix multiplication the
+         appended 1 is removed.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            Input Matrix
+
+        beta: ,optional
+
+        alpha: ,optional
+
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         return syft.addmm(self, tensor2, mat, beta, alpha)
 
     def addmm_(self, tensor2, mat, beta=1, alpha=1):
-        """Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and updates Tensor1
-        with result and reurns it
-            Tensor1.Tensor2 is performed as Matrix product of two array The
-            behavior depends on the arguments in the following way.
+        """
+        Performs ((Mat*Beta)+((Tensor1@Tensor2)*Alpha)) and updates Tensor1
+        with result and returns it
 
-            *If both tensors are 1-dimensional, their dot product is returned.
+        Tensor1.Tensor2 is performed as Matrix product of two array The
+        behavior depends on the arguments in the following way.
 
-            *If both arguments are 2-D they are multiplied like conventional
-            matrices.
+        *If both tensors are 1-dimensional, their dot product is returned.
 
-            *If either argument is N-D, N > 2, it is treated as a stack of
-            matrices residing in the last two indexes and broadcast
-            accordingly.
+        *If both arguments are 2-D they are multiplied like conventional
+         matrices.
 
-            *If the first argument is 1-D, it is promoted to a matrix by
-            prepending a 1 to its dimensions. After matrix multiplication the
-            prepended 1 is removed.
+        *If either argument is N-D, N > 2, it is treated as a stack of
+         matrices residing in the last two indexes and broadcast
+         accordingly.
 
-            *If the second argument is 1-D, it is promoted to a matrix by
-            appending a 1 to its dimensions. After matrix multiplication the
-            appended 1 is removed.
-            """
+        *If the first argument is 1-D, it is promoted to a matrix by
+         prepending a 1 to its dimensions. After matrix multiplication the
+         prepended 1 is removed.
+
+        *If the second argument is 1-D, it is promoted to a matrix by
+         appending a 1 to its dimensions. After matrix multiplication the
+         appended 1 is removed.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Caller with values in-place
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if self.encrypted or tensor2.encrypted or mat.encrypted:
@@ -375,13 +730,53 @@ class TensorBase(object):
             return self
 
     def addcmul(self, tensor2, mat, value=1):
-        """Performs the element-wise multiplication of tensor1 by tensor2,
-        multiply the result by the scalar value and add it to mat."""
+        """
+        Performs  element-wise multiplication of tensors
+
+        Performs element-wise multiplication of tensor1 by tensor2,
+        multiply the result by the scalar value and add it to mat.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            matrix to be added to
+
+        value: ,optional
+            value to be multiplied with
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         return syft.addcmul(self, tensor2, mat, value)
 
     def addcmul_(self, tensor2, mat, value=1):
-        """Performs implace element-wise multiplication of tensor1 by tensor2,
-        multiply the result by the scalar value and add it to mat."""
+        """
+        Performs in-place element-wise multiplication of tensors
+
+        Performs in-place element-wise multiplication of tensor1 by tensor2,
+        multiply the result by the scalar value and add it to mat.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            matrix to be added to
+
+        value: ,optional
+            value to be multiplied with
+
+        Returns
+        -------
+        TensorBase:
+            Caller with values in-place
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if self.encrypted or tensor2.encrypted or mat.encrypted:
@@ -393,13 +788,52 @@ class TensorBase(object):
             return self
 
     def addcdiv(self, tensor2, mat, value=1):
-        """Performs the element-wise division of tensor1 by tensor2,
-        multiply the result by the scalar value and add it to mat."""
+        """
+        Performs element-wise division
+
+        Performs element-wise division of tensor1 by tensor2,
+        multiply the result by the scalar value and add it to mat.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            matrix to be added to
+
+        value: ,optional
+            value to be multiplied with
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         return syft.addcdiv(self, tensor2, mat, value)
 
     def addcdiv_(self, tensor2, mat, value=1):
-        """Performs implace element-wise division of tensor1 by tensor2,
-        multiply the result by the scalar value and add it to mat."""
+        """
+        Performs in-place element-wise division
+
+        Performs in-place element-wise division of tensor1 by tensor2,
+        multiply the result by the scalar value and add it to mat.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            matrix to be added to
+
+        value: ,optional
+            value to be multiplied with
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if self.encrypted or tensor2.encrypted or mat.encrypted:
@@ -411,17 +845,61 @@ class TensorBase(object):
             return self
 
     def addmv(self, mat, vec, beta=1, alpha=1):
-        """"Performs a matrix-vector product of the matrix mat and the vector
-         vec. The vector tensor is added to the final result.
-              tensor1 and vec are 1d tensors
-              out=(beta∗tensor)+(alpha∗(mat@vec2))"""
+        """
+        Performs a matrix-vector product
+
+        Performs a in-place matrix-vector product of the matrix mat and the
+        vector vec.
+        The vector tensor is added to the final result. tensor1 and vec are
+        1d tensors
+              out=(beta∗tensor)+(alpha∗(mat@vec2))
+
+        Parameters
+        ----------
+        mat:
+            input Matrix
+
+        vec:
+            input vector
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         return syft.addmv(self, mat, vec, beta, alpha)
 
     def addmv_(self, mat, vec, beta=1, alpha=1):
-        """"Performs a inplace matrix-vector product of the matrix mat and the
-         vector vec. The vector tensor is added to the final result.
-              tensor1 and vec are 1d tensors
-              out=(beta∗tensor)+(alpha∗(mat@vec2))"""
+        """"
+        Performs a matrix-vector product
+
+        Performs a in-place matrix-vector product of the matrix mat and the
+        vector vec.
+        The vector tensor is added to the final result. tensor1 and vec are
+        1d tensors
+              out=(beta∗tensor)+(alpha∗(mat@vec2))
+
+        Parameters
+        ----------
+        mat:
+            input Matrix
+
+        vec:
+            input vector
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Caller with in-placed values
+        """
         _ensure_tensorbase(vec)
         _ensure_tensorbase(mat)
         if vec.data.ndim != 1:
@@ -456,23 +934,65 @@ class TensorBase(object):
         return syft.bmm(self, tensor)
 
     def addbmm(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a batch matrix-matrix product of matrices stored in
+        """
+        Perform batch matrix-matrix product of matrices
+
+        Performs a batch matrix-matrix product of matrices stored in
         batch1(tensor1) and batch2(tensor2), with a reduced add step (all
         matrix multiplications get accumulated along the first dimension).
          mat is added to the final result.
          res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b))
         * batch1 and batch2 must be 3D Tensors each containing the same
-        number of matrices."""
+        number of matrices.
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            input Matrix
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         return syft.addbmm(self, tensor2, mat, beta, alpha)
 
     def addbmm_(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a inplace batch matrix-matrix product of matrices stored
+        """
+        Perform batch matrix-matrix product of matrices
+
+        Performs a in-place batch matrix-matrix product of matrices stored
         in batch1(tensor1) and batch2(tensor2), with a reduced add step
         (all matrix multiplications get accumulated along the first dimension).
          mat is added to the final result.
          res=(beta∗M)+(alpha∗sum(batch1i@batch2i, i=0, b)
         * batch1 and batch2 must be 3D Tensors each containing the same number
-        of matrices.)"""
+        of matrices.)
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            input Matrix
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Caller with values in-place
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if tensor2.data.ndim != 3:
@@ -490,19 +1010,60 @@ class TensorBase(object):
             return self
 
     def baddbmm(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a batch matrix-matrix product of matrices in
+        """
+        Performs a batch matrix-matrix product of matrices in
         batch1(tensor1) and batch2(tensor2). mat is added to the final result.
-          resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
-          *batch1 and batch2 must be 3D Tensors each containing the same number
-          of matrices."""
+
+        resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
+        *batch1 and batch2 must be 3D Tensors each containing the same number
+        of matrices.
+
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            input Matrix
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
         return syft.baddbmm(self, tensor2, mat, beta, alpha)
 
     def baddbmm_(self, tensor2, mat, beta=1, alpha=1):
-        """Performs a batch matrix-matrix product of matrices in
+        """
+        Performs a batch matrix-matrix product of matrices in
         batch1(tensor1) and batch2(tensor2). mat is added to the final result.
-          resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
-          *batch1 and batch2 must be 3D Tensors each containing the same number
-          of matrices."""
+
+        resi=(beta∗Mi)+(alpha∗batch1i×batch2i)
+        *batch1 and batch2 must be 3D Tensors each containing the same number
+        of matrices.
+
+
+        Parameters
+        ----------
+        tensor2: TensorBase
+            input tensor
+
+        mat:
+            input Matrix
+
+        beta: ,optional
+
+        alpha: ,optional
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         _ensure_tensorbase(tensor2)
         _ensure_tensorbase(mat)
         if tensor2.data.ndim != 3:
@@ -518,7 +1079,21 @@ class TensorBase(object):
             return self
 
     def max(self, axis=None):
-        """ If axis is not specified, finds the largest element in the tensor. Otherwise, reduces along the specified axis.
+        """
+        If axis is not specified, finds the largest element in the tensor.
+
+        Otherwise, reduces along the specified axis.
+
+
+        Parameters
+        ----------
+        axis: ,optional
+
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -532,6 +1107,15 @@ class TensorBase(object):
         """
         Permute the dimensions of this tensor.
         Parameters:	*dims (int...) – The desired ordering of dimensions
+
+        Parameters
+        ----------
+        dims:
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -541,15 +1125,53 @@ class TensorBase(object):
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
 
+    def diag(self, tensor):
+        """
+        When input tensor is a vector (1D Tensor), returns a 2D square
+        Tensor with the elements of input as the diagonal.
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        Returns
+        -------
+        Numpy Array
+        """
+        return np.diag(tensor)
+
     def transpose(self, dim0, dim1):
         """
         Returns the transpose along the dimensions in a new Tensor.
+
+        Parameters
+        ----------
+        dim0:
+            Dimension0
+
+        dim1:
+            Dimension1
+
+        Returns
+        -------
+        Output Tensor
         """
         return syft.transpose(self.data, dim0, dim1)
 
     def transpose_(self, dim0, dim1):
         """
         Replaces the Tensor with its transpose along the dimensions.
+
+        Parameters
+        ----------
+        dim0:
+            Dimension0
+
+        dim1:
+            Dimension1
+
+        Returns
+        -------
         """
         num_dims = len(self.data.shape)
         axes = list(range(num_dims))
@@ -568,26 +1190,57 @@ class TensorBase(object):
     def t(self):
         """
         Returns the transpose along dimensions 0, 1 in a new Tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
         """
         return self.transpose(0, 1)
 
     def t_(self):
         """
         Replaces the Tensor with its transpose along dimensions 0, 1.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
         """
         self.transpose_(0, 1)
 
     def unsqueeze(self, dim):
         """
-        Returns expanded Tensor. An additional dimension of size one is added
+        Returns expanded Tensor.
+
+        An additional dimension of size one is added
         to at index 'dim'.
+
+        Parameters
+        ----------
+        dim:
+
+        Returns
+        -------
+        Output Tensor
+
         """
         return syft.unsqueeze(self.data, dim)
 
     def unsqueeze_(self, dim):
         """
-        Replaces with an expanded Tensor. An additional dimension of size one
-        is added to at index 'dim'.
+        Replaces with an expanded Tensor. An additional dimension of
+        size one is added to at index 'dim'.
+
+        Parameters
+        ----------
+        dim:
+
+        Returns
+        -------
         """
         num_dims = len(self.data.shape)
 
@@ -599,28 +1252,64 @@ class TensorBase(object):
             self.data = np.expand_dims(self.data, dim)
 
     def exp(self):
-        """Computes the exponential of each element in tensor."""
+        """
+        Computes the exponential of each element in tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensors
+        """
         if self.encrypted:
             return NotImplemented
         out = np.exp(self.data)
         return TensorBase(out)
 
     def exp_(self):
-        """Computes the exponential of each element inplace."""
+        """
+        Computes the exponential of each element in-place.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.exp(self.data)
         return self
 
     def frac(self):
-        """"Computes the fractional portion of each element in tensor."""
+        """"
+        Computes the fractional portion of each element in tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.modf(self.data)[0]
         return TensorBase(out)
 
     def frac_(self):
-        """"Computes the fractional portion of each element inplace."""
+        """"
+        Computes the fractional portion of each element in-place.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.modf(self.data)[0]
@@ -628,11 +1317,20 @@ class TensorBase(object):
 
     def sigmoid_(self):
         """
-            Performs inline sigmoid function on the Tensor elementwise
-            Implementation details:
-            Because of the way syft.math.sigmoid operates on a Tensor Object
-            calling it on self.data will cause an input error thus we call
-            sigmoid on the tensor object and we take the member 'data' from the returned Tensor
+        Performs in-place sigmoid function on the Tensor elementwise
+
+        Implementation details:
+        Because of the way syft.math.sigmoid operates on a Tensor Object
+        calling it on self.data will cause an input error thus we call
+        sigmoid on the tensor object and we take the member 'data' from
+        the returned Tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -642,7 +1340,15 @@ class TensorBase(object):
 
     def tanh_(self):
         """
-            Performs tanh (hyperbolic tangent) function on the Tensor elementwise
+        Performs tanh (hyperbolic tangent) function on the Tensor
+        elementwise
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -657,110 +1363,274 @@ class TensorBase(object):
         return "BaseTensor: " + repr(self.data)
 
     def rsqrt(self):
-        """Returns reciprocal of square root of Tensor element wise"""
+        """
+        Returns reciprocal of square root of Tensor element wise
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = 1 / np.sqrt(self.data)
         return TensorBase(out)
 
     def rsqrt_(self):
-        """Computes reciprocal of square root of Tensor elements inplace"""
+        """
+        Computes reciprocal of square root of Tensor elements in-place
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
 
     def sign(self):
-        """Return a tensor that contains sign of each element """
+        """
+        Return a tensor that contains sign of each element
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.sign(self.data)
         return TensorBase(out)
 
     def sign_(self):
-        """Computes the sign of each element of the Tensor inplace"""
+        """
+        Computes the sign of each element of the Tensor in-place
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.sign(self.data)
 
     def to_numpy(self):
-        """Returns the tensor as numpy.ndarray"""
+        """
+        Returns the tensor as numpy.ndarray
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         return np.array(self.data)
 
     def reciprocal(self):
-        """Computes element wise reciprocal"""
+        """
+        Computes element wise reciprocal
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = 1 / np.array(self.data)
         return TensorBase(out)
 
     def reciprocal_(self):
-        """Computes element wise reciprocal"""
+        """
+        Computes element wise reciprocal
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.array(self.data)
 
     def log(self):
-        """performs elementwise logarithm operation
-        and returns a new Tensor"""
+        """
+        Performs elementwise logarithm operation and returns a new Tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.log(self.data)
         return TensorBase(out)
 
     def log_(self):
-        """performs elementwise logarithm operation inplace"""
+        """
+        Performs elementwise logarithm operation in-place
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.log(self.data)
         return self
 
     def log1p(self):
-        """performs elementwise log(1+x) operation
-        and returns new tensor"""
+        """
+        Performs elementwise log(1+x) operation and returns new
+        tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Returns Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.log1p(self.data)
         return TensorBase(out)
 
     def log1p_(self):
-        """performs elementwise log(1+x) operation inplace"""
+        """
+        Performs element wise log(1+x) operation in-place
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.log1p(self.data)
         return self
 
     def log_normal_(self, mean=0, stdev=1.0):
-        """Fills give tensor with samples from a lognormal distribution
-        with given mean and stdev"""
+        """
+        Fills given tensor with samples from a lognormal distribution
+        with given mean and stdev
+
+        Parameters
+        ----------
+        mean: ,optional
+
+        stdev: ,optional
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.random.lognormal(mean, stdev, self.shape())
         return self
 
     def clamp(self, minimum=None, maximum=None):
-        """Returns a clamped tensor into the range [min, max], elementwise"""
+        """
+        Returns a clamped tensor into the range [min, max], elementwise
+
+        Parameters
+        ----------
+        minimum: ,optional
+
+        maximum: ,optional
+
+        Returns
+        -------
+        Output Tensor; clamped
+        """
         if self.encrypted:
             return NotImplemented
         return TensorBase(np.clip(self.data, a_min=minimum, a_max=maximum))
 
     def clamp_(self, minimum=None, maximum=None):
-        """Clamp the tensor, in-place, elementwise into the range [min, max]"""
+        """
+        Clamp the tensor, in-place, elementwise into the range [min, max]
+
+        Parameters
+        ----------
+        minimum: ,optional
+
+        maximum: ,optional
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.clip(self.data, a_min=minimum, a_max=maximum)
         return self
 
     def clone(self):
-        """Returns a copy of the tensor. The copy has the same size and data type as the original tensor."""
+        """
+        Returns a copy of the tensor.
+
+        The copy has the same size and data type as the original tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor; clone of input Tensor
+        """
         if self.encrypted:
             return NotImplemented
         return TensorBase(np.copy(self.data))
 
     def chunk(self, n, dim=0, same_size=False):
-        """Returns a list of tensors by splitting the tensor into a number of chunks along a given dimension.
-        Raises an exception if same_size is set to True and given tensor can't be split in n same-size chunks along dim."""
+        """
+        Returns a list of Tensors by Splitting tensors into Chunks.
+
+        Returns a list of tensors by splitting the tensor into a number
+        of chunks along a given dimension.
+        Raises an exception if same_size is set to True and given
+        tensor can't be split in n same-size chunks along dim.
+
+        Parameters
+        ----------
+        n:
+
+        dim: ,optional
+
+        same_size: ,optional
+
+
+        Returns
+        -------
+        List of Output Tensors
+        """
         if self.encrypted:
             return NotImplemented
         if same_size:
@@ -769,16 +1639,50 @@ class TensorBase(object):
             return [TensorBase(x) for x in np.array_split(self.data, n, dim)]
 
     def gt(self, other):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is greater than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Returns Boolean True if an Element calling is greater than second
+        tensor.
+
+        Returns a new Tensor having boolean True values where an element of
+        the calling tensor is greater than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Output Tensor
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
         return TensorBase(np.greater(self.data, other.data))
 
     def gt_(self, other):
-        """Writes in-place, boolean True values where an element of the calling tensor is greater than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Writes Boolean True if an Element calling is greater than second
+        tensor
+
+        Writes in-place, boolean True values where an element of the
+        calling tensor is greater than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
@@ -786,16 +1690,51 @@ class TensorBase(object):
         return self
 
     def lt(self, other):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is less than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Returns Boolean True if an Element calling is less second
+        tensor.
+
+        Returns a new Tensor having boolean True values where an element
+        of the calling tensor is less than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Output Tensor
+
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
         return TensorBase(np.less(self.data, other.data))
 
     def lt_(self, other):
-        """Writes in-place, boolean True values where an element of the calling tensor is less than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Writes Boolean True if an Element calling is less second
+        tensor.
+
+        Writes in-place, boolean True values where an element of the
+        calling tensor is less than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
@@ -803,16 +1742,50 @@ class TensorBase(object):
         return self
 
     def ge(self, other):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is greater or equal than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Returns Boolean True if an Element calling is greater than or equal
+        to second tensor
+
+        Returns a new Tensor having boolean True values where an element of
+        the calling tensor is greater or equal than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Output Tensor
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
         return TensorBase(np.greater_equal(self.data, other.data))
 
     def ge_(self, other):
-        """Writes in-place, boolean True values where an element of the calling tensor is greater or equal than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Writes Boolean True if an Element calling is greater or equal
+        to second tensor
+
+        Writes in-place, boolean True values where an element of the
+        calling tensor is greater or equal than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
@@ -820,16 +1793,50 @@ class TensorBase(object):
         return self
 
     def le(self, other):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is less or equal than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Returns Boolean True if an Element calling is less  or equal to
+        second tensor
+
+        Returns a new Tensor having boolean True values where an element
+        of the calling tensor is less or equal than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Output Tensor
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
         return TensorBase(np.less_equal(self.data, other.data))
 
     def le_(self, other):
-        """Writes in-place, boolean True values where an element of the calling tensor is less or equal than the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Writes Boolean True if an Element calling is less or equal to
+        second tensor
+
+        Writes in-place, boolean True values where an element of the
+        calling tensor is less or equal than the second Tensor,
+        False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        other: TensorBase
+            Other Tensor to be compared with
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         other = _ensure_tensorbase(other)
         if self.encrypted or other.encrypted:
             return NotImplemented
@@ -838,11 +1845,23 @@ class TensorBase(object):
 
     def bernoulli(self, p):
         """
-        Returns a Tensor filled with binary random numbers (0 or 1) from a bernoulli distribution
-        with probability and shape specified by p(arr_like).
+        Returns Tensor with random Numbers from Bernoulli Distri.
 
-        The p Tensor should be a tensor containing probabilities to be used for drawing the
-        binary random number. Hence, all values in p have to be in the range: 0<=p<=1
+        Returns Tensor in-place with binary random numbers (0 or 1)
+        from a bernoulli distribution with probability and shape
+        specified by p(arr_like).
+
+        The p Tensor should be a tensor containing probabilities to
+        be used for drawing the binary random number.
+        Hence, all values in p have to be in the range: 0<=p<=1
+
+        Parameters
+        ----------
+        p:
+
+        Returns
+        -------
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -851,11 +1870,23 @@ class TensorBase(object):
 
     def bernoulli_(self, p):
         """
-        Fills the Tensor in-place with binary random numbers (0 or 1) from a bernoulli distribution
-        with probability and shape specified by p(arr_like)
+        Fills the Tensor with random Numbers from Bernoulli Distri.
 
-        The p Tensor should be a tensor containing probabilities to be used for drawing the
-        binary random number. Hence, all values in p have to be in the range: 0<=p<=1
+        Fills the Tensor in-place with binary random numbers (0 or 1)
+        from a bernoulli distribution with probability and shape
+        specified by p(arr_like).
+
+        The p Tensor should be a tensor containing probabilities to
+        be used for drawing the binary random number.
+        Hence, all values in p have to be in the range: 0<=p<=1
+
+        Parameters
+        ----------
+        p:
+
+        Returns
+        -------
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
@@ -864,16 +1895,40 @@ class TensorBase(object):
         return self
 
     def uniform_(self, low=0, high=1):
-        """Fills the tensor in-place with numbers sampled unifromly
-        over the half-open interval [low,high) or from the uniform distribution"""
+        """
+        Fills the tensor in-place with numbers sampled unifromly
+        over the half-open interval [low,high) or from the uniform distribution
+
+        Parameters
+        -----------
+        low: ,optional
+
+        high: ,optional
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.random.uniform(low=low, high=high, size=self.shape())
         return self
 
     def uniform(self, low=0, high=1):
-        """Returns a new tensor filled with numbers sampled unifromly
-        over the half-open interval [low,high) or from the uniform distribution"""
+        """
+        Returns a new tensor filled with numbers sampled uniformly
+        over the half-open interval [low,high) or from the uniform distribution
+
+        Parameters
+        -----------
+        low: ,optional
+
+        high: ,optional
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.random.uniform(low=low, high=high, size=self.shape())
@@ -923,21 +1978,54 @@ class TensorBase(object):
         return self
 
     def fill_(self, value):
-        """Fills the tensor in-place with the specified value"""
+        """
+        Fills the tensor in-place with the specified value
+
+        Parameters
+        ----------
+        value:
+            Value to be filled
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data.fill(value)
         return self
 
     def tolist(self):
-        """Returns a new tensor as (possibly a nested) list"""
+        """
+        Returns a new tensor as (possibly a nested) list
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output data in list of the tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = self.data.tolist()
         return out
 
     def topk(self, k, largest=True):
-        """Returns a new tensor with the sorted k largest (or smallest) values"""
+        """
+        Returns a new tensor with the sorted k largest (or smallest)
+        values
+
+        Parameters
+        ----------
+        k:
+
+        largest: ,optional
+
+        Returns
+        -------
+        Output Tensor; sorted k largest Values
+        """
         if self.encrypted:
             return NotImplemented
         out_sort = np.sort(self.data)
@@ -950,9 +2038,24 @@ class TensorBase(object):
         return TensorBase(out)
 
     def trace(self, axis1=None, axis2=None):
-        """Returns a new tenosr with the sum along diagonals of a 2D tensor.
-           Axis1 and Axis2 are used to extract 2D subarray for sum calculation
-           along diagonals, if tensor has more than two dimensions. """
+        """
+        Returns a new tenosr with the sum along diagonals of a 2D tensor.
+
+        Axis1 and Axis2 are used to extract 2D subarray for sum calculation
+        along diagonals, if tensor has more than two dimensions.
+
+        Parameters
+        ----------
+        axis1: ,optional
+            Used to extract 2d subarray for sum calculation
+
+        axis2: ,optional
+            Used to extract 2d subarray for sum calculation
+
+        Returns
+        -------
+        Output Tensor ; sum along diagonals
+        """
         if self.encrypted:
             return NotImplemented
         if axis1 is not None and axis2 is not None and self.data.ndim > 2:
@@ -962,7 +2065,18 @@ class TensorBase(object):
         return TensorBase(out)
 
     def view(self, *args):
-        """View the tensor."""
+        """
+        View the tensor.
+
+        Parameters
+        ----------
+        args:
+            Arguments to view
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         else:
@@ -970,13 +2084,31 @@ class TensorBase(object):
             return TensorBase(dt.reshape(*args))
 
     def view_as(self, tensor):
-        """ View as another tensor's shape """
+        """
+        View as another tensor's shape
+
+        Parameters
+        ----------
+        tensor:
+            Input tensor
+
+        Returns
+        -------
+        Output Tensor-View
+        """
         if self.encrypted:
             return NotImplemented
         else:
             return self.view(tensor.shape())
 
     def resize_(self, *size):
+        """
+        Resizes the input object.
+
+        Parameters
+        ----------
+        size:
+        """
         input_size = np.prod(size)
         extension = input_size - self.data.size
         flattened = self.data.flatten()
@@ -997,90 +2129,228 @@ class TensorBase(object):
             raise ValueError('negative dimension not allowed')
 
     def resize_as_(self, tensor):
+        """
+        Resize Tensor
+
+        Parameters
+        ----------
+        tensor:
+
+        Returns
+        -------
+        """
         size = tensor.data.shape
         self.resize_(size)
 
     def round(self, decimals=0):
-        """Returns a new tensor with elements rounded off to a nearest decimal place"""
+        """
+        Returns a new tensor with elements rounded off to a nearest decimal place
+
+        Parameters
+        ----------
+        decimals:
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.round(self.data, decimals=decimals)
         return TensorBase(out)
 
     def round_(self, decimals=0):
-        """Round the elements of tensor in-place to a nearest decimal place"""
+        """
+        Round the elements of tensor in-place to a nearest decimal place
+
+        Parameters
+        ----------
+        decimal:
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.round(self.data, decimals=decimals)
         return self
 
     def repeat(self, reps):
-        """Return a new tensor by repeating the values given by reps"""
+        """
+        Return a new tensor by repeating the values given by reps
+
+        Parameters
+        ----------
+        reps:
+            Number of Repeats
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.tile(self.data, reps=reps)
         return TensorBase(out)
 
     def pow(self, exponent):
-        """Return a new tensor by raising elements to the given exponent.
+        """
+        Return a new tensor by raising elements to the given exponent.
+
         If exponent is an array, each element of the tensor is raised positionally to the
-        element of the exponent"""
+        element of the exponent
+
+        Parameters
+        ----------
+        exponent:
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.power(self.data, exponent)
         return TensorBase(out)
 
     def pow_(self, exponent):
-        """Raise elements to the given exponent in-place. If exponent is an array,
-        each element of the tensor is raised positionally to the element of the exponent"""
+        """
+        Raise elements to the given exponent in-place.
+
+        If exponent is an array, each element of the tensor is raised
+        positionally to the element of the exponent
+
+        Parameters
+        ----------
+        exponent:
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.power(self.data, exponent)
         return self
 
     def prod(self, axis=None):
-        """Returns a new tensor with the product of (specified axis) all the elements"""
+        """
+        Returns a new tensor with the product of (specified axis) all the elements
+
+        Parameters
+        ----------
+        axis: ,optional
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.prod(self.data, axis=axis)
         return TensorBase(out)
 
     def random_(self, low, high=None, size=None):
-        """Fill the tensor in-place with random integers from [low to high)"""
+        """
+        Fill the tensor in-place with random integers from [low to high)
+
+        Parameters
+        ----------
+        low:
+
+        high: ,optional
+
+        size: ,optional
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.random.randint(low=low, high=high, size=size)
         return self
 
     def nonzero(self):
-        """Returns a new tensor with the indices of non-zero elements"""
+        """
+        Returns a new tensor with the indices of non-zero elements
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.array(np.nonzero(self.data))
         return TensorBase(out)
 
     def size(self):
-        """Size of tensor"""
+        """
+        Size of tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Size of the Tensor
+        """
         if self.encrypted:
             return NotImplemented
         else:
             return self.data.size
 
     def cumprod(self, dim=0):
-        """Returns the cumulative product of elements in the dimension dim."""
+        """
+        Returns the cumulative product of elements in the dimension dim.
+
+        Parameters
+        ----------
+        dim:
+
+        Returns
+        -------
+        compound product of the Input
+        """
         if self.encrypted:
             return NotImplemented
         return syft.math.cumprod(self, dim)
 
     def cumprod_(self, dim=0):
-        """calculate in-place the cumulative product of elements in the dimension dim."""
+        """
+        calculate in-place the cumulative product of elements in the dimension dim.
+
+        Parameters
+        ----------
+        dim: ,optional
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = syft.math.cumprod(self, dim).data
         return self
 
     def split(self, split_size, dim=0):
-        """Returns tuple of tensors of equally sized tensor/chunks (if possible)"""
+        """
+        Returns tuple of tensors of equally sized tensor/chunks (if possible)
+
+        Parameters
+        ----------
+        split_size:
+
+        dim:
+
+        Returns
+        -------
+        Tuple of Tensors
+        """
         if self.encrypted:
             return NotImplemented
         splits = np.array_split(self.data, split_size, axis=0)
@@ -1091,14 +2361,35 @@ class TensorBase(object):
         return tensors_tuple
 
     def squeeze(self, axis=None):
-        """Returns a new tensor with all the single-dimensional entries removed"""
+        """
+        Returns a new tensor with all the single-dimensional entries removed
+
+        Parameters
+        ----------
+        axis
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.squeeze(self.data, axis=axis)
         return TensorBase(out)
 
     def expand_as(self, tensor):
-        """Returns a new tensor with the expanded size as of the specified (input) tensor"""
+        """
+        Returns a new tensor with the expanded size as of the specified
+        (input) tensor
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         shape = tensor.data.shape
@@ -1109,45 +2400,114 @@ class TensorBase(object):
         return TensorBase(out)
 
     def mean(self, dim=None, keepdim=False):
-        """Return the mean of the tensor elements"""
+        """
+        Returns the mean of the tensor elements
+
+        Parameters
+        ----------
+        dim: ,optional
+
+        keepdim: ,optional
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.mean(self.data, axis=dim, keepdims=keepdim)
         return TensorBase(out)
 
     def neg(self):
-        """Returns negative of the elements of tensor"""
+        """
+        Returns negative of the elements of tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Negative of elements of tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = -1 * np.array(self.data)
         return TensorBase(out)
 
     def neg_(self):
-        """Returns negative of the elements of tensor inplace"""
+        """
+        Sets negative of the elements of tensor in-place
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = -1 * np.array(self.data)
         return self
 
     def normal(self, mu, sigma):
-        """Returns a Tensor of random numbers drawn from separate
-        normal distributions who’s mean and standard deviation are given."""
+        """
+        Returns a Tensor of Random numbers
+
+        Returns a Tensor of random numbers drawn from separate
+        normal distributions who’s mean and standard deviation are given.
+
+        Parameters
+        ----------
+        mu:
+
+        sigma:
+
+        Returns
+        -------
+        Tensor of Random Numbers
+        """
+
         if self.encrypted:
             return NotImplemented
         out = np.random.normal(mu, sigma, self.data.shape)
         return TensorBase(out)
 
     def normal_(self, mu, sigma):
-        """Returns a Tensor of random numbers in-place drawn from separate
-        normal distributions who’s mean and standard deviation are given."""
+        """
+        Returns a Tensor of random numbers
+
+        Returns a Tensor of random numbers in-place drawn from separate
+        normal distributions who’s mean and standard deviation are given.
+
+        Parameters
+        ----------
+        mu:
+
+        sigma:
+
+        Returns
+        -------
+        Tensor of Random Numbers
+        """
+
         if self.encrypted:
             return NotImplemented
         self.data = np.random.normal(mu, sigma, self.data.shape)
         return self
 
     def ne(self, tensor):
-        """Checks element-wise equality with the given tensor and returns
-        a boolean result with same dimension as the input matrix"""
+        """
+        Checks element-wise equality with the given tensor
+
+        Parameters
+        ----------
+        tensor:
+
+        Returns
+        -------
+        Boolean result with dimension of the input matrix
+        """
         if self.encrypted:
             return NotImplemented
         else:
@@ -1163,7 +2523,15 @@ class TensorBase(object):
 
     def ne_(self, tensor):
         """
-         Checks in place element wise equality and updates the data matrix to the equality matrix
+        Checks in-place element wise equality and updates the data matrix
+        to the equality matrix.
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        Returns
+        -------
         """
         if self.encrypted:
             return NotImplemented
@@ -1172,38 +2540,107 @@ class TensorBase(object):
             self.data = value.data
 
     def median(self, axis=1, keepdims=False):
-        """Returns median of tensor as per specified axis. By default median is calculated along rows.
-        axis=None can be used get median of whole tensor."""
+        """
+        Returns median of tensor as per specified axis.
+
+        By default median is calculated along rows.
+        axis=None can be used get median of whole tensor.
+
+
+        Parameters
+        ----------
+        axis: ,optional
+            To get median of whole tensor, specify axis=None
+
+        keepdims: ,optional
+
+        Returns
+        -------
+        Outut Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = np.median(np.array(self.data), axis=axis, keepdims=keepdims)
         return TensorBase(out)
 
     def mode(self, axis=1):
-        """Returns mode of tensor as per specified axis. By default mode is calculated along rows.
-        To get mode of whole tensor, specify axis=None"""
+        """
+        Returns mode of tensor as per specified axis.
+
+        By default mode is calculated along rows.
+        To get mode of whole tensor, specify axis=None
+
+        Parameters
+        ----------
+        axis : ,optional
+            To get mode of whole tensor, specify axis=None
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         out = scipy.stats.mode(np.array(self.data), axis=axis)
         return TensorBase(out)
 
     def inverse(self):
-        """Returns inverse of a square matrix"""
+        """
+        Returns inverse of a square matrix.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output Tensor; with inverse values
+        """
+
         if self.encrypted:
             return NotImplemented
         inv = np.linalg.inv(np.matrix(np.array(self.data)))
         return TensorBase(inv)
 
     def min(self, axis=1, keepdims=False):
-        """Returns minimum value in tensor along rows by default
-        but if axis=None it will return minimum value in tensor"""
+        """
+        Returns minimum value in tensor along rows by default.
+
+        If axis=None it will return minimum value in tensor
+
+        Parameters
+        ----------
+        axis: ,optional
+            axis=None will return minimum value
+
+        keepdims: ,optional
+
+        Returns
+        -------
+        Output Tensor; with minimum value
+        """
+
         if self.encrypted:
             return NotImplemented
         min = np.matrix(np.array(self.data)).min(axis=axis, keepdims=keepdims)
         return TensorBase(min)
 
     def histc(self, bins=10, min=0, max=0):
-        """Computes the histogram of a tensor and Returns it"""
+        """
+        Computes the histogram of a tensor.
+
+        Parameters
+        ----------
+        bins: ,optional
+            The bin range
+        min: ,optional
+            Minimum of the Hist.
+        max: ,optional
+            Maximum of the Hist.
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         hist, edges = np.histogram(
@@ -1212,12 +2649,24 @@ class TensorBase(object):
 
     def scatter_(self, dim, index, src):
         """
-        Writes all values from the Tensor ``src`` into ``self`` at the indices specified in the ``index`` Tensor.
-        The indices are specified with respect to the given dimension, ``dim``, in the manner described in gather().
-        :param dim: The axis along which to index
-        :param index: The indices of elements to scatter
-        :param src: The source element(s) to scatter
-        :return: self
+        Writes all values from the Tensor ``src`` into ``self`` at the
+        indices specified in the ``index`` Tensor.
+
+        The indices are specified with respect to the given dimension,
+        ``dim``, in the manner described in gather().
+
+        Parameters
+        ----------
+        dim:
+            The axis along which to index
+        index:
+            The indices of elements to scatter
+        src:
+            The source element(s) to scatter
+
+        Returns
+        -------
+        Caller with values in-place
         """
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
@@ -1232,8 +2681,7 @@ class TensorBase(object):
         if dim < 0:
             # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
             dim = self.data.ndim + dim
-        idx_xsection_shape = index.data.shape[:dim] + \
-            index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
@@ -1278,19 +2726,27 @@ class TensorBase(object):
     def gather(self, dim, index):
         """
         Gathers values along an axis specified by ``dim``.
+
         For a 3-D tensor the output is specified by:
             out[i][j][k] = input[index[i][j][k]][j][k]  # if dim == 0
             out[i][j][k] = input[i][index[i][j][k]][k]  # if dim == 1
             out[i][j][k] = input[i][j][index[i][j][k]]  # if dim == 2
-        :param dim: The axis along which to index
-        :param index: A tensor of indices of elements to gather
-        :return: tensor of gathered values
+
+        Parameters
+        ----------
+        dim:
+            The axis along which to index
+        index:
+            A tensor of indices of elements to gather
+
+        Returns
+        -------
+        Output Tensor
         """
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
             return NotImplemented
-        idx_xsection_shape = index.data.shape[:dim] + \
-            index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
@@ -1303,19 +2759,52 @@ class TensorBase(object):
         return TensorBase(np.swapaxes(gathered, 0, dim))
 
     def serialize(self):
+        """
+        Serializes Object to a pickle.
+
+        Parameters
+        ----------
+
+
+        Returns
+        -------
+        pickle dumps
+        """
         return pickle.dumps(self)
 
     def deserialize(b):
+        """
+        Deserializes an Object from a Pickle
+
+        Parameters
+        ----------
+        b: Obj
+            pickled Object
+
+        Returns
+        -------
+        Object loaded from Pickle
+        """
         return pickle.loads(b)
 
     def remainder(self, divisor):
         """
         Computes the element-wise remainder of division.
-        The divisor and dividend may contain both for integer and floating point numbers.
+
+        The divisor & dividend may contain both for integer and floating point
+        numbers.
         The remainder has the same sign as the divisor.
-        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
-        :param divisor:  The divisor. This may be either a number or a tensor.
-        :return: result tensor
+        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor``
+        must be broadcastable.
+
+        Parameters
+        ----------
+        divisor:
+            This may be either a number or a tensor.
+
+        Returns
+        -------
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -1326,11 +2815,22 @@ class TensorBase(object):
     def remainder_(self, divisor):
         """
         Computes the element-wise remainder of division.
-        The divisor and dividend may contain both for integer and floating point numbers.
+
+        The divisor and dividend may contain both for integer and floating
+        point numbers.
         The remainder has the same sign as the divisor.
-        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
-        :param divisor:  The divisor. This may be either a number or a tensor.
-        :return: self
+        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor``
+        must be broadcastable.
+
+        Parameters
+        ----------
+        divisor:
+            The divisor. This may be either a number or a tensor.
+
+        Returns
+        -------
+        Caller with values in-place
+
         """
         if self.encrypted:
             return NotImplemented
@@ -1344,9 +2844,16 @@ class TensorBase(object):
         Returns a new Tensor which indexes the ``input`` Tensor along
         dimension ``dim`` using the entries in ``index``.
 
-        :param dim: dimension in which to index
-        :param index: 1D tensor containing the indices to index
-        :return: Tensor of selected indices
+        Parameters
+        ----------
+        dim:
+            dimension in which to index
+        index:
+            1D tensor containing the indices to index
+
+        Returns
+        -------
+        Tensor of selected indices
         """
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
@@ -1362,13 +2869,25 @@ class TensorBase(object):
 
     def masked_scatter_(self, mask, source):
         """
-        Copies elements from ``source`` into this tensor at positions where the ``mask`` is true.
-        The shape of ``mask`` must be broadcastable with the shape of the this tensor.
-        The ``source`` should have at least as many elements as the number of ones in ``mask``.
+        Copies elements from ``source`` into this tensor at positions
+        where the ``mask`` is true.
 
-        :param mask: The binary mask (non-zero is treated as true)
-        :param source: The tensor to copy from
-        :return:
+        The shape of ``mask`` must be broadcastable with the shape of the this
+        tensor.
+        The ``source`` should have at least as many elements as the number
+        of ones in ``mask``.
+
+        Parameters
+        ----------
+        mask: TensorBase
+            The binary mask (non-zero is treated as true)
+
+        source: TensorBase
+            The tensor to copy from
+
+        Returns
+        -------
+        Output Tensor
         """
         mask = _ensure_tensorbase(mask)
         source = _ensure_tensorbase(source)
@@ -1384,11 +2903,20 @@ class TensorBase(object):
     def masked_fill_(self, mask, value):
         """
         Fills elements of this ``tensor`` with value where ``mask`` is true.
-        The shape of mask must be broadcastable with the shape of the underlying tensor.
+        in-place
+        The shape of mask must be broadcastable with the shape of the underlying
+        tensor.
 
-        :param mask: The binary mask (non-zero is treated as true)
-        :param value: value to fill
-        :return:
+        Parameters
+        ----------
+        mask: TensorBase
+            The binary mask (non-zero is treated as true)
+        value:
+            value to fill
+
+        Returns
+        -------
+        Caller with values in-place
         """
         mask = _ensure_tensorbase(mask)
         if self.encrypted or mask.encrypted:
@@ -1407,35 +2935,87 @@ class TensorBase(object):
         return masked_select(self, mask)
 
     def eq(self, t):
-        """Returns a new Tensor having boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Checks if two Tensors are equal.
+
+        Returns a new Tensor having boolean True values where an element of the
+        calling tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        t: TensorBase
+            Input tensor
+
+        Returns
+        -------
+        Output Tensor
+        """
         if self.encrypted:
             return NotImplemented
         return TensorBase(np.equal(self.data, _ensure_tensorbase(t).data))
 
     def eq_(self, t):
-        """Writes in-place, boolean True values where an element of the calling tensor is equal to the second Tensor, False otherwise.
-        The second Tensor can be a number or a tensor whose shape is broadcastable with the calling Tensor."""
+        """
+        Checks if two Tensors are equal, in-place
+
+        Writes in-place, boolean True values where an element of the calling
+        tensor is equal to the second Tensor, False otherwise.
+        The second Tensor can be a number or a tensor whose shape is
+        broadcastable with the calling Tensor.
+
+        Parameters
+        ----------
+        t: TensorBase
+            Input Tensor
+
+        Returns
+        -------
+        Caller with values in-place
+        """
         if self.encrypted:
             return NotImplemented
         self.data = np.equal(self.data, _ensure_tensorbase(t).data)
         return self
 
-    def mm(self, tensor2):
-        """Performs a matrix multiplication of :attr:`tensor1` and :attr:`tensor2`.
+    def mm(self, tensor):
+        """
+        Performs a matrix multiplication of two Tensors.
 
         If :attr:`tensor1` is a `n x m` Tensor, :attr:`tensor2` is a `m x p` Tensor,
         output will be a `n x p` Tensor.
 
-        Args:
-            tensor1 (Tensor): First Tensor to be multiplied
-            tensor2 (Tensor): Second Tensor to be multiplied"""
+        Parameters
+        ----------
+        tensor: Tensor
+            Second Tensor to be multiplied
 
-        return syft.mm(self, tensor2)
+        Returns
+        -------
+        n x p Output Tensor
+        """
+
+        return syft.mm(self, tensor)
 
 
 def mv(tensormat, tensorvector):
-    """ matrix and vector multiplication """
+    """
+    Matrix and Vector multiplication is performed.
+
+
+    Parameters
+    ----------
+    tensormat: TensorBase
+        Input tensor matrix
+    tensorvector: TensorBase
+        Input tensor vector
+
+
+    Returns
+    -------
+    Output Tensor
+    """
     if tensormat.encrypted or tensorvector.encrypted:
         raise NotImplemented
     elif not len(tensorvector.data.shape) == 1:
@@ -1450,12 +3030,21 @@ def mv(tensormat, tensorvector):
 
 def masked_select(tensor, mask):
     """
-    Returns a new 1D Tensor which indexes the ``input`` Tensor according to the binary mask ``mask``.
-    The shapes of the ``mask`` tensor and the ``input`` tensor don’t need to match, but they must be broadcastable.
+    Returns a new 1D Tensor which indexes the ``input`` Tensor according to
+    the binary mask ``mask``.
+    The shapes of the ``mask`` tensor and the ``input`` tensor don’t need
+    to match, but they must be broadcastable.
 
-    :param tensor: Input tensor
-    :param mask: The binary mask (non-zero is treated as true)
-    :return: 1D output tensor
+    Parameters
+    ----------
+    tensor: TensorBase
+        The input Tensor
+    mask: TensorBase
+        The binary mask (non-zero is treated as true)
+
+    Returns
+    -------
+    Output Tensor; 1D
     """
     mask = _ensure_tensorbase(mask)
     tensor = _ensure_tensorbase(tensor)
