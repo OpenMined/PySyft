@@ -4,6 +4,7 @@ import unittest
 from syft import tensor
 import numpy as np
 import math
+import pytest
 
 
 # Here's our "unit tests".
@@ -831,6 +832,16 @@ class notEqualTests(unittest.TestCase):
         t1.ne_(t2)
         self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
 
+class indexTests(unittest.TestCase):
+    def test_index(self):
+        t = TensorBase(np.array([1, 2, 3.5]))
+        expected1 = TensorBase(np.array([2]))
+        expected2 = TensorBase(np.array([3.5]))
+
+        self.assertEqual(expected1, t.index(1))
+        self.assertEqual(expected2, t.index(2))
+        with pytest.raises(IndexError) as e_info:
+            t.index(100)
 
 class index_selectTests(unittest.TestCase):
     def test_index_select(self):

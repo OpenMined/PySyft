@@ -1259,6 +1259,19 @@ class TensorBase(object):
         self.data = np.remainder(self.data, divisor)
         return self
 
+    def index(self, position):
+        """
+        Returns a new Tensor with the element selected by position
+
+        :param index: integer position
+        :return: Tensor of selected indices
+        """
+        if self.encrypted:
+            return NotImplemented
+        if self.__len__() < position:
+            raise IndexError("Out of range") 
+        return TensorBase([self[position]], self.encrypted)
+
     def index_select(self, dim, index):
         """
         Returns a new Tensor which indexes the ``input`` Tensor along
