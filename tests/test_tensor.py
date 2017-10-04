@@ -716,6 +716,14 @@ class uniformTests(unittest.TestCase):
         self.assertTrue(np.all(t1.data > 0) and np.all(t1.data < 3))
 
 
+class geometricTests(unittest.TestCase):
+    def test_geometric_(self):
+        t1 = TensorBase(np.zeros((4, 4)))
+        out = t1.geometric_(p=0.5)
+        self.assertTupleEqual(t1.data.shape, out.data.shape)
+        self.assertTrue(np.all(out.data > 0))
+
+
 class fillTests(unittest.TestCase):
     def test_fill_(self):
         t1 = TensorBase(np.array([1, 2, 3, 4]))
