@@ -1399,12 +1399,16 @@ class TensorBase(object):
 
     def fmod_(self, divisor):
         """
-        Computes the element-wise remainder of division inline.
-        The divisor and dividend may contain integer and floating point numbers.
-        The remainder has the same sign as the divisor.
-        When ``divisor`` is a Tensor, the shapes of ``self`` and ``divisor`` must be broadcastable.
-        :param divisor:  The divisor, either a number or a Tensor.
-        :return: self.
+        Performs the element-wise division of tensor by divisor.
+
+        Parameters
+        ----------
+        divisor: number or TensorBase
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
         """
         if self.encrypted:
             return NotImplemented
