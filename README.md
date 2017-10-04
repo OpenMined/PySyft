@@ -77,7 +77,7 @@ make run
 
 If you want create a local Docker with Jupyter:
 ```sh
-docker build -f Dockerfile -t "pysyft" .
+docker build -f Development-Dockerfile -t "pysyft" .
 make custom docker=pysyft
 ```
 
