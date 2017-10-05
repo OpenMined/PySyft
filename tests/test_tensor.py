@@ -1119,6 +1119,16 @@ class mm_test(unittest.TestCase):
         self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
 
 
+class half(unittest.TestCase):
+    def half_test_1(self):
+        t1 = TensorBase(np.array([2, 3, 4]))
+        self.assertTrue(np.alltrue(t1.half() == np.array([2, 3, 4]).astype('float16')))
+
+    def half_test_2(self):
+        t1 = TensorBase(np.array([[1.1, 2.1], [1.11, 2.11]]))
+        self.assertTrue(np.alltrue(t1.half() == np.array([[1.1, 2.1], [1.11, 2.11]]).astype('float16')))
+
+
 class fmodTest(unittest.TestCase):
     def test_fmod_number(self):
         t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
