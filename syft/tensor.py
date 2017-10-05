@@ -1268,9 +1268,35 @@ class TensorBase(object):
         """
         if self.encrypted:
             return NotImplemented
-        if self.__len__() < position:
-            raise IndexError("Out of range") 
+        if not isinstance(position, int):
+            raise ValueError("The value of position must be an integer")
+        if position > self.data.size or position < 0:
+            raise IndexError("Out of range")
         return TensorBase([self[position]], self.encrypted)
+
+    def index_add_(self, dim, index, tensor):
+        """
+        Add the value of tensor selecting the elements and ordered
+        by index. In-place operation.
+
+        :dim: dimension along which to inde
+        :index: indices to select
+        :tensor: Tensor containing the values to add
+        """
+        index = _ensure_tensorbase(index)
+        tensor = _ensure_tensorbase(tensor)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if self.data.shape[dim] != index.data.size:
+            raise ValueError("Index should have the same number of elements as dimension")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Out of range")
+
+        self.data += tensor.data.take(index, dim)
+        return self
 
     def index_select(self, dim, index):
         """

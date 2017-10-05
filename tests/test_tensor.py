@@ -832,6 +832,7 @@ class notEqualTests(unittest.TestCase):
         t1.ne_(t2)
         self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
 
+
 class indexTests(unittest.TestCase):
     def test_index(self):
         t = TensorBase(np.array([1, 2, 3.5]))
@@ -840,8 +841,19 @@ class indexTests(unittest.TestCase):
 
         self.assertEqual(expected1, t.index(1))
         self.assertEqual(expected2, t.index(2))
-        with pytest.raises(IndexError) as e_info:
-            t.index(100)
+        with pytest.raises(IndexError):
+            t.index(3)
+
+    def test_index_add(self):
+        t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
+        t2 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        expected_0 = TensorBase(np.array([[1, 2, 3], [8, 9, 10], [5, 6, 7]]))
+        expected_1 = TensorBase(np.array([[1, 3, 2], [5, 7, 6], [8, 10, 9]]))
+        result_0 = t1.index_add_(0, [0, 2, 1], t2)
+        result_1 = t1.index_add_(1, [0, 2, 1], t2)
+        self.assertTrue(expected_0, result_0)
+        self.assertTrue(expected_1, result_1)
+
 
 class index_selectTests(unittest.TestCase):
     def test_index_select(self):
