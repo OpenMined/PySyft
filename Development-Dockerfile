@@ -1,2 +1,0 @@
-FROM openmined/pysyft
-RUN pip3 install jupyter

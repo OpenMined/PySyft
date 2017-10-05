@@ -1,5 +1,7 @@
 -r ./requirements.txt
 
-# Everything for testing purposes
 line_profiler
 pytest
+pytest-flake8
+sklearn
+jupyter
