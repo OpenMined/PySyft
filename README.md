@@ -85,6 +85,7 @@ make custom docker=pysyft
 
 ```sh
 cd PySyft
+pip install -r test-requirements.txt
 make test
 ```
 
