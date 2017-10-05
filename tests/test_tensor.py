@@ -1119,6 +1119,29 @@ class mm_test(unittest.TestCase):
         self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
 
 
+class newTensorTests(unittest.TestCase):
+    def test_encrypted_error(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]), encrypted=True)
+        t2 = t1.new([1, 1, 2], encrypted=True)
+
+        self.assertEqual(t2, NotImplemented)
+
+    def test_return_new_float_tensor(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]))
+        t2 = t1.new(np.array([1., 1., 2.]))
+
+        self.assertTrue(t2.data.dtype == np.float64)
+
+    def test_return_new_int_tensor(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]))
+        t2 = t1.new(np.array([1, 1, 2]))
+
+        self.assertTrue(t2.data.dtype == np.int64)
+
+
 class half(unittest.TestCase):
     def half_test_1(self):
         t1 = TensorBase(np.array([2, 3, 4]))

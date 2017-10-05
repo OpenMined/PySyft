@@ -109,6 +109,30 @@ class TensorBase(object):
         self.data = _ensure_ndarray(arr_like)
         self.encrypted = encrypted
 
+    def new(self, *args, **kwargs):
+        """Constructs a new tensor instance of the same data type.
+
+        Parameters
+        ----------
+        *args
+            Variable length argument list used to instantiate
+            new TensorBase object.
+        **kwargs
+            Arbitrary keyword arguments used to instantiate
+            new TensorBase object.
+
+        Returns
+        -------
+        TensorBase class instance if parent TensorBase
+        has self.encrypted = False, otherwise return NotImplemented
+        error.
+
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        return self.__class__(*args, **kwargs)
+
     def _calc_mul_depth(self, tensor1, tensor2):
         if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
             self._mul_depth = max(tensor1._mul_depth, tensor2._mul_depth) + 1
