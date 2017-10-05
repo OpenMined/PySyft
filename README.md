@@ -29,7 +29,7 @@ brew cask install docker
 open -a docker
 ```
 
-You can ensure that docker is properly installed and running by checking: `docker --version`.
+You can ensure that Docker is properly installed and running by checking: `docker --version`.
 
 ### Run PySyft in a container
 
@@ -74,7 +74,7 @@ pip3 install -r requirements.txt
 Additional test and development dependencies such as scikit-learn and Jupyter are
 listed in [`dev-requirements.txt`](./dev-requirements.txt):
 ```sh
-pip3 install -r requirements.txt
+pip3 install -r dev-requirements.txt
 ```
 
 #### PySyft installation

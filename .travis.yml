@@ -8,8 +8,7 @@ before_install:
 
 # install dependencies
 install:
-  - "pip install -r requirements.txt"
-  - "pip install pytest pytest-flake8"
+  - "pip install -r test-requirements.txt"
   - "python setup.py install"
 
 # run tests

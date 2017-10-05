@@ -1,7 +1,4 @@
--r ./requirements.txt
+-r ./test-requirements.txt
 
-line_profiler
-pytest
-pytest-flake8
 sklearn
 jupyter
