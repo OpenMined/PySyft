@@ -3053,6 +3053,24 @@ class TensorBase(object):
 
         return self
 
+    def half(self):
+        """
+        casts the tensor to half-precision float type.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return TensorBase(np.array(self).astype('float16'))
+
 
 def mv(tensormat, tensorvector):
     """
