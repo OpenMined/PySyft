@@ -89,7 +89,8 @@ class PublicKey(AbstractPublicKey):
         if(type(x) == int or type(x) == float or type(x) == np.float64):
             if(same_type):
                 return NotImplemented
-            return FixedPoint(self, x)
+            FP_num = FixedPoint(x)
+            return self.pk.encrypt(FP_num.scaledval)
         elif(type(x) == TensorBase):
             if(x.encrypted or same_type):
                 return NotImplemented
