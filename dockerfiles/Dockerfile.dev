@@ -2,8 +2,8 @@
 # PySyft in development mode, so that changes to its source are directly
 # available when importing the module
 
-FROM pysyft-base
+FROM pysyft-base:local
 
-WORKDIR PySyft
+WORKDIR /PySyft
 COPY . ./
 RUN make develop

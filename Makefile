@@ -19,7 +19,7 @@ notebook:
 
 # Docker-related targets, to build and run a prod and a dev images
 docker-build-base:
-	docker build -f dockerfiles/Dockerfile.base -t pysyft-base:local
+	docker build -f dockerfiles/Dockerfile.base -t pysyft-base:local .
 
 docker-build: docker-build-base
 	docker build -f dockerfiles/Dockerfile -t openmined/pysyft:local .
@@ -32,4 +32,4 @@ docker-run:
 	docker run -it --rm \
 		-v "$(PWD)":/PySyft \
 		-p 8888:8888 \
-		$(image) sh
+		"$(image)" sh

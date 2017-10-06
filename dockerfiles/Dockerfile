@@ -3,7 +3,7 @@
 
 FROM pysyft-base:local
 
-WORKDIR PySyft
+WORKDIR /PySyft
 COPY syft syft
 COPY bin bin
 COPY Makefile setup.py setup.cfg README.md LICENSE requirements.txt ./
