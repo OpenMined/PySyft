@@ -44,6 +44,46 @@ class DimTests(unittest.TestCase):
         self.assertEqual(t.nelement(), t1.nelement())
 
 
+class DiagTests(unittest.TestCase):
+    def test_one_dim_tensor_main_diag(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        tdiag = t.diag()
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([[1, 0, 0],
+                                                                    [0, 2, 0],
+                                                                    [0, 0, 3]]))))
+
+    def test_one_dim_tensor_upper_diag(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        tdiag = t.diag(1)
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([[0, 1, 0, 0],
+                                                                    [0, 0, 2, 0],
+                                                                    [0, 0, 0, 3],
+                                                                    [0, 0, 0, 0]]))))
+
+    def test_one_dim_tensor_below_diag(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        tdiag = t.diag(-1)
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([[0, 0, 0, 0],
+                                                                    [1, 0, 0, 0],
+                                                                    [0, 2, 0, 0],
+                                                                    [0, 0, 3, 0]]))))
+
+    def test_two_dim_tensor_main_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        tdiag = t.diag()
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([0, 3]))))
+
+    def test_two_dim_tensor_upper_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        tdiag = t.diag(1)
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([1]))))
+
+    def test_two_dim_tensor_below_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        tdiag = t.diag(-1)
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([2]))))
+
+
 class AddTests(unittest.TestCase):
     def test_simple(self):
         t = TensorBase(np.array([1, 2, 3]))
