@@ -27,7 +27,6 @@ class PaillierTensor(TensorBase):
         if(not isinstance(tensor, TensorBase)):
             # try encrypting it
             tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'))
-
             return PaillierTensor(self.public_key, self.data + tensor.data, False)
 
         if(type(tensor) == TensorBase):
@@ -42,7 +41,7 @@ class PaillierTensor(TensorBase):
 
         if(not isinstance(tensor, TensorBase)):
             # try encrypting it
-            tensor = self.public_key.encrypt(tensor)
+            tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'))
             return PaillierTensor(self.public_key, self.data - tensor.data, False)
 
         if(type(tensor) == TensorBase):

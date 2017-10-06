@@ -47,6 +47,20 @@ class FloorTests(unittest.TestCase):
                                                                     [7., 8.]])))
 
 
+class tanhTests(unittest.TestCase):
+    def test_tanh(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t2 = syft.math.tanh(t1)
+        self.assertTrue(np.array_equal(t1.data, np.array([[0, 1, -2], [0, -1, 2]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0, 1, -2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t2 = syft.math.tanh(t1)
+        self.assertTrue(np.array_equal(t1.data, np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
+
+
 class CumsumTests(unittest.TestCase):
     def test_cumsum(self):
         t1 = TensorBase(np.array([1, 2, 3]))
@@ -165,6 +179,21 @@ class addmv(unittest.TestCase):
         self.assertTrue(np.array_equal(out.data, [68, 130]))
 
 
+class bmmTests(unittest.TestCase):
+    def test_bmm_for_correct_size_output(self):
+        t1 = TensorBase(np.random.rand(4, 3, 2))
+        t2 = TensorBase(np.random.rand(4, 2, 1))
+        out = syft.bmm(t1, t2)
+        self.assertTupleEqual(out.shape(), (4, 3, 1))
+
+    def test_bmm(self):
+        t1 = TensorBase(np.array([[[3, 1]], [[1, 2]]]))
+        t2 = TensorBase(np.array([[[1], [3]], [[4], [8]]]))
+        out = syft.bmm(t1, t2)
+        test_result = np.array([[[6]], [[20]]])
+        self.assertTrue(np.array_equal(out.data, test_result))
+
+
 class addbmmTests(unittest.TestCase):
     def test_addbmm(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
@@ -226,4 +255,21 @@ class mmtest(unittest.TestCase):
         t1 = TensorBase(np.array([[1, 2], [2, 3], [3, 4]]))
         t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
         out = syft.mm(t1, t2)
-        self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
+        self.assertTrue(np.alltrue(
+            out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
+
+
+class fmodTest(unittest.TestCase):
+    def test_fmod_number(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        self.assertTrue(np.array_equal(syft.math.fmod(t1, 2).data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        self.assertTrue(np.array_equal(syft.math.fmod(t2, 2.).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
+
+    def test_fmod_tensor(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        divisor = np.array([2] * 6)
+        self.assertTrue(np.array_equal(syft.math.fmod(t1, divisor).data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        divisor = np.array([2.] * 6)
+        self.assertTrue(np.array_equal(syft.math.fmod(t2, divisor).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
