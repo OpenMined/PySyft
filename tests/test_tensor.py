@@ -724,6 +724,21 @@ class geometricTests(unittest.TestCase):
         self.assertTrue(np.all(out.data > 0))
 
 
+class normalTests(unittest.TestCase):
+    def test_normal_(self):
+        t = TensorBase(np.zeros([1, 2, 3, 4]))
+        t.normal_(mu=0, sigma=1)
+        self.assertTupleEqual((1, 2, 3, 4), t.shape())
+        self.assertTrue(np.all(t.data != 0))
+
+    def test_normal(self):
+        t = TensorBase(np.zeros([1, 2, 3, 4]))
+        t1 = t.normal(mu=0, sigma=1)
+        self.assertTrue(np.array_equal(t.data, np.zeros([1, 2, 3, 4])))
+        self.assertTupleEqual((1, 2, 3, 4), t1.shape())
+        self.assertTrue(np.all(t1.data != 0))
+
+
 class fillTests(unittest.TestCase):
     def test_fill_(self):
         t1 = TensorBase(np.array([1, 2, 3, 4]))
@@ -780,6 +795,42 @@ class powTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 4, 6]))
         t1.pow_(2)
         self.assertTrue(np.array_equal(t1.data, np.array([4, 16, 36])))
+
+
+class negTests(unittest.TestCase):
+    def test_neg(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t2 = t1.neg()
+        self.assertTrue(np.array_equal(t1.data, np.array([[0, 1, -2], [0, -1, 2]])))
+        self.assertTrue(np.array_equal(t2.data, np.array([[0, -1, 2], [0, 1, -2]])))
+        # float
+        t3 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t4 = t3.neg()
+        self.assertTrue(np.array_equal(t3.data, np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]])))
+        self.assertTrue(np.array_equal(t4.data, np.array([[0.0, -1.5, 2.5], [0.0, 1.5, -2.5]])))
+
+    def test_neg_(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t1.neg_()
+        self.assertTrue(np.array_equal(t1.data, np.array([[0, -1, 2], [0, 1, -2]])))
+        # float
+        t2 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t2.neg_()
+        self.assertTrue(np.array_equal(t2.data, np.array([[0.0, -1.5, 2.5], [0.0, 1.5, -2.5]])))
+
+
+class tanhTests(unittest.TestCase):
+    def test_tanh_(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t1.tanh_()
+        self.assertTrue(np.array_equal(t1.data, np.tanh(np.array([[0, 1, -2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t1.tanh_()
+        self.assertTrue(np.array_equal(t1.data, np.tanh(np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
 
 
 class prodTests(unittest.TestCase):
@@ -1117,6 +1168,55 @@ class mm_test(unittest.TestCase):
         t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
         out = t1.mm(t2)
         self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
+
+
+class newTensorTests(unittest.TestCase):
+    def test_encrypted_error(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]), encrypted=True)
+        t2 = t1.new([1, 1, 2], encrypted=True)
+
+        self.assertEqual(t2, NotImplemented)
+
+    def test_return_new_float_tensor(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]))
+        t2 = t1.new(np.array([1., 1., 2.]))
+
+        self.assertTrue(t2.data.dtype == np.float64)
+
+    def test_return_new_int_tensor(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]))
+        t2 = t1.new(np.array([1, 1, 2]))
+
+        self.assertTrue(t2.data.dtype == np.int64)
+
+
+class half(unittest.TestCase):
+    def half_test_1(self):
+        t1 = TensorBase(np.array([2, 3, 4]))
+        self.assertTrue(np.alltrue(t1.half() == np.array([2, 3, 4]).astype('float16')))
+
+    def half_test_2(self):
+        t1 = TensorBase(np.array([[1.1, 2.1], [1.11, 2.11]]))
+        self.assertTrue(np.alltrue(t1.half() == np.array([[1.1, 2.1], [1.11, 2.11]]).astype('float16')))
+
+
+class fmodTest(unittest.TestCase):
+    def test_fmod_number(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        self.assertTrue(np.array_equal(t1.fmod(2).data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        self.assertTrue(np.array_equal(t2.fmod(2.).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
+
+    def test_fmod_tensor(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        divisor = np.array([2] * 6)
+        self.assertTrue(np.array_equal(t1.fmod(divisor).data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        divisor = np.array([2.] * 6)
+        self.assertTrue(np.array_equal(t2.fmod(divisor).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
 
 
 class fmod_Test(unittest.TestCase):

@@ -109,6 +109,30 @@ class TensorBase(object):
         self.data = _ensure_ndarray(arr_like)
         self.encrypted = encrypted
 
+    def new(self, *args, **kwargs):
+        """Constructs a new tensor instance of the same data type.
+
+        Parameters
+        ----------
+        *args
+            Variable length argument list used to instantiate
+            new TensorBase object.
+        **kwargs
+            Arbitrary keyword arguments used to instantiate
+            new TensorBase object.
+
+        Returns
+        -------
+        TensorBase class instance if parent TensorBase
+        has self.encrypted = False, otherwise return NotImplemented
+        error.
+
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        return self.__class__(*args, **kwargs)
+
     def _calc_mul_depth(self, tensor1, tensor2):
         if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
             self._mul_depth = max(tensor1._mul_depth, tensor2._mul_depth) + 1
@@ -2981,9 +3005,33 @@ class TensorBase(object):
 
         return syft.mm(self, tensor)
 
+    def fmod(self, divisor):
+        """
+        Performs the element-wise division of tensor by divisor and returns
+        a new Tensor.
+
+        Parameters
+        ----------
+        divisor: number or TensorBase
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if isinstance(divisor, TensorBase):
+            if divisor.encrypted:
+                return NotImplemented
+            divisor = divisor.data
+
+        return syft.math.fmod(self, divisor)
+
     def fmod_(self, divisor):
         """
-        Performs the element-wise division of tensor by divisor.
+        Performs the element-wise division of tensor by divisor inline.
 
         Parameters
         ----------
@@ -3005,11 +3053,28 @@ class TensorBase(object):
 
         return self
 
+    def half(self):
+        """
+        casts the tensor to half-precision float type.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return TensorBase(np.array(self).astype('float16'))
+
 
 def mv(tensormat, tensorvector):
     """
     Matrix and Vector multiplication is performed.
-
 
     Parameters
     ----------
@@ -3017,7 +3082,6 @@ def mv(tensormat, tensorvector):
         Input tensor matrix
     tensorvector: TensorBase
         Input tensor vector
-
 
     Returns
     -------
