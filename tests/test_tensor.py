@@ -211,13 +211,6 @@ class EqualTests(unittest.TestCase):
         self.assertTrue(t1 != t2)
 
 
-class IndexTests(unittest.TestCase):
-    def test_indexing(self):
-        t1 = TensorBase(np.array([1.2, 2, 3]))
-        self.assertEqual(1.2, t1[0])
-        self.assertEqual(3, t1[-1])
-
-
 class sigmoidTests(unittest.TestCase):
     def test_sigmoid(self):
         t1 = TensorBase(np.array([1.2, 3.3, 4]))
@@ -833,7 +826,12 @@ class notEqualTests(unittest.TestCase):
         self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
 
 
-class indexTests(unittest.TestCase):
+class IndexTests(unittest.TestCase):
+    def test_indexing(self):
+        t1 = TensorBase(np.array([1.2, 2, 3]))
+        self.assertEqual(1.2, t1[0])
+        self.assertEqual(3, t1[-1])
+
     def test_index(self):
         t = TensorBase(np.array([1, 2, 3.5]))
         expected1 = TensorBase(np.array([2]))
@@ -841,21 +839,76 @@ class indexTests(unittest.TestCase):
 
         self.assertEqual(expected1, t.index(1))
         self.assertEqual(expected2, t.index(2))
+        with pytest.raises(ValueError):
+            t.index(3.5)
         with pytest.raises(IndexError):
             t.index(3)
 
     def test_index_add(self):
         t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
         t2 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+
         expected_0 = TensorBase(np.array([[1, 2, 3], [8, 9, 10], [5, 6, 7]]))
+        t1.index_add_(0, [0, 2, 1], t2)
+        self.assertEqual(expected_0, t1)
+
+        t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
         expected_1 = TensorBase(np.array([[1, 3, 2], [5, 7, 6], [8, 10, 9]]))
-        result_0 = t1.index_add_(0, [0, 2, 1], t2)
-        result_1 = t1.index_add_(1, [0, 2, 1], t2)
-        self.assertTrue(expected_0, result_0)
-        self.assertTrue(expected_1, result_1)
+        t1.index_add_(1, [0, 2, 1], t2)
+        self.assertEqual(expected_1, t1)
 
+        with pytest.raises(TypeError):
+            t1.index_add_(0, [1.0, 2, 2], t2)
+        with pytest.raises(IndexError):
+            t1.index_add_(0, [0, 1, 2], TensorBase([1, 2]))
+        with pytest.raises(ValueError):
+            t1.index_add_(0, [0, 1], t2)
+        with pytest.raises(ValueError):
+            t1.index_add_(0, [0, 1, 5], t2)
+        with pytest.raises(IndexError):
+            t1.index_add_(4, [0, 1, 2], t2)
 
-class index_selectTests(unittest.TestCase):
+    def test_index_copy_(self):
+        t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
+        t2 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        expected_0 = TensorBase(np.array([[1, 2, 3], [7, 8, 9], [4, 5, 6]]))
+        t1.index_copy_(0, [0, 2, 1], t2)
+        self.assertEqual(expected_0, t1)
+
+        t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
+        expected_1 = TensorBase(np.array([[3, 1, 2], [6, 4, 5], [9, 7, 8]]))
+        t1.index_copy_(1, [2, 0, 1], t2)
+        self.assertEqual(expected_1, t1)
+
+        with pytest.raises(TypeError):
+            t1.index_copy_(0, [1.0, 2, 2], t2)
+        with pytest.raises(IndexError):
+            t1.index_copy_(0, [0, 1, 2], TensorBase([1, 2]))
+        with pytest.raises(ValueError):
+            t1.index_copy_(0, [0, 1], t2)
+        with pytest.raises(ValueError):
+            t1.index_copy_(0, [0, 1, 5], t2)
+        with pytest.raises(IndexError):
+            t1.index_copy_(4, [0, 1, 2], t2)
+
+    def test_index_fill_(self):
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        expected_0 = TensorBase(np.array([[1, 1, 1], [1, 1, 1], [7, 8, 9]]))
+        t1.index_fill_(0, [0, 1], 1)
+        self.assertEqual(expected_0, t1)
+
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        expected_1 = TensorBase(np.array([[-2, 2, -2], [-2, 5, -2], [-2, 8, -2]]))
+        t1.index_fill_(1, [0, 2], -2)
+        self.assertEqual(expected_1, t1)
+
+        with pytest.raises(TypeError):
+            t1.index_fill_(0, [1.0, 2, 2], 1)
+        with pytest.raises(ValueError):
+            t1.index_fill_(0, [0, 1, 5], 1)
+        with pytest.raises(IndexError):
+            t1.index_fill_(4, [0, 1, 2], 1)
+
     def test_index_select(self):
         t = TensorBase(np.reshape(np.arange(0, 2 * 3 * 4), (2, 3, 4)))
         idx = np.array([1, 0])
