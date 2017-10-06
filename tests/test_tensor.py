@@ -724,6 +724,21 @@ class geometricTests(unittest.TestCase):
         self.assertTrue(np.all(out.data > 0))
 
 
+class normalTests(unittest.TestCase):
+    def test_normal_(self):
+        t = TensorBase(np.zeros([1, 2, 3, 4]))
+        t.normal_(mu=0, sigma=1)
+        self.assertTupleEqual((1, 2, 3, 4), t.shape())
+        self.assertTrue(np.all(t.data != 0))
+
+    def test_normal(self):
+        t = TensorBase(np.zeros([1, 2, 3, 4]))
+        t1 = t.normal(mu=0, sigma=1)
+        self.assertTrue(np.array_equal(t.data, np.zeros([1, 2, 3, 4])))
+        self.assertTupleEqual((1, 2, 3, 4), t1.shape())
+        self.assertTrue(np.all(t1.data != 0))
+
+
 class fillTests(unittest.TestCase):
     def test_fill_(self):
         t1 = TensorBase(np.array([1, 2, 3, 4]))
@@ -1153,6 +1168,29 @@ class mm_test(unittest.TestCase):
         t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
         out = t1.mm(t2)
         self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
+
+
+class newTensorTests(unittest.TestCase):
+    def test_encrypted_error(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]), encrypted=True)
+        t2 = t1.new([1, 1, 2], encrypted=True)
+
+        self.assertEqual(t2, NotImplemented)
+
+    def test_return_new_float_tensor(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]))
+        t2 = t1.new(np.array([1., 1., 2.]))
+
+        self.assertTrue(t2.data.dtype == np.float64)
+
+    def test_return_new_int_tensor(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]))
+        t2 = t1.new(np.array([1, 1, 2]))
+
+        self.assertTrue(t2.data.dtype == np.int64)
 
 
 class half(unittest.TestCase):
