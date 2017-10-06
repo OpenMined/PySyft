@@ -2,7 +2,8 @@ import phe as paillier
 import numpy as np
 import json
 import syft
-from .basic import FixedPoint, PaillierTensor
+from .basic import PaillierTensor
+from .FixedPoint import FXnum as FixedPoint
 from ...tensor import TensorBase
 from ..abstract.keys import AbstractSecretKey, AbstractPublicKey
 from ..abstract.keys import AbstractKeyPair
@@ -17,8 +18,11 @@ class SecretKey(AbstractSecretKey):
         """Decrypts x. X can be either an encrypted int or a numpy
         vector/matrix/tensor."""
 
-        if(type(x) == FixedPoint):
-            return x.decrypt(self.sk)
+        if(type(x) == paillier.EncryptedNumber):
+            FP_num = FixedPoint()
+            FP_num.scaledval = int(self.sk.decrypt(x))
+            # casts the fixed point data type to python numeric type
+            return float(FP_num) if FP_num.family.fraction_bits > 1 else int(FP_num)
         elif(type(x) == TensorBase or type(x) == PaillierTensor):
             if(x.encrypted):
                 return TensorBase(self.decrypt(x.data), encrypted=False)
@@ -29,7 +33,10 @@ class SecretKey(AbstractSecretKey):
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(v.decrypt(self.sk))
+                FP_num = FixedPoint()
+                FP_num.scaledval = int(self.sk.decrypt(v))
+                python_numeric = float(FP_num) if FP_num.family.fraction_bits > 1 else int(FP_num)
+                out.append(python_numeric)
             return np.array(out).reshape(sh)
         else:
             return NotImplemented
@@ -58,45 +65,46 @@ class PublicKey(AbstractPublicKey):
     def __init__(self, pk):
         self.pk = pk
 
-    def zeros(self, dim, fixed_point_conf=None):
+    def zeros(self, dim):
         """Returns an encrypted tensor of zeros"""
-        return PaillierTensor(self, syft.zeros(dim), fixed_point_conf=fixed_point_conf)
+        return PaillierTensor(self, syft.zeros(dim))
 
-    def ones(self, dim, fixed_point_conf=None):
+    def ones(self, dim):
         """Returns an encrypted tensor of ones"""
-        return PaillierTensor(self, syft.ones(dim), fixed_point_conf=fixed_point_conf)
+        return PaillierTensor(self, syft.ones(dim))
 
-    def rand(self, dim, fixed_point_conf=None):
+    def rand(self, dim):
         """Returns an encrypted tensor with initial numbers sampled from a
         uniform distribution from 0 to 1."""
-        return PaillierTensor(self, syft.rand(dim), fixed_point_conf=fixed_point_conf)
+        return PaillierTensor(self, syft.rand(dim))
 
-    def randn(self, dim, fixed_point_conf=None):
+    def randn(self, dim):
         """Returns an encrypted tensor with initial numbers sampled from a
         standard normal distribution"""
-        return PaillierTensor(self, syft.randn(dim), fixed_point_conf=fixed_point_conf)
+        return PaillierTensor(self, syft.randn(dim))
 
-    def encrypt(self, x, same_type=False, fixed_point_conf=None):
+    def encrypt(self, x, same_type=False):
         """Encrypts x. X can be either an encrypted int or a numpy
         vector/matrix/tensor."""
         if(type(x) == int or type(x) == float or type(x) == np.float64):
             if(same_type):
                 return NotImplemented
-            return FixedPoint(self, x, config=fixed_point_conf)
+            return FixedPoint(self, x)
         elif(type(x) == TensorBase):
             if(x.encrypted or same_type):
                 return NotImplemented
-            return PaillierTensor(self, x.data, fixed_point_conf=fixed_point_conf)
+            return PaillierTensor(self, x.data)
         elif(type(x) == np.ndarray):
             sh = x.shape
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(FixedPoint(self, v, config=fixed_point_conf))
+                num = FixedPoint(v)
+                out.append(self.pk.encrypt(num.scaledval))
             if(same_type):
                 return np.array(out).reshape(sh)
             else:
-                return PaillierTensor(self, np.array(out).reshape(sh), fixed_point_conf=fixed_point_conf)
+                return PaillierTensor(self, np.array(out).reshape(sh))
         else:
             print("format not recognized:" + str(type(x)))
             return NotImplemented
