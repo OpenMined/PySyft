@@ -336,6 +336,28 @@ def unsqueeze(tensor1, dim):
 
 def renorm(tensor1, p, dim, maxnorm):
     """
+     Performs the normalization of tensor1 along 
+     the dimension dim if the p-norm of the sub-tensors
+     is greater than the maxnorm 
+
+    Parmeters
+    ---------
+    tensor1: TensorBase
+        Input Tensor
+
+    p:
+        power of the norm function
+
+    dim:
+        Dimension on which the operation is done
+
+    maxnorm:
+        max value the p-norm is allowed to take on 
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
     """
     tensor1 = _ensure_tensorbase(tensor1)
     dims = tensor1.data.ndim
