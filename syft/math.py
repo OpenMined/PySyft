@@ -338,6 +338,7 @@ def renorm(tensor1, p, dim, maxnorm):
     """
     Performs the scaling of elements along the dimension dim in tensor1 such that 
     the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
+    Returns the result as an output tensor.
 
     The tensor, tensor1 is expected to have at least two dimesions, and the 
     p-norm is defined to have powers greater than or equal to one.

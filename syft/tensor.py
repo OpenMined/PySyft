@@ -1248,17 +1248,14 @@ class TensorBase(object):
 
     def renorm(self, p, dim, maxnorm):
         """
-        Performs the scaling of elements along the dimension dim in tensor1 such that 
+        Performs the scaling of elements along the dimension dim of a tensor such that 
         the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
 
-        The tensor, tensor1 is expected to have at least two dimesions, and the 
+        The tensor is expected to have at least two dimesions, and the 
         p-norm is defined to have powers greater than or equal to one.
 
         Parmeters
         ---------
-        tensor1: TensorBase
-            Input Tensor
-
         p:
             Power of the norm function
 
@@ -1278,28 +1275,37 @@ class TensorBase(object):
         else:
             return syft.math.renorm(self, p, dim, maxnorm) 
 
-    # def renorm_(self, p, dim, maxnorm):
-    #     """
-    #     """
-    #     if self.encrypted:
-    #         return NotImplemented
-    #     elif self.data.ndim < 2:
-    #         raise ValueError("tensor must have at least 2 dims")
-    #     elif p < 1.0:
-    #         raise ValueError("p must be a float greater than or equal to 1")
-    #     else:
-    #         # solve for c in maxnorm = sqrt(sum((c*x)**p))
-    #         dim_2_sum = tuple(filter(lambda x : x != dim, range(self.data.ndim)))
-    #         norm = np.power(np.power(np.absolute(self.data), p).sum(dim_2_sum), 1.0 / p)
-    #         c = maxnorm / norm
-    #         # only renorm when norm > maxnorm
-    #         scalar =  np.where(norm > maxnorm, c, 1)
-    #         # broadcast along appropriate dim
-    #         dim_array = np.ones((1, self.data.ndim), int).ravel()
-    #         dim_array[dim] = -1
-    #         scalar_reshaped = scalar.reshape(dim_array)
-    #         self.data = self.data * scalar_reshaped
-    #     return self
+    def renorm_(self, p, dim, maxnorm):
+        """
+        Performs an in-place scaling of elements along the dimension dim of the tensor such that 
+        the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
+
+        The tensor is expected to have at least two dimesions, and the 
+        p-norm is defined to have powers greater than or equal to one.
+
+        Parmeters
+        ---------
+        tensor1: TensorBase
+            Input Tensor
+
+        p:
+            Power of the norm function
+
+        dim:
+            Dimension on which the operation is done
+
+        maxnorm:
+            Max value the p-norm is allowed to take on 
+
+        Returns
+        -------
+        Caller with values in-place
+        """
+        if self.encrypted:
+            return NotImplemented
+        else:
+            self.data = syft.math.renorm(self, p, dim, maxnorm).data
+            return self.data
 
 
 def mv(tensormat, tensorvector):
