@@ -101,19 +101,16 @@ class FXfamily(object):
         self.scale = 1 << n_bits
         self._roundup = 1 << (n_bits - 1)
 
-        try:
-            thresh = 1 << (n_bits + n_intbits - 1)
-
-            def validate(scaledval):
-                if scaledval >= thresh or scaledval < -thresh:
-                    raise FXoverflowError
-        except:
-            def validate(scaledval):
-                return
-        self.validate = validate
-
         # Cached values of various mathematical constants:
         self._exp1, self._log2, self._pi, self._sqrt2 = (None,) * 4
+
+    def validate(self, scaledval):
+        if self.integer_bits is None:
+            return
+        else:
+            thresh = 1 << (self.fraction_bits + self.integer_bits - 1)
+            if scaledval >= thresh or scaledval < -thresh:
+                raise FXoverflowError
 
     @property
     def resolution(self):
