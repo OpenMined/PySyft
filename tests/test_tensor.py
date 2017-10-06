@@ -797,6 +797,42 @@ class powTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t1.data, np.array([4, 16, 36])))
 
 
+class negTests(unittest.TestCase):
+    def test_neg(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t2 = t1.neg()
+        self.assertTrue(np.array_equal(t1.data, np.array([[0, 1, -2], [0, -1, 2]])))
+        self.assertTrue(np.array_equal(t2.data, np.array([[0, -1, 2], [0, 1, -2]])))
+        # float
+        t3 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t4 = t3.neg()
+        self.assertTrue(np.array_equal(t3.data, np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]])))
+        self.assertTrue(np.array_equal(t4.data, np.array([[0.0, -1.5, 2.5], [0.0, 1.5, -2.5]])))
+
+    def test_neg_(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t1.neg_()
+        self.assertTrue(np.array_equal(t1.data, np.array([[0, -1, 2], [0, 1, -2]])))
+        # float
+        t2 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t2.neg_()
+        self.assertTrue(np.array_equal(t2.data, np.array([[0.0, -1.5, 2.5], [0.0, 1.5, -2.5]])))
+
+
+class tanhTests(unittest.TestCase):
+    def test_tanh_(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t1.tanh_()
+        self.assertTrue(np.array_equal(t1.data, np.tanh(np.array([[0, 1, -2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t1.tanh_()
+        self.assertTrue(np.array_equal(t1.data, np.tanh(np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
+
+
 class prodTests(unittest.TestCase):
     def test_prod(self):
         t1 = TensorBase(np.array([1, 2, 3]))
