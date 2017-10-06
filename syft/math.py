@@ -332,3 +332,30 @@ def unsqueeze(tensor1, dim):
         raise NotImplemented
     else:
         return TensorBase(np.expand_dims(tensor1.data, dim))
+
+
+def renorm(tensor1, p, dim, maxnorm):
+    """
+    """
+    tensor1 = _ensure_tensorbase(tensor1)
+    dims = tensor1.data.ndim
+
+    if tensor1.encrypted:
+        return NotImplemented
+    elif dims < 2:
+        raise ValueError("tensor must have at least 2 dims")
+    elif p < 1.0:
+        raise ValueError("p must be a float greater than or equal to 1")
+    else:
+        # solve for c in maxnorm = sqrt(sum((c*x)**p))
+        dim_2_sum = tuple(filter(lambda x : x != dim, range(dims)))
+        norm = np.power(np.power(np.absolute(tensor1), p).sum(dim_2_sum), 1.0 / p)
+        c = maxnorm / norm
+        # only renorm when norm > maxnorm
+        scalar =  np.where(norm > maxnorm, c, 1)
+        # broadcast along appropriate dim
+        dim_array = np.ones((1, dims), int).ravel()
+        dim_array[dim] = -1
+        scalar_reshaped = scalar.reshape(dim_array)
+        out = tensor1 * scalar_reshaped
+    return TensorBase(out)
