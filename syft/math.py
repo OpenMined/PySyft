@@ -336,9 +336,11 @@ def unsqueeze(tensor1, dim):
 
 def renorm(tensor1, p, dim, maxnorm):
     """
-     Performs the normalization of tensor1 along 
-     the dimension dim if the p-norm of the sub-tensors
-     is greater than the maxnorm 
+    Performs the scaling of elements along the dimension dim in tensor1 such that 
+    the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
+
+    The tensor, tensor1 is expected to have at least two dimesions, and the 
+    p-norm is defined to have powers greater than or equal to one.
 
     Parmeters
     ---------
@@ -346,13 +348,13 @@ def renorm(tensor1, p, dim, maxnorm):
         Input Tensor
 
     p:
-        power of the norm function
+        Power of the norm function
 
     dim:
         Dimension on which the operation is done
 
     maxnorm:
-        max value the p-norm is allowed to take on 
+        Max value the p-norm is allowed to take on 
 
     Returns
     -------
