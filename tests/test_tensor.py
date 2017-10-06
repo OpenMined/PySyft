@@ -826,11 +826,11 @@ class tanhTests(unittest.TestCase):
         # int
         t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
         t1.tanh_()
-        self.assertTrue(np.array_equal(t1.data, np.array([[0, np.tanh(1), np.tanh(-2)], [0, np.tanh(-1), np.tanh(2)]])))
+        self.assertTrue(np.array_equal(t1.data, np.tanh(np.array([[0, 1, -2], [0, -1, 2]]))))
         # float
         t1 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
         t1.tanh_()
-        self.assertTrue(np.array_equal(t1.data, np.array([[0.0, np.tanh(1.5), np.tanh(-2.5)], [0.0, np.tanh(-1.5), np.tanh(2.5)]])))
+        self.assertTrue(np.array_equal(t1.data, np.tanh(np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
 
 
 class prodTests(unittest.TestCase):

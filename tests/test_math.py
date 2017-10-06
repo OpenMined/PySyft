@@ -53,12 +53,12 @@ class tanhTests(unittest.TestCase):
         t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
         t2 = syft.math.tanh(t1)
         self.assertTrue(np.array_equal(t1.data, np.array([[0, 1, -2], [0, -1, 2]])))
-        self.assertTrue(np.array_equal(t2.data, np.array([[0, np.tanh(1), np.tanh(-2)], [0, np.tanh(-1), np.tanh(2)]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0, 1, -2], [0, -1, 2]]))))
         # float
         t1 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
         t2 = syft.math.tanh(t1)
         self.assertTrue(np.array_equal(t1.data, np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]])))
-        self.assertTrue(np.array_equal(t2.data, np.array([[0.0, np.tanh(1.5), np.tanh(-2.5)], [0.0, np.tanh(-1.5), np.tanh(2.5)]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
 
 
 class CumsumTests(unittest.TestCase):
