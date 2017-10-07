@@ -19,7 +19,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod'
+    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag'
 ]
 
 
@@ -116,6 +116,38 @@ def dot(tensor1, tensor2):
     if tensor1.encrypted is True or tensor2.encrypted is True:
         return NotImplemented
     return np.vdot(tensor1.data, tensor2.data)
+
+
+def diag(tensor, diagonal=0):
+    """
+    * Returns a new 2D square tensor with the elements of 1D input tensor as the diagonal.
+    * Returns a new 1D tensor with diagonal elements of 2D input tensor.
+
+    * Optional argument diagonal value is about which diagonal to consider,
+    zero is for main, positive for upper and negative for below diagonal
+
+    Parameters
+    ----------
+    tensor : TensorBase
+        The first operand in the diag operation
+    diagonal : Integer
+        The second operand in the diag operation
+
+    Returns
+    -------
+    TensorBase
+        Computed tensor result for diag operation
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    dim = tensor.dim()
+    if dim == 1:
+        return TensorBase(np.diag(tensor.data, diagonal))
+    elif dim == 2:
+        return TensorBase(np.diagonal(tensor.data, diagonal))
+    else:
+        raise ValueError("Input must be 1- or 2-d tensor.")
 
 
 def matmul(tensor1, tensor2):
