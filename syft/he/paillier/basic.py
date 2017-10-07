@@ -1,16 +1,23 @@
 import numpy as np
-import pickle
 from ...tensor import TensorBase
+from .FixedPoint import FXfamily
 
 
 class PaillierTensor(TensorBase):
 
-    def __init__(self, public_key, data=None, input_is_decrypted=True):
+    def __init__(self, public_key, data=None, input_is_decrypted=True, fixed_point_conf=None):
         self.encrypted = True
+        if fixed_point_conf is None:
+            self.fixed_point_conf = FXfamily()
+        else:
+            self.fixed_point_conf = fixed_point_conf
 
         self.public_key = public_key
-        if(type(data) == np.ndarray and input_is_decrypted):
-            self.data = public_key.encrypt(data, True)
+        if(type(data) == np.ndarray or type(data) == TensorBase) and input_is_decrypted:
+            if type(data) == np.ndarray:
+                self.data = public_key.encrypt(data, True)
+            else:
+                self.data = public_key.encrypt(data.data, True)
         else:
             self.data = data
 
@@ -32,7 +39,8 @@ class PaillierTensor(TensorBase):
         if(type(tensor) == TensorBase):
             tensor = PaillierTensor(self.public_key, tensor.data)
 
-        ptensor = PaillierTensor(self.public_key, self.data + tensor.data, False)
+        result_data = self.data + tensor.data
+        ptensor = PaillierTensor(self.public_key, result_data, False)
         ptensor._calc_add_depth(self, tensor)
         return ptensor
 
@@ -46,7 +54,9 @@ class PaillierTensor(TensorBase):
         if(type(tensor) == TensorBase):
             tensor = PaillierTensor(self.public_key, tensor.data)
 
-        return PaillierTensor(self.public_key, self.data - tensor.data, False)
+        result_data = self.data - tensor.data
+        ptensor = PaillierTensor(self.public_key, result_data, False)
+        return ptensor
 
     def __isub__(self, tensor):
         """Performs inline, element-wise subtraction between two tensors"""
@@ -106,77 +116,3 @@ class PaillierTensor(TensorBase):
 
     def __repr__(self):
         return "PaillierTensor: " + repr(self.data)
-
-
-class Float():
-
-    def __init__(self, public_key, data=None):
-        """Wraps pointer to encrypted Float with an interface that numpy
-        can use."""
-
-        self.public_key = public_key
-        if(data is not None):
-            self.data = self.public_key.pk.encrypt(data)
-        else:
-            self.data = None
-
-    def decrypt(self, secret_key):
-        return secret_key.decrypt(self)
-
-    def __add__(self, y):
-        """Adds two encrypted Floats together."""
-
-        out = Float(self.public_key, None)
-        out.data = self.data + y.data
-        return out
-
-    def __sub__(self, y):
-        """Subtracts two encrypted Floats."""
-
-        out = Float(self.public_key, None)
-        out.data = self.data - y.data
-        return out
-
-    def __mul__(self, y):
-        """Multiplies two Floats. y may be encrypted or a simple Float."""
-
-        if(type(y) == type(self)):
-            out = Float(self.public_key, None)
-            out.data = self.data * y.data
-            return out
-        elif(type(y) == int or type(y) == float):
-            out = Float(self.public_key, None)
-            out.data = self.data * y
-            return out
-        else:
-            return None
-
-    def __truediv__(self, y):
-        """Divides two Floats. y may be encrypted or a simple Float."""
-
-        if(type(y) == type(self)):
-            out = Float(self.public_key, None)
-            out.data = self.data / y.data
-            return out
-        elif(type(y) == int):
-            out = Float(self.public_key, None)
-            out.data = self.data / y
-            return out
-        else:
-            return None
-
-    def __repr__(self):
-        """This is kindof a boring/uninformative __repr__"""
-
-        return 'e'
-
-    def __str__(self):
-        """This is kindof a boring/uninformative __str__"""
-
-        return 'e'
-
-    def serialize(self):
-        return pickle.dumps(self)
-
-    def deserialize(b):
-        return pickle.loads(b)

@@ -2,7 +2,8 @@ import phe as paillier
 import numpy as np
 import json
 import syft
-from .basic import Float, PaillierTensor
+from .basic import PaillierTensor
+from .FixedPoint import FXnum as FixedPoint
 from ...tensor import TensorBase
 from ..abstract.keys import AbstractSecretKey, AbstractPublicKey
 from ..abstract.keys import AbstractKeyPair
@@ -17,8 +18,11 @@ class SecretKey(AbstractSecretKey):
         """Decrypts x. X can be either an encrypted int or a numpy
         vector/matrix/tensor."""
 
-        if(type(x) == Float):
-            return self.sk.decrypt(x.data)
+        if(type(x) == paillier.EncryptedNumber):
+            FP_num = FixedPoint()
+            FP_num.scaledval = int(self.sk.decrypt(x))
+            # casts the fixed point data type to python numeric type
+            return float(FP_num) if FP_num.family.fraction_bits > 1 else int(FP_num)
         elif(type(x) == TensorBase or type(x) == PaillierTensor):
             if(x.encrypted):
                 return TensorBase(self.decrypt(x.data), encrypted=False)
@@ -29,7 +33,10 @@ class SecretKey(AbstractSecretKey):
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(self.sk.decrypt(v.data))
+                FP_num = FixedPoint()
+                FP_num.scaledval = int(self.sk.decrypt(v))
+                python_numeric = float(FP_num) if FP_num.family.fraction_bits > 1 else int(FP_num)
+                out.append(python_numeric)
             return np.array(out).reshape(sh)
         else:
             return NotImplemented
@@ -60,21 +67,21 @@ class PublicKey(AbstractPublicKey):
 
     def zeros(self, dim):
         """Returns an encrypted tensor of zeros"""
-        return syft.zeros(dim).encrypt(self)
+        return PaillierTensor(self, syft.zeros(dim))
 
     def ones(self, dim):
         """Returns an encrypted tensor of ones"""
-        return syft.ones(dim).encrypt(self)
+        return PaillierTensor(self, syft.ones(dim))
 
     def rand(self, dim):
         """Returns an encrypted tensor with initial numbers sampled from a
         uniform distribution from 0 to 1."""
-        return syft.rand(dim).encrypt(self)
+        return PaillierTensor(self, syft.rand(dim))
 
     def randn(self, dim):
         """Returns an encrypted tensor with initial numbers sampled from a
         standard normal distribution"""
-        return syft.randn(dim).encrypt(self)
+        return PaillierTensor(self, syft.randn(dim))
 
     def encrypt(self, x, same_type=False):
         """Encrypts x. X can be either an encrypted int or a numpy
@@ -82,7 +89,8 @@ class PublicKey(AbstractPublicKey):
         if(type(x) == int or type(x) == float or type(x) == np.float64):
             if(same_type):
                 return NotImplemented
-            return Float(self, x)
+            FP_num = FixedPoint(x)
+            return self.pk.encrypt(FP_num.scaledval)
         elif(type(x) == TensorBase):
             if(x.encrypted or same_type):
                 return NotImplemented
@@ -92,7 +100,8 @@ class PublicKey(AbstractPublicKey):
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(Float(self, v))
+                num = FixedPoint(v)
+                out.append(self.pk.encrypt(num.scaledval))
             if(same_type):
                 return np.array(out).reshape(sh)
             else:
