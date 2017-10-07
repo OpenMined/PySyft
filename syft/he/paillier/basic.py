@@ -46,7 +46,6 @@ class PaillierTensor(TensorBase):
 
     def __sub__(self, tensor):
         """Performs element-wise subtraction between two tensors"""
-
         if(not isinstance(tensor, TensorBase)):
             # try encrypting it
             tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'))
