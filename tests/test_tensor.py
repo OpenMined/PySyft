@@ -4,6 +4,7 @@ import unittest
 from syft import tensor
 import numpy as np
 import math
+import pytest
 
 
 # Here's our "unit tests".
@@ -42,6 +43,46 @@ class DimTests(unittest.TestCase):
         t = TensorBase(np.array([[1, 2], [3, 4]]))
         t1 = TensorBase(np.array([[5.0, 6.0], [7.0, 8.0]]))
         self.assertEqual(t.nelement(), t1.nelement())
+
+
+class DiagTests(unittest.TestCase):
+    def test_one_dim_tensor_main_diag(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        tdiag = t.diag()
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([[1, 0, 0],
+                                                                    [0, 2, 0],
+                                                                    [0, 0, 3]]))))
+
+    def test_one_dim_tensor_upper_diag(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        tdiag = t.diag(1)
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([[0, 1, 0, 0],
+                                                                    [0, 0, 2, 0],
+                                                                    [0, 0, 0, 3],
+                                                                    [0, 0, 0, 0]]))))
+
+    def test_one_dim_tensor_below_diag(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        tdiag = t.diag(-1)
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([[0, 0, 0, 0],
+                                                                    [1, 0, 0, 0],
+                                                                    [0, 2, 0, 0],
+                                                                    [0, 0, 3, 0]]))))
+
+    def test_two_dim_tensor_main_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        tdiag = t.diag()
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([0, 3]))))
+
+    def test_two_dim_tensor_upper_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        tdiag = t.diag(1)
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([1]))))
+
+    def test_two_dim_tensor_below_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        tdiag = t.diag(-1)
+        self.assertTrue(syft.equal(tdiag.data, TensorBase(np.array([2]))))
 
 
 class AddTests(unittest.TestCase):
@@ -208,13 +249,6 @@ class EqualTests(unittest.TestCase):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([1, 4, 5]))
         self.assertTrue(t1 != t2)
-
-
-class IndexTests(unittest.TestCase):
-    def test_indexing(self):
-        t1 = TensorBase(np.array([1.2, 2, 3]))
-        self.assertEqual(1.2, t1[0])
-        self.assertEqual(3, t1[-1])
 
 
 class sigmoidTests(unittest.TestCase):
@@ -724,6 +758,21 @@ class geometricTests(unittest.TestCase):
         self.assertTrue(np.all(out.data > 0))
 
 
+class normalTests(unittest.TestCase):
+    def test_normal_(self):
+        t = TensorBase(np.zeros([1, 2, 3, 4]))
+        t.normal_(mu=0, sigma=1)
+        self.assertTupleEqual((1, 2, 3, 4), t.shape())
+        self.assertTrue(np.all(t.data != 0))
+
+    def test_normal(self):
+        t = TensorBase(np.zeros([1, 2, 3, 4]))
+        t1 = t.normal(mu=0, sigma=1)
+        self.assertTrue(np.array_equal(t.data, np.zeros([1, 2, 3, 4])))
+        self.assertTupleEqual((1, 2, 3, 4), t1.shape())
+        self.assertTrue(np.all(t1.data != 0))
+
+
 class fillTests(unittest.TestCase):
     def test_fill_(self):
         t1 = TensorBase(np.array([1, 2, 3, 4]))
@@ -780,6 +829,42 @@ class powTests(unittest.TestCase):
         t1 = TensorBase(np.array([2, 4, 6]))
         t1.pow_(2)
         self.assertTrue(np.array_equal(t1.data, np.array([4, 16, 36])))
+
+
+class negTests(unittest.TestCase):
+    def test_neg(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t2 = t1.neg()
+        self.assertTrue(np.array_equal(t1.data, np.array([[0, 1, -2], [0, -1, 2]])))
+        self.assertTrue(np.array_equal(t2.data, np.array([[0, -1, 2], [0, 1, -2]])))
+        # float
+        t3 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t4 = t3.neg()
+        self.assertTrue(np.array_equal(t3.data, np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]])))
+        self.assertTrue(np.array_equal(t4.data, np.array([[0.0, -1.5, 2.5], [0.0, 1.5, -2.5]])))
+
+    def test_neg_(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t1.neg_()
+        self.assertTrue(np.array_equal(t1.data, np.array([[0, -1, 2], [0, 1, -2]])))
+        # float
+        t2 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t2.neg_()
+        self.assertTrue(np.array_equal(t2.data, np.array([[0.0, -1.5, 2.5], [0.0, 1.5, -2.5]])))
+
+
+class tanhTests(unittest.TestCase):
+    def test_tanh_(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t1.tanh_()
+        self.assertTrue(np.array_equal(t1.data, np.tanh(np.array([[0, 1, -2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t1.tanh_()
+        self.assertTrue(np.array_equal(t1.data, np.tanh(np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
 
 
 class prodTests(unittest.TestCase):
@@ -863,7 +948,90 @@ class notEqualTests(unittest.TestCase):
         self.assertTrue(syft.equal(t1, TensorBase([1, 1, 1, 0])))
 
 
-class index_selectTests(unittest.TestCase):
+class IndexTests(unittest.TestCase):
+    def test_indexing(self):
+        t1 = TensorBase(np.array([1.2, 2, 3]))
+        self.assertEqual(1.2, t1[0])
+        self.assertEqual(3, t1[-1])
+
+    def test_index(self):
+        t = TensorBase(np.array([1, 2, 3.5, 4, 5, 6, 3.5]))
+        expected1 = TensorBase(np.array(2))
+        expected2 = TensorBase(np.array(3.5))
+        expected3 = TensorBase(np.array([4, 5, 6]))
+
+        self.assertEqual(expected1, t.index(1))
+        self.assertEqual(expected2, t.index(2))
+        self.assertEqual(expected2, t.index(-1))
+        self.assertEqual(expected3, t.index(slice(3, 6)))
+        with pytest.raises(ValueError):
+            t.index(3.5)
+
+    def test_index_add_(self):
+        t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
+        t2 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+
+        expected_0 = TensorBase(np.array([[1, 2, 3], [8, 9, 10], [5, 6, 7]]))
+        t1.index_add_(0, [0, 2, 1], t2)
+        self.assertEqual(expected_0, t1)
+
+        t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
+        expected_1 = TensorBase(np.array([[1, 3, 2], [5, 7, 6], [8, 10, 9]]))
+        t1.index_add_(1, [0, 2, 1], t2)
+        self.assertEqual(expected_1, t1)
+
+        with pytest.raises(TypeError):
+            t1.index_add_(0, [1.0, 2, 2], t2)
+        with pytest.raises(IndexError):
+            t1.index_add_(0, [0, 1, 2], TensorBase([1, 2]))
+        with pytest.raises(ValueError):
+            t1.index_add_(0, [0, 1], t2)
+        with pytest.raises(ValueError):
+            t1.index_add_(0, [0, 1, 5], t2)
+        with pytest.raises(IndexError):
+            t1.index_add_(4, [0, 1, 2], t2)
+
+    def test_index_copy_(self):
+        t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
+        t2 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        expected_0 = TensorBase(np.array([[1, 2, 3], [7, 8, 9], [4, 5, 6]]))
+        t1.index_copy_(0, [0, 2, 1], t2)
+        self.assertEqual(expected_0, t1)
+
+        t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
+        expected_1 = TensorBase(np.array([[3, 1, 2], [6, 4, 5], [9, 7, 8]]))
+        t1.index_copy_(1, [2, 0, 1], t2)
+        self.assertEqual(expected_1, t1)
+
+        with pytest.raises(TypeError):
+            t1.index_copy_(0, [1.0, 2, 2], t2)
+        with pytest.raises(IndexError):
+            t1.index_copy_(0, [0, 1, 2], TensorBase([1, 2]))
+        with pytest.raises(ValueError):
+            t1.index_copy_(0, [0, 1], t2)
+        with pytest.raises(ValueError):
+            t1.index_copy_(0, [0, 1, 5], t2)
+        with pytest.raises(IndexError):
+            t1.index_copy_(4, [0, 1, 2], t2)
+
+    def test_index_fill_(self):
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        expected_0 = TensorBase(np.array([[1, 1, 1], [1, 1, 1], [7, 8, 9]]))
+        t1.index_fill_(0, [0, 1], 1)
+        self.assertEqual(expected_0, t1)
+
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        expected_1 = TensorBase(np.array([[-2, 2, -2], [-2, 5, -2], [-2, 8, -2]]))
+        t1.index_fill_(1, [0, 2], -2)
+        self.assertEqual(expected_1, t1)
+
+        with pytest.raises(TypeError):
+            t1.index_fill_(0, [1.0, 2, 2], 1)
+        with pytest.raises(ValueError):
+            t1.index_fill_(0, [0, 1, 5], 1)
+        with pytest.raises(IndexError):
+            t1.index_fill_(4, [0, 1, 2], 1)
+
     def test_index_select(self):
         t = TensorBase(np.reshape(np.arange(0, 2 * 3 * 4), (2, 3, 4)))
         idx = np.array([1, 0])
@@ -1117,6 +1285,29 @@ class mm_test(unittest.TestCase):
         t2 = TensorBase(np.array([[1, 2, 3], [2, 3, 4]]))
         out = t1.mm(t2)
         self.assertTrue(np.alltrue(out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
+
+
+class newTensorTests(unittest.TestCase):
+    def test_encrypted_error(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]), encrypted=True)
+        t2 = t1.new([1, 1, 2], encrypted=True)
+
+        self.assertEqual(t2, NotImplemented)
+
+    def test_return_new_float_tensor(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]))
+        t2 = t1.new(np.array([1., 1., 2.]))
+
+        self.assertTrue(t2.data.dtype == np.float64)
+
+    def test_return_new_int_tensor(self):
+
+        t1 = TensorBase(np.array([1, 1, 1]))
+        t2 = t1.new(np.array([1, 1, 2]))
+
+        self.assertTrue(t2.data.dtype == np.int64)
 
 
 class half(unittest.TestCase):

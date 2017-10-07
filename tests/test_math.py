@@ -33,6 +33,43 @@ class DotTests(unittest.TestCase):
         self.assertEqual(syft.dot(t1, t2), 44.92)
 
 
+class DiagTests(unittest.TestCase):
+    def test_one_dim_tensor_main_diag(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertTrue(syft.equal(syft.diag(t), TensorBase([[1, 0, 0, 0],
+                                                            [0, 2, 0, 0],
+                                                            [0, 0, 3, 0],
+                                                            [0, 0, 0, 4]])))
+
+    def test_one_dim_tensor_upper_diag(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertTrue(syft.equal(syft.diag(t, 1), TensorBase([[0, 1, 0, 0, 0],
+                                                                [0, 0, 2, 0, 0],
+                                                                [0, 0, 0, 3, 0],
+                                                                [0, 0, 0, 0, 4],
+                                                                [0, 0, 0, 0, 0]])))
+
+    def test_one_dim_tensor_below_diag(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertTrue(syft.equal(syft.diag(t, -1), TensorBase([[0, 0, 0, 0, 0],
+                                                                [1, 0, 0, 0, 0],
+                                                                [0, 2, 0, 0, 0],
+                                                                [0, 0, 3, 0, 0],
+                                                                [0, 0, 0, 4, 0]])))
+
+    def test_two_dim_tensor_main_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        self.assertTrue(syft.equal(syft.diag(t, 0), TensorBase([0, 3])))
+
+    def test_two_dim_tensor_upper_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        self.assertTrue(syft.equal(syft.diag(t, 1), TensorBase([1])))
+
+    def test_two_dim_tensor_below_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        self.assertTrue(syft.equal(syft.diag(t, -1), TensorBase([2])))
+
+
 class CeilTests(unittest.TestCase):
     def test_ceil(self):
         t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
@@ -45,6 +82,20 @@ class FloorTests(unittest.TestCase):
         t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
         self.assertTrue(syft.equal(syft.math.floor(t1), TensorBase([[2., 4.],
                                                                     [7., 8.]])))
+
+
+class tanhTests(unittest.TestCase):
+    def test_tanh(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t2 = syft.math.tanh(t1)
+        self.assertTrue(np.array_equal(t1.data, np.array([[0, 1, -2], [0, -1, 2]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0, 1, -2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t2 = syft.math.tanh(t1)
+        self.assertTrue(np.array_equal(t1.data, np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
 
 
 class CumsumTests(unittest.TestCase):

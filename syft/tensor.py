@@ -109,6 +109,30 @@ class TensorBase(object):
         self.data = _ensure_ndarray(arr_like)
         self.encrypted = encrypted
 
+    def new(self, *args, **kwargs):
+        """Constructs a new tensor instance of the same data type.
+
+        Parameters
+        ----------
+        *args
+            Variable length argument list used to instantiate
+            new TensorBase object.
+        **kwargs
+            Arbitrary keyword arguments used to instantiate
+            new TensorBase object.
+
+        Returns
+        -------
+        TensorBase class instance if parent TensorBase
+        has self.encrypted = False, otherwise return NotImplemented
+        error.
+
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        return self.__class__(*args, **kwargs)
+
     def _calc_mul_depth(self, tensor1, tensor2):
         if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
             self._mul_depth = max(tensor1._mul_depth, tensor2._mul_depth) + 1
@@ -529,6 +553,23 @@ class TensorBase(object):
         """
 
         return self.data.ndim
+
+    def diag(self, diagonal=0):
+        """ Returns square matrix or n-th diagonal of input tensor.
+
+        Parameters
+        ----------
+        diagonal : Integer
+            The second operand in the diag operation
+
+        Returns
+        -------
+        TensorBase
+            Computed tensor result for diag operation
+        """
+        if self.encrypted:
+            return NotImplemented
+        return syft.math.diag(self, diagonal)
 
     def sum(self, dim=None):
         """
@@ -1107,21 +1148,6 @@ class TensorBase(object):
             raise ValueError("dims cannot be none")
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
-
-    def diag(self, tensor):
-        """
-        When input tensor is a vector (1D Tensor), returns a 2D square
-        Tensor with the elements of input as the diagonal.
-
-        Parameters
-        ----------
-        tensor: TensorBase
-
-        Returns
-        -------
-        Numpy Array
-        """
-        return np.diag(tensor)
 
     def transpose(self, dim0, dim1):
         """
@@ -2821,6 +2847,97 @@ class TensorBase(object):
             divisor = _ensure_tensorbase(divisor)
         self.data = np.remainder(self.data, divisor)
         return self
+
+    def index(self, m):
+        """
+        Returns a new Tensor with the element selected by position
+
+        :param m: integer index or slice
+        :return: tensor of selected indices
+        """
+        if self.encrypted:
+            return NotImplemented
+        if not isinstance(m, int) and not isinstance(m, slice):
+            raise ValueError("The value of index must be integer")
+        return TensorBase(self.data[m], self.encrypted)
+
+    def index_add_(self, dim, index, tensor):
+        """
+        Add the value of 'tensor' selecting the elements and ordered
+        by index. In-place operation.
+
+        :param dim: dimension along which to index
+        :param index: 1D tensor containing the indices to select
+        :param tensor: tensor containing the values to add
+        """
+        index = _ensure_tensorbase(index)
+        tensor = _ensure_tensorbase(tensor)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if self.data.shape != tensor.data.shape:
+            raise IndexError("Tensor has different shape")
+        if self.data.shape[dim] != index.data.size:
+            raise ValueError("Index should have the same number of elements as dimension")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        self.data += tensor.data.take(index, dim)
+
+    def index_copy_(self, dim, index, tensor):
+        """
+        Copy the values of 'tensor' selecting the elements and ordered
+        by index. In-place operation.
+
+        :para dim: dimension along which to index
+        :param index: 1D tensor containing the indices to select
+        :param tensor: tensor containing the values to add
+        """
+        index = _ensure_tensorbase(index)
+        tensor = _ensure_tensorbase(tensor)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if self.data.shape != tensor.data.shape:
+            raise IndexError("Tensor has different shape")
+        if self.data.shape[dim] != index.data.size:
+            raise ValueError("Index should have the same number of elements as dimension")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        np.copyto(self.data, tensor.data.take(index, dim))
+
+    def index_fill_(self, dim, index, value):
+        """
+        Fill the original tensor with the values of 'tensor' selecting
+        the elements and ordered by index. In-place operation.
+
+        :param dim: dimension along which to inde
+        :param index: 1D tensor containing the indices to select
+        :param value: value to fill
+        """
+        index = _ensure_tensorbase(index)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        idx = [slice(None)] * self.data.ndim
+        idx[dim] = index
+        self.data[tuple(idx)] = value
 
     def index_select(self, dim, index):
         """
