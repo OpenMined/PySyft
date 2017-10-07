@@ -109,6 +109,30 @@ class TensorBase(object):
         self.data = _ensure_ndarray(arr_like)
         self.encrypted = encrypted
 
+    def new(self, *args, **kwargs):
+        """Constructs a new tensor instance of the same data type.
+
+        Parameters
+        ----------
+        *args
+            Variable length argument list used to instantiate
+            new TensorBase object.
+        **kwargs
+            Arbitrary keyword arguments used to instantiate
+            new TensorBase object.
+
+        Returns
+        -------
+        TensorBase class instance if parent TensorBase
+        has self.encrypted = False, otherwise return NotImplemented
+        error.
+
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        return self.__class__(*args, **kwargs)
+
     def _calc_mul_depth(self, tensor1, tensor2):
         if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
             self._mul_depth = max(tensor1._mul_depth, tensor2._mul_depth) + 1
@@ -541,6 +565,23 @@ class TensorBase(object):
         """
 
         return self.data.ndim
+
+    def diag(self, diagonal=0):
+        """ Returns square matrix or n-th diagonal of input tensor.
+
+        Parameters
+        ----------
+        diagonal : Integer
+            The second operand in the diag operation
+
+        Returns
+        -------
+        TensorBase
+            Computed tensor result for diag operation
+        """
+        if self.encrypted:
+            return NotImplemented
+        return syft.math.diag(self, diagonal)
 
     def sum(self, dim=None):
         """
@@ -1119,21 +1160,6 @@ class TensorBase(object):
             raise ValueError("dims cannot be none")
 
         return _ensure_tensorbase(np.transpose(self.data, dims))
-
-    def diag(self, tensor):
-        """
-        When input tensor is a vector (1D Tensor), returns a 2D square
-        Tensor with the elements of input as the diagonal.
-
-        Parameters
-        ----------
-        tensor: TensorBase
-
-        Returns
-        -------
-        Numpy Array
-        """
-        return np.diag(tensor)
 
     def transpose(self, dim0, dim1):
         """
