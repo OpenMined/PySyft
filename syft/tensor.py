@@ -2848,6 +2848,97 @@ class TensorBase(object):
         self.data = np.remainder(self.data, divisor)
         return self
 
+    def index(self, m):
+        """
+        Returns a new Tensor with the element selected by position
+
+        :param m: integer index or slice
+        :return: tensor of selected indices
+        """
+        if self.encrypted:
+            return NotImplemented
+        if not isinstance(m, int) and not isinstance(m, slice):
+            raise ValueError("The value of index must be integer")
+        return TensorBase(self.data[m], self.encrypted)
+
+    def index_add_(self, dim, index, tensor):
+        """
+        Add the value of 'tensor' selecting the elements and ordered
+        by index. In-place operation.
+
+        :param dim: dimension along which to index
+        :param index: 1D tensor containing the indices to select
+        :param tensor: tensor containing the values to add
+        """
+        index = _ensure_tensorbase(index)
+        tensor = _ensure_tensorbase(tensor)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if self.data.shape != tensor.data.shape:
+            raise IndexError("Tensor has different shape")
+        if self.data.shape[dim] != index.data.size:
+            raise ValueError("Index should have the same number of elements as dimension")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        self.data += tensor.data.take(index, dim)
+
+    def index_copy_(self, dim, index, tensor):
+        """
+        Copy the values of 'tensor' selecting the elements and ordered
+        by index. In-place operation.
+
+        :para dim: dimension along which to index
+        :param index: 1D tensor containing the indices to select
+        :param tensor: tensor containing the values to add
+        """
+        index = _ensure_tensorbase(index)
+        tensor = _ensure_tensorbase(tensor)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if self.data.shape != tensor.data.shape:
+            raise IndexError("Tensor has different shape")
+        if self.data.shape[dim] != index.data.size:
+            raise ValueError("Index should have the same number of elements as dimension")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        np.copyto(self.data, tensor.data.take(index, dim))
+
+    def index_fill_(self, dim, index, value):
+        """
+        Fill the original tensor with the values of 'tensor' selecting
+        the elements and ordered by index. In-place operation.
+
+        :param dim: dimension along which to inde
+        :param index: 1D tensor containing the indices to select
+        :param value: value to fill
+        """
+        index = _ensure_tensorbase(index)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        idx = [slice(None)] * self.data.ndim
+        idx[dim] = index
+        self.data[tuple(idx)] = value
+
     def index_select(self, dim, index):
         """
         Returns a new Tensor which indexes the ``input`` Tensor along
