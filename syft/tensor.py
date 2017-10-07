@@ -464,10 +464,22 @@ class TensorBase(object):
         return self.data
 
     def nelement(self):
-        """Returns the total number of elements in the tensor."""
+        """
+          Returns the total number of elements in the Tensor.
+
+          Parameters
+          ----------
+
+          Returns
+          -------
+          int:
+              total number of elements in the input Tensor
+          """
+
         if self.encrypted:
-            return NotImplemented
-        return self.data.size
+            return self.data.size
+        else:
+            return self.data.size
 
     def shape(self):
         """
@@ -2273,7 +2285,7 @@ class TensorBase(object):
 
     def size(self):
         """
-        Size of tensor
+        Returns the size of the tensor as a tuple.
 
         Parameters
         ----------
@@ -2283,9 +2295,9 @@ class TensorBase(object):
         Size of the Tensor
         """
         if self.encrypted:
-            return NotImplemented
+            return self.data.shape
         else:
-            return self.data.size
+            return self.data.shape
 
     def cumprod(self, dim=0):
         """
@@ -3046,6 +3058,27 @@ class TensorBase(object):
             return NotImplemented
         else:
             return TensorBase(np.array(self).astype('float16'))
+        
+    def numel(self):
+        """
+        Returns the total number of elements in the Tensor.
+        
+        Parameters
+        ----------
+        
+        Returns
+        -------
+        int:
+            total number of elements in the input Tensor
+        """
+        
+        if self.encrypted:
+            return self.data.size
+        else:
+            return self.data.size
+        
+        
+        
 
 
 def mv(tensormat, tensorvector):
