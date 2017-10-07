@@ -955,18 +955,19 @@ class IndexTests(unittest.TestCase):
         self.assertEqual(3, t1[-1])
 
     def test_index(self):
-        t = TensorBase(np.array([1, 2, 3.5]))
-        expected1 = TensorBase(np.array([2]))
-        expected2 = TensorBase(np.array([3.5]))
+        t = TensorBase(np.array([1, 2, 3.5, 4, 5, 6, 3.5]))
+        expected1 = TensorBase(np.array(2))
+        expected2 = TensorBase(np.array(3.5))
+        expected3 = TensorBase(np.array([4, 5, 6]))
 
         self.assertEqual(expected1, t.index(1))
         self.assertEqual(expected2, t.index(2))
+        self.assertEqual(expected2, t.index(-1))
+        self.assertEqual(expected3, t.index(slice(3, 6)))
         with pytest.raises(ValueError):
             t.index(3.5)
-        with pytest.raises(IndexError):
-            t.index(3)
 
-    def test_index_add(self):
+    def test_index_add_(self):
         t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
         t2 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
 

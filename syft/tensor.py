@@ -2848,20 +2848,18 @@ class TensorBase(object):
         self.data = np.remainder(self.data, divisor)
         return self
 
-    def index(self, position):
+    def index(self, m):
         """
         Returns a new Tensor with the element selected by position
 
-        :param index: integer position
+        :param m: integer index or slice
         :return: tensor of selected indices
         """
         if self.encrypted:
             return NotImplemented
-        if not isinstance(position, int):
-            raise ValueError("The value of position must be an integer")
-        if position > self.data.size or position < 0:
-            raise IndexError("Out of range")
-        return TensorBase([self[position]], self.encrypted)
+        if not isinstance(m, int) and not isinstance(m, slice):
+            raise ValueError("The value of index must be integer")
+        return TensorBase(self.data[m], self.encrypted)
 
     def index_add_(self, dim, index, tensor):
         """
