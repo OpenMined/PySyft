@@ -480,12 +480,13 @@ class TensorBase(object):
 
         Returns
         -------
-        Tensor Data
+        TensorBase:
+            Output Tensor
         """
         if self.encrypted:
             return NotImplemented
         self.data = np.absolute(self.data)
-        return self.data
+        return self
 
     def nelement(self):
         """Returns the total number of elements in the tensor."""
@@ -523,7 +524,7 @@ class TensorBase(object):
         """
         if self.encrypted:
             return NotImplemented
-        return np.sqrt(self.data)
+        return TensorBase(np.sqrt(self.data))
 
     def sqrt_(self):
         """
@@ -534,10 +535,12 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
         self.data = np.sqrt(self.data)
+        return self
 
     def dim(self):
         """
@@ -654,7 +657,7 @@ class TensorBase(object):
             return NotImplemented
 
         self.data.fill(0)
-        return self.data
+        return self
 
     def addmm(self, tensor2, mat, beta=1, alpha=1):
         """
@@ -1181,20 +1184,22 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         num_dims = len(self.data.shape)
         axes = list(range(num_dims))
 
         if dim0 >= num_dims:
-            print("dimension 0 out of range")
+            raise ValueError("dimension 0 out of range")
         elif dim1 >= num_dims:
-            print("dimension 1 out of range")
+            raise ValueError("dimension 1 out of range")
         elif self.encrypted:
-            raise NotImplemented
+            return NotImplemented
         else:
             axes[dim0] = dim1
             axes[dim1] = dim0
             self.data = np.transpose(self.data, axes=tuple(axes))
+        return self
 
     def t(self):
         """
@@ -1218,8 +1223,10 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         self.transpose_(0, 1)
+        return self
 
     def unsqueeze(self, dim):
         """
@@ -1235,7 +1242,6 @@ class TensorBase(object):
         Returns
         -------
         Output Tensor
-
         """
         return syft.unsqueeze(self.data, dim)
 
@@ -1250,15 +1256,17 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         num_dims = len(self.data.shape)
 
         if dim >= num_dims or dim < 0:
-            print("dimension out of range")
+            raise ValueError("dimension out of range")
         elif self.encrypted:
             raise NotImplemented
         else:
             self.data = np.expand_dims(self.data, dim)
+        return self
 
     def exp(self):
         """
@@ -1401,6 +1409,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
+        return self
 
     def sign(self):
         """
@@ -1432,6 +1441,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = np.sign(self.data)
+        return self
 
     def to_numpy(self):
         """
@@ -1478,6 +1488,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.array(self.data)
+        return self
 
     def log(self):
         """
@@ -2117,6 +2128,10 @@ class TensorBase(object):
         Parameters
         ----------
         size:
+
+        Returns
+        -------
+        Caller with values in-place
         """
         input_size = np.prod(size)
         extension = input_size - self.data.size
@@ -2125,15 +2140,15 @@ class TensorBase(object):
             if extension > 0:
                 data = np.append(flattened, np.zeros(extension))
                 self.data = data.reshape(*size)
-                print(self.data)
+                return self
             elif extension < 0:
                 size_ = self.data.size + extension
                 self.data = flattened[:size_]
                 self.data = self.data.reshape(*size)
-                print(self.data)
+                return self
             else:
                 self.data = self.data.reshape(*size)
-                print(self.data)
+                return self
         else:
             raise ValueError('negative dimension not allowed')
 
@@ -2147,9 +2162,11 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         size = tensor.data.shape
         self.resize_(size)
+        return self
 
     def round(self, decimals=0):
         """
@@ -2847,6 +2864,97 @@ class TensorBase(object):
             divisor = _ensure_tensorbase(divisor)
         self.data = np.remainder(self.data, divisor)
         return self
+
+    def index(self, m):
+        """
+        Returns a new Tensor with the element selected by position
+
+        :param m: integer index or slice
+        :return: tensor of selected indices
+        """
+        if self.encrypted:
+            return NotImplemented
+        if not isinstance(m, int) and not isinstance(m, slice):
+            raise ValueError("The value of index must be integer")
+        return TensorBase(self.data[m], self.encrypted)
+
+    def index_add_(self, dim, index, tensor):
+        """
+        Add the value of 'tensor' selecting the elements and ordered
+        by index. In-place operation.
+
+        :param dim: dimension along which to index
+        :param index: 1D tensor containing the indices to select
+        :param tensor: tensor containing the values to add
+        """
+        index = _ensure_tensorbase(index)
+        tensor = _ensure_tensorbase(tensor)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if self.data.shape != tensor.data.shape:
+            raise IndexError("Tensor has different shape")
+        if self.data.shape[dim] != index.data.size:
+            raise ValueError("Index should have the same number of elements as dimension")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        self.data += tensor.data.take(index, dim)
+
+    def index_copy_(self, dim, index, tensor):
+        """
+        Copy the values of 'tensor' selecting the elements and ordered
+        by index. In-place operation.
+
+        :para dim: dimension along which to index
+        :param index: 1D tensor containing the indices to select
+        :param tensor: tensor containing the values to add
+        """
+        index = _ensure_tensorbase(index)
+        tensor = _ensure_tensorbase(tensor)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if self.data.shape != tensor.data.shape:
+            raise IndexError("Tensor has different shape")
+        if self.data.shape[dim] != index.data.size:
+            raise ValueError("Index should have the same number of elements as dimension")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        np.copyto(self.data, tensor.data.take(index, dim))
+
+    def index_fill_(self, dim, index, value):
+        """
+        Fill the original tensor with the values of 'tensor' selecting
+        the elements and ordered by index. In-place operation.
+
+        :param dim: dimension along which to inde
+        :param index: 1D tensor containing the indices to select
+        :param value: value to fill
+        """
+        index = _ensure_tensorbase(index)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        idx = [slice(None)] * self.data.ndim
+        idx[dim] = index
+        self.data[tuple(idx)] = value
 
     def index_select(self, dim, index):
         """

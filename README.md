@@ -20,7 +20,6 @@ The goal of this library is to give the user the ability to efficiently train De
 The fastest way to get started is to use the pre-assembled Docker image (works on all major operating systems). Alternatively, one can manually set up all the dependencies and develop locally.
 
 ### Get Docker
-
 Install Docker following the instructions on the [website](https://www.docker.com/).
 
 For macOS users with [Homebrew](https://brew.sh/) installed, use:
@@ -32,7 +31,6 @@ open -a docker
 You can ensure that Docker is properly installed and running by checking: `docker --version`.
 
 ### Run PySyft in a container
-
 First, clone this repository and navigate into its folder:
 
 ```sh
@@ -63,6 +61,7 @@ Inside the container you can run any make targets such as `test` or `notebook`.
 - Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
 - Install the base libraries listed [here](https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries)
 - Set up a virtual environment for the Python libraries (optional, recommended)
+- Install [Capsule](https://github.com/OpenMined/Capsule) dependency if you are going to develop and run tests.
 
 ### Python Requirements
 
@@ -125,11 +124,9 @@ make test
 ```
 
 ## For Contributors
-
 If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then sign into our [Slack Team](https://openmined.slack.com/) channel #team_pysyft to let us know which projects sound interesting to you! (or propose your own!).
 
 ## Relevant Literature
-
 As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
 
 ### Encrypted Deep Learning - Recommended Reading:
@@ -172,5 +169,4 @@ tools for encrypted statistical machine learning](https://arxiv.org/pdf/1508.065
 - [Tutorial: How to verify crowdsourced training data using a Known Answer Review Policy](https://blog.mturk.com/tutorial-how-to-verify-crowdsourced-training-data-using-a-known-answer-review-policy-85596fb55ed)
 
 ## License
-
 [Apache-2.0](https://github.com/OpenMined/PySyft/blob/develop/LICENSE) by OpenMined contributors
