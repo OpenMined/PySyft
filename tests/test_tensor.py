@@ -35,17 +35,6 @@ class DimTests(unittest.TestCase):
         t.resize_as_(t2)
         self.assertEqual(t.data.shape, (2, 1))
 
-    def test_size(self):
-        t = TensorBase([1, 2, 3])
-        t1 = TensorBase([1.0, 2.0, 3.0])
-        self.assertEqual(t.size(), t1.size())
-
-    def test_nelement(self):
-        t = TensorBase(np.array([[1, 2], [3, 4]]))
-        t1 = TensorBase(np.array([[5.0, 6.0], [7.0, 8.0]]))
-        self.assertEqual(t.nelement(), t1.nelement())
-
-
 class DiagTests(unittest.TestCase):
     def test_one_dim_tensor_main_diag(self):
         t = TensorBase(np.array([1, 2, 3]))
