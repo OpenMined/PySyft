@@ -3199,13 +3199,12 @@ class TensorBase(object):
         
         Parameters
         ----------
-        
+
         Returns
         -------
         int:
             total number of elements in the input Tensor
         """
-        
         if self.encrypted:
             return self.data.size
         else:
