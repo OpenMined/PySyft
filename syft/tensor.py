@@ -165,7 +165,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         else:
-            if isinstance(pubkey, syft.he.paillier.keys.PublicKey):
+            if type(pubkey) == syft.he.paillier.keys.PublicKey:
                 out = syft.he.paillier.PaillierTensor(pubkey, self.data)
                 return out
             else:
@@ -361,8 +361,7 @@ class TensorBase(object):
 
         # if it's a sub-class of TensorBase, use the multiplication of that
         # subclass not this one.
-        if (not isinstance(tensor, TensorBase)
-                and isinstance(tensor, TensorBase)):
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             return tensor * self
         else:
             tensor = _ensure_tensorbase(tensor)
@@ -385,8 +384,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        if (not isinstance(tensor, TensorBase)
-                and isinstance(tensor, TensorBase)):
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             self.data = tensor.data * self.data
             self.encrypted = tensor.encrypted
         else:
@@ -411,8 +409,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        if (not isinstance(tensor, TensorBase)
-                and isinstance(tensor, TensorBase)):
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
             return NotImplemented  # it's not clear that this can be done
         else:
             tensor = _ensure_tensorbase(tensor)
@@ -2009,11 +2006,7 @@ class TensorBase(object):
         """
         if self.encrypted:
             return NotImplemented
-        self.data = stats.cauchy.rvs(
-            loc=median,
-            scale=sigma,
-            size=self.data.size).reshape(
-            self.data.shape)
+        self.data = stats.cauchy.rvs(loc=median, scale=sigma, size=self.data.size).reshape(self.data.shape)
         return self
 
     def fill_(self, value):
@@ -2724,19 +2717,14 @@ class TensorBase(object):
         if dim >= self.data.ndim or dim < -self.data.ndim:
             raise IndexError("dim is out of range")
         if dim < 0:
-            # Not sure why scatter should accept dim < 0, but that is the
-            # behavior in PyTorch's scatter
+            # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
             dim = self.data.ndim + dim
-        idx_xsection_shape = index.data.shape[:dim] + \
-            index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
-            raise ValueError(
-                "Except for dimension " +
-                str(dim) +
-                ", all dimensions of index and output should be the same size")
-        if (index.data >= self.data.shape[dim]
-                ).any() or (index.data < 0).any():
+            raise ValueError("Except for dimension " + str(dim) +
+                             ", all dimensions of index and output should be the same size")
+        if (index.data >= self.data.shape[dim]).any() or (index.data < 0).any():
             raise IndexError(
                 "The values of index must be between 0 and (self.data.shape[dim] -1)")
 
@@ -2746,31 +2734,22 @@ class TensorBase(object):
             return slc
 
         # We use index and dim parameters to create idx
-        # idx is in a form that can be used as a NumPy advanced index for
-        # scattering of src param. in self.data
-        idx = [[*
-                np.indices(idx_xsection_shape).reshape(index.data.ndim -
-                                                       1, -
-                                                       1), index.data[make_slice(index.data, dim, i)].reshape(1, -
-                                                                                                              1)[0]] for i in range(index.data.shape[dim])]
+        # idx is in a form that can be used as a NumPy advanced index for scattering of src param. in self.data
+        idx = [[*np.indices(idx_xsection_shape).reshape(index.data.ndim - 1, -1),
+                index.data[make_slice(index.data, dim, i)].reshape(1, -1)[0]] for i in range(index.data.shape[dim])]
         idx = list(np.concatenate(idx, axis=1))
         idx.insert(dim, idx.pop())
 
         if not np.isscalar(src):
             src = _ensure_tensorbase(src)
             if index.data.shape[dim] > src.data.shape[dim]:
-                raise IndexError(
-                    "Dimension " +
-                    str(dim) +
-                    "of index can not be bigger than that of src ")
+                raise IndexError("Dimension " + str(dim) +
+                                 "of index can not be bigger than that of src ")
             src_shape = src.data.shape[:dim] + src.data.shape[dim + 1:]
             if idx_xsection_shape != src_shape:
-                raise ValueError(
-                    "Except for dimension " +
-                    str(dim) +
-                    ", all dimensions of index and src should be the same size")
-            # src_idx is a NumPy advanced index for indexing of elements in the
-            # src
+                raise ValueError("Except for dimension " +
+                                 str(dim) + ", all dimensions of index and src should be the same size")
+            # src_idx is a NumPy advanced index for indexing of elements in the src
             src_idx = list(idx)
             src_idx.pop(dim)
             src_idx.insert(dim, np.repeat(
@@ -2805,14 +2784,11 @@ class TensorBase(object):
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
             return NotImplemented
-        idx_xsection_shape = index.data.shape[:dim] + \
-            index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
-            raise ValueError(
-                "Except for dimension " +
-                str(dim) +
-                ", all dimensions of index and self should be the same size")
+            raise ValueError("Except for dimension " + str(dim) +
+                             ", all dimensions of index and self should be the same size")
         if index.data.dtype != np.dtype('int_'):
             raise TypeError("The values of index must be integers")
         data_swaped = np.swapaxes(self.data, 0, dim)
@@ -3216,24 +3192,27 @@ class TensorBase(object):
             return NotImplemented
         else:
             return TensorBase(np.array(self).astype('float16'))
-
+        
     def numel(self):
         """
         Returns the total number of elements in the Tensor.
-
+        
         Parameters
         ----------
-
+        
         Returns
         -------
         int:
             total number of elements in the input Tensor
         """
-
+        
         if self.encrypted:
             return self.data.size
         else:
             return self.data.size
+        
+        
+        
 
 
 def mv(tensormat, tensorvector):
