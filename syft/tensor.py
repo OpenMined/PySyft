@@ -3192,11 +3192,11 @@ class TensorBase(object):
             return NotImplemented
         else:
             return TensorBase(np.array(self).astype('float16'))
-        
+
     def numel(self):
         """
         Returns the total number of elements in the Tensor.
-        
+
         Parameters
         ----------
 
@@ -3209,9 +3209,6 @@ class TensorBase(object):
             return self.data.size
         else:
             return self.data.size
-        
-        
-        
 
 
 def mv(tensormat, tensorvector):
