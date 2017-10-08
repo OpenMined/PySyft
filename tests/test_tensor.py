@@ -1364,7 +1364,7 @@ class numel_test(unittest.TestCase):
 
     def numel_test_3d(self):
         t1_len = 12
-        t1 = TensorBase(np.array([[[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]],[[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]]]))
+        t1 = TensorBase(np.array([[[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]]]))
         self.assertEqual(t1.numel(), t1_len)
 
     def numel_test_str(self):
@@ -1397,7 +1397,7 @@ class nelement_test(unittest.TestCase):
 
     def nelement_test_3d(self):
         t1_len = 12
-        t1 = TensorBase(np.array([[[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]],[[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]]]))
+        t1 = TensorBase(np.array([[[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]]]))
         self.assertEqual(t1.nelement(), t1_len)
 
     def nelement_test_str(self):
@@ -1424,13 +1424,13 @@ class size_test(unittest.TestCase):
         self.assertEqual(t1.size(), t1_size)
 
     def size_test_2d(self):
-        t1_size = (2,3)
+        t1_size = (2, 3)
         t1 = TensorBase(np.array([[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]]))
         self.assertEqual(t1.size(), t1_size)
 
     def size_test_3d(self):
-        t1_size = (2,2,3)
-        t1 = TensorBase(np.array([[[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]],[[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]]]))
+        t1_size = (2, 2, 3)
+        t1 = TensorBase(np.array([[[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]]]))
         self.assertEqual(t1.size(), t1_size)
 
     def size_test_str(self):
