@@ -3181,6 +3181,27 @@ class TensorBase(object):
         else:
             return TensorBase(np.array(self).astype('float16'))
 
+    def lerp(self, tensor, weight):
+    
+        if self.encrypted:
+            return NotImplemented
+
+        tensor = _ensure_tensorbase(tensor)
+        t1 = np.array(self.data)
+        t2 = np.array(tensor.data)
+        out = t1 + weight * (t2 - t1)
+        return TensorBase(out)
+
+    def lerp_(self, tensor, weight):
+    
+        if self.encrypted:
+            return NotImplemented
+
+        tensor = _ensure_tensorbase(tensor)
+        t1 = np.array(self.data)
+        t2 = np.array(tensor.data)
+        self.data = t1 + weight * (t2 - t1)
+        return self
 
 def mv(tensormat, tensorvector):
     """
