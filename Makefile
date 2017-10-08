@@ -12,6 +12,7 @@ develop:
 	python3 setup.py develop
 
 test:
+	pip3 install -r test-requirements.txt
 	pytest && pytest --flake8
 
 notebook:
