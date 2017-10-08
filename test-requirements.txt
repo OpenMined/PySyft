@@ -3,3 +3,6 @@
 line_profiler
 pytest
 pytest-flake8
+line_profiler
+clint
+coverage
