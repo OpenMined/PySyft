@@ -116,10 +116,10 @@ class CeilTests(unittest.TestCase):
 class ZeroTests(unittest.TestCase):
     def test_zero(self):
         t = TensorBase(np.array([13, 42, 1024]))
-        self.assertTrue(syft.equal(t.zero_(), [0, 0, 0]))
+        self.assertTrue(syft.equal(t.zero_(), TensorBase([0, 0, 0])))
 
         t = TensorBase(np.array([13.1, 42.2, 1024.4]))
-        self.assertTrue(syft.equal(t.zero_(), [0.0, 0.0, 0.0]))
+        self.assertTrue(syft.equal(t.zero_(), TensorBase([0.0, 0.0, 0.0])))
 
 
 class FloorTests(unittest.TestCase):
@@ -194,11 +194,11 @@ class DivTests(unittest.TestCase):
 class AbsTests(unittest.TestCase):
     def test_abs(self):
         t = TensorBase(np.array([-1, -2, 3]))
-        self.assertTrue(np.array_equal(t.abs(), [1, 2, 3]))
+        self.assertTrue(np.array_equal(t.abs(), TensorBase([1, 2, 3])))
 
     def test_abs_(self):
         t = TensorBase(np.array([-1, -2, 3]))
-        self.assertTrue(np.array_equal(t.abs_(), t.data))
+        self.assertTrue(np.array_equal(t.abs_(), TensorBase([1, 2, 3])))
 
 
 class ShapeTests(unittest.TestCase):
@@ -211,12 +211,12 @@ class SqrtTests(unittest.TestCase):
     def test_sqrt(self):
         t = TensorBase(np.array([[0, 4], [9, 16]]))
 
-        self.assertTrue(syft.equal(t.sqrt(), ([[0, 2], [3, 4]])))
+        self.assertTrue(syft.equal(t.sqrt(), TensorBase([[0, 2], [3, 4]])))
 
     def test_sqrt_(self):
         t = TensorBase(np.array([[0, 4], [9, 16]]))
         t.sqrt_()
-        self.assertTrue(syft.equal(t, ([[0, 2], [3, 4]])))
+        self.assertTrue(syft.equal(t, TensorBase([[0, 2], [3, 4]])))
 
 
 class SumTests(unittest.TestCase):
