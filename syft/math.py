@@ -9,7 +9,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze', 'tanh',
-    'zeros', 'ones', 'rand', 'randn'
+    'zeros', 'ones', 'rand', 'randn', 'renorm'
 ]
 
 

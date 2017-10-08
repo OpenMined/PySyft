@@ -5,7 +5,7 @@ from syft import test
 from syft.tensor import equal, TensorBase
 from syft.math import cumprod, cumsum, ceil, dot, matmul, addmm, addcmul
 from syft.math import addcdiv, addmv, addbmm, baddbmm, transpose
-from syft.math import unsqueeze, zeros, ones, rand, randn
+from syft.math import unsqueeze, zeros, ones, rand, randn, renorm
 
 s = str(he)
 s += str(nn)
@@ -16,3 +16,4 @@ s += str(dot) + str(matmul) + str(addmm) + str(addcmul) + str(addcdiv)
 s += str(addmv) + str(addbmm) + str(baddbmm)
 s += str(transpose) + str(rand) + str(randn) + str(ones) + str(zeros)
 s += str(unsqueeze)
+s += str(renorm)
