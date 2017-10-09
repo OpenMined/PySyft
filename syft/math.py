@@ -758,11 +758,11 @@ def fmod(tensor, divisor):
 
 def renorm(tensor1, p, dim, maxnorm):
     """
-    Performs the scaling of elements along the dimension dim in tensor1 such that 
+    Performs the scaling of elements along the dimension dim in tensor1 such that
     the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
     Returns the result as an output tensor.
 
-    The tensor, tensor1 is expected to have at least two dimesions, and the 
+    The tensor, tensor1 is expected to have at least two dimesions, and the
     p-norm is defined to have powers greater than or equal to one.
 
     Parmeters
@@ -777,7 +777,7 @@ def renorm(tensor1, p, dim, maxnorm):
         Dimension on which the operation is done
 
     maxnorm:
-        Max value the p-norm is allowed to take on 
+        Max value the p-norm is allowed to take on
 
     Returns
     -------
@@ -795,11 +795,11 @@ def renorm(tensor1, p, dim, maxnorm):
         raise ValueError("p must be a float greater than or equal to 1")
     else:
         # solve for c in maxnorm = sqrt(sum((c*x)**p))
-        dim_2_sum = tuple(filter(lambda x : x != dim, range(dims)))
+        dim_2_sum = tuple(filter(lambda x: x != dim, range(dims)))
         norm = np.power(np.power(np.absolute(tensor1), p).sum(dim_2_sum), 1.0 / p)
         c = maxnorm / norm
         # only renorm when norm > maxnorm
-        scalar =  np.where(norm > maxnorm, c, 1)
+        scalar = np.where(norm > maxnorm, c, 1)
         # broadcast along appropriate dim
         dim_array = np.ones((1, dims), int).ravel()
         dim_array[dim] = -1

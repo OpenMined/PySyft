@@ -1358,14 +1358,14 @@ class fmod_Test(unittest.TestCase):
 
 class RenormTests(unittest.TestCase):
     def testRenorm(self):
-        t1 = TensorBase(np.array([[1, 2, 3], [4 , 5, 6]]))
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
         t2 = t1.renorm(2, 0, 6)
-        self.assertTrue(np.allclose(t2, np.array([[1.0, 2.0, 3.0],[2.735054, 3.418817, 4.102581]])))
+        self.assertTrue(np.allclose(t2, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
 
     def testRenorm_(self):
-        t = TensorBase(np.array([[1, 2, 3], [4 , 5, 6]]))
+        t = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
         t.renorm_(2, 0, 6)
-        self.assertTrue(np.allclose(t, np.array([[1.0, 2.0, 3.0],[2.735054, 3.418817, 4.102581]])))
+        self.assertTrue(np.allclose(t, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
 
 
 if __name__ == "__main__":
