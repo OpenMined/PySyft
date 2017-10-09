@@ -330,4 +330,4 @@ class numelTests(unittest.TestCase):
     def numel_test_float(self):
         t1_len = 3
         t1 = TensorBase(np.array([2.0, 3.0, 4.0]))
-        self.assertEqual(syft.math.numel(t1), t1_len)        
+        self.assertEqual(syft.math.numel(t1), t1_len)
