@@ -4,16 +4,13 @@
 
 FROM pysyft-base:local
 
-RUN apk update
-RUN apk add --no-cache \
-  git redis
-
-WORKDIR /usr/bin/
-RUN git clone https://github.com/OpenMined/Capsule.git
-WORKDIR /usr/bin/Capsule/
-RUN pip3 install -r requirements.txt
-RUN python3 setup.py install
-RUN chmod +x build_and_run.sh build_and_run_django.sh build_and_run_zmq.sh
+RUN apk add --initdb --no-cache	git redis && \
+	cd /usr/bin/ && \
+	git clone https://github.com/OpenMined/Capsule.git && \
+	cd /usr/bin/Capsule/ && \
+	pip3 install -r requirements.txt && \
+	python3 setup.py install && \
+	chmod +x build_and_run.sh build_and_run_django.sh build_and_run_zmq.sh
 
 WORKDIR /PySyft
 COPY . ./
