@@ -755,14 +755,15 @@ def fmod(tensor, divisor):
     return TensorBase(np.fmod(tensor.data, divisor))
 
 
-def lerp(self, tensor, weight):
+def lerp(tensor1, tensor2, weight):
     """
     Performs 'lerp' operation, returning a new tensor calculated by interpolation
     of two tensors using a weight.
 
     Parameters
     ----------
-    tensor: TensorBase
+    tensor1: TensorBase
+    tensor2: TensorBase
 
     weight:
         Weight supplied for iterpolation
@@ -772,38 +773,13 @@ def lerp(self, tensor, weight):
     TensorBase:
         Output Tensor
     """
-    if self.encrypted:
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+
+    if tensor1.encrypted or tensor2.encrypted:
         return NotImplemented
 
-    tensor = _ensure_tensorbase(tensor)
-    t1 = np.array(self.data)
-    t2 = np.array(tensor.data)
+    t1 = np.array(tensor1.data)
+    t2 = np.array(tensor2.data)
     out = t1 + weight * (t2 - t1)
     return TensorBase(out)
-
-
-def lerp_(self, tensor, weight):
-    """
-    Performs 'lerp' operation inline , returning the same tensor modified by interpolation
-    of two tensors using a weight.
-
-    Parameters
-    ----------
-    tensor: TensorBase
-
-    weight:
-        Weight supplied for iterpolation
-
-    Returns
-    -------
-    TensorBase:
-        Caller with values modified in place.
-    """
-    if self.encrypted:
-        return NotImplemented
-
-    tensor = _ensure_tensorbase(tensor)
-    t1 = np.array(self.data)
-    t2 = np.array(tensor.data)
-    self.data = t1 + weight * (t2 - t1)
-    return self

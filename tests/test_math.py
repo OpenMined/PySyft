@@ -317,12 +317,5 @@ class lerpTests(unittest.TestCase):
         t1 = TensorBase(np.array([1, 2, 3, 4]))
         t2 = TensorBase(np.array([3, 4, 5, 6]))
         weight = 0.5
-        out = t1.lerp(t2, weight)
+        out = syft.math.lerp(t1, t2, weight)
         self.assertTrue(np.array_equal(out.data, [2, 3, 4, 5]))
-
-    def test_lerp_(self):
-        t1 = TensorBase(np.array([1, 2, 3, 4]))
-        t2 = TensorBase(np.array([3, 4, 5, 6]))
-        weight = 0.5
-        t1.lerp_(t2, weight)
-        self.assertTrue(np.array_equal(t1.data, [2, 3, 4, 5]))
