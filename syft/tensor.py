@@ -3181,6 +3181,51 @@ class TensorBase(object):
         else:
             return TensorBase(np.array(self).astype('float16'))
 
+    def lerp(self, tensor, weight):
+        """
+        Performs 'lerp' operation, returning a new tensor calculated by interpolation
+        of two tensors using a weight.
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        weight:
+            Weight supplied for iterpolation
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        return syft.math.lerp(self, tensor, weight)
+
+    def lerp_(self, tensor, weight):
+        """
+        Performs 'lerp' operation inline, returning the calling tensor modified by interpolation
+        of two tensors using a weight.
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        weight:
+            Weight supplied for iterpolation
+
+        Returns
+        -------
+        TensorBase:
+            Calling Tensor modified inline
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        self.data = syft.math.lerp(self, tensor, weight)
+        return self
+
 
 def mv(tensormat, tensorvector):
     """
