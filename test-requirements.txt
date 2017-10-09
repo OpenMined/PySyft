@@ -3,3 +3,5 @@
 line_profiler
 pytest
 pytest-flake8
+clint
+coverage
