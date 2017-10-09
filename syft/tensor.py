@@ -3240,7 +3240,7 @@ class TensorBase(object):
             return NotImplemented
         else:
             self.data = syft.math.renorm(self, p, dim, maxnorm).data
-            return self.data
+            return self
 
 
 def mv(tensormat, tensorvector):
