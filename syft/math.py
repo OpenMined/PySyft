@@ -19,7 +19,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag'
+    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp'
 ]
 
 
@@ -753,3 +753,33 @@ def fmod(tensor, divisor):
         divisor = divisor.data
 
     return TensorBase(np.fmod(tensor.data, divisor))
+
+
+def lerp(tensor1, tensor2, weight):
+    """
+    Performs 'lerp' operation, returning a new tensor calculated by interpolation
+    of two tensors using a weight.
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+    tensor2: TensorBase
+
+    weight:
+        Weight supplied for iterpolation
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
+    _ensure_tensorbase(tensor1)
+    _ensure_tensorbase(tensor2)
+
+    if tensor1.encrypted or tensor2.encrypted:
+        return NotImplemented
+
+    t1 = np.array(tensor1.data)
+    t2 = np.array(tensor2.data)
+    out = t1 + weight * (t2 - t1)
+    return TensorBase(out)
