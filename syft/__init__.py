@@ -1,4 +1,4 @@
-Gfrom syft import he
+from syft import he
 from syft import nn
 from syft import test
 from syft import mpc
