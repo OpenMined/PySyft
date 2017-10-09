@@ -3251,6 +3251,7 @@ def numel(self):
     """
     return syft.math.numel(self)
 
+
 def mv(tensormat, tensorvector):
     """
     Matrix and Vector multiplication is performed.

@@ -772,6 +772,7 @@ def numel(tensor):
     else:
         return tensor.data.size
 
+
 def lerp(tensor1, tensor2, weight):
     """
     Performs 'lerp' operation, returning a new tensor calculated by interpolation
@@ -800,4 +801,3 @@ def lerp(tensor1, tensor2, weight):
     t2 = np.array(tensor2.data)
     out = t1 + weight * (t2 - t1)
     return TensorBase(out)
-

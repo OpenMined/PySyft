@@ -319,3 +319,15 @@ class lerpTests(unittest.TestCase):
         weight = 0.5
         out = syft.math.lerp(t1, t2, weight)
         self.assertTrue(np.array_equal(out.data, [2, 3, 4, 5]))
+
+
+class numelTests(unittest.TestCase):
+    def numel_test_int(self):
+        t1_len = 3
+        t1 = TensorBase(np.array([2, 3, 4]))
+        self.assertEqual(syft.math.numel(t1), t1_len)
+
+    def numel_test_float(self):
+        t1_len = 3
+        t1 = TensorBase(np.array([2.0, 3.0, 4.0]))
+        self.assertEqual(syft.math.numel(t1), t1_len)        
