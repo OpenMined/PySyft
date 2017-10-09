@@ -12,6 +12,9 @@ develop:
 	python3 setup.py develop
 
 test:
+	@# Remove pyc files to avoid conflict if tests are run locally
+	@# and inside container at the same time
+	@find . -name '*.pyc' -exec rm -f '{}' \;
 	pip3 install -r test-requirements.txt
 	pytest && pytest --flake8
 
