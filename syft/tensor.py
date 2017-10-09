@@ -490,6 +490,7 @@ class TensorBase(object):
 
     def nelement(self):
         """
+          Alias for numel()
           Returns the total number of elements in the Tensor.
 
           Parameters
@@ -501,10 +502,7 @@ class TensorBase(object):
               total number of elements in the input Tensor
           """
 
-        if self.encrypted:
-            return self.data.size
-        else:
-            return self.data.size
+        return numel(self)
 
     def shape(self):
         """
@@ -3193,23 +3191,20 @@ class TensorBase(object):
         else:
             return TensorBase(np.array(self).astype('float16'))
 
-    def numel(self):
-        """
-        Returns the total number of elements in the Tensor.
 
-        Parameters
-        ----------
+def numel(self):
+    """
+    Returns the total number of elements in the input Tensor.
 
-        Returns
-        -------
-        int:
-            total number of elements in the input Tensor
-        """
-        if self.encrypted:
-            return self.data.size
-        else:
-            return self.data.size
+    Parameters
+    ----------
 
+    Returns
+    -------
+    int:
+        total number of elements in the input Tensor
+    """
+    return syft.math.numel(self)
 
 def mv(tensormat, tensorvector):
     """

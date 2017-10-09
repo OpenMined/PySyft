@@ -753,3 +753,21 @@ def fmod(tensor, divisor):
         divisor = divisor.data
 
     return TensorBase(np.fmod(tensor.data, divisor))
+
+
+def numel(tensor):
+    """
+    Returns the total number of elements in the input Tensor.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    int:
+        total number of elements in the input Tensor
+    """
+    if tensor.encrypted:
+        return tensor.data.size
+    else:
+        return tensor.data.size
