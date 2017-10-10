@@ -332,6 +332,7 @@ class numelTests(unittest.TestCase):
         t1 = TensorBase(np.array([2.0, 3.0, 4.0]))
         self.assertEqual(syft.math.numel(t1), t1_len)
 
+
 class RenormTests(unittest.TestCase):
     def testIntRenorm(self):
         t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
@@ -348,4 +349,3 @@ class RenormTests(unittest.TestCase):
         t2 = syft.math.renorm(t1, 1, 2, 8)
         self.assertTrue(np.allclose(t2, np.array([[[1.0, 1.230770, 1.333333], [4.0, 3.076923, 2.666667]],
                                                   [[2.0, 1.846154, 1.777778], [1.0, 1.846154, 2.222222]]])))
-
