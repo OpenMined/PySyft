@@ -312,6 +312,15 @@ class fmodTest(unittest.TestCase):
         self.assertTrue(np.array_equal(syft.math.fmod(t2, divisor).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
 
 
+class lerpTests(unittest.TestCase):
+    def test_lerp(self):
+        t1 = TensorBase(np.array([1, 2, 3, 4]))
+        t2 = TensorBase(np.array([3, 4, 5, 6]))
+        weight = 0.5
+        out = syft.math.lerp(t1, t2, weight)
+        self.assertTrue(np.array_equal(out.data, [2, 3, 4, 5]))
+
+
 class RenormTests(unittest.TestCase):
     def testIntRenorm(self):
         t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
