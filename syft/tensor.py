@@ -92,8 +92,7 @@ def equal(tensor1, tensor2):
         return NotImplemented
 
     left = tensor1.data.shape == tensor2.data.shape
-    right = np.allclose(tensor1.data, tensor2.data)
-    return left and right
+    return left and np.allclose(tensor1.data, tensor2.data)
 
 
 class TensorBase(object):
