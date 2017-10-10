@@ -449,7 +449,7 @@ class TensorBase(object):
             return NotImplemented
         else:
             out = self.data[position]
-            if (len(self.shape()) == 1):
+            if (len(self.shape()) == 1) and (type(position) != slice):
                 return out
             else:
                 return TensorBase(self.data[position], self.encrypted)
