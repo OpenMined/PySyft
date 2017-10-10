@@ -489,10 +489,20 @@ class TensorBase(object):
         return self
 
     def nelement(self):
-        """Returns the total number of elements in the tensor."""
-        if self.encrypted:
-            return NotImplemented
-        return self.data.size
+        """
+          Alias for numel()
+          Returns the total number of elements in the Tensor.
+
+          Parameters
+          ----------
+
+          Returns
+          -------
+          int:
+              total number of elements in the input Tensor
+          """
+
+        return syft.math.numel(self)
 
     def shape(self):
         """
@@ -2316,7 +2326,7 @@ class TensorBase(object):
 
     def size(self):
         """
-        Size of tensor
+        Returns the size of the tensor as a tuple.
 
         Parameters
         ----------
@@ -2326,9 +2336,9 @@ class TensorBase(object):
         Size of the Tensor
         """
         if self.encrypted:
-            return NotImplemented
+            return self.data.shape
         else:
-            return self.data.size
+            return self.data.shape
 
     def cumprod(self, dim=0):
         """
@@ -3285,6 +3295,21 @@ class TensorBase(object):
         else:
             self.data = syft.math.renorm(self, p, dim, maxnorm).data
             return self
+
+
+def numel(self):
+    """
+    Returns the total number of elements in the input Tensor.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    int:
+        total number of elements in the input Tensor
+    """
+    return syft.math.numel(self)
 
 
 def mv(tensormat, tensorvector):

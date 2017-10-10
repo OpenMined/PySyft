@@ -19,7 +19,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm'
+    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
 ]
 
 
@@ -753,6 +753,24 @@ def fmod(tensor, divisor):
         divisor = divisor.data
 
     return TensorBase(np.fmod(tensor.data, divisor))
+
+
+def numel(tensor):
+    """
+    Returns the total number of elements in the input Tensor.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    int:
+        total number of elements in the input Tensor
+    """
+    if tensor.encrypted:
+        return tensor.data.size
+    else:
+        return tensor.data.size
 
 
 def lerp(tensor1, tensor2, weight):
