@@ -19,7 +19,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp'
+    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm'
 ]
 
 
@@ -782,4 +782,51 @@ def lerp(tensor1, tensor2, weight):
     t1 = np.array(tensor1.data)
     t2 = np.array(tensor2.data)
     out = t1 + weight * (t2 - t1)
+    return TensorBase(out)
+
+
+def renorm(tensor1, p, dim, maxnorm):
+    """
+    Performs the scaling of elements along the dimension dim in tensor1 such that
+    the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
+    Returns the result as an output tensor.
+
+    The tensor, tensor1 is expected to have at least two dimesions, and the
+    p-norm is defined to have powers greater than or equal to one.
+
+    Parmeters
+    ---------
+    tensor1: TensorBase
+        Input Tensor
+
+    p:
+        Power of the norm function
+
+    dim:
+        Dimension on which the operation is done
+
+    maxnorm:
+        Max value the p-norm is allowed to take on
+    """
+    tensor1 = _ensure_tensorbase(tensor1)
+    dims = tensor1.data.ndim
+
+    if tensor1.encrypted:
+        return NotImplemented
+    elif dims < 2:
+        raise ValueError("tensor must have at least 2 dims")
+    elif p < 1.0:
+        raise ValueError("p must be a float greater than or equal to 1")
+    else:
+        # solve for c in maxnorm = sqrt(sum((c*x)**p))
+        dim_2_sum = tuple(filter(lambda x: x != dim, range(dims)))
+        norm = np.power(np.power(np.absolute(tensor1), p).sum(dim_2_sum), 1.0 / p)
+        c = maxnorm / norm
+        # only renorm when norm > maxnorm
+        scalar = np.where(norm > maxnorm, c, 1)
+        # broadcast along appropriate dim
+        dim_array = np.ones((1, dims), int).ravel()
+        dim_array[dim] = -1
+        scalar_reshaped = scalar.reshape(dim_array)
+        out = tensor1 * scalar_reshaped
     return TensorBase(out)
