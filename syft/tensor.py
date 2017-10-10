@@ -502,7 +502,7 @@ class TensorBase(object):
               total number of elements in the input Tensor
           """
 
-        return numel(self)
+        return syft.math.numel(self)
 
     def shape(self):
         """
