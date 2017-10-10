@@ -950,20 +950,23 @@ class IndexTests(unittest.TestCase):
         expected2 = TensorBase(np.array(3.5))
         expected3 = TensorBase(np.array([4, 5, 6]))
 
-        t2 = TensorBase(np.array([1, 2, 3, 4]))
-        expected4 = TensorBase(np.array([2, 3, 4]))
-        expected5 = 1
-
         self.assertEqual(expected1, t.index(1))
         self.assertEqual(expected2, t.index(2))
         self.assertEqual(expected2, t.index(-1))
         self.assertEqual(expected3, t.index(slice(3, 6)))
-        # Do not use "t.index" form in following test
-        self.assertEqual(expected4, t2[1:])
-        self.assertEqual(type(t2[1:]), TensorBase)
-        self.assertEqual(expected5, t2.index(0))
         with pytest.raises(ValueError):
             t.index(3.5)
+
+    def test_index_slice_notation(self):
+        t2 = TensorBase(np.array([1, 2, 3, 4]))
+        expected1 = TensorBase(np.array([2, 3, 4]))
+        expected2 = type(t2[1:])
+        expected3 = 1
+
+        # Do not use "t.index" form in following test
+        self.assertEqual(expected1, t2[1:])
+        self.assertEqual(expected2, TensorBase)
+        self.assertEqual(expected3, t2[0])
 
     def test_index_add_(self):
         t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
