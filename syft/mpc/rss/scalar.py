@@ -99,9 +99,9 @@ class MPCFixedPoint(object):
     def __mul__(self, x):
 
         if(type(x) != type(self)):
-            return MPCFixedPoint(None, self.repo, raw_natural=(self.raw_natural * self.encode(x))).truncate()
+            return MPCFixedPoint(None, self.repo, raw_natural=(self.raw_natural * self.encode(x)))
         else:
-            return MPCFixedPoint(None, self.repo, raw_natural=(self.raw_natural * x.raw_natural)).truncate()
+            return MPCFixedPoint(None, self.repo, raw_natural=(self.raw_natural * x.raw_natural))
 
     def __truediv__(self, x):
 
@@ -109,9 +109,3 @@ class MPCFixedPoint(object):
 
     def __repr__(self):
         return str(self.get())
-
-    #To be done
-    def truncate(self):
-
-        self.config.BASE**self.config.PRECISION_FRACTIONAL
-        return self

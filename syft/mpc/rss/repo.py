@@ -57,7 +57,7 @@ class MPCRepo(object):
         self.create_share(new_id, share)
 
         if(populate_to_another_party):
-            self.another_party[0].add_public(new_id, id1, scalar)
+            self.another_party[0].add_public(new_id, id1, 0)
 
         return MPCNatural(new_id, self)
 
@@ -79,7 +79,7 @@ class MPCRepo(object):
         self.create_share(new_id, share)
 
         if(populate_to_another_party):
-            self.another_party[0].sub(new_id, id1, id2)
+            self.another_party[0].sub(new_id, id1, 0)
 
         return MPCNatural(new_id, self)
 
@@ -99,10 +99,10 @@ class MPCRepo(object):
         c = a * b % Q
         return self.create_natural_with_shares(self.share(a)), self.create_natural_with_shares(self.share(b)), self.create_natural_with_shares(self.share(c))
 
-    def truncate(x, amount=6):
-        y0 = x[0] // 10**amount
-        y1 = Q - ((Q - x[1]) // 10**amount)
-        return [y0, y1]
+    def truncate(self, x, amount=8):
+        self.ints[x.id] = self.ints[x.id] // 10**amount
+        self.another_party[0].ints[x.id] = Q - ((Q - self.another_party[0].ints[x.id]) // 10**amount)
+        return x
 
     def mult(self, new_id, x, y, populate_to_another_party=False):
 
@@ -113,13 +113,19 @@ class MPCRepo(object):
         new_id2 = np.random.randint(0, 2**32)
         e = self.sub(new_id2, y, b.id, True)
 
-        delta = self.reconstruct([self.ints[new_id1], self.another_party.ints[new_id1]])
-        epsilon = self.reconstruct([self.ints[new_id2], self.another_party.ints[new_id2]])
+        delta = self.reconstruct([self.ints[new_id1], self.another_party[0].ints[new_id1]])
+        epsilon = self.reconstruct([self.ints[new_id2], self.another_party[0].ints[new_id2]])
 
-        r = delta * epsilon % Q
-        s = mul_public(a, epsilon)
-        t = mul_public(b, delta)
-        return self.add(s, self.add(t, self.add_public(c, r)))
+        r = delta * epsilon // 10**8 % Q
+        new_id3 = np.random.randint(0, 2**32)
+        s = self.truncate(self.mult_public(new_id3, a.id, epsilon, True))
+        new_id4 = np.random.randint(0, 2**32)
+        t = self.truncate(self.mult_public(new_id4, b.id, delta, True))
+
+        new_id5 = np.random.randint(0, 2**32)
+        new_id6 = np.random.randint(0, 2**32)
+        new_id7 = np.random.randint(0, 2**32)
+        return self.add(new_id7, s.id, self.add(new_id6, t.id, self.add_public(new_id5, c.id, r, True).id, True).id, True)
 
     def mult_public(self, new_id, id1, scalar, populate_to_another_party=False):
 
@@ -128,7 +134,7 @@ class MPCRepo(object):
         self.create_share(new_id, share)
 
         if(populate_to_another_party):
-            self.another_party[0].mult_scalar(new_id, id1, scalar)
+            self.another_party[0].mult_public(new_id, id1, scalar)
 
         return MPCNatural(new_id, self)
 
