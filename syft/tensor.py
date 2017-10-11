@@ -2998,10 +2998,18 @@ class TensorBase(object):
         Returns a new tensor that is a narrowed version of this tensor.
         The dimension ``dim`` is narrowed from ``start`` to ``start`` + ``length``.
 
-        :param dim: dimension along which to narrow
-        :param start: starting dimension
-        :param length: length from start to narrow to
-        :return: narrowed version of this tensor
+        Parameters
+        ----------
+        dim: int
+            dimension along which to narrow
+        start: int
+            starting dimension
+        length: int
+            length from start to narrow to
+
+        Returns
+        -------
+        narrowed version of this tensor
         """
         dim = dim if dim >= 0 else dim + self.dim()
         if self.encrypted:
