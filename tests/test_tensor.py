@@ -1571,7 +1571,7 @@ class StorageTests(unittest.TestCase):
         res = t2.set_(t1)
         self.assertEqual(res, NotImplemented)
 
-    def test_tensor_set_tensor(self):
+    def test_tensor_set_(self):
         # begin test call signature
         t1 = TensorBase([1, 2, 3, 4])
 
