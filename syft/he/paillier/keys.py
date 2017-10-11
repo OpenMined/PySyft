@@ -193,7 +193,7 @@ def decode(self):
     else:
         raise OverflowError('Overflow detected in decrypted number')
     if self.exponent <= 1:
-        return int(mantissa * pow(self.BASE, self.exponent))
+        return int(math.ceil(mantissa * pow(self.BASE, self.exponent)))
     else:
         return float(mantissa * pow(self.BASE, self.exponent))
 
