@@ -235,8 +235,18 @@ class EqualTests(unittest.TestCase):
         t2 = TensorBase(np.array([1, 4, 3]))
         self.assertFalse(syft.equal(t1, t2))
 
+    def test_shape_not_equal(self):
+        t1 = TensorBase(np.array([1, 2]))
+        t2 = TensorBase(np.array([1, 4, 3]))
+        self.assertFalse(syft.equal(t1, t2))
+
     def test_inequality_operation(self):
         t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = TensorBase(np.array([1, 4, 5]))
+        self.assertTrue(t1 != t2)
+
+    def test_shape_inequality_operation(self):
+        t1 = TensorBase(np.array([1, 2]))
         t2 = TensorBase(np.array([1, 4, 5]))
         self.assertTrue(t1 != t2)
 
