@@ -3325,14 +3325,69 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
+        offset = 0
+
         # Base ndarray has 0 offset
         if self.data.base is None:
-            return 0
+            offset = 0
 
-        offset_raw = len(self.data.base.tobytes()) - len(self.data.tobytes())
-        offset = offset_raw / self.data.dtype.itemsize
+        elif type(self.data.base) is bytes:
+            offset = 0
+
+        else:
+            offset_raw = len(self.data.base.tobytes()) - len(self.data.tobytes())
+            offset = offset_raw / self.data.dtype.itemsize
 
         return offset
+
+    def set_(self, source=None, offset=0, size=None, stride=None):
+        """
+        Sets the source `numpy.ndarray`, offset, size, and strides.
+
+        If only a tensor is passed in :attr:`source`, this tensor will share
+        the same `numpy.ndarray` and have the same size and strides as the
+        given tensor. Changes to elements in one tensor will be reflected
+        in the other.
+
+        If :attr:`source` is `None`, the method sets the underlying
+        `numpy.ndarray`, offset, size, and stride.
+
+        Parameters
+        ----------
+
+        source: TensorBase or None
+            Input Tensor
+
+        offset: int
+            The offset in the underlying `numpy.ndarray`
+
+        size: Tuple
+            The desired size. Defaults to the size of the source.
+
+        stride: Tuple
+            The desired stride. Defaults to C-contiguous strides.
+        """
+
+        if self.encrypted or (source is not None and source.encrypted):
+            return NotImplemented
+
+        if source is not None:
+            self.data = source.data
+
+        if offset != 0 and size is None:
+            raise TypeError("Cannot set offset without size")
+
+        if stride is not None and size is None:
+            raise TypeError("Cannot set stride without size")
+
+        if size is not None or size is not None:
+            offset_nd = offset * self.data.dtype.itemsize
+            self.data = np.ndarray(shape=size,
+                                   buffer=self.data,
+                                   dtype=self.data.dtype,
+                                   offset=offset_nd,
+                                   strides=stride)
+
 
 def numel(self):
     """
