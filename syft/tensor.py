@@ -3295,6 +3295,20 @@ class TensorBase(object):
             self.data = syft.math.renorm(self, p, dim, maxnorm).data
             return self
 
+    def stride(self):
+        """
+        Strides of tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Strides of the Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+        return self.data.strides
 
     def storage_offset(self):
         """
