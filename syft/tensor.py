@@ -3472,6 +3472,30 @@ class TensorBase(object):
         return TensorBase(np.concatenate(sub_arrays, axis=dim))
 
 
+    def storage_offset(self):
+        """
+        Returns this tensor’s offset in the underlying
+        storage in terms of number of storage elements (not bytes).
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Offset of the underlying storage
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        # Base ndarray has 0 offset
+        if self.data.base is None:
+            return 0
+
+        offset_raw = len(self.data.base.tobytes()) - len(self.data.tobytes())
+        offset = offset_raw / self.data.dtype.itemsize
+
+        return offset
+
 def numel(self):
     """
     Returns the total number of elements in the input Tensor.

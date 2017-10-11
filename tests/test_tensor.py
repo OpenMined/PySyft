@@ -1500,6 +1500,31 @@ class RenormTests(unittest.TestCase):
         t.renorm_(2, 0, 6)
         self.assertTrue(np.allclose(t, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
 
+class StorageTests(unittest.TestCase):
+    def test_storage_offset(self):
+        # Test default offset = 0
+        t = TensorBase(np.array([1, 2, 4, 4]))
+        self.assertEqual(t.storage_offset(), 0)
+
+        t1 = t[1:]
+        self.assertEqual(t1.storage_offset(), 1)
+
+        t2 = t[2:]
+        self.assertEqual(t2.storage_offset(), 2)
+
+        t3 = t[3:]
+        self.assertEqual(t3.storage_offset(), 3)
+
+        t4 = t[4:]
+        self.assertEqual(t4.storage_offset(), 4)
+
+
+
+
+    def test_storage_offset_encrypted(self):
+        t1 = TensorBase(np.array([1, 2, 4, 4]),  encrypted=True)
+        res = t1.storage_offset()
+        self.assertEqual(res, NotImplemented)
 
 class StorageTests(unittest.TestCase):
     def test_stride(self):
