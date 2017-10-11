@@ -957,6 +957,17 @@ class IndexTests(unittest.TestCase):
         with pytest.raises(ValueError):
             t.index(3.5)
 
+    def test_index_slice_notation(self):
+        t1 = TensorBase(np.array([1, 2, 3, 4]))
+        expected1 = TensorBase(np.array([2, 3, 4]))
+        expected2 = type(t1[1:])
+        expected3 = 1
+
+        # Do not use "t.index" form in following test
+        self.assertEqual(expected1, t1[1:])
+        self.assertEqual(expected2, TensorBase)
+        self.assertEqual(expected3, t1[0])
+
     def test_index_add_(self):
         t1 = TensorBase(np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))
         t2 = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
@@ -1170,6 +1181,18 @@ class testMv(unittest.TestCase):
         mat = TensorBase([[1, 2, 3], [1, 2, 3]])
         vec = TensorBase([1, 2, 3])
         self.assertEqual(mat.mv(vec), TensorBase([14, 14]))
+
+
+class TestNarrow(unittest.TestCase):
+    def test_narrow_int(self):
+        mat = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        dim, start, length = 0, 0, 2
+        self.assertEqual(mat.narrow(dim, start, length), TensorBase(np.array([[1, 2, 3], [4, 5, 6]])))
+
+    def test_narrow_float(self):
+        mat = TensorBase(np.array([[1.1, 2.1, 3.1], [4.2, 5.2, 6.2], [7.3, 8.3, 9.3]]))
+        dim, start, length = 1, 1, 2
+        self.assertEqual(mat.narrow(dim, start, length), TensorBase(np.array([[2.1, 3.1], [5.2, 6.2], [8.3, 9.3]])))
 
 
 class masked_scatter_Tests(unittest.TestCase):
