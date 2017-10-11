@@ -108,14 +108,6 @@ class PaillierTensor(TensorBase):
         else:
             return NotImplemented
 
-    def decrypt(self, seckey):
-        """
-        Returns a new decrypted tensor
-        :param seckey: secret key to use for decryption
-        :return: A new decrypted TensorBase object
-        """
-        return seckey.decrypt(self, self.fixed_point_conf)
-
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
         if not self.encrypted:
