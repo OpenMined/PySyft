@@ -2,61 +2,109 @@
 
 [![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
 [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=master)](https://travis-ci.org/OpenMined/PySyft)
+[![codecov](https://codecov.io/gh/openmined/pysyft/branch/master/graph/badge.svg)](https://codecov.io/gh/openmined/pysyft)
 
 > Homomorphically Encrypted Deep Learning Library
 
-The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find very performant combinations of the two.  See [notebooks](./notebooks) folder for tutorials on how to use the library.
+The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state, without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find a very performant combinations of the two.  See the [notebooks](./notebooks) folder for tutorials on how to use the library. Also, check the [main demonstration](https://github.com/OpenMined/sonar) from the Sonar project.
 
-- [Setup](#setup-install-instructions)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Usage](#usage)
-  - [Start](#start)
-  - [Tests](#tests)
+- [Setup with Docker](#setup-with-doker)
+- [Local setup](#local-setup)
+- [Notebooks](#notebooks)
+- [Testing](#testing)
 - [For Contributors](#for-contributors)
 - [Relevant Literature](#relevant-literature)
 - [License](#license)
 
-## Setup
+## Setup with Docker
+
+The fastest way to get started is to use the pre-assembled Docker image (works on all major operating systems). Alternatively, one can manually set up all the dependencies and develop locally.
+
+### Get Docker
+Install Docker following the instructions on the [website](https://www.docker.com/).
+
+For macOS users with [Homebrew](https://brew.sh/) installed, use:
+```sh
+brew cask install docker
+open -a docker
+```
+
+You can ensure that Docker is properly installed and running by checking: `docker --version`.
+
+### Run PySyft in a container
+First, clone this repository and navigate into its folder:
+
+```sh
+git clone https://github.com/OpenMined/PySyft.git
+cd PySyft
+```
+
+Now, start a container based on [openmined/pysyft](https://hub.docker.com/r/openmined/pysyft/):
+```sh
+make docker-build
+make docker-run
+```
+In this container you'll be able to open a Python shell, import the library and develop with it.
+
+However, if you want to use Jupyter, try the provided notebooks, and make changes to the source,
+you should create your personal development image:
+```sh
+make docker-build-dev
+make docker-run image=openmined/pysyft-dev:local
+```
+
+Inside the container you can run any make targets such as `test` or `notebook`.
+
+## Local setup
 
 ### Prerequisites
 
-- PySyft is based on Python 3.X.
-- Install base libraries first - https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries
-- You need to install this library locally before running any of the notebooks this repository or the [main demonstration](https://github.com/OpenMined/sonar):
+- Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
+- Install the base libraries listed [here](https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries)
+- Set up a virtual environment for the Python libraries (optional, recommended)
 - Install [Capsule](https://github.com/OpenMined/Capsule) dependency if you are going to develop and run tests.
 
+### Python Requirements
+
+The Python dependencies are listed in [`requirements.txt`](./requirements.txt) and can be installed through
 ```sh
-# Get dependencies ready
-pip install -r requirements.txt
-# install the lib locally
-python setup.py install
+pip3 install -r requirements.txt
 ```
 
-### Installation
-
-The recommended method is using Docker (works on all major operating systems).
-
-#### For Docker Users
-
-Install Docker from [its website](https://www.docker.com/).
-For macOS users with [Homebrew](https://brew.sh/) installed, use `brew cask install docker`. Once installed, launch the Docker application. Ensure that docker is installed and running properly by checking the version: `docker -v`.
-
-#### For Anaconda Users
-
+Additional test and development dependencies such as scikit-learn and Jupyter are
+listed in [`dev-requirements.txt`](./dev-requirements.txt):
+```sh
+pip3 install -r dev-requirements.txt
 ```
+
+#### PySyft installation
+If you simply want to to _use_ PySyft, it is enough to install the library with:
+```sh
+python3 setup.py install
+```
+
+Instead, if you want to make changes to the source, fix bugs, add features etc.,
+it's recommended to install PySyft in development mode:
+```sh
+python3 setup.py develop
+```
+
+#### Anaconda
+
+```sh
 bash install_for_anaconda_users.sh
 ```
 
-Note: If you are having trouble with installation, after you run the above script, while you try to import Syft in your Jupyter notebook, try this: 
+__Note:__ if after running the above script, you have troubles importing Syft in your Jupyter notebook, try this:
 
-```
-source activate openmined  # activate your env, if you haven't already
+```sh
+# activate your env, if you haven't already
+source activate openmined  
 pip install ipykernel
 python -m ipykernel install --user --name=openmined
 ```
 
-##### Windows
+#### Windows
 
 ```sh
 conda install -c conda-forge gmpy2
@@ -64,37 +112,22 @@ pip install -r requirements.txt
 python setup.py install
 ```
 
-## Usage
-
-### Start
-
-Then, run:
-
+## Notebooks
+The make target `notebook` will launch a Jupyter server (either locally or in the container).
 ```sh
-git clone https://github.com/OpenMined/PySyft.git
-cd PySyft
-make run
+make notebook
 ```
 
-If you want create a local Docker with Jupyter:
+## Testing
+The make target `test` will run all tests with `pytest` and `flake8` (either locally or in the container).
 ```sh
-docker build -f Development-Dockerfile -t "pysyft" .
-make custom docker=pysyft
-```
-
-### Tests
-
-```sh
-cd PySyft
 make test
 ```
 
 ## For Contributors
-
 If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then sign into our [Slack Team](https://openmined.slack.com/) channel #team_pysyft to let us know which projects sound interesting to you! (or propose your own!).
 
 ## Relevant Literature
-
 As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
 
 ### Encrypted Deep Learning - Recommended Reading:
@@ -137,5 +170,4 @@ tools for encrypted statistical machine learning](https://arxiv.org/pdf/1508.065
 - [Tutorial: How to verify crowdsourced training data using a Known Answer Review Policy](https://blog.mturk.com/tutorial-how-to-verify-crowdsourced-training-data-using-a-known-answer-review-policy-85596fb55ed)
 
 ## License
-
 [Apache-2.0](https://github.com/OpenMined/PySyft/blob/develop/LICENSE) by OpenMined contributors
