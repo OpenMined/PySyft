@@ -3463,7 +3463,7 @@ class TensorBase(object):
         if stride is not None and size is None:
             raise TypeError("Cannot set stride without size")
 
-        if size is not None or size is not None:
+        if size is not None:
             offset_nd = offset * self.data.dtype.itemsize
             self.data = np.ndarray(shape=size,
                                    buffer=self.data,
