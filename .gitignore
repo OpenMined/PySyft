@@ -118,3 +118,6 @@ lastfailed
 
 # code coverage reports
 .coverage
+
+# makefile dummy files
+.test_last_installed

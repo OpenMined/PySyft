@@ -11,11 +11,13 @@ develop:
 	pip3 install -r dev-requirements.txt
 	python3 setup.py develop
 
-test:
+.test_last_installed: test-requirements.txt
+	pip3 install -r test-requirements.txt && touch .test_last_installed
+
+test: .test_last_installed
 	@# Remove pyc files to avoid conflict if tests are run locally
 	@# and inside container at the same time
 	@find . -name '*.pyc' -exec rm -f '{}' \;
-	pip3 install -r test-requirements.txt
 	pytest && pytest --flake8
 
 notebook:
