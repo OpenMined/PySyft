@@ -3471,6 +3471,20 @@ class TensorBase(object):
 
         return TensorBase(np.concatenate(sub_arrays, axis=dim))
 
+    def stride(self):
+        """
+        Strides of tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Strides of the Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+        return self.data.strides
 
     def storage_offset(self):
         """
