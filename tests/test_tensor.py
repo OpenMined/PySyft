@@ -1183,6 +1183,18 @@ class testMv(unittest.TestCase):
         self.assertEqual(mat.mv(vec), TensorBase([14, 14]))
 
 
+class TestNarrow(unittest.TestCase):
+    def test_narrow_int(self):
+        mat = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        dim, start, length = 0, 0, 2
+        self.assertEqual(mat.narrow(dim, start, length), TensorBase(np.array([[1, 2, 3], [4, 5, 6]])))
+
+    def test_narrow_float(self):
+        mat = TensorBase(np.array([[1.1, 2.1, 3.1], [4.2, 5.2, 6.2], [7.3, 8.3, 9.3]]))
+        dim, start, length = 1, 1, 2
+        self.assertEqual(mat.narrow(dim, start, length), TensorBase(np.array([[2.1, 3.1], [5.2, 6.2], [8.3, 9.3]])))
+
+
 class masked_scatter_Tests(unittest.TestCase):
     def test_masked_scatter_1(self):
         t = TensorBase(np.ones((2, 3)))

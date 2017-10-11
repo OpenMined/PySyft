@@ -2993,6 +2993,41 @@ class TensorBase(object):
             raise NotImplemented
         return mv(self, tensorvector)
 
+    def narrow(self, dim, start, length):
+        """
+        Returns a new tensor that is a narrowed version of this tensor.
+        The dimension ``dim`` is narrowed from ``start`` to ``start`` + ``length``.
+
+        Parameters
+        ----------
+        dim: int
+            dimension along which to narrow
+        start: int
+            starting dimension
+        length: int
+            length from start to narrow to
+
+        Returns
+        -------
+        narrowed version of this tensor
+        """
+        dim = dim if dim >= 0 else dim + self.dim()
+        if self.encrypted:
+            raise NotImplemented
+        if not isinstance(dim, int) or not isinstance(start, int) or not isinstance(length, int):
+            raise TypeError(("narrow received an invalid combination of arguments:\n"
+                             f"  got ({dim.__class__.__name__} dim, "
+                             f"{start.__class__.__name__} start, "
+                             f"{length.__class__.__name__} length), "
+                             "but expected (int dim, int start, int length)"))
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("dim value is out of range")
+        if start >= self.data.shape[dim] or start < 0:
+            raise IndexError("start value is out of range")
+        if length > self.data.shape[dim] - start or length <= 0:
+            raise IndexError("length value is out of range")
+        return TensorBase(self.data.take(range(start, start + length), axis=dim))
+
     def masked_scatter_(self, mask, source):
         """
         Copies elements from ``source`` into this tensor at positions
