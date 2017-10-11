@@ -3442,7 +3442,7 @@ class TensorBase(object):
             Input Tensor
 
         offset: int
-            The offset in the underlying `numpy.ndarray`
+            The offset in the underlying `numpy.ndarray` in items not bytes.
 
         size: Tuple
             The desired size. Defaults to the size of the source.
