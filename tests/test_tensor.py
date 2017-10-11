@@ -1500,6 +1500,46 @@ class RenormTests(unittest.TestCase):
         self.assertTrue(np.allclose(t, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
 
 
+class unfold_Test(unittest.TestCase):
+    def unfold_test_small(self):
+        t1 = TensorBase(np.arange(1, 5))
+        t1_unfolded_actual = t1.unfold(0, 1, 1).to_numpy()
+        t1_unfolded_expected = np.array([[1], [2], [3], [4]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected,
+                                       t1_unfolded_actual))
+        t1_unfolded_actual_1 = t1.unfold(0, 1, 2).to_numpy()
+        t1_unfolded_expected_1 = np.array([[1], [3]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected_1,
+                                       t1_unfolded_actual_1))
+        t1_unfolded_actual_2 = t1.unfold(-1, 1, 2).to_numpy()
+        t1_unfolded_expected_2 = np.array([[1], [3]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected_2,
+                                       t1_unfolded_actual_2))
+
+    def unfold_test_big(self):
+        arr = np.array(
+            [[[1, 3], [2, 4], [0, 2], [1, 4]], [[1, 3], [0, 0], [1, 2], [2, 1]], [[3, 1], [2, 2], [1, 0], [2, 1]],
+             [[4, 1], [4, 1], [0, 2], [0, 4]], [[4, 4], [2, 2], [0, 1], [1, 3]]])
+        t1 = TensorBase(arr)
+        t1_unfolded_actual = t1.unfold(0, 1, 1).to_numpy()
+        t1_unfolded_expected = np.array(
+            [[[[1], [3]], [[2], [4]], [[0], [2]], [[1], [4]]], [[[1], [3]], [[0], [0]], [[1], [2]], [[2], [1]]],
+             [[[3], [1]], [[2], [2]], [[1], [0]], [[2], [1]]], [[[4], [1]], [[4], [1]], [[0], [2]], [[0], [4]]],
+             [[[4], [4]], [[2], [2]], [[0], [1]], [[1], [3]]]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected,
+                                       t1_unfolded_actual))
+        t1_unfolded_actual_1 = t1.unfold(2, 1, 2).to_numpy()
+        t1_unfolded_expected_1 = np.array(
+            [[[[1]], [[2]], [[0]], [[1]]], [[[1]], [[0]], [[1]], [[2]]], [[[3]], [[2]], [[1]], [[2]]],
+             [[[4]], [[4]], [[0]], [[0]]], [[[4]], [[2]], [[0]], [[1]]]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected_1,
+                                       t1_unfolded_actual_1))
+        t1_unfolded_actual_2 = t1.unfold(-1, 1, 2).to_numpy()
+        t1_unfolded_expected_2 = t1_unfolded_expected_1
+        self.assertTrue(np.array_equal(t1_unfolded_expected_2,
+                                       t1_unfolded_actual_2))
+
+
 if __name__ == "__main__":
 
     unittest.main()
