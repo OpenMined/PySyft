@@ -3,10 +3,10 @@ import numpy as np
 import json
 import syft
 from .basic import PaillierTensor
-from .FixedPoint import FXnum as FixedPoint
 from ...tensor import TensorBase
 from ..abstract.keys import AbstractSecretKey, AbstractPublicKey
 from ..abstract.keys import AbstractKeyPair
+import math
 
 
 class SecretKey(AbstractSecretKey):
@@ -14,15 +14,13 @@ class SecretKey(AbstractSecretKey):
     def __init__(self, sk):
         self.sk = sk
 
-    def decrypt(self, x):
+    def decrypt(self, x, precision_conf=None):
         """Decrypts x. X can be either an encrypted int or a numpy
         vector/matrix/tensor."""
 
         if(type(x) == paillier.EncryptedNumber):
-            FP_num = FixedPoint()
-            FP_num.scaledval = int(self.sk.decrypt(x))
             # casts the fixed point data type to python numeric type
-            return float(FP_num) if FP_num.family.fraction_bits > 1 else int(FP_num)
+            return self.sk.decrypt(x)
         elif(type(x) == TensorBase or type(x) == PaillierTensor):
             if(x.encrypted):
                 return TensorBase(self.decrypt(x.data), encrypted=False)
@@ -33,9 +31,7 @@ class SecretKey(AbstractSecretKey):
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                FP_num = FixedPoint()
-                FP_num.scaledval = int(self.sk.decrypt(v))
-                python_numeric = float(FP_num) if FP_num.family.fraction_bits > 1 else int(FP_num)
+                python_numeric = self.sk.decrypt(v)
                 out.append(python_numeric)
             return np.array(out).reshape(sh)
         else:
@@ -83,14 +79,13 @@ class PublicKey(AbstractPublicKey):
         standard normal distribution"""
         return PaillierTensor(self, syft.randn(dim))
 
-    def encrypt(self, x, same_type=False):
+    def encrypt(self, x, same_type=False, precision_conf=None):
         """Encrypts x. X can be either an encrypted int or a numpy
         vector/matrix/tensor."""
         if(type(x) == int or type(x) == float or type(x) == np.float64):
             if(same_type):
                 return NotImplemented
-            FP_num = FixedPoint(x)
-            return self.pk.encrypt(FP_num.scaledval)
+            return self.pk.encrypt(x, precision_conf)
         elif(type(x) == TensorBase):
             if(x.encrypted or same_type):
                 return NotImplemented
@@ -100,8 +95,7 @@ class PublicKey(AbstractPublicKey):
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                num = FixedPoint(v)
-                out.append(self.pk.encrypt(num.scaledval))
+                out.append(self.pk.encrypt(v, precision_conf))
             if(same_type):
                 return np.array(out).reshape(sh)
             else:
@@ -142,3 +136,89 @@ class KeyPair(AbstractKeyPair):
         self.secret_key = SecretKey(prikey)
 
         return (self.public_key, self.secret_key)
+
+
+# This is our custom implementations of `encode` and `decode`. It replaces those of `phe`'s EncodedNumber.
+# This gives us control over the precision of numbers.
+@classmethod
+def encode(cls, public_key, scalar, precision=None, max_exponent=None):
+
+    # Calculate the maximum exponent for desired precision
+    if precision is None:
+        if isinstance(scalar, int):
+            exponent = 0
+        elif isinstance(scalar, float):
+            # Encode with *at least* as much precision as the python float
+            # What's the base-2 exponent on the float?
+            bin_flt_exponent = math.frexp(scalar)[1]
+
+            # What's the base-2 exponent of the least significant bit?
+            # The least significant bit has value 2 ** bin_lsb_exponent
+            bin_lsb_exponent = bin_flt_exponent - cls.FLOAT_MANTISSA_BITS
+
+            # What's the corresponding base BASE exponent? Round that down.
+            exponent = math.floor(bin_lsb_exponent / cls.LOG2_BASE)
+        else:
+            raise TypeError("Don't know the precision of type %s."
+                            % type(scalar))
+    else:
+        exponent = -precision.fraction_bits
+
+    int_rep = int(scalar * pow(cls.BASE, -exponent))
+    if abs(int_rep) > public_key.max_int:
+        raise ValueError('Integer needs to be within +/- %d but got %d'
+                         % (public_key.max_int, int_rep))
+    # Wrap negative numbers by adding n
+    return cls(public_key, int_rep % public_key.n, exponent)
+
+
+def decode(self):
+    """Decode fixed-point plaintext and return the result.
+
+    Returns:
+      returns an int if `exponent` is < 1. Returns a float otherwise.
+
+    Raises:
+      OverflowError: if overflow is detected in the decrypted number.
+    """
+    if self.encoding >= self.public_key.n:
+        # Should be mod n
+        raise ValueError('Attempted to decode corrupted number')
+    elif self.encoding <= self.public_key.max_int:
+        # Positive
+        mantissa = self.encoding
+    elif self.encoding >= self.public_key.n - self.public_key.max_int:
+        # Negative
+        mantissa = self.encoding - self.public_key.n
+    else:
+        raise OverflowError('Overflow detected in decrypted number')
+    if self.exponent <= 1:
+        return int(mantissa * pow(self.BASE, self.exponent))
+    else:
+        return float(mantissa * pow(self.BASE, self.exponent))
+
+
+def my__mul__(self, other):
+    """Multiply by an int, float, or EncodedNumber.
+    If `other` is a scalar, it is first encoded to fixed-point precision of `self`"""
+    if isinstance(other, paillier.EncryptedNumber):
+        raise NotImplementedError('Good luck with that...')
+    if isinstance(other, paillier.EncodedNumber):
+        encoding = other
+    else:
+        int_rep = int(other * pow(paillier.EncodedNumber.BASE, -self.exponent))
+        if abs(int_rep) > self.public_key.max_int:
+            raise ValueError('Integer needs to be within +/- %d but got %d'
+                             % (self.public_key.max_int, int_rep))
+        # Wrap negative numbers by adding n
+        encoding = paillier.EncodedNumber(self.public_key, int_rep % self.public_key.n, self.exponent)
+    product = self._raw_mul(encoding.encoding)
+    exponent = self.exponent + encoding.exponent
+
+    return paillier.EncryptedNumber(self.public_key, product, exponent)
+
+
+paillier.EncodedNumber.encode = encode
+paillier.EncodedNumber.decode = decode
+paillier.EncodedNumber.BASE = 2
+paillier.EncryptedNumber.__mul__ = my__mul__
