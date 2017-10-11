@@ -92,8 +92,7 @@ def equal(tensor1, tensor2):
         return NotImplemented
 
     left = tensor1.data.shape == tensor2.data.shape
-    right = np.allclose(tensor1.data, tensor2.data)
-    return left and right
+    return left and np.allclose(tensor1.data, tensor2.data)
 
 
 class TensorBase(object):
@@ -450,7 +449,7 @@ class TensorBase(object):
             return NotImplemented
         else:
             out = self.data[position]
-            if (len(self.shape()) == 1):
+            if (len(self.shape()) == 1) and (type(position) != slice):
                 return out
             else:
                 return TensorBase(self.data[position], self.encrypted)
