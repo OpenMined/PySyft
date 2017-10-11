@@ -118,14 +118,16 @@ class MPCRepo(object):
 
         r = delta * epsilon % Q
         new_id3 = np.random.randint(0, 2**32)
-        s = self.truncate(self.mult_public(new_id3, a.id, epsilon, True))
+        s = self.mult_public(new_id3, a.id, epsilon, True)
         new_id4 = np.random.randint(0, 2**32)
-        t = self.truncate(self.mult_public(new_id4, b.id, delta, True))
+        t = self.mult_public(new_id4, b.id, delta, True)
 
         new_id5 = np.random.randint(0, 2**32)
         new_id6 = np.random.randint(0, 2**32)
         new_id7 = np.random.randint(0, 2**32)
-        return self.add(new_id7, s.id, self.add(new_id6, t.id, self.add_public(new_id5, c.id, r, True).id, True).id, True)
+        result = self.add(new_id7, s.id, self.add(new_id6, t.id, self.add_public(new_id5, c.id, r, True).id, True).id, True)
+
+        return self.truncate(result)
 
     def mult_public(self, new_id, id1, scalar, populate_to_another_party=False):
 
