@@ -9,6 +9,7 @@ from capsule.django_client import LocalDjangoCapsuleClient
 from syft.mpc.rss import MPCRepo
 from syft.mpc.rss.tensor import RSSMPCTensor
 
+
 class PySonarNotebooks(unittest.TestCase):
 
     def model_training_demo_notebook(self):
@@ -35,13 +36,13 @@ class PySyftNotebooks(unittest.TestCase):
         server2.set_parties(server1)
         r = RSSMPCTensor(server1, np.array([1, 2, 3, 4, 5.]))
 
-        out1 = r+r
+        out1 = r + r
         self.assertEqual(out1, np.array([2., 4., 6., 8., 10.]))
 
-        out2 = r-r
+        out2 = r - r
         self.assertEqual(out2, np.array([0., 0., 0., 0., 0.]))
 
-        out3 = r*r
+        out3 = r * r
         self.assertEqual(out3, np.array([1., 4., 9., 16., 25.]))
 
         out4 = r.dot(r)
