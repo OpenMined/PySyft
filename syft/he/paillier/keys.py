@@ -1,4 +1,5 @@
 import phe as paillier
+from phe.util import invert
 import numpy as np
 import json
 import syft
@@ -192,7 +193,7 @@ def decode(self):
         mantissa = self.encoding - self.public_key.n
     else:
         raise OverflowError('Overflow detected in decrypted number')
-    if self.exponent <= 1:
+    if self.exponent >= -1:
         return int(math.ceil(mantissa * pow(self.BASE, self.exponent)))
     else:
         return float(mantissa * pow(self.BASE, self.exponent))
@@ -214,8 +215,11 @@ def my__mul__(self, other):
         encoding = paillier.EncodedNumber(self.public_key, int_rep % self.public_key.n, self.exponent)
     product = self._raw_mul(encoding.encoding)
     exponent = self.exponent + encoding.exponent
-
-    return paillier.EncryptedNumber(self.public_key, product, exponent)
+    unscaled_result = paillier.EncryptedNumber(self.public_key, product, exponent)
+    # moving the decimal point to end up having the same number of digits to its right
+    scaling_multiplier = invert(paillier.EncodedNumber.BASE**(-self.exponent), self.public_key.n)
+    scaled_product = unscaled_result._raw_mul(scaling_multiplier)
+    return paillier.EncryptedNumber(self.public_key, scaled_product, self.exponent)
 
 
 paillier.EncodedNumber.encode = encode
