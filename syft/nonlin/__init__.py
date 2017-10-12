@@ -1,5 +1,4 @@
-from .sigmoid import SigmoidInterpolated10, sigmoid
+from .sigmoid import SigmoidInterpolated10
 
 s = str(SigmoidInterpolated10)
 s += str(SigmoidInterpolated10)
-s += str(sigmoid)

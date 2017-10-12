@@ -1,8 +1,3 @@
-import numpy as np
-
-def sigmoid(x):
-    return SigmoidInterpolated10().forward(x)
-
 class SigmoidInterpolated10:
 
     def __init__(self):
