@@ -1,6 +1,5 @@
 from .config import PrecisionConfig
 import numpy as np
-import random
 
 Q = 293973345475167247070445277780365744413
 

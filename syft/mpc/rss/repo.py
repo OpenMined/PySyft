@@ -113,8 +113,8 @@ class MPCRepo(object):
         new_id2 = np.random.randint(0, 2**32)
         e = self.sub(new_id2, y, b.id, True)
 
-        delta = self.reconstruct([self.ints[new_id1], self.another_party[0].ints[new_id1]])
-        epsilon = self.reconstruct([self.ints[new_id2], self.another_party[0].ints[new_id2]])
+        delta = self.reconstruct([self.ints[d.id], self.another_party[0].ints[d.id]])
+        epsilon = self.reconstruct([self.ints[e.id], self.another_party[0].ints[e.id]])
 
         r = delta * epsilon % Q
         new_id3 = np.random.randint(0, 2**32)
