@@ -19,7 +19,8 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
+    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel',
+	'sparse'
 ]
 
 
@@ -848,3 +849,19 @@ def renorm(tensor1, p, dim, maxnorm):
         scalar_reshaped = scalar.reshape(dim_array)
         out = tensor1 * scalar_reshaped
     return TensorBase(out)
+
+def sparse(tensor):
+    """
+    Converts dense matrix to sparse, returning a new matrix as a tensor
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
+    tensor = _ensure_tensorbase(tensor)
+    return NotImplemented
