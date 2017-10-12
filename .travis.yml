@@ -4,16 +4,40 @@ python:
 
 # install server dependencies
 before_install:
-  - "sudo apt-get -y install musl-dev g++ libgmp3-dev libmpfr-dev ca-certificates libmpc-dev"
+  - "sudo apt-get -y install musl-dev g++ libgmp3-dev libmpfr-dev ca-certificates libmpc-dev redis-server"
+  - "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;"
+  - "bash miniconda.sh -b -p $HOME/miniconda3"
+  - "export PATH=$HOME/miniconda3/bin:$PATH"
+  - "conda update -q -y conda"
+  - "sudo service redis-server start"
 
 # install dependencies
 install:
+  - "conda create -n openmined python=3.6 -y"
+  - "source activate openmined"
+  - "conda install -c anaconda -y mpc"
+  - "conda install -c anaconda -y gmp"
+  - "conda install -c anaconda -y mpfr"
+  - "conda install -y gmpy2  --channel conda-forge"
+  - "source activate openmined"
+  - "pip install -r test-requirements.txt"
+  - "pip install redis"
+  - "conda install -y django"
+  - "python setup.py install"
+  - "git clone https://github.com/OpenMined/Capsule.git"
+  - "cd Capsule/"
   - "pip install -r requirements.txt"
   - "python setup.py install"
+  - "cd capsule_django/"
+  - "python manage.py runserver 9000 > /dev/null &"
+  - "cd ../../"
 
 # run tests
 script:
-  - pytest && pytest --flake8
+  - coverage run -m pytest --ignore=Capsule/ && pytest --flake8 --ignore=Capsule/
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 
 notifications:
     slack: openmined:vOUE1d9jSb6V7R1r6zrjRD4E

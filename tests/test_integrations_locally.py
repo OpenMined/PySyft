@@ -5,25 +5,53 @@ import pickle
 
 from syft.nn.linear import LinearClassifier
 from syft.he.paillier import KeyPair, PaillierTensor
+from capsule.django_client import LocalDjangoCapsuleClient
+from syft.mpc.rss import MPCRepo
+from syft.mpc.rss.tensor import RSSMPCTensor
 
 
 class PySonarNotebooks(unittest.TestCase):
 
-    def modelTrainingDemoNotebook(self):
+    def model_training_demo_notebook(self):
         """If this test fails, you probably broke the demo notebook located at
         PySonar/notebooks/Sonar - Decentralized Model Training Simulation
         (local blockchain).ipynb """
-
-        pubkey, prikey = KeyPair().generate(n_length=1024)
-        d = LinearClassifier(desc="DiabetesClassifier", n_inputs=10, n_labels=1)
-        d.encrypt(pubkey)
+        c = LocalDjangoCapsuleClient()
+        d = LinearClassifier(desc="DiabetesClassifier", n_inputs=10, n_labels=1, capsule_client=c)
+        d.encrypt()
 
         self.assertTrue(True)
 
 
 class PySyftNotebooks(unittest.TestCase):
 
-    def paillierHEExampleNotebook(self):
+    def MPC_SPDZ_notebook(self):
+        """If this test fails, you probably broke the demo notebook located at
+        PySyft/notebooks/MPC Tensor SPDZ.ipynb
+        """
+
+        server1 = MPCRepo()
+        server2 = MPCRepo()
+        server1.set_parties(server2)
+        server2.set_parties(server1)
+        r = RSSMPCTensor(server1, np.array([1, 2, 3, 4, 5.]))
+
+        out1 = r + r
+        self.assertEqual(out1, np.array([2., 4., 6., 8., 10.]))
+
+        out2 = r - r
+        self.assertEqual(out2, np.array([0., 0., 0., 0., 0.]))
+
+        out3 = r * r
+        self.assertEqual(out3, np.array([1., 4., 9., 16., 25.]))
+
+        out4 = r.dot(r)
+        self.assertEqual(out4, 55.)
+
+        out5 = r.sum()
+        self.asserEqual(out5, 15.)
+
+    def paillier_HE_example_notebook(self):
         """If this test fails, you probably broke the demo notebook located at
         PySyft/notebooks/Syft - Paillier Homomorphic Encryption Example.ipynb
         """
@@ -60,21 +88,31 @@ class PySyftNotebooks(unittest.TestCase):
         out7 = prikey.decrypt(y2)
         self.assertEqual(out7, np.array([.5, .5, .5, .5, .5]))
 
-    def paillierLinearClassifierNotebook(self):
+    def test_paillier_linear_classifier_notebook(self):
         """If this test fails, you probably broke the demo notebook located at
         PySyft/notebooks/Syft - Paillier Homomorphic Encryption Example.ipynb
         """
 
-        pubkey, prikey = KeyPair().generate(n_length=1024)
-        model = LinearClassifier(n_inputs=4, n_labels=2).encrypt(pubkey)
+        capsule = LocalDjangoCapsuleClient()
+        model = LinearClassifier(capsule_client=capsule)
+        assert(model.capsule == capsule)
+
+        try:
+            model = model.encrypt()
+            encrypted = True
+        except Exception as e:
+            encrypted = False
+            print('[!]', e)
+
         input = np.array([[0, 0, 1, 1], [0, 0, 1, 0],
                           [1, 0, 1, 1], [0, 0, 1, 0]])
         target = np.array([[0, 1], [0, 0], [1, 1], [0, 0]])
 
         for iter in range(3):
-            for i in range(len(input)):
-                model.learn(input=input[i], target=target[i], alpha=0.5)
+            model.learn(input, target, alpha=0.5)
 
-        model = model.decrypt(prikey)
+        if encrypted:
+            model = model.decrypt()
+
         for i in range(len(input)):
             model.forward(input[i])

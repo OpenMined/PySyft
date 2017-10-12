@@ -1,0 +1,17 @@
+# Common base for all PySyft images, install the required libraries and
+# the Python modules needed in production
+
+FROM alpine:edge
+RUN apk add --no-cache \
+  python3 python3-dev \
+  g++ linux-headers \
+  musl-dev gmp-dev mpfr-dev mpc1-dev \
+  ca-certificates openblas-dev \
+  make gfortran
+
+WORKDIR /PySyft
+
+# Installing these requirements is time consuming, but these steps
+# will be cached if no change is made to the requirements files
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
