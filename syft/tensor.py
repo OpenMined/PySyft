@@ -2993,6 +2993,41 @@ class TensorBase(object):
             raise NotImplemented
         return mv(self, tensorvector)
 
+    def narrow(self, dim, start, length):
+        """
+        Returns a new tensor that is a narrowed version of this tensor.
+        The dimension ``dim`` is narrowed from ``start`` to ``start`` + ``length``.
+
+        Parameters
+        ----------
+        dim: int
+            dimension along which to narrow
+        start: int
+            starting dimension
+        length: int
+            length from start to narrow to
+
+        Returns
+        -------
+        narrowed version of this tensor
+        """
+        dim = dim if dim >= 0 else dim + self.dim()
+        if self.encrypted:
+            raise NotImplemented
+        if not isinstance(dim, int) or not isinstance(start, int) or not isinstance(length, int):
+            raise TypeError(("narrow received an invalid combination of arguments:\n"
+                             f"  got ({dim.__class__.__name__} dim, "
+                             f"{start.__class__.__name__} start, "
+                             f"{length.__class__.__name__} length), "
+                             "but expected (int dim, int start, int length)"))
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("dim value is out of range")
+        if start >= self.data.shape[dim] or start < 0:
+            raise IndexError("start value is out of range")
+        if length > self.data.shape[dim] - start or length <= 0:
+            raise IndexError("length value is out of range")
+        return TensorBase(self.data.take(range(start, start + length), axis=dim))
+
     def masked_scatter_(self, mask, source):
         """
         Copies elements from ``source`` into this tensor at positions
@@ -3294,6 +3329,54 @@ class TensorBase(object):
         else:
             self.data = syft.math.renorm(self, p, dim, maxnorm).data
             return self
+
+    def unfold(self, dim, size, step):
+        """
+        Returns a tensor which contains all slices of size `size` along the dimension `dim`.
+
+        Parameters
+        ----------
+        dim: The axis/dimension along which unfolding has to happen
+        size: The number of elements to unfold along the axis 'dim'
+        step: The stride/steps to move along axis while unfolding
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+
+        if self.encrypted:
+            return NotImplemented
+
+        input_array = np.copy(self.data)
+        input_shape = np.shape(input_array)
+        num_axes = len(input_shape)  # number of dimensions of the nd-array
+
+        if dim < -num_axes or dim + 1 > num_axes:
+            raise Exception("\'dim\' should be between {} and {} inclusive".format(-num_axes, num_axes - 1))
+
+        if not size:
+            raise Exception("\'size\'' can\'t be 0 or less")
+
+        if size > input_shape[dim]:
+            raise Exception("\'size\'' is greater than \'dim\'")
+
+        if step <= 0:
+            raise Exception("\'steps\' will have to be greater than 0")
+        if dim < 0:
+            dim += num_axes
+
+        indices = [slice(s) for s in input_shape]
+
+        i = 0
+        sub_arrays = []
+        while i + size <= input_shape[dim]:
+            indices[dim] = slice(i, i + size)
+            sub_arrays.append(np.expand_dims(input_array[indices], axis=num_axes).swapaxes(dim, num_axes))
+            i = i + step
+
+        return TensorBase(np.concatenate(sub_arrays, axis=dim))
 
 
 def numel(self):

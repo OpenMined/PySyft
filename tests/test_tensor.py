@@ -235,8 +235,18 @@ class EqualTests(unittest.TestCase):
         t2 = TensorBase(np.array([1, 4, 3]))
         self.assertFalse(syft.equal(t1, t2))
 
+    def test_shape_not_equal(self):
+        t1 = TensorBase(np.array([1, 2]))
+        t2 = TensorBase(np.array([1, 4, 3]))
+        self.assertFalse(syft.equal(t1, t2))
+
     def test_inequality_operation(self):
         t1 = TensorBase(np.array([1, 2, 3]))
+        t2 = TensorBase(np.array([1, 4, 5]))
+        self.assertTrue(t1 != t2)
+
+    def test_shape_inequality_operation(self):
+        t1 = TensorBase(np.array([1, 2]))
         t2 = TensorBase(np.array([1, 4, 5]))
         self.assertTrue(t1 != t2)
 
@@ -1183,6 +1193,18 @@ class testMv(unittest.TestCase):
         self.assertEqual(mat.mv(vec), TensorBase([14, 14]))
 
 
+class TestNarrow(unittest.TestCase):
+    def test_narrow_int(self):
+        mat = TensorBase(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        dim, start, length = 0, 0, 2
+        self.assertEqual(mat.narrow(dim, start, length), TensorBase(np.array([[1, 2, 3], [4, 5, 6]])))
+
+    def test_narrow_float(self):
+        mat = TensorBase(np.array([[1.1, 2.1, 3.1], [4.2, 5.2, 6.2], [7.3, 8.3, 9.3]]))
+        dim, start, length = 1, 1, 2
+        self.assertEqual(mat.narrow(dim, start, length), TensorBase(np.array([[2.1, 3.1], [5.2, 6.2], [8.3, 9.3]])))
+
+
 class masked_scatter_Tests(unittest.TestCase):
     def test_masked_scatter_1(self):
         t = TensorBase(np.ones((2, 3)))
@@ -1476,6 +1498,46 @@ class RenormTests(unittest.TestCase):
         t = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
         t.renorm_(2, 0, 6)
         self.assertTrue(np.allclose(t, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
+
+
+class unfold_Test(unittest.TestCase):
+    def unfold_test_small(self):
+        t1 = TensorBase(np.arange(1, 5))
+        t1_unfolded_actual = t1.unfold(0, 1, 1).to_numpy()
+        t1_unfolded_expected = np.array([[1], [2], [3], [4]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected,
+                                       t1_unfolded_actual))
+        t1_unfolded_actual_1 = t1.unfold(0, 1, 2).to_numpy()
+        t1_unfolded_expected_1 = np.array([[1], [3]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected_1,
+                                       t1_unfolded_actual_1))
+        t1_unfolded_actual_2 = t1.unfold(-1, 1, 2).to_numpy()
+        t1_unfolded_expected_2 = np.array([[1], [3]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected_2,
+                                       t1_unfolded_actual_2))
+
+    def unfold_test_big(self):
+        arr = np.array(
+            [[[1, 3], [2, 4], [0, 2], [1, 4]], [[1, 3], [0, 0], [1, 2], [2, 1]], [[3, 1], [2, 2], [1, 0], [2, 1]],
+             [[4, 1], [4, 1], [0, 2], [0, 4]], [[4, 4], [2, 2], [0, 1], [1, 3]]])
+        t1 = TensorBase(arr)
+        t1_unfolded_actual = t1.unfold(0, 1, 1).to_numpy()
+        t1_unfolded_expected = np.array(
+            [[[[1], [3]], [[2], [4]], [[0], [2]], [[1], [4]]], [[[1], [3]], [[0], [0]], [[1], [2]], [[2], [1]]],
+             [[[3], [1]], [[2], [2]], [[1], [0]], [[2], [1]]], [[[4], [1]], [[4], [1]], [[0], [2]], [[0], [4]]],
+             [[[4], [4]], [[2], [2]], [[0], [1]], [[1], [3]]]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected,
+                                       t1_unfolded_actual))
+        t1_unfolded_actual_1 = t1.unfold(2, 1, 2).to_numpy()
+        t1_unfolded_expected_1 = np.array(
+            [[[[1]], [[2]], [[0]], [[1]]], [[[1]], [[0]], [[1]], [[2]]], [[[3]], [[2]], [[1]], [[2]]],
+             [[[4]], [[4]], [[0]], [[0]]], [[[4]], [[2]], [[0]], [[1]]]])
+        self.assertTrue(np.array_equal(t1_unfolded_expected_1,
+                                       t1_unfolded_actual_1))
+        t1_unfolded_actual_2 = t1.unfold(-1, 1, 2).to_numpy()
+        t1_unfolded_expected_2 = t1_unfolded_expected_1
+        self.assertTrue(np.array_equal(t1_unfolded_expected_2,
+                                       t1_unfolded_actual_2))
 
 
 if __name__ == "__main__":
