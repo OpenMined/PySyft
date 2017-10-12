@@ -1,3 +1,5 @@
+import numpy as np
+
 class SigmoidInterpolated10:
 
     def __init__(self):
