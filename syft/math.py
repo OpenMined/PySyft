@@ -19,7 +19,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'sin', 'sinh', 'sparse',  'cos', 'cosh', 'tan', 'tanh', 'zeros', 'ones',
+    'sin', 'sinh', 'sparse', 'cos', 'cosh', 'tan', 'tanh', 'zeros', 'ones',
     'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
 ]
 
