@@ -3015,8 +3015,8 @@ class TensorBase(object):
         if self.encrypted:
             raise NotImplemented
         if not isinstance(dim, int) or not isinstance(start, int) or not isinstance(length, int):
-            raise TypeError(("narrow received an invalid combination of arguments:\n" 
-                             "    got ({} dim, {} start, {} length), " 
+            raise TypeError(("narrow received an invalid combination of arguments:\n"
+                             "    got ({} dim, {} start, {} length), "
                              " but expected (int dim, int start, int length)"
                              .format(dim.__class__.__name__,
                                      start.__class__.__name__,
