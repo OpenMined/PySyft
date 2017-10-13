@@ -26,13 +26,10 @@ class TestPolyApproximators(unittest.TestCase):
         siga = sigmoid(a)
         sigb = sigmoid(b)
 
-        self.assertEqual(siga[0], 0.52158376423960751)
-        self.assertEqual(siga[1], 0.54311827756855013)
+        self.assertTrue(np.abs(siga[0] - 0.52158376423960751) < 0.0001)
+        self.assertTrue(np.abs(siga[1] - 0.54311827756855013) < 0.0001)
 
-        self.assertEqual(sigb[0], 0.7078828574)
-        self.assertEqual(sigb[1], 0.7078828574)
-        self.assertEqual(sigb[2], 0.7078828574)
-        self.assertEqual(sigb[3], 0.7078828574)
+        self.assertTrue(np.abs(sigb[1] - 0.7078828574) < 0.0001)
 
     def test_poly_approx_tanh(self):
 
