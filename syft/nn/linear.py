@@ -24,12 +24,15 @@ class LinearClassifier(object):
         self.encrypted = False
         self.capsule = capsule_client
 
-    def encrypt(self):
+    def encrypt(self, pubkey=None):
         """iterates through each weight and encrypts it
 
         TODO: check that weights are actually decrypted
         """
-        self.pubkey = self.capsule.keygen()
+        if pubkey is not None:
+            self.pubkey = pubkey
+        else:
+            self.pubkey = self.capsule.keygen()
         self.encrypted = True
         self.weights = self.weights.encrypt(self.pubkey)
         return self
