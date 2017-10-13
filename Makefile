@@ -37,3 +37,11 @@ docker-run:
 		-v "$(PWD)":/PySyft \
 		-p 8888:8888 \
 		"$(image)" sh
+
+run-redis:
+	redis-server &
+
+run-capsule:
+	FLASK_APP=/usr/bin/Capsule/capsule/local_server.py flask run &
+
+run-allservices: run-redis run-capsule
