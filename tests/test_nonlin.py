@@ -33,3 +33,18 @@ class TestPolyApproximators(unittest.TestCase):
         self.assertEqual(sigb[1], 0.7078828574)
         self.assertEqual(sigb[2], 0.7078828574)
         self.assertEqual(sigb[3], 0.7078828574)
+
+    def test_poly_approx_tanh(self):
+
+        tanh = PolyApproximator(np.tanh).output
+
+        a = TensorBase(np.array([.1, .2, .3, .4]))
+        b = TensorBase(np.ones(4))
+
+        tana = tanh(a)
+        tanb = tanh(b)
+
+        self.assertTrue(np.abs(tana[0] - 0.05772423) < 0.0001)
+        self.assertTrue(np.abs(tana[1] - 0.11527286) < 0.0001)
+
+        self.assertTrue(np.abs(tanb[1] - 0.54896505) < 0.0001)
