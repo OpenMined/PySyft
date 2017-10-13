@@ -3016,10 +3016,11 @@ class TensorBase(object):
             raise NotImplemented
         if not isinstance(dim, int) or not isinstance(start, int) or not isinstance(length, int):
             raise TypeError(("narrow received an invalid combination of arguments:\n"
-                             f"  got ({dim.__class__.__name__} dim, "
-                             f"{start.__class__.__name__} start, "
-                             f"{length.__class__.__name__} length), "
-                             "but expected (int dim, int start, int length)"))
+                             "    got ({} dim, {} start, {} length), "
+                             " but expected (int dim, int start, int length)"
+                             .format(dim.__class__.__name__,
+                                     start.__class__.__name__,
+                                     length.__class__.__name__)))
         if dim >= self.data.ndim or dim < -self.data.ndim:
             raise IndexError("dim value is out of range")
         if start >= self.data.shape[dim] or start < 0:
