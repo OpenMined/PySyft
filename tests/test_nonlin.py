@@ -29,6 +29,7 @@ class TestPolyApproximators(unittest.TestCase):
         self.assertTrue(np.abs(siga[0] - 0.52158376423960751) < 0.0001)
         self.assertTrue(np.abs(siga[1] - 0.54311827756855013) < 0.0001)
 
+        self.assertTrue(np.abs(sigb[0] - 0.7078828574) < 0.0001)
         self.assertTrue(np.abs(sigb[1] - 0.7078828574) < 0.0001)
 
     def test_poly_approx_tanh(self):
