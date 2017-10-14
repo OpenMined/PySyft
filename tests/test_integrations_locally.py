@@ -6,8 +6,8 @@ import pickle
 from syft.nn.linear import LinearClassifier
 from syft.he.paillier import KeyPair, PaillierTensor
 from capsule.django_client import LocalDjangoCapsuleClient
-from syft.mpc.rss import MPCRepo
-from syft.mpc.rss.tensor import RSSMPCTensor
+from syft.mpc.spdz import MPCRepo
+from syft.mpc.spdz.tensor import SPDZMPCTensor
 
 
 class PySonarNotebooks(unittest.TestCase):
@@ -34,7 +34,7 @@ class PySyftNotebooks(unittest.TestCase):
         server2 = MPCRepo()
         server1.set_parties(server2)
         server2.set_parties(server1)
-        r = RSSMPCTensor(server1, np.array([1, 2, 3, 4, 5.]))
+        r = SPDZMPCTensor(server1, np.array([1, 2, 3, 4, 5.]))
 
         out1 = r + r
         self.assertEqual(out1, np.array([2., 4., 6., 8., 10.]))
