@@ -1,5 +1,6 @@
 .PHONY: install develop test notebook \
-	docker-build-base docker-build docker-build-dev docker-run
+	docker-build-base docker-build docker-build-dev docker-run \
+	run-redis run-capsule run-allservices
 
 # Platform-agnostic targets, will run locally and inside Docker,
 # provided that the right dependencies are present
