@@ -92,8 +92,7 @@ def equal(tensor1, tensor2):
         return NotImplemented
 
     left = tensor1.data.shape == tensor2.data.shape
-    right = np.allclose(tensor1.data, tensor2.data)
-    return left and right
+    return left and np.allclose(tensor1.data, tensor2.data)
 
 
 class TensorBase(object):
@@ -450,7 +449,7 @@ class TensorBase(object):
             return NotImplemented
         else:
             out = self.data[position]
-            if (len(self.shape()) == 1):
+            if (len(self.shape()) == 1) and (type(position) != slice):
                 return out
             else:
                 return TensorBase(self.data[position], self.encrypted)
@@ -480,18 +479,29 @@ class TensorBase(object):
 
         Returns
         -------
-        Tensor Data
+        TensorBase:
+            Output Tensor
         """
         if self.encrypted:
             return NotImplemented
         self.data = np.absolute(self.data)
-        return self.data
+        return self
 
     def nelement(self):
-        """Returns the total number of elements in the tensor."""
-        if self.encrypted:
-            return NotImplemented
-        return self.data.size
+        """
+          Alias for numel()
+          Returns the total number of elements in the Tensor.
+
+          Parameters
+          ----------
+
+          Returns
+          -------
+          int:
+              total number of elements in the input Tensor
+          """
+
+        return syft.math.numel(self)
 
     def shape(self):
         """
@@ -523,7 +533,7 @@ class TensorBase(object):
         """
         if self.encrypted:
             return NotImplemented
-        return np.sqrt(self.data)
+        return TensorBase(np.sqrt(self.data))
 
     def sqrt_(self):
         """
@@ -534,10 +544,12 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         if self.encrypted:
             return NotImplemented
         self.data = np.sqrt(self.data)
+        return self
 
     def dim(self):
         """
@@ -654,7 +666,7 @@ class TensorBase(object):
             return NotImplemented
 
         self.data.fill(0)
-        return self.data
+        return self
 
     def addmm(self, tensor2, mat, beta=1, alpha=1):
         """
@@ -1181,20 +1193,22 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         num_dims = len(self.data.shape)
         axes = list(range(num_dims))
 
         if dim0 >= num_dims:
-            print("dimension 0 out of range")
+            raise ValueError("dimension 0 out of range")
         elif dim1 >= num_dims:
-            print("dimension 1 out of range")
+            raise ValueError("dimension 1 out of range")
         elif self.encrypted:
-            raise NotImplemented
+            return NotImplemented
         else:
             axes[dim0] = dim1
             axes[dim1] = dim0
             self.data = np.transpose(self.data, axes=tuple(axes))
+        return self
 
     def t(self):
         """
@@ -1218,8 +1232,10 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         self.transpose_(0, 1)
+        return self
 
     def unsqueeze(self, dim):
         """
@@ -1235,7 +1251,6 @@ class TensorBase(object):
         Returns
         -------
         Output Tensor
-
         """
         return syft.unsqueeze(self.data, dim)
 
@@ -1250,15 +1265,17 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         num_dims = len(self.data.shape)
 
         if dim >= num_dims or dim < 0:
-            print("dimension out of range")
+            raise ValueError("dimension out of range")
         elif self.encrypted:
             raise NotImplemented
         else:
             self.data = np.expand_dims(self.data, dim)
+        return self
 
     def exp(self):
         """
@@ -1401,6 +1418,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.sqrt(self.data)
+        return self
 
     def sign(self):
         """
@@ -1432,6 +1450,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = np.sign(self.data)
+        return self
 
     def to_numpy(self):
         """
@@ -1478,6 +1497,7 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
         self.data = 1 / np.array(self.data)
+        return self
 
     def log(self):
         """
@@ -2117,6 +2137,10 @@ class TensorBase(object):
         Parameters
         ----------
         size:
+
+        Returns
+        -------
+        Caller with values in-place
         """
         input_size = np.prod(size)
         extension = input_size - self.data.size
@@ -2125,15 +2149,15 @@ class TensorBase(object):
             if extension > 0:
                 data = np.append(flattened, np.zeros(extension))
                 self.data = data.reshape(*size)
-                print(self.data)
+                return self
             elif extension < 0:
                 size_ = self.data.size + extension
                 self.data = flattened[:size_]
                 self.data = self.data.reshape(*size)
-                print(self.data)
+                return self
             else:
                 self.data = self.data.reshape(*size)
-                print(self.data)
+                return self
         else:
             raise ValueError('negative dimension not allowed')
 
@@ -2147,9 +2171,11 @@ class TensorBase(object):
 
         Returns
         -------
+        Caller with values in-place
         """
         size = tensor.data.shape
         self.resize_(size)
+        return self
 
     def round(self, decimals=0):
         """
@@ -2299,7 +2325,7 @@ class TensorBase(object):
 
     def size(self):
         """
-        Size of tensor
+        Returns the size of the tensor as a tuple.
 
         Parameters
         ----------
@@ -2309,9 +2335,9 @@ class TensorBase(object):
         Size of the Tensor
         """
         if self.encrypted:
-            return NotImplemented
+            return self.data.shape
         else:
-            return self.data.size
+            return self.data.shape
 
     def cumprod(self, dim=0):
         """
@@ -2848,6 +2874,97 @@ class TensorBase(object):
         self.data = np.remainder(self.data, divisor)
         return self
 
+    def index(self, m):
+        """
+        Returns a new Tensor with the element selected by position
+
+        :param m: integer index or slice
+        :return: tensor of selected indices
+        """
+        if self.encrypted:
+            return NotImplemented
+        if not isinstance(m, int) and not isinstance(m, slice):
+            raise ValueError("The value of index must be integer")
+        return TensorBase(self.data[m], self.encrypted)
+
+    def index_add_(self, dim, index, tensor):
+        """
+        Add the value of 'tensor' selecting the elements and ordered
+        by index. In-place operation.
+
+        :param dim: dimension along which to index
+        :param index: 1D tensor containing the indices to select
+        :param tensor: tensor containing the values to add
+        """
+        index = _ensure_tensorbase(index)
+        tensor = _ensure_tensorbase(tensor)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if self.data.shape != tensor.data.shape:
+            raise IndexError("Tensor has different shape")
+        if self.data.shape[dim] != index.data.size:
+            raise ValueError("Index should have the same number of elements as dimension")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        self.data += tensor.data.take(index, dim)
+
+    def index_copy_(self, dim, index, tensor):
+        """
+        Copy the values of 'tensor' selecting the elements and ordered
+        by index. In-place operation.
+
+        :para dim: dimension along which to index
+        :param index: 1D tensor containing the indices to select
+        :param tensor: tensor containing the values to add
+        """
+        index = _ensure_tensorbase(index)
+        tensor = _ensure_tensorbase(tensor)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if self.data.shape != tensor.data.shape:
+            raise IndexError("Tensor has different shape")
+        if self.data.shape[dim] != index.data.size:
+            raise ValueError("Index should have the same number of elements as dimension")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        np.copyto(self.data, tensor.data.take(index, dim))
+
+    def index_fill_(self, dim, index, value):
+        """
+        Fill the original tensor with the values of 'tensor' selecting
+        the elements and ordered by index. In-place operation.
+
+        :param dim: dimension along which to inde
+        :param index: 1D tensor containing the indices to select
+        :param value: value to fill
+        """
+        index = _ensure_tensorbase(index)
+
+        if self.encrypted:
+            return NotImplemented
+        if index.data.dtype != np.dtype('int_'):
+            raise TypeError("The value of index must be integer")
+        if np.argmax(index.data > self.data.shape[dim]) != 0:
+            raise ValueError("Index contains a value which is out of range")
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("Dimension out of range")
+
+        idx = [slice(None)] * self.data.ndim
+        idx[dim] = index
+        self.data[tuple(idx)] = value
+
     def index_select(self, dim, index):
         """
         Returns a new Tensor which indexes the ``input`` Tensor along
@@ -2875,6 +2992,42 @@ class TensorBase(object):
         if self.encrypted:
             raise NotImplemented
         return mv(self, tensorvector)
+
+    def narrow(self, dim, start, length):
+        """
+        Returns a new tensor that is a narrowed version of this tensor.
+        The dimension ``dim`` is narrowed from ``start`` to ``start`` + ``length``.
+
+        Parameters
+        ----------
+        dim: int
+            dimension along which to narrow
+        start: int
+            starting dimension
+        length: int
+            length from start to narrow to
+
+        Returns
+        -------
+        narrowed version of this tensor
+        """
+        dim = dim if dim >= 0 else dim + self.dim()
+        if self.encrypted:
+            raise NotImplemented
+        if not isinstance(dim, int) or not isinstance(start, int) or not isinstance(length, int):
+            raise TypeError(("narrow received an invalid combination of arguments:\n"
+                             "    got ({} dim, {} start, {} length), "
+                             " but expected (int dim, int start, int length)"
+                             .format(dim.__class__.__name__,
+                                     start.__class__.__name__,
+                                     length.__class__.__name__)))
+        if dim >= self.data.ndim or dim < -self.data.ndim:
+            raise IndexError("dim value is out of range")
+        if start >= self.data.shape[dim] or start < 0:
+            raise IndexError("start value is out of range")
+        if length > self.data.shape[dim] - start or length <= 0:
+            raise IndexError("length value is out of range")
+        return TensorBase(self.data.take(range(start, start + length), axis=dim))
 
     def masked_scatter_(self, mask, source):
         """
@@ -3072,6 +3225,174 @@ class TensorBase(object):
             return NotImplemented
         else:
             return TensorBase(np.array(self).astype('float16'))
+
+    def lerp(self, tensor, weight):
+        """
+        Performs 'lerp' operation, returning a new tensor calculated by interpolation
+        of two tensors using a weight.
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        weight:
+            Weight supplied for iterpolation
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        return syft.math.lerp(self, tensor, weight)
+
+    def lerp_(self, tensor, weight):
+        """
+        Performs 'lerp' operation inline, returning the calling tensor modified by interpolation
+        of two tensors using a weight.
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        weight:
+            Weight supplied for iterpolation
+
+        Returns
+        -------
+        TensorBase:
+            Calling Tensor modified inline
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        self.data = syft.math.lerp(self, tensor, weight)
+        return self
+
+    def renorm(self, p, dim, maxnorm):
+        """
+        Performs the scaling of elements along the dimension dim of a tensor such that
+        the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
+
+        The tensor is expected to have at least two dimesions, and the
+        p-norm is defined to have powers greater than or equal to one.
+
+        Parmeters
+        ---------
+        p:
+            Power of the norm function
+
+        dim:
+            Dimension on which the operation is done
+
+        maxnorm:
+            Max value the p-norm is allowed to take on
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+        else:
+            return syft.math.renorm(self, p, dim, maxnorm)
+
+    def renorm_(self, p, dim, maxnorm):
+        """
+        Performs an in-place scaling of elements along the dimension dim of the tensor such that
+        the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
+
+        The tensor is expected to have at least two dimesions, and the
+        p-norm is defined to have powers greater than or equal to one.
+
+        Parmeters
+        ---------
+        tensor1: TensorBase
+            Input Tensor
+
+        p:
+            Power of the norm function
+
+        dim:
+            Dimension on which the operation is done
+
+        maxnorm:
+            Max value the p-norm is allowed to take on
+
+        Returns
+        -------
+        Caller with values in-place
+        """
+        if self.encrypted:
+            return NotImplemented
+        else:
+            self.data = syft.math.renorm(self, p, dim, maxnorm).data
+            return self
+
+    def unfold(self, dim, size, step):
+        """
+        Returns a tensor which contains all slices of size `size` along the dimension `dim`.
+
+        Parameters
+        ----------
+        dim: The axis/dimension along which unfolding has to happen
+        size: The number of elements to unfold along the axis 'dim'
+        step: The stride/steps to move along axis while unfolding
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+
+        if self.encrypted:
+            return NotImplemented
+
+        input_array = np.copy(self.data)
+        input_shape = np.shape(input_array)
+        num_axes = len(input_shape)  # number of dimensions of the nd-array
+
+        if dim < -num_axes or dim + 1 > num_axes:
+            raise Exception("\'dim\' should be between {} and {} inclusive".format(-num_axes, num_axes - 1))
+
+        if not size:
+            raise Exception("\'size\'' can\'t be 0 or less")
+
+        if size > input_shape[dim]:
+            raise Exception("\'size\'' is greater than \'dim\'")
+
+        if step <= 0:
+            raise Exception("\'steps\' will have to be greater than 0")
+        if dim < 0:
+            dim += num_axes
+
+        indices = [slice(s) for s in input_shape]
+
+        i = 0
+        sub_arrays = []
+        while i + size <= input_shape[dim]:
+            indices[dim] = slice(i, i + size)
+            sub_arrays.append(np.expand_dims(input_array[indices], axis=num_axes).swapaxes(dim, num_axes))
+            i = i + step
+
+        return TensorBase(np.concatenate(sub_arrays, axis=dim))
+
+
+def numel(self):
+    """
+    Returns the total number of elements in the input Tensor.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    int:
+        total number of elements in the input Tensor
+    """
+    return syft.math.numel(self)
 
 
 def mv(tensormat, tensorvector):

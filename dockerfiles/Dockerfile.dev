@@ -1,0 +1,17 @@
+# Starting from on the base image, copy the whole git repo and install
+# PySyft in development mode, so that changes to its source are directly
+# available when importing the module
+
+FROM pysyft-base:local
+
+RUN apk add --initdb --no-cache	git redis && \
+	cd /usr/bin/ && \
+	git clone https://github.com/OpenMined/Capsule.git && \
+	cd /usr/bin/Capsule/ && \
+	pip3 install -r requirements.txt && \
+	python3 setup.py install && \
+	chmod +x build_and_run.sh build_and_run_django.sh build_and_run_zmq.sh
+
+WORKDIR /PySyft
+COPY . ./
+RUN make develop

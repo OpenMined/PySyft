@@ -310,3 +310,42 @@ class fmodTest(unittest.TestCase):
         t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
         divisor = np.array([2.] * 6)
         self.assertTrue(np.array_equal(syft.math.fmod(t2, divisor).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
+
+
+class lerpTests(unittest.TestCase):
+    def test_lerp(self):
+        t1 = TensorBase(np.array([1, 2, 3, 4]))
+        t2 = TensorBase(np.array([3, 4, 5, 6]))
+        weight = 0.5
+        out = syft.math.lerp(t1, t2, weight)
+        self.assertTrue(np.array_equal(out.data, [2, 3, 4, 5]))
+
+
+class numelTests(unittest.TestCase):
+    def numel_test_int(self):
+        t1_len = 3
+        t1 = TensorBase(np.array([2, 3, 4]))
+        self.assertEqual(syft.math.numel(t1), t1_len)
+
+    def numel_test_float(self):
+        t1_len = 3
+        t1 = TensorBase(np.array([2.0, 3.0, 4.0]))
+        self.assertEqual(syft.math.numel(t1), t1_len)
+
+
+class RenormTests(unittest.TestCase):
+    def testIntRenorm(self):
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
+        t2 = syft.math.renorm(t1, 2, 0, 6)
+        self.assertTrue(np.allclose(t2, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
+
+    def testFloatRenorm(self):
+        t1 = TensorBase(np.array([[1.5, 2.5], [3.5, 4.5]]))
+        t2 = syft.math.renorm(t1, 1, 1, 5.0)
+        self.assertTrue(np.allclose(t2, np.array([[1.5, 1.785714], [3.5, 3.214286]])))
+
+    def test3DTensorRenorm(self):
+        t1 = TensorBase(np.array([[[1, 2, 3], [4, 5, 6]], [[2, 3, 4], [1, 3, 5]]]))
+        t2 = syft.math.renorm(t1, 1, 2, 8)
+        self.assertTrue(np.allclose(t2, np.array([[[1.0, 1.230770, 1.333333], [4.0, 3.076923, 2.666667]],
+                                                  [[2.0, 1.846154, 1.777778], [1.0, 1.846154, 2.222222]]])))
