@@ -69,7 +69,7 @@ Inside the container you can run any make targets such as `test` or `notebook`.
  docker run -it --rm -v "$(PWD)":/PySyft -p 8888:8888 openmined/pysyft-dev:local sh #to run the pysyft-dev image
  redis-server & FLASK_APP=/usr/bin/Capsule/capsule/local_server.py flask run & cd notebooks && jupyter notebook --allow-root --ip=0.0.0.0 #in the container to  start the capsule and run the jupyter notebook
 ```
-3. you should see the URL for the notebook something like this http://0.0.0.0:8888/.... now replace the IP - 0.0.0.0 with docker-machine’s IP address which you can find in your _docker quickstart terminal_ (scroll to top).
+3. you should see the URL for the notebook something like this http://0.0.0.0:8888/.... now replace the IP - 0.0.0.0 with docker-machine’s IP address which you can find in your _docker quickstart terminal_.
 
 ## Local setup
 
