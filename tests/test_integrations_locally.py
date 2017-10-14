@@ -6,6 +6,8 @@ import pickle
 from syft.nn.linear import LinearClassifier
 from syft.he.paillier import KeyPair, PaillierTensor
 from capsule.django_client import LocalDjangoCapsuleClient
+from syft.mpc.rss import MPCRepo
+from syft.mpc.rss.tensor import RSSMPCTensor
 
 
 class PySonarNotebooks(unittest.TestCase):
@@ -22,6 +24,32 @@ class PySonarNotebooks(unittest.TestCase):
 
 
 class PySyftNotebooks(unittest.TestCase):
+
+    def MPC_SPDZ_notebook(self):
+        """If this test fails, you probably broke the demo notebook located at
+        PySyft/notebooks/MPC Tensor SPDZ.ipynb
+        """
+
+        server1 = MPCRepo()
+        server2 = MPCRepo()
+        server1.set_parties(server2)
+        server2.set_parties(server1)
+        r = RSSMPCTensor(server1, np.array([1, 2, 3, 4, 5.]))
+
+        out1 = r + r
+        self.assertEqual(out1, np.array([2., 4., 6., 8., 10.]))
+
+        out2 = r - r
+        self.assertEqual(out2, np.array([0., 0., 0., 0., 0.]))
+
+        out3 = r * r
+        self.assertEqual(out3, np.array([1., 4., 9., 16., 25.]))
+
+        out4 = r.dot(r)
+        self.assertEqual(out4, 55.)
+
+        out5 = r.sum()
+        self.asserEqual(out5, 15.)
 
     def paillier_HE_example_notebook(self):
         """If this test fails, you probably broke the demo notebook located at
