@@ -28,8 +28,7 @@ install:
   - "cd Capsule/"
   - "pip install -r requirements.txt"
   - "python setup.py install"
-  - "cd capsule_django/"
-  - "python manage.py runserver 9000 > /dev/null &"
+  - "python capsule/local_server.py"
   - "cd ../../"
 
 # run tests
