@@ -55,27 +55,11 @@ make docker-run image=openmined/pysyft-dev:local
 
 Inside the container you can run any make targets such as `test` or `notebook`.
 
-**Note**: for windows users, if you have trouble with docker installation follow this:
-1. Install [docker toolbox on windows](https://docs.docker.com/toolbox/toolbox_install_windows/) and check if it is properly installed by doing ```docker -v``` on _docker quickstart terminal_.
-2. and then do this:
-```sh
- git clone https://github.com/OpenMined/PySyft.git 
- cd PySyft  
- 
- docker build -f dockerfiles/Dockerfile.base -t pysyft-base:local . # do not foget the dot ! 
- docker build -f dockerfiles/Dockerfile -t openmined/pysyft:local . # creates pysyft image 
- docker build -f dockerfiles/Dockerfile.dev -t openmined/pysyft-dev:local . # creates pysyft-dev image 
- docker images  # check the installed images 
- docker run -it --rm -v "$(PWD)":/PySyft -p 8888:8888 openmined/pysyft-dev:local sh #to run the pysyft-dev image
- redis-server & FLASK_APP=/usr/bin/Capsule/capsule/local_server.py flask run & cd notebooks && jupyter notebook --allow-root --ip=0.0.0.0 #in the container to  start the capsule and run the jupyter notebook
-```
-3. you should see the URL for the notebook something like this http://0.0.0.0:8888/.... now replace the IP - 0.0.0.0 with docker-machine’s IP address which you can find in your _docker quickstart terminal_.
-
 ## Local setup
 
 ### Prerequisites
 
-- Make sure Python 3.5+ in installed on your machine by_docker quickstart terminal_ checking `python3 --version`
+- Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
 - Install the base libraries listed [here](https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries)
 - Set up a virtual environment for the Python libraries (optional, recommended)
 - Install [Capsule](https://github.com/OpenMined/Capsule) dependency if you are going to develop and run tests.
