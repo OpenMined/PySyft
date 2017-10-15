@@ -28,7 +28,7 @@ install:
   - "cd Capsule/"
   - "pip install -r requirements.txt"
   - "python setup.py install"
-  - "python capsule/local_server.py > /dev/null &"
+  - "python capsule_zmq/local_server.py > /dev/null &"
   - "cd ../../"
 
 # run tests
