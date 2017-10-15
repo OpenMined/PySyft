@@ -10,19 +10,6 @@ from syft.mpc.spdz import MPCRepo
 from syft.mpc.spdz.tensor import SPDZMPCTensor
 
 
-class PySonarNotebooks(unittest.TestCase):
-
-    def model_training_demo_notebook(self):
-        """If this test fails, you probably broke the demo notebook located at
-        PySonar/notebooks/Sonar - Decentralized Model Training Simulation
-        (local blockchain).ipynb """
-        c = LocalDjangoCapsuleClient()
-        d = LinearClassifier(desc="DiabetesClassifier", n_inputs=10, n_labels=1, capsule_client=c)
-        d.encrypt()
-
-        self.assertTrue(True)
-
-
 class PySyftNotebooks(unittest.TestCase):
 
     def MPC_SPDZ_notebook(self):
