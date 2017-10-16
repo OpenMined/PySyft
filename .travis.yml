@@ -32,7 +32,7 @@ install:
   - "cd ../../"
 
 before_script:
-  - "pep8 --ignore=E501"
+  - "flake8 --ignore=E501"
 
 # run tests
 script:
