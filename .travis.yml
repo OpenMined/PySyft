@@ -33,7 +33,7 @@ install:
 
 before_script:
   - flake8 --ignore=E501 PySyft/
-  - FLAKE8 --IGNORE=E302, E305, E251, F401, E302, E231, E303,  E202, E302, F841, E303, E226 Capsule/
+  - flake8 --exclude Capsule/
 
 # run tests
 script:
