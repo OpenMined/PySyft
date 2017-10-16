@@ -1715,14 +1715,17 @@ class TensorBase(object):
 
     def cauchy_(self, median=0, sigma=1):
         """Fills the tensor in-place with numbers drawn from the Cauchy distribution:
-        .. math:: P(x) = \frac{1}{\pi} \frac{\sigma}{(x - \textit{median})^2 + \sigma^2}
+        .. math:: P(x) = \frac{1}{\pi} \frac{\sigma}{(x - \textit{median})^2
+        + \sigma^2}
         Parameters
         ----------
         self : tensor
         median : scalar, optional
-            Also known as the location parameter. Specifies the location of the distribution's peak.
+            Also known as the location parameter.
+            Specifies the location of the distribution's peak.
         sigma : scalar, optional
-            Also known as the scale parameter. Specifies the half-width at half-maximum (HWHM).
+            Also known as the scale parameter.
+            Specifies the half-width at half-maximum (HWHM).
         Returns
         -------
         ret : tensor
@@ -1889,8 +1892,8 @@ class TensorBase(object):
 
     def round(self, decimals=0):
         """
-        Returns a new tensor with elements rounded off to a nearest decimal place
-        Parameters
+        Returns a new tensor with elements rounded off to a nearest
+        decimal place Parameters
         ----------
         decimals:
         Returns
@@ -1921,12 +1924,17 @@ class TensorBase(object):
         """
         Return a new tensor by repeating the values given by reps
         Parameters
+
         ----------
         reps:
+
             Number of Repeats
+
         Returns
         -------
+
         Output Tensor
+
         """
         if self.encrypted:
             return NotImplemented
@@ -1936,11 +1944,13 @@ class TensorBase(object):
     def pow(self, exponent):
         """
         Return a new tensor by raising elements to the given exponent.
-        If exponent is an array, each element of the tensor is raised positionally to the
-        element of the exponent
+        If exponent is an array, each element of the tensor is raised
+        positionally to the element of the exponent
+
         Parameters
         ----------
         exponent:
+
         Returns
         -------
         Output Tensor
@@ -1955,9 +1965,11 @@ class TensorBase(object):
         Raise elements to the given exponent in-place.
         If exponent is an array, each element of the tensor is raised
         positionally to the element of the exponent
+
         Parameters
         ----------
         exponent:
+
         Returns
         -------
         Caller with values in-place
@@ -1969,13 +1981,19 @@ class TensorBase(object):
 
     def prod(self, axis=None):
         """
-        Returns a new tensor with the product of (specified axis) all the elements
+        Returns a new tensor with the product of
+        (specified axis) all the elements
+
         Parameters
+
         ----------
         axis: ,optional
+
         Returns
+
         -------
         Output Tensor
+
         """
         if self.encrypted:
             return NotImplemented
@@ -2043,13 +2061,19 @@ class TensorBase(object):
 
     def cumprod_(self, dim=0):
         """
-        calculate in-place the cumulative product of elements in the dimension dim.
+        calculate in-place the cumulative product of elements
+        in the dimension dim.
+
         Parameters
         ----------
+
         dim: ,optional
+
         Returns
         -------
+
         Caller with values in-place
+
         """
         if self.encrypted:
             return NotImplemented
@@ -2082,8 +2106,11 @@ class TensorBase(object):
         Parameters
         ----------
         axis
+
         Returns
+
         -------
+
         Output Tensor
         """
         if self.encrypted:
@@ -2095,9 +2122,12 @@ class TensorBase(object):
         """
         Returns a new tensor with the expanded size as of the specified
         (input) tensor
+
         Parameters
         ----------
+
         tensor: TensorBase
+
         Returns
         -------
         Output Tensor
@@ -2353,26 +2383,30 @@ class TensorBase(object):
         if dim >= self.data.ndim or dim < -self.data.ndim:
             raise IndexError("dim is out of range")
         if dim < 0:
-            # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
+            # Not sure why scatter should accept dim < 0,
+            # but that is the behavior in PyTorch's scatter
             dim = self.data.ndim + dim
         idx_xsection_shape = index.data.shape[:dim] + index.data.shape[
                                                       dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
-                             ", all dimensions of index and output should be the same size")
+                             ", all dimensions of index and output should be "
+                             "the same size")
         if (index.data >= self.data.shape[dim]).any() or (
                     index.data < 0).any():
             raise IndexError(
-                "The values of index must be between 0 and (self.data.shape[dim] -1)")
+                "The values of index must be between 0 and (self.data.shape["
+                "dim] -1)")
 
         def make_slice(arr, dim, i):
             slc = [slice(None)] * arr.ndim
             slc[dim] = i
             return slc
 
-        # We use index and dim parameters to create idx
-        # idx is in a form that can be used as a NumPy advanced index for scattering of src param. in self.data
+        # We use index and dim parameters to create idx idx is in a form
+        # that can be used as a NumPy advanced index for scattering of src
+        # param. in self.data
         idx = [
             [*np.indices(idx_xsection_shape).reshape(index.data.ndim - 1, -1),
              index.data[make_slice(index.data, dim, i)].reshape(1, -1)[0]] for
@@ -2384,13 +2418,14 @@ class TensorBase(object):
             src = _ensure_tensorbase(src)
             if index.data.shape[dim] > src.data.shape[dim]:
                 raise IndexError("Dimension " + str(dim) +
-                                 "of index can not be bigger than that of src ")
+                                 "of index can not be bigger than that of src")
             src_shape = src.data.shape[:dim] + src.data.shape[dim + 1:]
             if idx_xsection_shape != src_shape:
                 raise ValueError("Except for dimension " +
                                  str(
-                                     dim) + ", all dimensions of index and src should be the same size")
-            # src_idx is a NumPy advanced index for indexing of elements in the src
+                                     dim) + ", all dimensions of index and "
+                                            "src should be the same size")
+            # src_idx is a NumPy advanced index for indexing of elements in src
             src_idx = list(idx)
             src_idx.pop(dim)
             src_idx.insert(dim, np.repeat(
@@ -2427,7 +2462,8 @@ class TensorBase(object):
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
-                             ", all dimensions of index and self should be the same size")
+                             ", all dimensions of index and self should be "
+                             "the same size")
         if index.data.dtype != np.dtype('int_'):
             raise TypeError("The values of index must be integers")
         data_swaped = np.swapaxes(self.data, 0, dim)
@@ -2622,7 +2658,9 @@ class TensorBase(object):
     def narrow(self, dim, start, length):
         """
         Returns a new tensor that is a narrowed version of this tensor.
-        The dimension ``dim`` is narrowed from ``start`` to ``start`` + ``length``.
+        The dimension ``dim`` is narrowed
+        from ``start`` to ``start`` + ``length``.
+
         Parameters
         ----------
         dim: int
@@ -2640,7 +2678,7 @@ class TensorBase(object):
             raise NotImplemented
         if not isinstance(dim, int) or not isinstance(start,
                                                       int) or not isinstance(
-            length, int):
+                                                      length, int):
             raise TypeError(
                 ("narrow received an invalid combination of arguments:\n"
                  "    got ({} dim, {} start, {} length), "
@@ -2665,12 +2703,14 @@ class TensorBase(object):
         tensor.
         The ``source`` should have at least as many elements as the number
         of ones in ``mask``.
+
         Parameters
         ----------
         mask: TensorBase
             The binary mask (non-zero is treated as true)
         source: TensorBase
             The tensor to copy from
+
         Returns
         -------
         Output Tensor
@@ -2690,8 +2730,9 @@ class TensorBase(object):
         """
         Fills elements of this ``tensor`` with value where ``mask`` is true.
         in-place
-        The shape of mask must be broadcastable with the shape of the underlying
-        tensor.
+        The shape of mask must be broadcastable with the shape of
+        the underlying tensor.
+
         Parameters
         ----------
         mask: TensorBase
@@ -2725,6 +2766,7 @@ class TensorBase(object):
         calling tensor is equal to the second Tensor, False otherwise.
         The second Tensor can be a number or a tensor whose shape is
         broadcastable with the calling Tensor.
+
         Parameters
         ----------
         t: TensorBase
@@ -2744,6 +2786,7 @@ class TensorBase(object):
         tensor is equal to the second Tensor, False otherwise.
         The second Tensor can be a number or a tensor whose shape is
         broadcastable with the calling Tensor.
+
         Parameters
         ----------
         t: TensorBase
@@ -2760,8 +2803,10 @@ class TensorBase(object):
     def mm(self, tensor):
         """
         Performs a matrix multiplication of two Tensors.
-        If :attr:`tensor1` is a `n x m` Tensor, :attr:`tensor2` is a `m x p` Tensor,
+        If :attr:`tensor1` is a `n x m` Tensor,
+         :attr:`tensor2` is a `m x p` Tensor,
         output will be a `n x p` Tensor.
+
         Parameters
         ----------
         tensor: Tensor
@@ -2835,8 +2880,9 @@ class TensorBase(object):
 
     def lerp(self, tensor, weight):
         """
-        Performs 'lerp' operation, returning a new tensor calculated by interpolation
-        of two tensors using a weight.
+        Performs 'lerp' operation, returning a new tensor
+        calculated by interpolation of two tensors using a weight.
+
         Parameters
         ----------
         tensor: TensorBase
@@ -2854,8 +2900,10 @@ class TensorBase(object):
 
     def lerp_(self, tensor, weight):
         """
-        Performs 'lerp' operation inline, returning the calling tensor modified by interpolation
+        Performs 'lerp' operation inline, returning the
+        calling tensor modified by interpolation
         of two tensors using a weight.
+
         Parameters
         ----------
         tensor: TensorBase
@@ -2874,10 +2922,12 @@ class TensorBase(object):
 
     def renorm(self, p, dim, maxnorm):
         """
-        Performs the scaling of elements along the dimension dim of a tensor such that
-        the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
+        Performs the scaling of elements along the dimension dim
+        of a tensor such that the p-norm of the sub-tensors along dim are
+        less than or equal to maxnorm.
         The tensor is expected to have at least two dimesions, and the
         p-norm is defined to have powers greater than or equal to one.
+
         Parmeters
         ---------
         p:
@@ -2898,10 +2948,12 @@ class TensorBase(object):
 
     def renorm_(self, p, dim, maxnorm):
         """
-        Performs an in-place scaling of elements along the dimension dim of the tensor such that
-        the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
+        Performs an in-place scaling of elements along the dimension dim
+        of the tensor such that the p-norm of the sub-tensors along dim
+        are less than or equal to maxnorm.
         The tensor is expected to have at least two dimesions, and the
         p-norm is defined to have powers greater than or equal to one.
+
         Parmeters
         ---------
         tensor1: TensorBase
@@ -2924,12 +2976,15 @@ class TensorBase(object):
 
     def unfold(self, dim, size, step):
         """
-        Returns a tensor which contains all slices of size `size` along the dimension `dim`.
+        Returns a tensor which contains all slices of size
+        `size` along the dimension `dim`.
+
         Parameters
         ----------
         dim: The axis/dimension along which unfolding has to happen
         size: The number of elements to unfold along the axis 'dim'
         step: The stride/steps to move along axis while unfolding
+
         Returns
         -------
         TensorBase:

@@ -38,7 +38,7 @@ class MPCNatural(object):
 
     def __truediv__(self, x):
         new_id = self.gen_rand_id()
-        if (type(x) == type(self)):
+        if type(x) == type(self):
             return NotImplemented
         else:
             return self.repo.div_scalar(new_id, self.id, x, True)
@@ -50,13 +50,13 @@ class MPCNatural(object):
 class MPCFixedPoint(object):
     def __init__(self, raw, repo, config=None, raw_natural=None):
 
-        if (config is None):
+        if config is None:
             self.config = PrecisionConfig()
         else:
             self.config = config
 
         self.repo = repo
-        if (raw_natural is None):
+        if raw_natural is None:
             self.raw_natural = self.repo.create_natural(self.encode(raw))
         else:
             self.raw_natural = raw_natural
@@ -68,8 +68,10 @@ class MPCFixedPoint(object):
         return field_element
 
     def decode(self, field_element):
-        upscaled = field_element if field_element <= self.config.Q / 2 else field_element - self.config.Q
-        rational = upscaled / self.config.BASE ** self.config.PRECISION_FRACTIONAL
+        upscaled = field_element if field_element <= \
+            self.config.Q / 2 else field_element - self.config.Q
+        rational = upscaled / self.config.BASE ** \
+            self.config.PRECISION_FRACTIONAL
         return rational
 
     def get(self):
@@ -94,10 +96,10 @@ class MPCFixedPoint(object):
 
         if (type(x) != type(self)):
             return MPCFixedPoint(None, self.repo, raw_natural=(
-            self.raw_natural * self.encode(x))).truncate()
+                self.raw_natural * self.encode(x))).truncate()
         else:
             return MPCFixedPoint(None, self.repo, raw_natural=(
-            self.raw_natural * x.raw_natural)).truncate()
+                self.raw_natural * x.raw_natural)).truncate()
 
     def __truediv__(self, x):
 
@@ -110,16 +112,22 @@ class MPCFixedPoint(object):
 
         b = self.raw_natural + self.repo.create_natural_with_shares(
             [self.config.BASE ** (2 * self.config.PRECISION + 1), 0, 0])
+
         mask = random.randrange(self.config.Q) % self.config.BASE ** (
-        self.config.PRECISION + self.config.PRECISION_FRACTIONAL + self.config.KAPPA)
+            self.config.PRECISION + self.config.PRECISION_FRACTIONAL +
+            self.config.KAPPA)
+
         mask_low = mask % self.config.BASE ** self.config.PRECISION_FRACTIONAL
+
         b_masked = (
-        b + self.repo.create_natural_with_shares([mask, 0, 0])).get()
-        b_masked_low = b_masked % self.config.BASE ** self.config.PRECISION_FRACTIONAL
+            b + self.repo.create_natural_with_shares([mask, 0, 0])).get()
+
+        b_masked_low = b_masked % self.config.BASE ** \
+            self.config.PRECISION_FRACTIONAL
+
         b_low = self.repo.create_natural(
             b_masked_low) - self.repo.create_natural(mask_low)
         c = self.raw_natural - b_low
         d = c * self.config.INVERSE
         self.raw_natural = d
-
         return self

@@ -74,8 +74,10 @@ class MPCFixedPoint(object):
         return field_element
 
     def decode(self, field_element):
-        upscaled = field_element if field_element <= self.config.Q / 2 else field_element - self.config.Q
-        rational = upscaled / self.config.BASE ** self.config.PRECISION_FRACTIONAL
+        upscaled = field_element if field_element <= self.config.Q / 2 else \
+            field_element - self.config.Q
+        rational = upscaled / self.config.BASE ** \
+            self.config.PRECISION_FRACTIONAL
         return rational
 
     def get(self):
@@ -100,10 +102,10 @@ class MPCFixedPoint(object):
 
         if (type(x) != type(self)):
             return MPCFixedPoint(None, self.repo, raw_natural=(
-            self.raw_natural * self.encode(x)))
+             self.raw_natural * self.encode(x)))
         else:
             return MPCFixedPoint(None, self.repo, raw_natural=(
-            self.raw_natural * x.raw_natural))
+             self.raw_natural * x.raw_natural))
 
     def __truediv__(self, x):
 

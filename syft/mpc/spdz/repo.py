@@ -103,7 +103,7 @@ class MPCRepo(object):
     def truncate(self, x, amount=8):
         self.ints[x.id] = self.ints[x.id] // 10 ** amount
         self.another_party[0].ints[x.id] = Q - (
-        (Q - self.another_party[0].ints[x.id]) // 10 ** amount)
+         (Q - self.another_party[0].ints[x.id]) // 10 ** amount)
         return x
 
     def mult(self, new_id, x, y, populate_to_another_party=False):
