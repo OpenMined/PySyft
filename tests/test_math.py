@@ -37,25 +37,27 @@ class DiagTests(unittest.TestCase):
     def test_one_dim_tensor_main_diag(self):
         t = TensorBase(np.array([1, 2, 3, 4]))
         self.assertTrue(syft.equal(syft.diag(t), TensorBase([[1, 0, 0, 0],
-                                                            [0, 2, 0, 0],
-                                                            [0, 0, 3, 0],
-                                                            [0, 0, 0, 4]])))
+                                                             [0, 2, 0, 0],
+                                                             [0, 0, 3, 0],
+                                                             [0, 0, 0, 4]])))
 
     def test_one_dim_tensor_upper_diag(self):
         t = TensorBase(np.array([1, 2, 3, 4]))
-        self.assertTrue(syft.equal(syft.diag(t, 1), TensorBase([[0, 1, 0, 0, 0],
-                                                                [0, 0, 2, 0, 0],
-                                                                [0, 0, 0, 3, 0],
-                                                                [0, 0, 0, 0, 4],
-                                                                [0, 0, 0, 0, 0]])))
+        self.assertTrue(
+            syft.equal(syft.diag(t, 1), TensorBase([[0, 1, 0, 0, 0],
+                                                    [0, 0, 2, 0, 0],
+                                                    [0, 0, 0, 3, 0],
+                                                    [0, 0, 0, 0, 4],
+                                                    [0, 0, 0, 0, 0]])))
 
     def test_one_dim_tensor_below_diag(self):
         t = TensorBase(np.array([1, 2, 3, 4]))
-        self.assertTrue(syft.equal(syft.diag(t, -1), TensorBase([[0, 0, 0, 0, 0],
-                                                                [1, 0, 0, 0, 0],
-                                                                [0, 2, 0, 0, 0],
-                                                                [0, 0, 3, 0, 0],
-                                                                [0, 0, 0, 4, 0]])))
+        self.assertTrue(
+            syft.equal(syft.diag(t, -1), TensorBase([[0, 0, 0, 0, 0],
+                                                     [1, 0, 0, 0, 0],
+                                                     [0, 2, 0, 0, 0],
+                                                     [0, 0, 3, 0, 0],
+                                                     [0, 0, 0, 4, 0]])))
 
     def test_two_dim_tensor_main_diag(self):
         t = TensorBase(np.array([[0, 1], [2, 3]]))
@@ -81,7 +83,8 @@ class FloorTests(unittest.TestCase):
     def test_floor(self):
         t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
         self.assertTrue(syft.equal(syft.math.floor(t1), TensorBase([[2., 4.],
-                                                                    [7., 8.]])))
+                                                                    [7.,
+                                                                     8.]])))
 
 
 class tanhTests(unittest.TestCase):
@@ -89,13 +92,17 @@ class tanhTests(unittest.TestCase):
         # int
         t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
         t2 = syft.math.tanh(t1)
-        self.assertTrue(np.array_equal(t1.data, np.array([[0, 1, -2], [0, -1, 2]])))
-        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0, 1, -2], [0, -1, 2]]))))
+        self.assertTrue(
+            np.array_equal(t1.data, np.array([[0, 1, -2], [0, -1, 2]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(
+            np.array([[0, 1, -2], [0, -1, 2]]))))
         # float
         t1 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
         t2 = syft.math.tanh(t1)
-        self.assertTrue(np.array_equal(t1.data, np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]])))
-        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
+        self.assertTrue(np.array_equal(t1.data, np.array(
+            [[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(
+            np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
 
 
 class CumsumTests(unittest.TestCase):
@@ -255,13 +262,16 @@ class transposeTests(unittest.TestCase):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         out1 = syft.transpose(t1, 0, 1)
         self.assertTrue(np.array_equal(out1.data, np.array([[[3, 4], [7, 8]],
-                                                            [[5, 6], [1, 2]]])))
+                                                            [[5, 6],
+                                                             [1, 2]]])))
         out2 = syft.transpose(t1, 0, 2)
         self.assertTrue(np.array_equal(out2.data, np.array([[[3, 7], [5, 1]],
-                                                            [[4, 8], [6, 2]]])))
+                                                            [[4, 8],
+                                                             [6, 2]]])))
         out3 = syft.transpose(t1, 1, 2)
         self.assertTrue(np.array_equal(out3.data, np.array([[[3, 5], [4, 6]],
-                                                            [[7, 1], [8, 2]]])))
+                                                            [[7, 1],
+                                                             [8, 2]]])))
 
 
 class unsqueezeTests(unittest.TestCase):
@@ -299,17 +309,22 @@ class mmtest(unittest.TestCase):
 class fmodTest(unittest.TestCase):
     def test_fmod_number(self):
         t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
-        self.assertTrue(np.array_equal(syft.math.fmod(t1, 2).data, np.array([-1, 0, -1, 1, 0, 1])))
+        self.assertTrue(np.array_equal(syft.math.fmod(t1, 2).data,
+                                       np.array([-1, 0, -1, 1, 0, 1])))
         t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
-        self.assertTrue(np.array_equal(syft.math.fmod(t2, 2.).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
+        self.assertTrue(np.array_equal(syft.math.fmod(t2, 2.).data, np.array(
+            [-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
 
     def test_fmod_tensor(self):
         t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
         divisor = np.array([2] * 6)
-        self.assertTrue(np.array_equal(syft.math.fmod(t1, divisor).data, np.array([-1, 0, -1, 1, 0, 1])))
+        self.assertTrue(np.array_equal(syft.math.fmod(t1, divisor).data,
+                                       np.array([-1, 0, -1, 1, 0, 1])))
         t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
         divisor = np.array([2.] * 6)
-        self.assertTrue(np.array_equal(syft.math.fmod(t2, divisor).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
+        self.assertTrue(np.array_equal(syft.math.fmod(t2, divisor).data,
+                                       np.array(
+                                           [-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
 
 
 class lerpTests(unittest.TestCase):
@@ -337,15 +352,19 @@ class RenormTests(unittest.TestCase):
     def testIntRenorm(self):
         t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
         t2 = syft.math.renorm(t1, 2, 0, 6)
-        self.assertTrue(np.allclose(t2, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
+        self.assertTrue(np.allclose(t2, np.array(
+            [[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
 
     def testFloatRenorm(self):
         t1 = TensorBase(np.array([[1.5, 2.5], [3.5, 4.5]]))
         t2 = syft.math.renorm(t1, 1, 1, 5.0)
-        self.assertTrue(np.allclose(t2, np.array([[1.5, 1.785714], [3.5, 3.214286]])))
+        self.assertTrue(
+            np.allclose(t2, np.array([[1.5, 1.785714], [3.5, 3.214286]])))
 
     def test3DTensorRenorm(self):
-        t1 = TensorBase(np.array([[[1, 2, 3], [4, 5, 6]], [[2, 3, 4], [1, 3, 5]]]))
+        t1 = TensorBase(
+            np.array([[[1, 2, 3], [4, 5, 6]], [[2, 3, 4], [1, 3, 5]]]))
         t2 = syft.math.renorm(t1, 1, 2, 8)
-        self.assertTrue(np.allclose(t2, np.array([[[1.0, 1.230770, 1.333333], [4.0, 3.076923, 2.666667]],
-                                                  [[2.0, 1.846154, 1.777778], [1.0, 1.846154, 2.222222]]])))
+        self.assertTrue(np.allclose(t2, np.array(
+            [[[1.0, 1.230770, 1.333333], [4.0, 3.076923, 2.666667]],
+             [[2.0, 1.846154, 1.777778], [1.0, 1.846154, 2.222222]]])))

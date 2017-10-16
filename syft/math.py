@@ -19,7 +19,8 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
+    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod',
+    'diag', 'lerp', 'renorm', 'numel'
 ]
 
 
@@ -120,8 +121,10 @@ def dot(tensor1, tensor2):
 
 def diag(tensor, diagonal=0):
     """
-    * Returns a new 2D square tensor with the elements of 1D input tensor as the diagonal.
-    * Returns a new 1D tensor with diagonal elements of 2D input tensor.
+    * Returns a new 2D square tensor with the elements
+    of 1D input tensor as the diagonal.
+    * Returns a new 1D tensor with diagonal elements
+    of 2D input tensor.
 
     * Optional argument diagonal value is about which diagonal to consider,
     zero is for main, positive for upper and negative for below diagonal
@@ -706,7 +709,8 @@ def mm(tensor1, tensor2):
     """
     Performs a matrix multiplication of :attr:`tensor1` and :attr:`tensor2`.
 
-    If :attr:`tensor1` is a `n x m` Tensor, :attr:`tensor2` is a `m x p` Tensor,
+    If :attr:`tensor1` is a `n x m` Tensor,
+    :attr:`tensor2` is a `m x p` Tensor,
     output will be a `n x p` Tensor.
 
     Parameters
@@ -775,8 +779,8 @@ def numel(tensor):
 
 def lerp(tensor1, tensor2, weight):
     """
-    Performs 'lerp' operation, returning a new tensor calculated by interpolation
-    of two tensors using a weight.
+    Performs 'lerp' operation, returning a new tensor
+    calculated by interpolation of two tensors using a weight.
 
     Parameters
     ----------
@@ -805,9 +809,9 @@ def lerp(tensor1, tensor2, weight):
 
 def renorm(tensor1, p, dim, maxnorm):
     """
-    Performs the scaling of elements along the dimension dim in tensor1 such that
-    the p-norm of the sub-tensors along dim are less than or equal to maxnorm.
-    Returns the result as an output tensor.
+    Performs the scaling of elements along the dimension dim in
+    tensor1 such that the p-norm of the sub-tensors along dim
+    are less than or equal to maxnorm. Returns the result as an output tensor.
 
     The tensor, tensor1 is expected to have at least two dimesions, and the
     p-norm is defined to have powers greater than or equal to one.
@@ -838,7 +842,8 @@ def renorm(tensor1, p, dim, maxnorm):
     else:
         # solve for c in maxnorm = sqrt(sum((c*x)**p))
         dim_2_sum = tuple(filter(lambda x: x != dim, range(dims)))
-        norm = np.power(np.power(np.absolute(tensor1), p).sum(dim_2_sum), 1.0 / p)
+        norm = np.power(np.power(np.absolute(tensor1), p).sum(dim_2_sum),
+                        1.0 / p)
         c = maxnorm / norm
         # only renorm when norm > maxnorm
         scalar = np.where(norm > maxnorm, c, 1)

@@ -4,12 +4,11 @@ from ...tensor import TensorBase
 
 
 class PaillierTensor(TensorBase):
-
     def __init__(self, public_key, data=None, input_is_decrypted=True):
         self.encrypted = True
 
         self.public_key = public_key
-        if(type(data) == np.ndarray and input_is_decrypted):
+        if (type(data) == np.ndarray and input_is_decrypted):
             self.data = public_key.encrypt(data, True)
         else:
             self.data = data
@@ -24,26 +23,31 @@ class PaillierTensor(TensorBase):
     def __add__(self, tensor):
         """Performs element-wise addition between two tensors"""
 
-        if(not isinstance(tensor, TensorBase)):
+        if (not isinstance(tensor, TensorBase)):
             # try encrypting it
-            tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'))
-            return PaillierTensor(self.public_key, self.data + tensor.data, False)
+            tensor = PaillierTensor(self.public_key,
+                                    np.array([tensor]).astype('float'))
+            return PaillierTensor(self.public_key, self.data + tensor.data,
+                                  False)
 
-        if(type(tensor) == TensorBase):
+        if (type(tensor) == TensorBase):
             tensor = PaillierTensor(self.public_key, tensor.data)
 
-        ptensor = PaillierTensor(self.public_key, self.data + tensor.data, False)
+        ptensor = PaillierTensor(self.public_key, self.data + tensor.data,
+                                 False)
         ptensor._calc_add_depth(self, tensor)
         return ptensor
 
     def __sub__(self, tensor):
         """Performs element-wise subtraction between two tensors"""
-        if(not isinstance(tensor, TensorBase)):
+        if (not isinstance(tensor, TensorBase)):
             # try encrypting it
-            tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'))
-            return PaillierTensor(self.public_key, self.data - tensor.data, False)
+            tensor = PaillierTensor(self.public_key,
+                                    np.array([tensor]).astype('float'))
+            return PaillierTensor(self.public_key, self.data - tensor.data,
+                                  False)
 
-        if(type(tensor) == TensorBase):
+        if (type(tensor) == TensorBase):
             tensor = PaillierTensor(self.public_key, tensor.data)
 
         return PaillierTensor(self.public_key, self.data - tensor.data, False)
@@ -56,8 +60,8 @@ class PaillierTensor(TensorBase):
     def __mul__(self, tensor):
         """Performs element-wise multiplication between two tensors"""
 
-        if(isinstance(tensor, TensorBase)):
-            if(not tensor.encrypted):
+        if (isinstance(tensor, TensorBase)):
+            if (not tensor.encrypted):
                 result = self.data * tensor.data
                 o = PaillierTensor(self.public_key, result, False)
                 o._calc_mul_depth(self, tensor)
@@ -73,8 +77,8 @@ class PaillierTensor(TensorBase):
     def __truediv__(self, tensor):
         """Performs element-wise division between two tensors"""
 
-        if(isinstance(tensor, TensorBase)):
-            if(not tensor.encrypted):
+        if (isinstance(tensor, TensorBase)):
+            if (not tensor.encrypted):
                 result = self.data * (1 / tensor.data)
                 o = PaillierTensor(self.public_key, result, False)
                 return o
@@ -96,7 +100,7 @@ class PaillierTensor(TensorBase):
             return PaillierTensor(self.public_key, op, False)
 
     def dot(self, plaintext_x):
-        if(not plaintext_x.encrypted):
+        if (not plaintext_x.encrypted):
             return (self * plaintext_x).sum(plaintext_x.dim() - 1)
         else:
             return NotImplemented
@@ -109,13 +113,12 @@ class PaillierTensor(TensorBase):
 
 
 class Float():
-
     def __init__(self, public_key, data=None):
         """Wraps pointer to encrypted Float with an interface that numpy
         can use."""
 
         self.public_key = public_key
-        if(data is not None):
+        if (data is not None):
             self.data = self.public_key.pk.encrypt(data)
         else:
             self.data = None
@@ -140,11 +143,11 @@ class Float():
     def __mul__(self, y):
         """Multiplies two Floats. y may be encrypted or a simple Float."""
 
-        if(type(y) == type(self)):
+        if (type(y) == type(self)):
             out = Float(self.public_key, None)
             out.data = self.data * y.data
             return out
-        elif(type(y) == int or type(y) == float):
+        elif (type(y) == int or type(y) == float):
             out = Float(self.public_key, None)
             out.data = self.data * y
             return out
@@ -154,11 +157,11 @@ class Float():
     def __truediv__(self, y):
         """Divides two Floats. y may be encrypted or a simple Float."""
 
-        if(type(y) == type(self)):
+        if (type(y) == type(self)):
             out = Float(self.public_key, None)
             out.data = self.data / y.data
             return out
-        elif(type(y) == int):
+        elif (type(y) == int):
             out = Float(self.public_key, None)
             out.data = self.data / y
             return out
