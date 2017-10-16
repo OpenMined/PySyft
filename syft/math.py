@@ -19,7 +19,7 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 
+    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod',
     'diag', 'lerp', 'renorm', 'numel'
 ]
 
@@ -121,9 +121,9 @@ def dot(tensor1, tensor2):
 
 def diag(tensor, diagonal=0):
     """
-    * Returns a new 2D square tensor with the elements 
+    * Returns a new 2D square tensor with the elements
     of 1D input tensor as the diagonal.
-    * Returns a new 1D tensor with diagonal elements 
+    * Returns a new 1D tensor with diagonal elements
     of 2D input tensor.
 
     * Optional argument diagonal value is about which diagonal to consider,
@@ -709,7 +709,7 @@ def mm(tensor1, tensor2):
     """
     Performs a matrix multiplication of :attr:`tensor1` and :attr:`tensor2`.
 
-    If :attr:`tensor1` is a `n x m` Tensor, 
+    If :attr:`tensor1` is a `n x m` Tensor,
     :attr:`tensor2` is a `m x p` Tensor,
     output will be a `n x p` Tensor.
 
@@ -779,7 +779,7 @@ def numel(tensor):
 
 def lerp(tensor1, tensor2, weight):
     """
-    Performs 'lerp' operation, returning a new tensor 
+    Performs 'lerp' operation, returning a new tensor
     calculated by interpolation of two tensors using a weight.
 
     Parameters
@@ -809,8 +809,8 @@ def lerp(tensor1, tensor2, weight):
 
 def renorm(tensor1, p, dim, maxnorm):
     """
-    Performs the scaling of elements along the dimension dim in 
-    tensor1 such that the p-norm of the sub-tensors along dim 
+    Performs the scaling of elements along the dimension dim in
+    tensor1 such that the p-norm of the sub-tensors along dim
     are less than or equal to maxnorm. Returns the result as an output tensor.
 
     The tensor, tensor1 is expected to have at least two dimesions, and the
