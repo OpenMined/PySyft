@@ -32,7 +32,7 @@ install:
   - "cd ../../"
 
 before_script:
-  - "flake8 --ignore=E501"
+  - flake8 --ignore=E501 PySyft/
 
 # run tests
 script:
