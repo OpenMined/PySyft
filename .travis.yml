@@ -33,7 +33,7 @@ install:
 
 # run tests
 script:
-  - coverage run -m pytest --ignore=Capsule/ && pytest --flake8 --ignore=Capsule/, E501
+  - coverage run -m pytest --ignore=Capsule/ && pytest --flake8 --ignore=Capsule/ && pytest --flake8 --ignore=E501
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
