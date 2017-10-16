@@ -49,14 +49,15 @@ class LinearClassifier(object):
         """
         pred = self.weights[0] * input[0]
         for j, each_inp in enumerate(input[1:]):
-            if(each_inp == 1):
+            if (each_inp == 1):
                 pred = pred + self.weights[j + 1]
-            elif(each_inp != 0):
+            elif (each_inp != 0):
                 pred = pred + (self.weights[j + 1] * input[j + 1])
 
         return pred
 
-    def learn(self, input, target, alpha=0.5, batchsize=32, encrypt_interval=16):
+    def learn(self, input, target, alpha=0.5, batchsize=32,
+              encrypt_interval=16):
         """Updates weights based on input and target prediction. Note, updating
         weights increases the noise in the encrypted weights and will
         eventually require the weights to be re-encrypted.
@@ -64,12 +65,17 @@ class LinearClassifier(object):
         TODO: instead of storing weights, store aggregated weight updates (and
         optionally use them in "forward").
         """
-        input_batches = [input[i:i + batchsize] for i in range(0, len(input), batchsize)]
-        target_batches = [target[i:i + batchsize] for i in range(0, len(target), batchsize)]
-        for epoch_count, minibatch in enumerate(zip(input_batches, target_batches)):
+        input_batches = [input[i:i + batchsize] for i in
+                         range(0, len(input), batchsize)]
+        target_batches = [target[i:i + batchsize] for i in
+                          range(0, len(target), batchsize)]
+        for epoch_count, minibatch in enumerate(
+                zip(input_batches, target_batches)):
             self.batch_update(minibatch, alpha)
-            if self.encrypted and (epoch_count > encrypt_interval) and (epoch_count % encrypt_interval == 0):
-                self.weights = self.capsule.bootstrap(self.weights, self.pubkey.id)
+            if self.encrypted and (epoch_count > encrypt_interval) and (
+                            epoch_count % encrypt_interval == 0):
+                self.weights = self.capsule.bootstrap(self.weights,
+                                                      self.pubkey.id)
 
     def batch_update(self, minibatch, alpha):
         """Updates a minibatch of input and target prediction. Should be called through
@@ -88,7 +94,7 @@ class LinearClassifier(object):
         """
         scale = 1000
 
-        if(self.encrypted):
+        if (self.encrypted):
             return "not yet supported... but will in the future"
         else:
 
@@ -114,20 +120,20 @@ class LinearClassifier(object):
 
         target_v = target
 
-        if(self.pubkey is not None and self.encrypted):
+        if (self.pubkey is not None and self.encrypted):
             target_v = self.pubkey.encrypt(target_v)
 
         output_grad = (pred - target_v)
 
         weight_grad = TensorBase(np.zeros_like(self.weights.data))
 
-        if(self.encrypted):
+        if (self.encrypted):
             weight_grad = weight_grad.encrypt(self.pubkey)
 
         for i in range(len(input)):
-            if(input[i] != 1 and input[i] != 0):
+            if (input[i] != 1 and input[i] != 0):
                 weight_grad[i] += (output_grad[0] * input[i])
-            elif(input[i] == 1):
+            elif (input[i] == 1):
                 weight_grad[i] += output_grad[0]
             else:
                 "doesn't matter... input == 0"

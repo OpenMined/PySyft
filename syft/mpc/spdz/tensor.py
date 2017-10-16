@@ -4,23 +4,23 @@ import numpy as np
 
 
 class SPDZMPCTensor(TensorBase):
-
     def __init__(self, repo, data=None, input_is_shared=False):
 
         self.repo = repo
         self.encrypted = False
 
-        if(input_is_shared):
+        if (input_is_shared):
             self.data = data
         else:
 
-            if(type(data) == int or type(data) == float or type(data) == np.float64):
+            if (type(data) == int or type(data) == float or type(
+                    data) == np.float64):
                 self.data = self.repo.create_float(data)
 
-            elif(type(data) == TensorBase):
+            elif (type(data) == TensorBase):
                 return SPDZMPCTensor(self.repo, data.data)
 
-            elif(type(data) == np.ndarray):
+            elif (type(data) == np.ndarray):
                 x = data
                 sh = x.shape
                 x_ = x.reshape(-1)
