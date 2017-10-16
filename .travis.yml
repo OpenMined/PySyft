@@ -31,9 +31,11 @@ install:
   - "python capsule_zmq/local_server.py > /dev/null &"
   - "cd ../../"
 
+before_script:
+  - "pep8 --ignore=E501"
+
 # run tests
 script:
-  - pytest --ignore=E501 PySyft/
   - coverage run -m pytest --ignore=Capsule/ && pytest --flake8 --ignore=Capsule/
 
 after_success:
