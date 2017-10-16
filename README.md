@@ -44,7 +44,7 @@ Now, start a container based on [openmined/pysyft](https://hub.docker.com/r/open
 make docker-build
 make docker-run
 ```
-In this container you'll be able to open a Python shell, import the library and develop with it.
+In this container, you'll be able to open a Python shell, import the library and develop with it.
 
 However, if you want to use Jupyter, try the provided notebooks, and make changes to the source,
 you should create your personal development image:
