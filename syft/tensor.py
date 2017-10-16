@@ -2362,7 +2362,7 @@ class TensorBase(object):
             raise ValueError("Except for dimension " + str(dim) +
                              ", all dimensions of index and output should be the same size")
         if (index.data >= self.data.shape[dim]).any() or (
-            index.data < 0).any():
+                    index.data < 0).any():
             raise IndexError(
                 "The values of index must be between 0 and (self.data.shape[dim] -1)")
 
@@ -2640,7 +2640,7 @@ class TensorBase(object):
             raise NotImplemented
         if not isinstance(dim, int) or not isinstance(start,
                                                       int) or not isinstance(
-                length, int):
+            length, int):
             raise TypeError(
                 ("narrow received an invalid combination of arguments:\n"
                  "    got ({} dim, {} start, {} length), "
