@@ -53,6 +53,7 @@ class PolyFunction:
         """
         return self.function(x)
 
+    @staticmethod
     def fit_function(func, degree, precision, nodes):
         """
         Performs polynomial approximation of the given function.
@@ -128,7 +129,7 @@ class PolyFunction:
         elif callable(distribution):
             nodes = distribution(min_range, max_range, num)
         else:
-            raise exception.ValueError('Invalid distribution type.')
+            raise ValueError('Invalid distribution type.')
         
         coefs = cls.fit_function(f_real, degree, precision, nodes)
         
