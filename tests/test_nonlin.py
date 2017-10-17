@@ -12,9 +12,9 @@ class ActivationTests(unittest.TestCase):
         a = TensorBase(np.array([1, 2, 3]))
         sigmoid = SigmoidActivation()
         approx = sigmoid(a)
-        self.assertEqual(np.abs(approx[0] - 0.70788285770000015) < 0.0001)
-        self.assertEqual(np.abs(approx[1] - 0.87170293820000011) < 0.0001)
-        self.assertEqual(np.abs(approx[2] - 0.96626517229999997) < 0.0001)
+        self.assertTrue(np.abs(approx[0] - 0.70788285770000015) < 0.0001)
+        self.assertTrue(np.abs(approx[1] - 0.87170293820000011) < 0.0001)
+        self.assertTrue(np.abs(approx[2] - 0.96626517229999997) < 0.0001)
         
     def test_square(self):
         
