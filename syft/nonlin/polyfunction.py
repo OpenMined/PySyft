@@ -15,7 +15,7 @@ class PolyFunction:
     """
     Represents a polynomial and its derivative.
     """
-    def __init__(self, coefs, derivative_coefs = None):
+    def __init__(self, coefs, derivative_coefs=None):
         """
         Builds a polynomial function with the given coefficients.
         Parameters
@@ -85,7 +85,7 @@ class PolyFunction:
         return coefs
         
     @classmethod
-    def from_approximation(cls, f_real, f_derivative=None, degree=10, precision=10, min_range=-5, max_range=5, num=100, distribution = 'uniform'):
+    def from_approximation(cls, f_real, f_derivative=None, degree=10, precision=10, min_range=-5, max_range=5, num=100, distribution='uniform'):
         """
         Builds a PolyFunction by approximating a given function.
         Parameters
