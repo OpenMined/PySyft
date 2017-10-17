@@ -8,7 +8,7 @@
     NumPy Documentation Style-
         http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html
 """
-
+#[TODO: remove]This is just a test to see if travis build fails as expected, this line is very long so we should get an error, hopefully!!
 import numpy as np
 from syft.nonlin import PolyFunction
 
