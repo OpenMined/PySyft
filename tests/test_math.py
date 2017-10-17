@@ -33,6 +33,43 @@ class DotTests(unittest.TestCase):
         self.assertEqual(syft.dot(t1, t2), 44.92)
 
 
+class DiagTests(unittest.TestCase):
+    def test_one_dim_tensor_main_diag(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertTrue(syft.equal(syft.diag(t), TensorBase([[1, 0, 0, 0],
+                                                            [0, 2, 0, 0],
+                                                            [0, 0, 3, 0],
+                                                            [0, 0, 0, 4]])))
+
+    def test_one_dim_tensor_upper_diag(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertTrue(syft.equal(syft.diag(t, 1), TensorBase([[0, 1, 0, 0, 0],
+                                                                [0, 0, 2, 0, 0],
+                                                                [0, 0, 0, 3, 0],
+                                                                [0, 0, 0, 0, 4],
+                                                                [0, 0, 0, 0, 0]])))
+
+    def test_one_dim_tensor_below_diag(self):
+        t = TensorBase(np.array([1, 2, 3, 4]))
+        self.assertTrue(syft.equal(syft.diag(t, -1), TensorBase([[0, 0, 0, 0, 0],
+                                                                [1, 0, 0, 0, 0],
+                                                                [0, 2, 0, 0, 0],
+                                                                [0, 0, 3, 0, 0],
+                                                                [0, 0, 0, 4, 0]])))
+
+    def test_two_dim_tensor_main_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        self.assertTrue(syft.equal(syft.diag(t, 0), TensorBase([0, 3])))
+
+    def test_two_dim_tensor_upper_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        self.assertTrue(syft.equal(syft.diag(t, 1), TensorBase([1])))
+
+    def test_two_dim_tensor_below_diag(self):
+        t = TensorBase(np.array([[0, 1], [2, 3]]))
+        self.assertTrue(syft.equal(syft.diag(t, -1), TensorBase([2])))
+
+
 class CeilTests(unittest.TestCase):
     def test_ceil(self):
         t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
@@ -45,6 +82,20 @@ class FloorTests(unittest.TestCase):
         t1 = TensorBase(np.array([[2.3, 4.1], [7.4, 8.3]]))
         self.assertTrue(syft.equal(syft.math.floor(t1), TensorBase([[2., 4.],
                                                                     [7., 8.]])))
+
+
+class tanhTests(unittest.TestCase):
+    def test_tanh(self):
+        # int
+        t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
+        t2 = syft.math.tanh(t1)
+        self.assertTrue(np.array_equal(t1.data, np.array([[0, 1, -2], [0, -1, 2]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0, 1, -2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[-0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))
+        t2 = syft.math.tanh(t1)
+        self.assertTrue(np.array_equal(t1.data, np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]])))
+        self.assertTrue(np.array_equal(t2.data, np.tanh(np.array([[0.0, 1.5, -2.5], [0.0, -1.5, 2.5]]))))
 
 
 class CumsumTests(unittest.TestCase):
@@ -108,7 +159,7 @@ class MatmulTests(unittest.TestCase):
                                                          [54.82, 62.15]]))
 
 
-class admmTests(unittest.TestCase):
+class addmmTests(unittest.TestCase):
     def test_addmm_1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 3, 4]))
@@ -243,3 +294,58 @@ class mmtest(unittest.TestCase):
         out = syft.mm(t1, t2)
         self.assertTrue(np.alltrue(
             out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
+
+
+class fmodTest(unittest.TestCase):
+    def test_fmod_number(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        self.assertTrue(np.array_equal(syft.math.fmod(t1, 2).data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        self.assertTrue(np.array_equal(syft.math.fmod(t2, 2.).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
+
+    def test_fmod_tensor(self):
+        t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
+        divisor = np.array([2] * 6)
+        self.assertTrue(np.array_equal(syft.math.fmod(t1, divisor).data, np.array([-1, 0, -1, 1, 0, 1])))
+        t2 = TensorBase(np.array([-3.5, -2.5, -1.5, 1.5, 2.5, 3.5]))
+        divisor = np.array([2.] * 6)
+        self.assertTrue(np.array_equal(syft.math.fmod(t2, divisor).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
+
+
+class lerpTests(unittest.TestCase):
+    def test_lerp(self):
+        t1 = TensorBase(np.array([1, 2, 3, 4]))
+        t2 = TensorBase(np.array([3, 4, 5, 6]))
+        weight = 0.5
+        out = syft.math.lerp(t1, t2, weight)
+        self.assertTrue(np.array_equal(out.data, [2, 3, 4, 5]))
+
+
+class numelTests(unittest.TestCase):
+    def numel_test_int(self):
+        t1_len = 3
+        t1 = TensorBase(np.array([2, 3, 4]))
+        self.assertEqual(syft.math.numel(t1), t1_len)
+
+    def numel_test_float(self):
+        t1_len = 3
+        t1 = TensorBase(np.array([2.0, 3.0, 4.0]))
+        self.assertEqual(syft.math.numel(t1), t1_len)
+
+
+class RenormTests(unittest.TestCase):
+    def testIntRenorm(self):
+        t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
+        t2 = syft.math.renorm(t1, 2, 0, 6)
+        self.assertTrue(np.allclose(t2, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
+
+    def testFloatRenorm(self):
+        t1 = TensorBase(np.array([[1.5, 2.5], [3.5, 4.5]]))
+        t2 = syft.math.renorm(t1, 1, 1, 5.0)
+        self.assertTrue(np.allclose(t2, np.array([[1.5, 1.785714], [3.5, 3.214286]])))
+
+    def test3DTensorRenorm(self):
+        t1 = TensorBase(np.array([[[1, 2, 3], [4, 5, 6]], [[2, 3, 4], [1, 3, 5]]]))
+        t2 = syft.math.renorm(t1, 1, 2, 8)
+        self.assertTrue(np.allclose(t2, np.array([[[1.0, 1.230770, 1.333333], [4.0, 3.076923, 2.666667]],
+                                                  [[2.0, 1.846154, 1.777778], [1.0, 1.846154, 2.222222]]])))
