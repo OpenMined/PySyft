@@ -28,13 +28,12 @@ install:
   - "cd Capsule/"
   - "pip install -r requirements.txt"
   - "python setup.py install"
-  - "cd capsule_django/"
-  - "python manage.py runserver 9000 > /dev/null &"
+  - "python capsule_zmq/local_server.py > /dev/null &"
   - "cd ../../"
 
 # run tests
 script:
-  - coverage run -m pytest --ignore=Capsule/ && pytest --flake8 --ignore=Capsule/
+  - coverage run -m pytest --ignore=PySyft/Capsule/  && pytest --flake8 --ignore= PySyft/Capsule/
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
