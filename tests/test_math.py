@@ -159,7 +159,7 @@ class MatmulTests(unittest.TestCase):
                                                          [54.82, 62.15]]))
 
 
-class admmTests(unittest.TestCase):
+class addmmTests(unittest.TestCase):
     def test_addmm_1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 3, 4]))
