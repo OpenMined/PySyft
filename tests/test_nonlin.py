@@ -12,9 +12,9 @@ class ActivationTests(unittest.TestCase):
         a = TensorBase(np.array([1, 2, 3]))
         sigmoid = SigmoidActivation()
         approx = sigmoid(a)
-        self.assertEqual(approx[0], 0.70788285770000015)
-        self.assertEqual(approx[1], 0.87170293820000011)
-        self.assertEqual(approx[2], 0.96626517229999997)
+        self.assertEqual(np.abs(approx[0] - 0.70788285770000015) < 0.0001)
+        self.assertEqual(np.abs(approx[1] - 0.87170293820000011) < 0.0001)
+        self.assertEqual(np.abs(approx[2] - 0.96626517229999997) < 0.0001)
         
     def test_square(self):
         
@@ -100,11 +100,11 @@ class TestPolyApproximators(unittest.TestCase):
         siga = sigmoid(a)
         sigb = sigmoid(b)
 
-        self.assertTrue(np.abs(siga[0] - 0.52158376423960751) < 0.0001)
-        self.assertTrue(np.abs(siga[1] - 0.54311827756855013) < 0.0001)
+        self.assertTrue(np.abs(siga[0] - 0.52468552974207294) < 0.0001)
+        self.assertTrue(np.abs(siga[1] - 0.54926504169057511) < 0.0001)
 
-        self.assertTrue(np.abs(sigb[0] - 0.7078828574) < 0.0001)
-        self.assertTrue(np.abs(sigb[1] - 0.7078828574) < 0.0001)
+        self.assertTrue(np.abs(sigb[0] - 0.73033150520000001) < 0.0001)
+        self.assertTrue(np.abs(sigb[1] - 0.73033150520000001) < 0.0001)
 
     def test_poly_approx_tanh(self):
 
@@ -116,25 +116,25 @@ class TestPolyApproximators(unittest.TestCase):
         tana = tanh(a)
         tanb = tanh(b)
 
-        self.assertTrue(np.abs(tana[0] - 0.05772423) < 0.0001)
-        self.assertTrue(np.abs(tana[1] - 0.11527286) < 0.0001)
+        self.assertTrue(np.abs(tana[0] - 0.08623655535576058) < 0.0001)
+        self.assertTrue(np.abs(tana[1] - 0.17168771769649144) < 0.0001)
 
-        self.assertTrue(np.abs(tanb[1] - 0.54896505) < 0.0001)
+        self.assertTrue(np.abs(tanb[1] - 0.74340583420000006) < 0.0001)
 
     def test_function_fitting(self):
         square = lambda x: x**2
-        square_approx = PolyFunction.fit_function(square,2,1,np.asarray([-1,0,1]))
+        square_approx = PolyFunction.fit_function(square,2,10,np.asarray([-1,0,1]))
         self.assertTrue(np.abs(square_approx[0]-1) < 0.0001)
         self.assertTrue(np.abs(square_approx[1]) < 0.0001)
         self.assertTrue(np.abs(square_approx[2]) < 0.0001)
         
     def test_function_approx(self):
         square = lambda x: x**2
-        square_approx = PolyFunction.from_approximation(square,degree=2,precision=1,num=3)
+        square_approx = PolyFunction.from_approximation(square,degree=2,precision=10,num=3)
         coefs = square_approx.coefs
-        self.assertTrue(np.abs(coeffs[0]-1) < 0.0001)
-        self.assertTrue(np.abs(coeffs[1]) < 0.0001)
-        self.assertTrue(np.abs(coeffs[2]) < 0.0001)
+        self.assertTrue(np.abs(coefs[0]-1) < 0.0001)
+        self.assertTrue(np.abs(coefs[1]) < 0.0001)
+        self.assertTrue(np.abs(coefs[2]) < 0.0001)
         
         derivative_coefs = square_approx.derivative_coefs
         self.assertTrue(np.abs(derivative_coefs[0]-2) < 0.0001)
