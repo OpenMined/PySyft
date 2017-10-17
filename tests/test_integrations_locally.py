@@ -5,22 +5,9 @@ import pickle
 
 from syft.nn.linear import LinearClassifier
 from syft.he.paillier import KeyPair, PaillierTensor
-from capsule.django_client import LocalDjangoCapsuleClient
+from capsule.zmq_client import LocalCapsuleClient
 from syft.mpc.spdz import MPCRepo
 from syft.mpc.spdz.tensor import SPDZMPCTensor
-
-
-class PySonarNotebooks(unittest.TestCase):
-
-    def model_training_demo_notebook(self):
-        """If this test fails, you probably broke the demo notebook located at
-        PySonar/notebooks/Sonar - Decentralized Model Training Simulation
-        (local blockchain).ipynb """
-        c = LocalDjangoCapsuleClient()
-        d = LinearClassifier(desc="DiabetesClassifier", n_inputs=10, n_labels=1, capsule_client=c)
-        d.encrypt()
-
-        self.assertTrue(True)
 
 
 class PySyftNotebooks(unittest.TestCase):
@@ -49,7 +36,7 @@ class PySyftNotebooks(unittest.TestCase):
         self.assertEqual(out4, 55.)
 
         out5 = r.sum()
-        self.asserEqual(out5, 15.)
+        self.assertEqual(out5, 15.)
 
     def paillier_HE_example_notebook(self):
         """If this test fails, you probably broke the demo notebook located at
@@ -93,7 +80,7 @@ class PySyftNotebooks(unittest.TestCase):
         PySyft/notebooks/Syft - Paillier Homomorphic Encryption Example.ipynb
         """
 
-        capsule = LocalDjangoCapsuleClient()
+        capsule = LocalCapsuleClient()
         model = LinearClassifier(capsule_client=capsule)
         assert(model.capsule == capsule)
 
