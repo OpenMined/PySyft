@@ -29,7 +29,7 @@ class ActivationTests(unittest.TestCase):
         
         a = TensorBase(np.array([1, 2, 3]))
         square = SquareActivation()
-        approx = square.derivative(a)
+        approx = square.backward(a)
         self.assertEqual(approx[0], 2)
         self.assertEqual(approx[1], 4)
         self.assertEqual(approx[2], 6)
@@ -47,7 +47,7 @@ class ActivationTests(unittest.TestCase):
         
         a = TensorBase(np.array([1, 2, 3]))
         linear_square = LinearSquareActivation()
-        approx = linear_square.derivative(a)
+        approx = linear_square.backward(a)
         self.assertEqual(approx[0], 3)
         self.assertEqual(approx[1], 5)
         self.assertEqual(approx[2], 7)    
@@ -65,7 +65,7 @@ class ActivationTests(unittest.TestCase):
         
         a = TensorBase(np.array([1, 2, 3]))
         cubic = CubicActivation()
-        approx = cubic.derivative(a)
+        approx = cubic.backward(a)
         self.assertEqual(approx[0], 3)
         self.assertEqual(approx[1], 12)
         self.assertEqual(approx[2], 27)
@@ -83,7 +83,7 @@ class ActivationTests(unittest.TestCase):
         
         a = TensorBase(np.array([1, 2, 3]))
         linear_cubic = LinearCubicActivation()
-        approx = linear_cubic.derivative(a)
+        approx = linear_cubic.backward(a)
         self.assertEqual(approx[0], 4)
         self.assertEqual(approx[1], 13)
         self.assertEqual(approx[2], 28)  
