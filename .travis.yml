@@ -36,7 +36,7 @@ before_script:
 
 # run tests
 script:
-  - coverage run -m pytest --ignore=PySyft/Capsule/ && pytest --flake8 --ignore=PySyft/Capsule/
+  - coverage run -m pytest --ignore=PySyft/Capsule/ && pytest --flake8 --ignore=E501 PySyft/ --exclude PySyft/Capsule/
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
