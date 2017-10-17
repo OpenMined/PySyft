@@ -31,12 +31,9 @@ install:
   - "python capsule_zmq/local_server.py > /dev/null &"
   - "cd ../../"
 
-before_script:
-  - flake8 --ignore=E501 PySyft/ --exclude PySyft/Capsule/
-
 # run tests
 script:
-  - coverage run -m pytest --ignore=PySyft/Capsule/*.py  && pytest --flake8 --ignore=E501 PySyft/
+  - coverage run -m pytest --ignore=PySyft/Capsule/  && pytest --flake8 --ignore=E501 PySyft/
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
