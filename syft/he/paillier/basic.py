@@ -14,13 +14,6 @@ class PaillierTensor(TensorBase):
         else:
             self.data = data
 
-    def __setitem__(self, key, value):
-        self.data[key] = value.data
-        return self
-
-    def __getitem__(self, i):
-        return PaillierTensor(self.public_key, self.data[i], False)
-
     def __add__(self, tensor):
         """Performs element-wise addition between two tensors"""
 
@@ -36,17 +29,8 @@ class PaillierTensor(TensorBase):
         ptensor._calc_add_depth(self, tensor)
         return ptensor
 
-    def __sub__(self, tensor):
-        """Performs element-wise subtraction between two tensors"""
-        if(not isinstance(tensor, TensorBase)):
-            # try encrypting it
-            tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'))
-            return PaillierTensor(self.public_key, self.data - tensor.data, False)
-
-        if(type(tensor) == TensorBase):
-            tensor = PaillierTensor(self.public_key, tensor.data)
-
-        return PaillierTensor(self.public_key, self.data - tensor.data, False)
+    def __getitem__(self, i):
+        return PaillierTensor(self.public_key, self.data[i], False)
 
     def __isub__(self, tensor):
         """Performs inline, element-wise subtraction between two tensors"""
@@ -70,6 +54,28 @@ class PaillierTensor(TensorBase):
             ptensor._calc_mul_depth(self, tensor)
             return ptensor
 
+    def __repr__(self):
+        return "PaillierTensor: " + repr(self.data)
+
+    def __setitem__(self, key, value):
+        self.data[key] = value.data
+        return self
+
+    def __str__(self):
+        return "PaillierTensor: " + str(self.data)
+
+    def __sub__(self, tensor):
+        """Performs element-wise subtraction between two tensors"""
+        if(not isinstance(tensor, TensorBase)):
+            # try encrypting it
+            tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'))
+            return PaillierTensor(self.public_key, self.data - tensor.data, False)
+
+        if(type(tensor) == TensorBase):
+            tensor = PaillierTensor(self.public_key, tensor.data)
+
+        return PaillierTensor(self.public_key, self.data - tensor.data, False)
+
     def __truediv__(self, tensor):
         """Performs element-wise division between two tensors"""
 
@@ -84,6 +90,12 @@ class PaillierTensor(TensorBase):
             op = self.data * (1 / float(tensor))
             return PaillierTensor(self.public_key, op, False)
 
+    def dot(self, plaintext_x):
+        if(not plaintext_x.encrypted):
+            return (self * plaintext_x).sum(plaintext_x.dim() - 1)
+        else:
+            return NotImplemented
+
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
         if not self.encrypted:
@@ -94,19 +106,6 @@ class PaillierTensor(TensorBase):
         else:
             op = self.data.sum(axis=dim)
             return PaillierTensor(self.public_key, op, False)
-
-    def dot(self, plaintext_x):
-        if(not plaintext_x.encrypted):
-            return (self * plaintext_x).sum(plaintext_x.dim() - 1)
-        else:
-            return NotImplemented
-
-    def __str__(self):
-        return "PaillierTensor: " + str(self.data)
-
-    def __repr__(self):
-        return "PaillierTensor: " + repr(self.data)
-
 
 class Float():
 
@@ -120,21 +119,11 @@ class Float():
         else:
             self.data = None
 
-    def decrypt(self, secret_key):
-        return secret_key.decrypt(self)
-
     def __add__(self, y):
         """Adds two encrypted Floats together."""
 
         out = Float(self.public_key, None)
         out.data = self.data + y.data
-        return out
-
-    def __sub__(self, y):
-        """Subtracts two encrypted Floats."""
-
-        out = Float(self.public_key, None)
-        out.data = self.data - y.data
         return out
 
     def __mul__(self, y):
@@ -151,6 +140,23 @@ class Float():
         else:
             return None
 
+    def __repr__(self):
+        """This is kindof a boring/uninformative __repr__"""
+
+        return 'e'
+
+    def __str__(self):
+        """This is kindof a boring/uninformative __str__"""
+
+        return 'e'
+
+    def __sub__(self, y):
+        """Subtracts two encrypted Floats."""
+
+        out = Float(self.public_key, None)
+        out.data = self.data - y.data
+        return out
+
     def __truediv__(self, y):
         """Divides two Floats. y may be encrypted or a simple Float."""
 
@@ -165,18 +171,11 @@ class Float():
         else:
             return None
 
-    def __repr__(self):
-        """This is kindof a boring/uninformative __repr__"""
-
-        return 'e'
-
-    def __str__(self):
-        """This is kindof a boring/uninformative __str__"""
-
-        return 'e'
-
-    def serialize(self):
-        return pickle.dumps(self)
+    def decrypt(self, secret_key):
+        return secret_key.decrypt(self)
 
     def deserialize(b):
         return pickle.loads(b)
+
+    def serialize(self):
+        return pickle.dumps(self)
