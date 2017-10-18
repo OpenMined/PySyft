@@ -33,10 +33,11 @@ install:
 
 # run tests
 script:
-  - coverage run -m pytest --ignore=PySyft/Capsule/  && pytest --flake8 --ignore= PySyft/Capsule/
+#  - coverage run -m - pytest && flake8 --exclude=PySyft/Capsule/*.py --ignore=E501
+  - pytest && flake8 --exclude=PySyft/Capsule/*.py --ignore=E501
 
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+#after_success:
+#  - bash <(curl -s https://codecov.io/bash)
 
-notifications:
-    slack: openmined:vOUE1d9jSb6V7R1r6zrjRD4E
+#notifications:
+#    slack: openmined:vOUE1d9jSb6V7R1r6zrjRD4E
