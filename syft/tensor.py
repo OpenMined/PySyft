@@ -147,19 +147,6 @@ def mv(tensormat, tensorvector):
     else:
         return TensorBase(np.matmul(tensormat.data, tensorvector.data))
 
-def numel(self):
-    """
-    Returns the total number of elements in the input Tensor.
-
-    Parameters
-    ----------
-
-    Returns
-    -------
-    int:
-        total number of elements in the input Tensor
-    """
-    return syft.math.numel(self)
 
 class TensorBase(object):
     """
@@ -2442,6 +2429,20 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.random.normal(mu, sigma, self.data.shape)
         return self
+
+    def numel(self):
+        """
+        Returns the total number of elements in the input Tensor.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        int:
+            total number of elements in the input Tensor
+        """
+        return syft.math.numel(self)
 
     def permute(self, dims):
         """
