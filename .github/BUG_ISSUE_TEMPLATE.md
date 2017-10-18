@@ -1,12 +1,7 @@
 <!-- Please make sure that you review this: https://github.com/OpenMined/Docs/blob/master/contributing/guidelines.md  -->
 
 #### Description:
-<!-- Example 1: encrypted tensor multiplication throws an overflow error
-     Example 2: If you need a new feature, explain briefly about the feature
-     explain what this feature will do, and also provide the acceptance criteria for this
-     you can take a look at https://github.com/OpenMined/PySyft/issues/68, https://github.com/OpenMined/PySyft/issues/283 or 
-     https://github.com/OpenMined/PySyft/issues/227 for inspiration.
- -->
+<!-- Example 1: encrypted tensor multiplication throws an overflow error (explain a bit about the issue) -->
 
 #### Steps/Code to Reproduce: 
 <!--
