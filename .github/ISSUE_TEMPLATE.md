@@ -1,5 +1,5 @@
 <!-- Please make sure that you review this: https://github.com/OpenMined/Docs/blob/master/contributing/guidelines.md  -->
-<!-- If you looking to file a bug make sure to look at the .github/BUG_ISSUE_TEMPLATE.md -->
+<!-- If you are looking to file a bug make sure to look at the .github/BUG_ISSUE_TEMPLATE.md -->
 
 
 #### User story: 
