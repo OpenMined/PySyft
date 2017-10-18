@@ -768,9 +768,9 @@ def numel(tensor):
         total number of elements in the input Tensor
     """
     if tensor.encrypted:
-        return tensor.data.size
-    else:
-        return tensor.data.size
+        return NotImplemented
+
+    return tensor.data.size
 
 
 def lerp(tensor1, tensor2, weight):
