@@ -3346,15 +3346,15 @@ class TensorBase(object):
             Computed tuple result for stride operation
         """
         if self.encrypted:
-            return NotImplemented
-        
-        out = self.data.strides
-        output = tuple(map(lambda x: x/8, out))
-        
-        if dim == None:
-            return output
-        else:
-            return output[dim]
+        	return NotImplemented
+
+		out = self.data.strides
+		output = tuple(map(lambda x: x/8, out))
+
+		if dim == None:
+			return output
+		else:
+			return output[dim]
 
     def unfold(self, dim, size, step):
         """
