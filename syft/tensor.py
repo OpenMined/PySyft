@@ -3342,8 +3342,11 @@ class TensorBase(object):
 
         Returns
         -------
-        Tuple
-            Computed tuple result for stride operation
+        Tuple 
+            Tuple is returned when no Argument is passed. So we get stride in all dimensions.
+        OR
+        Integer
+            Integer value is returned when we desire stride in particular dimension.
         """
         if self.encrypted:
             return NotImplemented
