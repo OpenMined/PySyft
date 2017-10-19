@@ -3331,6 +3331,34 @@ class TensorBase(object):
             self.data = syft.math.renorm(self, p, dim, maxnorm).data
             return self
 
+    def stride(self, dim=None):
+        """
+        Returns the jump necessary to go from one element to the next one in the specified dimension dim.
+
+        Parameters
+        ----------
+        dim : dimension
+            The first operand in the stride operation
+
+        Returns
+        -------
+        Tuple
+            Tuple is returned when no Argument is passed. So we get stride in all dimensions.
+        OR
+        Integer
+            Integer value is returned when we desire stride in particular dimension.
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        out = self.data.strides
+        output = tuple(map(lambda x: x / 8, out))
+
+        if dim is None:
+            return output
+        else:
+            return output[dim]
+
     def unfold(self, dim, size, step):
         """
         Returns a tensor which contains all slices of size `size` along the dimension `dim`.
