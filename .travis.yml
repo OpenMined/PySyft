@@ -33,7 +33,7 @@ install:
 
 # run tests
 script:
-  - coverage run -m pytest --ignore=PySyft/Capsule/  && pytest --flake8 --ignore= PySyft/Capsule/
+  - coverage run -m pytest && flake8 --exclude=PySyft/Capsule/*.py --ignore=E501
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
