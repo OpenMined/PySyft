@@ -12,14 +12,15 @@
 
 """
 import numpy as np
-
+import scipy as sp
 from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
+    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel',
+    'sparse'
 ]
 
 
@@ -767,7 +768,10 @@ def numel(tensor):
     int:
         total number of elements in the input Tensor
     """
-    return tensor.data.size
+    if tensor.encrypted:
+        return tensor.data.size
+    else:
+        return tensor.data.size
 
 
 def lerp(tensor1, tensor2, weight):
@@ -845,3 +849,24 @@ def renorm(tensor1, p, dim, maxnorm):
         scalar_reshaped = scalar.reshape(dim_array)
         out = tensor1 * scalar_reshaped
     return TensorBase(out)
+
+def sparse(tensor):
+    """
+    Converts dense matrix to sparse, returning a new matrix as a tensor
+
+    Parameters
+    ----------
+    tensor1: TensorBase
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted:
+        return NotImplemented
+    else:
+        sparseTensor = sp.sparse.csr_matrix(tensor)
+        sparseTensor = _ensure_tensorbase(sparseTensor)
+        return sparseTensor
