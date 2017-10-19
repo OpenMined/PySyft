@@ -19,7 +19,10 @@ class MPCNatural(object):
         return others + [self.repo.ints[self.id]]
 
     def gen_rand_id(self, length=2**32):
-        return np.random.randint(0, length)
+        try:
+            return np.random.randint(0, length)
+        except Exception as e:
+            return np.random.randint(0, length, dtype=np.int64)
 
     def __add__(self, id):
         new_id = self.gen_rand_id()
