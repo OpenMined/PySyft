@@ -237,8 +237,12 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        self.data += tensor.data
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            self.data = tensor.data + self.data
+            self.encrypted = tensor.encrypted
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            self.data += tensor.data
         return self
 
     def __sub__(self, tensor):
@@ -278,8 +282,12 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        self.data -= tensor.data
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            self.data = tensor.data - self.data
+            self.encrypted = tensor.encrypted
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            self.data -= tensor.data
         return self
 
     def __eq__(self, tensor):
@@ -951,7 +959,7 @@ class TensorBase(object):
             return self
 
     def bmm(self, tensor):
-        """Performs a batch matrix-matrix product of this tesnor
+        """Performs a batch matrix-matrix product of this tensor
         and tensor2. Both tensors must be 3D containing equal number
         of matrices.
         If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
