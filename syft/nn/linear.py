@@ -18,7 +18,7 @@ class LinearClassifier(AbstractModel):
         self.n_inputs = n_inputs
         self.n_labels = n_labels
 
-        self.weights = TensorBase(np.zeros((n_inputs, n_labels)))
+        self.weights = TensorBase(np.random.rand(n_inputs, n_labels))
 
         self.pubkey = None
         self.encrypted = False
