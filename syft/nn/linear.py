@@ -3,6 +3,7 @@ from syft.nn.abstract_model import AbstractModel
 
 import numpy as np
 
+
 class LinearClassifier(AbstractModel):
     """
         This class is a basic linear classifier with functionality to
