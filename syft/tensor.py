@@ -3418,6 +3418,43 @@ class TensorBase(object):
             self.data = np.transpose(self.data, axes=tuple(axes))
         return self
 
+    def sparse(self):
+        """
+		Converts dense matrix to sparse, returning a new matrix as a tensor
+
+		Parameters
+		----------
+		tensor: TensorBase
+
+		Returns
+		-------
+		TensorBase:
+			Output Tensor
+		"""
+        if self.encrypted:
+            return NotImplemented
+
+        return syft.math.sparse(self)
+
+    def sparse_(self):
+        """
+		Converts dense matrix to sparse, returning a new matrix as a tensor
+
+		Parameters
+		----------
+		tensor1: TensorBase
+
+		Returns
+		-------
+		TensorBase:
+			Output Tensor
+		"""
+        if self.encrypted:
+            return NotImplemented
+
+        self.data = syft.math.sparse(self)
+        return self
+
     def unfold(self, dim, size, step):
         """
         Returns a tensor which contains all slices of size `size` along the dimension `dim`.

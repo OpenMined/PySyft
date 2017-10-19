@@ -12,15 +12,15 @@
 
 """
 import numpy as np
-
+import scipy as sp
 from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'sin', 'sinh', 'cos', 'cosh', 'tan', 'tanh', 'zeros', 'ones', 'rand',
-    'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
+    'sin', 'sinh', 'sparse',  'cos', 'cosh', 'tan', 'tanh', 'zeros', 'ones',
+    'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
 ]
 
 
@@ -803,6 +803,27 @@ def sinh(tensor):
     if tensor.encrypted:
         return NotImplemented
     return TensorBase(np.sinh(np.array(tensor.data)))
+
+def sparse(tensor):
+    """
+    Converts dense matrix to sparse, returning a new matrix as a tensor
+
+    Parameters
+    ----------
+    tensor: TensorBase
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted:
+        return NotImplemented
+    else:
+        sparseTensor = sp.sparse.csr_matrix(tensor)
+        sparseTensor = _ensure_tensorbase(sparseTensor)
+        return sparseTensor
 
 
 def cos(tensor):
