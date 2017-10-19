@@ -3379,6 +3379,39 @@ class TensorBase(object):
 
         return TensorBase(np.concatenate(sub_arrays, axis=dim))
 
+    def stride(self, dim=None):
+        """
+        Returns the number of jumps necessary to go from element
+        to the next one in the specific dimension. 
+        A stride in a form of a tuple for all dimensions is returned
+        when no dim is passed, an integer is returned otherwise.
+
+        Note that while OpenMined and Torch return the numeric value of the jumps needed, 
+        while NumPy returns the strides as the number of jumps in bytes in the memory.
+
+        Parameters
+        ----------
+        dim: The dimension of the stride
+
+        Returns
+        -------
+        Integer:
+            Stride of the passed dimension, when a dim is passed
+        OR
+        Tuple of Integers:
+            Stride of all dimensions, when no dim is passed
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        if dim is not None:
+            if dim > self.dim():
+                raise Exception("Invalid argument: \'dim\'' is greater than \'self.dim()\'")
+
+            return self.data.strides[dim] / 8
+
+        return [x / 8 for x in self.data.strides]
+
 
 def numel(self):
     """

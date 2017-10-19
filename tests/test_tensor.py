@@ -1540,6 +1540,33 @@ class unfold_Test(unittest.TestCase):
                                        t1_unfolded_actual_2))
 
 
+class strideTests(unittest.TestCase):
+    def test_all_1d(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        self.assertTrue(syft.equal(t.stride(), (1, )))
+
+    def test_all_2d(self):
+        t = TensorBase(np.array([[1, 2], [3, 4]]))
+        self.assertTrue(syft.equal(t.stride(), (2, 1)))
+
+    def test_all_3d(self):
+        t = TensorBase(np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
+        self.assertTrue(syft.equal(t.stride(), (4, 2, 1)))
+
+    def test_1_3d(self):
+        t = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [9, 0]]]))
+        self.assertTrue(syft.equal(t.stride(0), 4))
+
+    def test_minus_1(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        self.assertTrue(syft.equal(t.stride(-1), 1))
+
+    def test_out_of_bounds(self):
+        t = TensorBase(np.array([1, 2, 3]))
+        with pytest.raises(Exception) as oops:
+            t.stride(4)
+
+
 if __name__ == "__main__":
 
     unittest.main()
