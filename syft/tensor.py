@@ -3411,25 +3411,12 @@ def numel(self):
         """
         if self.encrypted:
             return NotImplemented
-        tensor = np.array(self.data)
-        shp = tensor.shape
-        ndim = len(shp)
-
-        def calculation(ndim, shp):
-            out = []
-            for i in range(1, ndim):
-                out.append(reduce(mul, shp[i:]))
-            out.append(1)
-            out = tuple(out)
-            return out
-        if dim is None:
-            out = calculation(ndim, shp)
-            return out
-        elif ((dim >= 0) and (dim < ndim)) or ((dim < 0) and (dim >= -ndim)):
-            out = calculation(ndim, shp)
-            return out[dim]
+        out = self.data.strides
+        output = tuple(map(lambda x: x/8, out))
+        if dim == None:
+        	return output
         else:
-            raise RuntimeError("dimension out of range of {}D tensor".format(ndim))
+        	return output[dim]
 
 
 def mv(tensormat, tensorvector):
