@@ -3342,7 +3342,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Tuple 
+        Tuple
             Tuple is returned when no Argument is passed. So we get stride in all dimensions.
         OR
         Integer
