@@ -3347,8 +3347,10 @@ class TensorBase(object):
         """
         if self.encrypted:
             return NotImplemented
+        
         out = self.data.strides
         output = tuple(map(lambda x: x/8, out))
+        
         if dim == None:
             return output
         else:
