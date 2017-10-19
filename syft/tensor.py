@@ -13,8 +13,6 @@ import syft
 import scipy
 from scipy import stats
 import pickle
-from functools import reduce
-from operator import mul
 
 __all__ = [
     'equal', 'TensorBase',
@@ -3337,24 +3335,24 @@ class TensorBase(object):
     	"""
     	Returns the jump necessary to go from one element to the next one in the specified dimension dim.
 
-    	Parameters
-    	----------
-    	dim : dimension
-        	The first operand in the stride operation
+        Parameters
+        ----------
+        dim : dimension
+            The first operand in the stride operation
     
-    	Returns
+        Returns
     	-------
-    	Tuple
-        	Computed tuple result for stride operation
-    	"""
-    	if self.encrypted:
-        	return NotImplemented
-    	out = self.data.strides
-    	output = tuple(map(lambda x: x/8, out))
-    	if dim == None:
-     		return output
-    	else:
-      		return output[dim]
+        Tuple
+            Computed tuple result for stride operation
+        """
+        if self.encrypted:
+            return NotImplemented
+        out = self.data.strides
+        output = tuple(map(lambda x: x/8, out))
+        if dim == None:
+            return output
+        else:
+            return output[dim]
 
     def unfold(self, dim, size, step):
         """

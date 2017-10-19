@@ -1502,7 +1502,7 @@ class RenormTests(unittest.TestCase):
 
 class stride_Tests(unittest.TestCase):
     def test_stride(self):
-        t = TensorBase([[1,2,3,4,5],[6,7,8,9,10]])
+        t = TensorBase([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]])
         self.assertEqual(t.stride(), (5, 1))
 
 
