@@ -767,9 +767,6 @@ def numel(tensor):
     int:
         total number of elements in the input Tensor
     """
-    if tensor.encrypted:
-        return NotImplemented
-
     return tensor.data.size
 
 
