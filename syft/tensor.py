@@ -3332,8 +3332,8 @@ class TensorBase(object):
             return self
 
     def stride(self, dim=None):
-    	"""
-    	Returns the jump necessary to go from one element to the next one in the specified dimension dim.
+        """
+        Returns the jump necessary to go from one element to the next one in the specified dimension dim.
 
         Parameters
         ----------
@@ -3341,20 +3341,20 @@ class TensorBase(object):
             The first operand in the stride operation
     
         Returns
-    	-------
+        -------
         Tuple
             Computed tuple result for stride operation
         """
         if self.encrypted:
-        	return NotImplemented
+            return NotImplemented
 
-		out = self.data.strides
-		output = tuple(map(lambda x: x/8, out))
+        out = self.data.strides
+        output = tuple(map(lambda x: x/8, out))
 
-		if dim == None:
-			return output
-		else:
-			return output[dim]
+        if dim == None:
+            return output
+        else:
+            return output[dim]
 
     def unfold(self, dim, size, step):
         """
