@@ -3339,7 +3339,7 @@ class TensorBase(object):
         ----------
         dim : dimension
             The first operand in the stride operation
-    
+
         Returns
         -------
         Tuple
@@ -3349,9 +3349,9 @@ class TensorBase(object):
             return NotImplemented
 
         out = self.data.strides
-        output = tuple(map(lambda x: x/8, out))
+        output = tuple(map(lambda x: x / 8, out))
 
-        if dim == None:
+        if dim is None:
             return output
         else:
             return output[dim]
