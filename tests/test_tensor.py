@@ -1500,6 +1500,12 @@ class RenormTests(unittest.TestCase):
         self.assertTrue(np.allclose(t, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
 
 
+class stride_Tests(unittest.TestCase):
+    def test_stride(self):
+        t = TensorBase([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]])
+        self.assertEqual(t.stride(), (5, 1))
+
+
 class unfold_Test(unittest.TestCase):
     def unfold_test_small(self):
         t1 = TensorBase(np.arange(1, 5))

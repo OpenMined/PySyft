@@ -237,8 +237,12 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        self.data += tensor.data
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            self.data = tensor.data + self.data
+            self.encrypted = tensor.encrypted
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            self.data += tensor.data
         return self
 
     def __sub__(self, tensor):
@@ -278,8 +282,12 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        self.data -= tensor.data
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            self.data = tensor.data - self.data
+            self.encrypted = tensor.encrypted
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            self.data -= tensor.data
         return self
 
     def __eq__(self, tensor):
@@ -951,7 +959,7 @@ class TensorBase(object):
             return self
 
     def bmm(self, tensor):
-        """Performs a batch matrix-matrix product of this tesnor
+        """Performs a batch matrix-matrix product of this tensor
         and tensor2. Both tensors must be 3D containing equal number
         of matrices.
         If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
@@ -3330,6 +3338,34 @@ class TensorBase(object):
         else:
             self.data = syft.math.renorm(self, p, dim, maxnorm).data
             return self
+
+    def stride(self, dim=None):
+        """
+        Returns the jump necessary to go from one element to the next one in the specified dimension dim.
+
+        Parameters
+        ----------
+        dim : dimension
+            The first operand in the stride operation
+
+        Returns
+        -------
+        Tuple
+            Tuple is returned when no Argument is passed. So we get stride in all dimensions.
+        OR
+        Integer
+            Integer value is returned when we desire stride in particular dimension.
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        out = self.data.strides
+        output = tuple(map(lambda x: x / 8, out))
+
+        if dim is None:
+            return output
+        else:
+            return output[dim]
 
     def unfold(self, dim, size, step):
         """
