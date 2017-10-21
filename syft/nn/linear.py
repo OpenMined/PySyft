@@ -1,15 +1,15 @@
 from syft.tensor import TensorBase
+from syft.nn.abstract_model import AbstractModel
 
 import numpy as np
 
 
-class LinearClassifier(object):
-    """This class is a basic linear classifier with functionality to
-    encrypt/decrypt weights according to any of the homomorphic encryption
-    schemes in syft.he. It also contains the logic to make predictions when
-    in an encrypted state.
-
-    TODO: create a generic interface for ML models that this class implements.
+class LinearClassifier(AbstractModel):
+    """
+        This class is a basic linear classifier with functionality to
+        encrypt/decrypt weights according to any of the homomorphic encryption
+        schemes in syft.he. It also contains the logic to make predictions when
+        in an encrypted state.
     """
 
     def __init__(self, n_inputs=4, n_labels=2, desc="", capsule_client=None):
@@ -18,29 +18,36 @@ class LinearClassifier(object):
         self.n_inputs = n_inputs
         self.n_labels = n_labels
 
-        self.weights = TensorBase(np.zeros((n_inputs, n_labels)))
+        self.weights = TensorBase(np.random.rand(n_inputs, n_labels))
 
         self.pubkey = None
         self.encrypted = False
         self.capsule = capsule_client
 
-    def encrypt(self):
+    def encrypt(self, pubkey):
         """iterates through each weight and encrypts it
-
-        TODO: check that weights are actually decrypted
         """
-        self.pubkey = self.capsule.keygen()
-        self.encrypted = True
+
+        if self.encrypted:
+            return self
+
+        self.pubkey = pubkey
         self.weights = self.weights.encrypt(self.pubkey)
+        self.encrypted = self.weights.encrypted
+
         return self
 
-    def decrypt(self):
+    def decrypt(self, prikey):
         """iterates through each weight and decrypts it
-
-        TODO: check that weights are actually encrypted
         """
-        self.encrypted = False
-        self.weights = self.capsule.decrypt(self.weights, self.pubkey.id)
+        if not self.pubkey:
+            raise KeyException("Public key was not generated.")
+
+        if not self.encrypted:
+            return self
+
+        self.weights = self.weights.decrypt(prikey)
+        self.encrypted = self.weights.encrypted
         return self
 
     def forward(self, input):
@@ -104,9 +111,6 @@ class LinearClassifier(object):
         left = "Linear Model (" + str(self.n_inputs) + ","
         return left + str(self.n_labels) + "): " + str(self.desc)
 
-    def __repr__(self):
-        return self.__str__()
-
     def generate_gradient(self, input, target):
         target = TensorBase(np.array(target).astype('float64'))
         input = TensorBase(np.array(input).astype('float64'))
@@ -133,3 +137,7 @@ class LinearClassifier(object):
                 "doesn't matter... input == 0"
 
         return weight_grad
+
+
+class KeyException(Exception):
+    pass
