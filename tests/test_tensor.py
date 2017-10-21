@@ -1536,8 +1536,10 @@ class unfold_Test(unittest.TestCase):
                                        t1_unfolded_actual))
         t1_unfolded_actual_1 = t1.unfold(2, 1, 2).to_numpy()
         t1_unfolded_expected_1 = np.array(
-            [[[[1]], [[2]], [[0]], [[1]]], [[[1]], [[0]], [[1]], [[2]]], [[[3]], [[2]], [[1]], [[2]]],
-             [[[4]], [[4]], [[0]], [[0]]], [[[4]], [[2]], [[0]], [[1]]]])
+            [[[[1]], [[2]], [[0]], [[1]]], [[[1]], [[0]], 
+            [[1]], [[2]]], [[[3]], [[2]], [[1]], [[2]]],
+             [[[4]], [[4]], [[0]], [[0]]], [[[4]], 
+             [[2]], [[0]], [[1]]]])
         self.assertTrue(np.array_equal(t1_unfolded_expected_1,
                                        t1_unfolded_actual_1))
         t1_unfolded_actual_2 = t1.unfold(-1, 1, 2).to_numpy()

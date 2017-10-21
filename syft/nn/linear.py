@@ -6,7 +6,7 @@ import numpy as np
 
 class LinearClassifier(AbstractModel):
     """
-        This class is a basic linear classifier with functionality to
+        This class is a basic linear classifier with functionality to INTENTIONALLY TOO LONG INTENTIONALLY TOO LONG INTENTIONALLY TOO LONG
         encrypt/decrypt weights according to any of the homomorphic encryption
         schemes in syft.he. It also contains the logic to make predictions when
         in an encrypted state.
@@ -37,7 +37,7 @@ class LinearClassifier(AbstractModel):
 
         return self
 
-    def decrypt(self):
+    def decrypt(self, prikey):
         """iterates through each weight and decrypts it
         """
         if not self.pubkey:
@@ -46,7 +46,7 @@ class LinearClassifier(AbstractModel):
         if not self.encrypted:
             return self
 
-        self.weights = self.capsule.decrypt(self.weights, self.pubkey.id)
+        self.weights = self.weights.decrypt(prikey)
         self.encrypted = self.weights.encrypted
         return self
 
