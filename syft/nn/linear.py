@@ -6,7 +6,7 @@ import numpy as np
 
 class LinearClassifier(AbstractModel):
     """
-        This class is a basic linear classifier with functionality to 
+        This class is a basic linear classifier with functionality to
         encrypt/decrypt weights according to any of the homomorphic encryption
         schemes in syft.he. It also contains the logic to make predictions when
         in an encrypted state.
@@ -24,15 +24,13 @@ class LinearClassifier(AbstractModel):
         self.encrypted = False
         self.capsule = capsule_client
 
-        y = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1
-
-    def encrypt(self,pubkey):
+    def encrypt(self, pubkey):
         """iterates through each weight and encrypts it
         """
 
         if self.encrypted:
             return self
-        
+
         self.pubkey = pubkey
         self.weights = self.weights.encrypt(self.pubkey)
         self.encrypted = self.weights.encrypted
