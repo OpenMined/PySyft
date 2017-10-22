@@ -24,20 +24,20 @@ class LinearClassifier(AbstractModel):
         self.encrypted = False
         self.capsule = capsule_client
 
-    def encrypt(self):
+    def encrypt(self, pubkey):
         """iterates through each weight and encrypts it
         """
 
         if self.encrypted:
             return self
 
-        self.pubkey = self.capsule.keygen()
+        self.pubkey = pubkey
         self.weights = self.weights.encrypt(self.pubkey)
         self.encrypted = self.weights.encrypted
 
         return self
 
-    def decrypt(self):
+    def decrypt(self, prikey):
         """iterates through each weight and decrypts it
         """
         if not self.pubkey:
@@ -46,7 +46,7 @@ class LinearClassifier(AbstractModel):
         if not self.encrypted:
             return self
 
-        self.weights = self.capsule.decrypt(self.weights, self.pubkey.id)
+        self.weights = self.weights.decrypt(prikey)
         self.encrypted = self.weights.encrypted
         return self
 
