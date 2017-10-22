@@ -425,7 +425,7 @@ class TensorBase(Encryptable):
 
     def __itruediv__(self, tensor):
         """
-        Performs in-place element-wise subtraction between two tensors
+        Performs in-place element-wise division between two tensors
 
 
         Parameters
@@ -2621,11 +2621,11 @@ class TensorBase(Encryptable):
 
         Returns
         -------
-        Output Tensor
+        Output Tensor having mode and its count.
         """
         if self.encrypted:
             return NotImplemented
-        out = scipy.stats.mode(np.array(self.data), axis=axis)
+        out = stats.mode(np.array(self.data), axis=axis)
         return TensorBase(out)
 
     def inverse(self):
