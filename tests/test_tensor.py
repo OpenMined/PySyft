@@ -1488,6 +1488,20 @@ class lerpTests(unittest.TestCase):
         self.assertTrue(np.array_equal(t1.data, [2, 3, 4, 5]))
 
 
+class ModeTests(unittest.TestCase):
+    def testMode_axis_row(self):
+        t1 = TensorBase([[1, 2, 3, 4, 5, 1, 1, 1, 1, 1], [1, 2, 3, 4, 4, 5, 6, 7, 8, 1]])
+        self.assertTrue(t1.mode(), np.array([[[1], [1]], [[6], [2]]]))
+
+    def testMode_axis_col(self):
+        t1 = TensorBase([[1, 2, 3, 4, 5, 1, 1, 1, 1, 1], [1, 2, 3, 4, 4, 5, 6, 7, 8, 1]])
+        self.assertTrue(t1.mode(axis=0), np.array([[[1, 2, 3, 4, 4, 1, 1, 1, 1, 1]], [[2, 2, 2, 2, 1, 1, 1, 1, 1, 2]]]))
+
+    def testMode_axis_None(self):
+        t1 = TensorBase([[1, 2, 3, 4, 5, 1, 1, 1, 1, 1], [1, 2, 3, 4, 4, 5, 6, 7, 8, 1]])
+        self.assertTrue(t1.mode(axis=None), np.array([[1], [8]]))
+
+
 class RenormTests(unittest.TestCase):
     def testRenorm(self):
         t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
