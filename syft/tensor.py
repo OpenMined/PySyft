@@ -424,7 +424,7 @@ class TensorBase(object):
 
     def __itruediv__(self, tensor):
         """
-        Performs in-place element-wise subtraction between two tensors
+        Performs in-place element-wise division between two tensors
 
 
         Parameters
