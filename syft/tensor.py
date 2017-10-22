@@ -10,7 +10,6 @@
 """
 import numpy as np
 import syft
-import scipy
 from scipy import stats
 import pickle
 
@@ -2620,11 +2619,11 @@ class TensorBase(object):
 
         Returns
         -------
-        Output Tensor
+        Output Tensor having mode and its count.
         """
         if self.encrypted:
             return NotImplemented
-        out = scipy.stats.mode(np.array(self.data), axis=axis)
+        out = stats.mode(np.array(self.data), axis=axis)
         return TensorBase(out)
 
     def inverse(self):
