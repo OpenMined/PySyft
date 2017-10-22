@@ -10,8 +10,12 @@
 """
 
 import numpy as np
+from syft.encryptable import Encryptable
+from syft.tensor import _ensure_tensorbase
+from syft.math import zeros
 
-class PolyFunction:
+class PolyFunction(Encryptable):
+    encryptables = ['coefs', 'derivative_coefs']
     """
     Represents a polynomial and its derivative.
     """
@@ -20,24 +24,24 @@ class PolyFunction:
         Builds a polynomial function with the given coefficients.
         Parameters
         ----------
-        coefs : numpy array
+        coefs : TensorBase
             Polynomial coefficients in descending order.
         
-        derivative_coefs : numpy array, optional
+        derivative_coefs : TensorBase, optional
             Polynomial derivative coefficients in descending order.
             If None, derivative is calculated from the polynomial coefficients.
         """
-        coefs = np.asarray(coefs)
-        self.degree = coefs.size - 1
-        
+        super().__init__()
+        coefs = _ensure_tensorbase(coefs)
+        size = coefs.size()
+        assert(len(size) == 1)
+        self.degree = size[0] - 1        
         self.coefs = coefs
-        self.function = np.poly1d(self.coefs)
         
         if derivative_coefs is None:
             derivative_coefs = np.polyder(coefs)
             
-        self.derivative_coefs = np.asarray(derivative_coefs)
-        self.derivative = np.poly1d(self.derivative_coefs)
+        self.derivative_coefs = _ensure_tensorbase(derivative_coefs)
         
     def __call__(self, x):
         """
@@ -48,11 +52,49 @@ class PolyFunction:
             The points to evaluate the polynomial at.
         Returns
         -------
-        numpy array:
+        TensorBase:
             Polynomial values in x.
         """
-        return self.function(x)
+        return self._tensor_polyval(self.coefs, x)
+    
+    def derivative(self, x):
+        """
+        Evaluates the function derivative in the given points.
+        Parameters
+        ----------
+        x : numpy array
+            The points to evaluate the derivative at.
+        Returns
+        -------
+        TensorBase:
+            Derivative values in x.
+        """
+        return self._tensor_polyval(self.derivative_coefs, x)
 
+    def _tensor_polyval(self,coefs,x):
+        """
+        Evaluates a polynomial in the given points.
+        Parameters
+        ----------
+        x : numpy array
+            The points to evaluate the polynomial at.
+            
+        coefs : TensorBase
+            Polynomial coefficients in descending order.
+            
+        Returns
+        -------
+        TensorBase:
+            Polynomial values in x.
+        """
+        x = _ensure_tensorbase(x)
+        val = zeros(x.shape())
+        if self.pubkey is not None:
+            val = val.encrypt(self.pubkey)
+        for cf in coefs:
+            val = val * x + cf
+        return val
+    
     @staticmethod
     def fit_function(func, degree, precision, nodes):
         """

@@ -11,6 +11,7 @@
 
 import numpy as np
 from syft.nonlin import PolyFunction
+from syft.encryptable import Encryptable
 
 def SquareActivation():
     """
@@ -80,10 +81,11 @@ class Activation:
         pass
     
     
-class PolynomialActivation(Activation):
+class PolynomialActivation(Activation, Encryptable):
     """
     Polynomial-based activation layer.
     """
+    encryptables=['polynomial']
     def __init__(self, polynomial):
         self.polynomial = polynomial
         super().__init__()

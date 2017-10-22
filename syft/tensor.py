@@ -10,6 +10,7 @@
 """
 import numpy as np
 import syft
+from syft.encryptable import Encryptable
 import scipy
 from scipy import stats
 import pickle
@@ -95,7 +96,7 @@ def equal(tensor1, tensor2):
     return left and np.allclose(tensor1.data, tensor2.data)
 
 
-class TensorBase(object):
+class TensorBase(Encryptable):
     """
     A base tensor class that performs basic element-wise operation such as
     addition, subtraction, multiplication and division, and also dot and
