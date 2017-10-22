@@ -10,7 +10,6 @@
 """
 import numpy as np
 import syft
-import scipy
 from scipy import stats
 import pickle
 
