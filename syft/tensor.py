@@ -3396,7 +3396,7 @@ class TensorBase(object):
 		Returns
 		-------
 		TensorBase:
-			Output Tensor
+			Caller with values in-place
 		"""
         if self.encrypted:
             return NotImplemented

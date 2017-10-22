@@ -349,3 +349,25 @@ class RenormTests(unittest.TestCase):
         t2 = syft.math.renorm(t1, 1, 2, 8)
         self.assertTrue(np.allclose(t2, np.array([[[1.0, 1.230770, 1.333333], [4.0, 3.076923, 2.666667]],
                                                   [[2.0, 1.846154, 1.777778], [1.0, 1.846154, 2.222222]]])))
+
+class sparseTests(unittest.TestCase):
+    def test_sparse_sparseMatrix(self):
+        matrix = np.array([[1, 0], [0, 0]])
+        sparseMatrix = syft.math.sparse(matrix)
+        self.assertTrue(TensorBase('(0, 0)\t1'), sparseMatrix)
+    def test_sparse_denseMatrix(self):
+        matrix = np.array([[1, 2], [3, 4]])
+        sparseMatrix = syft.math.sparse(matrix)
+        self.assertTrue(TensorBase('(0, 0)\t1\n  (0, 1)\t2\n  (1, 0)\t3\n  (1, 1)\t4'))
+    def test_sparse_sparseTensorBaseMatrix(self):
+        matrix = np.array([[1, 0], [0, 0]])
+        tensorBaseMatrix = TensorBase(matrix)
+        sparseTensorBaseMatrix = syft.math.sparse(tensorBaseMatrix)
+        sparseMatrix = syft.math.sparse(matrix)
+        self.assertTrue(sparseMatrix, sparseTensorBaseMatrix)
+    def test_sparse_denseTensorBaseMatrix(self):
+        matrix = np.array([[1, 2], [3, 4]])
+        sparseMatrix = syft.math.sparse(matrix)
+        tensorBaseMatrix = TensorBase(matrix)
+        sparseTensorBaseMatrix = syft.math.sparse(tensorBaseMatrix)
+        self.assertTrue(sparseMatrix, sparseTensorBaseMatrix)

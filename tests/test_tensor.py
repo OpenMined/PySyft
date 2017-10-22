@@ -1499,6 +1499,15 @@ class RenormTests(unittest.TestCase):
         t.renorm_(2, 0, 6)
         self.assertTrue(np.allclose(t, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
 
+class sparseTests(unittest.TestCase):
+    def test_sparse(self):
+        matrix = TensorBase(np.Array([[1, 0], [0, 0]]))
+        sparseMatrix = matrix.sparse(matrix)
+        self.assertTrue(TensorBase('(0, 0)\t1'), sparseMatrix)
+    def test_sparse_(self):
+        matrix = TensorBase(np.Array([[1, 0], [0, 0]]))
+        matrix.sparse_(matrix)
+        self.assertTrue(TensorBase('(0, 0)\t1'), matrix)
 
 class stride_Tests(unittest.TestCase):
     def test_stride(self):
