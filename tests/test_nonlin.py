@@ -88,8 +88,7 @@ class ActivationTests(unittest.TestCase):
         self.assertEqual(approx[1], 13)
         self.assertEqual(approx[2], 28)  
 
-        
-class TestPolyApproximators(unittest.TestCase):
+class PolyApproximatorsTests(unittest.TestCase):
     def test_poly_approx_sigmoid(self):
 
         sigmoid = PolyFunction.from_approximation(lambda x: 1 / (1 + np.exp(-x)))
