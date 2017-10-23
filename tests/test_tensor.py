@@ -729,13 +729,15 @@ class bernoulliTests(unittest.TestCase):
         self.assertTupleEqual((3, 2), t1.shape())
         self.assertTrue(np.all(t1.data >= 0) and np.all(t1.data <= 1))
 
+
 class multinomialTests(unittest.TestCase):
     def test_multinomial(self):
-        p = TensorBase([0.25,.25,.25,.25])
+        p = TensorBase([0.25, .25, .25, .25])
         t1 = TensorBase(np.zeros((1, 5)))
         t2 = t1.multinomial(p, len(p))
         self.assertTupleEqual((len(p),), t2.shape())
         self.assertTrue(np.all(t2.data >= 0) and np.all(t2.data <= len(p)))
+
 
 class cauchyTests(unittest.TestCase):
     def test_cauchy_(self):

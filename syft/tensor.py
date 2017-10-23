@@ -1930,7 +1930,7 @@ class TensorBase(object):
         self.data = np.random.binomial(1, p.data)
         return self
 
-    def multinomial(self, p, num_samples,  replacement=False):
+    def multinomial(self, p, num_samples, replacement=False):
         """
         Returns Tensor with random numbers from the Multinomial Distribution.
 
@@ -1962,7 +1962,6 @@ class TensorBase(object):
         p = _ensure_tensorbase(p)
         p = p / p.sum()
         return TensorBase(np.random.choice(len(p), num_samples, replacement, p.data))
-
 
     def uniform_(self, low=0, high=1):
         """
