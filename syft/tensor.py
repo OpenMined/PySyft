@@ -1930,6 +1930,40 @@ class TensorBase(object):
         self.data = np.random.binomial(1, p.data)
         return self
 
+    def multinomial(self, p, num_samples,  replacement=False):
+        """
+        Returns Tensor with random numbers from the Multinomial Distribution.
+
+        Returns Tensor with random numbers
+        from a multinomial distribution with probability
+        specified by p(arr_like), number of draws specified by num_samples,
+        and whether to replace the draws specified by replacement.
+
+        The p Tensor should be a tensor containing probabilities to
+        be used for drawing the multinomial random number.
+        The values of p do not need to sum to one (in which case we use the values as weights),
+        but must be non-negative and have a non-zero sum.
+
+        Parameters
+        ----------
+        p: TensorBase
+            Weights for the multinomial distribution
+        num_samples: Int
+            Number of samples to be drawn. If replacement is false, this must be lower than the length of p.
+        replacement: bool, optional
+            Whether to draw with replacement or not
+
+        Returns
+        -------
+        Output Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+        p = _ensure_tensorbase(p)
+        p = p / p.sum()
+        return TensorBase(np.random.choice(len(p), num_samples, replacement, p.data))
+
+
     def uniform_(self, low=0, high=1):
         """
         Fills the tensor in-place with numbers sampled unifromly
@@ -2598,7 +2632,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Outut Tensor
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
