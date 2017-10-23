@@ -3447,20 +3447,19 @@ class TensorBase(object):
 
         return TensorBase(np.concatenate(sub_arrays, axis=dim))
 
+    def numel(self):
+        """
+        Returns the total number of elements in the input Tensor.
 
-def numel(self):
-    """
-    Returns the total number of elements in the input Tensor.
+        Parameters
+        ----------
 
-    Parameters
-    ----------
-
-    Returns
-    -------
-    int:
-        total number of elements in the input Tensor
-    """
-    return syft.math.numel(self)
+        Returns
+        -------
+        int:
+            total number of elements in the input Tensor
+        """
+        return syft.math.numel(self)
 
 
 def mv(tensormat, tensorvector):
