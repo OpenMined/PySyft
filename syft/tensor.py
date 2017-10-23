@@ -3414,7 +3414,6 @@ class TensorBase(object):
 
         return TensorBase(np.concatenate(sub_arrays, axis=dim))
 
-
     def numel(self):
         """
         Returns the total number of elements in the input Tensor.
