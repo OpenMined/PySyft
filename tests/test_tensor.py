@@ -2,6 +2,7 @@ from syft import TensorBase
 import syft
 import unittest
 from syft import tensor
+import scipy as sp
 import numpy as np
 import math
 import pytest
@@ -1501,13 +1502,15 @@ class RenormTests(unittest.TestCase):
 
 class sparseTests(unittest.TestCase):
     def test_sparse(self):
-        matrix = TensorBase(np.Array([[1, 0], [0, 0]]))
-        sparseMatrix = matrix.sparse(matrix)
-        self.assertTrue(TensorBase('(0, 0)\t1'), sparseMatrix)
+        matrix = TensorBase(np.array([[1, 0], [0, 0]]))
+        sparseMatrix = matrix.sparse()
+        referenceSparseMatrix = np.array(sp.sparse.csr_matrix([[1, 0], [0, 0]]))
+        self.assertEqual(referenceSparseMatrix, sparseMatrix.data)
     def test_sparse_(self):
-        matrix = TensorBase(np.Array([[1, 0], [0, 0]]))
-        matrix.sparse_(matrix)
-        self.assertTrue(TensorBase('(0, 0)\t1'), matrix)
+        matrix = TensorBase(np.array([[1, 0], [0, 0]]))
+        matrix.sparse_()
+        referenceSparseMatrix = np.array(sp.sparse.csr_matrix([[1, 0], [0, 0]]))
+        self.assertEqual(referenceSparseMatrix, matrix.data.data)
 
 class stride_Tests(unittest.TestCase):
     def test_stride(self):
