@@ -22,7 +22,6 @@ install:
   - "source activate openmined"
   - "pip install -r test-requirements.txt"
   - "pip install redis"
-  - "conda install -y django"
   - "python setup.py install"
   - "git clone https://github.com/OpenMined/Capsule.git"
   - "cd Capsule/"
