@@ -371,7 +371,7 @@ def swish(tensor):
     tensor = _ensure_tensorbase(tensor)
     if tensor.encrypted is True:
         return NotImplemented
-    return TensorBase(t.data * sigmoid(t.data))
+    return TensorBase(tensor.data * sigmoid(tensor.data))
 
 
 def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
