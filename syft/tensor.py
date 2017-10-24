@@ -1371,6 +1371,28 @@ class TensorBase(object):
         # self.data = np.array((1 / (1 + np.exp(np.array(-self.data)))))
         return self
 
+    def swish_(self):
+        """
+        Performs in-place swish function on the Tensor elementwise
+
+        Implementation details:
+        Because of the way syft.math.swish operates on a Tensor Object
+        calling it on self.data will cause an input error thus we call
+        swish on the tensor object and we take the member 'data' from
+        the returned Tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.swish(self).data
+        return self
+
     def tanh_(self):
         """
         Performs tanh (hyperbolic tangent) function on the Tensor
