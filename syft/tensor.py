@@ -10,7 +10,6 @@
 """
 import numpy as np
 import syft
-import scipy
 from scipy import stats
 import pickle
 
@@ -237,8 +236,12 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        self.data += tensor.data
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            self.data = tensor.data + self.data
+            self.encrypted = tensor.encrypted
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            self.data += tensor.data
         return self
 
     def __sub__(self, tensor):
@@ -278,8 +281,12 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        self.data -= tensor.data
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            self.data = tensor.data - self.data
+            self.encrypted = tensor.encrypted
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            self.data -= tensor.data
         return self
 
     def __eq__(self, tensor):
@@ -416,7 +423,7 @@ class TensorBase(object):
 
     def __itruediv__(self, tensor):
         """
-        Performs in-place element-wise subtraction between two tensors
+        Performs in-place element-wise division between two tensors
 
 
         Parameters
@@ -951,7 +958,7 @@ class TensorBase(object):
             return self
 
     def bmm(self, tensor):
-        """Performs a batch matrix-matrix product of this tesnor
+        """Performs a batch matrix-matrix product of this tensor
         and tensor2. Both tensors must be 3D containing equal number
         of matrices.
         If this is a (b x n x m) Tensor, batch2 is a (b x m x p) Tensor,
@@ -1923,6 +1930,39 @@ class TensorBase(object):
         self.data = np.random.binomial(1, p.data)
         return self
 
+    def multinomial(self, p, num_samples, replacement=False):
+        """
+        Returns Tensor with random numbers from the Multinomial Distribution.
+
+        Returns Tensor with random numbers
+        from a multinomial distribution with probability
+        specified by p(arr_like), number of draws specified by num_samples,
+        and whether to replace the draws specified by replacement.
+
+        The p Tensor should be a tensor containing probabilities to
+        be used for drawing the multinomial random number.
+        The values of p do not need to sum to one (in which case we use the values as weights),
+        but must be non-negative and have a non-zero sum.
+
+        Parameters
+        ----------
+        p: TensorBase
+            Weights for the multinomial distribution
+        num_samples: Int
+            Number of samples to be drawn. If replacement is false, this must be lower than the length of p.
+        replacement: bool, optional
+            Whether to draw with replacement or not
+
+        Returns
+        -------
+        Output Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+        p = _ensure_tensorbase(p)
+        p = p / p.sum()
+        return TensorBase(np.random.choice(len(p), num_samples, replacement, p.data))
+
     def uniform_(self, low=0, high=1):
         """
         Fills the tensor in-place with numbers sampled unifromly
@@ -2591,7 +2631,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Outut Tensor
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -2612,11 +2652,11 @@ class TensorBase(object):
 
         Returns
         -------
-        Output Tensor
+        Output Tensor having mode and its count.
         """
         if self.encrypted:
             return NotImplemented
-        out = scipy.stats.mode(np.array(self.data), axis=axis)
+        out = stats.mode(np.array(self.data), axis=axis)
         return TensorBase(out)
 
     def inverse(self):
@@ -3331,6 +3371,34 @@ class TensorBase(object):
             self.data = syft.math.renorm(self, p, dim, maxnorm).data
             return self
 
+    def stride(self, dim=None):
+        """
+        Returns the jump necessary to go from one element to the next one in the specified dimension dim.
+
+        Parameters
+        ----------
+        dim : dimension
+            The first operand in the stride operation
+
+        Returns
+        -------
+        Tuple
+            Tuple is returned when no Argument is passed. So we get stride in all dimensions.
+        OR
+        Integer
+            Integer value is returned when we desire stride in particular dimension.
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        out = self.data.strides
+        output = tuple(map(lambda x: x / 8, out))
+
+        if dim is None:
+            return output
+        else:
+            return output[dim]
+
     def unfold(self, dim, size, step):
         """
         Returns a tensor which contains all slices of size `size` along the dimension `dim`.
@@ -3379,20 +3447,19 @@ class TensorBase(object):
 
         return TensorBase(np.concatenate(sub_arrays, axis=dim))
 
+    def numel(self):
+        """
+        Returns the total number of elements in the input Tensor.
 
-def numel(self):
-    """
-    Returns the total number of elements in the input Tensor.
+        Parameters
+        ----------
 
-    Parameters
-    ----------
-
-    Returns
-    -------
-    int:
-        total number of elements in the input Tensor
-    """
-    return syft.math.numel(self)
+        Returns
+        -------
+        int:
+            total number of elements in the input Tensor
+        """
+        return syft.math.numel(self)
 
 
 def mv(tensormat, tensorvector):

@@ -6,7 +6,7 @@
 
 > Homomorphically Encrypted Deep Learning Library
 
-The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state, without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find a very performant combinations of the two.  See the [notebooks](./notebooks) folder for tutorials on how to use the library. Also, check the [main demonstration](https://github.com/OpenMined/sonar) from the Sonar project.
+The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state, without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find a very performant combinations of the two. See the [notebooks](./notebooks) folder for tutorials on how to use the library. Also, check the [main demonstration](https://github.com/OpenMined/sonar) from the Sonar project.
 
 - [Setup with Docker](#setup-with-doker)
 - [Local setup](#local-setup)
@@ -55,27 +55,11 @@ make docker-run image=openmined/pysyft-dev:local
 
 Inside the container you can run any make targets such as `test` or `notebook`.
 
-**Note**: for windows users, if you have trouble with docker installation follow this:
-1. Install [docker toolbox on windows](https://docs.docker.com/toolbox/toolbox_install_windows/) and check if it is properly installed by doing ```docker -v``` on _docker quickstart terminal_.
-2. and then do this:
-```sh
- git clone https://github.com/OpenMined/PySyft.git 
- cd PySyft  
- 
- docker build -f dockerfiles/Dockerfile.base -t pysyft-base:local . # do not foget the dot ! 
- docker build -f dockerfiles/Dockerfile -t openmined/pysyft:local . # creates pysyft image 
- docker build -f dockerfiles/Dockerfile.dev -t openmined/pysyft-dev:local . # creates pysyft-dev image 
- docker images  # check the installed images 
- docker run -it --rm -v "$(PWD)":/PySyft -p 8888:8888 openmined/pysyft-dev:local sh #to run the pysyft-dev image
- redis-server & FLASK_APP=/usr/bin/Capsule/capsule/local_server.py flask run & cd notebooks && jupyter notebook --allow-root --ip=0.0.0.0 #in the container to  start the capsule and run the jupyter notebook
-```
-3. you should see the URL for the notebook something like this http://0.0.0.0:8888/.... now replace the IP - 0.0.0.0 with docker-machine’s IP address which you can find in your _docker quickstart terminal_.
-
 ## Local setup
 
 ### Prerequisites
 
-- Make sure Python 3.5+ in installed on your machine by_docker quickstart terminal_ checking `python3 --version`
+- Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
 - Install the base libraries listed [here](https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries)
 - Set up a virtual environment for the Python libraries (optional, recommended)
 - Install [Capsule](https://github.com/OpenMined/Capsule) dependency if you are going to develop and run tests.
@@ -186,4 +170,4 @@ tools for encrypted statistical machine learning](https://arxiv.org/pdf/1508.065
 - [Tutorial: How to verify crowdsourced training data using a Known Answer Review Policy](https://blog.mturk.com/tutorial-how-to-verify-crowdsourced-training-data-using-a-known-answer-review-policy-85596fb55ed)
 
 ## License
-[Apache-2.0](https://github.com/OpenMined/PySyft/blob/develop/LICENSE) by OpenMined contributors
+[Apache-2.0](https://github.com/OpenMined/PySyft/blob/master/LICENSE) by OpenMined contributors
