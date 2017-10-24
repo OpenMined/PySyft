@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-
+import scipy as sp
 import syft
 from syft import TensorBase
 
@@ -427,3 +427,28 @@ class MultinomialTests(unittest.TestCase):
         t2 = syft.math.multinomial(t1, len(t1))
         self.assertTupleEqual((len(t1),), t2.shape())
         self.assertTrue(np.all(t2.data >= 0) and np.all(t2.data <= len(t1)))
+
+        self.assertEqual(referenceSparseMatrix, sparseMatrix.data)
+class SparseTests(unittest.TestCase):
+    def test_sparse_sparseMatrix(self):
+        matrix = np.array([[1, 0], [0, 0]])
+        sparseMatrix = syft.math.sparse(matrix)
+        referenceSparseMatrix = np.array(sp.sparse.csr_matrix([[1, 0], [0, 0]]))
+        self.assertEqual(referenceSparseMatrix, sparseMatrix.data)
+    def test_sparse_denseMatrix(self):
+        matrix = np.array([[1, 2], [3, 4]])
+        sparseMatrix = syft.math.sparse(matrix)
+        referenceSparseMatrix = np.array(sp.sparse.csr_matrix([[1, 2], [3, 4]]))
+        self.assertEqual(referenceSparseMatrix, sparseMatrix.data)
+    def test_sparse_sparseTensorBaseMatrix(self):
+        matrix = np.array([[1, 0], [0, 0]])
+        tensorBaseMatrix = TensorBase(matrix)
+        sparseTensorBaseMatrix = syft.math.sparse(tensorBaseMatrix)
+        sparseMatrix = syft.math.sparse(matrix)
+        self.assertEqual(sparseMatrix.data, sparseTensorBaseMatrix.data)
+    def test_sparse_denseTensorBaseMatrix(self):
+        matrix = np.array([[1, 2], [3, 4]])
+        sparseMatrix = syft.math.sparse(matrix)
+        tensorBaseMatrix = TensorBase(matrix)
+        sparseTensorBaseMatrix = syft.math.sparse(tensorBaseMatrix)
+        self.assertEqual(sparseMatrix.data, sparseTensorBaseMatrix.data)
