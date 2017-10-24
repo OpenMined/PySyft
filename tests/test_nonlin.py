@@ -15,7 +15,7 @@ class NonlinTests(unittest.TestCase):
         self.assertEqual(approx[2], 0.96626517229999997)
 
 
-class TestPolyApproximators(unittest.TestCase):
+class PolyApproximatorsTests(unittest.TestCase):
     def test_poly_approx_sigmoid(self):
 
         sigmoid = PolyApproximator(lambda x: 1 / (1 + np.exp(-x))).output
