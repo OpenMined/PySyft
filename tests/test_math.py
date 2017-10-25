@@ -349,3 +349,11 @@ class RenormTests(unittest.TestCase):
         t2 = syft.math.renorm(t1, 1, 2, 8)
         self.assertTrue(np.allclose(t2, np.array([[[1.0, 1.230770, 1.333333], [4.0, 3.076923, 2.666667]],
                                                   [[2.0, 1.846154, 1.777778], [1.0, 1.846154, 2.222222]]])))
+
+
+class MultinomialTests(unittest.TestCase):
+    def test_multinomial(self):
+        t1 = TensorBase([0.25, .25, .25, .25])
+        t2 = syft.math.multinomial(t1, len(t1))
+        self.assertTupleEqual((len(t1),), t2.shape())
+        self.assertTrue(np.all(t2.data >= 0) and np.all(t2.data <= len(t1)))

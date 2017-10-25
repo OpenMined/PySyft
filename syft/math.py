@@ -845,3 +845,37 @@ def renorm(tensor1, p, dim, maxnorm):
         scalar_reshaped = scalar.reshape(dim_array)
         out = tensor1 * scalar_reshaped
     return TensorBase(out)
+
+
+def multinomial(tensor, num_samples, replacement=False):
+    """
+    Returns Tensor with random numbers from the Multinomial Distribution.
+
+    Returns Tensor with random numbers
+    from a multinomial distribution with probability
+    specified by ``input``(arr_like), number of draws specified by ``num_samples``,
+    and whether to replace the draws specified by replacement.
+
+    The ``input`` Tensor should be a tensor containing probabilities to
+    be used for drawing the multinomial random number.
+    The values of ``input`` do not need to sum to one (in which case we use the values as weights),
+    but must be non-negative and have a non-zero sum.
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        Weights for the multinomial distribution
+    num_samples: Int
+        Number of samples to be drawn. If replacement is false, this must be lower than the length of p.
+    replacement: bool, optional
+        Whether to draw with replacement or not
+
+    Returns
+    -------
+    Output Tensor
+    """
+    if tensor.encrypted:
+        return NotImplemented
+    p = _ensure_tensorbase(tensor)
+    p = p / p.sum()
+    return TensorBase(np.random.choice(len(p), num_samples, replacement, p.data))
