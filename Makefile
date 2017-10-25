@@ -17,7 +17,7 @@ test:
 	@# and inside container at the same time
 	@find . -name '*.pyc' -exec rm -f '{}' \;
 	pip3 install -r test-requirements.txt
-	pytest && pytest --flake8
+	pytest && flake8 --ignore=E501
 
 notebook:
 	jupyter notebook --allow-root --ip=0.0.0.0
@@ -43,6 +43,6 @@ run-redis:
 	redis-server &
 
 run-capsule:
-	FLASK_APP=/usr/bin/Capsule/capsule/local_server.py flask run &
+	python3 /usr/bin/Capsule/capsule_zmq/local_server.py &
 
 run-allservices: run-redis run-capsule
