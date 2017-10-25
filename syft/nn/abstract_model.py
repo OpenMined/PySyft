@@ -3,10 +3,10 @@ class AbstractModel(object):
         This is the interface used in all deep-learning models.
     """
 
-    def encrypt(self):
+    def encrypt(self, pubkey):
         return NotImplemented
 
-    def decrypt(self):
+    def decrypt(self, prikey):
         return NotImplemented
 
     def forward(self):
