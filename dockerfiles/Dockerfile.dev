@@ -10,7 +10,7 @@ RUN apk add --initdb --no-cache	git redis && \
 	cd /usr/bin/Capsule/ && \
 	pip3 install -r requirements.txt && \
 	python3 setup.py install && \
-	chmod +x build_and_run.sh build_and_run_django.sh build_and_run_zmq.sh
+	chmod +x build_and_run.sh build_and_run_mpc.sh
 
 WORKDIR /PySyft
 COPY . ./
