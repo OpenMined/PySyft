@@ -675,8 +675,6 @@ def rand(dim):
 
     return TensorBase(np.random.rand(dim))
 
-    return tensor.data.size
-
 
 def randn(dim):
     """
