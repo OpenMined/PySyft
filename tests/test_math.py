@@ -121,6 +121,15 @@ class SigmoidTests(unittest.TestCase):
             [0.76852478, 0.96442881, 0.98201379])))
 
 
+class SwishTests(unittest.TestCase):
+    """Swish Test"""
+
+    def test_swish(self):
+        t1 = TensorBase([1.2, 3.3, 4])
+        self.assertTrue(syft.equal(syft.math.swish(t1), TensorBase(
+            [0.92222974, 3.18261508, 3.92805516])))
+
+
 class MatmulTests(unittest.TestCase):
     """Matmul Tests"""
 

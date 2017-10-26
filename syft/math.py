@@ -354,6 +354,26 @@ def relu(tensor):
     return TensorBase(np.maximum(0, tensor.data))
 
 
+def swish(tensor):
+    """
+    Return Swish activation function (mathematically, f(x)=x*sigmoid(x)).
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor;
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted is True:
+        return NotImplemented
+    return TensorBase(tensor.data * sigmoid(tensor.data))
+
+
 def addmm(tensor1, tensor2, mat, beta=1, alpha=1):
     """
     Performs ((Mat*Beta)+((Tensor1.Tensor2)*Alpha)) and  returns the
