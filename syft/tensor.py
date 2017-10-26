@@ -10,7 +10,6 @@
 """
 import numpy as np
 import syft
-import scipy
 from scipy import stats
 import pickle
 
@@ -228,8 +227,12 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        self.data += tensor.data
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            self.data = tensor.data + self.data
+            self.encrypted = tensor.encrypted
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            self.data += tensor.data
         return self
 
     def __imul__(self, tensor):
@@ -274,8 +277,12 @@ class TensorBase(object):
         if self.encrypted:
             return NotImplemented
 
-        tensor = _ensure_tensorbase(tensor)
-        self.data -= tensor.data
+        if (type(tensor) != TensorBase and isinstance(tensor, TensorBase)):
+            self.data = tensor.data - self.data
+            self.encrypted = tensor.encrypted
+        else:
+            tensor = _ensure_tensorbase(tensor)
+            self.data -= tensor.data
         return self
 
     def __itruediv__(self, tensor):
@@ -412,6 +419,7 @@ class TensorBase(object):
             tensor = _ensure_tensorbase(tensor)
             return TensorBase(self.data / tensor.data)
 
+
     def _calc_add_depth(self, tensor1, tensor2):
         if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
             self._add_depth = max(tensor1._add_depth, tensor2._add_depth) + 1
@@ -419,6 +427,7 @@ class TensorBase(object):
             self._add_depth = tensor1._add_depth + 1
         elif isinstance(tensor2, TensorBase):
             self._add_depth = tensor2._add_depth + 1
+
 
     def _calc_mul_depth(self, tensor1, tensor2):
         if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
@@ -847,6 +856,7 @@ class TensorBase(object):
             Output Tensor
         """
         return syft.baddbmm(self, tensor2, mat, beta, alpha)
+
 
     def baddbmm_(self, tensor2, mat, beta=1, alpha=1):
         """
@@ -1876,6 +1886,7 @@ class TensorBase(object):
         self.data = syft.math.lerp(self, tensor, weight)
         return self
 
+
     def log(self):
         """
         Performs elementwise logarithm operation and returns a new Tensor
@@ -2212,10 +2223,40 @@ class TensorBase(object):
         out = scipy.stats.mode(np.array(self.data), axis=axis)
         return TensorBase(out)
 
+
+    def multinomial(self, num_samples, replacement=False):
+        """
+        Returns Tensor with random numbers from the Multinomial Distribution.
+
+        Returns Tensor with random numbers
+        from a multinomial distribution with probability
+        specified by ``self``, number of draws specified by num_samples,
+        and whether to replace the draws specified by replacement.
+
+        The ``self`` should be a tensor containing probabilities to
+        be used for drawing the multinomial random number.
+        The values of ``self`` do not need to sum to one (in which case we use the values as weights),
+        but must be non-negative and have a non-zero sum.
+
+        Parameters
+        ----------
+        num_samples: Int
+            Number of samples to be drawn. If replacement is false, this must be lower than the length of p.
+        replacement: bool, optional
+            Whether to draw with replacement or not
+
+        Returns
+        -------
+        Output Tensor
+        """
+        return syft.math.multinomial(self, num_samples=num_samples, replacement=replacement)
+
+
     def mv(self, tensorvector):
         if self.encrypted:
             raise NotImplemented
         return mv(self, tensorvector)
+
 
     def narrow(self, dim, start, length):
         """
@@ -2699,7 +2740,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output Tensor
+        Output Tensor 
         """
         if self.encrypted:
             return NotImplemented
@@ -3018,6 +3059,36 @@ class TensorBase(object):
             tensors.append(TensorBase(s))
         tensors_tuple = tuple(tensors)
         return tensors_tuple
+
+
+    def stride(self, dim=None):
+        """
+        Returns the jump necessary to go from one element to the next one in the specified dimension dim.
+
+        Parameters
+        ----------
+        dim : dimension
+            The first operand in the stride operation
+
+        Returns
+        -------
+        Tuple
+            Tuple is returned when no Argument is passed. So we get stride in all dimensions.
+        OR
+        Integer
+            Integer value is returned when we desire stride in particular dimension.
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        out = self.data.strides
+        output = tuple(map(lambda x: x / 8, out))
+
+        if dim is None:
+            return output
+        else:
+            return output[dim]
+
 
     def sqrt(self):
         """

@@ -592,6 +592,38 @@ def mm(tensor1, tensor2):
         return TensorBase(np.array(np.matmul(tensor1.data, tensor2.data)))
 
 
+def multinomial(tensor, num_samples, replacement=False):
+    """
+    Returns Tensor with random numbers from the Multinomial Distribution.
+
+    Returns Tensor with random numbers
+    from a multinomial distribution with probability
+    specified by ``input``(arr_like), number of draws specified by ``num_samples``,
+    and whether to replace the draws specified by replacement.
+
+    The ``input`` Tensor should be a tensor containing probabilities to
+    be used for drawing the multinomial random number.
+    The values of ``input`` do not need to sum to one (in which case we use the values as weights),
+    but must be non-negative and have a non-zero sum.
+
+    Weights for the multinomial distribution
+    =======
+    num_samples: Int
+        Number of samples to be drawn. If replacement is false, this must be lower than the length of p.
+    replacement: bool, optional
+        Whether to draw with replacement or not
+
+    Returns
+    -------
+    Output Tensor
+    """
+    if tensor.encrypted:
+        return NotImplemented
+    p = _ensure_tensorbase(tensor)
+    p = p / p.sum()
+    return TensorBase(np.random.choice(len(p), num_samples, replacement, p.data))
+
+
 def numel(tensor):
     """
     Returns the total number of elements in the input Tensor.
@@ -640,7 +672,11 @@ def rand(dim):
     TensorBase:
         Output Tensor
     """
+
     return TensorBase(np.random.rand(dim))
+
+    return tensor.data.size
+
 
 
 def randn(dim):
@@ -752,10 +788,10 @@ def tanh(tensor):
     """
     Returns a new tensor holding element wise values of tanh function
     tanh(x) = (e^(x) - e^(-x))/(e^(x) + e^(-x))
-
-    Parameters
+        Parameters
     ----------
     tensor: TensorBase
+
         input Tensor
 
     Returns

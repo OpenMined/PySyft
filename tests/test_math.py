@@ -13,7 +13,7 @@ class ConvenienceTests(unittest.TestCase):
     def test_ones(self):
         self.assertTrue((syft.ones(5).data == np.ones(5)).all())
 
-    def testRand(self):
+    def test_rand(self):
         np.random.seed(0)
         x = syft.rand(5).data
         np.random.seed(0)
@@ -84,7 +84,7 @@ class FloorTests(unittest.TestCase):
                                                                     [7., 8.]])))
 
 
-class tanhTests(unittest.TestCase):
+class TanhTests(unittest.TestCase):
     def test_tanh(self):
         # int
         t1 = TensorBase(np.array([[-0, 1, -2], [0, -1, 2]]))
@@ -159,7 +159,7 @@ class MatmulTests(unittest.TestCase):
                                                          [54.82, 62.15]]))
 
 
-class addmmTests(unittest.TestCase):
+class AddmmTests(unittest.TestCase):
     def test_addmm_1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 3, 4]))
@@ -175,7 +175,7 @@ class addmmTests(unittest.TestCase):
         self.assertTrue(np.array_equal(out.data, [[10, 18], [12, 20]]))
 
 
-class addcmulTests(unittest.TestCase):
+class AddcmulTests(unittest.TestCase):
     def test_addcmul_1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 3, 4]))
@@ -191,7 +191,7 @@ class addcmulTests(unittest.TestCase):
         self.assertTrue(np.array_equal(out.data, [[4, 11], [5, 12]]))
 
 
-class addcdivTests(unittest.TestCase):
+class AddcdivTests(unittest.TestCase):
     def test_addcdiv_1d(self):
         t1 = TensorBase(np.array([1, 2, 3]))
         t2 = TensorBase(np.array([2, 5, 4]))
@@ -207,7 +207,7 @@ class addcdivTests(unittest.TestCase):
         self.assertTrue(np.array_equal(out.data, [[4., 5.], [5., 6.]]))
 
 
-class addmv(unittest.TestCase):
+class AddmvTests(unittest.TestCase):
     def test_addmv(self):
         t1 = TensorBase(np.array([1, 2]))
         vec = TensorBase(np.array([1, 2, 3, 4]))
@@ -216,7 +216,7 @@ class addmv(unittest.TestCase):
         self.assertTrue(np.array_equal(out.data, [68, 130]))
 
 
-class bmmTests(unittest.TestCase):
+class BmmTests(unittest.TestCase):
     def test_bmm_for_correct_size_output(self):
         t1 = TensorBase(np.random.rand(4, 3, 2))
         t2 = TensorBase(np.random.rand(4, 2, 1))
@@ -231,7 +231,7 @@ class bmmTests(unittest.TestCase):
         self.assertTrue(np.array_equal(out.data, test_result))
 
 
-class addbmmTests(unittest.TestCase):
+class AddbmmTests(unittest.TestCase):
     def test_addbmm(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
@@ -240,7 +240,7 @@ class addbmmTests(unittest.TestCase):
         self.assertTrue(np.array_equal(out.data, [[176, 266], [114, 172]]))
 
 
-class baddbmmTests(unittest.TestCase):
+class BaddbmmTests(unittest.TestCase):
     def test_baddbmm(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         t2 = TensorBase(np.array([[[3, 5], [5, 7]], [[7, 9], [1, 3]]]))
@@ -250,7 +250,7 @@ class baddbmmTests(unittest.TestCase):
                                                   [[122, 184], [28, 42]]]))
 
 
-class transposeTests(unittest.TestCase):
+class TransposeTests(unittest.TestCase):
     def test_transpose(self):
         t1 = TensorBase(np.array([[[3, 4], [5, 6]], [[7, 8], [1, 2]]]))
         out1 = syft.transpose(t1, 0, 1)
@@ -264,7 +264,7 @@ class transposeTests(unittest.TestCase):
                                                             [[7, 1], [8, 2]]])))
 
 
-class unsqueezeTests(unittest.TestCase):
+class UnsqueezeTests(unittest.TestCase):
     def test_unsqueeze(self):
         t1 = TensorBase(np.arange(3 * 4 * 5).reshape((3, 4, 5)))
         for i in range(len(t1.data.shape)):
@@ -275,7 +275,7 @@ class unsqueezeTests(unittest.TestCase):
             self.assertTrue(np.array_equal(out.data.shape, expected_shape))
 
 
-class mmtest(unittest.TestCase):
+class MmTests(unittest.TestCase):
     def test_mm_1d(self):
         t1 = TensorBase(np.array([2, 3, 4]))
         t2 = TensorBase(np.array([3, 4, 5]))
@@ -296,7 +296,7 @@ class mmtest(unittest.TestCase):
             out.data == [[5, 8, 11], [8, 13, 18], [11, 18, 25]]))
 
 
-class fmodTest(unittest.TestCase):
+class FmodTests(unittest.TestCase):
     def test_fmod_number(self):
         t1 = TensorBase(np.array([-3, -2, -1, 1, 2, 3]))
         self.assertTrue(np.array_equal(syft.math.fmod(t1, 2).data, np.array([-1, 0, -1, 1, 0, 1])))
@@ -312,7 +312,7 @@ class fmodTest(unittest.TestCase):
         self.assertTrue(np.array_equal(syft.math.fmod(t2, divisor).data, np.array([-1.5, -0.5, -1.5, 1.5, 0.5, 1.5])))
 
 
-class lerpTests(unittest.TestCase):
+class LerpTests(unittest.TestCase):
     def test_lerp(self):
         t1 = TensorBase(np.array([1, 2, 3, 4]))
         t2 = TensorBase(np.array([3, 4, 5, 6]))
@@ -321,31 +321,39 @@ class lerpTests(unittest.TestCase):
         self.assertTrue(np.array_equal(out.data, [2, 3, 4, 5]))
 
 
-class numelTests(unittest.TestCase):
-    def numel_test_int(self):
+class NumelTests(unittest.TestCase):
+    def test_numel_int(self):
         t1_len = 3
         t1 = TensorBase(np.array([2, 3, 4]))
         self.assertEqual(syft.math.numel(t1), t1_len)
 
-    def numel_test_float(self):
+    def test_numel_float(self):
         t1_len = 3
         t1 = TensorBase(np.array([2.0, 3.0, 4.0]))
         self.assertEqual(syft.math.numel(t1), t1_len)
 
 
 class RenormTests(unittest.TestCase):
-    def testIntRenorm(self):
+    def test_int_renorm(self):
         t1 = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
         t2 = syft.math.renorm(t1, 2, 0, 6)
         self.assertTrue(np.allclose(t2, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
 
-    def testFloatRenorm(self):
+    def test_float_renorm(self):
         t1 = TensorBase(np.array([[1.5, 2.5], [3.5, 4.5]]))
         t2 = syft.math.renorm(t1, 1, 1, 5.0)
         self.assertTrue(np.allclose(t2, np.array([[1.5, 1.785714], [3.5, 3.214286]])))
 
-    def test3DTensorRenorm(self):
+    def test_3d_tensor_renorm(self):
         t1 = TensorBase(np.array([[[1, 2, 3], [4, 5, 6]], [[2, 3, 4], [1, 3, 5]]]))
         t2 = syft.math.renorm(t1, 1, 2, 8)
         self.assertTrue(np.allclose(t2, np.array([[[1.0, 1.230770, 1.333333], [4.0, 3.076923, 2.666667]],
                                                   [[2.0, 1.846154, 1.777778], [1.0, 1.846154, 2.222222]]])))
+
+
+class MultinomialTests(unittest.TestCase):
+    def test_multinomial(self):
+        t1 = TensorBase([0.25, .25, .25, .25])
+        t2 = syft.math.multinomial(t1, len(t1))
+        self.assertTupleEqual((len(t1),), t2.shape())
+        self.assertTrue(np.all(t2.data >= 0) and np.all(t2.data <= len(t1)))
