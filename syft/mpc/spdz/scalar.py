@@ -27,7 +27,7 @@ class MPCNatural(object):
 
     def __repr__(self):
         return str(self.get())
-        
+
     def __sub__(self, x):
         new_id = self.gen_rand_id()
         if(type(x) == type(self)):
@@ -51,8 +51,6 @@ class MPCNatural(object):
     def get_shares(self):
         others = list(map(lambda x: x.get_share(self.id), self.repo.another_party))
         return others + [self.repo.ints[self.id]]
-
-
 
 
 class MPCFixedPoint(object):

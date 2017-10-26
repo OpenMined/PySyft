@@ -68,7 +68,7 @@ class MPCRepo(object):
         z2 = self.right.mult_local(id1, id2)
 
         return z0 + z1 + z2
-        
+
     def mult_local(self, id1, id2):
 
         x_0 = self.ints[id1]

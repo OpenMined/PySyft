@@ -46,7 +46,6 @@ class PaillierTensor(TensorBase):
         ptensor._calc_add_depth(self, tensor)
         return ptensor
 
-
     def __getitem__(self, i):
         return PaillierTensor(self.public_key, self.data[i], False)
 
@@ -129,6 +128,7 @@ class PaillierTensor(TensorBase):
         else:
             op = self.data.sum(axis=dim)
             return PaillierTensor(self.public_key, op, False, fixed_point_conf=self.fixed_point_conf)
+
 
 class Float():
 
@@ -216,4 +216,3 @@ class PrecisionConf:
 
     def __eq__(self, other):
         return self.franction_bits == other.franction_bits
-

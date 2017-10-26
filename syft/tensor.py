@@ -93,6 +93,7 @@ def equal(tensor1, tensor2):
     left = tensor1.data.shape == tensor2.data.shape
     return left and np.allclose(tensor1.data, tensor2.data)
 
+
 def masked_select(tensor, mask):
     """
     Returns a new 1D Tensor which indexes the ``input`` Tensor according to
@@ -119,6 +120,7 @@ def masked_select(tensor, mask):
         mask.data, tensor.data)
     indices = np.where(mask_broadcasted)
     return TensorBase(data_broadcasted[indices])
+
 
 def mv(tensormat, tensorvector):
     """
@@ -395,7 +397,6 @@ class TensorBase(object):
         tensor = _ensure_tensorbase(tensor)
         return TensorBase(self.data - tensor.data)
 
-
     def __truediv__(self, tensor):
         """
         Performs element-wise division between two tensors
@@ -419,7 +420,6 @@ class TensorBase(object):
             tensor = _ensure_tensorbase(tensor)
             return TensorBase(self.data / tensor.data)
 
-
     def _calc_add_depth(self, tensor1, tensor2):
         if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
             self._add_depth = max(tensor1._add_depth, tensor2._add_depth) + 1
@@ -427,7 +427,6 @@ class TensorBase(object):
             self._add_depth = tensor1._add_depth + 1
         elif isinstance(tensor2, TensorBase):
             self._add_depth = tensor2._add_depth + 1
-
 
     def _calc_mul_depth(self, tensor1, tensor2):
         if isinstance(tensor1, TensorBase) and isinstance(tensor2, TensorBase):
@@ -857,7 +856,6 @@ class TensorBase(object):
         """
         return syft.baddbmm(self, tensor2, mat, beta, alpha)
 
-
     def baddbmm_(self, tensor2, mat, beta=1, alpha=1):
         """
         Performs a batch matrix-matrix product of matrices in
@@ -977,9 +975,11 @@ class TensorBase(object):
         ----------
         self : tensor
         median : scalar, optional
-            Also known as the location parameter. Specifies the location of the distribution's peak.
+            Also known as the location parameter. Specifies the location of the
+            distribution's peak.
         sigma : scalar, optional
-            Also known as the scale parameter. Specifies the half-width at half-maximum (HWHM).
+            Also known as the scale parameter. Specifies the half-width at
+            half-maximum (HWHM).
 
         Returns
         -------
@@ -989,7 +989,9 @@ class TensorBase(object):
         """
         if self.encrypted:
             return NotImplemented
-        self.data = stats.cauchy.rvs(loc=median, scale=sigma, size=self.data.size).reshape(self.data.shape)
+        self.data = (stats.cauchy
+                          .rvs(loc=median, scale=sigma, size=self.data.size)
+                          .reshape(self.data.shape))
         return self
 
     def ceil(self):
@@ -1886,7 +1888,6 @@ class TensorBase(object):
         self.data = syft.math.lerp(self, tensor, weight)
         return self
 
-
     def log(self):
         """
         Performs elementwise logarithm operation and returns a new Tensor
@@ -2023,7 +2024,6 @@ class TensorBase(object):
             return NotImplemented
         self.data = np.less(self.data, other.data)
         return self
-
 
     def masked_fill_(self, mask, value):
         """
@@ -2223,7 +2223,6 @@ class TensorBase(object):
         out = stats.mode(np.array(self.data), axis=axis)
         return TensorBase(out)
 
-
     def multinomial(self, num_samples, replacement=False):
         """
         Returns Tensor with random numbers from the Multinomial Distribution.
@@ -2251,12 +2250,10 @@ class TensorBase(object):
         """
         return syft.math.multinomial(self, num_samples=num_samples, replacement=replacement)
 
-
     def mv(self, tensorvector):
         if self.encrypted:
             raise NotImplemented
         return mv(self, tensorvector)
-
 
     def narrow(self, dim, start, length):
         """
@@ -2740,7 +2737,7 @@ class TensorBase(object):
 
         Returns
         -------
-        Output Tensor 
+        Output Tensor
         """
         if self.encrypted:
             return NotImplemented
@@ -3060,7 +3057,6 @@ class TensorBase(object):
         tensors_tuple = tuple(tensors)
         return tensors_tuple
 
-
     def stride(self, dim=None):
         """
         Returns the jump necessary to go from one element to the next one in the specified dimension dim.
@@ -3088,7 +3084,6 @@ class TensorBase(object):
             return output
         else:
             return output[dim]
-
 
     def sqrt(self):
         """

@@ -25,7 +25,7 @@ class MPCNatural(object):
 
     def __repr__(self):
         return str(self.get())
-        
+
     def __sub__(self, id):
         new_id = self.gen_rand_id()
         return self.repo.sub(new_id, self.id, id.id, True)
@@ -79,7 +79,7 @@ class MPCFixedPoint(object):
 
     def __repr__(self):
         return str(self.get())
-        
+
     def __sub__(self, x):
 
         if(type(x) != type(self)):
@@ -90,7 +90,7 @@ class MPCFixedPoint(object):
     def __truediv__(self, x):
 
         return self.raw_natural.__truediv__(self.encode(x))
-        
+
     def decode(self, field_element):
         upscaled = field_element if field_element <= self.config.Q / 2 else field_element - self.config.Q
         rational = upscaled / self.config.BASE**self.config.PRECISION_FRACTIONAL

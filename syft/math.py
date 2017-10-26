@@ -678,7 +678,6 @@ def rand(dim):
     return tensor.data.size
 
 
-
 def randn(dim):
     """
     Returns a tensor with initial numbers sampled from a standard normal
