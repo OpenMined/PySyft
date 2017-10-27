@@ -189,7 +189,7 @@ class DivTests(unittest.TestCase):
         self.assertTrue(s.decrypt(x) == np.array([1, 2, 3, 4, 5.]))
 
 
-class SerializeTest(unittest.TestCase):
+class SerializeTests(unittest.TestCase):
 
     def test_serialize(self):
         pubkey, seckey = KeyPair().generate()
