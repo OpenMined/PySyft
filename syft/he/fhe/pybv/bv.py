@@ -181,10 +181,11 @@ class Ciphertext(object):
         return self.__mul__(other)
 
 
-sk, pk = generate_key_pair()
-pt_1 = [1, 4, 6]
-pt_2 = [1, 1, 1, 1]
-ct_1 = Ciphertext(pt_1, pk)
-ct_2 = Ciphertext(pt_2, pk)
-ct = ct_1 * ct_2
-print(sk.decrypt(ct))
+if __name__ == '__main__':
+    sk, pk = generate_key_pair()
+    pt_1 = [1, 4, 6]
+    pt_2 = [1, 1, 1, 1]
+    ct_1 = Ciphertext(pt_1, pk)
+    ct_2 = Ciphertext(pt_2, pk)
+    ct = ct_1 * ct_2
+    print(sk.decrypt(ct))
