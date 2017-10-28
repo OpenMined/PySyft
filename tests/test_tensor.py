@@ -1503,14 +1503,15 @@ class RenormTests(unittest.TestCase):
 class sparseTests(unittest.TestCase):
     def test_sparse(self):
         matrix = TensorBase(np.array([[1, 0], [0, 0]]))
-        sparseMatrix = matrix.sparse()
-        referenceSparseMatrix = np.array(sp.sparse.csr_matrix([[1, 0], [0, 0]]))
-        self.assertEqual(referenceSparseMatrix, sparseMatrix.data)
+        sparseMatrix = "{0}".format(matrix.sparse())
+        expectedOutput = 'BaseTensor:   (0, 0)\t1'
+        self.assertEqual(expectedOutput, sparseMatrix)
     def test_sparse_(self):
         matrix = TensorBase(np.array([[1, 0], [0, 0]]))
         matrix.sparse_()
-        referenceSparseMatrix = np.array(sp.sparse.csr_matrix([[1, 0], [0, 0]]))
-        self.assertEqual(referenceSparseMatrix, matrix.data.data)
+        returnedOutput = "{0}".format(matrix)
+        expectedOutput = 'BaseTensor: BaseTensor:   (0, 0)\t1'
+        self.assertEqual(returnedOutput, expectedOutput)
 
 class stride_Tests(unittest.TestCase):
     def test_stride(self):
