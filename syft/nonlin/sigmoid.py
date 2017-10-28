@@ -1,6 +1,10 @@
 import numpy as np
 
 
+def sigmoid(x):
+    return SigmoidInterpolated10().forward(x)
+
+
 class SigmoidInterpolated10:
 
     def __init__(self):
@@ -15,12 +19,8 @@ class SigmoidInterpolated10:
                                     W0 + (x * W1) + (x**3 * W3) + (x**5 * W5) + (x**7 * W7) + (x**9 * W9))
         self.sigmoid_deriv = np.vectorize(lambda x: (ONE - x) * x)
 
-    def forward(self, x):
-        return self.sigmoid(x)
-
     def backward(self, x):
         return self.sigmoid_deriv(x)
 
-
-def sigmoid(x):
-    return SigmoidInterpolated10().forward(x)
+    def forward(self, x):
+        return self.sigmoid(x)

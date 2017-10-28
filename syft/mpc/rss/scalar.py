@@ -11,23 +11,9 @@ class MPCNatural(object):
         self.id = id
         self.repo = repo
 
-    def get(self):
-        return sum(self.get_shares()) % Q
-
-    def get_shares(self):
-        others = list(map(lambda x: x.get_share(self.id), self.repo.siblings))
-        return others + [self.repo.ints[self.id]]
-
-    def gen_rand_id(self, length=2**32):
-        return np.random.randint(0, length)
-
     def __add__(self, id):
         new_id = self.gen_rand_id()
         return self.repo.add(new_id, self.id, id.id, True)
-
-    def __sub__(self, id):
-        new_id = self.gen_rand_id()
-        return self.repo.sub(new_id, self.id, id.id, True)
 
     def __mul__(self, x):
         new_id = self.gen_rand_id()
@@ -37,6 +23,13 @@ class MPCNatural(object):
         else:
             return self.repo.mult_scalar(new_id, self.id, x, True)
 
+    def __repr__(self):
+        return str(self.get())
+
+    def __sub__(self, id):
+        new_id = self.gen_rand_id()
+        return self.repo.sub(new_id, self.id, id.id, True)
+
     def __truediv__(self, x):
         new_id = self.gen_rand_id()
         if(type(x) == type(self)):
@@ -44,8 +37,15 @@ class MPCNatural(object):
         else:
             return self.repo.div_scalar(new_id, self.id, x, True)
 
-    def __repr__(self):
-        return str(self.get())
+    def gen_rand_id(self, length=2**32):
+        return np.random.randint(0, length)
+
+    def get(self):
+        return sum(self.get_shares()) % Q
+
+    def get_shares(self):
+        others = list(map(lambda x: x.get_share(self.id), self.repo.siblings))
+        return others + [self.repo.ints[self.id]]
 
 
 class MPCFixedPoint(object):
@@ -63,32 +63,12 @@ class MPCFixedPoint(object):
         else:
             self.raw_natural = raw_natural
 
-    def encode(self, rational):
-        upscaled = int(rational * self.config.BASE**self.config.PRECISION_FRACTIONAL)
-        field_element = upscaled % self.config.Q
-        return field_element
-
-    def decode(self, field_element):
-        upscaled = field_element if field_element <= self.config.Q / 2 else field_element - self.config.Q
-        rational = upscaled / self.config.BASE**self.config.PRECISION_FRACTIONAL
-        return rational
-
-    def get(self):
-        return self.decode(self.raw_natural.get()) % self.config.Q
-
     def __add__(self, x):
 
         if(type(x) != type(self)):
             x = MPCFixedPoint(x, self.repo, config=self.config)
 
         return MPCFixedPoint(None, self.repo, raw_natural=self.raw_natural + x.raw_natural)
-
-    def __sub__(self, x):
-
-        if(type(x) != type(self)):
-            x = MPCFixedPoint(x, self.repo, config=self.config)
-
-        return self.raw_natural - x.raw_natural
 
     def __mul__(self, x):
 
@@ -97,12 +77,32 @@ class MPCFixedPoint(object):
         else:
             return MPCFixedPoint(None, self.repo, raw_natural=(self.raw_natural * x.raw_natural)).truncate()
 
+    def __repr__(self):
+        return str(self.get())
+
+    def __sub__(self, x):
+
+        if(type(x) != type(self)):
+            x = MPCFixedPoint(x, self.repo, config=self.config)
+
+        return self.raw_natural - x.raw_natural
+
     def __truediv__(self, x):
 
         return self.raw_natural.__truediv__(self.encode(x))
 
-    def __repr__(self):
-        return str(self.get())
+    def decode(self, field_element):
+        upscaled = field_element if field_element <= self.config.Q / 2 else field_element - self.config.Q
+        rational = upscaled / self.config.BASE**self.config.PRECISION_FRACTIONAL
+        return rational
+
+    def encode(self, rational):
+        upscaled = int(rational * self.config.BASE**self.config.PRECISION_FRACTIONAL)
+        field_element = upscaled % self.config.Q
+        return field_element
+
+    def get(self):
+        return self.decode(self.raw_natural.get()) % self.config.Q
 
     def truncate(self):
 

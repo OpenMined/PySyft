@@ -10,14 +10,17 @@ class MPCRepo(object):
     def __init__(self):
         self.ints = {}
 
-    def set_siblings(self, a, b):
-        self.siblings = list()
+    def add(self, new_id, id1, id2, populate_to_siblings=False):
 
-        self.left = a
-        self.right = b
+        share = (self.ints[id1] + self.ints[id2]) % Q
 
-        self.siblings.append(a)
-        self.siblings.append(b)
+        self.create_share(new_id, share)
+
+        if(populate_to_siblings):
+            for s in self.siblings:
+                s.add(new_id, id1, id2)
+
+        return MPCNatural(new_id, self)
 
     def create_float(self, secret):
         return MPCFixedPoint(secret, self)
@@ -43,40 +46,28 @@ class MPCRepo(object):
         else:
             return False  # hmm... non-unique int id
 
+    def div_scalar(self, new_id, id1, scalar, populate_to_siblings=False):
+
+        share = int(self.ints[id1] / scalar) % Q
+
+        self.create_share(new_id, share)
+
+        if(populate_to_siblings):
+            for s in self.siblings:
+                s.div_scalar(new_id, id1, scalar)
+
+        return MPCNatural(new_id, self)
+
     def get_share(self, id):
         return self.ints[id]
 
-    def add(self, new_id, id1, id2, populate_to_siblings=False):
+    def mult(self, new_id, id1, id2, populate_to_siblings=False):
 
-        share = (self.ints[id1] + self.ints[id2]) % Q
+        z0 = self.mult_local(id1, id2)
+        z1 = self.left.mult_local(id1, id2)
+        z2 = self.right.mult_local(id1, id2)
 
-        self.create_share(new_id, share)
-
-        if(populate_to_siblings):
-            for s in self.siblings:
-                s.add(new_id, id1, id2)
-
-        return MPCNatural(new_id, self)
-
-    def sub(self, new_id, id1, id2, populate_to_siblings=False):
-
-        share = (self.ints[id1] - self.ints[id2]) % Q
-
-        self.create_share(new_id, share)
-
-        if(populate_to_siblings):
-            for s in self.siblings:
-                s.sub(new_id, id1, id2)
-
-        return MPCNatural(new_id, self)
-
-    def share(self, secret):
-
-        first = random.randrange(Q)
-        second = random.randrange(Q)
-        third = (secret - first - second) % Q
-
-        return [first, second, third]
+        return z0 + z1 + z2
 
     def mult_local(self, id1, id2):
 
@@ -90,14 +81,6 @@ class MPCRepo(object):
 
         return self.create_natural(z0)
 
-    def mult(self, new_id, id1, id2, populate_to_siblings=False):
-
-        z0 = self.mult_local(id1, id2)
-        z1 = self.left.mult_local(id1, id2)
-        z2 = self.right.mult_local(id1, id2)
-
-        return z0 + z1 + z2
-
     def mult_scalar(self, new_id, id1, scalar, populate_to_siblings=False):
 
         share = (self.ints[id1] * scalar) % Q
@@ -110,14 +93,31 @@ class MPCRepo(object):
 
         return MPCNatural(new_id, self)
 
-    def div_scalar(self, new_id, id1, scalar, populate_to_siblings=False):
+    def set_siblings(self, a, b):
+        self.siblings = list()
 
-        share = int(self.ints[id1] / scalar) % Q
+        self.left = a
+        self.right = b
+
+        self.siblings.append(a)
+        self.siblings.append(b)
+
+    def share(self, secret):
+
+        first = random.randrange(Q)
+        second = random.randrange(Q)
+        third = (secret - first - second) % Q
+
+        return [first, second, third]
+
+    def sub(self, new_id, id1, id2, populate_to_siblings=False):
+
+        share = (self.ints[id1] - self.ints[id2]) % Q
 
         self.create_share(new_id, share)
 
         if(populate_to_siblings):
             for s in self.siblings:
-                s.div_scalar(new_id, id1, scalar)
+                s.sub(new_id, id1, id2)
 
         return MPCNatural(new_id, self)
