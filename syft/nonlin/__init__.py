@@ -1,7 +1,13 @@
-from .sigmoid import SigmoidInterpolated10, sigmoid
-from .arbitrary import PolyApproximator
+from .polyfunction import PolyFunction
+from .activations import Activation, PolynomialActivation, SquareActivation
+from .activations import LinearSquareActivation, CubicActivation
+from .activations import SigmoidActivation, LinearCubicActivation
 
-s = str(SigmoidInterpolated10)
-s += str(SigmoidInterpolated10)
-s += str(sigmoid)
-s += str(PolyApproximator)
+
+s = str(Activation)
+s += str(PolynomialActivation)
+s += str(SquareActivation)
+s += str(CubicActivation)
+s += str(LinearSquareActivation)
+s += str(LinearCubicActivation)
+s += str(SigmoidActivation)

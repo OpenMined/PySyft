@@ -4,6 +4,7 @@ from syft import test
 from syft import mpc
 from syft import nonlin
 
+from syft.encryptable import Encryptable
 from syft.tensor import equal, TensorBase
 from syft.math import cumprod, cumsum, ceil, dot, matmul, addmm, addcmul
 from syft.math import addcdiv, addmv, bmm, addbmm, baddbmm, transpose
@@ -15,6 +16,7 @@ s += str(test)
 s += str(mpc)
 s += str(nonlin)
 
+s += str(Encryptable)
 s += str(equal) + str(TensorBase) + str(cumprod) + str(cumsum) + str(ceil)
 s += str(dot) + str(matmul) + str(addmm) + str(addcmul) + str(addcdiv)
 s += str(addmv) + str(bmm) + str(addbmm) + str(baddbmm)

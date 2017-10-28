@@ -30,6 +30,19 @@ class PaillierTensor(TensorBase):
         else:
             self.data = data
 
+    def shape(self):
+        """
+        Returns a tuple of input array dimensions.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Shape of Tensor
+        """
+        return self.data.shape            
+            
     def __setitem__(self, key, value):
         self.data[key] = value.data
         return self
