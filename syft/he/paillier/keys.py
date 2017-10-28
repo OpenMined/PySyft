@@ -38,15 +38,6 @@ class SecretKey(AbstractSecretKey):
         else:
             return NotImplemented
 
-    def serialize(self):
-        seckey_dict = {}
-        seckey_dict['secret_key'] = {
-            'p': self.sk.p,
-            'q': self.sk.q,
-            'n': self.sk.public_key.n
-        }
-        return json.dumps(seckey_dict)
-
     def deserialize(b):
         seckey_dict = json.loads(b)
         sk_record = seckey_dict['secret_key']
@@ -56,29 +47,26 @@ class SecretKey(AbstractSecretKey):
             q=sk_record['q'])
         return SecretKey(sk)
 
+    def serialize(self):
+        seckey_dict = {}
+        seckey_dict['secret_key'] = {
+            'p': self.sk.p,
+            'q': self.sk.q,
+            'n': self.sk.public_key.n
+        }
+        return json.dumps(seckey_dict)
+
 
 class PublicKey(AbstractPublicKey):
 
     def __init__(self, pk):
         self.pk = pk
 
-    def zeros(self, dim):
-        """Returns an encrypted tensor of zeros"""
-        return PaillierTensor(self, syft.zeros(dim))
-
-    def ones(self, dim):
-        """Returns an encrypted tensor of ones"""
-        return PaillierTensor(self, syft.ones(dim))
-
-    def rand(self, dim):
-        """Returns an encrypted tensor with initial numbers sampled from a
-        uniform distribution from 0 to 1."""
-        return PaillierTensor(self, syft.rand(dim))
-
-    def randn(self, dim):
-        """Returns an encrypted tensor with initial numbers sampled from a
-        standard normal distribution"""
-        return PaillierTensor(self, syft.randn(dim))
+    def deserialize(b):
+        pubkey_dict = json.loads(b)
+        pk_record = pubkey_dict['public_key']
+        pk = paillier.PaillierPublicKey(n=int(pk_record['n']))
+        return PublicKey(pk)
 
     def encrypt(self, x, same_type=False, precision_conf=None):
         """Encrypts x. X can be either an encrypted int or a numpy
@@ -107,6 +95,20 @@ class PublicKey(AbstractPublicKey):
 
         return self.pk.encrypt(x)
 
+    def ones(self, dim):
+        """Returns an encrypted tensor of ones"""
+        return syft.ones(dim).encrypt(self)
+
+    def rand(self, dim):
+        """Returns an encrypted tensor with initial numbers sampled from a
+        uniform distribution from 0 to 1."""
+        return syft.rand(dim).encrypt(self)
+
+    def randn(self, dim):
+        """Returns an encrypted tensor with initial numbers sampled from a
+        standard normal distribution"""
+        return syft.randn(dim).encrypt(self)
+
     def serialize(self):
         pubkey_dict = {}
         pubkey_dict['public_key'] = {
@@ -114,11 +116,9 @@ class PublicKey(AbstractPublicKey):
         }
         return json.dumps(pubkey_dict)
 
-    def deserialize(b):
-        pubkey_dict = json.loads(b)
-        pk_record = pubkey_dict['public_key']
-        pk = paillier.PaillierPublicKey(n=int(pk_record['n']))
-        return PublicKey(pk)
+    def zeros(self, dim):
+        """Returns an encrypted tensor of zeros"""
+        return syft.zeros(dim).encrypt(self)
 
 
 class KeyPair(AbstractKeyPair):

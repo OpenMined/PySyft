@@ -10,8 +10,27 @@ class MPCRepo(object):
     def __init__(self):
         self.ints = {}
 
-    def set_parties(self, a):
-        self.another_party = [a]
+    def add(self, new_id, id1, id2, populate_to_another_party=False):
+
+        share = (self.ints[id1] + self.ints[id2]) % Q
+
+        self.create_share(new_id, share)
+
+        if(populate_to_another_party):
+            self.another_party[0].add(new_id, id1, id2)
+
+        return MPCNatural(new_id, self)
+
+    def add_public(self, new_id, id1, scalar, populate_to_another_party=False):
+
+        share = (self.ints[id1] + scalar) % Q
+
+        self.create_share(new_id, share)
+
+        if(populate_to_another_party):
+            self.another_party[0].add_public(new_id, id1, 0)
+
+        return MPCNatural(new_id, self)
 
     def create_float(self, secret):
         return MPCFixedPoint(secret, self)
@@ -36,62 +55,16 @@ class MPCRepo(object):
         else:
             return False  # hmm... non-unique int id
 
-    def get_share(self, id):
-        return self.ints[id]
+    def div_public(self, new_id, id1, scalar, populate_to_another_party=False):
 
-    def add(self, new_id, id1, id2, populate_to_another_party=False):
-
-        share = (self.ints[id1] + self.ints[id2]) % Q
+        share = int(self.ints[id1] / scalar) % Q
 
         self.create_share(new_id, share)
 
         if(populate_to_another_party):
-            self.another_party[0].add(new_id, id1, id2)
+            self.another_party[0].div_public(new_id, id1, scalar)
 
         return MPCNatural(new_id, self)
-
-    def add_public(self, new_id, id1, scalar, populate_to_another_party=False):
-
-        share = (self.ints[id1] + scalar) % Q
-
-        self.create_share(new_id, share)
-
-        if(populate_to_another_party):
-            self.another_party[0].add_public(new_id, id1, 0)
-
-        return MPCNatural(new_id, self)
-
-    def sub(self, new_id, id1, id2, populate_to_another_party=False):
-
-        share = (self.ints[id1] - self.ints[id2]) % Q
-
-        self.create_share(new_id, share)
-
-        if(populate_to_another_party):
-            self.another_party[0].sub(new_id, id1, id2)
-
-        return MPCNatural(new_id, self)
-
-    def sub_public(self, new_id, id1, scalar, populate_to_another_party=False):
-
-        share = (self.ints[id1] - scalar) % Q
-
-        self.create_share(new_id, share)
-
-        if(populate_to_another_party):
-            self.another_party[0].sub(new_id, id1, 0)
-
-        return MPCNatural(new_id, self)
-
-    def share(self, secret):
-
-        x0 = random.randrange(Q)
-        x1 = (secret - x0) % Q
-
-        return [x0, x1]
-
-    def reconstruct(self, shares):
-        return sum(shares) % Q
 
     def generate_multiplication_triple(self):
         a = random.randrange(Q)
@@ -99,10 +72,8 @@ class MPCRepo(object):
         c = a * b % Q
         return self.create_natural_with_shares(self.share(a)), self.create_natural_with_shares(self.share(b)), self.create_natural_with_shares(self.share(c))
 
-    def truncate(self, x, amount=8):
-        self.ints[x.id] = self.ints[x.id] // 10**amount
-        self.another_party[0].ints[x.id] = Q - ((Q - self.another_party[0].ints[x.id]) // 10**amount)
-        return x
+    def get_share(self, id):
+        return self.ints[id]
 
     def mult(self, new_id, x, y, populate_to_another_party=False):
 
@@ -140,13 +111,42 @@ class MPCRepo(object):
 
         return MPCNatural(new_id, self)
 
-    def div_public(self, new_id, id1, scalar, populate_to_another_party=False):
+    def reconstruct(self, shares):
+        return sum(shares) % Q
 
-        share = int(self.ints[id1] / scalar) % Q
+    def set_parties(self, a):
+        self.another_party = [a]
+
+    def share(self, secret):
+
+        x0 = random.randrange(Q)
+        x1 = (secret - x0) % Q
+
+        return [x0, x1]
+
+    def sub(self, new_id, id1, id2, populate_to_another_party=False):
+
+        share = (self.ints[id1] - self.ints[id2]) % Q
 
         self.create_share(new_id, share)
 
         if(populate_to_another_party):
-            self.another_party[0].div_public(new_id, id1, scalar)
+            self.another_party[0].sub(new_id, id1, id2)
 
         return MPCNatural(new_id, self)
+
+    def sub_public(self, new_id, id1, scalar, populate_to_another_party=False):
+
+        share = (self.ints[id1] - scalar) % Q
+
+        self.create_share(new_id, share)
+
+        if(populate_to_another_party):
+            self.another_party[0].sub(new_id, id1, 0)
+
+        return MPCNatural(new_id, self)
+
+    def truncate(self, x, amount=8):
+        self.ints[x.id] = self.ints[x.id] // 10**amount
+        self.another_party[0].ints[x.id] = Q - ((Q - self.another_party[0].ints[x.id]) // 10**amount)
+        return x

@@ -30,13 +30,6 @@ class PaillierTensor(TensorBase):
         else:
             self.data = data
 
-    def __setitem__(self, key, value):
-        self.data[key] = value.data
-        return self
-
-    def __getitem__(self, i):
-        return PaillierTensor(self.public_key, self.data[i], False, fixed_point_conf=self.fixed_point_conf)
-
     def __add__(self, tensor):
         """Performs element-wise addition between two tensors"""
 
@@ -53,19 +46,8 @@ class PaillierTensor(TensorBase):
         ptensor._calc_add_depth(self, tensor)
         return ptensor
 
-    def __sub__(self, tensor):
-        """Performs element-wise subtraction between two tensors"""
-        if(not isinstance(tensor, TensorBase)):
-            # try encrypting it
-            tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'), fixed_point_conf=self.fixed_point_conf)
-            return PaillierTensor(self.public_key, self.data - tensor.data, False, fixed_point_conf=self.fixed_point_conf)
-
-        if(type(tensor) == TensorBase):
-            tensor = PaillierTensor(self.public_key, tensor.data, fixed_point_conf=self.fixed_point_conf)
-
-        result_data = self.data - tensor.data
-        ptensor = PaillierTensor(self.public_key, result_data, False, fixed_point_conf=self.fixed_point_conf)
-        return ptensor
+    def __getitem__(self, i):
+        return PaillierTensor(self.public_key, self.data[i], False)
 
     def __isub__(self, tensor):
         """Performs inline, element-wise subtraction between two tensors"""
@@ -92,6 +74,28 @@ class PaillierTensor(TensorBase):
         else:
             return NotImplemented
 
+    def __repr__(self):
+        return "PaillierTensor: " + repr(self.data)
+
+    def __setitem__(self, key, value):
+        self.data[key] = value.data
+        return self
+
+    def __str__(self):
+        return "PaillierTensor: " + str(self.data)
+
+    def __sub__(self, tensor):
+        """Performs element-wise subtraction between two tensors"""
+        if(not isinstance(tensor, TensorBase)):
+            # try encrypting it
+            tensor = PaillierTensor(self.public_key, np.array([tensor]).astype('float'))
+            return PaillierTensor(self.public_key, self.data - tensor.data, False)
+
+        if(type(tensor) == TensorBase):
+            tensor = PaillierTensor(self.public_key, tensor.data)
+
+        return PaillierTensor(self.public_key, self.data - tensor.data, False)
+
     def __truediv__(self, tensor):
         """Performs element-wise division between two tensors"""
 
@@ -108,6 +112,12 @@ class PaillierTensor(TensorBase):
         else:
             return NotImplemented
 
+    def dot(self, plaintext_x):
+        if(not plaintext_x.encrypted):
+            return (self * plaintext_x).sum(plaintext_x.dim() - 1)
+        else:
+            return NotImplemented
+
     def sum(self, dim=None):
         """Returns the sum of all elements in the input array."""
         if not self.encrypted:
@@ -118,18 +128,6 @@ class PaillierTensor(TensorBase):
         else:
             op = self.data.sum(axis=dim)
             return PaillierTensor(self.public_key, op, False, fixed_point_conf=self.fixed_point_conf)
-
-    def dot(self, plaintext_x):
-        if(not plaintext_x.encrypted):
-            return (self * plaintext_x).sum(plaintext_x.dim() - 1)
-        else:
-            return NotImplemented
-
-    def __str__(self):
-        return "PaillierTensor: " + str(self.data)
-
-    def __repr__(self):
-        return "PaillierTensor: " + repr(self.data)
 
 
 class PrecisionConf:
