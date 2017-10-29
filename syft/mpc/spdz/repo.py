@@ -79,7 +79,6 @@ class MPCRepo(object):
         return self.ints[id]
 
     def mult(self, new_id, x, y, populate_to_another_party=False):
-
         a, b, c = self.generate_multiplication_triple()
         try:
             new_id1 = np.random.randint(0, 2**32)
