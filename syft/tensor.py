@@ -14,7 +14,7 @@ from scipy import stats
 import pickle
 
 __all__ = [
-    'equal', 'TensorBase',
+    'equal', 'TensorBase', 'masked_select'
 ]
 
 
@@ -1487,7 +1487,8 @@ class TensorBase(object):
         index = _ensure_tensorbase(index)
         if self.encrypted or index.encrypted:
             return NotImplemented
-        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + \
+            index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
@@ -1693,7 +1694,8 @@ class TensorBase(object):
         if self.data.shape != tensor.data.shape:
             raise IndexError("Tensor has different shape")
         if self.data.shape[dim] != index.data.size:
-            raise ValueError("Index should have the same number of elements as dimension")
+            raise ValueError(
+                "Index should have the same number of elements as dimension")
         if np.argmax(index.data > self.data.shape[dim]) != 0:
             raise ValueError("Index contains a value which is out of range")
         if dim >= self.data.ndim or dim < -self.data.ndim:
@@ -1720,7 +1722,8 @@ class TensorBase(object):
         if self.data.shape != tensor.data.shape:
             raise IndexError("Tensor has different shape")
         if self.data.shape[dim] != index.data.size:
-            raise ValueError("Index should have the same number of elements as dimension")
+            raise ValueError(
+                "Index should have the same number of elements as dimension")
         if np.argmax(index.data > self.data.shape[dim]) != 0:
             raise ValueError("Index contains a value which is out of range")
         if dim >= self.data.ndim or dim < -self.data.ndim:
@@ -2891,7 +2894,8 @@ class TensorBase(object):
         if dim < 0:
             # Not sure why scatter should accept dim < 0, but that is the behavior in PyTorch's scatter
             dim = self.data.ndim + dim
-        idx_xsection_shape = index.data.shape[:dim] + index.data.shape[dim + 1:]
+        idx_xsection_shape = index.data.shape[:dim] + \
+            index.data.shape[dim + 1:]
         self_xsection_shape = self.data.shape[:dim] + self.data.shape[dim + 1:]
         if idx_xsection_shape != self_xsection_shape:
             raise ValueError("Except for dimension " + str(dim) +
@@ -3356,7 +3360,8 @@ class TensorBase(object):
         num_axes = len(input_shape)  # number of dimensions of the nd-array
 
         if dim < -num_axes or dim + 1 > num_axes:
-            raise Exception("\'dim\' should be between {} and {} inclusive".format(-num_axes, num_axes - 1))
+            raise Exception(
+                "\'dim\' should be between {} and {} inclusive".format(-num_axes, num_axes - 1))
 
         if not size:
             raise Exception("\'size\'' can\'t be 0 or less")
@@ -3375,7 +3380,8 @@ class TensorBase(object):
         sub_arrays = []
         while i + size <= input_shape[dim]:
             indices[dim] = slice(i, i + size)
-            sub_arrays.append(np.expand_dims(input_array[indices], axis=num_axes).swapaxes(dim, num_axes))
+            sub_arrays.append(np.expand_dims(
+                input_array[indices], axis=num_axes).swapaxes(dim, num_axes))
             i = i + step
 
         return TensorBase(np.concatenate(sub_arrays, axis=dim))
