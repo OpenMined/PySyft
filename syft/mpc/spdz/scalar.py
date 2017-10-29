@@ -43,7 +43,10 @@ class MPCNatural(object):
             return self.repo.div_public(new_id, self.id, x, True)
 
     def gen_rand_id(self, length=2**32):
-        return np.random.randint(0, length)
+		try:
+			return np.random.randint(0, length)
+		except Exception as e:
+			return np.random.randint(0, length, dtype=np.int64)
 
     def get(self):
         return sum(self.get_shares()) % Q
