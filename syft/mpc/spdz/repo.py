@@ -42,8 +42,11 @@ class MPCRepo(object):
         return self.create_natural_with_shares(shares)
 
     def create_natural_with_shares(self, shares):
+        try:
+            id = np.random.randint(0, 2**32)
+        except Exception as e:
+            id = np.random.randint(0, 2**32, dtype=np.int64)
 
-        id = np.random.randint(0, 2**32)
         self.create_share(id, shares[0])
         self.another_party[0].create_share(id, shares[1])
         return MPCNatural(id, self)
@@ -79,24 +82,46 @@ class MPCRepo(object):
 
         a, b, c = self.generate_multiplication_triple()
 
-        new_id1 = np.random.randint(0, 2**32)
-        d = self.sub(new_id1, x, a.id, True)
-        new_id2 = np.random.randint(0, 2**32)
-        e = self.sub(new_id2, y, b.id, True)
+		try:
+			new_id1 = np.random.randint(0, 2**32)
+			d = self.sub(new_id1, x, a.id, True)
+			new_id2 = np.random.randint(0, 2**32)
+			e = self.sub(new_id2, y, b.id, True)
 
-        delta = self.reconstruct([self.ints[d.id], self.another_party[0].ints[d.id]])
-        epsilon = self.reconstruct([self.ints[e.id], self.another_party[0].ints[e.id]])
+			delta = self.reconstruct([self.ints[d.id], self.another_party[0].ints[d.id]])
+			epsilon = self.reconstruct([self.ints[e.id], self.another_party[0].ints[e.id]])
 
-        r = delta * epsilon % Q
-        new_id3 = np.random.randint(0, 2**32)
-        s = self.mult_public(new_id3, a.id, epsilon, True)
-        new_id4 = np.random.randint(0, 2**32)
-        t = self.mult_public(new_id4, b.id, delta, True)
+			r = delta * epsilon % Q
+			new_id3 = np.random.randint(0, 2**32)
+			s = self.mult_public(new_id3, a.id, epsilon, True)
+			new_id4 = np.random.randint(0, 2**32)
+			t = self.mult_public(new_id4, b.id, delta, True)
 
-        new_id5 = np.random.randint(0, 2**32)
-        new_id6 = np.random.randint(0, 2**32)
-        new_id7 = np.random.randint(0, 2**32)
-        result = self.add(new_id7, s.id, self.add(new_id6, t.id, self.add_public(new_id5, c.id, r, True).id, True).id, True)
+			new_id5 = np.random.randint(0, 2**32)
+			new_id6 = np.random.randint(0, 2**32)
+			new_id7 = np.random.randint(0, 2**32)
+			result = self.add(new_id7, s.id, self.add(new_id6, t.id, self.add_public(new_id5, c.id, r, True).id, True).id, True)
+
+		except Exception as e:
+
+			new_id1 = np.random.randint(0, 2**32, dtype=np.int64)
+			d = self.sub(new_id1, x, a.id, True)
+			new_id2 = np.random.randint(0, 2**32, dtype=np.int64)
+			e = self.sub(new_id2, y, b.id, True)
+
+			delta = self.reconstruct([self.ints[d.id], self.another_party[0].ints[d.id]])
+			epsilon = self.reconstruct([self.ints[e.id], self.another_party[0].ints[e.id]])
+
+			r = delta * epsilon % Q
+			new_id3 = np.random.randint(0, 2**32, dtype=np.int64)
+			s = self.mult_public(new_id3, a.id, epsilon, True)
+			new_id4 = np.random.randint(0, 2**32, dtype=np.int64)
+			t = self.mult_public(new_id4, b.id, delta, True)
+
+			new_id5 = np.random.randint(0, 2**32, dtype=np.int64)
+			new_id6 = np.random.randint(0, 2**32, dtype=np.int64)
+			new_id7 = np.random.randint(0, 2**32, dtype=np.int64)
+			result = self.add(new_id7, s.id, self.add(new_id6, t.id, self.add_public(new_id5, c.id, r, True).id, True).id, True)
 
         return self.truncate(result)
 
