@@ -42,10 +42,7 @@ class MPCRepo(object):
         return self.create_natural_with_shares(shares)
 
     def create_natural_with_shares(self, shares):
-        try:
-            id = np.random.randint(0, 2**32)
-        except Exception as e:
-            id = np.random.randint(0, 2**32, dtype=np.int64)
+        id = np.random.randint(0, 2**32, dtype=np.int64)
         self.create_share(id, shares[0])
         self.another_party[0].create_share(id, shares[1])
         return MPCNatural(id, self)
