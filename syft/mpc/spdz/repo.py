@@ -42,12 +42,11 @@ class MPCRepo(object):
         return self.create_natural_with_shares(shares)
 
     def create_natural_with_shares(self, shares):
-		
-		try:
-			id = np.random.randint(0, 2**32)
-		except Exception as e:
-			id = np.random.randint(0, 2**32, dtype=np.int64)
-			
+        try:
+            id = np.random.randint(0, 2**32)
+        except Exception as e:
+            id = np.random.randint(0, 2**32, dtype=np.int64)
+
         self.create_share(id, shares[0])
         self.another_party[0].create_share(id, shares[1])
         return MPCNatural(id, self)
@@ -82,7 +81,7 @@ class MPCRepo(object):
     def mult(self, new_id, x, y, populate_to_another_party=False):
 
         a, b, c = self.generate_multiplication_triple()
-		
+
 		try:
 			new_id1 = np.random.randint(0, 2**32)
 			d = self.sub(new_id1, x, a.id, True)
@@ -102,9 +101,9 @@ class MPCRepo(object):
 			new_id6 = np.random.randint(0, 2**32)
 			new_id7 = np.random.randint(0, 2**32)
 			result = self.add(new_id7, s.id, self.add(new_id6, t.id, self.add_public(new_id5, c.id, r, True).id, True).id, True)
-		
+
 		except Exception as e:
-			
+
 			new_id1 = np.random.randint(0, 2**32, dtype=np.int64)
 			d = self.sub(new_id1, x, a.id, True)
 			new_id2 = np.random.randint(0, 2**32, dtype=np.int64)
