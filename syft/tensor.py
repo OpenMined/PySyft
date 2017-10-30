@@ -3185,6 +3185,88 @@ class TensorBase(object):
         self.transpose_(0, 1)
         return self
 
+    def sin(self):
+        """
+        Performs sine function on the Tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output tensor with sin applied
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.sin(self).data
+        return self
+
+    def sinh(self):
+        """
+        Performs sine function on the Tensor
+        elementwise
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.sinh(self).data
+        return self
+
+    def cos(self):
+        """
+        Performs cosine function on the Tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output tensor with cos applied
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.cos(self).data
+        return self
+
+    def cosh(self):
+        """
+        Performs cosine function on the Tensor
+        elementwise
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Caller with values in-place
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.cosh(self).data
+        return self
+
+    def tan(self):
+        """
+        Performs tan function on the Tensor
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Output tensor with tan applied
+        """
+        if self.encrypted:
+            return NotImplemented
+        self.data = syft.math.tan(self).data
+        return self
+
     def tanh_(self):
         """
         Performs tanh (hyperbolic tangent) function on the Tensor

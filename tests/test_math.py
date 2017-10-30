@@ -84,6 +84,76 @@ class FloorTests(unittest.TestCase):
                                                                     [7., 8.]])))
 
 
+class SinTests(unittest.TestCase):
+    def test_sin(self):
+        # int
+        t1 = TensorBase(np.array([[3, 1, 2], [0, -1, 2]]))
+        t2 = syft.math.sin(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3, 1, 2], [0, -1, 2]])))
+        self.assertTrue(syft.equal(t2.data, np.sin(np.array([[3, 1, 2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))
+        t2 = syft.math.sin(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]])))
+        self.assertTrue(syft.equal(t2.data, np.sin(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
+
+
+class SinhTests(unittest.TestCase):
+    def test_sinh(self):
+        # int
+        t1 = TensorBase(np.array([[3, 1, 2], [0, -1, 2]]))
+        t2 = syft.math.sinh(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3, 1, 2], [0, -1, 2]])))
+        self.assertTrue(syft.equal(t2.data, np.sinh(np.array([[3, 1, 2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))
+        t2 = syft.math.sinh(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]])))
+        self.assertTrue(syft.equal(t2.data, np.sinh(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
+
+
+class CosTests(unittest.TestCase):
+    def test_cos(self):
+        # int
+        t1 = TensorBase(np.array([[3, 1, 2], [0, -1, 2]]))
+        t2 = syft.math.cos(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3, 1, 2], [0, -1, 2]])))
+        self.assertTrue(syft.equal(t2.data, np.cos(np.array([[3, 1, 2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))
+        t2 = syft.math.cos(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]])))
+        self.assertTrue(syft.equal(t2.data, np.cos(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
+
+
+class CoshTests(unittest.TestCase):
+    def test_cosh(self):
+        # int
+        t1 = TensorBase(np.array([[3, 1, 2], [0, -1, 2]]))
+        t2 = syft.math.cosh(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3, 1, 2], [0, -1, 2]])))
+        self.assertTrue(syft.equal(t2.data, np.cosh(np.array([[3, 1, 2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))
+        t2 = syft.math.cosh(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]])))
+        self.assertTrue(syft.equal(t2.data, np.cosh(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
+
+
+class TanTests(unittest.TestCase):
+    def test_tan(self):
+        # int
+        t1 = TensorBase(np.array([[3, 1, 2], [0, -1, 2]]))
+        t2 = syft.math.tan(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3, 1, 2], [0, -1, 2]])))
+        self.assertTrue(syft.equal(t2.data, np.tan(np.array([[3, 1, 2], [0, -1, 2]]))))
+        # float
+        t1 = TensorBase(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))
+        t2 = syft.math.tan(t1)
+        self.assertTrue(syft.equal(t1.data, np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]])))
+        self.assertTrue(syft.equal(t2.data, np.tan(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
+
+
 class TanhTests(unittest.TestCase):
     def test_tanh(self):
         # int
