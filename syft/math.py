@@ -17,10 +17,17 @@ from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
+<<<<<<< HEAD
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
     'sin', 'sinh', 'cos', 'cosh', 'tan', 'tanh', 'relu', 'zeros', 'ones', 'rand',
     'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
+=======
+    'addbmm', 'addcdiv', 'addcmul', 'addmm', 'addmv', 'baddbmm', 'bmm', 'ceil',
+    'cumprod', 'cumsum', 'diag', 'dot', 'floor', 'fmod', 'lerp', 'matmul',
+    'mm', 'multinomial', 'numel', 'ones', 'rand', 'randn', 'renorm', 'sigmoid',
+    'tanh', 'transpose', 'unsqueeze', 'zeros'
+>>>>>>> upstream/master
 ]
 
 
@@ -694,26 +701,6 @@ def randn(dim):
     return TensorBase(np.random.randn(dim))
 
 
-def relu(tensor):
-    """
-    Return relu function
-
-    Parameters
-    ----------
-    tensor: TensorBase
-        input Tensor
-
-    Returns
-    -------
-    TensorBase:
-        Output Tensor;
-    """
-    tensor = _ensure_tensorbase(tensor)
-    if tensor.encrypted is True:
-        return NotImplemented
-    return TensorBase(np.maximum(0, tensor.data))
-
-
 def renorm(tensor1, p, dim, maxnorm):
     """
     Performs the scaling of elements along the dimension dim in tensor1 such that
@@ -749,7 +736,8 @@ def renorm(tensor1, p, dim, maxnorm):
     else:
         # solve for c in maxnorm = sqrt(sum((c*x)**p))
         dim_2_sum = tuple(filter(lambda x: x != dim, range(dims)))
-        norm = np.power(np.power(np.absolute(tensor1), p).sum(dim_2_sum), 1.0 / p)
+        norm = np.power(np.power(np.absolute(tensor1),
+                                 p).sum(dim_2_sum), 1.0 / p)
         c = maxnorm / norm
         # only renorm when norm > maxnorm
         scalar = np.where(norm > maxnorm, c, 1)
