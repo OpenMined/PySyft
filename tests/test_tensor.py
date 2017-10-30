@@ -862,6 +862,7 @@ class NegTests(unittest.TestCase):
         t2.neg_()
         self.assertTrue(np.array_equal(t2.data, np.array([[0.0, -1.5, 2.5], [0.0, 1.5, -2.5]])))
 
+
 class SinTests(unittest.TestCase):
     def test_sin(self):
         # int
@@ -872,6 +873,7 @@ class SinTests(unittest.TestCase):
         t1 = TensorBase(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))
         out = t1.sin()
         self.assertTrue(np.array_equal(out.data, np.sin(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
+
 
 class SinhTests(unittest.TestCase):
     def test_sinh(self):
@@ -884,6 +886,7 @@ class SinhTests(unittest.TestCase):
         out = t1.sinh()
         self.assertTrue(np.array_equal(out.data, np.sinh(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
 
+
 class CosTests(unittest.TestCase):
     def test_cos(self):
         # int
@@ -894,6 +897,7 @@ class CosTests(unittest.TestCase):
         t1 = TensorBase(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))
         out = t1.cos()
         self.assertTrue(np.array_equal(out.data, np.cos(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
+
 
 class CoshTests(unittest.TestCase):
     def test_cosh(self):
@@ -906,6 +910,7 @@ class CoshTests(unittest.TestCase):
         out = t1.cosh()
         self.assertTrue(np.array_equal(out.data, np.cosh(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
 
+
 class TanTests(unittest.TestCase):
     def test_tan(self):
         # int
@@ -916,6 +921,7 @@ class TanTests(unittest.TestCase):
         t1 = TensorBase(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))
         out = t1.tan()
         self.assertTrue(np.array_equal(out.data, np.tan(np.array([[3.3, 1.3, 2.2], [0.0, -1.3, 2.4]]))))
+
 
 class TanhTests(unittest.TestCase):
     def test_tanh_(self):

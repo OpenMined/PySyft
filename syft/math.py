@@ -19,9 +19,9 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'sin', 'sinh', 'cos', 'cosh', 'tan', 'tanh', 'relu', 'zeros', 'ones', 'rand',
+    'sin', 'sinh', 'cos', 'cosh', 'tan', 'tanh', 'zeros', 'ones', 'rand',
     'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
-    ]
+]
 
 
 def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
@@ -762,6 +762,7 @@ def sigmoid(tensor):
         return NotImplemented
     return TensorBase(1 / (1 + np.exp(np.array(-tensor.data))))
 
+
 def sin(tensor):
     """
     Returns a new tensor holding values of Trigonometric sine
@@ -781,6 +782,7 @@ def sin(tensor):
     if tensor.encrypted:
         return NotImplemented
     return TensorBase(np.sin(np.array(tensor.data)))
+
 
 def sinh(tensor):
     """
@@ -802,6 +804,7 @@ def sinh(tensor):
         return NotImplemented
     return TensorBase(np.sinh(np.array(tensor.data)))
 
+
 def cos(tensor):
     """
     Returns a new tensor holding values of Trigonometric cosine
@@ -821,6 +824,7 @@ def cos(tensor):
     if tensor.encrypted:
         return NotImplemented
     return TensorBase(np.cos(np.array(tensor.data)))
+
 
 def cosh(tensor):
     """
@@ -842,6 +846,7 @@ def cosh(tensor):
         return NotImplemented
     return TensorBase(np.cosh(np.array(tensor.data)))
 
+
 def tan(tensor):
     """
     Returns a new tensor holding values of Trigonometric tan
@@ -861,6 +866,7 @@ def tan(tensor):
     if tensor.encrypted:
         return NotImplemented
     return TensorBase(np.tan(np.array(tensor.data)))
+
 
 def tanh(tensor):
     """
