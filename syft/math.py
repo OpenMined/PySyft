@@ -17,18 +17,11 @@ from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
-<<<<<<< HEAD
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
     'sin', 'sinh', 'cos', 'cosh', 'tan', 'tanh', 'relu', 'zeros', 'ones', 'rand',
     'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
-=======
-    'addbmm', 'addcdiv', 'addcmul', 'addmm', 'addmv', 'baddbmm', 'bmm', 'ceil',
-    'cumprod', 'cumsum', 'diag', 'dot', 'floor', 'fmod', 'lerp', 'matmul',
-    'mm', 'multinomial', 'numel', 'ones', 'rand', 'randn', 'renorm', 'sigmoid',
-    'tanh', 'transpose', 'unsqueeze', 'zeros'
->>>>>>> upstream/master
-]
+    ]
 
 
 def addbmm(tensor1, tensor2, mat, beta=1, alpha=1):
