@@ -19,7 +19,8 @@ from .tensor import _ensure_tensorbase
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'tanh', 'relu', 'zeros', 'ones', 'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
+    'sin', 'sinh', 'cos', 'cosh', 'tan', 'tanh', 'relu', 'zeros', 'ones', 'rand',
+    'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
 ]
 
 
@@ -780,6 +781,105 @@ def sigmoid(tensor):
         return NotImplemented
     return TensorBase(1 / (1 + np.exp(np.array(-tensor.data))))
 
+def sin(tensor):
+    """
+    Returns a new tensor holding values of Trigonometric sine
+    function
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor;
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted:
+        return NotImplemented
+    return TensorBase(np.sin(np.array(tensor.data)))
+
+def sinh(tensor):
+    """
+    Returns a new tensor holding element wise values of hyperbolic sine
+    function
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor;
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted:
+        return NotImplemented
+    return TensorBase(np.sinh(np.array(tensor.data)))
+
+def cos(tensor):
+    """
+    Returns a new tensor holding values of Trigonometric cosine
+    function
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor;
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted:
+        return NotImplemented
+    return TensorBase(np.cos(np.array(tensor.data)))
+
+def cosh(tensor):
+    """
+    Returns a new tensor holding element wise values of hyperbolic cosine
+    function
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor;
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted:
+        return NotImplemented
+    return TensorBase(np.cosh(np.array(tensor.data)))
+
+def tan(tensor):
+    """
+    Returns a new tensor holding values of Trigonometric tan
+    function
+
+    Parameters
+    ----------
+    tensor: TensorBase
+        input Tensor
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor;
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted:
+        return NotImplemented
+    return TensorBase(np.tan(np.array(tensor.data)))
 
 def tanh(tensor):
     """
