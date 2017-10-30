@@ -428,7 +428,6 @@ class MultinomialTests(unittest.TestCase):
         self.assertTupleEqual((len(t1),), t2.shape())
         self.assertTrue(np.all(t2.data >= 0) and np.all(t2.data <= len(t1)))
 
-        self.assertEqual(referenceSparseMatrix, sparseMatrix.data)
 class SparseTests(unittest.TestCase):
     def test_sparse_sparseMatrix(self):
         matrix = np.array([[1, 0], [0, 0]])

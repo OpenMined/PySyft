@@ -825,27 +825,6 @@ def sparse(tensor):
         sparseTensor = _ensure_tensorbase(sparseTensor)
         return sparseTensor
 
-def sparse(tensor):
-    """
-    Converts dense matrix to sparse, returning a new matrix as a tensor
-
-    Parameters
-    ----------
-    tensor: TensorBase
-
-    Returns
-    -------
-    TensorBase:
-        Output Tensor
-    """
-    tensor = _ensure_tensorbase(tensor)
-    if tensor.encrypted:
-        return NotImplemented
-    else:
-        sparseTensor = sp.sparse.csr_matrix(tensor)
-        sparseTensor = _ensure_tensorbase(sparseTensor)
-        return sparseTensor
-
 def cos(tensor):
     """
     Returns a new tensor holding values of Trigonometric cosine
