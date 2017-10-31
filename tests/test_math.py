@@ -428,12 +428,14 @@ class MultinomialTests(unittest.TestCase):
         self.assertTupleEqual((len(t1),), t2.shape())
         self.assertTrue(np.all(t2.data >= 0) and np.all(t2.data <= len(t1)))
 
+
 class SparseTests(unittest.TestCase):
     def test_sparse_sparseMatrix(self):
         matrix = np.array([[1, 0], [0, 0]])
         sparseMatrix = "{0}".format(syft.math.sparse(matrix))
         expectedOutput = 'BaseTensor:   (0, 0)\t1'
         self.assertEqual(sparseMatrix, expectedOutput)
+        
     def test_sparse_denseMatrix(self):
         matrix = np.array([[1, 2], [3, 4]])
         sparseMatrix = "{0}".format(syft.math.sparse(matrix))

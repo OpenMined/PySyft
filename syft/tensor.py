@@ -3038,6 +3038,42 @@ class TensorBase(object):
         else:
             return self.data.shape
 
+    def sparse(self):
+        """
+	Converts dense matrix to sparse, returning a new matrix as a tensor
+
+	Parameters
+	----------
+	tensor: TensorBase
+
+	Returns
+	-------
+	TensorBase:
+		Output Tensor
+	"""
+        if self.encrypted:
+            return NotImplemented
+
+        return syft.math.sparse(self)
+
+    def sparse_(self):
+        """
+	Converts dense matrix to sparse, returning a new matrix as a tensor
+
+	Parameters
+	----------
+	tensor: TensorBase
+
+	Returns
+	-------
+		Caller with values in-place
+	"""
+        if self.encrypted:
+            return NotImplemented
+
+        self.data = syft.math.sparse(self)
+        return self
+
     def split(self, split_size, dim=0):
         """
         Returns tuple of tensors of equally sized tensor/chunks (if possible)
@@ -3416,43 +3452,6 @@ class TensorBase(object):
             axes[dim0] = dim1
             axes[dim1] = dim0
             self.data = np.transpose(self.data, axes=tuple(axes))
-        return self
-
-    def sparse(self):
-        """
-		Converts dense matrix to sparse, returning a new matrix as a tensor
-
-		Parameters
-		----------
-		tensor: TensorBase
-
-		Returns
-		-------
-		TensorBase:
-			Output Tensor
-		"""
-        if self.encrypted:
-            return NotImplemented
-
-        return syft.math.sparse(self)
-
-    def sparse_(self):
-        """
-		Converts dense matrix to sparse, returning a new matrix as a tensor
-
-		Parameters
-		----------
-		tensor: TensorBase
-
-		Returns
-		-------
-		TensorBase:
-			Output Tensor
-		"""
-        if self.encrypted:
-            return NotImplemented
-
-        self.data = syft.math.sparse(self)
         return self
 
     def unfold(self, dim, size, step):
