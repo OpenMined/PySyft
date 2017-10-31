@@ -3601,3 +3601,35 @@ class TensorBase(object):
 
         self.data.fill(0)
         return self
+
+    def split_(self, split_size, axis=0):
+        """
+        Splits the tensor into multiple equally sized chunks (if possible).
+
+        Last chunk will be smaller if the tensor size along a given axis
+        is not divisible by `split_size`.
+
+        Returns a list of the split tensors
+
+        Parameters
+        ----------
+        tensor: TensorBase
+            array to be divided into sub-arrays.
+
+        split_size: int
+            the array will be divided into `split_size` equal arrays along `axis`. If split
+            cannot be done equally the last array will be smaller along the given axis.
+
+        axis: int, optional
+            The axis along which to split, default is 0.
+
+        Returns
+        -------
+        list: list of divided arrays
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        return syft.math.split(self, split_size, axis)
+
+
