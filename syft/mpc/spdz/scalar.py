@@ -1,6 +1,5 @@
 from .config import PrecisionConfig
 import numpy as np
-import random
 
 Q = 293973345475167247070445277780365744413
 
@@ -11,9 +10,12 @@ class MPCNatural(object):
         self.id = id
         self.repo = repo
 
-    def __add__(self, id):
+    def __add__(self, x):
         new_id = self.gen_rand_id()
-        return self.repo.add(new_id, self.id, id.id, True)
+        if(type(x) == type(self)):
+            return self.repo.add(new_id, self.id, x.id, True)
+        else:
+            return self.repo.add_public(new_id, self.id, id, True)
 
     def __mul__(self, x):
         new_id = self.gen_rand_id()
@@ -21,21 +23,24 @@ class MPCNatural(object):
         if(type(x) == type(self)):
             return self.repo.mult(new_id, self.id, x.id, True)
         else:
-            return self.repo.mult_scalar(new_id, self.id, x, True)
+            return self.repo.mult_public(new_id, self.id, x, True)
 
     def __repr__(self):
         return str(self.get())
 
-    def __sub__(self, id):
+    def __sub__(self, x):
         new_id = self.gen_rand_id()
-        return self.repo.sub(new_id, self.id, id.id, True)
+        if(type(x) == type(self)):
+            return self.repo.sub(new_id, self.id, x.id, True)
+        else:
+            return self.repo.sub_public(new_id, self.id, id, True)
 
     def __truediv__(self, x):
         new_id = self.gen_rand_id()
         if(type(x) == type(self)):
             return NotImplemented
         else:
-            return self.repo.div_scalar(new_id, self.id, x, True)
+            return self.repo.div_public(new_id, self.id, x, True)
 
     def gen_rand_id(self, length=2**32):
         return np.random.randint(0, length)
@@ -44,7 +49,7 @@ class MPCNatural(object):
         return sum(self.get_shares()) % Q
 
     def get_shares(self):
-        others = list(map(lambda x: x.get_share(self.id), self.repo.siblings))
+        others = list(map(lambda x: x.get_share(self.id), self.repo.another_party))
         return others + [self.repo.ints[self.id]]
 
 
@@ -73,9 +78,9 @@ class MPCFixedPoint(object):
     def __mul__(self, x):
 
         if(type(x) != type(self)):
-            return MPCFixedPoint(None, self.repo, raw_natural=(self.raw_natural * self.encode(x))).truncate()
+            return MPCFixedPoint(None, self.repo, raw_natural=(self.raw_natural * self.encode(x)))
         else:
-            return MPCFixedPoint(None, self.repo, raw_natural=(self.raw_natural * x.raw_natural)).truncate()
+            return MPCFixedPoint(None, self.repo, raw_natural=(self.raw_natural * x.raw_natural))
 
     def __repr__(self):
         return str(self.get())
@@ -103,17 +108,3 @@ class MPCFixedPoint(object):
 
     def get(self):
         return self.decode(self.raw_natural.get()) % self.config.Q
-
-    def truncate(self):
-
-        b = self.raw_natural + self.repo.create_natural_with_shares([self.config.BASE**(2 * self.config.PRECISION + 1), 0, 0])
-        mask = random.randrange(self.config.Q) % self.config.BASE**(self.config.PRECISION + self.config.PRECISION_FRACTIONAL + self.config.KAPPA)
-        mask_low = mask % self.config.BASE**self.config.PRECISION_FRACTIONAL
-        b_masked = (b + self.repo.create_natural_with_shares([mask, 0, 0])).get()
-        b_masked_low = b_masked % self.config.BASE**self.config.PRECISION_FRACTIONAL
-        b_low = self.repo.create_natural(b_masked_low) - self.repo.create_natural(mask_low)
-        c = self.raw_natural - b_low
-        d = c * self.config.INVERSE
-        self.raw_natural = d
-
-        return self

@@ -3,7 +3,7 @@ from syft.tensor import TensorBase
 import numpy as np
 
 
-class RSSMPCTensor(TensorBase):
+class SPDZMPCTensor(TensorBase):
 
     def __init__(self, repo, data=None, input_is_shared=False):
 
@@ -18,7 +18,7 @@ class RSSMPCTensor(TensorBase):
                 self.data = self.repo.create_float(data)
 
             elif(type(data) == TensorBase):
-                return RSSMPCTensor(self.repo, data.data)
+                return SPDZMPCTensor(self.repo, data.data)
 
             elif(type(data) == np.ndarray):
                 x = data
@@ -34,19 +34,19 @@ class RSSMPCTensor(TensorBase):
                 return NotImplemented
 
     def __add__(self, x):
-        return RSSMPCTensor(self.repo, (self.data + x.data), True)
+        return SPDZMPCTensor(self.repo, (self.data + x.data), True)
 
     def __mul__(self, x):
-        return RSSMPCTensor(self.repo, (self.data * x.data), True)
+        return SPDZMPCTensor(self.repo, (self.data * x.data), True)
 
     def __repr__(self):
-        return "RSSMPCTensor: " + repr(self.data)
+        return "SPDZMPCTensor: " + repr(self.data)
 
     def __str__(self):
-        return "RSSMPCTensor: " + str(self.data)
+        return "SPDZMPCTensor: " + str(self.data)
 
     def __sub__(self, x):
-        return RSSMPCTensor(self.repo, (self.data - x.data), True)
+        return SPDZMPCTensor(self.repo, (self.data - x.data), True)
 
     def dot(self, x):
         return (self * x).sum(x.dim() - 1)
