@@ -969,6 +969,7 @@ def zeros(dim):
     """
     return TensorBase(np.zeros(dim))
 
+
 def split(tensor, split_size, axis=0):
     """
     Splits the tensor into multiple equally sized chunks (if possible).
@@ -995,18 +996,19 @@ def split(tensor, split_size, axis=0):
     list: list of divided arrays
     """
     if axis < 0:
-        axis += len(tensor.shape())        
+        axis += len(tensor.shape())
+
     length_along_axis = tensor.shape()[axis]
 
-    # calculate size of the biggest array after splitting 
+    # calculate size of the biggest array after splitting
     subdivision_size = (length_along_axis + split_size - 1) // split_size
 
-    # calculate number of full sized splits that will be formed 
+    # calculate number of full sized splits that will be formed
     number_of_full_splits = length_along_axis // subdivision_size
 
     # make array to pass to numpy array_split function
-    split_according = [subdivision_size * i for i in range(1,number_of_full_splits + 1)]
-    
-    list_ = np.array_split(tensor.data,split_according,axis)
+    split_according = [subdivision_size * i for i in range(1, number_of_full_splits + 1)]
 
-    return list(map(lambda x: TensorBase(x),list_))
+    list_ = np.array_split(tensor.data, split_according, axis)
+
+    return list(map(lambda x: TensorBase(x), list_))

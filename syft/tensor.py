@@ -3631,5 +3631,3 @@ class TensorBase(object):
             return NotImplemented
 
         return syft.math.split(self, split_size, axis)
-
-
