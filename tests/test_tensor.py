@@ -1627,6 +1627,18 @@ class UnfoldTest(unittest.TestCase):
         self.assertTrue(np.array_equal(t1_unfolded_expected_2,
                                        t1_unfolded_actual_2))
 
+class SplitTests(unittest.Testcase):
+    def test_split(self):
+        t = TensorBase(np.random.rand(10,5))
+        split_size = 3
+        axis = 0
+        target_shapes = [(3,5),(3,5),(3,5),(1,5)]
+        splits = syft.math.split(t,split_size,axis)
+        np_splits = np.array_split(t.data,split_size,axis)
+        for target_shape, split, np_split in zip(target_shapes, splits, np_splits):
+            self.assertTrue(syft.equal(split.shape(),target_shape))
+            self.assertTrue(syft.equal(TensorBase(np_split),split))
+
 
 if __name__ == "__main__":
 
