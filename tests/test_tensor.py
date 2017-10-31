@@ -1633,11 +1633,10 @@ class SplitTests2(unittest.TestCase):
         t = TensorBase(np.random.rand(10, 5))
         split_size = 3
         axis = 0
-        target_shapes = [(4, 5), (4, 5), (2, 5)]
+        target_shapes = [(3, 5), (3, 5), (3, 5), (1, 5)]
         splits = syft.math.split(t, split_size, axis)
         start = 0
         for target_shape, split in zip(target_shapes, splits):
-            print(split.shape())
             self.assertTrue(syft.equal(split.shape(), target_shape))
             self.assertTrue(syft.equal(t.narrow(axis, start, target_shape[axis]), split))
             start += target_shape[axis]
