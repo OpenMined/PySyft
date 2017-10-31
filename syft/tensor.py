@@ -3613,12 +3613,9 @@ class TensorBase(object):
 
         Parameters
         ----------
-        tensor: TensorBase
-            array to be divided into sub-arrays.
 
         split_size: int
-            the array will be divided into `split_size` equal arrays along `axis`. If split
-            cannot be done equally the last array will be smaller along the given axis.
+            size of single chunk
 
         axis: int, optional
             The axis along which to split, default is 0.
