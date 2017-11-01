@@ -3038,29 +3038,6 @@ class TensorBase(object):
         else:
             return self.data.shape
 
-    def split(self, split_size, dim=0):
-        """
-        Returns tuple of tensors of equally sized tensor/chunks (if possible)
-
-        Parameters
-        ----------
-        split_size:
-
-        dim:
-
-        Returns
-        -------
-        Tuple of Tensors
-        """
-        if self.encrypted:
-            return NotImplemented
-        splits = np.array_split(self.data, split_size, axis=0)
-        tensors = list()
-        for s in splits:
-            tensors.append(TensorBase(s))
-        tensors_tuple = tuple(tensors)
-        return tensors_tuple
-
     def stride(self, dim=None):
         """
         Returns the jump necessary to go from one element to the next one in the specified dimension dim.
@@ -3601,3 +3578,30 @@ class TensorBase(object):
 
         self.data.fill(0)
         return self
+
+    def split(self, split_size, axis=0):
+        """
+        Splits the tensor into multiple equally sized chunks (if possible).
+
+        Last chunk will be smaller if the tensor size along a given axis
+        is not divisible by `split_size`.
+
+        Returns a list of the split tensors
+
+        Parameters
+        ----------
+
+        split_size: int
+            size of single chunk
+
+        axis: int, optional
+            The axis along which to split, default is 0.
+
+        Returns
+        -------
+        list: list of divided arrays
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        return syft.math.split(self, split_size, axis)
