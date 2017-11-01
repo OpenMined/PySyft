@@ -427,3 +427,17 @@ class MultinomialTests(unittest.TestCase):
         t2 = syft.math.multinomial(t1, len(t1))
         self.assertTupleEqual((len(t1),), t2.shape())
         self.assertTrue(np.all(t2.data >= 0) and np.all(t2.data <= len(t1)))
+
+
+class SplitTests(unittest.TestCase):
+    def test_split(self):
+        t = TensorBase(np.random.rand(7, 4))
+        split_size = 3
+        axis = 0
+        target_shapes = [(3, 4), (3, 4), (1, 4)]
+        splits = syft.math.split(t, split_size, axis)
+        start = 0
+        for target_shape, split in zip(target_shapes, splits):
+            self.assertTrue(syft.equal(split.shape(), target_shape))
+            self.assertTrue(syft.equal(t.narrow(axis, start, target_shape[axis]), split))
+            start += target_shape[axis]
