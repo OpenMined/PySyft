@@ -3038,6 +3038,42 @@ class TensorBase(object):
         else:
             return self.data.shape
 
+    def sparse(self):
+        """
+        Converts dense matrix to sparse, returning a new matrix as a tensor
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        Returns
+        -------
+        TensorBase:
+            Output Tensor
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        return syft.math.sparse(self)
+
+    def sparse_(self):
+        """
+        Converts dense matrix to sparse, returning a new matrix as a tensor
+
+        Parameters
+        ----------
+        tensor: TensorBase
+
+        Returns
+        -------
+            Caller with values in-place
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        self.data = syft.math.sparse(self)
+        return self
+
     def stride(self, dim=None):
         """
         Returns the jump necessary to go from one element to the next one in the specified dimension dim.

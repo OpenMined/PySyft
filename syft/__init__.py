@@ -7,7 +7,7 @@ from syft import nonlin
 from syft.tensor import equal, TensorBase
 from syft.math import cumprod, cumsum, ceil, dot, matmul, addmm, addcmul
 from syft.math import addcdiv, addmv, bmm, addbmm, baddbmm, transpose
-from syft.math import unsqueeze, zeros, ones, rand, randn, mm, fmod, diag, lerp, renorm, numel
+from syft.math import unsqueeze, zeros, ones, rand, randn, mm, fmod, diag, lerp, renorm, sparse, numel
 
 s = str(he)
 s += str(nn)
@@ -26,3 +26,4 @@ s += str(fmod)
 s += str(lerp)
 s += str(numel)
 s += str(renorm)
+s += str(sparse)
