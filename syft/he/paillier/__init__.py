@@ -1,5 +1,5 @@
-from .basic import PaillierTensor, PrecisionConf
+from .basic import PaillierTensor
 from .keys import SecretKey, PublicKey, KeyPair
 
-s = str(PaillierTensor) + str(PrecisionConf) + str(SecretKey) + str(PublicKey)
+s = str(PaillierTensor) + str(SecretKey) + str(PublicKey)
 s += str(KeyPair)
