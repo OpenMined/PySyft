@@ -1635,6 +1635,20 @@ class SplitTests(unittest.TestCase):
             start += target_shape[axis]
 
 
+class CrossTests(unittest.TestCase):
+    def setUp(self):
+        self.a = np.eye(2, 3)
+        self.b = np.ones((2, 3))
+
+    def test_cross(self):
+        a = TensorBase(self.a)
+        b = TensorBase(self.b)
+        expected_result = np.array([0, -1, 1, 1, 0, -1]).reshape(2, 3)
+
+        # Verify that the expected result is retuned
+        self.assertTrue(np.array_equal(a.cross(b), expected_result))
+
+
 if __name__ == "__main__":
 
     unittest.main()

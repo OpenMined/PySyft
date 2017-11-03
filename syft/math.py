@@ -20,7 +20,7 @@ __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
     'sin', 'sinh', 'cos', 'cosh', 'tan', 'tanh', 'zeros', 'ones', 'rand',
-    'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
+    'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel', 'cross'
 ]
 
 
@@ -1008,3 +1008,49 @@ def split(tensor, split_size, axis=0):
     list_ = np.array_split(tensor.data, split_according, axis)
 
     return list(map(lambda x: TensorBase(x), list_))
+
+
+def cross(input, other, dim=-1):
+    """
+    Computes cross products between two tensors in the given dimension
+    The two vectors must have the same size, and the size of the dim
+    dimension should be 3.
+
+    Parameters
+    ----------
+
+    input: TensorBase
+        the first input tensor
+
+    other: TensorBase
+        the second input tensor
+
+    dim: int, optional
+        the dimension to take the cross-product in. Default is -1
+
+    Returns
+    -------
+    TensorBase: The result Tensor
+    """
+    input = _ensure_tensorbase(input)
+    other = _ensure_tensorbase(other)
+
+    if input.encrypted or other.encrypted:
+        return NotImplemented
+
+    # Verify that the shapes of both vectors are same
+    if input.shape() != other.shape():
+        raise ValueError('inconsistent dimensions {} and {}'.format(
+            input.shape(), other.shape()))
+
+    # verify that the given dim is valid
+    if dim < -len(input.shape()) or dim >= len(input.shape()):
+        raise ValueError('invalid dim. Should be between {} and {}'.format(
+            -len(input.shape()), len(input.shape()) - 1))
+
+    # verify that the size of dimension dim is 3
+    if input.shape()[dim] != 3:
+        raise ValueError('size of dimension {}(dim) is {}. Should be 3'.format(
+            dim, input.shape()[-1]))
+
+    return TensorBase(np.cross(input, other, axis=dim))
