@@ -974,13 +974,6 @@ class CumprodTest(unittest.TestCase):
         self.assertTrue(np.equal(t1.cumprod_(dim=1), t3).all())
 
 
-class SplitTests(unittest.TestCase):
-    def test_split(self):
-        t1 = TensorBase(np.arange(8.0))
-        t2 = t1.split(4)
-        self.assertTrue(np.array_equal(t2, tuple((np.array([0., 1.]), np.array([2., 3.]), np.array([4., 5.]), np.array([6., 7.])))))
-
-
 class SqueezeTests(unittest.TestCase):
     def test_squeeze(self):
         t1 = TensorBase(np.zeros((2, 1, 2, 1, 2)))
@@ -1626,6 +1619,20 @@ class UnfoldTest(unittest.TestCase):
         t1_unfolded_expected_2 = t1_unfolded_expected_1
         self.assertTrue(np.array_equal(t1_unfolded_expected_2,
                                        t1_unfolded_actual_2))
+
+
+class SplitTests(unittest.TestCase):
+    def test_split(self):
+        t = TensorBase(np.random.rand(10, 5))
+        split_size = 3
+        axis = 0
+        target_shapes = [(3, 5), (3, 5), (3, 5), (1, 5)]
+        splits = t.split(split_size, axis)
+        start = 0
+        for target_shape, split in zip(target_shapes, splits):
+            self.assertTrue(syft.equal(split.shape(), target_shape))
+            self.assertTrue(syft.equal(t.narrow(axis, start, target_shape[axis]), split))
+            start += target_shape[axis]
 
 
 if __name__ == "__main__":
