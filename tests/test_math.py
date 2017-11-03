@@ -465,3 +465,7 @@ class CrossTests(unittest.TestCase):
         # Verify that ValueError is thrown when dimensions don't match
         a = TensorBase(self.a.reshape(3, 2))
         self.assertRaises(ValueError, a.cross, b)
+
+        # Verify that NotImplemented is returned if Tensor is encrypted
+        a = TensorBase(self.a, True)
+        self.assertEqual(a.cross(b), NotImplemented)

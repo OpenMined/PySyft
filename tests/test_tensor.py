@@ -1648,10 +1648,6 @@ class CrossTests(unittest.TestCase):
         # Verify that the expected result is retuned
         self.assertTrue(np.array_equal(a.cross(b), expected_result))
 
-        # Verify that NotImplemented is returned if Tensor is encrypted
-        a = TensorBase(self.a, True)
-        self.assertEqual(a.cross(b), NotImplemented)
-
 
 if __name__ == "__main__":
 

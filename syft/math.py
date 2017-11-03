@@ -20,7 +20,7 @@ __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
     'sin', 'sinh', 'cos', 'cosh', 'tan', 'tanh', 'zeros', 'ones', 'rand',
-    'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel'
+    'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel', 'cross'
 ]
 
 
@@ -1032,6 +1032,12 @@ def cross(input, other, dim=-1):
     -------
     TensorBase: The result Tensor
     """
+    input = _ensure_tensorbase(input)
+    other = _ensure_tensorbase(other)
+
+    if input.encrypted or other.encrypted:
+        return NotImplemented
+
     # Verify that the shapes of both vectors are same
     if input.shape() != other.shape():
         raise ValueError('inconsistent dimensions {} and {}'.format(

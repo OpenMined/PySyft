@@ -3625,8 +3625,4 @@ class TensorBase(object):
         -------
         TensorBase: The result Tensor
         """
-        tensor = _ensure_tensorbase(tensor)
-        if self.encrypted or tensor.encrypted:
-            return NotImplemented
-
         return syft.math.cross(self, tensor, dim)
