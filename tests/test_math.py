@@ -441,3 +441,31 @@ class SplitTests(unittest.TestCase):
             self.assertTrue(syft.equal(split.shape(), target_shape))
             self.assertTrue(syft.equal(t.narrow(axis, start, target_shape[axis]), split))
             start += target_shape[axis]
+
+
+class CrossTests(unittest.TestCase):
+    def setUp(self):
+        self.a = np.eye(2, 3)
+        self.b = np.ones((2, 3))
+
+    def test_cross(self):
+        a = TensorBase(self.a)
+        b = TensorBase(self.b)
+
+        # Verify that the expected result is retuned
+        expected_result = np.array([0, -1, 1, 1, 0, -1]).reshape(2, 3)
+        self.assertTrue(np.array_equal(a.cross(b), expected_result))
+
+        # Verify that ValueError is thrown when dimension is out of bounds
+        self.assertRaises(ValueError, a.cross, b, 5)
+
+        # Verify that ValueError is thrown when size dimension dim != 3
+        self.assertRaises(ValueError, a.cross, b, 0)
+
+        # Verify that ValueError is thrown when dimensions don't match
+        a = TensorBase(self.a.reshape(3, 2))
+        self.assertRaises(ValueError, a.cross, b)
+
+        # Verify that NotImplemented is returned if Tensor is encrypted
+        a = TensorBase(self.a, True)
+        self.assertEqual(a.cross(b), NotImplemented)

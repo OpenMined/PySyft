@@ -3605,3 +3605,24 @@ class TensorBase(object):
             return NotImplemented
 
         return syft.math.split(self, split_size, axis)
+
+    def cross(self, tensor, dim=-1):
+        """
+        Computes cross products between two tensors in the given dimension
+        The two vectors must have the same size, and the size of the dim
+        dimension should be 3.
+
+        Parameters
+        ----------
+
+        tensor: TensorBase
+            the second input tensor
+
+        dim: int, optional
+            the dimension to take the cross-product in. Default is -1
+
+        Returns
+        -------
+        TensorBase: The result Tensor
+        """
+        return syft.math.cross(self, tensor, dim)
