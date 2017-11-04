@@ -3439,8 +3439,8 @@ class TensorBase(object):
         Parameters
         ----------
 
-        source: TensorBase or None
-            Input Tensor
+        source: TensorBase or `numpy.ndarray` or None
+            Input Tensor or ndarray
 
         offset: int
             The offset in the underlying `numpy.ndarray` in items not bytes.
@@ -3452,8 +3452,17 @@ class TensorBase(object):
             The desired stride. Defaults to C-contiguous strides.
         """
 
+
         if self.encrypted or (source is not None and source.encrypted):
             return NotImplemented
+
+        _locals = locals()
+
+        if list(_locals.values())[:-1] == [None, None, 0, None]:
+            self.data = None
+            return self
+
+
 
         if source is not None:
             self.data = source.data

@@ -1575,9 +1575,20 @@ class StorageTests(unittest.TestCase):
         # begin test call signature
         t1 = TensorBase([1, 2, 3, 4])
 
+        # Tensor with none storage
+        tn = TensorBase([])
+        tn.data = None
+
+        # test set_ with no argument
+        result = t1.set_()
+
+        self.assertEqual(result, tn)
+
         # test set offset without size
         with pytest.raises(TypeError):
             t1.set_(offset=2)
+            t1.set_(size=2)
+            t1.set_(stride=(1,))
 
         # test set strides without size
         with pytest.raises(TypeError):
