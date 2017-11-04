@@ -11,16 +11,16 @@
         http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html
 
 """
+import scipy as sp
 import numpy as np
-
 from .tensor import TensorBase
 from .tensor import _ensure_tensorbase
 
 __all__ = [
     'cumprod', 'cumsum', 'ceil', 'dot', 'floor', 'matmul', 'addmm', 'addcmul',
     'addcdiv', 'addmv', 'bmm', 'addbmm', 'baddbmm', 'sigmoid', 'unsqueeze',
-    'sin', 'sinh', 'cos', 'cosh', 'tan', 'tanh', 'zeros', 'ones', 'rand',
-    'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel', 'cross'
+    'sin', 'sinh', 'sparse', 'cos', 'cosh', 'tan', 'tanh', 'zeros', 'ones',
+    'rand', 'randn', 'mm', 'fmod', 'diag', 'lerp', 'renorm', 'numel', 'cross'
 ]
 
 
@@ -803,6 +803,28 @@ def sinh(tensor):
     if tensor.encrypted:
         return NotImplemented
     return TensorBase(np.sinh(np.array(tensor.data)))
+
+
+def sparse(tensor):
+    """
+    Converts dense matrix to sparse, returning a new matrix as a tensor
+
+    Parameters
+    ----------
+    tensor: TensorBase
+
+    Returns
+    -------
+    TensorBase:
+        Output Tensor
+    """
+    tensor = _ensure_tensorbase(tensor)
+    if tensor.encrypted:
+        return NotImplemented
+    else:
+        sparse_tensor = sp.sparse.csr_matrix(tensor)
+        sparse_tensor = _ensure_tensorbase(sparse_tensor)
+        return sparse_tensor
 
 
 def cos(tensor):
