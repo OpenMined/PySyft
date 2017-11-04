@@ -2335,7 +2335,7 @@ class TensorBase(object):
         Size of the Tensor
         """
         if self.encrypted:
-            return self.data.shape
+            return NotImplemented
         else:
             return self.data.shape
 
