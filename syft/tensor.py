@@ -3095,7 +3095,7 @@ class TensorBase(object):
             return NotImplemented
 
         out = self.data.strides
-        output = tuple(map(lambda x: int(x / 8), out))
+        output = tuple(map(lambda x: int(x / self.data.dtype.itemsize), out))
 
         if dim is None:
             return output
@@ -3565,7 +3565,7 @@ class TensorBase(object):
 
             _stride = stride
             if stride is not None:
-                _stride = np.multiply(stride, 8)
+                _stride = np.multiply(stride, self.data.dtype.itemsize)
 
             offset_nd = offset * self.data.dtype.itemsize
             self.data = np.ndarray(shape=size,
