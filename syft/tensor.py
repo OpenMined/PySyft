@@ -3520,7 +3520,7 @@ class TensorBase(object):
         given tensor. Changes to elements in one tensor will be reflected
         in the other.
 
-        If :attr:`source` is `None`, the method sets the underlying
+        If :attr:`source` is `numpy.ndarray`, the method sets the underlying
         `numpy.ndarray`, offset, size, and stride.
 
         Parameters
