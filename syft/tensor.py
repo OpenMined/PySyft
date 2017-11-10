@@ -3559,7 +3559,7 @@ class TensorBase(object):
             self.data = source
 
         # Calling as _set(source=ndarray, offset, size)
-        # Create a new ndarray with same storage
+        # Calling as _set(source=ndarray, offset, size, stride)
         elif source is not None and type(source) is np.ndarray \
                 and size is not None:
 
