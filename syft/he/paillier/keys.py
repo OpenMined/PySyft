@@ -2,7 +2,7 @@ import phe as paillier
 import numpy as np
 import json
 import syft
-from .basic import Float, PaillierTensor
+from .basic import PaillierTensor
 from ...tensor import TensorBase
 from ..abstract.keys import AbstractSecretKey, AbstractPublicKey
 from ..abstract.keys import AbstractKeyPair
@@ -17,8 +17,9 @@ class SecretKey(AbstractSecretKey):
         """Decrypts x. X can be either an encrypted int or a numpy
         vector/matrix/tensor."""
 
-        if(type(x) == Float):
-            return self.sk.decrypt(x.data)
+        if(type(x) == paillier.EncryptedNumber):
+            # casts the fixed point data type to python numeric type
+            return self.sk.decrypt(x)
         elif(type(x) == TensorBase or type(x) == PaillierTensor):
             if(x.encrypted):
                 return TensorBase(self.decrypt(x.data), encrypted=False)
@@ -29,19 +30,11 @@ class SecretKey(AbstractSecretKey):
             x_ = x.reshape(-1)
             out = list()
             for v in x_:
-                out.append(self.sk.decrypt(v.data))
+                python_numeric = self.sk.decrypt(v)
+                out.append(python_numeric)
             return np.array(out).reshape(sh)
         else:
             return NotImplemented
-
-    def serialize(self):
-        seckey_dict = {}
-        seckey_dict['secret_key'] = {
-            'p': self.sk.p,
-            'q': self.sk.q,
-            'n': self.sk.public_key.n
-        }
-        return json.dumps(seckey_dict)
 
     def deserialize(b):
         seckey_dict = json.loads(b)
@@ -52,15 +45,53 @@ class SecretKey(AbstractSecretKey):
             q=sk_record['q'])
         return SecretKey(sk)
 
+    def serialize(self):
+        seckey_dict = {}
+        seckey_dict['secret_key'] = {
+            'p': self.sk.p,
+            'q': self.sk.q,
+            'n': self.sk.public_key.n
+        }
+        return json.dumps(seckey_dict)
+
 
 class PublicKey(AbstractPublicKey):
 
     def __init__(self, pk):
         self.pk = pk
 
-    def zeros(self, dim):
-        """Returns an encrypted tensor of zeros"""
-        return syft.zeros(dim).encrypt(self)
+    def deserialize(b):
+        pubkey_dict = json.loads(b)
+        pk_record = pubkey_dict['public_key']
+        pk = paillier.PaillierPublicKey(n=int(pk_record['n']))
+        return PublicKey(pk)
+
+    def encrypt(self, x, same_type=False):
+        """Encrypts x. X can be either an encrypted int or a numpy
+        vector/matrix/tensor."""
+        if(type(x) == int or type(x) == float or type(x) == np.float64):
+            if(same_type):
+                return NotImplemented
+            return self.pk.encrypt(x)
+        elif(type(x) == TensorBase):
+            if(x.encrypted or same_type):
+                return NotImplemented
+            return PaillierTensor(self, x.data)
+        elif(type(x) == np.ndarray):
+            sh = x.shape
+            x_ = x.reshape(-1)
+            out = list()
+            for v in x_:
+                out.append(self.pk.encrypt(v))
+            if(same_type):
+                return np.array(out).reshape(sh)
+            else:
+                return PaillierTensor(self, np.array(out).reshape(sh))
+        else:
+            print("format not recognized:" + str(type(x)))
+            return NotImplemented
+
+        return self.pk.encrypt(x)
 
     def ones(self, dim):
         """Returns an encrypted tensor of ones"""
@@ -76,33 +107,6 @@ class PublicKey(AbstractPublicKey):
         standard normal distribution"""
         return syft.randn(dim).encrypt(self)
 
-    def encrypt(self, x, same_type=False):
-        """Encrypts x. X can be either an encrypted int or a numpy
-        vector/matrix/tensor."""
-        if(type(x) == int or type(x) == float or type(x) == np.float64):
-            if(same_type):
-                return NotImplemented
-            return Float(self, x)
-        elif(type(x) == TensorBase):
-            if(x.encrypted or same_type):
-                return NotImplemented
-            return PaillierTensor(self, x.data)
-        elif(type(x) == np.ndarray):
-            sh = x.shape
-            x_ = x.reshape(-1)
-            out = list()
-            for v in x_:
-                out.append(Float(self, v))
-            if(same_type):
-                return np.array(out).reshape(sh)
-            else:
-                return PaillierTensor(self, np.array(out).reshape(sh))
-        else:
-            print("format not recognized:" + str(type(x)))
-            return NotImplemented
-
-        return self.pk.encrypt(x)
-
     def serialize(self):
         pubkey_dict = {}
         pubkey_dict['public_key'] = {
@@ -110,11 +114,9 @@ class PublicKey(AbstractPublicKey):
         }
         return json.dumps(pubkey_dict)
 
-    def deserialize(b):
-        pubkey_dict = json.loads(b)
-        pk_record = pubkey_dict['public_key']
-        pk = paillier.PaillierPublicKey(n=int(pk_record['n']))
-        return PublicKey(pk)
+    def zeros(self, dim):
+        """Returns an encrypted tensor of zeros"""
+        return syft.zeros(dim).encrypt(self)
 
 
 class KeyPair(AbstractKeyPair):

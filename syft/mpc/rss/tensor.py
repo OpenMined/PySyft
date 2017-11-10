@@ -39,14 +39,14 @@ class RSSMPCTensor(TensorBase):
     def __mul__(self, x):
         return RSSMPCTensor(self.repo, (self.data * x.data), True)
 
-    def __sub__(self, x):
-        return RSSMPCTensor(self.repo, (self.data - x.data), True)
+    def __repr__(self):
+        return "RSSMPCTensor: " + repr(self.data)
 
     def __str__(self):
         return "RSSMPCTensor: " + str(self.data)
 
-    def __repr__(self):
-        return "RSSMPCTensor: " + repr(self.data)
+    def __sub__(self, x):
+        return RSSMPCTensor(self.repo, (self.data - x.data), True)
 
     def dot(self, x):
         return (self * x).sum(x.dim() - 1)
