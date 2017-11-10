@@ -1728,7 +1728,6 @@ class StorageTests(unittest.TestCase):
 
         self.assertEqual(t1.stride(), strides)
 
-
         # set strides on underlying ndarray
         t1 = TensorBase(np.zeros(shape=(3, 4, 9, 10))).uniform_()
         strides = (10, 360, 90, 1)
@@ -1787,8 +1786,8 @@ class StorageTests(unittest.TestCase):
 
         t1.set_(t1.data, offset=0, size=size, stride=strides)
         self.assertEqual(t1.stride(), strides)
-
         # end set strides
+
 
 class SparseTests(unittest.TestCase):
     def test_sparse(self):

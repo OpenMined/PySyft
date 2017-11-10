@@ -3481,7 +3481,6 @@ class TensorBase(object):
 
         return TensorBase(np.concatenate(sub_arrays, axis=dim))
 
-
     def storage_offset(self):
         """
         Returns this tensor’s offset in the underlying
@@ -3548,23 +3547,21 @@ class TensorBase(object):
             * (np.ndarray storage, int offset, tuple size, tuple stride)
         '''
 
-
         if self.encrypted or \
-                (source is not None and type(source) is TensorBase and \
+                (source is not None and type(source) is TensorBase and
                  source.encrypted):
             return NotImplemented
 
         # Calling as _set(source=ndarray)
         if source is not None and \
             type(source) is np.ndarray and \
-            (offset, size, stride) == (0,None,None):
+                (offset, size, stride) == (0, None, None):
             self.data = source
 
         # Calling as _set(source=ndarray, offset, size)
         # Create a new ndarray with same storage
-        elif source is not None and \
-            type(source) is np.ndarray and \
-            size is not None:
+        elif source is not None and type(source) is np.ndarray \
+                and size is not None:
 
             _stride = stride
             if stride is not None:
@@ -3580,7 +3577,7 @@ class TensorBase(object):
         # Calling as _set(source=TensorBase)
         elif source is not None and \
             type(source) is TensorBase and \
-            (offset, size, stride) == (0, None, None):
+                (offset, size, stride) == (0, None, None):
                 self.data = source.data
 
         # Calling as _set()
