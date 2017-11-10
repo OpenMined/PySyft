@@ -3095,7 +3095,7 @@ class TensorBase(object):
             return NotImplemented
 
         out = self.data.strides
-        output = tuple(map(lambda x: x / 8, out))
+        output = tuple(map(lambda x: int(x / 8), out))
 
         if dim is None:
             return output
@@ -3480,6 +3480,114 @@ class TensorBase(object):
             i = i + step
 
         return TensorBase(np.concatenate(sub_arrays, axis=dim))
+
+    def storage_offset(self):
+        """
+        Returns this tensor’s offset in the underlying
+        storage in terms of number of storage elements (not bytes).
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        Offset of the underlying storage
+        """
+        if self.encrypted:
+            return NotImplemented
+
+        offset = 0
+
+        # Base ndarray has 0 offset
+        if self.data.base is None:
+            offset = 0
+
+        elif type(self.data.base) is bytes:
+            offset = 0
+
+        else:
+            offset_raw = len(self.data.base.tobytes()) - len(self.data.tobytes())
+            offset = offset_raw / self.data.dtype.itemsize
+
+        return offset
+
+    def set_(self, source=None, offset=0, size=None, stride=None):
+        """
+        Sets the source `numpy.ndarray`, offset, size, and strides.
+
+        If only a tensor is passed in :attr:`source`, this tensor will share
+        the same `numpy.ndarray` and have the same size and strides as the
+        given tensor. Changes to elements in one tensor will be reflected
+        in the other.
+
+        If :attr:`source` is `numpy.ndarray`, the method sets the underlying
+        `numpy.ndarray`, offset, size, and stride.
+
+        Parameters
+        ----------
+
+        source: TensorBase or `numpy.ndarray` or None
+            Input Tensor or ndarray
+
+        offset: int
+            The offset in the underlying `numpy.ndarray` in items not bytes.
+
+        size: Tuple
+            The desired size. Defaults to the size of the source.
+
+        stride: Tuple
+            The desired stride. Defaults to C-contiguous strides.
+        """
+
+        TYPE_ERROR = ''' Received invalid combination of arguments. Expected on of:
+            * no arguments
+            * (syft.TensorBase source)
+            * (np.ndarray storage)
+            * (np.ndarray storage, int offset, tuple size)
+            * (np.ndarray storage, int offset, tuple size, tuple stride)
+        '''
+
+        if self.encrypted or \
+                (source is not None and type(source) is TensorBase and
+                 source.encrypted):
+            return NotImplemented
+
+        # Calling as _set(source=ndarray)
+        if source is not None and \
+            type(source) is np.ndarray and \
+                (offset, size, stride) == (0, None, None):
+            self.data = source
+
+        # Calling as _set(source=ndarray, offset, size)
+        # Calling as _set(source=ndarray, offset, size, stride)
+        elif source is not None and type(source) is np.ndarray \
+                and size is not None:
+
+            _stride = stride
+            if stride is not None:
+                _stride = np.multiply(stride, 8)
+
+            offset_nd = offset * self.data.dtype.itemsize
+            self.data = np.ndarray(shape=size,
+                                   buffer=source.data,
+                                   dtype=self.data.dtype,
+                                   offset=offset_nd,
+                                   strides=_stride)
+
+        # Calling as _set(source=TensorBase)
+        elif source is not None and \
+            type(source) is TensorBase and \
+                (offset, size, stride) == (0, None, None):
+                self.data = source.data
+
+        # Calling as _set()
+        elif (source, offset, size, stride) == (None, 0, None, None):
+            self.data = np.array(None)
+
+        else:
+            raise TypeError(TYPE_ERROR)
+
+        return self
 
     def uniform(self, low=0, high=1):
         """

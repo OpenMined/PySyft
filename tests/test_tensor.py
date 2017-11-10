@@ -5,6 +5,7 @@ from syft import tensor
 import numpy as np
 import math
 import pytest
+import struct
 
 
 # Here's our "unit tests".
@@ -20,7 +21,6 @@ class DimTests(unittest.TestCase):
     def test_as_view(self):
         t = TensorBase(np.array([1.0, 2.0, 3.0]))
         t1 = t.view([-1, 1])
-        print(t.data.dtype)
         self.assertTrue(syft.equal(t.view_as(t1), TensorBase(np.array([[1.0], [2.0], [3.0]]))))
 
     def test_resize(self):
@@ -1573,6 +1573,220 @@ class RenormTests(unittest.TestCase):
         t = TensorBase(np.array([[1, 2, 3], [4, 5, 6]]))
         t.renorm_(2, 0, 6)
         self.assertTrue(np.allclose(t, np.array([[1.0, 2.0, 3.0], [2.735054, 3.418817, 4.102581]])))
+
+
+class StorageTests(unittest.TestCase):
+
+    def test_storage_offset(self):
+        # int
+        # create custom buffer
+        data = [7, 4, 5, 5, 8, 2, 1, 1, 4, 3, 9, 4, 9, 9, 3, 1]
+        buf = struct.pack('16i', *data)
+
+        # Use custom buffer and ndarray tensors
+        t1 = TensorBase(np.ndarray(shape=(4, 4), buffer=buf, dtype=np.int32))
+        t2 = TensorBase(np.array([[7, 4, 5, 5],
+                                  [8, 2, 1, 1],
+                                  [4, 3, 9, 4],
+                                  [9, 9, 3, 1]], dtype=np.int32))
+
+        # Test default offset = 0
+        self.assertEqual(t1.storage_offset(), 0)
+        self.assertEqual(t2.storage_offset(), 0)
+
+        # value of first element in first row [7,4,5,5]
+        self.assertEqual(t1[0][0], 7)
+        self.assertEqual(t2[0][0], 7)
+
+        t1.set_(t1.data, offset=8, size=(2, 4))
+        self.assertEqual(t1.storage_offset(), 8)
+        self.assertEqual(t1[0][0], 4)
+
+        t2.set_(t2.data, offset=8, size=(2, 4))
+        self.assertEqual(t2.storage_offset(), 8)
+        self.assertEqual(t2[0][0], 4)
+
+        t1 = TensorBase(np.ndarray(shape=(4, 4), buffer=buf, dtype=np.int32))
+        t1.set_(t1.data, offset=4, size=(3, 4))
+        self.assertEqual(t1.storage_offset(), 4)
+        self.assertEqual(t1[0][0], 8)
+
+        t2 = TensorBase(np.array([[7, 4, 5, 5],
+                                  [8, 2, 1, 1],
+                                  [4, 3, 9, 4],
+                                  [9, 9, 3, 1]], dtype=np.int32))
+        t2.set_(t2.data, offset=4, size=(3, 4))
+        self.assertEqual(t2.storage_offset(), 4)
+        self.assertEqual(t2[0][0], 8)
+
+    def test_storage_offset_encrypted(self):
+        t1 = TensorBase(np.array([1, 2, 4, 4]), encrypted=True)
+        res = t1.storage_offset()
+        self.assertEqual(res, NotImplemented)
+
+    def test_tensor_set_encrypted(self):
+        t1 = TensorBase(np.array([]))
+        t2 = TensorBase(np.array([1, 2, 3, 4]), encrypted=True)
+        res = t1.set_(t2)
+        self.assertEqual(res, NotImplemented)
+
+        res = t2.set_(t1)
+        self.assertEqual(res, NotImplemented)
+
+    def test_tensor_set_source_nd(self):
+        t1 = np.array([1, 2, 3, 4])
+        t2 = np.array([0.1, 0.2, 0.3, 0.4])
+
+        tb = TensorBase([])
+        tb2 = TensorBase([])
+
+        r1 = tb.set_(t1)
+        r2 = tb2.set_(t2)
+
+        self.assertEqual(tb, t1)
+        self.assertEqual(tb2, t2)
+
+        self.assertEqual(r1, t1)
+        self.assertEqual(r2, t2)
+
+    def test_tensor_set_empty(self):
+        t1 = TensorBase([1, 2, 3, 4])
+        t2 = TensorBase([0.1, 0.2, 0.3, 0.4])
+
+        # Tensor with none storage
+        tn = TensorBase([])
+        tn.data = np.array(None)
+
+        # test set_ with no argument
+        result = t1.set_()
+        result_f = t2.set_()
+
+        self.assertEqual(result.data, tn.data)
+        self.assertEqual(result_f.data, tn.data)
+
+    def test_tensor_set_(self):
+        t1 = TensorBase([1, 2, 3, 4])
+        t2 = TensorBase([0.1, 0.2, 0.3, 0.4])
+
+        # test call signature
+        with pytest.raises(TypeError):
+            t1.set_(offset=2)
+            t1.set_(size=2)
+            t1.set_(stride=(1,))
+            t1.set_(offset=2, size=(1,))
+            t1.set_(offset=2, size=(1,), stride=(1,))
+            t1.set_(t2, offset=2, size=(1,), stride=(1,))
+
+        # end test call signature
+
+        # tests on ints
+
+        # begin setting tensor
+
+        t1 = TensorBase([])
+        t2 = TensorBase(np.array([1, 2, 3, 4]))
+        t1.set_(t2)
+
+        # memory location is the same
+        self.assertEqual(t1.data.__array_interface__['data'],
+                         t2.data.__array_interface__['data'])
+
+        # data is the same
+        self.assertTrue((t1.data == t2.data).all())
+        self.assertEqual(t1.data.dtype, np.int)
+
+        # stride and size are the same
+        self.assertEqual(t1.size(), t2.size())
+        self.assertEqual(t1.stride(), t2.stride())
+
+        # end setting tensor
+
+        # begin set offset and size
+
+        t1 = TensorBase([1, 2, 3, 4])
+
+        t1.set_(t1.data, offset=1, size=(3,))
+        self.assertEqual(t1[0], 2)
+        self.assertEqual(t1[2], 4)
+
+        with pytest.raises(IndexError):
+            t1[3]
+
+        # end set offset and size
+
+        # begin set strides
+        t1 = TensorBase([])
+        t2 = TensorBase(np.zeros(shape=(3, 4, 9, 10), dtype=np.int))
+
+        # set strides on new ndarray
+        strides = (10, 360, 90, 1)
+        size = (9, 3, 4, 10)
+        t1.set_(t2.data, 0, size, strides)
+
+        self.assertEqual(t1.data.base.__array_interface__['data'],
+                         t2.data.__array_interface__['data'])
+
+        self.assertEqual(t1.stride(), strides)
+
+        # set strides on underlying ndarray
+        t1 = TensorBase(np.zeros(shape=(3, 4, 9, 10))).uniform_()
+        strides = (10, 360, 90, 1)
+        size = (9, 3, 4, 10)
+
+        t1.set_(t1.data, offset=0, size=size, stride=strides)
+        self.assertEqual(t1.stride(), strides)
+
+        # end set strides
+
+        # tests on floats #######
+
+        # begin setting the underlying ndarray
+
+        t1 = TensorBase([])
+        t2 = TensorBase(np.array([1.0, 2.0, 3.0]))
+        t1.set_(t2)
+        self.assertEqual(t1.data.__array_interface__['data'], t2.data.__array_interface__['data'])
+        self.assertTrue((t1.data == t2.data).all())
+        self.assertEqual(t1.data.dtype, np.float)
+        self.assertEqual(t1.size(), t2.size())
+        self.assertEqual(t1.stride(), t2.stride())
+
+        # end setting the underlying ndarray
+
+        # begin set offset and size
+
+        t2 = TensorBase(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]))
+
+        t2.set_(t2.data, offset=3, size=(3,))
+        self.assertEqual(t2[0], 4.0)
+        self.assertEqual(t2[2], 6.0)
+        with pytest.raises(IndexError):
+            t2[3]
+
+        # end set offset and size
+
+        # begin set strides
+
+        t1 = TensorBase([])
+        shape = (3, 4, 9, 10)
+        t2 = TensorBase(np.zeros(shape=shape, dtype=np.float))
+
+        # set strides on new ndarray
+        strides = (10, 360, 90, 1)
+        size = (9, 3, 4, 10)
+        t1.set_(t2.data, 0, size, strides)
+        self.assertEqual(t1.data.base.__array_interface__['data'],
+                         t2.data.__array_interface__['data'])
+        self.assertEqual(t1.stride(), strides)
+
+        # set strides on underlying ndarray
+        t1 = TensorBase(np.zeros(shape=shape, dtype=np.float))
+        strides = (10, 360, 90, 1)
+        size = (9, 3, 4, 10)
+
+        t1.set_(t1.data, offset=0, size=size, stride=strides)
+        self.assertEqual(t1.stride(), strides)
+        # end set strides
 
 
 class SparseTests(unittest.TestCase):
