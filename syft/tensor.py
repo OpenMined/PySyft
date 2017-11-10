@@ -3095,7 +3095,7 @@ class TensorBase(object):
             return NotImplemented
 
         out = self.data.strides
-        output = tuple(map(lambda x: x / 8, out))
+        output = tuple(map(lambda x: int(x / 8), out))
 
         if dim is None:
             return output
@@ -3540,34 +3540,57 @@ class TensorBase(object):
             The desired stride. Defaults to C-contiguous strides.
         """
 
+        TYPE_ERROR = ''' Received invalid combination of arguments. Expected on of:
+            * no arguments
+            * (syft.TensorBase source)
+            * (np.ndarray storage)
+            * (np.ndarray storage, int offset, tuple size)
+            * (np.ndarray storage, int offset, tuple size, tuple stride)
+        '''
 
-        if self.encrypted or (source is not None and source.encrypted):
+
+        if self.encrypted or \
+                (source is not None and type(source) is TensorBase and \
+                 source.encrypted):
             return NotImplemented
 
-        _locals = locals()
+        # Calling as _set(source=ndarray)
+        if source is not None and \
+            type(source) is np.ndarray and \
+            (offset, size, stride) == (0,None,None):
+            self.data = source
 
-        if list(_locals.values())[:-1] == [None, None, 0, None]:
-            self.data = None
-            return self
+        # Calling as _set(source=ndarray, offset, size)
+        # Create a new ndarray with same storage
+        elif source is not None and \
+            type(source) is np.ndarray and \
+            size is not None:
 
+            _stride = stride
+            if stride is not None:
+                _stride = np.multiply(stride, 8)
 
-
-        if source is not None:
-            self.data = source.data
-
-        if offset != 0 and size is None:
-            raise TypeError("Cannot set offset without size")
-
-        if stride is not None and size is None:
-            raise TypeError("Cannot set stride without size")
-
-        if size is not None:
             offset_nd = offset * self.data.dtype.itemsize
             self.data = np.ndarray(shape=size,
-                                   buffer=self.data,
+                                   buffer=source.data,
                                    dtype=self.data.dtype,
                                    offset=offset_nd,
-                                   strides=stride)
+                                   strides=_stride)
+
+        # Calling as _set(source=TensorBase)
+        elif source is not None and \
+            type(source) is TensorBase and \
+            (offset, size, stride) == (0, None, None):
+                self.data = source.data
+
+        # Calling as _set()
+        elif (source, offset, size, stride) == (None, 0, None, None):
+            self.data = np.array(None)
+
+        else:
+            raise TypeError(TYPE_ERROR)
+
+        return self
 
     def uniform(self, low=0, high=1):
         """
