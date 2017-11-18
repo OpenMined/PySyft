@@ -1,4 +1,0 @@
--r ./test-requirements.txt
-
-sklearn
-jupyter
