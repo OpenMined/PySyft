@@ -16,9 +16,25 @@ class FloatTensor():
         
         print("FloatTensor.__init__: " +  str(self.id))
     
-    def init_sigmoid_matrix_multiply(self, tensor_1):
+    def abs(self):
+        command = {}
+        command["functionCall"] = "abs"
+        command["objectType"] = "tensor"
+        command["objectIndex"] = self.id
+        command["tensorIndexParams"] = []
         
-        self.controller.socket.send_json({"functionCall":"init_sigmoid_matrix_multiply","objectType":"tensor","objectIndex":self.id,"tensorIndexParams":[tensor_1.id]})
+        self.controller.socket.send_json(command) # sends the command
+        return self.controller.socket.recv_string() # receives output from command
+        
+    
+    def init_sigmoid_matrix_multiply(self, tensor_1):
+        command = {}
+        command["functionCall"] = "init_sigmoid_matrix_multiply"
+        command["objectType"] = "tensor"
+        command["objectIndex"] = self.id
+        command["tensorIndexParams"] = [tensor_1.id]
+        
+        self.controller.socket.send_json(command)
         return self.controller.socket.recv_string()
     
     def init_add_matrix_multiply(self, tensor_1):
