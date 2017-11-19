@@ -27,37 +27,29 @@ class FloatTensor():
 
     
     def abs(self):
+        return self.no_params_func("abs")
 
-        self.controller.socket.send_json(self.cmd("abs")) # sends the command
+    def neg(self):
+        return self.no_params_func("neg")
+    
+    def no_params_func(self, name, return_response=False):
+        
+        self.controller.socket.send_json(self.cmd(name)) # sends the command
         res = self.controller.socket.recv_string() # receives output from command
 
         if(self.verbose):
             print(res)
 
+        if(return_response):
+            return res
         return self
 
-    def neg(self):
-
-        self.controller.socket.send_json(self.cmd("neg")) # sends the command
-        return self.controller.socket.recv_string() # receives output from command
-    
     
     def __repr__(self):
-        self.controller.socket.send_json({"functionCall":"print","objectType":"tensor","objectIndex":self.id})
-        res = self.controller.socket.recv_string() # receives output from command
-        
-        return res
+        return self.no_params_func("print",True)
 
     def __str__(self):
-        self.controller.socket.send_json({"functionCall":"print","objectType":"tensor","objectIndex":self.id})
-        return self.controller.socket.recv_string()
-
-    def print(self):
-
-        self.controller.socket.send_json({"functionCall":"print","objectType":"tensor","objectIndex":self.id})
-        res = self.controller.socket.recv_string() # receives output from command
-
-        return res
+        return self.no_params_func("print",True)
 
     def cmd(self,functionCall,tensorIndexParams=[]):
         cmd = {}
@@ -66,11 +58,6 @@ class FloatTensor():
         cmd['objectIndex'] = self.id
         cmd['tensorIndexParams'] = tensorIndexParams
         return cmd
-
-    def print(self):
-        self.controller.socket.send_json({"functionCall":"print","objectType":"tensor","objectIndex":self.id})
-        
-        print(self.controller.socket.recv_string())
 
 
 class SyftController():
