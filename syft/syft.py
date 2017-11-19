@@ -25,6 +25,13 @@ class FloatTensor():
         
         self.controller.socket.send_json(command) # sends the command
         return self.controller.socket.recv_string() # receives output from command
+
+    def scalar_multiply(self, scalar):
+        self.controller.socket.send_json({"functionCall":"scalar_multiply",
+                                          "objectType":"tensor",
+                                          "objectIndex":self.id,
+                                          "tensorIndexParams":[scalar]})
+        return self.controller.socket.recv_string()
         
     
     def init_sigmoid_matrix_multiply(self, tensor_1):
