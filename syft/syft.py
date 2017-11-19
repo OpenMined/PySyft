@@ -25,8 +25,6 @@ class FloatTensor():
         self.controller.socket.send_json(self.cmd("add",[x.id])) # sends the command
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
 
-        return "Tensors don't have the same shape"
-
     
     def abs(self):
 
@@ -42,7 +40,7 @@ class FloatTensor():
 
         self.controller.socket.send_json(self.cmd("neg")) # sends the command
         return self.controller.socket.recv_string() # receives output from command
-
+    
     
     def __repr__(self):
         self.controller.socket.send_json({"functionCall":"print","objectType":"tensor","objectIndex":self.id})
