@@ -123,6 +123,10 @@ The make target `test` will run all tests with `pytest` and `flake8` (either loc
 ```sh
 make test
 ```
+#### Windows
+```sh
+python setup.py test
+```
 
 ## For Contributors
 If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then sign into our [Slack Team](https://openmined.slack.com/) channel #team_pysyft to let us know which projects sound interesting to you! (or propose your own!).
