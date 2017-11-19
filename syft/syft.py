@@ -31,11 +31,16 @@ class FloatTensor():
 
     def neg(self):
         return self.no_params_func("neg")
+
+    def scalar_multiply(self, scalar):
+        return self.params_func("scalar_multiply",[scalar])
     
-    def no_params_func(self, name, return_response=False):
+    def params_func(self, name, params, return_response=False):
         
-        self.controller.socket.send_json(self.cmd(name)) # sends the command
-        res = self.controller.socket.recv_string() # receives output from command
+        # send the command
+        self.controller.socket.send_json(self.cmd(name,tensorIndexParams=params))
+        # receive output from command
+        res = self.controller.socket.recv_string()
 
         if(self.verbose):
             print(res)
@@ -44,6 +49,8 @@ class FloatTensor():
             return res
         return self
 
+    def no_params_func(self, name, return_response=False):
+        return( self.params_func(name,[],return_response) )
     
     def __repr__(self):
         return self.no_params_func("print",True)
