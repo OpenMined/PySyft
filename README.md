@@ -90,10 +90,10 @@ python3 setup.py develop
 ```
 
 #### Anaconda
-Set up a new virutal environment (here called openmind). Developer should pass the optional argument "develop". 
+Set up a new virutal environment (here called openmind), the former for user, the latter for developers. 
 ```sh
-bash install_for_anaconda_users.sh openmined
-bash install_for_anaconda_users.sh openmined develop
+install_for_anaconda_users.bat openmined install
+install_for_anaconda_users.sh openmined develop
 ```
 
 #### Windows
