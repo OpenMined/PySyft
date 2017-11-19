@@ -62,7 +62,7 @@ Inside the container you can run any make targets such as `test` or `notebook`.
 - Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
 - Install the base libraries listed [here](https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries)
 - Set up a virtual environment for the Python libraries (optional, recommended)
-- Install [Capsule](https://github.com/OpenMined/Capsule) dependency if you are going to develop and run tests.
+- None if you are using anaconda
 
 ### Python Requirements
 
@@ -90,26 +90,18 @@ python3 setup.py develop
 ```
 
 #### Anaconda
-
+Set up a new virutal environment (here called openmind). Developer should pass the optional argument "develop". 
 ```sh
-bash install_for_anaconda_users.sh
-```
-
-__Note:__ if after running the above script, you have troubles importing Syft in your Jupyter notebook, try this:
-
-```sh
-# activate your env, if you haven't already
-source activate openmined  
-pip install ipykernel
-python -m ipykernel install --user --name=openmined
+bash install_for_anaconda_users.sh openmined
+bash install_for_anaconda_users.sh openmined develop
 ```
 
 #### Windows
-
+Run below, where "mode" is either "install" or "develop"
 ```sh
 conda install -c conda-forge gmpy2
 pip install -r requirements.txt
-python setup.py install
+python setup.py mode
 ```
 
 ## Notebooks
@@ -122,6 +114,10 @@ make notebook
 The make target `test` will run all tests with `pytest` and `flake8` (either locally or in the container).
 ```sh
 make test
+```
+#### Windows
+```sh
+python setup.py test
 ```
 
 ## For Contributors
