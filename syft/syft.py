@@ -29,6 +29,9 @@ class FloatTensor():
     def abs(self):
         return self.no_params_func("abs")
 
+    def add_(self, x):
+        return self.params_func("add_",[x])
+
     def neg(self):
         return self.no_params_func("neg")
 
