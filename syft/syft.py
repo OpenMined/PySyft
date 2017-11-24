@@ -25,6 +25,11 @@ class FloatTensor():
         self.controller.socket.send_json(self.cmd("add",[x.id])) # sends the command
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
 
+    def gpu(self):
+        return self.no_params_func("gpu")
+
+    def cpu(self):
+        return self.no_params_func("cpu")        
     
     def abs(self):
         return self.no_params_func("abs")
