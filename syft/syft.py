@@ -42,7 +42,11 @@ class FloatTensor():
 
     def scalar_multiply(self, scalar):
         return self.params_func("scalar_multiply",[scalar])
-    
+
+    # Fills this tensor with zeros.
+    def zero_(self):
+        return self.no_params_func("zero_")
+
     def params_func(self, name, params, return_response=False):
         
         # send the command
