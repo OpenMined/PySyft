@@ -9,7 +9,6 @@ class FloatTensor():
         self.verbose = verbose
         self.controller = controller
         if(data is not None and not data_is_pointer):
-            
             controller.socket.send_json({"functionCall":"createTensor", "data": list(data.flatten()), "shape": data.shape})
             
             self.id = int(controller.socket.recv_string())
@@ -19,15 +18,33 @@ class FloatTensor():
         elif(data_is_pointer):
             self.id = int(data)
 
+    def __del__(self):
+        self.delete_tensor()
 
     def __add__(self,x):
 
         self.controller.socket.send_json(self.cmd("add",[x.id])) # sends the command
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
 
+    def delete_tensor(self):
+        if(data is not None and not data_is_pointer):
+            controller.socket.send_json({"functionCall":"deleteTensor", "objectIndex": self.id})
+        self.verbose = None
+        self.data = None
+        self.controller = None
+        self.id = None
+
+    def gpu(self):
+        return self.no_params_func("gpu")
+
+    def cpu(self):
+        return self.no_params_func("cpu")        
     
     def abs(self):
         return self.no_params_func("abs")
+
+    def add_(self, x):
+        return self.params_func("add_",[x])
 
     def neg(self):
         return self.no_params_func("neg")
@@ -37,7 +54,11 @@ class FloatTensor():
 
     def ceil(self):
         return self.no_params_func("ceil")
-    
+
+    # Fills this tensor with zeros.
+    def zero_(self):
+        return self.no_params_func("zero_")
+
     def params_func(self, name, params, return_response=False):
         
         # send the command
