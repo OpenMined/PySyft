@@ -27,7 +27,7 @@ class FloatTensor():
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
 
     def delete_tensor(self):
-        if(data is not None and not data_is_pointer):
+        if(not data_is_pointer):
             controller.socket.send_json({"functionCall":"deleteTensor", "objectIndex": self.id})
         self.verbose = None
         self.controller = None
