@@ -3,3 +3,5 @@ numpy
 scipy
 phe
 line_profiler
+zmq
+ipykernel
