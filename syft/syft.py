@@ -28,7 +28,7 @@ class FloatTensor():
 
     def delete_tensor(self):
         
-        controller.socket.send_json({"functionCall":"deleteTensor", "objectIndex": self.id})
+        self.controller.socket.send_json({"functionCall":"deleteTensor", "objectIndex": self.id})
         self.verbose = None
         self.controller = None
         self.id = None
