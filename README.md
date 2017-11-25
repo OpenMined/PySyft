@@ -20,7 +20,6 @@ The goal of this library is to give the user the ability to efficiently train De
 ### Prerequisites
 
 - Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
-- Install the base libraries listed [here](https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries)
 - Set up a virtual environment for the Python libraries (optional, recommended)
 - None if you are using anaconda
 
