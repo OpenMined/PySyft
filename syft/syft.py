@@ -18,13 +18,24 @@ class FloatTensor():
         elif(data_is_pointer):
             self.id = int(data)
 
-    def __del__(self):
-        self.delete_tensor()
+    # TODO: this fails with x = x + x if x is a FloatTensor
+    # def __del__(self):
+        # self.delete_tensor()
 
     def __add__(self,x):
-
-        self.controller.socket.send_json(self.cmd("add",[x.id])) # sends the command
+        if(type(x) == FloatTensor):
+            self.controller.socket.send_json(self.cmd("add_elem",[x.id])) # sends the command
+        else:   
+            self.controller.socket.send_json(self.cmd("add_scalar",[str(x)])) # sends the command
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
+
+    def __iadd__(self,x):
+        if(type(x) == FloatTensor):
+            self.controller.socket.send_json(self.cmd("add_elem_",[x.id])) # sends the command
+        else:   
+            self.controller.socket.send_json(self.cmd("add_scalar_",[str(x)])) # sends the command
+        return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
+
 
     def delete_tensor(self):
         
@@ -41,9 +52,6 @@ class FloatTensor():
     
     def abs_(self):
         return self.no_params_func("abs_")
-
-    def add_(self, x):
-        return self.params_func("add_",[x])
 
     def neg(self):
         return self.no_params_func("neg")
