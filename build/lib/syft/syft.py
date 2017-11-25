@@ -30,7 +30,6 @@ class FloatTensor():
         if(data is not None and not data_is_pointer):
             controller.socket.send_json({"functionCall":"deleteTensor", "objectIndex": self.id})
         self.verbose = None
-        self.data = None
         self.controller = None
         self.id = None
 
@@ -40,8 +39,8 @@ class FloatTensor():
     def cpu(self):
         return self.no_params_func("cpu")        
     
-    def abs(self):
-        return self.no_params_func("abs")
+    def abs_(self):
+        return self.no_params_func("abs_")
 
     def add_(self, x):
         return self.params_func("add_",[x])
@@ -71,6 +70,7 @@ class FloatTensor():
 
         if(return_response):
             return res
+
         return self
 
     def no_params_func(self, name, return_response=False):

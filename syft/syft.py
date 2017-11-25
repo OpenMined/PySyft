@@ -39,8 +39,8 @@ class FloatTensor():
     def cpu(self):
         return self.no_params_func("cpu")        
     
-    def abs(self):
-        return self.no_params_func("abs")
+    def abs_(self):
+        return self.no_params_func("abs_")
 
     def add_(self, x):
         return self.params_func("add_",[x])
