@@ -3,12 +3,12 @@ import zmq
 from random import choice
 
 class FloatTensor():
+
     
     def __init__(self, controller, data, data_is_pointer = False, verbose=False):
         self.verbose = verbose
         self.controller = controller
         if(data is not None and not data_is_pointer):
-            
             controller.socket.send_json({"functionCall":"createTensor", "data": list(data.flatten()), "shape": data.shape})
             
             self.id = int(controller.socket.recv_string())
@@ -18,160 +18,90 @@ class FloatTensor():
         elif(data_is_pointer):
             self.id = int(data)
 
+    def __del__(self):
+        self.delete_tensor()
 
     def __add__(self,x):
 
-
-        command = {}
-        command["functionCall"] = "add"
-        command["objectType"] = "tensor"
-        command["objectIndex"] = self.id
-        command["tensorIndexParams"] = [x.id]
-
-        self.controller.socket.send_json(command) # sends the command
+        self.controller.socket.send_json(self.cmd("add",[x.id])) # sends the command
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
 
-        return "Tensors don't have the same shape"
+    def delete_tensor(self):
+        if(data is not None and not data_is_pointer):
+            controller.socket.send_json({"functionCall":"deleteTensor", "objectIndex": self.id})
+        self.verbose = None
+        self.controller = None
+        self.id = None
 
+    def gpu(self):
+        return self.no_params_func("gpu")
+
+    def cpu(self):
+        return self.no_params_func("cpu")        
     
-    def abs(self):
-        command = {}
-        command["functionCall"] = "abs"
-        command["objectType"] = "tensor"
-        command["objectIndex"] = self.id
-        command["tensorIndexParams"] = []
-        
-        self.controller.socket.send_json(command) # sends the command
-        res = self.controller.socket.recv_string() # receives output from command
+    def abs_(self):
+        return self.no_params_func("abs_")
 
-        if(self.verbose):
-            print(res)
-
-        return self
+    def add_(self, x):
+        return self.params_func("add_",[x])
 
     def neg(self):
+        return self.no_params_func("neg")
 
-        command = {}
-        command["functionCall"] = "neg"
-        command["objectType"] = "tensor"
-        command["objectIndex"] = self.id
-        command["tensorIndexParams"] = []
+    def scalar_multiply(self, scalar):
+        return self.params_func("scalar_multiply",[scalar])
 
-        self.controller.socket.send_json(command) # sends the command
-        return self.controller.socket.recv_string() # receives output from command
-    
-    def init_sigmoid_matrix_multiply(self, tensor_1):
-        command = {}
-        command["functionCall"] = "init_sigmoid_matrix_multiply"
-        command["objectType"] = "tensor"
-        command["objectIndex"] = self.id
-        command["tensorIndexParams"] = [tensor_1.id]
+    def ceil(self):
+        return self.no_params_func("ceil")
+
+    # Fills this tensor with zeros.
+    def zero_(self):
+        return self.no_params_func("zero_")
+
+    def params_func(self, name, params, return_response=False):
         
-        self.controller.socket.send_json(command)
-        res = self.controller.socket.recv_string() # receives output from command
-        
+        # send the command
+        self.controller.socket.send_json(self.cmd(name,tensorIndexParams=params))
+        # receive output from command
+        res = self.controller.socket.recv_string()
+
         if(self.verbose):
             print(res)
 
-        return self
-    
-    def init_add_matrix_multiply(self, tensor_1):
-        
-        self.controller.socket.send_json({"functionCall":"init_add_matrix_multiply","objectType":"tensor","objectIndex":self.id,"tensorIndexParams":[tensor_1.id]})
-        res = self.controller.socket.recv_string() # receives output from command
-        
-        if(self.verbose):
-            print(res)
+        if(return_response):
+            return res
 
         return self
-    
-    def init_weights(self, tensor_1):
-        
-        self.controller.socket.send_json({"functionCall":"init_weights","objectType":"tensor","objectIndex":self.id,"tensorIndexParams":[tensor_1.id]})
-        res = self.controller.socket.recv_string() # receives output from command
-        
-        if(self.verbose):
-            print(res)
 
-        return self
-    
-    def sigmoid_matrix_multiply(self, tensor_1, tensor_2):
-        
-        self.controller.socket.send_json({"functionCall":"sigmoid_matrix_multiply","objectType":"tensor","objectIndex":self.id,"tensorIndexParams":[tensor_1.id, tensor_2.id]})
-        res = self.controller.socket.recv_string() # receives output from command
-        
-        if(self.verbose):
-            print(res)
-
-        return self
-    
-    def reset_weights(self):
-        
-        self.controller.socket.send_json({"functionCall":"reset_weights","objectType":"tensor","objectIndex":self.id})
-        res = self.controller.socket.recv_string() # receives output from command
-        
-        if(self.verbose):
-            print(res)
-
-        return self
-    
-    def inline_elementwise_subtract(self, tensor_1):
-        
-        self.controller.socket.send_json({"functionCall":"inline_elementwise_subtract","objectType":"tensor","objectIndex":self.id,"tensorIndexParams":[tensor_1.id]})
-        res = self.controller.socket.recv_string() # receives output from command
-        
-        if(self.verbose):
-            print(res)
-
-        return self
-    
-    def multiply_derivative(self, tensor_1):
-        
-        self.controller.socket.send_json({"functionCall":"multiply_derivative","objectType":"tensor","objectIndex":self.id,"tensorIndexParams":[tensor_1.id]})
-        res = self.controller.socket.recv_string() # receives output from command
-        
-        if(self.verbose):
-            print(res)
-
-        return self
-    
-    def add_matrix_multiply(self, tensor_1, tensor_2):
-        
-        self.controller.socket.send_json({"functionCall":"add_matrix_multiply","objectType":"tensor","objectIndex":self.id,"tensorIndexParams":[tensor_1.id, tensor_2.id]})
-        res = self.controller.socket.recv_string() # receives output from command
-        
-        if(self.verbose):
-            print(res)
-
-        return self
+    def no_params_func(self, name, return_response=False):
+        return( self.params_func(name,[],return_response) )
     
     def __repr__(self):
-        self.controller.socket.send_json({"functionCall":"print","objectType":"tensor","objectIndex":self.id})
-        res = self.controller.socket.recv_string() # receives output from command
-        
-        return res
+        return self.no_params_func("print",True)
 
     def __str__(self):
-        self.controller.socket.send_json({"functionCall":"print","objectType":"tensor","objectIndex":self.id})
-        res = self.controller.socket.recv_string() # receives output from command
+        return self.no_params_func("print",True)
 
-        return res
+    def cmd(self,functionCall,tensorIndexParams=[]):
+        cmd = {}
+        cmd['functionCall'] = functionCall
+        cmd['objectType'] = 'tensor'
+        cmd['objectIndex'] = self.id
+        cmd['tensorIndexParams'] = tensorIndexParams
+        return cmd
 
-    def print(self):
-        self.controller.socket.send_json({"functionCall":"print","objectType":"tensor","objectIndex":self.id})
-        
-        print(self.controller.socket.recv_string())
-    
+
 class SyftController():
-    
+
     def __init__(self, identity):
-        
+
         self.identity = identity
-        
+
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
         self.socket.setsockopt_string(zmq.IDENTITY, identity)
         self.socket.connect("tcp://localhost:5555")
-    
+
     def FloatTensor(self,data):
         return FloatTensor(self,data)
+

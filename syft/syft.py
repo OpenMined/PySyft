@@ -17,9 +17,13 @@ class FloatTensor():
         elif(data_is_pointer):
             self.id = int(data)
 
+
     def __add__(self,x):
         self.controller.socket.send_json(self.cmd("add",[x.id])) # sends the command
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
+
+    def __del__(self):
+        self.delete_tensor()
 
     def __repr__(self):
         return self.no_params_func("print",True,False)
@@ -29,7 +33,7 @@ class FloatTensor():
     
     def abs(self):
         return self.no_params_func("abs",return_response=True)
-
+      
     def abs_(self):
         return self.no_params_func("abs_")
 

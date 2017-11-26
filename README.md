@@ -8,59 +8,16 @@
 
 The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state, without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find a very performant combinations of the two. See the [notebooks](./notebooks) folder for tutorials on how to use the library. Also, check the [main demonstration](https://github.com/OpenMined/sonar) from the Sonar project.
 
-- [Setup with Docker](#setup-with-doker)
 - [Local setup](#local-setup)
-- [Notebooks](#notebooks)
-- [Testing](#testing)
 - [For Contributors](#for-contributors)
 - [Relevant Literature](#relevant-literature)
 - [License](#license)
-
-## Setup with Docker
-
-The fastest way to get started is to use the pre-assembled Docker image (works on all major operating systems). Alternatively, one can manually set up all the dependencies and develop locally.
-
-### Get Docker
-Install Docker following the instructions on the [website](https://www.docker.com/).
-
-For macOS users with [Homebrew](https://brew.sh/) installed, use:
-```sh
-brew cask install docker
-open -a docker
-```
-
-You can ensure that Docker is properly installed and running by checking: `docker --version`.
-
-### Run PySyft in a container
-First, clone this repository and navigate into its folder:
-
-```sh
-git clone https://github.com/OpenMined/PySyft.git
-cd PySyft
-```
-
-Now, start a container based on [openmined/pysyft](https://hub.docker.com/r/openmined/pysyft/):
-```sh
-make docker-build
-make docker-run
-```
-In this container you'll be able to open a Python shell, import the library and develop with it.
-
-However, if you want to use Jupyter, try the provided notebooks, and make changes to the source,
-you should create your personal development image:
-```sh
-make docker-build-dev
-make docker-run image=openmined/pysyft-dev:local
-```
-
-Inside the container you can run any make targets such as `test` or `notebook`.
 
 ## Local setup
 
 ### Prerequisites
 
 - Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
-- Install the base libraries listed [here](https://github.com/OpenMined/PySonar/blob/master/README.md#base-libraries)
 - Set up a virtual environment for the Python libraries (optional, recommended)
 - None if you are using anaconda
 
@@ -71,53 +28,10 @@ The Python dependencies are listed in [`requirements.txt`](./requirements.txt) a
 pip3 install -r requirements.txt
 ```
 
-Additional test and development dependencies such as scikit-learn and Jupyter are
-listed in [`dev-requirements.txt`](./dev-requirements.txt):
-```sh
-pip3 install -r dev-requirements.txt
-```
-
 #### PySyft installation
 If you simply want to to _use_ PySyft, it is enough to install the library with:
 ```sh
 python3 setup.py install
-```
-
-Instead, if you want to make changes to the source, fix bugs, add features etc.,
-it's recommended to install PySyft in development mode:
-```sh
-python3 setup.py develop
-```
-
-#### Anaconda
-Set up a new virutal environment (here called openmind), the former for user, the latter for developers. 
-```sh
-install_for_anaconda_users.bat openmined install
-install_for_anaconda_users.sh openmined develop
-```
-
-#### Windows
-Run below, where "mode" is either "install" or "develop"
-```sh
-conda install -c conda-forge gmpy2
-pip install -r requirements.txt
-python setup.py mode
-```
-
-## Notebooks
-The make target `notebook` will launch a Jupyter server (either locally or in the container).
-```sh
-make notebook
-```
-
-## Testing
-The make target `test` will run all tests with `pytest` and `flake8` (either locally or in the container).
-```sh
-make test
-```
-#### Windows
-```sh
-python setup.py test
 ```
 
 ## For Contributors
