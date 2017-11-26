@@ -100,6 +100,8 @@ class FloatTensor():
     def scalar_multiply(self, scalar):
         return self.params_func("scalar_multiply",[scalar],return_response=True)
     
+    def sigmoid_(self):
+        return self.no_params_func("sigmoid_")
 
 class SyftController():
 
