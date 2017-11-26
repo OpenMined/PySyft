@@ -54,6 +54,9 @@ class FloatTensor():
     def ceil(self):
         return self.no_params_func("ceil")
 
+    def floor_(self):
+    	return self.no_params_func("floor_")
+
     # Fills this tensor with zeros.
     def zero_(self):
         return self.no_params_func("zero_")
