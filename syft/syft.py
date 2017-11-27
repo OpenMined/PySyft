@@ -71,6 +71,13 @@ class FloatTensor():
         self.controller = None
         self.id = None
 
+    def floor_(self):
+    	return self.no_params_func("floor_")
+
+    # Fills this tensor with zeros.
+    def zero_(self):
+        return self.no_params_func("zero_")
+
     def gpu(self):
         return self.no_params_func("gpu")
 
