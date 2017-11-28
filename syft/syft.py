@@ -1,3 +1,4 @@
+
 import zmq
 
 class FloatTensor():
@@ -109,6 +110,9 @@ class FloatTensor():
     
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
+
+    def T(self):
+        return self.no_params_func("transpose",return_response=True)
 
 class SyftController():
 
