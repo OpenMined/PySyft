@@ -27,6 +27,24 @@ class FloatTensor():
     def __iadd__(self,x):
         return self.arithmetic_operation(x,"add",True)
 
+    def __sub__(self,x):
+        return self.arithmetic_operation(x,"sub",False)
+
+    def __isub__(self,x):
+        return self.arithmetic_operation(x,"sub",True)
+
+    def __mul__(self,x):
+        return self.arithmetic_operation(x,"mul",False)
+
+    def __imul__(self,x):
+        return self.arithmetic_operation(x,"mul",True)
+
+    def __truediv__(self,x):
+        return self.arithmetic_operation(x,"div",False)
+
+    def __itruediv__(self,x):
+        return self.arithmetic_operation(x,"div",True)
+
     def arithmetic_operation(self,x,name,inline=False):
 
         operation_cmd = name
@@ -51,17 +69,12 @@ class FloatTensor():
         self.controller = None
         self.id = None
 
-    def __mul__(self,x):
-        return self.params_func("mul",[x.id],return_response=True)
 
     def __repr__(self):
         return self.no_params_func("print",True,False)
 
     def __str__(self):
         return self.no_params_func("print",True,False)
-
-    def __sub__(self,x):
-        return self.params_func("sub",[x.id],return_response=True)
     
     def abs(self):
         return self.no_params_func("abs",return_response=True)
