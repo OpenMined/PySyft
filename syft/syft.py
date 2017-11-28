@@ -18,8 +18,8 @@ class FloatTensor():
             self.id = int(data)
 
     # TODO: this fails with x = x + x if x is a FloatTensor
-    # def __del__(self):
-        # self.delete_tensor()
+    def __del__(self):
+        self.delete_tensor()
 
     def abs(self):
         return self.no_params_func("abs",return_response=True)
