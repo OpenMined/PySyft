@@ -1,7 +1,7 @@
 import zmq
 
 class FloatTensor():
-    
+
     def __init__(self, controller, data, data_is_pointer = False, verbose=False):
         self.verbose = verbose
         self.controller = controller
@@ -50,9 +50,9 @@ class FloatTensor():
         operation_cmd = name
 
         if(type(x) == FloatTensor):
-            operation_cmd += "_elem"            
+            operation_cmd += "_elem"
             parameter = x.id
-        else:   
+        else:
             operation_cmd += "_scalar"
             parameter = str(x)
 
@@ -63,7 +63,7 @@ class FloatTensor():
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
 
     def delete_tensor(self):
-        
+
         self.controller.socket.send_json({"functionCall":"deleteTensor", "objectIndex": self.id})
         self.verbose = None
         self.controller = None
@@ -75,15 +75,21 @@ class FloatTensor():
 
     def __str__(self):
         return self.no_params_func("print",True,False)
-    
+
     def abs(self):
         return self.no_params_func("abs",return_response=True)
-      
+
     def abs_(self):
         return self.no_params_func("abs_")
 
     def neg(self):
         return self.no_params_func("neg")
+
+    def tanh(self):
+        return self.no_params_func("tanh",return_response=False)
+
+    def tanh_(self):
+        return self.no_params_func("tanh",return_response=True)
 
     def addmm_(self, x,y):
         return self.params_func("addmm_",[x.id,y.id])
@@ -126,8 +132,8 @@ class FloatTensor():
 
     def neg(self):
         return self.no_params_func("neg",return_response=True)
-    
-    def params_func(self, name, params, return_response=False,return_as_tensor=True):        
+
+    def params_func(self, name, params, return_response=False,return_as_tensor=True):
         # send the command
         self.controller.socket.send_json(self.cmd(name,tensorIndexParams=params))
         # receive output from command
@@ -149,7 +155,7 @@ class FloatTensor():
 
     def scalar_multiply(self, scalar):
         return self.params_func("scalar_multiply",[scalar],return_response=True)
-    
+
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
@@ -166,4 +172,3 @@ class SyftController():
 
     def FloatTensor(self,data):
         return FloatTensor(self,data)
-
