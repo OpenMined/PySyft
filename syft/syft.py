@@ -22,6 +22,7 @@ class FloatTensor():
         # self.delete_tensor()
 
     def __add__(self,x):
+
         if(type(x) == FloatTensor):
             self.controller.socket.send_json(self.cmd("add_elem",[x.id])) # sends the command
         else:   
@@ -36,6 +37,7 @@ class FloatTensor():
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
 
 
+
     def delete_tensor(self):
         
         self.controller.socket.send_json({"functionCall":"deleteTensor", "objectIndex": self.id})
@@ -43,11 +45,17 @@ class FloatTensor():
         self.controller = None
         self.id = None
 
+    def __mul__(self,x):
+        return self.params_func("mul",[x.id],return_response=True)
+
     def __repr__(self):
         return self.no_params_func("print",True,False)
 
     def __str__(self):
         return self.no_params_func("print",True,False)
+
+    def __sub__(self,x):
+        return self.params_func("sub",[x.id],return_response=True)
     
     def abs(self):
         return self.no_params_func("abs",return_response=True)
@@ -123,6 +131,8 @@ class FloatTensor():
     def scalar_multiply(self, scalar):
         return self.params_func("scalar_multiply",[scalar],return_response=True)
     
+    def sigmoid_(self):
+        return self.no_params_func("sigmoid_")
 
 class SyftController():
 
