@@ -85,6 +85,12 @@ class FloatTensor():
     def neg(self):
         return self.no_params_func("neg")
 
+    def tanh(self):
+        return self.no_params_func("tanh",return_response=False)
+
+    def tanh_(self):
+        return self.no_params_func("tanh",return_response=True)
+
     def addmm_(self, x,y):
         return self.params_func("addmm_",[x.id,y.id])
 
