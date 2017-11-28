@@ -22,21 +22,27 @@ class FloatTensor():
         # self.delete_tensor()
 
     def __add__(self,x):
-
-        if(type(x) == FloatTensor):
-            self.controller.socket.send_json(self.cmd("add_elem",[x.id])) # sends the command
-        else:   
-            self.controller.socket.send_json(self.cmd("add_scalar",[str(x)])) # sends the command
-        return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
+        return self.arithmetic_operation(x,"add",False)
 
     def __iadd__(self,x):
+        return self.arithmetic_operation(x,"add",True)
+
+    def arithmetic_operation(self,x,name,inline=False):
+
+        operation_cmd = name
+
         if(type(x) == FloatTensor):
-            self.controller.socket.send_json(self.cmd("add_elem_",[x.id])) # sends the command
+            operation_cmd += "_elem"            
+            parameter = x.id
         else:   
-            self.controller.socket.send_json(self.cmd("add_scalar_",[str(x)])) # sends the command
+            operation_cmd += "_scalar"
+            parameter = str(x)
+
+        if(inline):
+            operation_cmd += "_"
+
+        self.controller.socket.send_json(self.cmd(operation_cmd,[parameter])) # sends the command
         return FloatTensor(self.controller,int(self.controller.socket.recv_string()),True)
-
-
 
     def delete_tensor(self):
         
