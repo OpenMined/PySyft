@@ -74,7 +74,6 @@ class FloatTensor():
     def zero_(self):
         return self.no_params_func("zero_")
 
-
     def __repr__(self):
         return self.no_params_func("print",True,False)
 
