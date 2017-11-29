@@ -53,10 +53,10 @@ class FloatTensor():
         return self.no_params_func("floor_")
 
     def __mul__(self,x):
-        return self.arithmetic_operation(x,"mul_elem",False)
+        return self.arithmetic_operation(x,"mul",False)
 
     def __imul__(self,x):
-        return self.arithmetic_operation(x,"mul_elem",True)
+        return self.arithmetic_operation(x,"mul",True)
 
     def neg(self):
         return self.no_params_func("neg",return_response=True)
@@ -67,8 +67,8 @@ class FloatTensor():
     def __sub__(self,x):
         return self.arithmetic_operation(x,"sub",False)
 
-    def __isub__(self,x):
-        return self.arithmetic_operation(x,"sub",True)
+#    def __isub__(self,x):
+#        return self.arithmetic_operation(x,"sub",True)
     
     # Fills this tensor with zeros.
     def zero_(self):
