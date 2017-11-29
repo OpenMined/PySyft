@@ -67,13 +67,12 @@ class FloatTensor():
     def __sub__(self,x):
         return self.arithmetic_operation(x,"sub",False)
 
-    def __isub__(self,x):
-        return self.arithmetic_operation(x,"sub",True)
+#    def __isub__(self,x):
+#        return self.arithmetic_operation(x,"sub",True)
     
     # Fills this tensor with zeros.
     def zero_(self):
         return self.no_params_func("zero_")
-
 
     def __repr__(self):
         return self.no_params_func("print",True,False)
@@ -139,6 +138,8 @@ class FloatTensor():
         self.controller = None
         self.id = None
 
+    def T(self):
+        return self.no_params_func("transpose",return_response=True)
 
 class SyftController():
 
@@ -153,4 +154,3 @@ class SyftController():
 
     def FloatTensor(self,data):
         return FloatTensor(self,data)
-
