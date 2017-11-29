@@ -38,7 +38,7 @@ class FloatTensor():
         return self.arithmetic_operation(x,"add",False)
 
     def __iadd__(self,x):
-        return self.arithmetic_operation(x,"add",True)
+        return self.arithmetic_operation(x,"add",True)        
     
     def copy(self):
         return self.no_params_func("copy", return_response=True)
