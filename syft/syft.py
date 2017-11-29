@@ -1,4 +1,3 @@
-
 import zmq
 
 class FloatTensor():
@@ -54,10 +53,10 @@ class FloatTensor():
         return self.no_params_func("floor_")
 
     def __mul__(self,x):
-        return self.arithmetic_operation(x,"mul",False)
+        return self.arithmetic_operation(x,"mul_elem",False)
 
     def __imul__(self,x):
-        return self.arithmetic_operation(x,"mul",True)
+        return self.arithmetic_operation(x,"mul_elem",True)
 
     def neg(self):
         return self.no_params_func("neg",return_response=True)
@@ -74,7 +73,6 @@ class FloatTensor():
     # Fills this tensor with zeros.
     def zero_(self):
         return self.no_params_func("zero_")
-
 
     def __repr__(self):
         return self.no_params_func("print",True,False)
@@ -140,7 +138,6 @@ class FloatTensor():
         self.controller = None
         self.id = None
 
-
     def T(self):
         return self.no_params_func("transpose",return_response=True)
 
@@ -157,4 +154,3 @@ class SyftController():
 
     def FloatTensor(self,data):
         return FloatTensor(self,data)
-
