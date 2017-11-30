@@ -1,4 +1,5 @@
 import zmq
+import uuid
 
 class FloatTensor():
 
@@ -143,14 +144,14 @@ class FloatTensor():
 
 class SyftController():
 
-    def __init__(self, identity):
+    def __init__(self):
 
-        self.identity = identity
+        self.identity = str(uuid.uuid4())
 
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
-        self.socket.setsockopt_string(zmq.IDENTITY, identity)
+        self.socket.setsockopt_string(zmq.IDENTITY, self.identity)
         self.socket.connect("tcp://localhost:5555")
 
-    def FloatTensor(self,data):
-        return FloatTensor(self,data)
+    def FloatTensor(self, data):
+        return FloatTensor(self, data)
