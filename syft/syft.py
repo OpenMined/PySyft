@@ -65,6 +65,9 @@ class FloatTensor():
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
+    def trunc(self):
+        return self.no_params_func("trunc", return_response=True)
+
     def __sub__(self,x):
         return self.arithmetic_operation(x,"sub",False)
 
@@ -142,6 +145,9 @@ class FloatTensor():
     def T(self):
         return self.no_params_func("transpose",return_response=True)
 
+    def is_contiguous(self):
+        return self.no_params_func("is_contiguous", return_response=True)
+
 class SyftController():
 
     def __init__(self):
@@ -155,3 +161,4 @@ class SyftController():
 
     def FloatTensor(self, data):
         return FloatTensor(self, data)
+
