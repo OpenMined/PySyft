@@ -64,6 +64,9 @@ class FloatTensor():
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
+    def trunc(self):
+        return self.no_params_func("trunc", return_response=True)
+
     def __sub__(self,x):
         return self.arithmetic_operation(x,"sub",False)
 
