@@ -1,7 +1,7 @@
 import zmq
 
 class FloatTensor():
-    
+
     def __init__(self, controller, data, data_is_pointer = False, verbose=False):
         self.verbose = verbose
         self.controller = controller
@@ -22,7 +22,7 @@ class FloatTensor():
 
     def abs(self):
         return self.no_params_func("abs",return_response=True)
-      
+
     def abs_(self):
         return self.no_params_func("abs_")
 
@@ -38,8 +38,8 @@ class FloatTensor():
         return self.arithmetic_operation(x,"add",False)
 
     def __iadd__(self,x):
-        return self.arithmetic_operation(x,"add",True)        
-    
+        return self.arithmetic_operation(x,"add",True)
+
     def copy(self):
         return self.no_params_func("copy", return_response=True)
 
@@ -69,7 +69,7 @@ class FloatTensor():
 
 #    def __isub__(self,x):
 #        return self.arithmetic_operation(x,"sub",True)
-    
+
     # Fills this tensor with zeros.
     def zero_(self):
         return self.no_params_func("zero_")
@@ -79,12 +79,12 @@ class FloatTensor():
 
     def __str__(self):
         return self.no_params_func("print",True,False)
-    
+
     def cpu(self):
         return self.no_params_func("cpu")
 
     def gpu(self):
-        return self.no_params_func("gpu")    
+        return self.no_params_func("gpu")
 
     def cmd(self,functionCall,tensorIndexParams=[]):
         cmd = {
@@ -94,7 +94,7 @@ class FloatTensor():
             'tensorIndexParams' :tensorIndexParams}
         return cmd
 
-    def params_func(self, name, params, return_response=False,return_as_tensor=True):        
+    def params_func(self, name, params, return_response=False,return_as_tensor=True):
         # send the command
         self.controller.socket.send_json(self.cmd(name,tensorIndexParams=params))
         # receive output from command
@@ -119,9 +119,9 @@ class FloatTensor():
         operation_cmd = name
 
         if(type(x) == FloatTensor):
-            operation_cmd += "_elem"            
+            operation_cmd += "_elem"
             parameter = x.id
-        else:   
+        else:
             operation_cmd += "_scalar"
             parameter = str(x)
 
@@ -140,6 +140,9 @@ class FloatTensor():
 
     def T(self):
         return self.no_params_func("transpose",return_response=True)
+
+    def is_contiguous(self):
+        return self.no_params_func("is_contiguous", return_response=True)
 
 class SyftController():
 
