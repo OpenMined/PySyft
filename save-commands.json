@@ -1,0 +1,5 @@
+{
+    "commands": [
+        "*.py : python setup.py develop"
+    ]
+}

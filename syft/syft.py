@@ -1,4 +1,5 @@
 import zmq
+import uuid
 
 class FloatTensor():
 
@@ -63,6 +64,9 @@ class FloatTensor():
 
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
+
+    def trunc(self):
+        return self.no_params_func("trunc", return_response=True)
 
     def __sub__(self,x):
         return self.arithmetic_operation(x,"sub",False)
@@ -147,16 +151,20 @@ class FloatTensor():
     def T(self):
         return self.no_params_func("transpose",return_response=True)
 
+    def is_contiguous(self):
+        return self.no_params_func("is_contiguous", return_response=True)
+
 class SyftController():
 
-    def __init__(self, identity):
+    def __init__(self):
 
-        self.identity = identity
+        self.identity = str(uuid.uuid4())
 
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
-        self.socket.setsockopt_string(zmq.IDENTITY, identity)
+        self.socket.setsockopt_string(zmq.IDENTITY, self.identity)
         self.socket.connect("tcp://localhost:5555")
 
-    def FloatTensor(self,data):
-        return FloatTensor(self,data)
+    def FloatTensor(self, data):
+        return FloatTensor(self, data)
+
