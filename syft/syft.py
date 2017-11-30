@@ -71,6 +71,12 @@ class FloatTensor():
     def __sub__(self,x):
         return self.arithmetic_operation(x,"sub",False)
 
+    def triu(self,k=0):
+        return self.params_func("triu", [k], return_response=True)
+
+    def triu_(self,k=0):
+        return self.params_func("triu_", [k])
+
 #    def __isub__(self,x):
 #        return self.arithmetic_operation(x,"sub",True)
 
