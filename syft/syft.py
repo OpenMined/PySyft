@@ -65,6 +65,9 @@ class FloatTensor():
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
+    def sqrt(self):
+        return self.no_params_func("sqrt", return_response=True)
+
     def trunc(self):
         return self.no_params_func("trunc", return_response=True)
 
@@ -167,4 +170,3 @@ class SyftController():
 
     def FloatTensor(self, data):
         return FloatTensor(self, data)
-
