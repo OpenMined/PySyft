@@ -45,6 +45,12 @@ class FloatTensor():
     def copy(self):
         return self.no_params_func("copy", return_response=True)
 
+    def cos(self):
+        return self.no_params_func("cos", return_response=True)
+
+    def cos_(self):
+        return self.no_params_func("cos_")
+
     def cosh(self):
         return self.no_params_func("cosh", return_response=True)
 
