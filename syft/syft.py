@@ -154,6 +154,15 @@ class FloatTensor():
     def is_contiguous(self):
         return self.no_params_func("is_contiguous", return_response=True)
 
+    def sinh(self):
+        return self.no_params_func("sinh", return_response=True)
+
+    def sinh_(self):
+        return self.no_params_func("sinh_")
+
+    def tanh(self):
+        return self.no_params_func("tanh", return_response=True)
+
 class SyftController():
 
     def __init__(self):
