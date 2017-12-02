@@ -42,6 +42,12 @@ class FloatTensor():
     def __iadd__(self, x):
         return self.arithmetic_operation(x, "add", True)
 
+    def ceil(self):
+        return self.no_params_func("ceil", return_response=True)
+
+    def ceil_(self):
+        return self.no_params_func("ceil_")
+
     def copy(self):
         return self.no_params_func("copy", return_response=True)
 
@@ -89,7 +95,7 @@ class FloatTensor():
 
     def __isub__(self,x):
         return self.arithmetic_operation(x,"sub",True)
-    
+
     def sum(self,dim):
         assert type(dim) == int
         return self.arithmetic_operation(dim,"sum",False)
