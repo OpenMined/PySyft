@@ -87,6 +87,9 @@ class FloatTensor():
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
+    def sigmoid(self):
+        return self.no_params_func("sigmoid", return_response=True)
+
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
 
