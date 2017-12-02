@@ -70,6 +70,24 @@ class FloatTensor():
     def __isub__(self,x):
         return self.arithmetic_operation(x,"sub",True)
     
+    def sum(self,dim):
+        assert type(dim) == int
+        return self.arithmetic_operation(dim,"sum",False)
+
+    def view(self,*args):
+        new_dim = list(args)
+        assert type(new_dim) == list
+        assert type(new_dim[0]) == int
+        return self.params_func("view",new_dim, return_response=True)
+
+    def view_(self,*args):
+        new_dim = list(args)
+        assert type(new_dim) == list
+        assert type(new_dim[0]) == int
+        self.params_func("view_",new_dim, return_response=False)
+        return self
+
+
     # Fills this tensor with zeros.
     def zero_(self):
         return self.no_params_func("zero_")
