@@ -69,6 +69,9 @@ class FloatTensor():
     def __itruediv__(self, x):
         return self.arithmetic_operation(x, "div", True)
 
+    def floor(self):
+        return self.no_params_func("floor", True)
+
     def floor_(self):
         return self.no_params_func("floor_")
 
