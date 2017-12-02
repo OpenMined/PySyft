@@ -6,7 +6,7 @@
 
 > Homomorphically Encrypted Deep Learning Library
 
-The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state, without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find a very performant combinations of the two. See the [notebooks](./notebooks) folder for tutorials on how to use the library. Also, check the [main demonstration](https://github.com/OpenMined/sonar) from the Sonar project.
+The goal of this library is to give the user the ability to efficiently train Deep Learning models in a homomorphically encrypted state, without needing to be an expert in either. Furthermore, by understanding the characteristics of both Deep Learning and Homomorphic Encryption, we hope to find a very performant combinations of the two. Also, check the [main demonstration](https://github.com/OpenMined/sonar) from the Sonar project.
 
 - [Local setup](#local-setup)
 - [For Contributors](#for-contributors)
@@ -19,7 +19,8 @@ The goal of this library is to give the user the ability to efficiently train De
 
 - Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
 - Set up a virtual environment for the Python libraries (optional, recommended)
-- None if you are using anaconda
+- Install our OpenMined Unity app by following the guidelines [here]
+(https://github.com/OpenMined/OpenMined)
 
 ### Python Requirements
 
