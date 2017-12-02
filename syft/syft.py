@@ -93,6 +93,9 @@ class FloatTensor():
         assert type(new_dim[0]) == int
         self.params_func("view_",new_dim, return_response=False)
         return self
+    
+    def T(self):
+        return self.no_params_func("transpose",return_response=True)
 
     def triu(self,k=0):
         return self.params_func("triu", [k], return_response=True)
@@ -167,9 +170,6 @@ class FloatTensor():
         self.verbose = None
         self.controller = None
         self.id = None
-
-    def T(self):
-        return self.no_params_func("transpose",return_response=True)
 
     def is_contiguous(self):
         return self.no_params_func("is_contiguous", return_response=True)
