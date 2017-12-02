@@ -50,6 +50,12 @@ class FloatTensor():
     def __itruediv__(self,x):
         return self.arithmetic_operation(x,"div",True)
 
+    def __pow__(self, x):
+        return self.arithmetic_operation(x, "pow", False)
+
+    def __ipow__(self, x):
+        return self.arithmetic_operation(x, "pow", True)
+
     def floor_(self):
         return self.no_params_func("floor_")
 
