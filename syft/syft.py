@@ -1,7 +1,8 @@
 import zmq
+import uuid
 
 class FloatTensor():
-    
+
     def __init__(self, controller, data, data_is_pointer = False, verbose=False):
         self.verbose = verbose
         self.controller = controller
@@ -22,7 +23,7 @@ class FloatTensor():
 
     def abs(self):
         return self.no_params_func("abs",return_response=True)
-      
+
     def abs_(self):
         return self.no_params_func("abs_")
 
@@ -38,8 +39,8 @@ class FloatTensor():
         return self.arithmetic_operation(x,"add",False)
 
     def __iadd__(self,x):
-        return self.arithmetic_operation(x,"add",True)        
-    
+        return self.arithmetic_operation(x,"add",True)
+
     def copy(self):
         return self.no_params_func("copy", return_response=True)
 
@@ -64,6 +65,12 @@ class FloatTensor():
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
+    def sqrt(self):
+        return self.no_params_func("sqrt", return_response=True)
+
+    def trunc(self):
+        return self.no_params_func("trunc", return_response=True)
+
     def __sub__(self,x):
         return self.arithmetic_operation(x,"sub",False)
 
@@ -87,6 +94,11 @@ class FloatTensor():
         self.params_func("view_",new_dim, return_response=False)
         return self
 
+    def triu(self,k=0):
+        return self.params_func("triu", [k], return_response=True)
+
+    def triu_(self,k=0):
+        return self.params_func("triu_", [k])
 
     # Fills this tensor with zeros.
     def zero_(self):
@@ -97,12 +109,12 @@ class FloatTensor():
 
     def __str__(self):
         return self.no_params_func("print",True,False)
-    
+
     def cpu(self):
         return self.no_params_func("cpu")
 
     def gpu(self):
-        return self.no_params_func("gpu")    
+        return self.no_params_func("gpu")
 
     def cmd(self,functionCall,tensorIndexParams=[]):
         cmd = {
@@ -112,7 +124,7 @@ class FloatTensor():
             'tensorIndexParams' :tensorIndexParams}
         return cmd
 
-    def params_func(self, name, params, return_response=False,return_as_tensor=True):        
+    def params_func(self, name, params, return_response=False,return_as_tensor=True):
         # send the command
         self.controller.socket.send_json(self.cmd(name,tensorIndexParams=params))
         # receive output from command
@@ -137,9 +149,9 @@ class FloatTensor():
         operation_cmd = name
 
         if(type(x) == FloatTensor):
-            operation_cmd += "_elem"            
+            operation_cmd += "_elem"
             parameter = x.id
-        else:   
+        else:
             operation_cmd += "_scalar"
             parameter = str(x)
 
@@ -156,18 +168,22 @@ class FloatTensor():
         self.controller = None
         self.id = None
 
+    def T(self):
+        return self.no_params_func("transpose",return_response=True)
+
+    def is_contiguous(self):
+        return self.no_params_func("is_contiguous", return_response=True)
 
 class SyftController():
 
-    def __init__(self, identity):
+    def __init__(self):
 
-        self.identity = identity
+        self.identity = str(uuid.uuid4())
 
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
-        self.socket.setsockopt_string(zmq.IDENTITY, identity)
+        self.socket.setsockopt_string(zmq.IDENTITY, self.identity)
         self.socket.connect("tcp://localhost:5555")
 
-    def FloatTensor(self,data):
-        return FloatTensor(self,data)
-
+    def FloatTensor(self, data):
+        return FloatTensor(self, data)
