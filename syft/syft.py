@@ -13,7 +13,8 @@ class FloatTensor():
                                          "data"         : list(data.flatten()),
                                          "shape"        : data.shape})
             self.id = int(controller.socket.recv_string())
-            print("FloatTensor.__init__: " +  str(self.id))
+            if(verbose):
+                print("FloatTensor.__init__: " +  str(self.id))
 
         elif(data_is_pointer):
             self.id = int(data)
@@ -118,7 +119,8 @@ class FloatTensor():
 
         if(return_response):
             if(return_as_tensor):
-                print("FloatTensor.__init__: " +  res)
+                if(self.verbose):
+                    print("FloatTensor.__init__: " +  res)
                 return FloatTensor(self.controller,int(res),True)
             else:
                 return res
@@ -159,7 +161,7 @@ class FloatTensor():
 
 class SyftController():
 
-    def __init__(self):
+    def __init__(self,verbose=True):
 
         self.identity = str(uuid.uuid4())
 
@@ -167,6 +169,8 @@ class SyftController():
         self.socket = context.socket(zmq.DEALER)
         self.socket.setsockopt_string(zmq.IDENTITY, self.identity)
         self.socket.connect("tcp://localhost:5555")
+        self.verbose=verbose
 
     def FloatTensor(self, data):
-        return FloatTensor(self, data)
+        verbose = self.verbose
+        return FloatTensor(self, data,verbose=verbose)
