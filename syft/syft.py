@@ -204,6 +204,12 @@ class FloatTensor():
     def sinh_(self):
         return self.no_params_func("sinh_")
 
+    def tan(self):
+        return self.no_params_func("tan", return_response=True)
+
+    def tan_(self):
+        return self.no_params_func("tan_")
+
     def tanh(self):
         return self.no_params_func("tanh", return_response=True)
 
