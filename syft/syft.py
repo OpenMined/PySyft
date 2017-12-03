@@ -28,6 +28,24 @@ class FloatTensor():
     def abs_(self):
         return self.no_params_func("abs_")
 
+    def acos(self):
+        return self.no_params_func("acos", return_response=True)
+
+    def acos_(self):
+        return self.no_params_func("acos_")
+
+    def asin(self):
+        return self.no_params_func("asin", return_response=True)
+
+    def asin_(self):
+        return self.no_params_func("asin_")
+
+    def atan(self):
+        return self.no_params_func("atan", return_response=True)
+
+    def atan_(self):
+        return self.no_params_func("atan_")
+
     def addmm_(self, x, y):
         return self.params_func("addmm_", [x.id, y.id])
 
