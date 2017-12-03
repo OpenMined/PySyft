@@ -78,6 +78,12 @@ class FloatTensor():
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
+    def sin(self):
+        return self.no_params_func("sin", return_response=True)
+
+    def sin_(self):
+        return self.no_params_func("sin_")
+
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
 
@@ -87,30 +93,30 @@ class FloatTensor():
     def __sub__(self, x):
         return self.arithmetic_operation(x, "sub", False)
 
-    def __isub__(self,x):
-        return self.arithmetic_operation(x,"sub",True)
-    
-    def sum(self,dim):
+    def __isub__(self, x):
+        return self.arithmetic_operation(x, "sub", True)
+
+    def sum(self, dim):
         assert type(dim) == int
-        return self.arithmetic_operation(dim,"sum",False)
+        return self.arithmetic_operation(dim, "sum", False)
 
-    def view(self,*args):
+    def view(self, *args):
         new_dim = list(args)
         assert type(new_dim) == list
         assert type(new_dim[0]) == int
-        return self.params_func("view",new_dim, return_response=True)
+        return self.params_func("view", new_dim, return_response=True)
 
-    def view_(self,*args):
+    def view_(self, *args):
         new_dim = list(args)
         assert type(new_dim) == list
         assert type(new_dim[0]) == int
-        self.params_func("view_",new_dim, return_response=False)
+        self.params_func("view_", new_dim, return_response=False)
         return self
-    
-    def T(self):
-        return self.no_params_func("transpose",return_response=True)
 
-    def triu(self,k=0):
+    def T(self):
+        return self.no_params_func("transpose", return_response=True)
+
+    def triu(self, k=0):
         return self.params_func("triu", [k], return_response=True)
 
     def triu_(self, k=0):
