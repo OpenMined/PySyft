@@ -230,6 +230,30 @@ class FloatTensor():
     def sinh_(self):
         return self.no_params_func("sinh_")
 
+    def log(self):
+        return self.no_params_func("log", return_response=True)
+
+    def log_(self):
+        return self.no_params_func("log_")
+
+    def frac(self):
+        return self.no_params_func("frac", return_response=True)
+
+    def frac_(self):
+        return self.no_params_func("frac_")
+
+    def reciprocal(self):
+        return self.no_params_func("reciprocal", return_response=True)
+
+    def reciprocal_(self):
+        return self.no_params_func("reciprocal_")
+
+    def rsqrt(self):
+        return self.no_params_func("rsqrt", return_response=True)
+
+    def rsqrt_(self):
+        return self.no_params_func("rsqrt_")
+
     def tan(self):
         return self.no_params_func("tan", return_response=True)
 
