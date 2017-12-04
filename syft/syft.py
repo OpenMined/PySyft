@@ -114,6 +114,16 @@ class FloatTensor():
     def sin_(self):
         return self.no_params_func("sin_")
 
+    def size(self):
+        """
+        Returns the size of the self tensor as a FloatTensor.
+
+        Note:
+            The returned value currently is a FloatTensor because it leverages
+            the messaging mechanism with Unity.
+        """
+        return self.no_params_func("size", return_response=True)
+
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
 
