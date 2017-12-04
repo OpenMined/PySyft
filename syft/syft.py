@@ -105,6 +105,9 @@ class FloatTensor():
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
+    def sign(self):
+        return self.no_params_func("sign", return_response=True)
+
     def sin(self):
         return self.no_params_func("sin", return_response=True)
 
