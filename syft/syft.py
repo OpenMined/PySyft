@@ -14,7 +14,8 @@ class FloatTensor():
                                          "data": list(data.flatten()),
                                          "shape": data.shape})
             self.id = int(controller.socket.recv_string())
-            print("FloatTensor.__init__: " + str(self.id))
+            if(verbose):
+                print("FloatTensor.__init__: " +  str(self.id))
 
         elif(data_is_pointer):
             self.id = int(data)
@@ -27,6 +28,24 @@ class FloatTensor():
 
     def abs_(self):
         return self.no_params_func("abs_")
+
+    def acos(self):
+        return self.no_params_func("acos", return_response=True)
+
+    def acos_(self):
+        return self.no_params_func("acos_")
+
+    def asin(self):
+        return self.no_params_func("asin", return_response=True)
+
+    def asin_(self):
+        return self.no_params_func("asin_")
+
+    def atan(self):
+        return self.no_params_func("atan", return_response=True)
+
+    def atan_(self):
+        return self.no_params_func("atan_")
 
     def addmm_(self, x, y):
         return self.params_func("addmm_", [x.id, y.id])
@@ -81,6 +100,12 @@ class FloatTensor():
     def sign(self):
         return self.no_params_func("sign", return_response=True)
 
+    def sin(self):
+        return self.no_params_func("sin", return_response=True)
+
+    def sin_(self):
+        return self.no_params_func("sin_")
+
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
 
@@ -90,30 +115,30 @@ class FloatTensor():
     def __sub__(self, x):
         return self.arithmetic_operation(x, "sub", False)
 
-    def __isub__(self,x):
-        return self.arithmetic_operation(x,"sub",True)
-    
-    def sum(self,dim):
+    def __isub__(self, x):
+        return self.arithmetic_operation(x, "sub", True)
+
+    def sum(self, dim):
         assert type(dim) == int
-        return self.arithmetic_operation(dim,"sum",False)
+        return self.arithmetic_operation(dim, "sum", False)
 
-    def view(self,*args):
+    def view(self, *args):
         new_dim = list(args)
         assert type(new_dim) == list
         assert type(new_dim[0]) == int
-        return self.params_func("view",new_dim, return_response=True)
+        return self.params_func("view", new_dim, return_response=True)
 
-    def view_(self,*args):
+    def view_(self, *args):
         new_dim = list(args)
         assert type(new_dim) == list
         assert type(new_dim[0]) == int
-        self.params_func("view_",new_dim, return_response=False)
+        self.params_func("view_", new_dim, return_response=False)
         return self
-    
-    def T(self):
-        return self.no_params_func("transpose",return_response=True)
 
-    def triu(self,k=0):
+    def T(self):
+        return self.no_params_func("transpose", return_response=True)
+
+    def triu(self, k=0):
         return self.params_func("triu", [k], return_response=True)
 
     def triu_(self, k=0):
@@ -155,8 +180,9 @@ class FloatTensor():
 
         if(return_response):
             if(return_as_tensor):
-                print("FloatTensor.__init__: " + res)
-                return FloatTensor(self.controller, int(res), True)
+                if(self.verbose):
+                    print("FloatTensor.__init__: " +  res)
+                return FloatTensor(self.controller,int(res),True)
             else:
                 return res
         return self
@@ -193,7 +219,7 @@ class FloatTensor():
         return self.no_params_func("transpose", return_response=True)
 
     def is_contiguous(self):
-        return self.no_params_func("is_contiguous", return_response=True)
+        return self.no_params_func("is_contiguous", return_response=True, return_as_tensor=False)
 
     def sinh(self):
         return self.no_params_func("sinh", return_response=True)
@@ -201,13 +227,19 @@ class FloatTensor():
     def sinh_(self):
         return self.no_params_func("sinh_")
 
+    def tan(self):
+        return self.no_params_func("tan", return_response=True)
+
+    def tan_(self):
+        return self.no_params_func("tan_")
+
     def tanh(self):
         return self.no_params_func("tanh", return_response=True)
 
 
 class SyftController():
 
-    def __init__(self):
+    def __init__(self,verbose=True):
 
         self.identity = str(uuid.uuid4())
 
@@ -215,6 +247,8 @@ class SyftController():
         self.socket = context.socket(zmq.DEALER)
         self.socket.setsockopt_string(zmq.IDENTITY, self.identity)
         self.socket.connect("tcp://localhost:5555")
+        self.verbose=verbose
 
     def FloatTensor(self, data):
-        return FloatTensor(self, data)
+        verbose = self.verbose
+        return FloatTensor(self, data,verbose=verbose)
