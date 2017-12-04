@@ -55,6 +55,14 @@ class FloatTensor():
         copy.params_func("addmm_", [x.id, y.id])
         return copy
 
+    def addmv_(self, x, y):
+        return self.params_func("addmv_", [x.id, y.id])
+
+    def addmv(self, x, y):
+        copy = self.copy()
+        copy.params_func("addmv_", [x.id, y.id])
+        return copy
+
     def __add__(self, x):
         return self.arithmetic_operation(x, "add", False)
 
@@ -115,10 +123,10 @@ class FloatTensor():
     def __sub__(self, x):
         return self.arithmetic_operation(x, "sub", False)
 
-    def __isub__(self, x):
-        return self.arithmetic_operation(x, "sub", True)
+    def __isub__(self,x):
+        return self.arithmetic_operation(x,"sub",True)
 
-    def sum(self, dim):
+    def sum(self,dim):
         assert type(dim) == int
         return self.arithmetic_operation(dim, "sum", False)
 
