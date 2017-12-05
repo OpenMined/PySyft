@@ -102,6 +102,9 @@ class FloatTensor():
     def neg(self):
         return self.no_params_func("neg", return_response=True)
 
+    def rsqrt(self):
+        return self.no_params_func("rsqrt",return_response=True)
+
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
