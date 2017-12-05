@@ -69,6 +69,12 @@ class FloatTensor():
     def __iadd__(self, x):
         return self.arithmetic_operation(x, "add", True)
 
+    def ceil(self):
+        return self.no_params_func("ceil", return_response=True)
+
+    def ceil_(self):
+        return self.no_params_func("ceil_")
+
     def copy(self):
         return self.no_params_func("copy", return_response=True)
 
@@ -90,6 +96,9 @@ class FloatTensor():
     def __itruediv__(self, x):
         return self.arithmetic_operation(x, "div", True)
 
+    def floor(self):
+        return self.no_params_func("floor", True)
+
     def floor_(self):
         return self.no_params_func("floor_")
 
@@ -107,6 +116,9 @@ class FloatTensor():
 
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
+
+    def sigmoid(self):
+        return self.no_params_func("sigmoid", return_response=True)
 
     def sign(self):
         return self.no_params_func("sign", return_response=True)
