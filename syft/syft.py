@@ -111,6 +111,9 @@ class FloatTensor():
     def neg(self):
         return self.no_params_func("neg", return_response=True)
 
+    def rsqrt(self):
+        return self.no_params_func("rsqrt",return_response=True)
+
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
@@ -119,6 +122,9 @@ class FloatTensor():
 
     def sign(self):
         return self.no_params_func("sign", return_response=True)
+
+    def sign_(self):
+        return self.no_params_func("sign_")
 
     def sin(self):
         return self.no_params_func("sin", return_response=True)
@@ -138,6 +144,9 @@ class FloatTensor():
 
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
+
+    def trace(self):
+        return self.no_params_func("trace", return_response=True)
 
     def trunc(self):
         return self.no_params_func("trunc", return_response=True)
