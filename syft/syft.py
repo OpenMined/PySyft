@@ -69,6 +69,12 @@ class FloatTensor():
     def __iadd__(self, x):
         return self.arithmetic_operation(x, "add", True)
 
+    def ceil(self):
+        return self.no_params_func("ceil", return_response=True)
+
+    def ceil_(self):
+        return self.no_params_func("ceil_")
+
     def copy(self):
         return self.no_params_func("copy", return_response=True)
 
@@ -96,6 +102,15 @@ class FloatTensor():
     def __ipow__(self, x):
         return self.arithmetic_operation(x, "pow", True)
 
+    def pow(self, x):
+        return self.arithmetic_operation(x, "pow", False)
+      
+    def pow_(self, x):
+        return self.arithmetic_operation(x, "pow", True)
+      
+    def floor(self):
+        return self.no_params_func("floor", True)
+
     def floor_(self):
         return self.no_params_func("floor_")
 
@@ -108,8 +123,20 @@ class FloatTensor():
     def neg(self):
         return self.no_params_func("neg", return_response=True)
 
+    def rsqrt(self):
+        return self.no_params_func("rsqrt",return_response=True)
+
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
+
+    def sigmoid(self):
+        return self.no_params_func("sigmoid", return_response=True)
+
+    def sign(self):
+        return self.no_params_func("sign", return_response=True)
+
+    def sign_(self):
+        return self.no_params_func("sign_")
 
     def sin(self):
         return self.no_params_func("sin", return_response=True)
@@ -117,8 +144,21 @@ class FloatTensor():
     def sin_(self):
         return self.no_params_func("sin_")
 
+    def size(self):
+        """
+        Returns the size of the self tensor as a FloatTensor.
+
+        Note:
+            The returned value currently is a FloatTensor because it leverages
+            the messaging mechanism with Unity.
+        """
+        return self.no_params_func("size", return_response=True)
+
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
+
+    def trace(self):
+        return self.no_params_func("trace", return_response=True)
 
     def trunc(self):
         return self.no_params_func("trunc", return_response=True)
