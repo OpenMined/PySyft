@@ -275,6 +275,12 @@ class FloatTensor():
     def tanh(self):
         return self.no_params_func("tanh", return_response=True)
 
+    def squeeze(self, dim=0):
+        return self.params_func("squeeze", [dim], return_response=True)
+
+    def squeeze_(self, dim=0):
+        return self.params_func("squeeze_", [dim])
+
 
 class SyftController():
 
