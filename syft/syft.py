@@ -89,6 +89,12 @@ class FloatTensor():
     def __iadd__(self, x):
         return self.arithmetic_operation(x, "add", True)
 
+    def backward(self, grad=None):
+        if(grad is None):
+            self.no_params_func("backward")
+        else:
+            self.params_func(name="backward",params=[grad.id])
+
     def ceil(self):
         return self.no_params_func("ceil", return_response=True)
 
