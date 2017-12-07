@@ -1,1 +1,1 @@
-from syft import syft
+from syft.syft import FloatTensor, SyftController

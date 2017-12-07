@@ -7,6 +7,10 @@ class FloatTensor():
     def __init__(self, controller, data, autograd=False, data_is_pointer=False, verbose=False):
         self.verbose = verbose
         self.controller = controller
+
+        if(type(data) == list):
+            data = np.array(data).astype('float')
+
         if(data is not None and not data_is_pointer):
             self.data = data.astype('float')
             controller.socket.send_json({"objectType": "tensor",
@@ -78,8 +82,8 @@ class FloatTensor():
             else:
                 out = self.set("autograd",["0"])
 
-            if(out == "1"):
-                return True
+            if(out == "1" and setter) or (out == "0" and not setter):
+                return self
             else:
                 return False
 
@@ -165,10 +169,12 @@ class FloatTensor():
 
     def floor_(self):
         return self.no_params_func("floor_")
+      
+    def mm(self, other):
+        return self.params_func("mm",[other.id],True)
 
     def grad(self):
         return self.get("grad", response_as_tensor=True)
-
     def __mul__(self, x):
         return self.arithmetic_operation(x, "mul", False)
 
@@ -205,7 +211,7 @@ class FloatTensor():
     def size(self):
         return int(self.get("size"))
 
-    def shape(self):
+    def shape(self,as_list=True):
         """
         Returns the size of the self tensor as a FloatTensor.
 
@@ -213,7 +219,10 @@ class FloatTensor():
             The returned value currently is a FloatTensor because it leverages
             the messaging mechanism with Unity.
         """
-        return self.no_params_func("size", return_response=True)
+        shape_tensor = self.no_params_func("size", return_response=True)
+        if(as_list):
+            return list(map(lambda x:int(x),shape_tensor.get("data").split(",")[:-1]))
+        return shape_tensor
 
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
@@ -271,10 +280,19 @@ class FloatTensor():
         return self.no_params_func("zero_")
 
     def __repr__(self):
-        return self.no_params_func("print", True, False)
+        tensor_str = str(self.to_numpy())
+
+        type_str = ""
+        for dim in self.shape():
+            type_str += str(dim) + "x"
+
+        type_str = type_str[:-1]
+        return tensor_str + "\n[syft.FloatTensor of size " + type_str + "]"
+        # return self.no_params_func("print", True, False)
 
     def __str__(self):
-        return self.no_params_func("print", True, False)
+        tensor_str =  str(self.to_numpy()).replace("]"," ").replace("["," ")
+        # return self.no_params_func("print", True, False)
 
     def get(self, param_name="size", response_as_tensor=False):
         return self.params_func(name="get",params=[param_name], return_response=True, return_as_tensor=response_as_tensor)
@@ -407,3 +425,6 @@ class SyftController():
     def FloatTensor(self, data, autograd=False):
         verbose = self.verbose
         return FloatTensor(controller=self, data=data, autograd=autograd, verbose=verbose)
+
+    def zeros(self,*args):
+        return self.FloatTensor(np.zeros((args)))
