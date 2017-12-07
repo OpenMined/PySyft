@@ -82,8 +82,8 @@ class FloatTensor():
             else:
                 out = self.set("autograd",["0"])
 
-            if(out == "1"):
-                return True
+            if(out == "1" and setter) or (out == "0" and not setter):
+                return self
             else:
                 return False
 
@@ -169,6 +169,9 @@ class FloatTensor():
 
     def floor_(self):
         return self.no_params_func("floor_")
+
+    def mm(self, other):
+        return self.params_func("mm",[other.id],True)
 
     def __mul__(self, x):
         return self.arithmetic_operation(x, "mul", False)
@@ -416,5 +419,5 @@ class SyftController():
         verbose = self.verbose
         return FloatTensor(controller=self, data=data, autograd=autograd, verbose=verbose)
 
-    def zeros(self,*args,autograd=False):
-        return self.FloatTensor(np.zeros((args)),autogad=autograd)
+    def zeros(self,*args):
+        return self.FloatTensor(np.zeros((args)))
