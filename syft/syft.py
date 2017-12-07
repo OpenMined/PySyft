@@ -4,7 +4,7 @@ import uuid
 
 class FloatTensor():
 
-    def __init__(self, controller, data, data_is_pointer=False, verbose=False):
+    def __init__(self, controller, data, autograd=False, data_is_pointer=False, verbose=False):
         self.verbose = verbose
         self.controller = controller
         if(data is not None and not data_is_pointer):
@@ -20,6 +20,9 @@ class FloatTensor():
         elif(data_is_pointer):
             self.id = int(data)
 
+        if(autograd):
+            self.autograd(True)
+
     def __del__(self):
         self.delete_tensor()
 
@@ -34,18 +37,6 @@ class FloatTensor():
 
     def acos_(self):
         return self.no_params_func("acos_")
-
-    def asin(self):
-        return self.no_params_func("asin", return_response=True)
-
-    def asin_(self):
-        return self.no_params_func("asin_")
-
-    def atan(self):
-        return self.no_params_func("atan", return_response=True)
-
-    def atan_(self):
-        return self.no_params_func("atan_")
 
     def addmm_(self, x, y):
         return self.params_func("addmm_", [x.id, y.id])
@@ -63,11 +54,46 @@ class FloatTensor():
         copy.params_func("addmv_", [x.id, y.id])
         return copy
 
+    def asin(self):
+        return self.no_params_func("asin", return_response=True)
+
+    def asin_(self):
+        return self.no_params_func("asin_")
+
+    def atan(self):
+        return self.no_params_func("atan", return_response=True)
+
+    def atan_(self):
+        return self.no_params_func("atan_")
+
+    def autograd(self, setter=None):
+        if(setter is None):
+            if(self.get("autograd") == "1"):
+                return True
+            else:
+                return False
+        else:
+            if(setter):
+                out = self.set("autograd",["1"])
+            else:
+                out = self.set("autograd",["0"])
+
+            if(out == "1"):
+                return True
+            else:
+                return False
+
     def __add__(self, x):
         return self.arithmetic_operation(x, "add", False)
 
     def __iadd__(self, x):
         return self.arithmetic_operation(x, "add", True)
+
+    def backward(self, grad=None):
+        if(grad is None):
+            self.no_params_func("backward")
+        else:
+            self.params_func(name="backward",params=[grad.id])
 
     def ceil(self):
         return self.no_params_func("ceil", return_response=True)
@@ -90,11 +116,37 @@ class FloatTensor():
     def cosh_(self):
         return self.no_params_func("cosh_")
 
+    def children(self):
+        res = self.get("children")
+        if(len(res) > 0):
+            return list(map(lambda x:int(x),res.split(",")[0:-1]))
+        return []
+
+    def creation_op(self):
+        return self.get("creation_op")
+
+    def creators(self):
+        res = self.get("creators")
+        if(len(res) > 0):
+            return list(map(lambda x:int(x),res.split(",")[0:-1]))
+        return []
+
+    def dataOnGpu(self):
+        if(self.get("dataOnGpu") == "1"):
+            return True
+        return False
+
     def __truediv__(self, x):
         return self.arithmetic_operation(x, "div", False)
 
     def __itruediv__(self, x):
         return self.arithmetic_operation(x, "div", True)
+
+    def keepgrad(self):
+        if(self.get("keepgrad") == "1"):
+            return True
+        else:
+            return False
 
     def __pow__(self, x):
         return self.arithmetic_operation(x, "pow", False)
@@ -126,6 +178,9 @@ class FloatTensor():
     def rsqrt(self):
         return self.no_params_func("rsqrt",return_response=True)
 
+    def set(self, param_name="size", params=[]):
+        return self.params_func(name="set",params=[param_name] + params, return_response=True, return_as_tensor=False)
+
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
 
@@ -145,6 +200,9 @@ class FloatTensor():
         return self.no_params_func("sin_")
 
     def size(self):
+        return int(self.get("size"))
+
+    def shape(self):
         """
         Returns the size of the self tensor as a FloatTensor.
 
@@ -205,6 +263,9 @@ class FloatTensor():
     def __str__(self):
         return self.no_params_func("print", True, False)
 
+    def get(self, param_name="size"):
+        return self.params_func(name="get",params=[param_name], return_response=True, return_as_tensor=False)
+
     def cpu(self):
         return self.no_params_func("cpu")
 
@@ -233,7 +294,7 @@ class FloatTensor():
             if(return_as_tensor):
                 if(self.verbose):
                     print("FloatTensor.__init__: " +  res)
-                return FloatTensor(self.controller,int(res),True)
+                return FloatTensor(controller=self.controller,data=int(res),data_is_pointer=True)
             else:
                 return res
         return self
@@ -257,7 +318,7 @@ class FloatTensor():
 
         self.controller.socket.send_json(
             self.cmd(operation_cmd, [parameter]))  # sends the command
-        return FloatTensor(self.controller, int(self.controller.socket.recv_string()), True)
+        return FloatTensor(controller=self.controller, data=int(self.controller.socket.recv_string()), data_is_pointer=True)
 
     def delete_tensor(self):
         if(self.id is not None):
@@ -330,6 +391,6 @@ class SyftController():
         self.socket.connect("tcp://localhost:5555")
         self.verbose=verbose
 
-    def FloatTensor(self, data):
+    def FloatTensor(self, data, autograd=False):
         verbose = self.verbose
-        return FloatTensor(self, data,verbose=verbose)
+        return FloatTensor(controller=self, data=data, autograd=autograd, verbose=verbose)
