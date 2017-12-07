@@ -131,6 +131,9 @@ class FloatTensor():
             return list(map(lambda x:int(x),res.split(",")[0:-1]))
         return []
 
+    def dataOnGpu(self):
+        return self.get("dataOnGpu")
+
     def __truediv__(self, x):
         return self.arithmetic_operation(x, "div", False)
 
