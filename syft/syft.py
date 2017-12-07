@@ -415,3 +415,6 @@ class SyftController():
     def FloatTensor(self, data, autograd=False):
         verbose = self.verbose
         return FloatTensor(controller=self, data=data, autograd=autograd, verbose=verbose)
+
+    def zeros(self,*args,autograd=False):
+        return self.FloatTensor(np.zeros((args)),autogad=autograd)
