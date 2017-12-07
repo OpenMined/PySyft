@@ -12,11 +12,11 @@ class FloatTensor():
             data = np.array(data).astype('float')
 
         if(data is not None and not data_is_pointer):
-            data = data.astype('float')
+            self.data = data.astype('float')
             controller.socket.send_json({"objectType": "tensor",
                                          "functionCall": "create",
                                          "data": list(data.flatten()),
-                                         "shape": data.shape})
+                                         "shape": self.data.shape})
             self.id = int(controller.socket.recv_string())
             if(verbose):
                 print("FloatTensor.__init__: " +  str(self.id))
@@ -233,10 +233,15 @@ class FloatTensor():
     def trunc(self):
         return self.no_params_func("trunc", return_response=True)
 
-    def to_numpy(self):
-        temp_data = np.array(self.get("data").split(",")[:-1]).astype('float')
-        temp_data = temp_data.reshape(self.shape())
-        return temp_data
+     def to_numpy(self):
+         self.controller.socket.send_json({
+             'functionCall': 'to_numpy',
+             'objectType': 'tensor',
+             'objectIndex': self.id
+         })
+
+         res = self.controller.socket.recv_string()
+         return np.fromstring(res, sep=' ').astype('float')
 
     def __sub__(self, x):
         return self.arithmetic_operation(x, "sub", False)
