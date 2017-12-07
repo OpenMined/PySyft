@@ -132,7 +132,9 @@ class FloatTensor():
         return []
 
     def dataOnGpu(self):
-        return self.get("dataOnGpu")
+        if(self.get("dataOnGpu") == "1"):
+            return True
+        return False
 
     def __truediv__(self, x):
         return self.arithmetic_operation(x, "div", False)
