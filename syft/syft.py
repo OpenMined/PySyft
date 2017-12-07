@@ -135,6 +135,11 @@ class FloatTensor():
             return list(map(lambda x:int(x),res.split(",")[0:-1]))
         return []
 
+    def dataOnGpu(self):
+        if(self.get("dataOnGpu") == "1"):
+            return True
+        return False
+
     def __truediv__(self, x):
         return self.arithmetic_operation(x, "div", False)
 
@@ -387,6 +392,12 @@ class FloatTensor():
 
     def tanh(self):
         return self.no_params_func("tanh", return_response=True)
+
+    def squeeze(self, dim=-1):
+        return self.params_func("squeeze", [dim], return_response=True)
+
+    def squeeze_(self, dim=-1):
+        return self.params_func("squeeze_", [dim])
 
 
 class SyftController():
