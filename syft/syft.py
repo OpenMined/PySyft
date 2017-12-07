@@ -166,6 +166,9 @@ class FloatTensor():
     def floor_(self):
         return self.no_params_func("floor_")
 
+    def grad(self):
+        return self.get("grad", response_as_tensor=True)
+
     def __mul__(self, x):
         return self.arithmetic_operation(x, "mul", False)
 
@@ -263,8 +266,8 @@ class FloatTensor():
     def __str__(self):
         return self.no_params_func("print", True, False)
 
-    def get(self, param_name="size"):
-        return self.params_func(name="get",params=[param_name], return_response=True, return_as_tensor=False)
+    def get(self, param_name="size", response_as_tensor=False):
+        return self.params_func(name="get",params=[param_name], return_response=True, return_as_tensor=response_as_tensor)
 
     def cpu(self):
         return self.no_params_func("cpu")
