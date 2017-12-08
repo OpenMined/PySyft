@@ -270,6 +270,15 @@ class FloatTensor():
         self.params_func("view_", new_dim, return_response=False)
         return self
 
+    def view_as(self, x):
+        assert type(x) == FloatTensor
+        return self.params_func("view_as", [x.id], return_response=True)
+
+    def view_as_(self, x):
+        assert type(x) == FloatTensor
+        self.params_func("view_as_", [x.id], return_response=False)
+        return self
+
     def T(self):
         return self.no_params_func("transpose", return_response=True)
 
