@@ -429,5 +429,11 @@ class SyftController():
         verbose = self.verbose
         return FloatTensor(controller=self, data=data, autograd=autograd, verbose=verbose)
 
+    def rand(self, *args):
+        return self.FloatTensor(np.random.rand(*args))
+
     def zeros(self,*args):
         return self.FloatTensor(np.zeros((args)))
+
+    def ones(self,*args):
+        return self.FloatTensor(np.ones((args)))
