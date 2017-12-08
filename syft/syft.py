@@ -1,6 +1,7 @@
 import zmq
 import uuid
 import numpy as np
+from .nn import Linear, Sigmoid
 
 class FloatTensor():
 
@@ -426,11 +427,19 @@ class SyftController():
         self.verbose=verbose
 
     def FloatTensor(self, data, autograd=False):
-        verbose = self.verbose
-        return FloatTensor(controller=self, data=data, autograd=autograd, verbose=verbose)
+        return FloatTensor(controller=self, data=data, autograd=autograd, verbose=self.verbose)
+
+    def Linear(self, *args):
+        return Linear(sc=self, dims = args)
+
+    def Sigmoid(self):
+        return Sigmoid(sc=self)
 
     def rand(self, *args):
         return self.FloatTensor(np.random.rand(*args))
+
+    def randn(self, *args):
+        return self.FloatTensor(np.random.randn(*args))
 
     def zeros(self,*args):
         return self.FloatTensor(np.zeros((args)))

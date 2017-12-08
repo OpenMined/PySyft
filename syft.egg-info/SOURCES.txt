@@ -1,6 +1,7 @@
 README.md
 setup.py
 syft/__init__.py
+syft/nn.py
 syft/syft.py
 syft.egg-info/PKG-INFO
 syft.egg-info/SOURCES.txt
