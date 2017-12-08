@@ -164,16 +164,16 @@ class FloatTensor():
 
     def pow(self, x):
         return self.arithmetic_operation(x, "pow", False)
-      
+
     def pow_(self, x):
         return self.arithmetic_operation(x, "pow", True)
-      
+
     def floor(self):
         return self.no_params_func("floor", True)
 
     def floor_(self):
         return self.no_params_func("floor_")
-      
+
     def mm(self, other):
         return self.params_func("mm",[other.id],True)
 
@@ -252,10 +252,6 @@ class FloatTensor():
 
     def __isub__(self,x):
         return self.arithmetic_operation(x,"sub",True)
-
-    def sum(self,dim):
-        assert type(dim) == int
-        return self.arithmetic_operation(dim, "sum", False)
 
     def view(self, *args):
         new_dim = list(args)
@@ -413,6 +409,20 @@ class FloatTensor():
     def squeeze_(self, dim=-1):
         return self.params_func("squeeze_", [dim])
 
+    def min(self, dim=-1, keepdim=False):
+        return self.params_func("min", [dim, keepdim], return_response=True)
+
+    def max(self, dim=-1, keepdim=False):
+        return self.params_func("max", [dim, keepdim], return_response=True)
+
+    def sum(self, dim=-1, keepdim=False):
+        return self.params_func("sum", [dim, keepdim], return_response=True)
+
+    def prod(self, dim=-1, keepdim=False):
+        return self.params_func("prod", [dim, keepdim], return_response=True)
+
+    def mean(self, dim=-1, keepdim=False):
+        return self.params_func("mean", [dim, keepdim], return_response=True)
 
 class SyftController():
 
