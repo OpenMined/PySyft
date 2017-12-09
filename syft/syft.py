@@ -144,6 +144,9 @@ class FloatTensor():
     def exp(self):
         return self.no_params_func("exp", return_response=True)
 
+    def exp_(self):
+        return self.no_params_func("exp_")
+
     def __truediv__(self, x):
         return self.arithmetic_operation(x, "div", False)
 
