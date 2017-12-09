@@ -34,7 +34,7 @@ If you simply want to to _use_ PySyft, it is enough to install the library with:
 ```sh
 python3 setup.py install
 ```
-note: If you have anaconda installed, you can just run `bash install_for_anaconda_users.sh`.
+note: If you have anaconda installed, you can just run `bash install_for_anaconda.sh`.
 
 ## For Contributors
 If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then sign into our [Slack Team](https://openmined.slack.com/) channel #team_pysyft to let us know which projects sound interesting to you! (or propose your own!).
