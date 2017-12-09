@@ -173,6 +173,9 @@ class FloatTensor():
 
     def floor_(self):
         return self.no_params_func("floor_")
+
+    def round(self):
+        return self.no_params_func("round", return_response=True)
       
     def mm(self, other):
         return self.params_func("mm",[other.id],True)
