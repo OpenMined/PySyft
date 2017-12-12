@@ -194,6 +194,9 @@ class FloatTensor():
     def neg(self):
         return self.no_params_func("neg", return_response=True)
 
+    def neg_(self):
+        return self.no_params_func("neg_")
+
     def rsqrt(self):
         return self.no_params_func("rsqrt",return_response=True)
 
