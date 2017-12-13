@@ -194,9 +194,6 @@ class FloatTensor():
     def neg(self):
         return self.no_params_func("neg", return_response=True)
 
-    def neg_(self):
-        return self.no_params_func("neg_")
-
     def rsqrt(self):
         return self.no_params_func("rsqrt",return_response=True)
 
@@ -232,7 +229,7 @@ class FloatTensor():
             The returned value currently is a FloatTensor because it leverages
             the messaging mechanism with Unity.
         """
-        shape_tensor = self.no_params_func("size", return_response=True)
+        shape_tensor = self.no_params_func("shape", return_response=True)
         if(as_list):
             return list(map(lambda x:int(x),shape_tensor.get("data").split(",")[:-1]))
         return shape_tensor
@@ -305,11 +302,11 @@ class FloatTensor():
             type_str += str(dim) + "x"
 
         type_str = type_str[:-1]
-        return tensor_str + "\n[syft.FloatTensor of size " + type_str + "]"
+        return tensor_str + "\n[syft.FloatTensor of size " + type_str + "]" + "\n"
         # return self.no_params_func("print", True, False)
 
     def __str__(self):
-        tensor_str =  str(self.to_numpy()).replace("]"," ").replace("["," ")
+        tensor_str =  str(self.to_numpy()).replace("]"," ").replace("["," ") + "\n"
         # return self.no_params_func("print", True, False)
 
     def get(self, param_name="size", response_as_tensor=False):
@@ -474,3 +471,31 @@ class SyftController():
 
     def ones(self,*args):
         return self.FloatTensor(np.ones((args)))
+
+    def params_func(self, cmd_func, name, params, return_type=None):
+        # send the command
+        self.socket.send_json(
+            cmd_func(name, params=params))
+        # receive output from command
+        res = self.socket.recv_string()
+
+        if(self.verbose):
+            print(res)
+
+        if(return_type is None):
+            return self
+        elif(return_type == 'FloatTensor'):
+            if(self.verbose):
+                print("FloatTensor.__init__: " +  res)
+            return FloatTensor(controller=self,data=int(res),data_is_pointer=True)
+        elif return_type == 'FloatTensor_list':
+            tensors = list()
+            for str_id in res.split(","):
+                tensors.append(FloatTensor(controller=self,data=int(str_id),data_is_pointer=True))
+            return tensors
+        else:
+            return res
+
+    def no_params_func(self, cmd_func, name, return_type):
+        return self.params_func(cmd_func, name, [], return_type)
+                

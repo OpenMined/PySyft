@@ -15,8 +15,8 @@ class Model():
 		params = list()
 		for v in self.__dict__.values():
 		    if(isinstance(v,Model)):
-		       if(v.params):
-		           params.append(v)
+		       for p in v.parameters():
+		           params.append(p)
 		return params
 
 class Linear(Model):
@@ -24,15 +24,24 @@ class Linear(Model):
 	def __init__(self, sc, dims):
 		self.sc = sc
 		assert len(dims) == 2 and type(dims) == tuple
-		self.dims = dims
-		self.params = True
 
-		self.weights = ((sc.randn(self.dims[0],self.dims[1]) * 0.2) - 0.1).autograd(True)
-		self.bias = sc.zeros(1,self.dims[1]).autograd(True)
+		self.id = -1
+		self.sc.socket.send_json(self.cmd("create",[dims[0],dims[1]]))
+		self.id = int(self.sc.socket.recv_string())
 
 	def forward(self, input):
-		return input.mm(self.weights)
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
 
+	def parameters(self):
+		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')
+
+	def cmd(self,function_call, params = []):
+		cmd = {
+	    'functionCall': function_call,
+	    'objectType': 'model',
+	    'objectIndex': self.id,
+	    'tensorIndexParams': params}
+		return cmd
 
 class Sigmoid(Model):
 
@@ -40,10 +49,7 @@ class Sigmoid(Model):
 		return input.sigmoid();
 
 
-class MSELoss():
-
-	def __call__(self, *args):
-		return self.forward(args[0], args[1])
+class MSELoss(Model):
 
 	def forward(self, input, target):
 		return (input - target) ** 2
