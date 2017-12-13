@@ -1,7 +1,9 @@
+import syft.controller
+
 class Model():
-	def __init__(self,sc):
-		self.sc = sc
-		self.params = False
+	def __init__(self):
+		self.controller = syft.controller
+		self.controller.log("Model instantiated")
 
 	def __call__(self,*args):
 		if(len(args) == 1):
@@ -20,15 +22,16 @@ class Model():
 		return params
 
 class Linear(Model):
+	def __init__(self, dims):
+		self.controller.socket.send_json({
+			"objectType": "linear",
+			"functionCall": "create",
+			"dimensions": dims
+		})
 
-	def __init__(self, sc, dims):
-		self.sc = sc
-		assert len(dims) == 2 and type(dims) == tuple
-		self.dims = dims
-		self.params = True
-
-		self.weights = ((sc.randn(self.dims[0],self.dims[1]) * 0.2) - 0.1).autograd(True)
-		self.bias = sc.zeros(1,self.dims[1]).autograd(True)
+		self.id = int(self.controller.socket.recv_string())
+		if (OpenMinedController.verbose):
+			print("Linear.__init__: {}".format(self.id))
 
 	def forward(self, input):
 		return input.mm(self.weights)

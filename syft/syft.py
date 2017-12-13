@@ -1,24 +1,25 @@
-import zmq
-import uuid
 import numpy as np
+from .controller import *
 from .nn import Linear, Sigmoid
 
 class FloatTensor():
 
-    def __init__(self, controller, data, autograd=False, data_is_pointer=False, verbose=False):
+    def __init__(self, data, autograd=False, data_is_pointer=False, verbose=False):
         self.verbose = verbose
-        self.controller = controller
+        self.controller = OpenMinedController
+
+        print("defined a controller {}".format(self.controller))
 
         if(type(data) == list):
             data = np.array(data).astype('float')
 
         if(data is not None and not data_is_pointer):
             self.data = data.astype('float')
-            controller.socket.send_json({"objectType": "tensor",
+            self.controller.socket.send_json({"objectType": "tensor",
                                          "functionCall": "create",
                                          "data": list(data.flatten()),
                                          "shape": self.data.shape})
-            self.id = int(controller.socket.recv_string())
+            self.id = int(self.controller.socket.recv_string())
             if(verbose):
                 print("FloatTensor.__init__: " +  str(self.id))
 
@@ -442,35 +443,35 @@ class FloatTensor():
     def mean(self, dim=-1, keepdim=False):
         return self.params_func("mean", [dim, keepdim], return_response=True)
 
-class SyftController():
-
-    def __init__(self,verbose=True):
-
-        self.identity = str(uuid.uuid4())
-
-        context = zmq.Context()
-        self.socket = context.socket(zmq.DEALER)
-        self.socket.setsockopt_string(zmq.IDENTITY, self.identity)
-        self.socket.connect("tcp://localhost:5555")
-        self.verbose=verbose
-
-    def FloatTensor(self, data, autograd=False):
-        return FloatTensor(controller=self, data=data, autograd=autograd, verbose=self.verbose)
-
-    def Linear(self, *args):
-        return Linear(sc=self, dims = args)
-
-    def Sigmoid(self):
-        return Sigmoid(sc=self)
-
-    def rand(self, *args):
-        return self.FloatTensor(np.random.rand(*args))
-
-    def randn(self, *args):
-        return self.FloatTensor(np.random.randn(*args))
-
-    def zeros(self,*args):
-        return self.FloatTensor(np.zeros((args)))
-
-    def ones(self,*args):
-        return self.FloatTensor(np.ones((args)))
+# class SyftController():
+#
+#     def __init__(self,verbose=True):
+#
+#         self.identity = str(uuid.uuid4())
+#
+#         context = zmq.Context()
+#         self.socket = context.socket(zmq.DEALER)
+#         self.socket.setsockopt_string(zmq.IDENTITY, self.identity)
+#         self.socket.connect("tcp://localhost:5555")
+#         self.verbose=verbose
+#
+#     def FloatTensor(self, data, autograd=False):
+#         return FloatTensor(controller=self, data=data, autograd=autograd, verbose=self.verbose)
+#
+#     def Linear(self, *args):
+#         return Linear(sc=self, dims = args)
+#
+#     def Sigmoid(self):
+#         return Sigmoid(sc=self)
+#
+#     def rand(self, *args):
+#         return self.FloatTensor(np.random.rand(*args))
+#
+#     def randn(self, *args):
+#         return self.FloatTensor(np.random.randn(*args))
+#
+#     def zeros(self,*args):
+#         return self.FloatTensor(np.zeros((args)))
+#
+#     def ones(self,*args):
+#         return self.FloatTensor(np.ones((args)))
