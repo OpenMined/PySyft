@@ -39,3 +39,11 @@ class Sigmoid(Model):
 	def forward(self, input):
 		return input.sigmoid();
 
+
+class MSELoss():
+
+	def __call__(self, *args):
+		return self.forward(args[0], args[1])
+
+	def forward(self, input, target):
+		return (input - target) ** 2
