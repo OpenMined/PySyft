@@ -1,7 +1,7 @@
 import zmq
 import uuid
 import numpy as np
-from nn import Linear, Sigmoid
+from .nn import Linear, Sigmoid
 
 class FloatTensor():
 
@@ -314,7 +314,7 @@ class FloatTensor():
         # return self.no_params_func("print", True, False)
 
     def __str__(self):
-        str(self.to_numpy()).replace("]"," ").replace("["," ")
+        return str(self.to_numpy()).replace("]"," ").replace("["," ")
         # return self.no_params_func("print", True, False)
 
     def get(self, param_name="size", response_as_tensor=False):
@@ -369,7 +369,7 @@ class FloatTensor():
         
         if(inline):
             operation_cmd += "_"
-        print( "Running ", operation_cmd, " for ", parameter);
+
         self.controller.socket.send_json(
             self.cmd(operation_cmd, [parameter]))  # sends the command
         return FloatTensor(controller=self.controller, data=int(self.controller.socket.recv_string()), data_is_pointer=True)
