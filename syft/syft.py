@@ -150,26 +150,31 @@ class FloatTensor():
         new_dims = list(args)
         # assert isinstance(new_dim, list)
         assert all([isinstance(dim, int) for dim in new_dims])
-        return self.params_func("view", new_dims, return_response=True)
+        return self._op("view", new_dims)
+        # return self.params_func("view", new_dims, return_response=True)
 
     def view_(self, *args):
         new_dims = list(args)
         # assert isinstance(new_dim, list)
         assert all([isinstance(dim, int) for dim in new_dims])
-        self.params_func("view_", new_dims, return_response=False)
+        self._op_inline("view_", new_dims)
+        # self.params_func("view_", new_dims, return_response=False)
         return self
 
     def view_as(self, x):
         assert isinstance(x, FloatTensor)
-        return self.params_func("view_as", [x.id], return_response=True)
+        # return self.params_func("view_as", [x.id], return_response=True)
+        return self._op("view_as", x.id)
 
     def view_as_(self, x):
         assert isinstance(x, FloatTensor)
-        self.params_func("view_as_", [x.id], return_response=False)
+        # self.params_func("view_as_", [x.id], return_response=False)
+        self._op_inline("view_as_", x.id)
         return self
 
     def T(self):
-        return self.no_params_func("transpose", return_response=True)
+        # return self.no_params_func("transpose", return_response=True)
+        return self._op("transpose")
 
 
 
@@ -177,19 +182,24 @@ class FloatTensor():
     # reductions
     #
     def max(self, dim=-1, keepdim=False):
-        return self.params_func("max", [dim, keepdim], return_response=True)
+        # return self.params_func("max", [dim, keepdim], return_response=True)
+        return self._op("max", [dim, keepdim])
 
     def mean(self, dim=-1, keepdim=False):
-        return self.params_func("mean", [dim, keepdim], return_response=True)
+        # return self.params_func("mean", [dim, keepdim], return_response=True)
+        return self._op("mean", [dim, keepdim])
 
     def min(self, dim=-1, keepdim=False):
-        return self.params_func("min", [dim, keepdim], return_response=True)
+        # return self.params_func("min", [dim, keepdim], return_response=True)
+        return self._op("min", [dim, keepdim])
 
     def prod(self, dim=-1, keepdim=False):
-        return self.params_func("prod", [dim, keepdim], return_response=True)
+        # return self.params_func("prod", [dim, keepdim], return_response=True)
+        return self._op("prod", [dim, keepdim])
 
     def sum(self, dim=-1, keepdim=False):
-        return self.params_func("sum", [dim, keepdim], return_response=True)
+        # return self.params_func("sum", [dim, keepdim], return_response=True)
+        return self._op("sum", [dim, keepdim])
 
     def sum(self, dim):
         assert isinstance(dim, int)
