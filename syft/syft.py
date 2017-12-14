@@ -52,15 +52,16 @@ class FloatTensor():
         self.delete_tensor()
 
     def __repr__(self):
-        tensor_str = str(self.to_numpy()).replace('\n', ',')[:15]  # truncate
-        type_str = "x".join([str(dim) for dim in self.shape()])
-        return tensor_str + "... <syft.FloatTensor #" + self.id + ", size " + type_str + ">"
-        # return self.no_params_func("print", True, False)
+        temp = self.to_numpy()
+        tensor_str = str(temp)
+        type_str = "x".join([str(dim) for dim in temp.shape])
+        return tensor_str + "\n<syft.FloatTensor #{}, size {}>".format(self.id, type_str)
 
     def __str__(self):
-        tensor_str = str(self.to_numpy()).replace('\n', ',')
-        type_str = "x".join([str(dim) for dim in self.shape()])
-        return tensor_str + "\nsyft.FloatTensor #" + self.id + ", size " + type_str
+        temp = self.to_numpy()
+        tensor_str = str(temp).replace('\n', ',')
+        type_str = "x".join([str(dim) for dim in temp.shape])
+        return tensor_str + "\nsyft.FloatTensor #{}, size {}".format(self.id, type_str)
         # return self.no_params_func("print", True, False)
 
 
