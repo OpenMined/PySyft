@@ -703,6 +703,9 @@ class FloatTensor():
 
 
     def _op(self, name, params=None):
+        """
+        Returns a FloatTensor, a float or a list as a result of pure function application (no side-effect).
+        """
         if params and not isinstance(params, list):
             params = [params]
         retval, error = self._parse(self._remote_execute(name, params), typeassert=[FloatTensor, float])
@@ -711,6 +714,11 @@ class FloatTensor():
         return retval
 
     def _op_inline(self, name, params=None):
+        """
+        Inline variant of `op`: executes operation `name` and returns nothing.
+
+        An exception is raised in case the operation failed remotely.
+        """
         if params and not isinstance(params, list):
             params = [params]
         # if not name.endswith("_"):
@@ -720,13 +728,22 @@ class FloatTensor():
             raise RuntimeError("Command {} failed: {}".format(name, error))
 
     def _get_prop(self, param_name="size"):
-        # no type assertions: get_prop can almost return anything
+        """
+        Basically reads an existing property on Unity side of the bridge. The difference with op is
+        that no computation is required: the property already exists as such on Unity side.
+        The returned property could be any type (list, float, bool), so no type assertions are made here:
+        get_prop can almost return anything
+        """
         retval, error = self._parse(self._remote_execute("get", [param_name]), typeassert=None)
         if error:
             raise RuntimeError("Command get_prop with param {} failed: {}".format([param_name], error))
         return retval
 
     def _set_prop(self, param_name="size", params=None):
+        """
+        Basically writes a property on Unity side. The semantics is that no computation is required.
+        Returns nothing, but raises in case of failure on Unity side.
+        """
         if params and not isinstance(params, list):
             params = [params]
         prm = [param_name] + params
@@ -735,13 +752,18 @@ class FloatTensor():
             raise RuntimeError("Command set_prop with param {} failed: {}".format(prm, error))
 
     def _manage(self, name):
+        """
+        Semantically, this method is for memory management methods: cpu, gpu, delete, ...
+
+        Returns nothing, but raises in case of failure on Unity side.
+        """
         ok, error = self._parse(self._remote_execute(name, []), typeassert=[bool])
         if error or not ok:
             raise RuntimeError("Command {} failed: {}".format(name, error))
 
 
     def _build_arithmetic_op(self, x, name):
-        # NOTE: should be a pure function
+        # NOTE: could be a pure function because self is unused
         inline = name.endswith("_")
         if inline:
             name = name[:-1]
