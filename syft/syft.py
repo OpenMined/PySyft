@@ -237,6 +237,13 @@ class FloatTensor():
             return list(map(lambda x:int(x),shape_tensor.get("data").split(",")[:-1]))
         return shape_tensor
 
+    def stride(self, dim=-1):
+        if dim == -1:
+            return self.no_params_func("stride", return_response=True, return_as_tensor=False)
+        else:
+            strides = self.params_func("stride", [dim], return_response=True, return_as_tensor=False)
+            return np.fromstring(strides, sep=' ').astype('long')
+
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
 
