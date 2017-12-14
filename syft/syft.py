@@ -394,6 +394,9 @@ class FloatTensor():
     def log_(self):
         return self.no_params_func("log_")
 
+    def log1p_(self):
+        return self.no_params_func("log1p_")
+
     def frac(self):
         return self.no_params_func("frac", return_response=True)
 
