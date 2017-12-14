@@ -1,7 +1,7 @@
 import zmq
 import uuid
 import numpy as np
-from .nn import Linear, Sigmoid
+from .nn import Linear, Sigmoid, Sequential
 
 class FloatTensor():
 
@@ -9,11 +9,12 @@ class FloatTensor():
         self.verbose = verbose
         self.controller = controller
 
-        if(type(data) == list):
-            data = np.array(data).astype('float')
-
         if(data is not None and not data_is_pointer):
-            self.data = data.astype('float')
+            if(type(data) == list):
+                data = np.array(data)
+            data = data.astype('float')
+
+            self.data = data
             controller.socket.send_json({"objectType": "tensor",
                                          "functionCall": "create",
                                          "data": list(data.flatten()),
@@ -180,11 +181,21 @@ class FloatTensor():
     def round(self):
         return self.no_params_func("round", return_response=True)
 
+    def round_(self):
+        return self.no_params_func("round_")
+
     def mm(self, other):
         return self.params_func("mm",[other.id],True)
 
     def grad(self):
         return self.get("grad", response_as_tensor=True)
+
+    def __mod__(self, x):
+        return self.arithmetic_operation(x, "remainder", False)
+
+    def __imod__(self, x):
+        return self.arithmetic_operation(x, "remainder", True)
+
     def __mul__(self, x):
         return self.arithmetic_operation(x, "mul", False)
 
@@ -232,10 +243,17 @@ class FloatTensor():
             The returned value currently is a FloatTensor because it leverages
             the messaging mechanism with Unity.
         """
-        shape_tensor = self.no_params_func("size", return_response=True)
+        shape_tensor = self.no_params_func("shape", return_response=True)
         if(as_list):
             return list(map(lambda x:int(x),shape_tensor.get("data").split(",")[:-1]))
         return shape_tensor
+
+    def stride(self, dim=-1):
+        if dim == -1:
+            return self.no_params_func("stride", return_response=True, return_as_tensor=False)
+        else:
+            strides = self.params_func("stride", [dim], return_response=True, return_as_tensor=False)
+            return np.fromstring(strides, sep=' ').astype('long')
 
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
@@ -305,12 +323,11 @@ class FloatTensor():
             type_str += str(dim) + "x"
 
         type_str = type_str[:-1]
-        return tensor_str + "\n[syft.FloatTensor of size " + type_str + "]"
+        return tensor_str + "\n[syft.FloatTensor of size " + type_str + "]" + "\n"
         # return self.no_params_func("print", True, False)
 
     def __str__(self):
-        tensor_str =  str(self.to_numpy()).replace("]"," ").replace("["," ")
-        # return self.no_params_func("print", True, False)
+        tensor_str =  str(self.to_numpy()).replace("]"," ").replace("["," ") + "\n"
 
     def get(self, param_name="size", response_as_tensor=False):
         return self.params_func(name="get",params=[param_name], return_response=True, return_as_tensor=response_as_tensor)
@@ -354,14 +371,14 @@ class FloatTensor():
     def arithmetic_operation(self, x, name, inline=False):
 
         operation_cmd = name
-
+        
         if(type(x) == FloatTensor):
             operation_cmd += "_elem"
             parameter = x.id
         else:
             operation_cmd += "_scalar"
             parameter = str(x)
-
+        
         if(inline):
             operation_cmd += "_"
 
@@ -375,9 +392,6 @@ class FloatTensor():
         self.verbose = None
         self.controller = None
         self.id = None
-
-    def T(self):
-        return self.no_params_func("transpose", return_response=True)
 
     def is_contiguous(self):
         return self.no_params_func("is_contiguous", return_response=True, return_as_tensor=False)
@@ -397,6 +411,9 @@ class FloatTensor():
     def log1p_(self):
         return self.no_params_func("log1p_")
 
+    def log1p(self):
+        return self.no_params_func("log1p", return_response=True)
+
     def frac(self):
         return self.no_params_func("frac", return_response=True)
 
@@ -410,10 +427,16 @@ class FloatTensor():
         return self.no_params_func("reciprocal_")
 
     def rsqrt(self):
-        return self.no_params_func("rsqrt", return_response=True)
+        return self.no_params_func("rsqrt",return_response=True)
 
     def rsqrt_(self):
         return self.no_params_func("rsqrt_")
+
+    def remainder(self,divisor):
+        return self.arithmetic_operation(divisor, "remainder")
+
+    def remainder_(self,divisor):
+        return self.arithmetic_operation(divisor, "remainder",True)
 
     def tan(self):
         return self.no_params_func("tan", return_response=True)
@@ -466,6 +489,9 @@ class SyftController():
     def Sigmoid(self):
         return Sigmoid(sc=self)
 
+    def Sequential(self):
+        return Sequential(sc=self)
+
     def rand(self, *args):
         return self.FloatTensor(np.random.rand(*args))
 
@@ -477,3 +503,33 @@ class SyftController():
 
     def ones(self,*args):
         return self.FloatTensor(np.ones((args)))
+
+    def params_func(self, cmd_func, name, params, return_type=None):
+        # send the command
+        self.socket.send_json(
+            cmd_func(name, params=params))
+        # receive output from command
+        res = self.socket.recv_string()
+
+        if(self.verbose):
+            print(res)
+
+        if(return_type is None):
+            return self
+        elif(return_type == 'FloatTensor'):
+            if(self.verbose):
+                print("FloatTensor.__init__: " +  res)
+            return FloatTensor(controller=self,data=int(res),data_is_pointer=True)
+        elif return_type == 'FloatTensor_list':
+            tensors = list()
+            if(res[-1] == ','):
+                res = res[:-1]
+            for str_id in res.split(","):
+                tensors.append(FloatTensor(controller=self,data=int(str_id),data_is_pointer=True))
+            return tensors
+        else:
+            return res
+
+    def no_params_func(self, cmd_func, name, return_type):
+        return self.params_func(cmd_func, name, [], return_type)
+                
