@@ -683,7 +683,7 @@ class FloatTensor():
             result = np.array(response['data']).astype('float').reshape(shape)
             # result = np.fromstring(strValue, sep=',').astype('float').reshape(objectShape)
 
-        elif objectType in ['string', 'int', 'float', 'bool']:
+        elif objectType in ['string', 'int', 'float', 'bool', 'intList']:
             result = response['value']
 
         elif objectType == 'tensorID':
