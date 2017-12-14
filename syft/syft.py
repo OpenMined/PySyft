@@ -32,7 +32,6 @@ class FloatTensor():
                                          "shape": data.shape})
             res = json.loads(controller.socket.recv_string())
             # self.id = int(controller.socket.recv_string())
-            print(res)
             if not res['ok']:
                 raise RuntimeError("Could not create Tensor: {}".format(res['error']))
             if res.get('objectType') != 'tensorID':
@@ -642,13 +641,11 @@ class FloatTensor():
             'objectIndex': self.id,
             'tensorIndexParams': tensorIndexParams or []}
 
-    # def no_params_func(self, name, return_response=False, return_as_tensor=True):
-    #     return self.params_func(name, [], return_response, return_as_tensor)
 
-    # def params_func(self, name, params, return_response=False, return_as_tensor=True):
     def _remote_execute(self, name, params):
         """
-        Synchronous execution, may be extended with timeout for instance
+        Synchronous execution, may be extended with timeout for instance.
+        This basically replaces params_func.
         """
         # send the command
         self.controller.socket.send_json(
@@ -658,13 +655,15 @@ class FloatTensor():
         raw_response = self.controller.socket.recv_string()
 
         if self.verbose:
-            print("command: " + name)
-            print("message: " + raw_response)
+            print("command: " + name + " -> " + raw_response)
 
         return raw_response
 
 
     def _parse(self, raw_response, typeassert=None):
+        """
+        Parse controller response string -> json -> types
+        """
         response = json.loads(
             raw_response.replace('\r', '\\r').replace('\n', '\\n').replace('\t', '\\t'))
 
@@ -688,8 +687,6 @@ class FloatTensor():
 
         elif objectType == 'tensorID':
             tid = response['id']
-            if self.verbose:
-                print("FloatTensor.__init__: " +  tid)
             result = FloatTensor(controller=self.controller, data=tid, data_is_pointer=True)
             # declare t with controller?
 
