@@ -19,6 +19,32 @@ class Model():
 		           params.append(p)
 		return params
 
+class Sequential(Model):
+
+	def __init__(self,sc):
+		self.sc = sc
+		self.id = -1
+		self.sc.socket.send_json(self.cmd("create",["sequential"]))
+		self.id = int(self.sc.socket.recv_string())
+
+	def cmd(self,function_call, params = []):
+		cmd = {
+	    'functionCall': function_call,
+	    'objectType': 'model',
+	    'objectIndex': self.id,
+	    'tensorIndexParams': params}
+		return cmd	
+
+	def forward(self, input):
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
+
+	def add(self, model):
+		self.sc.params_func(self.cmd,"add",[model.id])
+
+	def parameters(self):
+		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')		
+
+
 class Linear(Model):
 
 	def __init__(self, sc, dims):
@@ -26,7 +52,7 @@ class Linear(Model):
 		assert len(dims) == 2 and type(dims) == tuple
 
 		self.id = -1
-		self.sc.socket.send_json(self.cmd("create",[dims[0],dims[1]]))
+		self.sc.socket.send_json(self.cmd("create",["linear",dims[0],dims[1]]))
 		self.id = int(self.sc.socket.recv_string())
 
 	def forward(self, input):
@@ -45,8 +71,22 @@ class Linear(Model):
 
 class Sigmoid(Model):
 
+	def __init__(self, sc):
+		self.sc = sc
+		self.id = -1
+		self.sc.socket.send_json(self.cmd("create",["sigmoid"]))
+		self.id = int(self.sc.socket.recv_string())
+
+	def cmd(self,function_call, params = []):
+		cmd = {
+	    'functionCall': function_call,
+	    'objectType': 'model',
+	    'objectIndex': self.id,
+	    'tensorIndexParams': params}
+		return cmd	
+
 	def forward(self, input):
-		return input.sigmoid();
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
 
 
 class MSELoss(Model):

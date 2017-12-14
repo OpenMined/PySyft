@@ -1,7 +1,7 @@
 import zmq
 import uuid
 import numpy as np
-from .nn import Linear, Sigmoid
+from .nn import Linear, Sigmoid, Sequential
 
 class FloatTensor():
 
@@ -460,6 +460,9 @@ class SyftController():
     def Sigmoid(self):
         return Sigmoid(sc=self)
 
+    def Sequential(self):
+        return Sequential(sc=self)
+
     def rand(self, *args):
         return self.FloatTensor(np.random.rand(*args))
 
@@ -490,6 +493,8 @@ class SyftController():
             return FloatTensor(controller=self,data=int(res),data_is_pointer=True)
         elif return_type == 'FloatTensor_list':
             tensors = list()
+            if(res[-1] == ','):
+                res = res[:-1]
             for str_id in res.split(","):
                 tensors.append(FloatTensor(controller=self,data=int(str_id),data_is_pointer=True))
             return tensors
