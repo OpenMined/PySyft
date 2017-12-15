@@ -372,7 +372,7 @@ class FloatTensor():
         self.verbose = None
         self.controller = None
         self.id = None
-
+        
     def T(self):
         return self.no_params_func("transpose", return_response=True)
 
@@ -451,9 +451,19 @@ class SyftController():
         self.socket.connect("tcp://localhost:5555")
         self.verbose=verbose
 
-    def FloatTensor(self, data, autograd=False):
-        return FloatTensor(controller=self, data=data, autograd=autograd, verbose=self.verbose)
 
+    # Introspection
+    def num_models(self):
+        return self.no_params_func(self.cmd,"num_models",'int')
+
+    def num_tensors(self):
+        return self.no_params_func(self.cmd,"num_tensors",'int')
+
+    def get_tensor(self,id):
+        return FloatTensor(controller=self,data=int(id),data_is_pointer=True)
+
+
+    # Layer Initialization
     def Linear(self, *args):
         return Linear(sc=self, dims = args)
 
@@ -462,7 +472,12 @@ class SyftController():
 
     def Sequential(self):
         return Sequential(sc=self)
+    
+    def FloatTensor(self, data, autograd=False):
+        return FloatTensor(controller=self, data=data, autograd=autograd, verbose=self.verbose)
 
+    
+    # Tensor Initialization
     def rand(self, *args):
         return self.FloatTensor(np.random.rand(*args))
 
@@ -474,6 +489,17 @@ class SyftController():
 
     def ones(self,*args):
         return self.FloatTensor(np.ones((args)))
+
+
+    # Network Convenience Functions
+    def cmd(self, functionCall, params=[]):
+        cmd = {
+            'functionCall': functionCall,
+            'objectType': 'controller',
+            'objectIndex': '-1',
+            'tensorIndexParams': params}
+        return cmd
+
 
     def params_func(self, cmd_func, name, params, return_type=None):
         # send the command
@@ -496,8 +522,10 @@ class SyftController():
             if(res[-1] == ','):
                 res = res[:-1]
             for str_id in res.split(","):
-                tensors.append(FloatTensor(controller=self,data=int(str_id),data_is_pointer=True))
+                tensors.append(self.get_tensor(int(str_id)))
             return tensors
+        elif return_type == 'int':
+            return int(res)
         else:
             return res
 
