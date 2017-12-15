@@ -2,3 +2,4 @@ build/
 dist/
 .idea/
 .python-version
+syft/__pycache__/
