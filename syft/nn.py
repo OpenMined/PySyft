@@ -21,13 +21,13 @@ class Model():
 		           params.append(p)
 		return params
 
+
 class Sequential(Model):
 
 	def __init__(self):
 		self.sc = controller
 		self.id = -1
-		self.sc.socket.send_json(self.cmd("create",["sequential"]))
-		self.id = int(self.sc.socket.recv_string())
+		self.id = int(self.sc.send_json(self.cmd("create",["sequential"])))
 
 	def cmd(self,function_call, params = []):
 		cmd = {
@@ -54,8 +54,7 @@ class Linear(Model):
 		assert len(dims) == 2 and type(dims) == tuple
 
 		self.id = -1
-		self.sc.socket.send_json(self.cmd("create",["linear",dims[0],dims[1]]))
-		self.id = int(self.sc.socket.recv_string())
+		self.id = int(self.sc.send_json(self.cmd("create",["linear",dims[0],dims[1]])))	
 
 	def forward(self, input):
 		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
@@ -71,13 +70,13 @@ class Linear(Model):
 	    'tensorIndexParams': params}
 		return cmd
 
+
 class Sigmoid(Model):
 
 	def __init__(self):
 		self.sc = controller
 		self.id = -1
-		self.sc.socket.send_json(self.cmd("create",["sigmoid"]))
-		self.id = int(self.sc.socket.recv_string())
+		self.id = int(self.sc.socket.send_json(self.cmd("create",["sigmoid"])))
 
 	def cmd(self,function_call, params = []):
 		cmd = {

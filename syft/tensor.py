@@ -12,7 +12,7 @@ class FloatTensor():
             data = data.astype('float')
 
             self.data = data
-            self.controller.socket.send_json({"objectType": "tensor",
+            self.controller.send_json({"objectType": "tensor",
                                          "functionCall": "create",
                                          "data": list(data.flatten()),
                                          "shape": self.data.shape})
@@ -261,7 +261,7 @@ class FloatTensor():
         return self.no_params_func("trunc", return_response=True)
 
     def to_numpy(self):
-         self.controller.socket.send_json({
+         self.controller.send_json({
              'functionCall': 'to_numpy',
              'objectType': 'tensor',
              'objectIndex': self.id
@@ -344,7 +344,7 @@ class FloatTensor():
 
     def params_func(self, name, params, return_response=False, return_as_tensor=True):
         # send the command
-        self.controller.socket.send_json(
+        self.controller.send_json(
             self.cmd(name, tensorIndexParams=params))
         # receive output from command
         res = self.controller.socket.recv_string()
