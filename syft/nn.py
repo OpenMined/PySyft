@@ -1,6 +1,8 @@
+import syft.controller as controller
+
 class Model():
-	def __init__(self,sc):
-		self.sc = sc
+	def __init__(self):
+		self.sc = controller
 		self.params = False
 
 	def __call__(self,*args):
@@ -21,8 +23,8 @@ class Model():
 
 class Sequential(Model):
 
-	def __init__(self,sc):
-		self.sc = sc
+	def __init__(self):
+		self.sc = controller
 		self.id = -1
 		self.sc.socket.send_json(self.cmd("create",["sequential"]))
 		self.id = int(self.sc.socket.recv_string())
@@ -33,7 +35,7 @@ class Sequential(Model):
 	    'objectType': 'model',
 	    'objectIndex': self.id,
 	    'tensorIndexParams': params}
-		return cmd	
+		return cmd
 
 	def forward(self, input):
 		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
@@ -42,13 +44,13 @@ class Sequential(Model):
 		self.sc.params_func(self.cmd,"add",[model.id])
 
 	def parameters(self):
-		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')		
+		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')
 
 
 class Linear(Model):
 
-	def __init__(self, sc, dims):
-		self.sc = sc
+	def __init__(self, *dims):
+		self.sc = controller
 		assert len(dims) == 2 and type(dims) == tuple
 
 		self.id = -1
@@ -71,8 +73,8 @@ class Linear(Model):
 
 class Sigmoid(Model):
 
-	def __init__(self, sc):
-		self.sc = sc
+	def __init__(self):
+		self.sc = controller
 		self.id = -1
 		self.sc.socket.send_json(self.cmd("create",["sigmoid"]))
 		self.id = int(self.sc.socket.recv_string())
@@ -83,7 +85,7 @@ class Sigmoid(Model):
 	    'objectType': 'model',
 	    'objectIndex': self.id,
 	    'tensorIndexParams': params}
-		return cmd	
+		return cmd
 
 	def forward(self, input):
 		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
