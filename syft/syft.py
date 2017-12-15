@@ -1,7 +1,7 @@
 import zmq
 import uuid
 import numpy as np
-from .nn import Linear, Sigmoid, Sequential
+from .nn import Sequential,Linear,Sigmoid,Conv2d
 
 class FloatTensor():
 
@@ -482,6 +482,9 @@ class SyftController():
 
     def FloatTensor(self, data, autograd=False):
         return FloatTensor(controller=self, data=data, autograd=autograd, verbose=self.verbose)
+
+    def Conv2d(self, *args):
+        return Conv2d(self, *args)
 
     def Linear(self, *args):
         return Linear(sc=self, dims = args)
