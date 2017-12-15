@@ -1,6 +1,5 @@
 import numpy as np
 import syft.controller
-from .nn import Linear, Sigmoid
 
 class FloatTensor():
 
