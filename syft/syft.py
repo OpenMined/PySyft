@@ -137,6 +137,12 @@ class FloatTensor():
             return list(map(lambda x:int(x),res.split(",")[0:-1]))
         return []
 
+    def cumsum(self, dim=0):
+        return self.params_func("cumsum", [dim], return_response=True)
+
+    def cumsum_(self, dim=0):
+        return self.params_func("cumsum_", [dim])
+
     def dataOnGpu(self):
         if(self.get("dataOnGpu") == "1"):
             return True
@@ -371,14 +377,14 @@ class FloatTensor():
     def arithmetic_operation(self, x, name, inline=False):
 
         operation_cmd = name
-        
+
         if(type(x) == FloatTensor):
             operation_cmd += "_elem"
             parameter = x.id
         else:
             operation_cmd += "_scalar"
             parameter = str(x)
-        
+
         if(inline):
             operation_cmd += "_"
 
@@ -532,4 +538,3 @@ class SyftController():
 
     def no_params_func(self, cmd_func, name, return_type):
         return self.params_func(cmd_func, name, [], return_type)
-                
