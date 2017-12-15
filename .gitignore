@@ -1,4 +1,8 @@
 build/
 dist/
+*__pycache__/
 .idea/
+.cache/
+.eggs/
 .python-version
+syft.egg-info/
