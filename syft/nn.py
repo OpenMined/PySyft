@@ -1,9 +1,9 @@
-import syft.controller
+import syft.controller as controller
 
 class Model():
 	def __init__(self):
-		self.controller = syft.controller
-		self.controller.log("Model instantiated")
+		self.sc = controller
+		self.params = False
 
 	def __call__(self,*args):
 		if(len(args) == 1):
@@ -17,36 +17,81 @@ class Model():
 		params = list()
 		for v in self.__dict__.values():
 		    if(isinstance(v,Model)):
-		       if(v.params):
-		           params.append(v)
+		       for p in v.parameters():
+		           params.append(p)
 		return params
 
-class Linear(Model):
-	def __init__(self, dims):
-		self.controller.socket.send_json({
-			"objectType": "linear",
-			"functionCall": "create",
-			"dimensions": dims
-		})
+class Sequential(Model):
 
-		self.id = int(self.controller.socket.recv_string())
-		if (OpenMinedController.verbose):
-			print("Linear.__init__: {}".format(self.id))
+	def __init__(self):
+		self.sc = controller
+		self.id = -1
+		self.sc.socket.send_json(self.cmd("create",["sequential"]))
+		self.id = int(self.sc.socket.recv_string())
+
+	def cmd(self,function_call, params = []):
+		cmd = {
+	    'functionCall': function_call,
+	    'objectType': 'model',
+	    'objectIndex': self.id,
+	    'tensorIndexParams': params}
+		return cmd
 
 	def forward(self, input):
-		return input.mm(self.weights)
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
 
+	def add(self, model):
+		self.sc.params_func(self.cmd,"add",[model.id])
+
+	def parameters(self):
+		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')
+
+
+class Linear(Model):
+
+	def __init__(self, *dims):
+		self.sc = controller
+		assert len(dims) == 2 and type(dims) == tuple
+
+		self.id = -1
+		self.sc.socket.send_json(self.cmd("create",["linear",dims[0],dims[1]]))
+		self.id = int(self.sc.socket.recv_string())
+
+	def forward(self, input):
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
+
+	def parameters(self):
+		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')
+
+	def cmd(self,function_call, params = []):
+		cmd = {
+	    'functionCall': function_call,
+	    'objectType': 'model',
+	    'objectIndex': self.id,
+	    'tensorIndexParams': params}
+		return cmd
 
 class Sigmoid(Model):
 
+	def __init__(self):
+		self.sc = controller
+		self.id = -1
+		self.sc.socket.send_json(self.cmd("create",["sigmoid"]))
+		self.id = int(self.sc.socket.recv_string())
+
+	def cmd(self,function_call, params = []):
+		cmd = {
+	    'functionCall': function_call,
+	    'objectType': 'model',
+	    'objectIndex': self.id,
+	    'tensorIndexParams': params}
+		return cmd
+
 	def forward(self, input):
-		return input.sigmoid();
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
 
 
-class MSELoss():
-
-	def __call__(self, *args):
-		return self.forward(args[0], args[1])
+class MSELoss(Model):
 
 	def forward(self, input, target):
 		return (input - target) ** 2
