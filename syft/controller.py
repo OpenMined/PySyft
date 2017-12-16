@@ -31,8 +31,7 @@ def num_tensors():
     return no_params_func(cmd,"num_tensors",'int')
 
 def get_tensor(id):
-    return syft.tensor.FloatTensor(controller=self,data=int(id),data_is_pointer=True)
-
+    return syft.tensor.FloatTensor(data=int(id),data_is_pointer=True)
 
 def params_func(cmd_func, name, params, return_type=None):
         # send the command
@@ -60,8 +59,17 @@ def params_func(cmd_func, name, params, return_type=None):
             for str_id in res.split(","):
                 tensors.append(syft.tensor.FloatTensor(data=int(str_id),data_is_pointer=True))
             return tensors
+        elif return_type == "Model_list":
+            models = list()
+            if(res[-1] == ','):
+                res = res[:-1]
+            for str_id in res.split(","):
+                models.append(syft.nn.Model(id=int(str_id)).discover())
+            return models
         elif return_type == 'int':
             return int(res)
+        elif return_type == 'string':
+            return str(res)
         else:
             return res
 
