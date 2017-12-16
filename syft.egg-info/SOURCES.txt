@@ -1,8 +1,9 @@
 README.md
 setup.py
 syft/__init__.py
+syft/controller.py
 syft/nn.py
-syft/syft.py
+syft/tensor.py
 syft.egg-info/PKG-INFO
 syft.egg-info/SOURCES.txt
 syft.egg-info/dependency_links.txt
