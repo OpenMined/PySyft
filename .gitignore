@@ -4,4 +4,8 @@ dist/
 .eggs/
 .idea/
 .python-version
+<<<<<<< HEAD
 syft.egg-info/
+=======
+syft/__pycache__/
+>>>>>>> upstream/master
