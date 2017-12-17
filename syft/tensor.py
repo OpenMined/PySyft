@@ -1,13 +1,10 @@
-import zmq
-import uuid
 import numpy as np
-from .nn import Sequential,Linear,Sigmoid,Conv2d
+import syft.controller
 
 class FloatTensor():
 
-    def __init__(self, controller, data, autograd=False, data_is_pointer=False, verbose=False):
-        self.verbose = verbose
-        self.controller = controller
+    def __init__(self, data, autograd=False, data_is_pointer=False):
+        self.controller = syft.controller
 
         if(data is not None and not data_is_pointer):
             if(type(data) == list):
@@ -15,13 +12,11 @@ class FloatTensor():
             data = data.astype('float')
 
             self.data = data
-            controller.socket.send_json({"objectType": "tensor",
+            self.id = int(self.controller.send_json({"objectType": "tensor",
                                          "functionCall": "create",
                                          "data": list(data.flatten()),
-                                         "shape": self.data.shape})
-            self.id = int(controller.socket.recv_string())
-            if(verbose):
-                print("FloatTensor.__init__: " +  str(self.id))
+                                         "shape": self.data.shape}))
+            # self.controller.log("FloatTensor.__init__: {}".format(self.id))
 
         elif(data_is_pointer):
             self.id = int(data)
@@ -29,8 +24,8 @@ class FloatTensor():
         if(autograd):
             self.autograd(True)
 
-    def __del__(self):
-        self.delete_tensor()
+    # def __del__(self):
+        # self.delete_tensor()
 
     def abs(self):
         return self.no_params_func("abs", return_response=True)
@@ -265,13 +260,12 @@ class FloatTensor():
         return self.no_params_func("trunc", return_response=True)
 
     def to_numpy(self):
-         self.controller.socket.send_json({
+         res = self.controller.send_json({
              'functionCall': 'to_numpy',
              'objectType': 'tensor',
              'objectIndex': self.id
          })
 
-         res = self.controller.socket.recv_string()
          return np.fromstring(res, sep=' ').astype('float').reshape(self.shape())
 
     def __sub__(self, x):
@@ -315,7 +309,7 @@ class FloatTensor():
     def zero_(self):
         return self.no_params_func("zero_")
 
-    def __repr__(self):
+    def __repr__(self, verbose=True):
         tensor_str = str(self.to_numpy())
 
         type_str = ""
@@ -323,11 +317,41 @@ class FloatTensor():
             type_str += str(dim) + "x"
 
         type_str = type_str[:-1]
-        return tensor_str + "\n[syft.FloatTensor of size " + type_str + "]" + "\n"
-        # return self.no_params_func("print", True, False)
+        grad = self.get("grad")
+        if(grad == ''):
+            grad = 'None'
+        desc = "[syft.FloatTensor:"+str(self.id)+" grad:" + grad + " size:" + type_str + "]" + "\n"
+
+
+        if(verbose):
+            children = self.children()
+            creators = self.creators()
+            if(len(children) > 0):
+                #tensor_str = "\n -------------------------------\n" + tensor_str
+                desc += "\n\t-----------children-----------\n\t"
+            for child_id in children:
+                desc += syft.controller.get_tensor(child_id).__repr__(False)
+            if(len(children) > 0):
+                if(len(creators) > 0):
+                    desc += "\t------------------------------\n"
+                else:
+                    desc += "\t------------------------------\n\n\n"
+
+            if(len(creators) > 0):
+                #tensor_str = "\n -------------------------------\n" + tensor_str
+                desc += "\n\t-----------creators-----------\n"
+            for parent_id in creators:
+                desc += "\t" + syft.controller.get_tensor(parent_id).__repr__(False)
+            if(len(creators) > 0):
+                desc += "\t------------------------------\n\n\n"
+
+            return tensor_str + "\n" + desc
+        return desc
+
 
     def __str__(self):
         tensor_str =  str(self.to_numpy()).replace("]"," ").replace("["," ") + "\n"
+        return tensor_str
 
     def get(self, param_name="size", response_as_tensor=False):
         return self.params_func(name="get",params=[param_name], return_response=True, return_as_tensor=response_as_tensor)
@@ -348,19 +372,15 @@ class FloatTensor():
 
     def params_func(self, name, params, return_response=False, return_as_tensor=True):
         # send the command
-        self.controller.socket.send_json(
+        res = self.controller.send_json(
             self.cmd(name, tensorIndexParams=params))
-        # receive output from command
-        res = self.controller.socket.recv_string()
-
-        if(self.verbose):
-            print(res)
+        
+        self.controller.log(res)
 
         if(return_response):
             if(return_as_tensor):
-                if(self.verbose):
-                    print("FloatTensor.__init__: " +  res)
-                return FloatTensor(controller=self.controller,data=int(res),data_is_pointer=True)
+                self.controller.log("FloatTensor.__init__: {}".format(res))
+                return FloatTensor(data=int(res),data_is_pointer=True)
             else:
                 return res
         return self
@@ -371,27 +391,29 @@ class FloatTensor():
     def arithmetic_operation(self, x, name, inline=False):
 
         operation_cmd = name
-        
+
         if(type(x) == FloatTensor):
             operation_cmd += "_elem"
             parameter = x.id
         else:
             operation_cmd += "_scalar"
             parameter = str(x)
-        
+
         if(inline):
             operation_cmd += "_"
 
-        self.controller.socket.send_json(
+        response = self.controller.send_json(
             self.cmd(operation_cmd, [parameter]))  # sends the command
-        return FloatTensor(controller=self.controller, data=int(self.controller.socket.recv_string()), data_is_pointer=True)
+        return FloatTensor(data=int(response), data_is_pointer=True)
 
     def delete_tensor(self):
         if(self.id is not None):
             self.no_params_func("delete")
-        self.verbose = None
         self.controller = None
         self.id = None
+        
+    def T(self):
+        return self.no_params_func("transpose", return_response=True)
 
     def is_contiguous(self):
         return self.no_params_func("is_contiguous", return_response=True, return_as_tensor=False)
@@ -467,72 +489,3 @@ class FloatTensor():
 
     def mean(self, dim=-1, keepdim=False):
         return self.params_func("mean", [dim, keepdim], return_response=True)
-
-class SyftController():
-
-    def __init__(self,verbose=True):
-
-        self.identity = str(uuid.uuid4())
-
-        context = zmq.Context()
-        self.socket = context.socket(zmq.DEALER)
-        self.socket.setsockopt_string(zmq.IDENTITY, self.identity)
-        self.socket.connect("tcp://localhost:5555")
-        self.verbose=verbose
-
-    def FloatTensor(self, data, autograd=False):
-        return FloatTensor(controller=self, data=data, autograd=autograd, verbose=self.verbose)
-
-    def Conv2d(self, *args):
-        return Conv2d(self, *args)
-
-    def Linear(self, *args):
-        return Linear(sc=self, dims = args)
-
-    def Sigmoid(self):
-        return Sigmoid(sc=self)
-
-    def Sequential(self):
-        return Sequential(sc=self)
-
-    def rand(self, *args):
-        return self.FloatTensor(np.random.rand(*args))
-
-    def randn(self, *args):
-        return self.FloatTensor(np.random.randn(*args))
-
-    def zeros(self,*args):
-        return self.FloatTensor(np.zeros((args)))
-
-    def ones(self,*args):
-        return self.FloatTensor(np.ones((args)))
-
-    def params_func(self, cmd_func, name, params, return_type=None):
-        # send the command
-        self.socket.send_json(
-            cmd_func(name, params=params))
-        # receive output from command
-        res = self.socket.recv_string()
-
-        if(self.verbose):
-            print(res)
-
-        if(return_type is None):
-            return self
-        elif(return_type == 'FloatTensor'):
-            if(self.verbose):
-                print("FloatTensor.__init__: " +  res)
-            return FloatTensor(controller=self,data=int(res),data_is_pointer=True)
-        elif return_type == 'FloatTensor_list':
-            tensors = list()
-            if(res[-1] == ','):
-                res = res[:-1]
-            for str_id in res.split(","):
-                tensors.append(FloatTensor(controller=self,data=int(str_id),data_is_pointer=True))
-            return tensors
-        else:
-            return res
-
-    def no_params_func(self, cmd_func, name, return_type):
-        return self.params_func(cmd_func, name, [], return_type)
-                
