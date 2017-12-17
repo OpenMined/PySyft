@@ -10,6 +10,22 @@ socket.setsockopt_string(zmq.IDENTITY, identity)
 socket.connect("tcp://localhost:5555")
 verbose = False
 
+
+class TensorPointer():
+    def __init__(self):
+        ""
+    def __getitem__(self,id):
+        return get_tensor(id)
+
+class ModelPointer():
+    def __init__(self):
+        ""
+    def __getitem__(self,id):
+        return get_model(id)        
+
+tensors = TensorPointer()        
+models = ModelPointer()
+
 def log(message):
     if (verbose):
         print(message)
@@ -27,11 +43,17 @@ def cmd(functionCall, params=[]):
 def num_models():
     return no_params_func(cmd,"num_models",'int')
 
+def get_model(id):
+    return syft.nn.Model(id=int(id)).discover()
+
 def num_tensors():
     return no_params_func(cmd,"num_tensors",'int')
 
 def get_tensor(id):
     return syft.tensor.FloatTensor(data=int(id),data_is_pointer=True)
+
+def __getitem__(id):
+        return get_tensor(id)
 
 def params_func(cmd_func, name, params, return_type=None):
         # send the command
@@ -49,22 +71,27 @@ def params_func(cmd_func, name, params, return_type=None):
         if(return_type is None):
             return None
         elif(return_type == 'FloatTensor'):
-            if(verbose):
-                print("FloatTensor.__init__: " +  res)
-            return syft.tensor.FloatTensor(data=int(res),data_is_pointer=True)
+            if(res != '-1' and res != ''):
+                if(verbose):
+                    print("FloatTensor.__init__: " +  res)
+                return syft.tensor.FloatTensor(data=int(res),data_is_pointer=True)
+            return None
         elif return_type == 'FloatTensor_list':
-            tensors = list()
-            if(res[-1] == ','):
-                res = res[:-1]
-            for str_id in res.split(","):
-                tensors.append(syft.tensor.FloatTensor(data=int(str_id),data_is_pointer=True))
-            return tensors
+            if(res != ''):
+                tensors = list()
+                if(res[-1] == ','):
+                    res = res[:-1]
+                for str_id in res.split(","):
+                    tensors.append(get_tensor(int(str_id)))
+                return tensors
+            else:
+                return []
         elif return_type == "Model_list":
             models = list()
             if(res[-1] == ','):
                 res = res[:-1]
             for str_id in res.split(","):
-                models.append(syft.nn.Model(id=int(str_id)).discover())
+                models.append(get_model(int(str_id)))
             return models
         elif return_type == 'int':
             return int(res)
