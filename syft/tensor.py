@@ -253,6 +253,9 @@ class FloatTensor():
     def sqrt(self):
         return self.no_params_func("sqrt", return_response=True)
 
+    def sqrt_(self):
+        return self.no_params_func("sqrt_")
+
     def trace(self):
         return self.no_params_func("trace", return_response=True)
 
