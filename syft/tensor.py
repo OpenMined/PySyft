@@ -7,6 +7,7 @@ class FloatTensor():
         self.controller = syft.controller
 
         if(data is not None and not data_is_pointer):
+            print("Creating Python FloatTensor")
             if(type(data) == list):
                 data = np.array(data)
             data = data.astype('float')
@@ -238,10 +239,11 @@ class FloatTensor():
             The returned value currently is a FloatTensor because it leverages
             the messaging mechanism with Unity.
         """
-        shape_tensor = self.no_params_func("shape", return_response=True)
         if(as_list):
-            return list(map(lambda x:int(x),shape_tensor.get("data").split(",")[:-1]))
-        return shape_tensor
+            return list(np.fromstring(self.get("shape")[:-1],sep=",").astype('int'))
+        else:
+            shape_tensor = self.no_params_func("shape", return_response=True)
+            return shape_tensor
 
     def stride(self, dim=-1):
         if dim == -1:
@@ -260,13 +262,13 @@ class FloatTensor():
         return self.no_params_func("trunc", return_response=True)
 
     def to_numpy(self):
-         res = self.controller.send_json({
+        res = self.controller.send_json({
              'functionCall': 'to_numpy',
              'objectType': 'tensor',
              'objectIndex': self.id
-         })
-
-         return np.fromstring(res, sep=' ').astype('float').reshape(self.shape())
+        })
+        
+        return np.fromstring(res, sep=' ').astype('float').reshape(self.shape())
 
     def __sub__(self, x):
         return self.arithmetic_operation(x, "sub", False)
@@ -310,8 +312,9 @@ class FloatTensor():
         return self.no_params_func("zero_")
 
     def __repr__(self, verbose=True):
-        tensor_str = str(self.to_numpy())
 
+        tensor_str = str(self.to_numpy())
+        
         type_str = ""
         for dim in self.shape():
             type_str += str(dim) + "x"

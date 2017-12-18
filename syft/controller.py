@@ -10,7 +10,6 @@ socket.setsockopt_string(zmq.IDENTITY, identity)
 socket.connect("tcp://localhost:5555")
 verbose = False
 
-
 class TensorPointer():
     def __init__(self):
         ""
