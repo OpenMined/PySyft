@@ -7,7 +7,7 @@ class FloatTensor():
         self.controller = syft.controller
 
         if(data is not None and not data_is_pointer):
-            print("Creating Python FloatTensor")
+            
             if(type(data) == list):
                 data = np.array(data)
             data = data.astype('float')

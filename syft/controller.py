@@ -48,6 +48,15 @@ def get_model(id):
 def num_tensors():
     return no_params_func(cmd,"num_tensors",'int')
 
+def new_tensors_allowed(allowed=None):
+    if(allowed is None):
+        return no_params_func(cmd,"new_tensors_allowed",'bool')
+    else:
+        if(allowed):
+            return params_func(cmd, "new_tensors_allowed",["True"], 'bool')
+        else:
+            return params_func(cmd, "new_tensors_allowed",["False"], 'bool')
+
 def get_tensor(id):
     return syft.tensor.FloatTensor(data=int(id),data_is_pointer=True)
 
@@ -96,6 +105,13 @@ def params_func(cmd_func, name, params, return_type=None):
             return int(res)
         elif return_type == 'string':
             return str(res)
+        elif return_type == 'bool':
+            if res == 'True':
+                return True
+            elif res == 'False':
+                return False
+            else:
+                return res
         else:
             return res
 
