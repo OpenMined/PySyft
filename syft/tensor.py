@@ -1,32 +1,32 @@
 import numpy as np
 import syft.controller
 
-class FloatTensor():
 
+class FloatTensor():
     def __init__(self, data, autograd=False, data_is_pointer=False):
         self.controller = syft.controller
 
-        if(data is not None and not data_is_pointer):
-            
-            if(type(data) == list):
+        if (data is not None and not data_is_pointer):
+
+            if (type(data) == list):
                 data = np.array(data)
             data = data.astype('float')
 
             self.data = data
             self.id = int(self.controller.send_json({"objectType": "tensor",
-                                         "functionCall": "create",
-                                         "data": list(data.flatten()),
-                                         "shape": self.data.shape}))
+                                                     "functionCall": "create",
+                                                     "data": list(data.flatten()),
+                                                     "shape": self.data.shape}))
             # self.controller.log("FloatTensor.__init__: {}".format(self.id))
 
-        elif(data_is_pointer):
+        elif (data_is_pointer):
             self.id = int(data)
 
-        if(autograd):
+        if (autograd):
             self.autograd(True)
 
-    # def __del__(self):
-        # self.delete_tensor()
+            # def __del__(self):
+            # self.delete_tensor()
 
     def abs(self):
         return self.no_params_func("abs", return_response=True)
@@ -69,18 +69,18 @@ class FloatTensor():
         return self.no_params_func("atan_")
 
     def autograd(self, setter=None):
-        if(setter is None):
-            if(self.get("autograd") == "1"):
+        if (setter is None):
+            if (self.get("autograd") == "1"):
                 return True
             else:
                 return False
         else:
-            if(setter):
-                out = self.set("autograd",["1"])
+            if (setter):
+                out = self.set("autograd", ["1"])
             else:
-                out = self.set("autograd",["0"])
+                out = self.set("autograd", ["0"])
 
-            if(out == "1" and setter) or (out == "0" and not setter):
+            if (out == "1" and setter) or (out == "0" and not setter):
                 return self
             else:
                 return False
@@ -92,10 +92,10 @@ class FloatTensor():
         return self.arithmetic_operation(x, "add", True)
 
     def backward(self, grad=None):
-        if(grad is None):
+        if (grad is None):
             self.no_params_func("backward")
         else:
-            self.params_func(name="backward",params=[grad.id])
+            self.params_func(name="backward", params=[grad.id])
 
     def ceil(self):
         return self.no_params_func("ceil", return_response=True)
@@ -120,8 +120,8 @@ class FloatTensor():
 
     def children(self):
         res = self.get("children")
-        if(len(res) > 0):
-            return list(map(lambda x:int(x),res.split(",")[0:-1]))
+        if (len(res) > 0):
+            return list(map(lambda x: int(x), res.split(",")[0:-1]))
         return []
 
     def creation_op(self):
@@ -129,12 +129,12 @@ class FloatTensor():
 
     def creators(self):
         res = self.get("creators")
-        if(len(res) > 0):
-            return list(map(lambda x:int(x),res.split(",")[0:-1]))
+        if (len(res) > 0):
+            return list(map(lambda x: int(x), res.split(",")[0:-1]))
         return []
 
     def dataOnGpu(self):
-        if(self.get("dataOnGpu") == "1"):
+        if (self.get("dataOnGpu") == "1"):
             return True
         return False
 
@@ -151,7 +151,7 @@ class FloatTensor():
         return self.arithmetic_operation(x, "div", True)
 
     def keepgrad(self):
-        if(self.get("keepgrad") == "1"):
+        if (self.get("keepgrad") == "1"):
             return True
         else:
             return False
@@ -181,7 +181,7 @@ class FloatTensor():
         return self.no_params_func("round_")
 
     def mm(self, other):
-        return self.params_func("mm",[other.id],True)
+        return self.params_func("mm", [other.id], True)
 
     def grad(self):
         return self.get("grad", response_as_tensor=True)
@@ -205,10 +205,10 @@ class FloatTensor():
         return self.no_params_func("neg_")
 
     def rsqrt(self):
-        return self.no_params_func("rsqrt",return_response=True)
+        return self.no_params_func("rsqrt", return_response=True)
 
     def set(self, param_name="size", params=[]):
-        return self.params_func(name="set",params=[param_name] + params, return_response=True, return_as_tensor=False)
+        return self.params_func(name="set", params=[param_name] + params, return_response=True, return_as_tensor=False)
 
     def sigmoid_(self):
         return self.no_params_func("sigmoid_")
@@ -231,7 +231,7 @@ class FloatTensor():
     def size(self):
         return int(self.get("size"))
 
-    def shape(self,as_list=True):
+    def shape(self, as_list=True):
         """
         Returns the size of the self tensor as a FloatTensor.
 
@@ -239,8 +239,8 @@ class FloatTensor():
             The returned value currently is a FloatTensor because it leverages
             the messaging mechanism with Unity.
         """
-        if(as_list):
-            return list(np.fromstring(self.get("shape")[:-1],sep=",").astype('int'))
+        if (as_list):
+            return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))
         else:
             shape_tensor = self.no_params_func("shape", return_response=True)
             return shape_tensor
@@ -263,18 +263,18 @@ class FloatTensor():
 
     def to_numpy(self):
         res = self.controller.send_json({
-             'functionCall': 'to_numpy',
-             'objectType': 'tensor',
-             'objectIndex': self.id
+            'functionCall': 'to_numpy',
+            'objectType': 'tensor',
+            'objectIndex': self.id
         })
-        
+
         return np.fromstring(res, sep=' ').astype('float').reshape(self.shape())
 
     def __sub__(self, x):
         return self.arithmetic_operation(x, "sub", False)
 
-    def __isub__(self,x):
-        return self.arithmetic_operation(x,"sub",True)
+    def __isub__(self, x):
+        return self.arithmetic_operation(x, "sub", True)
 
     def view(self, *args):
         new_dim = list(args)
@@ -314,50 +314,49 @@ class FloatTensor():
     def __repr__(self, verbose=True):
 
         tensor_str = str(self.to_numpy())
-        
+
         type_str = ""
         for dim in self.shape():
             type_str += str(dim) + "x"
 
         type_str = type_str[:-1]
         grad = self.get("grad")
-        if(grad == ''):
+        if (grad == ''):
             grad = 'None'
-        desc = "[syft.FloatTensor:"+str(self.id)+" grad:" + grad + " size:" + type_str + "]" + "\n"
+        desc = "[syft.FloatTensor:" + str(self.id) + " grad:" + grad + " size:" + type_str + "]" + "\n"
 
-
-        if(verbose):
+        if (verbose):
             children = self.children()
             creators = self.creators()
-            if(len(children) > 0):
-                #tensor_str = "\n -------------------------------\n" + tensor_str
+            if (len(children) > 0):
+                # tensor_str = "\n -------------------------------\n" + tensor_str
                 desc += "\n\t-----------children-----------\n\t"
             for child_id in children:
                 desc += syft.controller.get_tensor(child_id).__repr__(False)
-            if(len(children) > 0):
-                if(len(creators) > 0):
+            if (len(children) > 0):
+                if (len(creators) > 0):
                     desc += "\t------------------------------\n"
                 else:
                     desc += "\t------------------------------\n\n\n"
 
-            if(len(creators) > 0):
-                #tensor_str = "\n -------------------------------\n" + tensor_str
+            if (len(creators) > 0):
+                # tensor_str = "\n -------------------------------\n" + tensor_str
                 desc += "\n\t-----------creators-----------\n"
             for parent_id in creators:
                 desc += "\t" + syft.controller.get_tensor(parent_id).__repr__(False)
-            if(len(creators) > 0):
+            if (len(creators) > 0):
                 desc += "\t------------------------------\n\n\n"
 
             return tensor_str + "\n" + desc
         return desc
 
-
     def __str__(self):
-        tensor_str =  str(self.to_numpy()).replace("]"," ").replace("["," ") + "\n"
+        tensor_str = str(self.to_numpy()).replace("]", " ").replace("[", " ") + "\n"
         return tensor_str
 
     def get(self, param_name="size", response_as_tensor=False):
-        return self.params_func(name="get",params=[param_name], return_response=True, return_as_tensor=response_as_tensor)
+        return self.params_func(name="get", params=[param_name], return_response=True,
+                                return_as_tensor=response_as_tensor)
 
     def cpu(self):
         return self.no_params_func("cpu")
@@ -377,32 +376,32 @@ class FloatTensor():
         # send the command
         res = self.controller.send_json(
             self.cmd(name, tensorIndexParams=params))
-        
+
         self.controller.log(res)
 
-        if(return_response):
-            if(return_as_tensor):
+        if (return_response):
+            if (return_as_tensor):
                 self.controller.log("FloatTensor.__init__: {}".format(res))
-                return FloatTensor(data=int(res),data_is_pointer=True)
+                return FloatTensor(data=int(res), data_is_pointer=True)
             else:
                 return res
         return self
 
     def no_params_func(self, name, return_response=False, return_as_tensor=True):
-        return(self.params_func(name, [], return_response, return_as_tensor))
+        return (self.params_func(name, [], return_response, return_as_tensor))
 
     def arithmetic_operation(self, x, name, inline=False):
 
         operation_cmd = name
 
-        if(type(x) == FloatTensor):
+        if (type(x) == FloatTensor):
             operation_cmd += "_elem"
             parameter = x.id
         else:
             operation_cmd += "_scalar"
             parameter = str(x)
 
-        if(inline):
+        if (inline):
             operation_cmd += "_"
 
         response = self.controller.send_json(
@@ -410,11 +409,11 @@ class FloatTensor():
         return FloatTensor(data=int(response), data_is_pointer=True)
 
     def delete_tensor(self):
-        if(self.id is not None):
+        if (self.id is not None):
             self.no_params_func("delete")
         self.controller = None
         self.id = None
-        
+
     def T(self):
         return self.no_params_func("transpose", return_response=True)
 
@@ -452,16 +451,16 @@ class FloatTensor():
         return self.no_params_func("reciprocal_")
 
     def rsqrt(self):
-        return self.no_params_func("rsqrt",return_response=True)
+        return self.no_params_func("rsqrt", return_response=True)
 
     def rsqrt_(self):
         return self.no_params_func("rsqrt_")
 
-    def remainder(self,divisor):
+    def remainder(self, divisor):
         return self.arithmetic_operation(divisor, "remainder")
 
-    def remainder_(self,divisor):
-        return self.arithmetic_operation(divisor, "remainder",True)
+    def remainder_(self, divisor):
+        return self.arithmetic_operation(divisor, "remainder", True)
 
     def tan(self):
         return self.no_params_func("tan", return_response=True)
@@ -492,4 +491,3 @@ class FloatTensor():
 
     def mean(self, dim=-1, keepdim=False):
         return self.params_func("mean", [dim, keepdim], return_response=True)
-
