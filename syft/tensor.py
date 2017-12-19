@@ -724,7 +724,7 @@ class FloatTensor():
         ----------
         Returns
         -------
-        Integer
+        int
             int with value of size
         """
         return int(self.get("size"))
@@ -758,7 +758,7 @@ class FloatTensor():
         Returns the stride of tensor.
         Parameters
         ----------
-        dim : Integer
+        dim : int
             dimension of expected return
 
         Returns
@@ -1006,49 +1006,177 @@ class FloatTensor():
         return self.no_params_func("transpose", return_response=True)
 
     def is_contiguous(self):
-
         return self.no_params_func("is_contiguous", return_response=True, return_as_tensor=False)
 
     def sinh(self):
+        """
+        Returns the hyperbolic sine of the input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("sinh", return_response=True)
 
     def sinh_(self):
+        """
+        Returns the hyperbolic sine of the input inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace.
+        """
         return self.no_params_func("sinh_")
 
     def log(self):
+        """
+        Returns the logarithm of the input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("log", return_response=True)
 
     def log_(self):
+        """
+        Returns the logarithm of the input inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace.
+        """
         return self.no_params_func("log_")
 
     def log1p_(self):
+        """
+        Returns the natural logarithm of (1 + input) inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace.
+        """
         return self.no_params_func("log1p_")
 
     def log1p(self):
+        """
+        Returns a new tensor with the natural logarithm of (1 + 'self').
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("log1p", return_response=True)
 
     def frac(self):
+        """
+        Computes the fractional portion of each element in tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("frac", return_response=True)
 
     def frac_(self):
+        """
+        Computes the fractional portion of each element in tensor, inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("frac_")
 
     def reciprocal(self):
+        """
+        Computes the reciprocal of the input tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("reciprocal", return_response=True)
 
     def reciprocal_(self):
+        """
+        Computes reciprocal of input tensor with values inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("reciprocal_")
 
     def rsqrt(self):
+        """
+        Returns a new tensor with the reciprocal of the square-root of each of
+        the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("rsqrt", return_response=True)
 
     def rsqrt_(self):
+        """
+        Computes the reciprocal of the square-root of each of the elements of input,
+        inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("rsqrt_")
 
     def remainder(self, divisor):
+        """
+        Computes the element-wise remainder of division.
+        inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.arithmetic_operation(divisor, "remainder")
 
     def remainder_(self, divisor):
+        """
+        Computes the element-wise remainder of division, inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.arithmetic_operation(divisor, "remainder", True)
 
     def tan(self):
@@ -1077,33 +1205,122 @@ class FloatTensor():
 
     def tanh(self):
         """
-        Returns the hyperbolic tangent of the input inplace.
+        Returns the hyperbolic tangent of the input.
         Parameters
         ----------
         Returns
         -------
         FloatTensor
-            Caller with values inplace
+            Output tensor
         """
         return self.no_params_func("tanh", return_response=True)
 
     def squeeze(self, dim=-1):
+        """
+        Returns a tensor with all the dimensions of input of size 1 removed.
+        Parameters
+        ----------
+        dim : int
+            When dim is given, a squeeze operation is done only in the given
+            dimension.
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("squeeze", [dim], return_response=True)
 
     def squeeze_(self, dim=-1):
+        """
+        Removes all the dimensions of input tensor of size 1, inplace.
+        Parameters
+        ----------
+        dim : int
+            When dim is given, a squeeze operation is done only in the given
+            dimension.
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.params_func("squeeze_", [dim])
 
     def min(self, dim=-1, keepdim=False):
+        """
+        Returns the minimum value of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("min", [dim, keepdim], return_response=True)
 
     def max(self, dim=-1, keepdim=False):
+        """
+        Returns the maximum value of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("max", [dim, keepdim], return_response=True)
 
     def sum(self, dim=-1, keepdim=False):
+        """
+        Returns the sum of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("sum", [dim, keepdim], return_response=True)
 
     def prod(self, dim=-1, keepdim=False):
+        """
+        Returns the product of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("prod", [dim, keepdim], return_response=True)
 
     def mean(self, dim=-1, keepdim=False):
+        """
+        Returns the mean value of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("mean", [dim, keepdim], return_response=True)
