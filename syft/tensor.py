@@ -58,32 +58,123 @@ class FloatTensor():
         return self.no_params_func("acos_")
 
     def addmm_(self, x, y):
-
+        """
+        Performs a matrix multiplication of the matrices 'x' and 'y'.
+        The caller matrix 'self' is added to the final result inplace.
+        Parameters
+        ----------
+        x : FloatTensor
+            First tensor for multiplication
+        y : FloatTensor
+            Second tensor for multiplication
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.params_func("addmm_", [x.id, y.id])
 
     def addmm(self, x, y):
+        """
+        Performs a matrix multiplication of the matrices 'x' and 'y'.
+        The caller matrix 'self' is added to the final result.
+        Parameters
+        ----------
+        x : FloatTensor
+            First tensor for multiplication
+        y : FloatTensor
+            Second tensor for multiplication
+        Returns
+        -------
+        copy : FloatTensor
+            Output tensor
+        """
         copy = self.copy()
         copy.params_func("addmm_", [x.id, y.id])
         return copy
 
     def addmv_(self, x, y):
+        """
+        Performs a matrix-vector product of the matrix x and the vector vec.
+        The vector tensor is added to the final result inplace.
+        Parameters
+        ----------
+        x : FloatTensor
+            tensor for multiplication
+        vec : FloatTensor
+            Vector for Matrix-Vector Product
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.params_func("addmv_", [x.id, y.id])
 
-    def addmv(self, x, y):
+    def addmv(self, x, vec):
+        """
+        Performs a matrix-vector product of the matrix x and the vector vec.
+        The vector tensor is added to the final result.
+        Parameters
+        ----------
+        x : FloatTensor
+            tensor for multiplication
+        vec : FloatTensor
+            Vector for Matrix-Vector Product
+        Returns
+        -------
+        copy : FloatTensor
+            Output tensor
+        """
         copy = self.copy()
-        copy.params_func("addmv_", [x.id, y.id])
+        copy.params_func("addmv_", [x.id, vec.id])
         return copy
 
     def asin(self):
+        """
+        Returns a new Tensor with the arcsine of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("asin", return_response=True)
 
     def asin_(self):
+        """
+        Performs inplace arcsine operation of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("asin_")
 
     def atan(self):
+        """
+        Returns a new Tensor with the arctangent of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("atan", return_response=True)
 
     def atan_(self):
+        """
+        Performs inplace arctangent operation of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("atan_")
 
     def autograd(self, setter=None):
