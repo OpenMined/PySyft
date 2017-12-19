@@ -1,4 +1,5 @@
 import numpy as np
+
 import syft.controller
 
 
@@ -36,7 +37,7 @@ class FloatTensor():
         Returns
         -------
         FloatTensor:
-            Output Tensor
+            Output tensor
         """
         return self.no_params_func("abs", return_response=True)
 
@@ -47,7 +48,8 @@ class FloatTensor():
         ----------
         Returns
         -------
-        Tensor Data
+        FloatTensor
+            Output tensor
         """
         return self.no_params_func("abs_")
 
@@ -128,7 +130,7 @@ class FloatTensor():
         """
         return self.params_func("addmv_", [x.id, y.id])
 
-    def addmv(self, x, vec):
+    def addmv(self, x, y):
         """
         Performs a matrix-vector product of the matrix x and the vector vec.
         The vector tensor is added to the final result.
@@ -136,7 +138,7 @@ class FloatTensor():
         ----------
         x : FloatTensor
             tensor for multiplication
-        vec : FloatTensor
+        y : FloatTensor
             Vector for Matrix-Vector Product
         Returns
         -------
@@ -144,7 +146,7 @@ class FloatTensor():
             Output tensor
         """
         copy = self.copy()
-        copy.params_func("addmv_", [x.id, vec.id])
+        copy.params_func("addmv_", [x.id, y.id])
         return copy
 
     def asin(self):
@@ -214,7 +216,7 @@ class FloatTensor():
 
     def __add__(self, x):
         """
-        Performs element-wise addition between two tensors
+        Performs element-wise addition arithmetic between two tensors
         Parameters
         ----------
         x : FloatTensor
@@ -228,7 +230,7 @@ class FloatTensor():
 
     def __iadd__(self, x):
         """
-        Performs in place element-wise addition between two tensors
+        Performs in place element-wise addition arithmetic between two tensors
         Parameters
         ----------
         x : FloatTensor
@@ -260,7 +262,7 @@ class FloatTensor():
 
     def ceil_(self):
         """
-        Performs the ceiling of the input tensor element-wise.
+        Performs the inplace ceiling of the input tensor element-wise.
         Parameters
         ----------
         Returns
@@ -296,7 +298,7 @@ class FloatTensor():
 
     def cos_(self):
         """
-        Returns the cosine of the input inplace.
+        Performs the cosine of the input tensor inplace.
         Parameters
         ----------
         Returns
@@ -331,6 +333,15 @@ class FloatTensor():
         return self.no_params_func("cosh_")
 
     def children(self):
+        """
+        Returns an iterator over immediate children modules.
+        Parameters
+        ----------
+        Returns
+        -------
+        Iterable
+            Returns a list of children
+        """
         res = self.get("children")
         if (len(res) > 0):
             return list(map(lambda x: int(x), res.split(",")[0:-1]))
@@ -340,6 +351,14 @@ class FloatTensor():
         return self.get("creation_op")
 
     def creators(self):
+        """
+        Returns an iterator over immediate creators of input tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        Returns a list of creators
+        """
         res = self.get("creators")
         if (len(res) > 0):
             return list(map(lambda x: int(x), res.split(",")[0:-1]))
@@ -351,15 +370,55 @@ class FloatTensor():
         return False
 
     def exp(self):
+        """
+        Computes the exponential of each element of input tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("exp", return_response=True)
 
     def exp_(self):
+        """
+        Computes the exponential of each element of input tensor inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("exp_")
 
     def __truediv__(self, x):
+        """
+        Performs division arithmetic between two tensors
+        Parameters
+        ----------
+        x : FloatTensor
+            Second divident tensor
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.arithmetic_operation(x, "div", False)
 
     def __itruediv__(self, x):
+        """
+        Performs division arithmetic between two tensors inplace.
+        Parameters
+        ----------
+        x : FloatTensor
+            Second divident tensor
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.arithmetic_operation(x, "div", True)
 
     def keepgrad(self):
@@ -369,15 +428,62 @@ class FloatTensor():
             return False
 
     def __pow__(self, x):
+        """
+        Takes the power of each element in input ('self') with 'x' and
+        returns a tensor with the result.
+        Parameters
+        ----------
+        x : FloatTensor
+            Exponent tensor
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.arithmetic_operation(x, "pow", False)
 
     def __ipow__(self, x):
+        """
+        Takes the power of each element in input ('self') with 'x' and
+        returns a tensor with the result inplace.
+        Parameters
+        ----------
+        x : FloatTensor
+            Exponent tensor
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.arithmetic_operation(x, "pow", True)
 
     def pow(self, x):
+        """
+        Takes the power of each element in input ('self') with 'x' and
+        returns a tensor with the result.
+        Parameters
+        ----------
+        x : FloatTensor
+            Exponent tensor
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.arithmetic_operation(x, "pow", False)
 
     def pow_(self, x):
+        """
+        Takes the power of each element in input ('self') with 'x', inplace.
+        Parameters
+        ----------
+        x : FloatTensor
+            Exponent tensor
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.arithmetic_operation(x, "pow", True)
 
     def floor(self):
@@ -542,7 +648,7 @@ class FloatTensor():
 
     def sigmoid_(self):
         """
-        Performs inline sigmoid function on the tensor element-wise.
+        Performs inplace sigmoid function on the tensor element-wise.
         Parameters
         ----------
         Returns
@@ -614,15 +720,34 @@ class FloatTensor():
         return self.no_params_func("sin_")
 
     def size(self):
+        """
+        Returns the size of tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        int
+            int with value of size
+        """
         return int(self.get("size"))
 
     def shape(self, as_list=True):
         """
-        Returns the size of the self tensor as a FloatTensor.
-
+        Returns the size of the self tensor as a FloatTensor (or as List).
         Note:
             The returned value currently is a FloatTensor because it leverages
             the messaging mechanism with Unity.
+        Parameters
+        ----------
+        as_list : bool
+            Value retruned as list if true; else as tensor
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        (or)
+        Iterable
+            Output list
         """
         if (as_list):
             return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))
@@ -631,6 +756,21 @@ class FloatTensor():
             return shape_tensor
 
     def stride(self, dim=-1):
+        """
+        Returns the stride of tensor.
+        Parameters
+        ----------
+        dim : int
+            dimension of expected return
+
+        Returns
+        -------
+        FloatTensor
+            Output tensor.
+        (or)
+        numpy.ndarray
+            NumPy Array as Long
+        """
         if dim == -1:
             return self.no_params_func("stride", return_response=True, return_as_tensor=False)
         else:
@@ -638,9 +778,25 @@ class FloatTensor():
             return np.fromstring(strides, sep=' ').astype('long')
 
     def sqrt(self):
+        """
+        Returns a new tensor with the square-root of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor:
+            Output Tensor
+        """
         return self.no_params_func("sqrt", return_response=True)
 
     def trace(self):
+        """
+        Returns a new tensor with the sum along diagonals of a 2D tensor.
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("trace", return_response=True)
 
     def trunc(self):
@@ -656,9 +812,31 @@ class FloatTensor():
         return np.fromstring(res, sep=' ').astype('float').reshape(self.shape())
 
     def __sub__(self, x):
+        """
+        Performs element-wise substraction arithmetic between two tensors
+        Parameters
+        ----------
+        x : FloatTensor
+            The Second tensor to perform addition with.
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.arithmetic_operation(x, "sub", False)
 
     def __isub__(self, x):
+        """
+        Performs element-wise substraction arithmetic between two tensors
+        Parameters
+        ----------
+        x : FloatTensor
+            The Second tensor to perform addition with.
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.arithmetic_operation(x, "sub", True)
 
     def view(self, *args):
@@ -684,6 +862,15 @@ class FloatTensor():
         return self
 
     def T(self):
+        """
+        Returns a tensor that is a transposed version of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("transpose", return_response=True)
 
     def triu(self, k=0):
@@ -692,8 +879,16 @@ class FloatTensor():
     def triu_(self, k=0):
         return self.params_func("triu_", [k])
 
-    # Fills this tensor with zeros.
     def zero_(self):
+        """
+        Fills this tensor with zeros inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("zero_")
 
     def __repr__(self, verbose=True):
@@ -749,9 +944,27 @@ class FloatTensor():
                                 return_as_tensor=response_as_tensor)
 
     def cpu(self):
+        """
+        Returns a CPU copy of this storage if it's not already on the CPU
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("cpu")
 
     def gpu(self):
+        """
+        Returns a GPU copy of this storage if it's not already on the GPU
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("gpu")
 
     def cmd(self, functionCall, tensorIndexParams=[]):
@@ -799,85 +1012,340 @@ class FloatTensor():
         return FloatTensor(data=int(response), data_is_pointer=True)
 
     def delete_tensor(self):
+        """
+        Deletes the input tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        """
         if (self.id is not None):
             self.no_params_func("delete")
         self.controller = None
         self.id = None
 
     def T(self):
+        """
+        (Function DUPLICATED?)
+        """
         return self.no_params_func("transpose", return_response=True)
 
     def is_contiguous(self):
         return self.no_params_func("is_contiguous", return_response=True, return_as_tensor=False)
 
     def sinh(self):
+        """
+        Returns the hyperbolic sine of the input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("sinh", return_response=True)
 
     def sinh_(self):
+        """
+        Returns the hyperbolic sine of the input inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace.
+        """
         return self.no_params_func("sinh_")
 
     def log(self):
+        """
+        Returns the logarithm of the input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("log", return_response=True)
 
     def log_(self):
+        """
+        Returns the logarithm of the input inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace.
+        """
         return self.no_params_func("log_")
 
     def log1p_(self):
+        """
+        Returns the natural logarithm of (1 + input) inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace.
+        """
         return self.no_params_func("log1p_")
 
     def log1p(self):
+        """
+        Returns a new tensor with the natural logarithm of (1 + 'self').
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("log1p", return_response=True)
 
     def frac(self):
+        """
+        Computes the fractional portion of each element in tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("frac", return_response=True)
 
     def frac_(self):
+        """
+        Computes the fractional portion of each element in tensor, inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("frac_")
 
     def reciprocal(self):
+        """
+        Computes the reciprocal of the input tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("reciprocal", return_response=True)
 
     def reciprocal_(self):
+        """
+        Computes reciprocal of input tensor with values inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("reciprocal_")
 
     def rsqrt(self):
+        """
+        Returns a new tensor with the reciprocal of the square-root of each of
+        the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("rsqrt", return_response=True)
 
     def rsqrt_(self):
+        """
+        Computes the reciprocal of the square-root of each of the elements of input,
+        inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("rsqrt_")
 
     def remainder(self, divisor):
+        """
+        Computes the element-wise remainder of division.
+        inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.arithmetic_operation(divisor, "remainder")
 
     def remainder_(self, divisor):
+        """
+        Computes the element-wise remainder of division, inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.arithmetic_operation(divisor, "remainder", True)
 
     def tan(self):
+        """
+        Returns the tangent of the input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("tan", return_response=True)
 
     def tan_(self):
+        """
+        Returns the tangent of the input inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("tan_")
 
     def tanh(self):
+        """
+        Returns the hyperbolic tangent of the input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("tanh", return_response=True)
 
     def squeeze(self, dim=-1):
+        """
+        Returns a tensor with all the dimensions of input of size 1 removed.
+        Parameters
+        ----------
+        dim : int
+            When dim is given, a squeeze operation is done only in the given
+            dimension.
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("squeeze", [dim], return_response=True)
 
     def squeeze_(self, dim=-1):
+        """
+        Removes all the dimensions of input tensor of size 1, inplace.
+        Parameters
+        ----------
+        dim : int
+            When dim is given, a squeeze operation is done only in the given
+            dimension.
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.params_func("squeeze_", [dim])
 
     def min(self, dim=-1, keepdim=False):
+        """
+        Returns the minimum value of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("min", [dim, keepdim], return_response=True)
 
     def max(self, dim=-1, keepdim=False):
+        """
+        Returns the maximum value of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("max", [dim, keepdim], return_response=True)
 
     def sum(self, dim=-1, keepdim=False):
+        """
+        Returns the sum of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("sum", [dim, keepdim], return_response=True)
 
     def prod(self, dim=-1, keepdim=False):
+        """
+        Returns the product of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("prod", [dim, keepdim], return_response=True)
 
     def mean(self, dim=-1, keepdim=False):
+        """
+        Returns the mean value of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("mean", [dim, keepdim], return_response=True)
