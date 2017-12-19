@@ -23,6 +23,8 @@ class Model():
 			return Linear(id = self.id)
 		elif(self._layer_type == 'sigmoid'):
 			return Sigmoid(id = self.id)
+		elif(self._layer_type == 'crossentropy'):
+			return CrossEntropyLoss(id = self.id)
 
 	def __call__(self,*args):
 		if(len(args) == 1):
@@ -117,3 +119,23 @@ class MSELoss(Model):
 
 	def forward(self, input, target):
 		return (input - target) ** 2
+
+class CrossEntropyLoss(Model):
+    # TODO backward() to be implemented: grad = target - prediction
+    # TODO backward(): until IntegerTensor is available assume a one-hot vector is passed in.
+
+    def __init__(self, id=None):
+        if(id is None):
+            self.init("crossentropy")
+        else:
+            self.id = id
+            self.sc = controller
+            self.type = "model"
+            self._layer_type = "crossentropy"
+
+    def forward(self, input):
+        return input.softmax()
+
+    def backward(self, target, pred):
+        return (target-pred)
+
