@@ -323,7 +323,9 @@ class FloatTensor():
         grad = self.get("grad")
         if(grad == ''):
             grad = 'None'
-        desc = "[syft.FloatTensor:"+str(self.id)+" grad:" + grad + " size:" + type_str + "]" + "\n"
+        co = str(self.creation_op())
+        
+        desc = "[syft.FloatTensor:"+str(self.id)+" grad:" + grad + " size:" + type_str + " c:" + str(self.children()) + " p:" + str(self.creators()) + " init:" + co + "]" + "\n"
 
 
         if(verbose):
@@ -331,9 +333,9 @@ class FloatTensor():
             creators = self.creators()
             if(len(children) > 0):
                 #tensor_str = "\n -------------------------------\n" + tensor_str
-                desc += "\n\t-----------children-----------\n\t"
+                desc += "\n\t-----------children-----------\n"
             for child_id in children:
-                desc += syft.controller.get_tensor(child_id).__repr__(False)
+                desc += "\t" + syft.controller.get_tensor(child_id).__repr__(False)
             if(len(children) > 0):
                 if(len(creators) > 0):
                     desc += "\t------------------------------\n"
