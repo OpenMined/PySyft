@@ -52,9 +52,27 @@ class FloatTensor():
         return self.no_params_func("abs_")
 
     def acos(self):
+        """
+        Returns a new Tensor with the arccosine of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("acos", return_response=True)
 
     def acos_(self):
+        """
+        Performs inplace arccosine operation of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("acos_")
 
     def addmm_(self, x, y):
@@ -253,18 +271,63 @@ class FloatTensor():
         return self.no_params_func("ceil_")
 
     def copy(self):
+        """
+        Returns a copy of the input
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("copy", return_response=True)
 
     def cos(self):
+        """
+        Returns a new Tensor with the cosine of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("cos", return_response=True)
 
     def cos_(self):
+        """
+        Returns the cosine of the input inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("cos_")
 
     def cosh(self):
+        """
+        Returns a new Tensor with hyperbolic cosine of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("cosh", return_response=True)
 
     def cosh_(self):
+        """
+        Returns the hyperbolic cosine of the input inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
         return self.no_params_func("cosh_")
 
     def children(self):
