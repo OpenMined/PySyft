@@ -1,4 +1,5 @@
 import numpy as np
+
 import syft.controller
 
 
@@ -36,7 +37,7 @@ class FloatTensor():
         Returns
         -------
         FloatTensor:
-            Output Tensor
+            Output tensor
         """
         return self.no_params_func("abs", return_response=True)
 
@@ -47,7 +48,8 @@ class FloatTensor():
         ----------
         Returns
         -------
-        Tensor Data
+        FloatTensor
+            Output tensor
         """
         return self.no_params_func("abs_")
 
@@ -260,7 +262,7 @@ class FloatTensor():
 
     def ceil_(self):
         """
-        Performs the ceiling of the input tensor element-wise.
+        Performs the inplace ceiling of the input tensor element-wise.
         Parameters
         ----------
         Returns
@@ -296,7 +298,7 @@ class FloatTensor():
 
     def cos_(self):
         """
-        Returns the cosine of the input inplace.
+        Performs the cosine of the input tensor inplace.
         Parameters
         ----------
         Returns
@@ -337,7 +339,8 @@ class FloatTensor():
         ----------
         Returns
         -------
-        Returns a list of children
+        Iterable
+            Returns a list of children
         """
         res = self.get("children")
         if (len(res) > 0):
@@ -471,8 +474,7 @@ class FloatTensor():
 
     def pow_(self, x):
         """
-        Takes the power of each element in input ('self') with 'x' and
-        returns a tensor with the result.
+        Takes the power of each element in input ('self') with 'x', inplace.
         Parameters
         ----------
         x : FloatTensor
@@ -646,7 +648,7 @@ class FloatTensor():
 
     def sigmoid_(self):
         """
-        Performs inline sigmoid function on the tensor element-wise.
+        Performs inplace sigmoid function on the tensor element-wise.
         Parameters
         ----------
         Returns
@@ -937,9 +939,27 @@ class FloatTensor():
                                 return_as_tensor=response_as_tensor)
 
     def cpu(self):
+        """
+        Returns a CPU copy of this storage if it's not already on the CPU
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("cpu")
 
     def gpu(self):
+        """
+        Returns a GPU copy of this storage if it's not already on the GPU
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.no_params_func("gpu")
 
     def cmd(self, functionCall, tensorIndexParams=[]):
@@ -1001,7 +1021,7 @@ class FloatTensor():
 
     def T(self):
         """
-        (FUNCTION DUPLICATED?)
+        (Function DUPLICATED?)
         """
         return self.no_params_func("transpose", return_response=True)
 
