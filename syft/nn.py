@@ -36,7 +36,16 @@ class Model():
 		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')
 
 	def models(self):
-		return self.sc.no_params_func(self.cmd, "models",return_type='Model_list')		
+		return self.sc.no_params_func(self.cmd, "models",return_type='Model_list')
+
+	def __len__(self):
+		return len(self.models())
+
+	def __getitem__(self,idx):
+		return self.parameters()[idx]		
+
+	def activation(self):
+		return self.sc.no_params_func(self.cmd, "activation",return_type='FloatTensor')		
 
 	def layer_type(self):
 		return self.sc.no_params_func(self.cmd,"layer_type",return_type='string')
@@ -50,7 +59,22 @@ class Model():
 		return cmd
 
 	def forward(self, input):
-		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')		
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')	
+
+	def __repr__(self,verbose=True):
+
+		if(verbose):
+			output = ""
+			output += self.__repr__(False) + "\n"
+			for p in self.parameters():
+				output += "\t W:" + p.__repr__(verbose=False)
+			activation = self.activation()
+			if(activation is not None):
+				output += "\t A:" + activation.__repr__(verbose=False) + "\n"
+
+			return output
+		else:
+			return "<syft.nn."+self._layer_type+" at " + str(self.id) + ">"
 
 
 class Sequential(Model):
@@ -65,6 +89,15 @@ class Sequential(Model):
 
 	def add(self, model):
 		self.sc.params_func(self.cmd,"add",[model.id])
+
+	def __repr__(self):
+		output = ""
+		for m in self.models():
+			output += m.__repr__()
+		return output
+
+	def __getitem__(self,idx):
+		return self.models()[idx]		
 
 class Linear(Model):
 
