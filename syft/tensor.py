@@ -1024,11 +1024,6 @@ class FloatTensor():
         self.controller = None
         self.id = None
 
-    def T(self):
-        """
-        (Function DUPLICATED?)
-        """
-        return self.no_params_func("transpose", return_response=True)
 
     def is_contiguous(self):
         return self.no_params_func("is_contiguous", return_response=True, return_as_tensor=False)
