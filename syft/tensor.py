@@ -755,6 +755,9 @@ class FloatTensor():
             shape_tensor = self.no_params_func("shape", return_response=True)
             return shape_tensor
 
+    def softmax(self, dim=-1):
+        return self.params_func("softmax", [dim], return_response=True)
+    
     def stride(self, dim=-1):
         """
         Returns the stride of tensor.
