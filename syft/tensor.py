@@ -246,7 +246,7 @@ class FloatTensor():
             return shape_tensor
 
     def softmax(self, dim=-1):
-        return self.params_func("sum", [dim], return_response=True)
+        return self.params_func("softmax", [dim], return_response=True)
     
     def stride(self, dim=-1):
         if dim == -1:
