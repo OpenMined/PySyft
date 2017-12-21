@@ -792,6 +792,9 @@ class FloatTensor():
         """
         return self.no_params_func("sqrt", return_response=True)
 
+    def sqrt_(self):
+        return self.no_params_func("sqrt_")
+
     def trace(self):
         """
         Returns a new tensor with the sum along diagonals of a 2D tensor.
