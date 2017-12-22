@@ -38,7 +38,13 @@ class Model():
 		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')
 
 	def models(self):
-		return self.sc.no_params_func(self.cmd, "models",return_type='Model_list')		
+		return self.sc.no_params_func(self.cmd, "models",return_type='Model_list')
+
+	def __len__(self):
+		return len(self.models())
+
+	def __getitem__(self,idx):
+		return self.parameters()[idx]		
 
 	def activation(self):
 		return self.sc.no_params_func(self.cmd, "activation",return_type='FloatTensor')		
@@ -91,6 +97,9 @@ class Sequential(Model):
 		for m in self.models():
 			output += m.__repr__()
 		return output
+
+	def __getitem__(self,idx):
+		return self.models()[idx]		
 
 class Linear(Model):
 
