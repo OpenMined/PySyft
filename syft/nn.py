@@ -25,6 +25,8 @@ class Model():
 			return Sigmoid(id = self.id)
 		elif(self._layer_type == 'crossentropyloss'):
 			return CrossEntropyLoss(id = self.id)
+		elif(self._layer_type == 'tanh'):
+			return Tanh(id = self.id)
 
 	def __call__(self,*args):
 		if(len(args) == 1):
@@ -122,6 +124,16 @@ class Sigmoid(Model):
 			self.sc = controller
 			self.type = "model"
 			self._layer_type = "sigmoid"
+
+class Tanh(Model):
+    def __init__(self, id=None):
+        if(id is None):
+            self.init("tanh")
+        else:
+            self.id = id
+            self.sc = controller
+            self.type = "model"
+            self._layer_type = "tanh"
 
 
 class MSELoss(Model):
