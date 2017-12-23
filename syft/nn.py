@@ -23,6 +23,10 @@ class Model():
 			return Linear(id = self.id)
 		elif(self._layer_type == 'sigmoid'):
 			return Sigmoid(id = self.id)
+		elif(self._layer_type == 'crossentropyloss'):
+			return CrossEntropyLoss(id = self.id)
+		elif(self._layer_type == 'tanh'):
+			return Tanh(id = self.id)
 
 	def __call__(self,*args):
 		if(len(args) == 1):
@@ -48,7 +52,7 @@ class Model():
 		return self.sc.no_params_func(self.cmd, "activation",return_type='FloatTensor')		
 
 	def layer_type(self):
-		return self.sc.no_params_func(self.cmd,"layer_type",return_type='string')
+		return self.sc.no_params_func(self.cmd,"model_type",return_type='string')
 
 	def cmd(self,function_call, params = []):
 		cmd = {
@@ -121,8 +125,44 @@ class Sigmoid(Model):
 			self.type = "model"
 			self._layer_type = "sigmoid"
 
+class Tanh(Model):
+    def __init__(self, id=None):
+        if(id is None):
+            self.init("tanh")
+        else:
+            self.id = id
+            self.sc = controller
+            self.type = "model"
+            self._layer_type = "tanh"
+
 
 class MSELoss(Model):
+    def __init__(self, id=None):
+        if (id is None):
+            self.init("mseloss")
+        else:
+            self.id = id
+            self.sc = controller
+            self.type = "model"
+            self._layer_type = "mseloss"
 
-	def forward(self, input, target):
-		return (input - target) ** 2
+    def forward(self, input, target):
+        return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
+
+class CrossEntropyLoss(Model):
+    # TODO backward() to be implemented: grad = target - prediction
+    # TODO backward(): until IntegerTensor is available assume a one-hot vector is passed in.
+
+    def __init__(self, id=None):
+        if(id is None):
+            self.init("crossentropyloss")
+        else:
+            self.id = id
+            self.sc = controller
+            self.type = "model"
+            self._layer_type = "crossentropyloss"
+
+    def forward(self, input, target):
+        return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
+
+
