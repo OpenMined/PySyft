@@ -2,6 +2,24 @@ import numpy as np
 
 import syft.controller
 
+class IntTensor():
+    def __init__(self, data, data_is_pointer=False):
+        self.controller = syft.controller
+
+        if (data is not None and not data_is_pointer):
+
+            if (type(data) == list):
+                data = np.array(data)
+            data = data.astype('float')
+
+            self.data = data
+            self.id = int(self.controller.send_json({"objectType": "IntTensor",
+                                                     "functionCall": "create",
+                                                     "data": list(data.flatten()),
+                                                     "shape": self.data.shape}))
+        elif (data_is_pointer):
+            self.id = int(data)
+
 
 class FloatTensor():
     def __init__(self, data, autograd=False, data_is_pointer=False):
@@ -14,7 +32,7 @@ class FloatTensor():
             data = data.astype('float')
 
             self.data = data
-            self.id = int(self.controller.send_json({"objectType": "tensor",
+            self.id = int(self.controller.send_json({"objectType": "FloatTensor",
                                                      "functionCall": "create",
                                                      "data": list(data.flatten()),
                                                      "shape": self.data.shape}))
@@ -811,7 +829,7 @@ class FloatTensor():
     def to_numpy(self):
         res = self.controller.send_json({
             'functionCall': 'to_numpy',
-            'objectType': 'tensor',
+            'objectType': 'FloatTensor',
             'objectIndex': self.id
         })
 
@@ -976,7 +994,7 @@ class FloatTensor():
     def cmd(self, functionCall, tensorIndexParams=[]):
         cmd = {
             'functionCall': functionCall,
-            'objectType': 'tensor',
+            'objectType': 'FloatTensor',
             'objectIndex': self.id,
             'tensorIndexParams': tensorIndexParams}
         return cmd
