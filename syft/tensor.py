@@ -20,6 +20,70 @@ class IntTensor():
         elif (data_is_pointer):
             self.id = int(data)
 
+    def shape(self):
+        """
+        Returns the size of the self tensor as a List.
+
+        Returns
+        -------
+        Iterable
+            Output list
+        """
+        
+        return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))           
+
+    def __repr__(self, verbose=True):
+
+        tensor_str = str(self.to_numpy())
+
+        type_str = ""
+        for dim in self.shape():
+            type_str += str(dim) + "x"
+
+        type_str = type_str[:-1]
+
+        desc = "[syft.IntTensor:"+str(self.id) + " size:" + type_str + "]" + "\n"
+
+        return tensor_str + "\n" + desc
+
+    def params_func(self, name, params, return_response=False, return_as_tensor=True):
+        # send the command
+        res = self.controller.send_json(
+            self.cmd(name, tensorIndexParams=params))
+
+        self.controller.log(res)
+
+        if (return_response):
+            if (return_as_tensor):
+                self.controller.log("IntTensor.__init__: {}".format(res))
+                return IntTensor(data=int(res), data_is_pointer=True)
+            else:
+                return res
+        return self
+
+    def no_params_func(self, name, return_response=False, return_as_tensor=True):
+        return (self.params_func(name, [], return_response, return_as_tensor))        
+
+    def get(self, param_name="size", response_as_tensor=False):
+        return self.params_func(name="get", params=[param_name], return_response=True,
+                                return_as_tensor=response_as_tensor)        
+
+    def cmd(self, functionCall, tensorIndexParams=[]):
+        cmd = {
+            'functionCall': functionCall,
+            'objectType': 'IntTensor',
+            'objectIndex': self.id,
+            'tensorIndexParams': tensorIndexParams}
+        return cmd
+
+    def to_numpy(self):
+        res = self.controller.send_json({
+            'functionCall': 'to_numpy',
+            'objectType': 'IntTensor',
+            'objectIndex': self.id
+        })
+
+        return np.fromstring(res, sep=' ').astype('int').reshape(self.shape())
 
 class FloatTensor():
     def __init__(self, data, autograd=False, data_is_pointer=False):
