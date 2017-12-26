@@ -29,7 +29,6 @@ class IntTensor():
         Iterable
             Output list
         """
-        
         return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))           
 
     def __repr__(self, verbose=True):
@@ -46,7 +45,7 @@ class IntTensor():
 
         return tensor_str + "\n" + desc
 
-    def params_func(self, name, params, return_response=False, return_as_tensor=True):
+    def params_func(self, name, params, return_response=False, return_type='IntTensor'):
         # send the command
         res = self.controller.send_json(
             self.cmd(name, tensorIndexParams=params))
@@ -54,19 +53,22 @@ class IntTensor():
         self.controller.log(res)
 
         if (return_response):
-            if (return_as_tensor):
+            if (return_type == 'IntTensor'):
                 self.controller.log("IntTensor.__init__: {}".format(res))
                 return IntTensor(data=int(res), data_is_pointer=True)
+            elif(return_type == 'FloatTensor'):
+                self.controller.log("IntTensor.__init__: {}".format(res))
+                return FloatTensor(data=int(res), data_is_pointer=True)
             else:
                 return res
         return self
 
-    def no_params_func(self, name, return_response=False, return_as_tensor=True):
-        return (self.params_func(name, [], return_response, return_as_tensor))        
+    def no_params_func(self, name, return_response=False, return_type='IntTensor'):
+        return (self.params_func(name, [], return_response, return_type))        
 
-    def get(self, param_name="size", response_as_tensor=False):
+    def get(self, param_name="size", response_as_tensor=False, return_type='IntTensor'):
         return self.params_func(name="get", params=[param_name], return_response=True,
-                                return_as_tensor=response_as_tensor)        
+                                return_type="string")        
 
     def cmd(self, functionCall, tensorIndexParams=[]):
         cmd = {
@@ -77,13 +79,16 @@ class IntTensor():
         return cmd
 
     def to_numpy(self):
-        res = self.controller.send_json({
-            'functionCall': 'to_numpy',
-            'objectType': 'IntTensor',
-            'objectIndex': self.id
-        })
+        if(self.is_contiguous()):
+            res = self.controller.send_json({
+                'functionCall': 'to_numpy',
+                'objectType': 'IntTensor',
+                'objectIndex': self.id
+            })
 
-        return np.fromstring(res, sep=' ').astype('int').reshape(self.shape())
+            return np.fromstring(res, sep=' ').astype('int').reshape(self.shape())
+        else:
+            return " - non-contiguous - "
 
 class FloatTensor():
     def __init__(self, data, autograd=False, data_is_pointer=False):
@@ -354,6 +359,18 @@ class FloatTensor():
         """
         return self.no_params_func("ceil_")
 
+    def contiguous(self):
+        """
+        Returns a copy of the input
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.no_params_func("contiguous", return_response=True)
+
     def copy(self):
         """
         Returns a copy of the input
@@ -474,6 +491,22 @@ class FloatTensor():
             Caller with values inplace
         """
         return self.no_params_func("exp_")
+
+    def expand(self,*args):
+        """
+        Returns the tensor, with values repeated across one dimension
+        Parameters
+        ----------
+        args : list
+               the new, expanded size
+        Returns
+        -------
+        FloatTensor
+            the new, expanded tensor.
+        """
+        new_dim = list(args)
+        assert type(new_dim[0]) == int
+        return self.params_func("expand", new_dim, return_response=True)
 
     def __truediv__(self, x):
         """
@@ -726,7 +759,7 @@ class FloatTensor():
         return self.no_params_func("rsqrt", return_response=True)
 
     def set(self, param_name="size", params=[]):
-        return self.params_func(name="set", params=[param_name] + params, return_response=True, return_as_tensor=False)
+        return self.params_func(name="set", params=[param_name] + params, return_response=True, return_type=None)
 
     def sigmoid_(self):
         """
@@ -857,9 +890,9 @@ class FloatTensor():
             NumPy Array as Long
         """
         if dim == -1:
-            return self.no_params_func("stride", return_response=True, return_as_tensor=False)
+            return self.no_params_func("stride", return_response=True, return_type=None)
         else:
-            strides = self.params_func("stride", [dim], return_response=True, return_as_tensor=False)
+            strides = self.params_func("stride", [dim], return_response=True, return_type=None)
             return np.fromstring(strides, sep=' ').astype('long')
 
     def sqrt(self):
@@ -891,13 +924,16 @@ class FloatTensor():
         return self.no_params_func("trunc", return_response=True)
 
     def to_numpy(self):
-        res = self.controller.send_json({
-            'functionCall': 'to_numpy',
-            'objectType': 'FloatTensor',
-            'objectIndex': self.id
-        })
+        if(self.is_contiguous()):
+            res = self.controller.send_json({
+                'functionCall': 'to_numpy',
+                'objectType': 'FloatTensor',
+                'objectIndex': self.id
+            })
 
-        return np.fromstring(res, sep=' ').astype('float').reshape(self.shape())
+            return np.fromstring(res, sep=' ').astype('float').reshape(self.shape())
+        else:
+            return "--- non-contiguous tensor ---"
 
     def __sub__(self, x):
         """
@@ -1029,7 +1065,7 @@ class FloatTensor():
 
     def get(self, param_name="size", response_as_tensor=False):
         return self.params_func(name="get", params=[param_name], return_response=True,
-                                return_as_tensor=response_as_tensor)
+                                return_type='string', data_is_pointer=False)
 
     def cpu(self):
         """
@@ -1063,7 +1099,7 @@ class FloatTensor():
             'tensorIndexParams': tensorIndexParams}
         return cmd
 
-    def params_func(self, name, params, return_response=False, return_as_tensor=True):
+    def params_func(self, name, params, return_response=False, return_type='FloatTensor', data_is_pointer=True,):
         # send the command
         res = self.controller.send_json(
             self.cmd(name, tensorIndexParams=params))
@@ -1071,15 +1107,18 @@ class FloatTensor():
         self.controller.log(res)
 
         if (return_response):
-            if (return_as_tensor):
+            if (return_type == 'IntTensor'):
+                self.controller.log("IntTensor.__init__: {}".format(res))
+                return IntTensor(data=int(res), data_is_pointer=data_is_pointer)
+            elif(return_type == 'FloatTensor'):
                 self.controller.log("FloatTensor.__init__: {}".format(res))
-                return FloatTensor(data=int(res), data_is_pointer=True)
+                return FloatTensor(data=int(res), data_is_pointer=data_is_pointer)
             else:
                 return res
         return self
 
-    def no_params_func(self, name, return_response=False, return_as_tensor=True):
-        return (self.params_func(name, [], return_response, return_as_tensor))
+    def no_params_func(self, name, return_response=False, return_type='FloatTensor'):
+        return (self.params_func(name, [], return_response, return_type)) 
 
     def arithmetic_operation(self, x, name, inline=False):
 
@@ -1114,7 +1153,12 @@ class FloatTensor():
 
 
     def is_contiguous(self):
-        return self.no_params_func("is_contiguous", return_response=True, return_as_tensor=False)
+        txt = (self.no_params_func("is_contiguous", return_response=True, return_type=None))
+        if(txt == 'True'):
+            return True
+
+        else:
+            return False
 
     def sinh(self):
         """
@@ -1285,7 +1329,18 @@ class FloatTensor():
         FloatTensor
             Caller with values inplace
         """
-        return self.arithmetic_operation(divisor, "remainder", True)
+        return self.arithmetic_operation(divisor, "remainder", 'FloatTensor')
+
+    def sample(self):
+        """
+        Samples the current tensor uniformly assuming each value is a binary probability.
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("sample", return_response=True,return_type='IntTensor')
 
     def tan(self):
         """

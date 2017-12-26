@@ -80,6 +80,37 @@ class Model():
 		else:
 			return "<syft.nn."+self._layer_type+" at " + str(self.id) + ">"
 
+class Policy(Model):
+
+	def __init__(self, model, state_type='discrete'):
+		
+		self.init("policy",[model.id])
+		self.model = model
+		self.state_type = state_type
+
+	def sample(self, input):
+		return self.sc.params_func(self.cmd,"sample",[input.id],return_type='IntTensor')	
+
+	def __call__(self,*args):
+
+		if(self.state_type == 'discrete'):
+			if(len(args) == 1):
+				return self.sample(args[0])
+			elif(len(args) == 2):
+				return self.sample(args[0],args[1])
+			elif(len(args) == 3):
+				return self.sample(args[0],args[1], args[2])
+
+		elif(self.state_type == 'continuous'):
+			if(len(args) == 1):
+				return self.forward(args[0])
+			elif(len(args) == 2):
+				return self.forward(args[0],args[1])
+			elif(len(args) == 3):
+				return self.forward(args[0],args[1], args[2])
+
+		else:
+			print("Error: State type " + self.state_type + " unknown")
 
 class Sequential(Model):
 
