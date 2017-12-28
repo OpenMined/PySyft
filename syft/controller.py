@@ -84,6 +84,12 @@ def params_func(cmd_func, name, params, return_type=None):
                     print("FloatTensor.__init__: " +  res)
                 return syft.tensor.FloatTensor(data=int(res),data_is_pointer=True)
             return None
+        elif(return_type == 'IntTensor'):
+            if(res != '-1' and res != ''):
+                if(verbose):
+                    print("IntTensor.__init__: " +  res)
+                return syft.tensor.IntTensor(data=int(res),data_is_pointer=True)
+            return None
         elif return_type == 'FloatTensor_list':
             if(res != ''):
                 tensors = list()
