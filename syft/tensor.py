@@ -1064,7 +1064,11 @@ class FloatTensor():
         return tensor_str
 
     def get(self, param_name="size", response_as_tensor=False):
-        return self.params_func(name="get", params=[param_name], return_response=True,
+        if(response_as_tensor):
+            return self.params_func(name="get", params=[param_name], return_response=True,
+                                return_type='FloatTensor', data_is_pointer=True)
+        else:
+            return self.params_func(name="get", params=[param_name], return_response=True,
                                 return_type='string', data_is_pointer=False)
 
     def cpu(self):
@@ -1112,6 +1116,8 @@ class FloatTensor():
                 return IntTensor(data=int(res), data_is_pointer=data_is_pointer)
             elif(return_type == 'FloatTensor'):
                 self.controller.log("FloatTensor.__init__: {}".format(res))
+                if(res == ''):
+                    return None
                 return FloatTensor(data=int(res), data_is_pointer=data_is_pointer)
             else:
                 return res
