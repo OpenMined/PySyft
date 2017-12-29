@@ -78,6 +78,9 @@ class IntTensor():
             'tensorIndexParams': tensorIndexParams}
         return cmd
 
+    def is_contiguous(self):
+        return True
+
     def to_numpy(self):
         if(self.is_contiguous()):
             res = self.controller.send_json({
@@ -462,6 +465,22 @@ class FloatTensor():
         if (len(res) > 0):
             return list(map(lambda x: int(x), res.split(",")[0:-1]))
         return []
+
+    def cumsum(self, dim=0):
+        """
+        Returns the sum of all elements in the input tensor.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.params_func("cumsum", [dim], return_response=True)
 
     def dataOnGpu(self):
         if (self.get("dataOnGpu") == "1"):
@@ -1003,6 +1022,12 @@ class FloatTensor():
     def triu_(self, k=0):
         return self.params_func("triu_", [k])
 
+    def unsqueeze(self,dim):
+        return self.params_func("unsqueeze", [dim], return_response=True)
+
+    def unsqueeze_(self,dim):
+        return self.params_func("unsqueeze_", [dim], return_response=True)        
+
     def zero_(self):
         """
         Fills this tensor with zeros inplace.
@@ -1337,7 +1362,7 @@ class FloatTensor():
         """
         return self.arithmetic_operation(divisor, "remainder", 'FloatTensor')
 
-    def sample(self):
+    def sample(self,dim):
         """
         Samples the current tensor uniformly assuming each value is a binary probability.
         ----------
@@ -1346,7 +1371,7 @@ class FloatTensor():
         IntTensor
             Output tensor
         """
-        return self.no_params_func("sample", return_response=True,return_type='IntTensor')
+        return self.params_func("sample", [dim], return_response=True, return_type='IntTensor')
 
     def tan(self):
         """

@@ -14,5 +14,8 @@ class FloatTensor(object):
 	def float(self):
 		return self
 
+	def unsqueeze(self, dim=0):
+		return FloatTensor(syft_obj=self.syft_obj.unsqueeze(dim))
+
 	def __repr__(self):
 		return self.syft_obj.__repr__()
