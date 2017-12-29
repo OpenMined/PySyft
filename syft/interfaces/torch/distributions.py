@@ -4,4 +4,4 @@ class Categorical(object):
 		self.probs = probs
 
 	def sample(self):
-		return self.probs.data.syft_obj.sample(1)
+		return self.probs.sample(1)

@@ -20,6 +20,9 @@ class IntTensor():
         elif (data_is_pointer):
             self.id = int(data)
 
+    def autograd(self, state):
+        "do nothing"
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
@@ -526,6 +529,12 @@ class FloatTensor():
         new_dim = list(args)
         assert type(new_dim[0]) == int
         return self.params_func("expand", new_dim, return_response=True)
+
+    def index_add(self, indices, dim, x):
+        return self.params_func("index_add", [indices.id, dim, x.id], return_response=True)
+
+    def index_select(self, indices, dim=0):
+        return self.params_func("index_select", [indices.id, dim], return_response=True)
 
     def __truediv__(self, x):
         """
