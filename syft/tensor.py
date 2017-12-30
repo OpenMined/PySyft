@@ -533,7 +533,7 @@ class FloatTensor():
     def index_add(self, indices, dim, x):
         return self.params_func("index_add", [indices.id, dim, x.id], return_response=True)
 
-    def index_select(self, indices, dim=0):
+    def index_select(self, dim, indices):
         return self.params_func("index_select", [indices.id, dim], return_response=True)
 
     def __truediv__(self, x):
