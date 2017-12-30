@@ -10,5 +10,8 @@ class Variable(object):
 	def sample(self,dim=1):
 		return Variable(self.data.sample(dim))
 
+	def index_select(self,dim,indices):
+		return Variable(self.data.index_select(dim,indices.data))
+
 	def __repr__(self):
 		return "Variable:\n" + self.data.__repr__()

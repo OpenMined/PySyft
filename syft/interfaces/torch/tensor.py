@@ -26,6 +26,9 @@ class FloatTensor(object):
 		else:
 			self.syft_obj = syft_obj
 	
+	def index_select(self,dim,indices):
+		return FloatTensor(syft_obj=self.syft_obj.index_select(dim,indices.syft_obj))
+
 	def softmax(self,dim=-1):
 		return FloatTensor(syft_obj=self.syft_obj.softmax())
 
