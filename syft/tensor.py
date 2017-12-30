@@ -777,6 +777,10 @@ class FloatTensor():
         """
         return self.no_params_func("neg_")
 
+    def relu(self):
+        
+        return self.no_params_func("relu", return_response=True)
+
     def rsqrt(self):
         """
         Returns reciprocal of square root of tensor element wise.
