@@ -793,6 +793,9 @@ class FloatTensor():
         """
         return self.no_params_func("rsqrt", return_response=True)
 
+    def save(self, filename):
+        return self.params_func(name="save", params=[filename], return_response=True, return_type=bool)
+
     def set(self, param_name="size", params=[]):
         return self.params_func(name="set", params=[param_name] + params, return_response=True, return_type=None)
 
