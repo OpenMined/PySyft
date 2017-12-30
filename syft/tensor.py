@@ -1104,7 +1104,8 @@ class FloatTensor():
         return desc
 
     def __str__(self):
-        tensor_str = str(self.to_numpy()).replace("]", " ").replace("[", " ") + "\n"
+        tensor_str = str(self.to_numpy()).replace("]", " ").replace("[", " ")
+        
         return tensor_str
 
     def get(self, param_name="size", response_as_tensor=False):
