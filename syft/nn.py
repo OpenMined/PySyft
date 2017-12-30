@@ -149,6 +149,16 @@ class Linear(Model):
 			self.type = "model"
 			self._layer_type = "linear"
 
+class ReLU(Model):
+	def __init__(self, id=None):
+		if(id is None):
+			self.init("relu")
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "relu"
+
 class Sigmoid(Model):
 	def __init__(self, id=None):
 		if(id is None):
