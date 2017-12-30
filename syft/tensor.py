@@ -20,6 +20,9 @@ class IntTensor():
         elif (data_is_pointer):
             self.id = int(data)
 
+    def autograd(self, state):
+        "do nothing"
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
@@ -527,6 +530,12 @@ class FloatTensor():
         assert type(new_dim[0]) == int
         return self.params_func("expand", new_dim, return_response=True)
 
+    def index_add(self, indices, dim, x):
+        return self.params_func("index_add", [indices.id, dim, x.id], return_response=True)
+
+    def index_select(self, dim, indices):
+        return self.params_func("index_select", [indices.id, dim], return_response=True)
+
     def __truediv__(self, x):
         """
         Performs division arithmetic between two tensors
@@ -741,6 +750,9 @@ class FloatTensor():
         """
         return self.arithmetic_operation(x, "mul", True)
 
+    def __neg__(self):
+        return self.neg()
+
     def neg(self):
         """
         Sets negative of the elements of tensor.
@@ -896,6 +908,9 @@ class FloatTensor():
     def softmax(self, dim=-1):
         return self.params_func("softmax", [dim], return_response=True)
     
+    def std(self, dim=-1):
+        return self.params_func("std", [dim], return_response=True)
+
     def stride(self, dim=-1):
         """
         Returns the stride of tensor.
