@@ -750,6 +750,9 @@ class FloatTensor():
         """
         return self.arithmetic_operation(x, "mul", True)
 
+    def __neg__(self):
+        return self.neg()
+
     def neg(self):
         """
         Sets negative of the elements of tensor.
@@ -901,6 +904,9 @@ class FloatTensor():
     def softmax(self, dim=-1):
         return self.params_func("softmax", [dim], return_response=True)
     
+    def std(self, dim=-1):
+        return self.params_func("std", [dim], return_response=True)
+
     def stride(self, dim=-1):
         """
         Returns the stride of tensor.
