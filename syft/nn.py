@@ -42,6 +42,9 @@ class Model():
 	def models(self):
 		return self.sc.no_params_func(self.cmd, "models",return_type='Model_list')
 
+	def fit(self, input, target, criterion, optim, iters=15):
+		return self.sc.params_func(self.cmd,"fit",[input.id, target.id, criterion.id, optim.id, iters], return_type='FloatTensor')	
+
 	def __len__(self):
 		return len(self.models())
 

@@ -1,10 +1,14 @@
 import syft
 import syft.nn as nn
-import syft.interfaces.torch.actual_torch as actual_torch
+from syft.interfaces.torch import actual_torch
+from syft.interfaces.torch.nn import Module
+from syft.interfaces.torch.tensor import FloatTensor
 
-class Linear(object):
+class Linear(Module):
 
 	def __init__(self, input=None, output=None, syft_obj=None, use_torch_init = True):
+		super(Linear, self).__init__()
+
 		if(syft_obj is None):
 			self.syft_obj = nn.Linear(input,output)
 			if(use_torch_init):
@@ -23,7 +27,8 @@ class Linear(object):
 			self.syft_obj = syft_obj
 
 
-
+	def parameters(self):
+		return map(lambda x:FloatTensor(syft_obj=x),self.syft_obj.parameters())
 
 	def __call__(self,input):
 		return syft.interfaces.torch.autograd.Variable(syft.interfaces.torch.FloatTensor(syft_obj=self.syft_obj(input.data.syft_obj)))
