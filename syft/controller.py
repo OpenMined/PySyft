@@ -45,6 +45,19 @@ def num_models():
 def get_model(id):
     return syft.nn.Model(id=int(id)).discover()
 
+def load(filename):
+    return params_func(cmd,"load_floattensor",params=[filename], return_type='FloatTensor')
+
+def save(x,filename):
+    return x.save(filename)
+
+def concatenate(tensors,axis=0):
+    ids = list()
+    for t in tensors:
+        ids.append(t.id)
+
+    return params_func(cmd, "concatenate", params = [axis] + ids, return_type='FloatTensor')
+
 def num_tensors():
     return no_params_func(cmd,"num_tensors",'int')
 

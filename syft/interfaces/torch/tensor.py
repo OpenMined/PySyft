@@ -40,6 +40,9 @@ class FloatTensor(object):
 	def float(self):
 		return self
 
+	def sum(self,dim=-1):
+		return FloatTensor(syft_obj=self.syft_obj.sum(dim))
+
 	def log(self):
 		return FloatTensor(syft_obj=self.syft_obj.log())
 
@@ -47,7 +50,7 @@ class FloatTensor(object):
 		return FloatTensor(syft_obj = self.syft_obj.mean(dim))
 
 	def __neg__(self):
-		return self.syft_obj.__neg__()
+		return FloatTensor(syft_obj = self.syft_obj.__neg__())
 
 	def std(self, dim=-1):
 		return FloatTensor(syft_obj = self.syft_obj.std(dim))		
