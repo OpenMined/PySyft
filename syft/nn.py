@@ -27,6 +27,8 @@ class Model():
 			return CrossEntropyLoss(id = self.id)
 		elif(self._layer_type == 'tanh'):
 			return Tanh(id = self.id)
+		elif(self._layer_type == 'dropout'):
+			return Dropout(id = self.id)
 
 	def __call__(self,*args):
 		if(len(args) == 1):
@@ -158,6 +160,16 @@ class ReLU(Model):
 			self.sc = controller
 			self.type = "model"
 			self._layer_type = "relu"
+
+class Dropout(Model):
+	def __init__(self, rate=0.5, id=None):
+		if(id is None):
+			self.init("dropout",params=[rate])
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "dropout"			
 
 class Sigmoid(Model):
 	def __init__(self, id=None):
