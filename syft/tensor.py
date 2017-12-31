@@ -533,6 +533,9 @@ class FloatTensor():
     def index_add(self, indices, dim, x):
         return self.params_func("index_add", [indices.id, dim, x.id], return_response=True)
 
+    def index_add_(self, indices, dim, x):
+        return self.params_func("index_add_", [indices.id, dim, x.id], return_response=True)
+
     def index_select(self, dim, indices):
         return self.params_func("index_select", [indices.id, dim], return_response=True)
 
