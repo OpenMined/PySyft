@@ -372,7 +372,7 @@ class FloatTensor():
         ----------
         min : float
             lower-bound of the range to be clamped to
-        mas : float
+        max : float
             upper-bound of the range to be clamped to
         Returns
         -------
