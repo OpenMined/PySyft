@@ -366,7 +366,19 @@ class FloatTensor():
         return self.no_params_func("ceil_")
 
     def clamp(self, min = 'None', max = 'None'):
-        
+        """
+        Clamp all elements in input into the range [min, max]
+        Parameters
+        ----------
+        min : float
+            lower-bound of the range to be clamped to
+        mas : float
+            upper-bound of the range to be clamped to
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
         return self.params_func("clamp", [min,max], return_response=True)
 
     def contiguous(self):
