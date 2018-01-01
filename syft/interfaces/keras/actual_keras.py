@@ -1,7 +1,5 @@
-
-# def start_keras():
-# 	import keras
-# 	import syft
+import keras
+import syft
 
 # def manual_seed(seed):
 # 	return torch.manual_seed(seed)
