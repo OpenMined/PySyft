@@ -1,4 +1,5 @@
 import syft.controller as controller
+import sys
 
 class Model():
 	def __init__(self, id=None):
@@ -32,10 +33,14 @@ class Model():
 			return Dropout(id = self.id)
 		elif(self._layer_type == 'softmax'):
 			return Softmax(id = self.id)
+		elif(self._layer_type == 'logsoftmax'):
+			return LogSoftmax(id = self.id)
 		elif(self._layer_type == 'relu'):
 			return ReLU(id = self.id)
+		elif(self._layer_type == 'log'):
+			return Log(id = self.id)
 		else:
-			print("Attempted to discover the type - but it wasn't supported. Has the layer type '"
+			sys.stderr.write("Attempted to discover the type - but it wasn't supported. Has the layer type '"
 			 + self._layer_type + "' been added to the discover() method in nn.py?")
 
 	def __call__(self,*args):
@@ -69,10 +74,7 @@ class Model():
 			
 		n_param = str(self.num_parameters())
 		output = layer_type + " "*(29-len(layer_type)) + output_shape + " "*(26-len(output_shape)) + n_param + "\n"
-		if(not verbose):
-			""
-			
-		else:
+		if(verbose):
 			single = "_________________________________________________________________\n"
 			header = "Layer (type)                 Output Shape              Param #   \n"
 			double = "=================================================================\n"
@@ -193,8 +195,6 @@ class Sequential(Model):
 		print(output)
 		
 
-		
-
 	def __repr__(self):
 		output = ""
 		for m in self.models():
@@ -217,7 +217,10 @@ class Linear(Model):
 			self.type = "model"
 			self._layer_type = "linear"
 
-		self.output_shape = output_dim
+		params = self.parameters()
+
+		self.output_shape = int(params[0].shape()[-1])
+		self.input_shape = int(params[0].shape()[0])
 
 class ReLU(Model):
 	def __init__(self, id=None):
@@ -267,6 +270,30 @@ class Softmax(Model):
 			self.type = "model"
 			self._layer_type = "softmax"			
 
+class LogSoftmax(Model):
+	def __init__(self, dim=1, id=None):
+		super(LogSoftmax, self).__init__()
+
+		if(id is None):
+			self.init("logsoftmax",params=[dim])
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "logsoftmax"	
+
+class Log(Model):
+	def __init__(self, id=None):
+		super(Log, self).__init__()
+
+		if(id is None):
+			self.init("log")
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "log"	
+
 class Tanh(Model):
 	def __init__(self, id=None):
 		super(Tanh, self).__init__()
@@ -294,6 +321,22 @@ class MSELoss(Model):
 
 	def forward(self, input, target):
 		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
+
+class NLLLoss(Model):
+	def __init__(self, id=None):
+		super(NLLLoss, self).__init__()
+
+		if (id is None):
+			self.init("nllloss")
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "nllloss"
+
+	def forward(self, input, target):
+		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
+
 
 class CrossEntropyLoss(Model):
 

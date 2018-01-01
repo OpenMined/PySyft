@@ -1,11 +1,14 @@
 import syft
 import syft.nn as nn
+import sys
+from syft.interfaces.keras.layers import Log
 
 class Sequential(object):
 
 	def __init__(self):
 		self.syft = nn.Sequential()
 		self.layers = list()
+		self.compiled = False
 
 	def add(self, layer):
 
@@ -31,7 +34,17 @@ class Sequential(object):
 	def summary(self):
 		self.syft.summary()
 
-	def compile(loss,optimizer,metrics):
-		self.loss = loss
-		self.optimizer = optimizer
-		self.metrics = metrics
+	def compile(self,loss,optimizer,metrics):
+		if(not self.compiled):
+			self.compiled = True
+
+			if(loss == 'categorical_crossentropy'):
+				self.add(Log())
+				self.loss = nn.NLLLoss()
+
+			self.optimizer = optimizer
+			self.metrics = metrics
+		else:
+			sys.stderr.write("Warning: Model already compiled... please rebuild from scratch if you need to change things")
+
+	# def fit()

@@ -51,7 +51,7 @@ class IntTensor():
     def params_func(self, name, params, return_response=False, return_type='IntTensor'):
         # send the command
         res = self.controller.send_json(
-            self.cmd(name, tensorIndexParams=params))
+            self.cmd(name, params=params))
 
         self.controller.log(res)
 
@@ -73,12 +73,12 @@ class IntTensor():
         return self.params_func(name="get", params=[param_name], return_response=True,
                                 return_type="string")        
 
-    def cmd(self, functionCall, tensorIndexParams=[]):
+    def cmd(self, functionCall, params=[]):
         cmd = {
             'functionCall': functionCall,
             'objectType': 'IntTensor',
             'objectIndex': self.id,
-            'tensorIndexParams': tensorIndexParams}
+            'tensorIndexParams': params}
         return cmd
 
     def is_contiguous(self):
@@ -340,6 +340,9 @@ class FloatTensor():
             self.no_params_func("backward")
         else:
             self.params_func(name="backward", params=[grad.id])
+
+    def batchify(self,dim,batch_size):
+        return self.controller.params_func(cmd_func=self.cmd,name="batchify", params=[dim,batch_size],return_type='FloatTensor_list')
 
     def ceil(self):
         """
@@ -1146,18 +1149,18 @@ class FloatTensor():
         """
         return self.no_params_func("gpu")
 
-    def cmd(self, functionCall, tensorIndexParams=[]):
+    def cmd(self, functionCall, params=[]):
         cmd = {
             'functionCall': functionCall,
             'objectType': 'FloatTensor',
             'objectIndex': self.id,
-            'tensorIndexParams': tensorIndexParams}
+            'tensorIndexParams': params}
         return cmd
 
     def params_func(self, name, params, return_response=False, return_type='FloatTensor', data_is_pointer=True,):
         # send the command
         res = self.controller.send_json(
-            self.cmd(name, tensorIndexParams=params))
+            self.cmd(name, params=params))
 
         self.controller.log(res)
 
