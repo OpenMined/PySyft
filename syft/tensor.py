@@ -657,7 +657,7 @@ class FloatTensor():
         return self.no_params_func("floor_")
     def random_(self):
         """
-        Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)[0,1)
+        Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)
         The shape of the tensor is defined by the varargs sizes.
         ----------
         Returns
@@ -1523,19 +1523,7 @@ class FloatTensor():
             Output tensor
         """
         return self.params_func("sum", [dim, keepdim], return_response=True)
-    def cumprod(self, dim=0, output_dim=None):
-        """
-        Returns the cumulative product of all elements in the input tensor.
-        Parameters
-        ----------
-        dim : int
-            the dimension to use
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.params_func("cumprod", dim, output_dim)
+
     def prod(self, dim=-1, keepdim=False):
         """
         Returns the product of all elements in the input tensor.
