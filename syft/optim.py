@@ -15,8 +15,8 @@ class SGD(object):
 	def zero_grad(self):
 		return self.sc.no_params_func(self.cmd,"zero_grad",return_type='string')
 
-	def step(self):
-		return self.sc.no_params_func(self.cmd,"step",return_type='string')		
+	def step(self, batch_size):
+		return self.sc.params_func(self.cmd,"step",params=[batch_size],return_type='string')		
 
 	def cmd(self,function_call, params = []):
 		cmd = {
