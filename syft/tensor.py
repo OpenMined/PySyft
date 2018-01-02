@@ -655,6 +655,17 @@ class FloatTensor():
             Caller with values inplace
         """
         return self.no_params_func("floor_")
+    def random_(self):
+        """
+        Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)[0,1)
+        The shape of the tensor is defined by the varargs sizes.
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
+        return self.no_params_func("random_")
 
     def round(self):
         """
