@@ -3,6 +3,7 @@
 [![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
 [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=master)](https://travis-ci.org/OpenMined/PySyft)
 [![codecov](https://codecov.io/gh/openmined/pysyft/branch/master/graph/badge.svg)](https://codecov.io/gh/openmined/pysyft)
+[![Help Contribute to Open Source](https://www.codetriage.com/openmined/pysyft/badges/users.svg)](https://www.codetriage.com/openmined/pysyft)
 
 > Homomorphically Encrypted Deep Learning Library
 
