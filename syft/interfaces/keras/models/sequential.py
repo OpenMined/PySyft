@@ -34,7 +34,7 @@ class Sequential(object):
 	def summary(self):
 		self.syft.summary()
 
-	def compile(self,loss,optimizer,metrics):
+	def compile(self,loss,optimizer,metrics,alpha=0.01):
 		if(not self.compiled):
 			self.compiled = True
 
@@ -44,7 +44,18 @@ class Sequential(object):
 
 			self.optimizer = optimizer
 			self.metrics = metrics
+
+			self.optimizer.init(syft_params=self.syft.parameters(),alpha=alpha)
 		else:
 			sys.stderr.write("Warning: Model already compiled... please rebuild from scratch if you need to change things")
 
-	# def fit()
+	def fit(self,x_train,y_train,batch_size,epochs,verbose,validation_data):
+		final_loss = self.syft.fit(input=x_train,
+                       target=y_train,                       
+                       batch_size=batch_size,
+                       criterion=self.loss,
+                       optim=self.optimizer.syft,
+                       iters=epochs)
+		return final_loss
+
+

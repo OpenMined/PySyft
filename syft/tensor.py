@@ -104,6 +104,7 @@ class FloatTensor():
 
             if (type(data) == list):
                 data = np.array(data)
+            
             data = data.astype('float')
 
             self.data = data

@@ -1,11 +1,14 @@
 from IPython.display import display
 from IPython.html.widgets import IntProgress, HBox, HTML
 
+import signal
+import logging
+
 class Progress(object):
     
-    def __init__(self,min,max):
+    def __init__(self,start,end):
 
-        self.pbar = IntProgress(orientation='horizontal',min=0, max=100)
+        self.pbar = IntProgress(orientation='horizontal',min=start, max=end)
         self.ptext = HTML()
         # Only way to place text to the right of the bar is to use a container
         container = HBox(children=[self.pbar, self.ptext])
@@ -38,3 +41,20 @@ class Progress(object):
         
     def normal(self):
         self.pbar.bar_style = ''                  
+
+
+# functionality that doesn't let keyboard interrupt break a process
+# it's useful for helping things fail gracefully.
+class DelayedKeyboardInterrupt(object):
+    def __enter__(self):
+        self.signal_received = False
+        self.old_handler = signal.signal(signal.SIGINT, self.handler)
+
+    def handler(self, sig, frame):
+        self.signal_received = (sig, frame)
+        logging.debug('SIGINT received. Delaying KeyboardInterrupt.')
+
+    def __exit__(self, type, value, traceback):
+        signal.signal(signal.SIGINT, self.old_handler)
+        if self.signal_received:
+            self.old_handler(*self.signal_received)        

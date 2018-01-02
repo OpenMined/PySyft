@@ -1,5 +1,9 @@
 import syft.controller as controller
-import sys
+from syft.utils import Progress
+from syft import FloatTensor
+import sys, time
+import numpy as np
+
 
 class Model():
 	def __init__(self, id=None):
@@ -60,8 +64,73 @@ class Model():
 	def models(self):
 		return self.sc.no_params_func(self.cmd, "models",return_type='Model_list')
 
-	def fit(self, input, target, criterion, optim, iters=15):
-		return self.sc.params_func(self.cmd,"fit",[input.id, target.id, criterion.id, optim.id, iters], return_type='FloatTensor')	
+	def fit(self, input, target, criterion, optim, batch_size, iters=15, log_interval=200, metrics=[]):
+
+		if(type(input) == list):
+			input = np.array(input).astype('float')
+		if(type(input) == np.array):
+			input = FloatTensor(input,autograd=True)
+
+		if(type(target) == list):
+			target = np.array(target).astype('float')
+		if(type(target) == np.array):
+			target = FloatTensor(target,autograd=True)	
+
+
+		num_batches = self.sc.params_func(self.cmd,"prepare_to_fit",[input.id, target.id, criterion.id, optim.id, batch_size], return_type='int')
+
+		print("Number of Batches:" + str(num_batches))
+
+		progress_bars = list()
+
+		progress_bars.append(Progress(0,iters-1))
+		start = time.time()
+		loss = 100000
+		for iter in range(iters):
+			progress_bars.append(Progress(0,num_batches))
+			iter_start = time.time()
+			for log_i in range(0,num_batches,log_interval):
+					prev_loss = float(loss)
+					_loss = self.sc.params_func(self.cmd,"fit",[log_i, min(log_i+log_interval,num_batches),1], return_type='float')
+					if(_loss != '0'):
+						loss = _loss
+					if(loss == 'NaN' or prev_loss == 'NaN'):
+						progress_bars[0].danger()
+						progress_bars[-1].danger()	
+						break
+					elif(float(loss) > prev_loss):
+						progress_bars[0].info()	
+						progress_bars[-1].info()	
+					else:
+						progress_bars[0].normal()
+						progress_bars[-1].normal()	
+
+					elapsed = time.time() - iter_start
+					pace = elapsed / (log_i+1)
+					remaining = int((num_batches - log_i - 1) * pace)
+					if(remaining > 60):
+						remaining = str(int(remaining/60)) + "m" + str(remaining%60) + "s"
+					else:
+						remaining = str(remaining) + "s"
+
+					progress_bars[-1].update(log_i+1,[('',remaining),('loss',str(loss)),("batch",str(log_i)+"-"+str(min(log_i+log_interval,num_batches)))])
+			progress_bars[-1].success()
+			progress_bars[-1].update(num_batches,[('',str(time.time() - iter_start)),('loss',str(loss)),("batch",str(log_i)+"-"+str(min(log_i+log_interval,num_batches)))])
+
+			elapsed = time.time() - start
+			pace = elapsed / (iter+1)
+			remaining = int((iters - iter - 1) * pace)
+			if(remaining > 60):
+				remaining = str(int(remaining/60)) + "m" + str(remaining%60) + "s"
+			else:
+				remaining = str(remaining) + "s"
+			progress_bars[0].update(iter,[('',remaining),('loss',loss)])
+
+			if(loss == 'NaN'):
+				break
+				
+		progress_bars[0].success()
+		return loss
 
 	def summary(self, verbose=True, return_instead_of_print = False):
 
