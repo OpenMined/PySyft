@@ -673,7 +673,7 @@ class FloatTensor():
         Parameters
         ----------
         Returns
-        -------
+        ------- 
         FloatTensor
             Output tensor
         """
