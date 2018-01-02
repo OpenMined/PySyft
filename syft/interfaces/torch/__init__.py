@@ -1,5 +1,3 @@
-# import torch.nn
-# import torch.optim
 from . import nn
 from . import optim
 from . import distributions
