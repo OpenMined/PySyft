@@ -54,3 +54,6 @@ class Variable(object):
 			return Variable(self.data / x.data)
 		else:
 			return Variable(self.data / x)
+
+	def view(self, shape):
+		return Variable(self.data.view(shape))

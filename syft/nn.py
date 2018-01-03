@@ -195,6 +195,9 @@ class Model():
 		else:
 			return "<syft.nn."+self._layer_type+" at " + str(self.id) + ">"
 
+	def zero_grad(self):
+		return self.sc.no_params_func(self.cmd,"zero_grad",return_type='string')
+
 # class Policy(Model):
 # 	super(Policy, self).__init__()
 

@@ -15,8 +15,13 @@ class Module(object):
 		params = list()
 
 		for item in self.__dict__.items():
-		    if(isinstance(item[1],Module)):
-		        for p in item[1].parameters():
-		            params.append(p)
+			if(isinstance(item[1],Module)):
+				for p in item[1].parameters():
+					params.append(p)
 
 		return params
+
+	def zero_grad(self):
+		for item in self.__dict__.items():
+			if(isinstance(item[1],Module)):
+				item[1].syft_obj.zero_grad()

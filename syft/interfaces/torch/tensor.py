@@ -85,6 +85,9 @@ class FloatTensor(object):
 	def sample(self, dim = -1):
 		return IntTensor(syft_obj=self.syft_obj.sample(dim))
 
+	def view(self, shape):
+		return FloatTensor(syft_obj=self.syft_obj.view(*shape))
+
 	def __sub__(self,x):
 		if(type(x) == type(self)):
 			return FloatTensor(syft_obj = self.syft_obj - x.syft_obj)
