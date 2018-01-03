@@ -944,6 +944,9 @@ class FloatTensor():
 
     def softmax(self, dim=-1):
         return self.params_func("softmax", [dim], return_response=True)
+
+    def log_softmax(self, dim=-1):
+        return self.params_func("log_softmax", [dim], return_response=True)
     
     def std(self, dim=-1):
         return self.params_func("std", [dim], return_response=True)

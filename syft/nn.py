@@ -4,7 +4,6 @@ from syft import FloatTensor
 import sys, time
 import numpy as np
 
-
 class Model():
 	def __init__(self, id=None):
 		self.sc = controller
@@ -27,6 +26,8 @@ class Model():
 		self._layer_type = self.layer_type()
 		if(self._layer_type == 'linear'):
 			return Linear(id = self.id)
+		elif(self._layer_type == 'embedding'):
+			return Embedding(id = self.id)
 		elif(self._layer_type == 'sigmoid'):
 			return Sigmoid(id = self.id)
 		elif(self._layer_type == 'crossentropyloss'):
@@ -160,10 +161,10 @@ class Model():
 		return len(self.models())
 
 	def __getitem__(self,idx):
-		return self.parameters()[idx]		
+		return self.parameters()[idx]
 
 	def activation(self):
-		return self.sc.no_params_func(self.cmd, "activation",return_type='FloatTensor')		
+		return self.sc.no_params_func(self.cmd, "activation",return_type='FloatTensor')
 
 	def layer_type(self):
 		return self.sc.no_params_func(self.cmd,"model_type",return_type='string')
@@ -177,7 +178,7 @@ class Model():
 		return cmd
 
 	def forward(self, input):
-		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')	
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')
 
 	def __repr__(self,verbose=True):
 
@@ -271,7 +272,7 @@ class Sequential(Model):
 		return output
 
 	def __getitem__(self,idx):
-		return self.models()[idx]		
+		return self.models()[idx]
 
 class Linear(Model):
 
@@ -290,6 +291,17 @@ class Linear(Model):
 
 		self.output_shape = int(params[0].shape()[-1])
 		self.input_shape = int(params[0].shape()[0])
+
+class Embedding(Model):
+
+	def __init__(self, num_embeddings=0, embedding_dim=0, id=None):
+		if(id is None):
+			self.init("embedding", [num_embeddings, embedding_dim])
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "embedding"
 
 class ReLU(Model):
 	def __init__(self, id=None):
@@ -313,7 +325,7 @@ class Dropout(Model):
 			self.id = id
 			self.sc = controller
 			self.type = "model"
-			self._layer_type = "dropout"			
+			self._layer_type = "dropout"
 
 class Sigmoid(Model):
 	def __init__(self, id=None):
@@ -425,5 +437,4 @@ class CrossEntropyLoss(Model):
 
 	def forward(self, input, target):
 		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
-
 

@@ -3,6 +3,24 @@ import syft
 def Tensor(data):
 	return FloatTensor(data=data)
 
+class LongTensor(object):
+
+	def __init__(self,data=None,syft_obj=None):
+		if(syft_obj is None):
+			self.syft_obj = syft.FloatTensor(data)
+		else:
+			self.syft_obj = syft_obj
+
+	def __getitem__(self,i):
+		out = self.syft_obj.to_numpy()[i]
+		if(out.shape == ()):
+			return int(out)
+		else:
+			return LongTensor(out)
+
+	def __repr__(self):
+		return self.syft_obj.__repr__()
+
 class IntTensor(object):
 
 	def __init__(self,data=None,syft_obj=None):
@@ -36,6 +54,12 @@ class FloatTensor(object):
 
 	def softmax(self,dim=-1):
 		return FloatTensor(syft_obj=self.syft_obj.softmax())
+
+	def log_softmax(self, dim=-1):
+		return FloatTensor(syft_obj=self.syft_obj.log_softmax())
+
+	def relu(self):
+		return FloatTensor(syft_obj=self.syft_obj.relu())
 
 	def float(self):
 		return self

@@ -12,3 +12,9 @@ def cat(tensors,axis=0):
 		return Variable(cat(tensors=list(map(lambda x:x.data,tensors)),axis=axis))
 	else:
 		print("Not supported for type: " + str(type(tensors[0])))
+
+def log_softmax(x, dim=1):
+    return x.log_softmax(dim=dim)
+
+def relu(x):
+    return x.relu()
