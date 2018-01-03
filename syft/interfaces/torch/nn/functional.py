@@ -14,7 +14,7 @@ def cat(tensors,axis=0):
 		print("Not supported for type: " + str(type(tensors[0])))
 
 def log_softmax(x, dim=1):
-    return x.log_softmax(dim=dim)
+	return x.log_softmax(dim=dim)
 
 def relu(x):
-    return x.relu()
+	return x.relu()
