@@ -1,7 +1,9 @@
+import keras
+import syft
+import sys
 
-# def start_keras():
-# 	import keras
-# 	import syft
+sys.stderr.write('lol... Just Kidding... Using OpenMined Backend')
+
 
 # def manual_seed(seed):
 # 	return torch.manual_seed(seed)

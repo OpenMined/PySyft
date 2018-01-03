@@ -1,6 +1,7 @@
 import zmq
 import uuid
 import syft.tensor
+from syft.utils import DelayedKeyboardInterrupt
 
 identity = str(uuid.uuid4())
 context = zmq.Context()
@@ -70,6 +71,9 @@ def __getitem__(id):
         return get_tensor(id)
 
 def params_func(cmd_func, name, params, return_type=None):
+    # makes things fail gracefully - without this, interruping the process early
+    # can cause the client and the server to go out of sync
+    with DelayedKeyboardInterrupt():
         # send the command
         socket.send_json(
             cmd_func(name, params=params))
