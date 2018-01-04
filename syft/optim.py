@@ -30,7 +30,7 @@ class Optimizer(object):
 	    'objectType': self.type,
 	    'objectIndex': self.id,
 	    'tensorIndexParams': params,
-		'hyperParams': h_params}
+			'hyperParams': h_params}
 		return cmd
 
 	def get_param_ids(self, params=[]):
@@ -45,30 +45,24 @@ class SGD(Optimizer):
 	Stochastic Gradient Descent optimizer.
 	Includes support for momentum and learning rate decay
 	"""
-	def __init__(self, params, lr=0.01, momentum=0., decay=0., id=None):
+	def __init__(self, params, lr=0.01, momentum=0., decay=0.):
 		super(SGD, self).__init__()
-
-		if (id is None):
-			self.init('sgd', params=self.get_param_ids(params), h_params=[lr, momentum, decay])
+		self.init('sgd', params=self.get_param_ids(params), h_params=[lr, momentum, decay])
 
 
 class RMSProp(Optimizer):
 	"""
 	RMSProp Optimizer
 	"""
-	def __init__(self, params, lr=0.01, rho=0.9, epsilon=1e-8, decay=0., id=None):
+	def __init__(self, params, lr=0.01, rho=0.9, epsilon=1e-8, decay=0.):
 		super(RMSProp, self).__init__()
-
-		if (id is None):
-			self.init('rmsprop', params=self.get_param_ids(params), h_params=[lr, rho, epsilon, decay])
+		self.init('rmsprop', params=self.get_param_ids(params), h_params=[lr, rho, epsilon, decay])
 
 
 class Adam(Optimizer):
 	"""
 	Adam Optimizer
 	"""
-	def __init__(self, params, lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0., id=None):
+	def __init__(self, params, lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0.):
 		super(Adam, self).__init__()
-
-		if (id is None):
-			self.init('adam', params=self.get_param_ids(params), h_params=[lr, beta_1, beta_2, epsilon, decay])
+		self.init('adam', params=self.get_param_ids(params), h_params=[lr, beta_1, beta_2, epsilon, decay])
