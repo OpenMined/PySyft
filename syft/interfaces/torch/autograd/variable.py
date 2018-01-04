@@ -57,3 +57,9 @@ class Variable(object):
 
 	def view(self, shape):
 		return Variable(self.data.view(shape))
+
+	def relu(self):
+		return Variable(self.data.relu())
+
+	def log_softmax(self, dim=1):
+		return Variable(self.data.log_softmax())

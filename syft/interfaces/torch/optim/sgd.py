@@ -9,4 +9,5 @@ class SGD(object):
 		self.syft_obj.zero_grad()
 
 	def step(self):
-		self.syft_obj.step()
+		batchsize = 1
+		self.syft_obj.step(batch_size)
