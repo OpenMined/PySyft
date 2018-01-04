@@ -275,11 +275,11 @@ class Sequential(Model):
 
 class Linear(Model):
 
-	def __init__(self, input_dim=0, output_dim=0, id=None):
+	def __init__(self, input_dim=0, output_dim=0, id=None, initializer="Xavier"):
 		super(Linear, self).__init__()
 	
 		if(id is None):
-			self.init("linear",[input_dim,output_dim])
+			self.init("linear",[input_dim, output_dim, initializer])
 		else:
 			self.id = id
 			self.sc = controller
