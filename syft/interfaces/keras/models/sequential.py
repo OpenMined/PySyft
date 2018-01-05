@@ -55,7 +55,8 @@ class Sequential(object):
                        batch_size=batch_size,
                        criterion=self.loss,
                        optim=self.optimizer.syft,
-                       iters=epochs)
+                       iters=epochs,
+                       log_interval=1)
 		return final_loss
 
 

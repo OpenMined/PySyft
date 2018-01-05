@@ -68,12 +68,12 @@ class Model():
 
 		if(type(input) == list):
 			input = np.array(input).astype('float')
-		if(type(input) == np.array):
+		if(type(input) == np.array or type(input) == np.ndarray):
 			input = FloatTensor(input,autograd=True)
 
 		if(type(target) == list):
 			target = np.array(target).astype('float')
-		if(type(target) == np.array):
+		if(type(target) == np.array or type(target) == np.ndarray):
 			target = FloatTensor(target,autograd=True)	
 
 
