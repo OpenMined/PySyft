@@ -64,7 +64,7 @@ class Model():
 	def models(self):
 		return self.sc.no_params_func(self.cmd, "models",return_type='Model_list')
 
-	def fit(self, input, target, criterion, optim, batch_size, iters=15, log_interval=200, metrics=[]):
+	def fit(self, input, target, criterion, optim, batch_size, iters=15, log_interval=200, metrics=[], verbose=True):
 
 		if(type(input) == list):
 			input = np.array(input).astype('float')
@@ -81,13 +81,15 @@ class Model():
 
 		print("Number of Batches:" + str(num_batches))
 
-		progress_bars = list()
+		if(verbose):
+			progress_bars = list()
+			progress_bars.append(Progress(0,iters-1))
 
-		progress_bars.append(Progress(0,iters-1))
 		start = time.time()
 		loss = 100000
 		for iter in range(iters):
-			progress_bars.append(Progress(0,num_batches))
+			if(verbose):
+				progress_bars.append(Progress(0,num_batches))
 			iter_start = time.time()
 			for log_i in range(0,num_batches,log_interval):
 					prev_loss = float(loss)
@@ -95,15 +97,18 @@ class Model():
 					if(_loss != '0'):
 						loss = _loss
 					if(loss == 'NaN' or prev_loss == 'NaN'):
-						progress_bars[0].danger()
-						progress_bars[-1].danger()	
+						if(verbose):
+							progress_bars[0].danger()
+							progress_bars[-1].danger()	
 						break
 					elif(float(loss) > prev_loss):
-						progress_bars[0].info()	
-						progress_bars[-1].info()	
+						if(verbose):
+							progress_bars[0].info()	
+							progress_bars[-1].info()	
 					else:
-						progress_bars[0].normal()
-						progress_bars[-1].normal()	
+						if(verbose):
+							progress_bars[0].normal()
+							progress_bars[-1].normal()
 
 					elapsed = time.time() - iter_start
 					pace = elapsed / (log_i+1)
@@ -112,10 +117,11 @@ class Model():
 						remaining = str(int(remaining/60)) + "m" + str(remaining%60) + "s"
 					else:
 						remaining = str(remaining) + "s"
-
-					progress_bars[-1].update(log_i+1,[('',remaining),('loss',str(loss)),("batch",str(log_i)+"-"+str(min(log_i+log_interval,num_batches)))])
-			progress_bars[-1].success()
-			progress_bars[-1].update(num_batches,[('',str(time.time() - iter_start)),('loss',str(loss)),("batch",str(log_i)+"-"+str(min(log_i+log_interval,num_batches)))])
+					if(verbose):
+						progress_bars[-1].update(log_i+1,[('',remaining),('loss',str(loss)),("batch",str(log_i)+"-"+str(min(log_i+log_interval,num_batches)))])
+			if(verbose):
+				progress_bars[-1].success()
+				progress_bars[-1].update(num_batches,[('',str(time.time() - iter_start)),('loss',str(loss)),("batch",str(log_i)+"-"+str(min(log_i+log_interval,num_batches)))])
 
 			elapsed = time.time() - start
 			pace = elapsed / (iter+1)
@@ -124,12 +130,13 @@ class Model():
 				remaining = str(int(remaining/60)) + "m" + str(remaining%60) + "s"
 			else:
 				remaining = str(remaining) + "s"
-			progress_bars[0].update(iter,[('',remaining),('loss',loss)])
+			if(verbose):
+				progress_bars[0].update(iter,[('',remaining),('loss',loss)])
 
 			if(loss == 'NaN'):
 				break
-				
-		progress_bars[0].success()
+		if(verbose):				
+			progress_bars[0].success()
 		return loss
 
 	def summary(self, verbose=True, return_instead_of_print = False):
@@ -275,11 +282,11 @@ class Sequential(Model):
 
 class Linear(Model):
 
-	def __init__(self, input_dim=0, output_dim=0, id=None):
+	def __init__(self, input_dim=0, output_dim=0, id=None, initializer="Xavier"):
 		super(Linear, self).__init__()
 	
 		if(id is None):
-			self.init("linear",[input_dim,output_dim])
+			self.init("linear",[input_dim, output_dim, initializer])
 		else:
 			self.id = id
 			self.sc = controller
