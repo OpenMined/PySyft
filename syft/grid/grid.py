@@ -14,8 +14,7 @@ class Grid():
         configurations_json = list(map(lambda x: x.toJSON(), configurations))
         self.controller.send_json({"objectType": "Grid",
                                    "functionCall": "learn",
-                                   "input": input,
-                                   "target": target,
+                                   "tensorIndexParams": [input.id, target.id],
                                    "configurations": configurations_json})
 
 
