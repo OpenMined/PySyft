@@ -20,9 +20,9 @@ class Progress(object):
 
         for stat in stats:
             if(stat[0] != ''):
-                out += "<span style='margin-left:10px'>-</span><span style='margin-left:10px'><font face='courier' size='2'>"+stat[0] + ": "+stat[1]+"</font></span>"
+                out += "<span style='margin-left:10px'>-</span><span style='margin-left:10px'><font face='courier' size='2'>"+str(stat[0]) + ": "+str(stat[1])+"</font></span>"
             else:
-                out += "<span style='margin-left:10px'>-</span><span style='margin-left:10px'><font face='courier' size='2'>"+stat[1]+"</font></span>"
+                out += "<span style='margin-left:10px'>-</span><span style='margin-left:10px'><font face='courier' size='2'>"+str(stat[1])+"</font></span>"
 
         out += "</div>"
         self.ptext.value = out
