@@ -47,7 +47,7 @@ class SGD(Optimizer):
 	"""
 	def __init__(self, params, lr=0.01, momentum=0., decay=0.):
 		super(SGD, self).__init__()
-		self.init('sgd', params=self.get_param_ids(params), h_params=[lr, momentum, decay])
+		self.init('sgd', params=self.get_param_ids(params), h_params=[str(lr), str(momentum), str(decay)])
 
 
 class RMSProp(Optimizer):
@@ -56,7 +56,7 @@ class RMSProp(Optimizer):
 	"""
 	def __init__(self, params, lr=0.01, rho=0.9, epsilon=1e-8, decay=0.):
 		super(RMSProp, self).__init__()
-		self.init('rmsprop', params=self.get_param_ids(params), h_params=[lr, rho, epsilon, decay])
+		self.init('rmsprop', params=self.get_param_ids(params), h_params=[str(lr), str(rho), str(epsilon), str(decay)])
 
 
 class Adam(Optimizer):
@@ -65,4 +65,4 @@ class Adam(Optimizer):
 	"""
 	def __init__(self, params, lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0.):
 		super(Adam, self).__init__()
-		self.init('adam', params=self.get_param_ids(params), h_params=[lr, beta_1, beta_2, epsilon, decay])
+		self.init('adam', params=self.get_param_ids(params), h_params=[str(lr), str(beta_1), str(beta_2), str(epsilon), str(decay)])
