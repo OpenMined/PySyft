@@ -54,7 +54,7 @@ class RMSProp(Optimizer):
 	"""
 	RMSProp Optimizer
 	"""
-	def __init__(self, params, lr=0.01, rho=0.9, epsilon=1e-8, decay=0.):
+	def __init__(self, params, lr=0.01, rho=0.9, epsilon=1e-6, decay=0.):
 		super(RMSProp, self).__init__()
 		self.init('rmsprop', params=self.get_param_ids(params), h_params=[lr, rho, epsilon, decay])
 
@@ -63,6 +63,6 @@ class Adam(Optimizer):
 	"""
 	Adam Optimizer
 	"""
-	def __init__(self, params, lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0.):
+	def __init__(self, params, lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-6, decay=0.):
 		super(Adam, self).__init__()
 		self.init('adam', params=self.get_param_ids(params), h_params=[lr, beta_1, beta_2, epsilon, decay])
