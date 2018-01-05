@@ -45,6 +45,13 @@ def random(*args):
     assert type(dims[0]) == int
     return params_func(cmd, "random", params=dims, return_type='FloatTensor')
 
+def set_seed(seed):
+    """
+    Sets the seed value for the random number generator to make model testing deterministic. 
+    """
+    assert (type(seed) == int and seed >= 0)
+    return params_func(cmd, "set_seed", params=[seed])
+
 def zeros(*args):
     """
     Returns a tensor filled with zeros
