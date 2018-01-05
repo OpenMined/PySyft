@@ -675,17 +675,19 @@ class FloatTensor():
             Caller with values inplace
         """
         return self.no_params_func("floor_")
-    def random_(self):
+    def random_(self, start=.0, to=None):
         """
-        Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)
-        The shape of the tensor is defined by the varargs sizes.
+        Returns a tensor filled with numbers sampled from the discrete uniform distribution over [from, to - 1]. 
+        If not specified, the values are usually only bounded by self tensor’s data type. For floating point types, 
+        if unspecified, range will be [0, 2^mantissa] to ensure that every value is representable. 
         ----------
         Returns
         -------
         FloatTensor
             Caller with values inplace
         """
-        return self.no_params_func("random_")
+        params = [str(start), str(to)] if to else [str(start)]
+        return self.params_func("random_", params)
 
     def round(self):
         """
@@ -1071,6 +1073,9 @@ class FloatTensor():
             Output tensor
         """
         return self.no_params_func("transpose", return_response=True)
+
+    def T_(self):
+        return self.no_params_func("transpose_")
 
     def triu(self, k=0):
         return self.params_func("triu", [k], return_response=True)
@@ -1465,6 +1470,17 @@ class FloatTensor():
             Output tensor
         """
         return self.no_params_func("tanh", return_response=True)
+
+    def uniform_(self, start=.0, to=1.0):
+        """
+        Returns a tensor filled with numbers sampled from the uniform distribution:
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
+        return self.params_func("uniform_", [str(start), str(to)])
 
     def squeeze(self, dim=-1):
         """
