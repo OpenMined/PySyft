@@ -41,6 +41,8 @@ class Sequential(object):
 			if(loss == 'categorical_crossentropy'):
 				self.add(Log())
 				self.loss = nn.NLLLoss()
+			elif(loss == 'mean_squared_error'):
+				self.loss = nn.MSELoss()
 
 			self.optimizer = optimizer
 			self.metrics = metrics
@@ -58,5 +60,11 @@ class Sequential(object):
                        iters=epochs,
                        log_interval=1)
 		return final_loss
+
+	def predict(self,x):
+		return self.syft.forward(input=x)
+
+	def get_weights(self):
+		return self.syft.parameters()
 
 
