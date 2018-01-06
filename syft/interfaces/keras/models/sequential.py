@@ -62,6 +62,7 @@ class Sequential(object):
 	def predict(self,x):
 		return self.syft.forward(input=x)
 
-	
+	def get_weights(self):
+		return self.syft.parameters()
 
 
