@@ -186,21 +186,32 @@ class Model():
 	def forward(self, input):
 		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')	
 
-	def evaluate(self, input, target, batch_size=100, verbose=True):
+	def evaluate(self, input, target, batch_size=100, verbose=True, loss_fn=None):
 		if (type(input) == list):
 			input = np.array(input).astype('float')
-		if (type(target) == target):
+		if (type(target) == list):
 			target = np.array(target)
 		if len(target.shape)>1 and target.shape[1]>1:
-			target = np.argmax(target, axis=1)
+			target_argmax = np.argmax(target, axis=1)
+		loss, accuracy = .0, .0
 		num_batches = target.shape[0] // batch_size
-		accuracy = .0
+		if loss_fn == None:
+			loss_fn = self.MSEloss()
+
 		for i in range(num_batches):
 			batch_input = FloatTensor(input[i*batch_size:(i+1)*batch_size], autograd=True)
-			batch_forwarded = self.forward(batch_input).to_numpy()
-			accuracy += float(np.sum(np.argmax(batch_forwarded, axis=1) == target[i*batch_size:(i+1)*batch_size])) / batch_size
-		accuracy /= num_batches
-		return accuracy
+			batch_forwarded = self.forward(batch_input)
+			batch_accuracy = float(np.sum(np.argmax(batch_forwarded.to_numpy(), axis=1) == target_argmax[i*batch_size:(i+1)*batch_size])) / batch_size
+			batch_loss = loss_fn(batch_forwarded, FloatTensor(target[i*batch_size:(i+1)*batch_size], autograd=True)).to_numpy()[0]
+			if verbose:
+				print("Test batch {}/{}: Loss = {:.4} - Accuracy = {:.4}%".format(i+1, num_batches, batch_loss, batch_accuracy*100.0))
+			loss += batch_loss
+			accuracy += batch_accuracy
+		accuracy /= float(num_batches)
+		loss /= float(num_batches)
+		if verbose:
+			print("\nAverage test loss = {:.4}\nAverage accuracy = {:.4}%".format(loss, accuracy*100.0))
+		return loss, accuracy
 
 	def __repr__(self,verbose=True):
 

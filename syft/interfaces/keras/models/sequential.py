@@ -60,6 +60,6 @@ class Sequential(object):
 		return final_loss
 
 	def evaluate(self, x_test, y_test, verbose=False):
-		return self.syft.evaluate(x_test, y_test, verbose=verbose)
+		return self.syft.evaluate(x_test, y_test, verbose=verbose, loss_fn=self.loss)
 
 
