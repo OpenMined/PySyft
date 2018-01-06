@@ -34,7 +34,7 @@ class Sequential(object):
 	def summary(self):
 		self.syft.summary()
 
-	def compile(self,loss,optimizer,metrics,alpha=0.01):
+	def compile(self,loss,optimizer,metrics):
 		if(not self.compiled):
 			self.compiled = True
 
@@ -45,7 +45,7 @@ class Sequential(object):
 			self.optimizer = optimizer
 			self.metrics = metrics
 
-			self.optimizer.init(syft_params=self.syft.parameters(),alpha=alpha)
+			self.optimizer.init(syft_params=self.syft.parameters())
 		else:
 			sys.stderr.write("Warning: Model already compiled... please rebuild from scratch if you need to change things")
 
