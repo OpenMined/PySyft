@@ -41,6 +41,8 @@ class Sequential(object):
 			if(loss == 'categorical_crossentropy'):
 				self.add(Log())
 				self.loss = nn.NLLLoss()
+			elif(loss == 'mean_squared_error'):
+				self.loss = nn.MSELoss()
 
 			self.optimizer = optimizer
 			self.metrics = metrics
