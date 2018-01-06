@@ -59,4 +59,9 @@ class Sequential(object):
                        log_interval=1)
 		return final_loss
 
+	def predict(self,x):
+		return self.syft.forward(input=x)
+
+	
+
 
