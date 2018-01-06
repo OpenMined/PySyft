@@ -54,3 +54,12 @@ class Variable(object):
 			return Variable(self.data / x.data)
 		else:
 			return Variable(self.data / x)
+
+	def view(self, shape):
+		return Variable(self.data.view(shape))
+
+	def relu(self):
+		return Variable(self.data.relu())
+
+	def log_softmax(self, dim=1):
+		return Variable(self.data.log_softmax())
