@@ -59,4 +59,7 @@ class Sequential(object):
                        log_interval=1)
 		return final_loss
 
+	def evaluate(self, x_test, y_test, verbose=False):
+		return self.syft.evaluate(x_test, y_test, verbose=verbose)
+
 

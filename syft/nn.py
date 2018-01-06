@@ -186,6 +186,22 @@ class Model():
 	def forward(self, input):
 		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')	
 
+	def evaluate(self, input, target, batch_size=100, verbose=True):
+		if (type(input) == list):
+			input = np.array(input).astype('float')
+		if (type(target) == target):
+			target = np.array(target)
+		if len(target.shape)>1 and target.shape[1]>1:
+			target = np.argmax(target, axis=1)
+		num_batches = target.shape[0] // batch_size
+		accuracy = .0
+		for i in range(num_batches):
+			batch_input = FloatTensor(input[i*batch_size:(i+1)*batch_size], autograd=True)
+			batch_forwarded = self.forward(batch_input).to_numpy()
+			accuracy += float(np.sum(np.argmax(batch_forwarded, axis=1) == target[i*batch_size:(i+1)*batch_size])) / batch_size
+		accuracy /= num_batches
+		return accuracy
+
 	def __repr__(self,verbose=True):
 
 		if(verbose):
