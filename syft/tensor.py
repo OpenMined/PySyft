@@ -811,6 +811,9 @@ class FloatTensor():
         """
         return self.no_params_func("neg_")
 
+    def norm(self, dim=-1, keepdim=False, p=2):
+        return self.params_func("norm", [dim, keepdim, p], return_response=True)
+
     def relu(self):
         
         return self.no_params_func("relu", return_response=True)
@@ -945,8 +948,19 @@ class FloatTensor():
     def softmax(self, dim=-1):
         return self.params_func("softmax", [dim], return_response=True)
     
-    def std(self, dim=-1):
-        return self.params_func("std", [dim], return_response=True)
+    def split(self, split_size_or_sections, dim=0):
+        if isinstance(split_size_or_sections, int):
+            return self.controller.params_func(cmd_func=self.cmd,name="split_by_size", params=[split_size_or_sections, dim],return_type='FloatTensor_list')
+        split_size_or_sections = list(split_size_or_sections)
+        assert type(split_size_or_sections) == list
+        assert type(split_size_or_sections[0]) == int
+        return self.controller.params_func(cmd_func=self.cmd,name="split_by_sections", params=split_size_or_sections+[dim], return_type='FloatTensor_list')
+    
+    def var(self, dim=-1, keepdim=False, unbiased=True):
+        return self.params_func("var", [dim, keepdim, unbiased], return_response=True)
+
+    def std(self, dim=-1, keepdim=False, unbiased=True):
+        return self.params_func("std", [dim, keepdim, unbiased], return_response=True)
 
     def stride(self, dim=-1):
         """
