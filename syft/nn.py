@@ -1,8 +1,7 @@
 import syft.controller as controller
 
 class Model():
-	def __init__(self,id=None):
-		self.id=-1
+	def __init__(self, id=None):
 		self.sc = controller
 		self.params = False
 		self.type = None
@@ -44,16 +43,16 @@ class Model():
 	def cmd(self,function_call, params = []):
 		cmd = {
 			'functionCall': function_call,
-			'objectType': 'model',
+			'objectType': self.type,
 			'objectIndex': self.id,
 			'tensorIndexParams': params}
 		return cmd
-    
+
 	def forward(self, input):
 		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')		
 
 class Sequential(Model):
-	def __init__(self, layers=None):		
+	def __init__(self, layers=None):
 		self.init("sequential")
 
 		if(layers is not None):
@@ -64,7 +63,7 @@ class Sequential(Model):
 		self.sc.params_func(self.cmd,"add",[model.id])
 
 class Linear(Model):
-	def __init__(self, input_dim=0, output_dim=0, id=None):	
+	def __init__(self, input_dim=0, output_dim=0, id=None):
 		if(id is None):
 			self.init("linear",[input_dim,output_dim])
 		else:
@@ -82,6 +81,16 @@ class Sigmoid(Model):
 			self.sc = controller
 			self.type = "model"
 			self._layer_type = "sigmoid"
+
+class View(Model):
+	def __init__(self, *out_dims, id=None):
+		if(id is None):
+			self.init("view", list(out_dims))
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "view"
 
 class MSELoss(Model):
 	def forward(self, data, target):
@@ -155,13 +164,13 @@ class Conv2d(_Conv):
 	def __init__(self, input_dim, output_dim, kernel, stride=1,
                 padding=0, dilation=1, groups=1, bias=True,id=None):
 		if(type(kernel) == int):
-			kernel = [kernel,kernel]
+			kernel = (kernel,kernel)
 		if(type(stride) == int):
-			kernel = [stride,stride]
+			stride = (stride,stride)
 		if(type(padding) == int):
-			kernel = [padding,padding]
+			padding = (padding,padding)
 		if(type(dilation) == int):
-			dilation = [dilation,dilation]
+			dilation = (dilation,dilation)
 
 		assert len(kernel) == 2
 
@@ -179,7 +188,7 @@ class Conv2d(_Conv):
 					stride[0], stride[1],
 					padding[0], padding[1],
 					dilation[0], dilation[1],
-					bias
+					groups, bias
 					]
 
 		if(id is None):
