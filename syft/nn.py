@@ -56,7 +56,7 @@ class Model():
 			return self.forward(args[0],args[1], args[2])
 
 	def parameters(self):
-		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')
+		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list', delete_after_use=False)
 	
 	def num_parameters(self):
 		return self.sc.no_params_func(self.cmd,"param_count",return_type='int')
@@ -69,12 +69,12 @@ class Model():
 		if(type(input) == list):
 			input = np.array(input).astype('float')
 		if(type(input) == np.array or type(input) == np.ndarray):
-			input = FloatTensor(input,autograd=True)
+			input = FloatTensor(input,autograd=True, delete_after_use=False)
 
 		if(type(target) == list):
 			target = np.array(target).astype('float')
 		if(type(target) == np.array or type(target) == np.ndarray):
-			target = FloatTensor(target,autograd=True)	
+			target = FloatTensor(target,autograd=True, delete_after_use=False)
 
 
 		num_batches = self.sc.params_func(self.cmd,"prepare_to_fit",[input.id, target.id, criterion.id, optim.id, batch_size], return_type='int')
@@ -170,7 +170,7 @@ class Model():
 		return self.parameters()[idx]		
 
 	def activation(self):
-		return self.sc.no_params_func(self.cmd, "activation",return_type='FloatTensor')		
+		return self.sc.no_params_func(self.cmd, "activation",return_type='FloatTensor', delete_after_use=False)
 
 	def layer_type(self):
 		return self.sc.no_params_func(self.cmd,"model_type",return_type='string')
@@ -184,7 +184,7 @@ class Model():
 		return cmd
 
 	def forward(self, input):
-		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')	
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor', delete_after_use=False)
 
 	def __repr__(self,verbose=True):
 
@@ -246,7 +246,7 @@ class Sequential(Model):
 				self.add(layer)
 
 	def add(self, model):
-		self.sc.params_func(self.cmd,"add",[model.id])
+		self.sc.params_func(self.cmd,"add",[model.id], delete_after_use=False)
 
 	def summary(self):
 		single = "_________________________________________________________________\n"
@@ -396,7 +396,7 @@ class MSELoss(Model):
 			self._layer_type = "mseloss"
 
 	def forward(self, input, target):
-		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
+		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
 
 class NLLLoss(Model):
 	def __init__(self, id=None):
@@ -411,7 +411,7 @@ class NLLLoss(Model):
 			self._layer_type = "nllloss"
 
 	def forward(self, input, target):
-		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
+		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
 
 
 class CrossEntropyLoss(Model):
@@ -431,6 +431,6 @@ class CrossEntropyLoss(Model):
 			self._layer_type = "crossentropyloss"
 
 	def forward(self, input, target):
-		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
+		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
 
 

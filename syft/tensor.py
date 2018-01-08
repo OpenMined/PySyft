@@ -97,9 +97,9 @@ class IntTensor():
             return " - non-contiguous - "
 
 class FloatTensor():
-    def __init__(self, data, autograd=False, data_is_pointer=False):
+    def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=True):
         self.controller = syft.controller
-
+        self.delete_after_use = delete_after_use
         if (data is not None and not data_is_pointer):
 
             if (type(data) == list):
@@ -120,8 +120,8 @@ class FloatTensor():
         if (autograd):
             self.autograd(True)
 
-            # def __del__(self):
-            # self.delete_tensor()
+    def __del__(self):
+        self.delete_tensor()
 
     def abs(self):
         """
@@ -1163,7 +1163,7 @@ class FloatTensor():
         FloatTensor
             Output tensor
         """
-        return self.no_params_func("cpu")
+        return self.no_params_func("cpu", delete_after_use=False)
 
     def gpu(self):
         """
@@ -1175,7 +1175,7 @@ class FloatTensor():
         FloatTensor
             Output tensor
         """
-        return self.no_params_func("gpu")
+        return self.no_params_func("gpu", delete_after_use=False)
 
     def cmd(self, functionCall, params=[]):
         cmd = {
@@ -1185,7 +1185,7 @@ class FloatTensor():
             'tensorIndexParams': params}
         return cmd
 
-    def params_func(self, name, params, return_response=False, return_type='FloatTensor', data_is_pointer=True,):
+    def params_func(self, name, params, return_response=False, return_type='FloatTensor', data_is_pointer=True, delete_after_use=True):
         # send the command
         res = self.controller.send_json(
             self.cmd(name, params=params))
@@ -1200,7 +1200,7 @@ class FloatTensor():
                 self.controller.log("FloatTensor.__init__: {}".format(res))
                 if(res == ''):
                     return None
-                return FloatTensor(data=int(res), data_is_pointer=data_is_pointer)
+                return FloatTensor(data=int(res), data_is_pointer=data_is_pointer, delete_after_use=delete_after_use)
             else:
                 return res
         return self
@@ -1235,7 +1235,8 @@ class FloatTensor():
         -------
         """
         if (self.id is not None):
-            self.no_params_func("delete")
+            if self.delete_after_use:
+                response = self.no_params_func("delete", return_response=True, return_type=str)
         self.controller = None
         self.id = None
 
