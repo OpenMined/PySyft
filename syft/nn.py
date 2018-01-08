@@ -4,7 +4,6 @@ from syft import FloatTensor
 import sys, time
 import numpy as np
 
-
 class Model():
 	def __init__(self, id=None):
 		self.sc = controller
@@ -46,6 +45,8 @@ class Model():
 			return View(id = self.id)
 		elif(self._layer_type == 'conv2d'):
 			return Conv2d(id = self.id)
+		elif(self._layer_type == 'policy'):
+			return Policy(id = self.id)
 		else:
 			sys.stderr.write("Attempted to discover the type - but it wasn't supported. Has the layer type '"
 			 + self._layer_type + "' been added to the discover() method in nn.py?")
@@ -59,7 +60,7 @@ class Model():
 			return self.forward(args[0],args[1], args[2])
 
 	def parameters(self):
-		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list')
+		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list', delete_after_use=False)
 	
 	def num_parameters(self):
 		return self.sc.no_params_func(self.cmd,"param_count",return_type='int')
@@ -67,17 +68,22 @@ class Model():
 	def models(self):
 		return self.sc.no_params_func(self.cmd, "models",return_type='Model_list')
 
+	def set_id(self,new_id):
+		self.sc.params_func(self.cmd,"set_id",[new_id], return_type='string')
+		self.id = new_id
+		return self
+
 	def fit(self, input, target, criterion, optim, batch_size, iters=15, log_interval=200, metrics=[], verbose=True):
 
 		if(type(input) == list):
 			input = np.array(input).astype('float')
 		if(type(input) == np.array or type(input) == np.ndarray):
-			input = FloatTensor(input,autograd=True)
+			input = FloatTensor(input,autograd=True, delete_after_use=False)
 
 		if(type(target) == list):
 			target = np.array(target).astype('float')
 		if(type(target) == np.array or type(target) == np.ndarray):
-			target = FloatTensor(target,autograd=True)	
+			target = FloatTensor(target,autograd=True, delete_after_use=False)
 
 
 		num_batches = self.sc.params_func(self.cmd,"prepare_to_fit",[input.id, target.id, criterion.id, optim.id, batch_size], return_type='int')
@@ -173,7 +179,7 @@ class Model():
 		return self.parameters()[idx]		
 
 	def activation(self):
-		return self.sc.no_params_func(self.cmd, "activation",return_type='FloatTensor')		
+		return self.sc.no_params_func(self.cmd, "activation",return_type='FloatTensor', delete_after_use=False)
 
 	def layer_type(self):
 		return self.sc.no_params_func(self.cmd,"model_type",return_type='string')
@@ -187,7 +193,7 @@ class Model():
 		return cmd
 
 	def forward(self, input):
-		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor')	
+		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor', delete_after_use=False)
 
 	def __repr__(self,verbose=True):
 
@@ -204,38 +210,61 @@ class Model():
 		else:
 			return "<syft.nn."+self._layer_type+" at " + str(self.id) + ">"
 
-# class Policy(Model):
-# 	super(Policy, self).__init__()
+class Policy(Model):
+	#super(Policy, self).__init__()
 
-# 	def __init__(self, model, state_type='discrete'):
+	def __init__(self, model, optimizer, state_type='discrete'):
 		
-# 		self.init("policy",[model.id])
-# 		self.model = model
-# 		self.state_type = state_type
+		self.init("policy",[model.id, optimizer.id])
+		self.model = model
+		self.state_type = state_type
+		self.optimizer = optimizer
 
-# 	def sample(self, input):
-# 		return self.sc.params_func(self.cmd,"sample",[input.id],return_type='IntTensor')	
+	def sample(self, input):
+		return self.sc.params_func(self.cmd,"sample",[input.id],return_type='IntTensor')	
 
-# 	def __call__(self,*args):
+	def parameters(self):
+		return self.model.parameters()
 
-# 		if(self.state_type == 'discrete'):
-# 			if(len(args) == 1):
-# 				return self.sample(args[0])
-# 			elif(len(args) == 2):
-# 				return self.sample(args[0],args[1])
-# 			elif(len(args) == 3):
-# 				return self.sample(args[0],args[1], args[2])
+	def __call__(self,*args):
 
-# 		elif(self.state_type == 'continuous'):
-# 			if(len(args) == 1):
-# 				return self.forward(args[0])
-# 			elif(len(args) == 2):
-# 				return self.forward(args[0],args[1])
-# 			elif(len(args) == 3):
-# 				return self.forward(args[0],args[1], args[2])
+		if(self.state_type == 'discrete'):
+			if(len(args) == 1):
+				return self.sample(args[0])
+			elif(len(args) == 2):
+				return self.sample(args[0],args[1])
+			elif(len(args) == 3):
+				return self.sample(args[0],args[1], args[2])
 
-# 		else:
-# 			print("Error: State type " + self.state_type + " unknown")
+		elif(self.state_type == 'continuous'):
+			if(len(args) == 1):
+				return self.forward(args[0])
+			elif(len(args) == 2):
+				return self.forward(args[0],args[1])
+			elif(len(args) == 3):
+				return self.forward(args[0],args[1], args[2])
+
+		else:
+			print("Error: State type " + self.state_type + " unknown")
+
+	def history(self):
+
+		raw_history = self.sc.params_func(self.cmd,"get_history",[],return_type="string")
+		history_idx = list(map(lambda x:list(map(lambda y:int(y),x.split(","))),raw_history[2:-1].split("],[")))
+		losses = list()
+		rewards = list()
+
+		for loss,reward in history_idx:
+			if(loss != -1):
+				losses.append(self.sc.get_tensor(loss))
+			else:
+				losses.append(None)
+			if(reward != -1):
+				rewards.append(self.sc.get_tensor(reward))
+			else:
+				rewards.append(None)
+
+		return losses,rewards
 
 class Sequential(Model):
 	def __init__(self, layers=None):
@@ -248,7 +277,7 @@ class Sequential(Model):
 				self.add(layer)
 
 	def add(self, model):
-		self.sc.params_func(self.cmd,"add",[model.id])
+		self.sc.params_func(self.cmd,"add",[model.id], delete_after_use=False)
 
 	def summary(self):
 		single = "_________________________________________________________________\n"
@@ -380,7 +409,6 @@ class _Conv(Model):
         s += ')'
         return s.format(name=self.__class__.__name__, **self.__dict__)
 
-
 class Conv2d(_Conv):
 	r"""Applies a 2D convolution/cross-correlation using a kernel.
 
@@ -501,7 +529,7 @@ class MSELoss(Model):
 			self._layer_type = "mseloss"
 
 	def forward(self, input, target):
-		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
+		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
 
 class NLLLoss(Model):
 	def __init__(self, id=None):
@@ -516,8 +544,7 @@ class NLLLoss(Model):
 			self._layer_type = "nllloss"
 
 	def forward(self, input, target):
-		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
-
+		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
 
 class CrossEntropyLoss(Model):
 
@@ -536,4 +563,4 @@ class CrossEntropyLoss(Model):
 			self._layer_type = "crossentropyloss"
 
 	def forward(self, input, target):
-		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor')
+		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
