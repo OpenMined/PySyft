@@ -44,7 +44,7 @@ class Model():
 			return Log(id = self.id)
 		elif(self._layer_type == 'view'):
 			return View(id = self.id)
-		elif(self._layer_type == 'ocnv2d'):
+		elif(self._layer_type == 'conv2d'):
 			return Conv2d(id = self.id)
 		else:
 			sys.stderr.write("Attempted to discover the type - but it wasn't supported. Has the layer type '"
