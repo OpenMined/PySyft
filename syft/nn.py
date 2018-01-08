@@ -366,8 +366,14 @@ class Sigmoid(Model):
 
 class View(Model):
 	def __init__(self, *out_dims, id=None):
+		super(View, self).__init__()
+		
 		if(id is None):
 			self.init("view", list(out_dims))
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
 			self._layer_type = "view"
 
 class _Conv(Model):
