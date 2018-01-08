@@ -4,7 +4,6 @@ from syft import FloatTensor
 import sys, time
 import numpy as np
 
-
 class Model():
 	def __init__(self, id=None):
 		self.sc = controller
@@ -412,7 +411,6 @@ class Tanh(Model):
 			self.type = "model"
 			self._layer_type = "tanh"
 
-
 class MSELoss(Model):
 	def __init__(self, id=None):
 		super(MSELoss, self).__init__()
@@ -462,5 +460,3 @@ class CrossEntropyLoss(Model):
 
 	def forward(self, input, target):
 		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
-
-
