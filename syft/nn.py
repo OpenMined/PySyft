@@ -43,6 +43,8 @@ class Model():
 			return ReLU(id = self.id)
 		elif(self._layer_type == 'log'):
 			return Log(id = self.id)
+		elif(self._layer_type == 'policy'):
+			return Policy(id = self.id)
 		else:
 			sys.stderr.write("Attempted to discover the type - but it wasn't supported. Has the layer type '"
 			 + self._layer_type + "' been added to the discover() method in nn.py?")
@@ -63,6 +65,11 @@ class Model():
 
 	def models(self):
 		return self.sc.no_params_func(self.cmd, "models",return_type='Model_list')
+
+	def set_id(self,new_id):
+		self.sc.params_func(self.cmd,"set_id",[new_id], return_type='string')
+		self.id = new_id
+		return self
 
 	def fit(self, input, target, criterion, optim, batch_size, iters=15, log_interval=200, metrics=[], verbose=True):
 
@@ -201,38 +208,61 @@ class Model():
 		else:
 			return "<syft.nn."+self._layer_type+" at " + str(self.id) + ">"
 
-# class Policy(Model):
-# 	super(Policy, self).__init__()
+class Policy(Model):
+	#super(Policy, self).__init__()
 
-# 	def __init__(self, model, state_type='discrete'):
+	def __init__(self, model, optimizer, state_type='discrete'):
 		
-# 		self.init("policy",[model.id])
-# 		self.model = model
-# 		self.state_type = state_type
+		self.init("policy",[model.id, optimizer.id])
+		self.model = model
+		self.state_type = state_type
+		self.optimizer = optimizer
 
-# 	def sample(self, input):
-# 		return self.sc.params_func(self.cmd,"sample",[input.id],return_type='IntTensor')	
+	def sample(self, input):
+		return self.sc.params_func(self.cmd,"sample",[input.id],return_type='IntTensor')	
 
-# 	def __call__(self,*args):
+	def parameters(self):
+		return self.model.parameters()
 
-# 		if(self.state_type == 'discrete'):
-# 			if(len(args) == 1):
-# 				return self.sample(args[0])
-# 			elif(len(args) == 2):
-# 				return self.sample(args[0],args[1])
-# 			elif(len(args) == 3):
-# 				return self.sample(args[0],args[1], args[2])
+	def __call__(self,*args):
 
-# 		elif(self.state_type == 'continuous'):
-# 			if(len(args) == 1):
-# 				return self.forward(args[0])
-# 			elif(len(args) == 2):
-# 				return self.forward(args[0],args[1])
-# 			elif(len(args) == 3):
-# 				return self.forward(args[0],args[1], args[2])
+		if(self.state_type == 'discrete'):
+			if(len(args) == 1):
+				return self.sample(args[0])
+			elif(len(args) == 2):
+				return self.sample(args[0],args[1])
+			elif(len(args) == 3):
+				return self.sample(args[0],args[1], args[2])
 
-# 		else:
-# 			print("Error: State type " + self.state_type + " unknown")
+		elif(self.state_type == 'continuous'):
+			if(len(args) == 1):
+				return self.forward(args[0])
+			elif(len(args) == 2):
+				return self.forward(args[0],args[1])
+			elif(len(args) == 3):
+				return self.forward(args[0],args[1], args[2])
+
+		else:
+			print("Error: State type " + self.state_type + " unknown")
+
+	def history(self):
+
+		raw_history = self.sc.params_func(self.cmd,"get_history",[],return_type="string")
+		history_idx = list(map(lambda x:list(map(lambda y:int(y),x.split(","))),raw_history[2:-1].split("],[")))
+		losses = list()
+		rewards = list()
+
+		for loss,reward in history_idx:
+			if(loss != -1):
+				losses.append(self.sc.get_tensor(loss))
+			else:
+				losses.append(None)
+			if(reward != -1):
+				rewards.append(self.sc.get_tensor(reward))
+			else:
+				rewards.append(None)
+
+		return losses,rewards
 
 class Sequential(Model):
 
