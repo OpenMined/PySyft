@@ -811,6 +811,24 @@ class FloatTensor():
         """
         return self.no_params_func("neg_")
 
+    def norm(self, dim=-1, keepdim=False, p=2):
+        """
+        Returns the p-norm of each row of the input tensor in the given dimension dim.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        p: float
+            the exponent value in the norm formulation
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.params_func("norm", [dim, keepdim, p], return_response=True)
+
     def relu(self):
         
         return self.no_params_func("relu", return_response=True)
@@ -945,8 +963,43 @@ class FloatTensor():
     def softmax(self, dim=-1):
         return self.params_func("softmax", [dim], return_response=True)
     
-    def std(self, dim=-1):
-        return self.params_func("std", [dim], return_response=True)
+    def split(self, split_size_or_sections, dim=0):
+        """
+        Splits the tensor into chunks. If split_size_or_sections is an integer type, then tensor will be split into chunks of size split_size_or_sections (if possible). Last chunk will be smaller if the tensor size along a given dimension is not divisible by split_size. If split_size_or_sections is a list, then tensor will be split into len(split_size_or_sections) chunks with sizes in dim according to split_size_or_sections.
+        Parameters
+        ----------
+        split_size_or_sections : int or list(int)
+            size of a single chunk or of sizes for each chunk
+        dim: int
+            dimension along which to split the tensor.
+        """
+
+        if isinstance(split_size_or_sections, int):
+            return self.controller.params_func(cmd_func=self.cmd,name="split_by_size", params=[split_size_or_sections, dim],return_type='FloatTensor_list')
+        split_size_or_sections = list(split_size_or_sections)
+        assert type(split_size_or_sections) == list
+        assert type(split_size_or_sections[0]) == int
+        return self.controller.params_func(cmd_func=self.cmd,name="split_by_sections", params=split_size_or_sections+[dim], return_type='FloatTensor_list')
+
+    def std(self, dim=-1, keepdim=False, unbiased=True):
+        """
+        Returns the standard-deviation of each row of the input tensor in the given dimension dim. 
+
+        If unbiased is False, then the standard-deviation will be calculated via the biased estimator. Otherwise, Bessel’s correction will be used.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        unbiased: bool
+            whether to use the unbiased estimation or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.params_func("std", [dim, keepdim, unbiased], return_response=True)
 
     def stride(self, dim=-1):
         """
@@ -1037,6 +1090,26 @@ class FloatTensor():
             Caller with values inplace
         """
         return self.arithmetic_operation(x, "sub", True)
+
+    def var(self, dim=-1, keepdim=False, unbiased=True):
+        """
+        Returns the variance of each row of the input tensor in the given dimension dim. 
+
+        If unbiased is False, then the variance will be calculated via the biased estimator. Otherwise, Bessel’s correction will be used.
+        Parameters
+        ----------
+        dim : int
+            the dimension to reduce
+        keepdim : bool
+            whether the output tensors have dim retained or not
+        unbiased: bool
+            whether to use the unbiased estimation or not
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.params_func("var", [dim, keepdim, unbiased], return_response=True)
 
     def view(self, *args):
         new_dim = list(args)
