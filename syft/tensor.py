@@ -550,12 +550,6 @@ class FloatTensor():
         assert type(new_dim[0]) == int
         return self.params_func("expand", new_dim, return_response=True)
 
-    def fill_(self, data, starting_offset=0, length_to_fill=0):
-        if (type(data) == list):
-            data = np.array(data)
-        data = data.astype('float')
-        return self.params_funct("fill_", list(data.flatten()) + [starting_offset, length_to_fill])
-
     def index_add(self, indices, dim, x):
         return self.params_func("index_add", [indices.id, dim, x.id], return_response=True)
 
@@ -1240,14 +1234,9 @@ class FloatTensor():
         Returns
         -------
         """
-        print("Callingdelete densor")
         if (self.id is not None):
-            print("delete after use = ", self.delete_after_use)
             if self.delete_after_use:
-                print("Deleting tensor:", self.to_numpy())
-                print("ID:", self.id)
                 response = self.no_params_func("delete", return_response=True, return_type=str)
-                print("response: ",response)
         self.controller = None
         self.id = None
 
