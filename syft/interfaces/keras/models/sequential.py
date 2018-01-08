@@ -34,18 +34,20 @@ class Sequential(object):
 	def summary(self):
 		self.syft.summary()
 
-	def compile(self,loss,optimizer,metrics,alpha=0.01):
+	def compile(self,loss,optimizer,metrics):
 		if(not self.compiled):
 			self.compiled = True
 
 			if(loss == 'categorical_crossentropy'):
 				self.add(Log())
 				self.loss = nn.NLLLoss()
+			elif(loss == 'mean_squared_error'):
+				self.loss = nn.MSELoss()
 
 			self.optimizer = optimizer
 			self.metrics = metrics
 
-			self.optimizer.init(syft_params=self.syft.parameters(),alpha=alpha)
+			self.optimizer.init(syft_params=self.syft.parameters())
 		else:
 			sys.stderr.write("Warning: Model already compiled... please rebuild from scratch if you need to change things")
 
@@ -61,5 +63,11 @@ class Sequential(object):
 
 	def evaluate(self, x_test, y_test, verbose=False):
 		return self.syft.evaluate(x_test, y_test, verbose=verbose, loss_fn=self.loss)
+
+	def predict(self,x):
+		return self.syft.forward(input=x)
+
+	def get_weights(self):
+		return self.syft.parameters()
 
 

@@ -41,36 +41,36 @@ def cmd(functionCall, params=[]):
 
 # Introspection
 def num_models():
-    return no_params_func(cmd,"num_models",'int')
+    return no_params_func(cmd,"num_models",'int', delete_after_use=False)
 
 def get_model(id):
     return syft.nn.Model(id=int(id)).discover()
 
 def load(filename):
-    return params_func(cmd,"load_floattensor",params=[filename], return_type='FloatTensor')
+    return params_func(cmd,"load_floattensor",params=[filename], return_type='FloatTensor', delete_after_use=False)
 
 def save(x,filename):
     return x.save(filename)
 
 def num_tensors():
-    return no_params_func(cmd,"num_tensors",'int')
+    return no_params_func(cmd,"num_tensors",'int', delete_after_use=False)
 
 def new_tensors_allowed(allowed=None):
     if(allowed is None):
-        return no_params_func(cmd,"new_tensors_allowed",'bool')
+        return no_params_func(cmd,"new_tensors_allowed",'bool', delete_after_use=False)
     else:
         if(allowed):
-            return params_func(cmd, "new_tensors_allowed",["True"], 'bool')
+            return params_func(cmd, "new_tensors_allowed",["True"], 'bool', delete_after_use=False)
         else:
-            return params_func(cmd, "new_tensors_allowed",["False"], 'bool')
+            return params_func(cmd, "new_tensors_allowed",["False"], 'bool', delete_after_use=False)
 
 def get_tensor(id):
-    return syft.tensor.FloatTensor(data=int(id),data_is_pointer=True)
+    return syft.tensor.FloatTensor(data=int(id),data_is_pointer=True, delete_after_use=False)
 
 def __getitem__(id):
         return get_tensor(id)
 
-def params_func(cmd_func, name, params, return_type=None):
+def params_func(cmd_func, name, params, return_type=None, delete_after_use=True):
     # makes things fail gracefully - without this, interruping the process early
     # can cause the client and the server to go out of sync
     with DelayedKeyboardInterrupt():
@@ -92,7 +92,7 @@ def params_func(cmd_func, name, params, return_type=None):
             if(res != '-1' and res != ''):
                 if(verbose):
                     print("FloatTensor.__init__: " +  res)
-                return syft.tensor.FloatTensor(data=int(res),data_is_pointer=True)
+                return syft.tensor.FloatTensor(data=int(res),data_is_pointer=True, delete_after_use=delete_after_use)
             return None
         elif(return_type == 'IntTensor'):
             if(res != '-1' and res != ''):
@@ -143,6 +143,6 @@ def send_json(message,response=True):
             raise Exception(res)
         return res
 
-def no_params_func(cmd_func, name, return_type):
-    return params_func(cmd_func, name, [], return_type)
+def no_params_func(cmd_func, name, return_type, delete_after_use=True):
+    return params_func(cmd_func, name, [], return_type, delete_after_use)
 
