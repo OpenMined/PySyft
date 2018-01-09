@@ -1278,8 +1278,8 @@ class FloatTensor():
                 return res
         return self
 
-    def no_params_func(self, name, return_response=False, return_type='FloatTensor'):
-        return (self.params_func(name, [], return_response, return_type)) 
+    def no_params_func(self, name, return_response=False, return_type='FloatTensor', delete_after_use=True):
+        return (self.params_func(name, [], return_response, return_type, delete_after_use=delete_after_use)) 
 
     def arithmetic_operation(self, x, name, inline=False):
 
@@ -1309,7 +1309,7 @@ class FloatTensor():
         """
         if (self.id is not None):
             if self.delete_after_use:
-                response = self.no_params_func("delete", return_response=True, return_type=str)
+                self.no_params_func("delete", return_response=True, return_type=str)
         self.controller = None
         self.id = None
 
