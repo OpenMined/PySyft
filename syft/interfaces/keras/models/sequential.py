@@ -1,8 +1,12 @@
 import syft.nn as nn
 import sys
 from syft.interfaces.keras.layers import Log
+<<<<<<< HEAD
 from syft import FloatTensor
 import numpy as np
+=======
+import json
+>>>>>>> WIP: Add a first graph topology serialization using JSON
 
 class Sequential(object):
 
@@ -70,3 +74,28 @@ class Sequential(object):
 
 	def get_weights(self):
 		return self.syft.parameters()
+
+	def to_json(self):
+		json_str = self.syft.to_json()
+		# Postprocessing to match keras
+
+		o = json.loads(json_str)
+
+		o['config'][0]['config']['batch_input_shape'] = [None] + list(self.layers[0].input_shape)
+
+		new_config = []
+		for layer in o['config']:
+			if layer["class_name"] == 'Linear':
+				layer["class_name"] = 'Dense'
+				layer["config"]["name"] = "dense_" + layer["config"]["name"].split("_")[-1]
+			elif layer["class_name"] == "Softmax":
+				new_config[-1]["config"]["activation"] = "softmax"
+				continue
+			elif layer["class_name"] == "ReLU":
+				new_config[-1]["config"]["activation"] = "relu"
+				continue
+
+			new_config.append(layer)
+		o['config'] = new_config
+
+		return json.dumps(o)

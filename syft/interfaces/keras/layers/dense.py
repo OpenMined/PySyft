@@ -24,7 +24,7 @@ class Dense(object):
 		self.syft_model = nn.Linear(int(np.sum(self.input_shape)),self.units)
 		self.ordered_syft.append(self.syft_model)
 
-		if(self.activation_str != None):
+		if(self.activation_str != None and self.activation_str != "linear"):
 			if(self.activation_str == 'relu'):
 				self.syft_activation = nn.ReLU()
 			elif(self.activation_str == 'softmax'):
