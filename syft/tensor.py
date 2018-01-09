@@ -1297,7 +1297,10 @@ class FloatTensor():
 
         response = self.controller.send_json(
             self.cmd(operation_cmd, [parameter]))  # sends the command
-        return FloatTensor(data=int(response), data_is_pointer=True)
+        if int(response) == self.id:
+            return self
+        else:
+            return FloatTensor(data=int(response), data_is_pointer=True)
 
     def delete_tensor(self):
         """
