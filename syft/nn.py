@@ -203,12 +203,14 @@ class Model():
 			test_target = np.array(test_target).astype('float')
 		if(type(test_target) == np.array or type(test_target) == np.ndarray):
 			test_target = FloatTensor(test_target, autograd=True, delete_after_use=True)
-		y_true = test_target.to_numpy()
+		test_size = test_target.shape()[0] - (test_target.shape()[0] % batch_size) # Discard test examples that don't fit in the batches
+		y_true = test_target.to_numpy()[:test_size]
 		loss, predictions = self.sc.params_func(self.cmd, "evaluate", [test_input.id, test_target.id, criterion.id, batch_size], return_type='FloatTensor_list')
 		loss = loss.to_numpy()[0]
+
 		if verbose:
 			print("Test loss = {}".format(loss))
-		y_pred = predictions.to_numpy()
+		y_pred = predictions.to_numpy()[:test_size]
 
 		metrics_dict = {}
 		for metric in metrics:
