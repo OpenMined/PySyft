@@ -224,7 +224,7 @@ class Model():
 			if verbose:
 				print("{} = {}".format(metric_name, result))
 
-		return loss, metrics_result, y_pred, y_true
+		return loss, metrics_result
 
 	def __repr__(self,verbose=True):
 
