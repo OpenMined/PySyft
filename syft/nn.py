@@ -6,7 +6,7 @@ import numpy as np
 import syft.metrics
 
 class Model():
-	def __init__(self, id=None, batch_size=100):
+	def __init__(self, id=None):
 		self.sc = controller
 		self.params = False
 		self.type = None
