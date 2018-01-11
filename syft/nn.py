@@ -3,10 +3,10 @@ from syft.utils import Progress
 from syft import FloatTensor
 import sys, time
 import numpy as np
-
+import syft.metrics
 
 class Model():
-	def __init__(self, id=None):
+	def __init__(self, id=None, batch_size=100):
 		self.sc = controller
 		self.params = False
 		self.type = None
@@ -23,7 +23,6 @@ class Model():
 		self.id = int(self.sc.send_json(self.cmd("create",[self._layer_type] + params)))
 
 	def discover(self):
-
 		self._layer_type = self.layer_type()
 		if(self._layer_type == 'linear'):
 			return Linear(id = self.id)
@@ -69,12 +68,12 @@ class Model():
 		if(type(input) == list):
 			input = np.array(input).astype('float')
 		if(type(input) == np.array or type(input) == np.ndarray):
-			input = FloatTensor(input,autograd=True, delete_after_use=False)
+			input = FloatTensor(input,autograd=True, delete_after_use=True)
 
 		if(type(target) == list):
 			target = np.array(target).astype('float')
 		if(type(target) == np.array or type(target) == np.ndarray):
-			target = FloatTensor(target,autograd=True, delete_after_use=False)
+			target = FloatTensor(target,autograd=True, delete_after_use=True)
 
 
 		num_batches = self.sc.params_func(self.cmd,"prepare_to_fit",[input.id, target.id, criterion.id, optim.id, batch_size], return_type='int')
@@ -184,34 +183,41 @@ class Model():
 		return cmd
 
 	def forward(self, input):
-		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor', delete_after_use=False)
+		return self.sc.params_func(self.cmd, "forward", [input.id], return_type='FloatTensor', delete_after_use=False)
 
-	def evaluate(self, input, target, batch_size=100, verbose=True, loss_fn=None):
-		if (type(input) == list):
-			input = np.array(input).astype('float')
-		if (type(target) == list):
-			target = np.array(target)
-		if len(target.shape)>1 and target.shape[1]>1:
-			target_argmax = np.argmax(target, axis=1)
-		loss, accuracy = .0, .0
-		num_batches = target.shape[0] // batch_size
-		if loss_fn == None:
-			loss_fn = self.MSEloss()
+	def evaluate(self, test_input, test_target, criterion, batch_size=128, metrics=[], verbose=True):
 
-		for i in range(num_batches):
-			batch_input = FloatTensor(input[i*batch_size:(i+1)*batch_size], autograd=True)
-			batch_forwarded = self.forward(batch_input)
-			batch_accuracy = float(np.sum(np.argmax(batch_forwarded.to_numpy(), axis=1) == target_argmax[i*batch_size:(i+1)*batch_size])) / batch_size
-			batch_loss = loss_fn(batch_forwarded, FloatTensor(target[i*batch_size:(i+1)*batch_size], autograd=True)).to_numpy()[0]
-			if verbose:
-				print("Test batch {}/{}: Loss = {:.4} - Accuracy = {:.4}%".format(i+1, num_batches, batch_loss, batch_accuracy*100.0))
-			loss += batch_loss
-			accuracy += batch_accuracy
-		accuracy /= float(num_batches)
-		loss /= float(num_batches)
+		if(type(test_input) == list):
+			test_input = np.array(test_input).astype('float')
+		if(type(test_input) == np.array or type(test_input) == np.ndarray):
+			test_input = FloatTensor(test_input, autograd=True, delete_after_use=True)
+
+		if(type(test_target) == list):
+			test_target = np.array(test_target).astype('float')
+		if(type(test_target) == np.array or type(test_target) == np.ndarray):
+			test_target = FloatTensor(test_target, autograd=True, delete_after_use=True)
+		y_true = test_target.to_numpy()
+		loss, predictions = self.sc.params_func(self.cmd, "evaluate", [test_input.id, test_target.id, criterion.id, batch_size], return_type='FloatTensor_list')
+		loss = loss.to_numpy()[0]
 		if verbose:
-			print("\nAverage test loss = {:.4}\nAverage accuracy = {:.4}%".format(loss, accuracy*100.0))
-		return loss, accuracy
+			print("Test loss = {}".format(loss))
+		y_pred = predictions.to_numpy()
+
+		metrics_dict = {}
+		for metric in metrics:
+			if (callable(metric)):
+				metrics_dict[metric.__name__] = metric
+			else:
+				metrics_dict[metric] = syft.metrics.get(metric)
+
+		metrics_result = {}
+		for metric_name, metric_fn in metrics_dict.items():
+			result = metric_fn(y_true, y_pred)
+			metrics_result[metric_name] = result
+			if verbose:
+				print("{} = {}".format(metric_name, result))
+
+		return loss, metrics_result, y_pred, y_true
 
 	def __repr__(self,verbose=True):
 
