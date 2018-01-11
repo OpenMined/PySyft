@@ -383,7 +383,7 @@ class FloatTensor():
         return self.params_func("clamp", [min, max], return_response=True)
 
     def contiguous(self):
-        """Returns a copy of the input.
+        """Returns a contiguous tensor containing the same data as self tensor.
 
         Returns
         -------
