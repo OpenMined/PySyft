@@ -327,6 +327,18 @@ class IntTensor(BaseTensor):
             'tensorIndexParams': params}
         return cmd
 
+    def gpu(self):
+        """
+        Returns a GPU copy of this storage if it's not already on the GPU
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("gpu")
+
     def is_contiguous(self):
         return True
 
