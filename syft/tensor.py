@@ -43,11 +43,11 @@ class BaseTensor():
         Performs in place element-wise addition arithmetic between two tensors
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             The Second tensor to perform addition with.
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Caller with values inplace
         """
         return self.arithmetic_operation(x, "add", True)
@@ -57,11 +57,11 @@ class BaseTensor():
         Performs division arithmetic between two tensors
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Second divident tensor
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Output tensor
         """
         return self.arithmetic_operation(x, "div", False)
@@ -71,11 +71,11 @@ class BaseTensor():
         Performs division arithmetic between two tensors inplace.
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Second divident tensor
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Caller with values inplace
         """
         return self.arithmetic_operation(x, "div", True)
@@ -86,11 +86,11 @@ class BaseTensor():
         returns a tensor with the result.
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Exponent tensor
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Output tensor
         """
         return self.arithmetic_operation(x, "pow", False)
@@ -101,11 +101,11 @@ class BaseTensor():
         returns a tensor with the result inplace.
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Exponent tensor
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Caller with values inplace
         """
         return self.arithmetic_operation(x, "pow", True)
@@ -116,11 +116,11 @@ class BaseTensor():
         returns a tensor with the result.
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Exponent tensor
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Output tensor
         """
         return self.arithmetic_operation(x, "pow", False)
@@ -130,11 +130,11 @@ class BaseTensor():
         Takes the power of each element in input ('self') with 'x', inplace.
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Exponent tensor
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Caller with values inplace
         """
         return self.arithmetic_operation(x, "pow", True)
@@ -144,11 +144,11 @@ class BaseTensor():
         Performs Modulus arithmetic operation between two tensors.
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Dividend tensor
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Output tensor
         """
         return self.arithmetic_operation(x, "remainder", False)
@@ -158,11 +158,11 @@ class BaseTensor():
         Performs Modulus arithmetic operation between two tensors inplace.
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Dividend tensor
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Caller with values inplace
         """
         return self.arithmetic_operation(x, "remainder", True)
@@ -172,11 +172,11 @@ class BaseTensor():
         Performs Multiplication arithmetic operation between two tensors.
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Second tensor to be multiplied with.
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Output tensor
         """
         return self.arithmetic_operation(x, "mul", False)
@@ -186,11 +186,11 @@ class BaseTensor():
         Performs Multiplication arithmetic operation between two tensors inplace.
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             Second tensor to be multiplied with.
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Caller with values inplace
         """
         return self.arithmetic_operation(x, "mul", True)
@@ -200,11 +200,11 @@ class BaseTensor():
         Performs element-wise substraction arithmetic between two tensors
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             The Second tensor to perform addition with.
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Output tensor
         """
         return self.arithmetic_operation(x, "sub", False)
@@ -214,11 +214,11 @@ class BaseTensor():
         Performs element-wise substraction arithmetic between two tensors
         Parameters
         ----------
-        x : FloatTensor
+        x : BaseTensor (Subclass)
             The Second tensor to perform addition with.
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Caller with values inplace
         """
         return self.arithmetic_operation(x, "sub", True)
@@ -231,7 +231,7 @@ class BaseTensor():
         ----------
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Output tensor
         """
         return self.arithmetic_operation(divisor, "remainder")
@@ -243,10 +243,10 @@ class BaseTensor():
         ----------
         Returns
         -------
-        FloatTensor
+        BaseTensor (Subclass)
             Caller with values inplace
         """
-        return self.arithmetic_operation(divisor, "remainder", 'FloatTensor')
+        return self.arithmetic_operation(divisor, "remainder", True)
 
 class IntTensor(BaseTensor):
     def __init__(self, data, data_is_pointer=False):
