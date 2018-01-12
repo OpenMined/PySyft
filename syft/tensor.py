@@ -24,6 +24,20 @@ class BaseTensor():
         else:
             return self.__class__(data=int(response), data_is_pointer=True)
 
+    def __add__(self, x):
+        """
+        Performs element-wise addition arithmetic between two tensors
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            The Second tensor to perform addition with.
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Output tensor
+        """
+        return self.arithmetic_operation(x, "add", False)
+
 class IntTensor(BaseTensor):
     def __init__(self, data, data_is_pointer=False):
         self.controller = syft.controller
@@ -41,20 +55,6 @@ class IntTensor(BaseTensor):
                                                      "shape": self.data.shape}))
         elif (data_is_pointer):
             self.id = int(data)
-
-    def __add__(self, x):
-        """
-        Performs element-wise addition arithmetic between two tensors
-        Parameters
-        ----------
-        x : IntTensor
-            The Second tensor to perform addition with.
-        Returns
-        -------
-        IntTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(x, "add", False)
 
     def autograd(self, state):
         "do nothing"
@@ -132,7 +132,7 @@ class IntTensor(BaseTensor):
         else:
             return " - non-contiguous - "
 
-class FloatTensor():
+class FloatTensor(BaseTensor):
     def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=True):
         self.controller = syft.controller
         self.delete_after_use = delete_after_use
@@ -343,20 +343,6 @@ class FloatTensor():
                 return self
             else:
                 return False
-
-    def __add__(self, x):
-        """
-        Performs element-wise addition arithmetic between two tensors
-        Parameters
-        ----------
-        x : FloatTensor
-            The Second tensor to perform addition with.
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(x, "add", False)
 
     def __iadd__(self, x):
         """
@@ -1315,28 +1301,7 @@ class FloatTensor():
         return self
 
     def no_params_func(self, name, return_response=False, return_type='FloatTensor', delete_after_use=True):
-        return (self.params_func(name, [], return_response, return_type, delete_after_use=delete_after_use)) 
-
-    def arithmetic_operation(self, x, name, inline=False):
-
-        operation_cmd = name
-
-        if (type(x) == FloatTensor):
-            operation_cmd += "_elem"
-            parameter = x.id
-        else:
-            operation_cmd += "_scalar"
-            parameter = str(x)
-
-        if (inline):
-            operation_cmd += "_"
-
-        response = self.controller.send_json(
-            self.cmd(operation_cmd, [parameter]))  # sends the command
-        if int(response) == self.id:
-            return self
-        else:
-            return FloatTensor(data=int(response), data_is_pointer=True)
+        return (self.params_func(name, [], return_response, return_type, delete_after_use=delete_after_use))
 
     def delete_tensor(self):
         """
