@@ -20,6 +20,41 @@ class IntTensor():
         elif (data_is_pointer):
             self.id = int(data)
 
+    def __add__(self, x):
+        """
+        Performs element-wise addition arithmetic between two tensors
+        Parameters
+        ----------
+        x : IntTensor
+            The Second tensor to perform addition with.
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.arithmetic_operation(x, "add", False)
+
+    def arithmetic_operation(self, x, name, inline=False):
+
+        operation_cmd = name
+
+        if (type(x) == IntTensor):
+            operation_cmd += "_elem"
+            parameter = x.id
+        else:
+            operation_cmd += "_scalar"
+            parameter = str(x)
+
+        if (inline):
+            operation_cmd += "_"
+
+        response = self.controller.send_json(
+            self.cmd(operation_cmd, [parameter]))  # sends the command
+        if int(response) == self.id:
+            return self
+        else:
+            return IntTensor(data=int(response), data_is_pointer=True)
+
     def autograd(self, state):
         "do nothing"
 
