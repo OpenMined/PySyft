@@ -57,7 +57,8 @@ class Sequential(object):
                        criterion=self.loss,
                        optim=self.optimizer.syft,
                        iters=epochs,
-                       log_interval=1)
+                       log_interval=1,
+                       verbose=verbose)
 		return final_loss
 
 	def predict(self,x):
