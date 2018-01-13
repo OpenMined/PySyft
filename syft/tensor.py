@@ -376,6 +376,18 @@ class IntTensor(BaseTensor):
         else:
             return " - non-contiguous - "
 
+    def zero_(self):
+        """
+        Fills this tensor with zeros inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Caller with values inplace
+        """
+        return self.no_params_func("zero_")
+
 class FloatTensor(BaseTensor):
     def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=False):
         self.controller = syft.controller
