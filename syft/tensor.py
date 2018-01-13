@@ -269,6 +269,18 @@ class IntTensor(BaseTensor):
     def autograd(self, state):
         "do nothing"
 
+    def abs(self):
+        """
+        Returns absolute value of tensor as a new tensor
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor:
+            Output tensor
+        """
+        return self.no_params_func("abs", return_response=True)
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
