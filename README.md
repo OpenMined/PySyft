@@ -16,16 +16,27 @@ The goal of this library is to give the user the ability to efficiently train De
 
 ## Local setup
 
-### Prerequisites
+### Using [Anaconda](http://anaconda.org) (recommended)
+
+- [Install Anaconda](https://www.anaconda.com/download/) or [Miniconda](https://conda.io/miniconda.html) for your platform
+- Install our OpenMined Unity app by following the guidelines [here](https://github.com/OpenMined/OpenMined)
+- Install PySyft
+  - Linux: run `./install_for_anaconda.sh`
+  - Windows: execute `https://conda.io/miniconda.html`
+
+### Using system Python
+
+Skip this section if you installed PySyft using Anaconda above.
+
+#### Prerequisites
 
 - Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
 - Set up a virtual environment for the Python libraries (optional, recommended)
-- Install our OpenMined Unity app by following the guidelines [here]
-(https://github.com/OpenMined/OpenMined)
+- Install our OpenMined Unity app by following the guidelines [here](https://github.com/OpenMined/OpenMined)
 
-### Python Requirements
+#### Python Requirements
 
-The Python dependencies are listed in [`requirements.txt`](./requirements.txt) and can be installed through
+The Python dependencies are listed in [`requirements.txt`](./requirements.txt) and can be installed through:
 ```sh
 pip3 install -r requirements.txt
 ```
@@ -35,10 +46,9 @@ If you simply want to to _use_ PySyft, it is enough to install the library with:
 ```sh
 python3 setup.py install
 ```
-note: If you have anaconda installed, you can just run `bash install_for_anaconda.sh`.
 
 ## For Contributors
-If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then sign into our [Slack Team](https://openmined.slack.com/) channel #team_pysyft to let us know which projects sound interesting to you! (or propose your own!).
+If you are interested in contributing to Syft, first check out our [Contributor Quickstart Guide](https://github.com/OpenMined/Docs/blob/master/contributing/quickstart.md) and then sign into our [Slack Team](https://openmined.slack.com/) channel `#team_pysyft` to let us know which projects sound interesting to you! (or propose your own!).
 
 ## Relevant Literature
 As both Homomorphic Encryption and Deep Learning are still somewhat sparsely known, below is a curated list of relevant reading materials to bring you up to speed with the major concepts and themes of these exciting fields.
