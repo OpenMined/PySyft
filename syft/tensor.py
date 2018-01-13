@@ -132,7 +132,7 @@ class IntTensor():
             return " - non-contiguous - "
 
 class FloatTensor():
-    def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=True):
+    def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=False):
         self.controller = syft.controller
         self.delete_after_use = delete_after_use
         if (data is not None and not data_is_pointer):
