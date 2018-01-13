@@ -281,6 +281,18 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs", return_response=True)
 
+    def sqrt(self):
+        """
+        Returns a new tensor with the square-root of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor:
+            Output Tensor
+        """
+        return self.no_params_func("sqrt", return_response=True)
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
