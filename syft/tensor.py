@@ -2,7 +2,253 @@ import numpy as np
 
 import syft.controller
 
-class IntTensor():
+class BaseTensor():
+    def arithmetic_operation(self, x, name, inline=False):
+
+        operation_cmd = name
+
+        if (type(x) == type(self)):
+            operation_cmd += "_elem"
+            parameter = x.id
+        else:
+            operation_cmd += "_scalar"
+            parameter = str(x)
+
+        if (inline):
+            operation_cmd += "_"
+
+        response = self.controller.send_json(
+            self.cmd(operation_cmd, [parameter]))  # sends the command
+        if int(response) == self.id:
+            return self
+        else:
+            return self.__class__(data=int(response), data_is_pointer=True)
+
+    def __add__(self, x):
+        """
+        Performs element-wise addition arithmetic between two tensors
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            The Second tensor to perform addition with.
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Output tensor
+        """
+        return self.arithmetic_operation(x, "add", False)
+
+    def __iadd__(self, x):
+        """
+        Performs in place element-wise addition arithmetic between two tensors
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            The Second tensor to perform addition with.
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Caller with values inplace
+        """
+        return self.arithmetic_operation(x, "add", True)
+
+    def __truediv__(self, x):
+        """
+        Performs division arithmetic between two tensors
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Second divident tensor
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Output tensor
+        """
+        return self.arithmetic_operation(x, "div", False)
+
+    def __itruediv__(self, x):
+        """
+        Performs division arithmetic between two tensors inplace.
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Second divident tensor
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Caller with values inplace
+        """
+        return self.arithmetic_operation(x, "div", True)
+
+    def __pow__(self, x):
+        """
+        Takes the power of each element in input ('self') with 'x' and
+        returns a tensor with the result.
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Exponent tensor
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Output tensor
+        """
+        return self.arithmetic_operation(x, "pow", False)
+
+    def __ipow__(self, x):
+        """
+        Takes the power of each element in input ('self') with 'x' and
+        returns a tensor with the result inplace.
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Exponent tensor
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Caller with values inplace
+        """
+        return self.arithmetic_operation(x, "pow", True)
+
+    def pow(self, x):
+        """
+        Takes the power of each element in input ('self') with 'x' and
+        returns a tensor with the result.
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Exponent tensor
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Output tensor
+        """
+        return self.arithmetic_operation(x, "pow", False)
+
+    def pow_(self, x):
+        """
+        Takes the power of each element in input ('self') with 'x', inplace.
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Exponent tensor
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Caller with values inplace
+        """
+        return self.arithmetic_operation(x, "pow", True)
+
+    def __mod__(self, x):
+        """
+        Performs Modulus arithmetic operation between two tensors.
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Dividend tensor
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Output tensor
+        """
+        return self.arithmetic_operation(x, "remainder", False)
+
+    def __imod__(self, x):
+        """
+        Performs Modulus arithmetic operation between two tensors inplace.
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Dividend tensor
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Caller with values inplace
+        """
+        return self.arithmetic_operation(x, "remainder", True)
+
+    def __mul__(self, x):
+        """
+        Performs Multiplication arithmetic operation between two tensors.
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Second tensor to be multiplied with.
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Output tensor
+        """
+        return self.arithmetic_operation(x, "mul", False)
+
+    def __imul__(self, x):
+        """
+        Performs Multiplication arithmetic operation between two tensors inplace.
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            Second tensor to be multiplied with.
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Caller with values inplace
+        """
+        return self.arithmetic_operation(x, "mul", True)
+
+    def __sub__(self, x):
+        """
+        Performs element-wise substraction arithmetic between two tensors
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            The Second tensor to perform addition with.
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Output tensor
+        """
+        return self.arithmetic_operation(x, "sub", False)
+
+    def __isub__(self, x):
+        """
+        Performs element-wise substraction arithmetic between two tensors
+        Parameters
+        ----------
+        x : BaseTensor (Subclass)
+            The Second tensor to perform addition with.
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Caller with values inplace
+        """
+        return self.arithmetic_operation(x, "sub", True)
+
+    def remainder(self, divisor):
+        """
+        Computes the element-wise remainder of division.
+        inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Output tensor
+        """
+        return self.arithmetic_operation(divisor, "remainder")
+
+    def remainder_(self, divisor):
+        """
+        Computes the element-wise remainder of division, inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        BaseTensor (Subclass)
+            Caller with values inplace
+        """
+        return self.arithmetic_operation(divisor, "remainder", True)
+
+class IntTensor(BaseTensor):
     def __init__(self, data, data_is_pointer=False):
         self.controller = syft.controller
 
@@ -32,7 +278,7 @@ class IntTensor():
         Iterable
             Output list
         """
-        return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))           
+        return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))
 
     def __repr__(self, verbose=True):
 
@@ -67,11 +313,11 @@ class IntTensor():
         return self
 
     def no_params_func(self, name, return_response=False, return_type='IntTensor'):
-        return (self.params_func(name, [], return_response, return_type))        
+        return (self.params_func(name, [], return_response, return_type))
 
     def get(self, param_name="size", response_as_tensor=False, return_type='IntTensor'):
         return self.params_func(name="get", params=[param_name], return_response=True,
-                                return_type="string")        
+                                return_type="string")
 
     def cmd(self, functionCall, params=[]):
         cmd = {
@@ -80,6 +326,18 @@ class IntTensor():
             'objectIndex': self.id,
             'tensorIndexParams': params}
         return cmd
+
+    def gpu(self):
+        """
+        Returns a GPU copy of this storage if it's not already on the GPU
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("gpu")
 
     def is_contiguous(self):
         return True
@@ -96,15 +354,15 @@ class IntTensor():
         else:
             return " - non-contiguous - "
 
-class FloatTensor():
-    def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=True):
+class FloatTensor(BaseTensor):
+    def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=False):
         self.controller = syft.controller
         self.delete_after_use = delete_after_use
         if (data is not None and not data_is_pointer):
 
             if (type(data) == list):
                 data = np.array(data)
-            
+
             data = data.astype('float')
 
             self.data = data
@@ -307,34 +565,6 @@ class FloatTensor():
                 return self
             else:
                 return False
-
-    def __add__(self, x):
-        """
-        Performs element-wise addition arithmetic between two tensors
-        Parameters
-        ----------
-        x : FloatTensor
-            The Second tensor to perform addition with.
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(x, "add", False)
-
-    def __iadd__(self, x):
-        """
-        Performs in place element-wise addition arithmetic between two tensors
-        Parameters
-        ----------
-        x : FloatTensor
-            The Second tensor to perform addition with.
-        Returns
-        -------
-        FloatTensor
-            Caller with values inplace
-        """
-        return self.arithmetic_operation(x, "add", True)
 
     def backward(self, grad=None):
         if (grad is None):
@@ -559,98 +789,11 @@ class FloatTensor():
     def index_select(self, dim, indices):
         return self.params_func("index_select", [indices.id, dim], return_response=True)
 
-    def __truediv__(self, x):
-        """
-        Performs division arithmetic between two tensors
-        Parameters
-        ----------
-        x : FloatTensor
-            Second divident tensor
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(x, "div", False)
-
-    def __itruediv__(self, x):
-        """
-        Performs division arithmetic between two tensors inplace.
-        Parameters
-        ----------
-        x : FloatTensor
-            Second divident tensor
-        Returns
-        -------
-        FloatTensor
-            Caller with values inplace
-        """
-        return self.arithmetic_operation(x, "div", True)
-
     def keepgrad(self):
         if (self.get("keepgrad") == "1"):
             return True
         else:
             return False
-
-    def __pow__(self, x):
-        """
-        Takes the power of each element in input ('self') with 'x' and
-        returns a tensor with the result.
-        Parameters
-        ----------
-        x : FloatTensor
-            Exponent tensor
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(x, "pow", False)
-
-    def __ipow__(self, x):
-        """
-        Takes the power of each element in input ('self') with 'x' and
-        returns a tensor with the result inplace.
-        Parameters
-        ----------
-        x : FloatTensor
-            Exponent tensor
-        Returns
-        -------
-        FloatTensor
-            Caller with values inplace
-        """
-        return self.arithmetic_operation(x, "pow", True)
-
-    def pow(self, x):
-        """
-        Takes the power of each element in input ('self') with 'x' and
-        returns a tensor with the result.
-        Parameters
-        ----------
-        x : FloatTensor
-            Exponent tensor
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(x, "pow", False)
-
-    def pow_(self, x):
-        """
-        Takes the power of each element in input ('self') with 'x', inplace.
-        Parameters
-        ----------
-        x : FloatTensor
-            Exponent tensor
-        Returns
-        -------
-        FloatTensor
-            Caller with values inplace
-        """
-        return self.arithmetic_operation(x, "pow", True)
 
     def floor(self):
         """
@@ -693,7 +836,7 @@ class FloatTensor():
         Parameters
         ----------
         Returns
-        ------- 
+        -------
         FloatTensor
             Output tensor
         """
@@ -727,62 +870,6 @@ class FloatTensor():
 
     def grad(self):
         return self.get("grad", response_as_tensor=True)
-
-    def __mod__(self, x):
-        """
-        Performs Modulus arithmetic operation between two tensors.
-        Parameters
-        ----------
-        x : FloatTensor
-            Dividend tensor
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(x, "remainder", False)
-
-    def __imod__(self, x):
-        """
-        Performs Modulus arithmetic operation between two tensors inplace.
-        Parameters
-        ----------
-        x : FloatTensor
-            Dividend tensor
-        Returns
-        -------
-        FloatTensor
-            Caller with values inplace
-        """
-        return self.arithmetic_operation(x, "remainder", True)
-
-    def __mul__(self, x):
-        """
-        Performs Multiplication arithmetic operation between two tensors.
-        Parameters
-        ----------
-        x : FloatTensor
-            Second tensor to be multiplied with.
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(x, "mul", False)
-
-    def __imul__(self, x):
-        """
-        Performs Multiplication arithmetic operation between two tensors inplace.
-        Parameters
-        ----------
-        x : FloatTensor
-            Second tensor to be multiplied with.
-        Returns
-        -------
-        FloatTensor
-            Caller with values inplace
-        """
-        return self.arithmetic_operation(x, "mul", True)
 
     def __neg__(self):
         return self.neg()
@@ -830,7 +917,7 @@ class FloatTensor():
         return self.params_func("norm", [dim, keepdim, p], return_response=True)
 
     def relu(self):
-        
+
         return self.no_params_func("relu", return_response=True)
 
     def rsqrt(self):
@@ -962,7 +1049,7 @@ class FloatTensor():
 
     def softmax(self, dim=-1):
         return self.params_func("softmax", [dim], return_response=True)
-    
+
     def split(self, split_size_or_sections, dim=0):
         """
         Splits the tensor into chunks. If split_size_or_sections is an integer type, then tensor will be split into chunks of size split_size_or_sections (if possible). Last chunk will be smaller if the tensor size along a given dimension is not divisible by split_size. If split_size_or_sections is a list, then tensor will be split into len(split_size_or_sections) chunks with sizes in dim according to split_size_or_sections.
@@ -983,7 +1070,7 @@ class FloatTensor():
 
     def std(self, dim=-1, keepdim=False, unbiased=True):
         """
-        Returns the standard-deviation of each row of the input tensor in the given dimension dim. 
+        Returns the standard-deviation of each row of the input tensor in the given dimension dim.
 
         If unbiased is False, then the standard-deviation will be calculated via the biased estimator. Otherwise, Bessel’s correction will be used.
         Parameters
@@ -1063,37 +1150,9 @@ class FloatTensor():
         else:
             return "--- non-contiguous tensor ---"
 
-    def __sub__(self, x):
-        """
-        Performs element-wise substraction arithmetic between two tensors
-        Parameters
-        ----------
-        x : FloatTensor
-            The Second tensor to perform addition with.
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(x, "sub", False)
-
-    def __isub__(self, x):
-        """
-        Performs element-wise substraction arithmetic between two tensors
-        Parameters
-        ----------
-        x : FloatTensor
-            The Second tensor to perform addition with.
-        Returns
-        -------
-        FloatTensor
-            Caller with values inplace
-        """
-        return self.arithmetic_operation(x, "sub", True)
-
     def var(self, dim=-1, keepdim=False, unbiased=True):
         """
-        Returns the variance of each row of the input tensor in the given dimension dim. 
+        Returns the variance of each row of the input tensor in the given dimension dim.
 
         If unbiased is False, then the variance will be calculated via the biased estimator. Otherwise, Bessel’s correction will be used.
         Parameters
@@ -1155,7 +1214,7 @@ class FloatTensor():
         return self.params_func("unsqueeze", [dim], return_response=True)
 
     def unsqueeze_(self,dim):
-        return self.params_func("unsqueeze_", [dim], return_response=True)        
+        return self.params_func("unsqueeze_", [dim], return_response=True)
 
     def zero_(self):
         """
@@ -1183,7 +1242,7 @@ class FloatTensor():
             grad = 'None'
 
         co = str(self.creation_op())
-        
+
         desc = "[syft.FloatTensor:"+str(self.id)+" grad:" + grad + " size:" + type_str + " c:" + str(self.children()) + " p:" + str(self.creators()) + " init:" + co + "]" + "\n"
 
         if (verbose):
@@ -1215,7 +1274,7 @@ class FloatTensor():
 
     def __str__(self):
         tensor_str = str(self.to_numpy()).replace("]", " ").replace("[", " ")
-        
+
         return tensor_str
 
     def get(self, param_name="size", response_as_tensor=False):
@@ -1279,28 +1338,7 @@ class FloatTensor():
         return self
 
     def no_params_func(self, name, return_response=False, return_type='FloatTensor', delete_after_use=True):
-        return (self.params_func(name, [], return_response, return_type, delete_after_use=delete_after_use)) 
-
-    def arithmetic_operation(self, x, name, inline=False):
-
-        operation_cmd = name
-
-        if (type(x) == FloatTensor):
-            operation_cmd += "_elem"
-            parameter = x.id
-        else:
-            operation_cmd += "_scalar"
-            parameter = str(x)
-
-        if (inline):
-            operation_cmd += "_"
-
-        response = self.controller.send_json(
-            self.cmd(operation_cmd, [parameter]))  # sends the command
-        if int(response) == self.id:
-            return self
-        else:
-            return FloatTensor(data=int(response), data_is_pointer=True)
+        return (self.params_func(name, [], return_response, return_type, delete_after_use=delete_after_use))
 
     def delete_tensor(self):
         """
@@ -1470,31 +1508,6 @@ class FloatTensor():
             Caller with values inplace
         """
         return self.no_params_func("rsqrt_")
-
-    def remainder(self, divisor):
-        """
-        Computes the element-wise remainder of division.
-        inplace.
-        Parameters
-        ----------
-        Returns
-        -------
-        FloatTensor
-            Output tensor
-        """
-        return self.arithmetic_operation(divisor, "remainder")
-
-    def remainder_(self, divisor):
-        """
-        Computes the element-wise remainder of division, inplace.
-        Parameters
-        ----------
-        Returns
-        -------
-        FloatTensor
-            Caller with values inplace
-        """
-        return self.arithmetic_operation(divisor, "remainder", 'FloatTensor')
 
     def sample(self,dim):
         """
