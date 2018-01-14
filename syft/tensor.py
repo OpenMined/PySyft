@@ -280,6 +280,17 @@ class IntTensor(BaseTensor):
         """
         return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))
 
+    def reciprocal(self):
+        """
+        Computes the reciprocal of the input tensor.
+        ----------
+        Returns
+        -------
+        IntTensor:
+            Output Tensor
+        """
+        return self.no_params_func("reciprocal", return_response=True)
+    
     def __repr__(self, verbose=True):
 
         tensor_str = str(self.to_numpy())
