@@ -288,7 +288,7 @@ class IntTensor(BaseTensor):
         ----------
         Returns
         -------
-        FloatTensor
+        IntTensor
             Output tensor
         """
         return self.no_params_func("abs_", return_response=True)
@@ -852,6 +852,7 @@ class FloatTensor(BaseTensor):
             Caller with values inplace
         """
         return self.no_params_func("floor_")
+
     def random_(self):
         """
         Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)
