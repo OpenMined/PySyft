@@ -304,6 +304,16 @@ class IntTensor(BaseTensor):
         """
         return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))
 
+    def trace(self):
+        """
+        Returns a new tensor with the sum along diagonals of a 2D tensor.
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("trace", return_response=True)
+
     def __repr__(self, verbose=True):
 
         tensor_str = str(self.to_numpy())
