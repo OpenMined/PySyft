@@ -39,8 +39,7 @@ class Sequential(object):
 			self.compiled = True
 
 			if(loss == 'categorical_crossentropy'):
-				self.add(Log())
-				self.loss = nn.NLLLoss()
+				self.loss = nn.CategoricalCrossEntropy()
 			elif(loss == 'mean_squared_error'):
 				self.loss = nn.MSELoss()
 
@@ -51,14 +50,15 @@ class Sequential(object):
 		else:
 			sys.stderr.write("Warning: Model already compiled... please rebuild from scratch if you need to change things")
 
-	def fit(self,x_train,y_train,batch_size,epochs,verbose,validation_data):
+	def fit(self,x_train,y_train,batch_size,epochs,verbose=False,validation_data=None):
 		final_loss = self.syft.fit(input=x_train,
-                       target=y_train,                       
+                       target=y_train,
                        batch_size=batch_size,
                        criterion=self.loss,
                        optim=self.optimizer.syft,
                        iters=epochs,
-                       log_interval=1)
+                       log_interval=1,
+                       verbose=verbose)
 		return final_loss
 
 	def predict(self,x):
@@ -66,5 +66,3 @@ class Sequential(object):
 
 	def get_weights(self):
 		return self.syft.parameters()
-
-

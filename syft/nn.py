@@ -58,7 +58,7 @@ class Model():
 
 	def parameters(self):
 		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list', delete_after_use=False)
-	
+
 	def num_parameters(self):
 		return self.sc.no_params_func(self.cmd,"param_count",return_type='int')
 
@@ -422,6 +422,21 @@ class MSELoss(Model):
 			self.sc = controller
 			self.type = "model"
 			self._layer_type = "mseloss"
+
+	def forward(self, input, target):
+		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
+
+class CategoricalCrossEntropy(Model):
+	def __init__(self, id=None):
+		super(CategoricalCrossEntropy, self).__init__()
+
+		if (id is None):
+			self.init("categorical_crossentropy")
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "categorical_crossentropy"
 
 	def forward(self, input, target):
 		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
