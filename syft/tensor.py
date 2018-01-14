@@ -269,6 +269,18 @@ class IntTensor(BaseTensor):
     def autograd(self, state):
         "do nothing"
 
+    def abs(self):
+        """
+        Returns absolute value of tensor as a new tensor
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor:
+            Output tensor
+        """
+        return self.no_params_func("abs", return_response=True)
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
@@ -290,7 +302,17 @@ class IntTensor(BaseTensor):
             Output Tensor
         """
         return self.no_params_func("reciprocal", return_response=True)
-    
+      
+    def trace(self):
+        """
+        Returns a new tensor with the sum along diagonals of a 2D tensor.
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("trace", return_response=True)
+      
     def __repr__(self, verbose=True):
 
         tensor_str = str(self.to_numpy())
