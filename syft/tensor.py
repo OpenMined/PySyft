@@ -281,6 +281,30 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs", return_response=True)
 
+    def neg(self):
+        """
+        Sets negative of the elements of tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("neg", return_response=True)
+
+    def neg_(self):
+        """
+        Sets negative of the elements of tensor inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Caller with values inplace
+        """
+        return self.no_params_func("neg_")
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
