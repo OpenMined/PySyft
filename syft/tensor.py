@@ -281,6 +281,18 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs", return_response=True)
 
+    def abs_(self):
+        """
+        Replaces tensor values with its absolute value
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.no_params_func("abs_", return_response=True)
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
