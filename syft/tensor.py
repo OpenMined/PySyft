@@ -281,6 +281,18 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs", return_response=True)
 
+    def abs_(self):
+        """
+        Replaces tensor values with its absolute value
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("abs_", return_response=True)
+
     def equal(self, x):
         """
         Determines whether the given tensor has the same size and elements as this instance.
@@ -853,6 +865,7 @@ class FloatTensor(BaseTensor):
             Caller with values inplace
         """
         return self.no_params_func("floor_")
+
     def random_(self):
         """
         Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)
