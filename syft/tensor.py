@@ -268,6 +268,100 @@ class IntTensor(BaseTensor):
     def autograd(self, state):
         "do nothing"
 
+    def abs(self):
+        """
+        Returns absolute value of tensor as a new tensor
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor:
+            Output tensor
+        """
+        return self.no_params_func("abs", return_response=True)
+
+    def abs_(self):
+        """
+        Replaces tensor values with its absolute value
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("abs_", return_response=True)
+
+    def lt(self, other):
+        """
+        Performs element-wise > comparison and returns 1 if the element
+        is less than a corresponding element in other Tensor, and 0 otherwise.
+        Returns a new Tensor with results of the comparison.
+
+        Parameters
+        __________
+        other: IntTensor to compare with
+
+        Returns
+        _________
+        IntTensor
+            Output tensor
+        """
+        return self.params_func("lt", [other.id], return_response=True)
+
+    def lt_(self, other):
+        """
+        Performs inline element-wise > comparison and returns 1 if the element
+        is less than a corresponding element in other Tensor, and 0 otherwise.
+
+        Parameters
+        __________
+        other: IntTensor to compare with
+
+        Returns
+        _________
+        IntTensor
+            Output tensor
+        """
+        return self.params_func("lt_", [other.id], return_response=True)
+
+    def equal(self, x):
+        """
+        Determines whether the given tensor has the same size and elements as this instance.
+
+        :param x: IntTensor
+        :return: True if the given tensor has the same size and elements as this instance. Otherwise, False.
+        """
+        response_string = self.params_func("equal", [x.id], return_response=True, return_type="str")
+        if response_string == "True":
+            return True
+        else:
+            return False
+
+    def neg(self):
+        """
+        Sets negative of the elements of tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("neg", return_response=True)
+    
+    def neg_(self):
+        """
+        Sets negative of the elements of tensor inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Caller with values inplace
+        """
+        return self.no_params_func("neg_")
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
@@ -279,6 +373,39 @@ class IntTensor(BaseTensor):
         """
         return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))
 
+    def sqrt(self):
+        """
+        Returns a new tensor with the square-root of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor:
+            Output Tensor
+        """
+        return self.no_params_func("sqrt", return_response=True)
+
+    def reciprocal(self):
+        """
+        Computes the reciprocal of the input tensor.
+        ----------
+        Returns
+        -------
+        IntTensor:
+            Output Tensor
+        """
+        return self.no_params_func("reciprocal", return_response=True)
+      
+    def trace(self):
+        """
+        Returns a new tensor with the sum along diagonals of a 2D tensor.
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("trace", return_response=True)
+      
     def __repr__(self, verbose=True):
 
         tensor_str = str(self.to_numpy())
@@ -366,7 +493,7 @@ class IntTensor(BaseTensor):
         return self.no_params_func("sign", return_response=True)
 
 class FloatTensor(BaseTensor):
-    def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=False):
+    def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=True):
         self.controller = syft.controller
         self.delete_after_use = delete_after_use
         if (data is not None and not data_is_pointer):
@@ -829,6 +956,7 @@ class FloatTensor(BaseTensor):
             Caller with values inplace
         """
         return self.no_params_func("floor_")
+
     def random_(self):
         """
         Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)

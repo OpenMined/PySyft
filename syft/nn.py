@@ -3,6 +3,7 @@ from syft.utils import Progress
 from syft import FloatTensor
 import sys, time
 import numpy as np
+import syft.metrics
 
 class Model():
 	def __init__(self, id=None):
@@ -22,7 +23,6 @@ class Model():
 		self.id = int(self.sc.send_json(self.cmd("create",[self._layer_type] + params)))
 
 	def discover(self):
-
 		self._layer_type = self.layer_type()
 		if(self._layer_type == 'linear'):
 			return Linear(id = self.id)
@@ -58,7 +58,7 @@ class Model():
 
 	def parameters(self):
 		return self.sc.no_params_func(self.cmd, "params",return_type='FloatTensor_list', delete_after_use=False)
-	
+
 	def num_parameters(self):
 		return self.sc.no_params_func(self.cmd,"param_count",return_type='int')
 
@@ -75,12 +75,12 @@ class Model():
 		if(type(input) == list):
 			input = np.array(input).astype('float')
 		if(type(input) == np.array or type(input) == np.ndarray):
-			input = FloatTensor(input,autograd=True, delete_after_use=False)
+			input = FloatTensor(input,autograd=True, delete_after_use=True)
 
 		if(type(target) == list):
 			target = np.array(target).astype('float')
 		if(type(target) == np.array or type(target) == np.ndarray):
-			target = FloatTensor(target,autograd=True, delete_after_use=False)
+			target = FloatTensor(target,autograd=True, delete_after_use=True)
 
 
 		num_batches = self.sc.params_func(self.cmd,"prepare_to_fit",[input.id, target.id, criterion.id, optim.id, batch_size], return_type='int')
@@ -190,7 +190,43 @@ class Model():
 		return cmd
 
 	def forward(self, input):
-		return self.sc.params_func(self.cmd,"forward",[input.id],return_type='FloatTensor', delete_after_use=False)
+		return self.sc.params_func(self.cmd, "forward", [input.id], return_type='FloatTensor', delete_after_use=False)
+
+	def evaluate(self, test_input, test_target, criterion, batch_size=128, metrics=[], verbose=True):
+
+		if(type(test_input) == list):
+			test_input = np.array(test_input).astype('float')
+		if(type(test_input) == np.array or type(test_input) == np.ndarray):
+			test_input = FloatTensor(test_input, autograd=True, delete_after_use=True)
+
+		if(type(test_target) == list):
+			test_target = np.array(test_target).astype('float')
+		if(type(test_target) == np.array or type(test_target) == np.ndarray):
+			test_target = FloatTensor(test_target, autograd=True, delete_after_use=True)
+		test_size = test_target.shape()[0] - (test_target.shape()[0] % batch_size) # Discard test examples that don't fit in the batches
+		y_true = test_target.to_numpy()[:test_size]
+		loss, predictions = self.sc.params_func(self.cmd, "evaluate", [test_input.id, test_target.id, criterion.id, batch_size], return_type='FloatTensor_list')
+		loss = loss.to_numpy()[0]
+
+		if verbose:
+			print("Test loss = {}".format(loss))
+		y_pred = predictions.to_numpy()[:test_size]
+
+		metrics_dict = {}
+		for metric in metrics:
+			if (callable(metric)):
+				metrics_dict[metric.__name__] = metric
+			else:
+				metrics_dict[metric] = syft.metrics.get(metric)
+
+		metrics_result = {}
+		for metric_name, metric_fn in metrics_dict.items():
+			result = metric_fn(y_true, y_pred)
+			metrics_result[metric_name] = result
+			if verbose:
+				print("{} = {}".format(metric_name, result))
+
+		return loss, metrics_result
 
 	def __repr__(self,verbose=True):
 
@@ -422,6 +458,21 @@ class MSELoss(Model):
 			self.sc = controller
 			self.type = "model"
 			self._layer_type = "mseloss"
+
+	def forward(self, input, target):
+		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
+
+class CategoricalCrossEntropy(Model):
+	def __init__(self, id=None):
+		super(CategoricalCrossEntropy, self).__init__()
+
+		if (id is None):
+			self.init("categorical_crossentropy")
+		else:
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "categorical_crossentropy"
 
 	def forward(self, input, target):
 		return self.sc.params_func(self.cmd, "forward", [input.id, target.id], return_type='FloatTensor', delete_after_use=False)
