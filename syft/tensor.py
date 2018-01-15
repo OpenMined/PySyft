@@ -326,6 +326,19 @@ class IntTensor(BaseTensor):
         """
         return self.params_func("lt_", [other.id], return_response=True)
 
+    def equal(self, x):
+        """
+        Determines whether the given tensor has the same size and elements as this instance.
+
+        :param x: IntTensor
+        :return: True if the given tensor has the same size and elements as this instance. Otherwise, False.
+        """
+        response_string = self.params_func("equal", [x.id], return_response=True, return_type="str")
+        if response_string == "True":
+            return True
+        else:
+            return False
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
