@@ -396,6 +396,18 @@ class IntTensor(BaseTensor):
             Output Tensor
         """
         return self.no_params_func("reciprocal", return_response=True)
+    
+    def reciprocal_(self):
+        """
+        Computes reciprocal of input tensor with values inplace.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Caller with values inplace
+        """
+        return self.no_params_func("reciprocal_")
       
     def trace(self):
         """
