@@ -421,6 +421,18 @@ class IntTensor(BaseTensor):
 
         return tensor_str + "\n" + desc
 
+    def T(self):
+        """
+        Returns a tensor that is a transposed version of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.no_params_func("transpose", return_response=True)
+
     def params_func(self, name, params, return_response=False, return_type='IntTensor'):
         # send the command
         res = self.controller.send_json(
