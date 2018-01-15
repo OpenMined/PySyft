@@ -360,11 +360,11 @@ class IntTensor(BaseTensor):
         ----------
         Returns
         -------
-        FloatTensor
+        IntTensor
             Output tensor
         """
         return self.no_params_func("sign", return_response=True)
-        
+
 class FloatTensor(BaseTensor):
     def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=False):
         self.controller = syft.controller
