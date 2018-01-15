@@ -37,7 +37,6 @@ class BaseTensor():
             Output tensor
         """
         return self.arithmetic_operation(x, "add", False)
-
     def __iadd__(self, x):
         """
         Performs in place element-wise addition arithmetic between two tensors
@@ -480,6 +479,18 @@ class IntTensor(BaseTensor):
             return np.fromstring(res, sep=' ').astype('int').reshape(self.shape())
         else:
             return " - non-contiguous - "
+
+    def sign(self):
+        """
+        Computes sign of each element of the tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("sign", return_response=True)
 
 class FloatTensor(BaseTensor):
     def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=True):
