@@ -362,7 +362,7 @@ class IntTensor(BaseTensor):
             Caller with values inplace
         """
         return self.no_params_func("neg_")
-      
+
     def shape(self):
         """
         Returns the size of the self tensor as a List.
@@ -373,6 +373,18 @@ class IntTensor(BaseTensor):
             Output list
         """
         return list(np.fromstring(self.get("shape")[:-1], sep=",").astype('int'))
+
+    def sqrt(self):
+        """
+        Returns a new tensor with the square-root of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor:
+            Output Tensor
+        """
+        return self.no_params_func("sqrt", return_response=True)
 
     def reciprocal(self):
         """
