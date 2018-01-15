@@ -281,6 +281,64 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs", return_response=True)
 
+    def abs_(self):
+        """
+        Replaces tensor values with its absolute value
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("abs_", return_response=True)
+
+    def lt(self, other):
+        """
+        Performs element-wise > comparison and returns 1 if the element
+        is less than a corresponding element in other Tensor, and 0 otherwise.
+        Returns a new Tensor with results of the comparison.
+
+        Parameters
+        __________
+        other: IntTensor to compare with
+
+        Returns
+        _________
+        IntTensor
+            Output tensor
+        """
+        return self.params_func("lt", [other.id], return_response=True)
+
+    def lt_(self, other):
+        """
+        Performs inline element-wise > comparison and returns 1 if the element
+        is less than a corresponding element in other Tensor, and 0 otherwise.
+
+        Parameters
+        __________
+        other: IntTensor to compare with
+
+        Returns
+        _________
+        IntTensor
+            Output tensor
+        """
+        return self.params_func("lt_", [other.id], return_response=True)
+
+    def equal(self, x):
+        """
+        Determines whether the given tensor has the same size and elements as this instance.
+
+        :param x: IntTensor
+        :return: True if the given tensor has the same size and elements as this instance. Otherwise, False.
+        """
+        response_string = self.params_func("equal", [x.id], return_response=True, return_type="str")
+        if response_string == "True":
+            return True
+        else:
+            return False
+
     def neg(self):
         """
         Sets negative of the elements of tensor.
@@ -292,7 +350,7 @@ class IntTensor(BaseTensor):
             Output tensor
         """
         return self.no_params_func("neg", return_response=True)
-
+    
     def neg_(self):
         """
         Sets negative of the elements of tensor inplace.
@@ -304,7 +362,7 @@ class IntTensor(BaseTensor):
             Caller with values inplace
         """
         return self.no_params_func("neg_")
-
+      
     def shape(self):
         """
         Returns the size of the self tensor as a List.
@@ -864,6 +922,7 @@ class FloatTensor(BaseTensor):
             Caller with values inplace
         """
         return self.no_params_func("floor_")
+
     def random_(self):
         """
         Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)
