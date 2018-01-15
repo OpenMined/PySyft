@@ -29,6 +29,10 @@ class Dense(object):
 				self.syft_activation = nn.ReLU()
 			elif(self.activation_str == 'softmax'):
 				self.syft_activation = nn.Softmax()
+			elif(self.activation_str == 'sigmoid'):
+				self.syft_activation = nn.Sigmoid()
+			elif(self.activation_str == 'tanh'):
+				self.syft_activation = nn.Tanh()
 			self.ordered_syft.append(self.syft_activation)
 		else:
 			self.syft_activation = None
