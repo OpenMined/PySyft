@@ -1,4 +1,3 @@
-import syft
 import syft.nn as nn
 import sys
 from syft.interfaces.keras.layers import Log
@@ -50,16 +49,13 @@ class Sequential(object):
 		else:
 			sys.stderr.write("Warning: Model already compiled... please rebuild from scratch if you need to change things")
 
-	def fit(self,x_train,y_train,batch_size,epochs,verbose=False,validation_data=None):
-		final_loss = self.syft.fit(input=x_train,
-                       target=y_train,
-                       batch_size=batch_size,
-                       criterion=self.loss,
-                       optim=self.optimizer.syft,
-                       iters=epochs,
-                       log_interval=1,
-                       verbose=verbose)
-		return final_loss
+
+	def fit(self, x_train, y_train, batch_size, epochs=1, validation_data=None, log_interval=1, verbose=False):
+		return self.syft.fit(input=x_train, target=y_train, batch_size=batch_size, criterion=self.loss,
+							 optim=self.optimizer.syft, iters=epochs, log_interval=log_interval, verbose=verbose)
+
+	def evaluate(self, test_input, test_target, batch_size, metrics=[], verbose=True):
+		return self.syft.evaluate(test_input, test_target, self.loss, metrics=metrics, verbose=verbose, batch_size=batch_size)
 
 	def predict(self,x):
 		return self.syft.forward(input=x)
