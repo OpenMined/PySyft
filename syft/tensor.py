@@ -293,6 +293,39 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs_", return_response=True)
 
+    def lt(self, other):
+        """
+        Performs element-wise > comparison and returns 1 if the element
+        is less than a corresponding element in other Tensor, and 0 otherwise.
+        Returns a new Tensor with results of the comparison.
+
+        Parameters
+        __________
+        other: IntTensor to compare with
+
+        Returns
+        _________
+        IntTensor
+            Output tensor
+        """
+        return self.params_func("lt", [other.id], return_response=True)
+
+    def lt_(self, other):
+        """
+        Performs inline element-wise > comparison and returns 1 if the element
+        is less than a corresponding element in other Tensor, and 0 otherwise.
+
+        Parameters
+        __________
+        other: IntTensor to compare with
+
+        Returns
+        _________
+        IntTensor
+            Output tensor
+        """
+        return self.params_func("lt_", [other.id], return_response=True)
+
     def equal(self, x):
         """
         Determines whether the given tensor has the same size and elements as this instance.
