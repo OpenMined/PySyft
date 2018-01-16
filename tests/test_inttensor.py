@@ -24,4 +24,9 @@ def test_transpose():
     b_t = b.T()
     b_t_ground = IntTensor(np.array([[1, 4], [2, 5], [3, 6]]))
     assert(b_t.equal(b_t_ground))
+    c = IntTensor(np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
+    c_t = c.T(0, 1)
+    c_t_ground = IntTensor(np.array([[[1, 2], [5, 6]], [[3, 4], [7, 8]]]))
+    assert (c_t.equal(c_t_ground))
+
 

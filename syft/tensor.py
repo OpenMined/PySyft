@@ -421,7 +421,7 @@ class IntTensor(BaseTensor):
 
         return tensor_str + "\n" + desc
 
-    def T(self):
+    def T(self, dim1=None, dim2=None):
         """
         Returns a tensor that is a transposed version of input.
         Parameters
@@ -431,7 +431,10 @@ class IntTensor(BaseTensor):
         FloatTensor
             Output tensor
         """
-        return self.no_params_func("transpose", return_response=True)
+        if isinstance(dim1, int) and isinstance(dim2, int):
+            return self.params_func("transpose", [dim1, dim2], return_response=True)
+        else:
+            return self.no_params_func("transpose", return_response=True)
 
     def params_func(self, name, params, return_response=False, return_type='IntTensor'):
         # send the command
