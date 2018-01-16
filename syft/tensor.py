@@ -1279,7 +1279,7 @@ class FloatTensor():
         return self
 
     def no_params_func(self, name, return_response=False, return_type='FloatTensor', delete_after_use=True):
-        return (self.params_func(name, [], return_response, return_type, delete_after_use=delete_after_use)) 
+        return self.params_func(name, [], return_response, return_type, delete_after_use=delete_after_use)
 
     def arithmetic_operation(self, x, name, inline=False):
 
@@ -1297,7 +1297,10 @@ class FloatTensor():
 
         response = self.controller.send_json(
             self.cmd(operation_cmd, [parameter]))  # sends the command
-        return FloatTensor(data=int(response), data_is_pointer=True)
+        if int(response) == self.id:
+            return self
+        else:
+            return FloatTensor(data=int(response), data_is_pointer=True)
 
     def delete_tensor(self):
         """
@@ -1315,10 +1318,9 @@ class FloatTensor():
 
 
     def is_contiguous(self):
-        txt = (self.no_params_func("is_contiguous", return_response=True, return_type=None))
+        txt = self.no_params_func("is_contiguous", return_response=True, return_type=None)
         if(txt == 'True'):
             return True
-
         else:
             return False
 
