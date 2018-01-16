@@ -423,12 +423,16 @@ class IntTensor(BaseTensor):
 
     def T(self, dim1=None, dim2=None):
         """
-        Returns a tensor that is a transposed version of input.
-        Parameters
+        Returns a tensor that is a transposed version of input. The given dimensions dim1 and dim0 are swapped.
+        Parameters:
+
+            input (Tensor) – the input IntTensor
+            dim0 (int) – the first dimension to be transposed
+            dim1 (int) – the second dimension to be transposed
         ----------
         Returns
         -------
-        FloatTensor
+        IntTensor
             Output tensor
         """
         if isinstance(dim1, int) and isinstance(dim2, int):
