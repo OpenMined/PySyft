@@ -1,12 +1,9 @@
 import syft.nn as nn
 import sys
 from syft.interfaces.keras.layers import Log
-<<<<<<< HEAD
 from syft import FloatTensor
 import numpy as np
-=======
 import json
->>>>>>> WIP: Add a first graph topology serialization using JSON
 
 class Sequential(object):
 
