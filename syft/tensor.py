@@ -428,7 +428,7 @@ class IntTensor(BaseTensor):
         FloatTensor
             Output Tensor
         """
-        return self.no_params_func("sin", return_response=True);
+        return self.no_params_func("sin", return_response=True, return_type='FloatTensor');
       
     def __repr__(self, verbose=True):
 
