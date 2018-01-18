@@ -325,6 +325,30 @@ class IntTensor(BaseTensor):
         """
         return self.params_func("lt_", [other.id], return_response=True)
 
+    def eq(self, other):
+        """
+        Determines whether 'other' (IntTensor) has the same elements as self (IntTensor).
+
+        parameters:
+            other: IntTensor, of the same dimension as self
+        returns: IntTensor, with values
+            1 - when the elements are equal
+            0 - when the elements are not equal
+        """
+        return self.params_func("eq", [other.id], return_response=True)
+
+    def eq_(self, other):
+        """
+        Determines whether 'other' (IntTensor) has the same elements as self (IntTensor).
+
+        parameters:
+            other: IntTensor, of the same dimension as self
+        returns: IntTensor, with values
+            1 - when the elements are equal
+            0 - when the elements are not equal
+        """
+        return self.params_func("eq_", [other.id], return_response=True)
+
     def equal(self, x):
         """
         Determines whether the given tensor has the same size and elements as this instance.
@@ -349,7 +373,7 @@ class IntTensor(BaseTensor):
             Output tensor
         """
         return self.no_params_func("neg", return_response=True)
-    
+
     def neg_(self):
         """
         Sets negative of the elements of tensor inplace.
@@ -395,7 +419,7 @@ class IntTensor(BaseTensor):
             Output Tensor
         """
         return self.no_params_func("reciprocal", return_response=True)
-    
+
     def reciprocal_(self):
         """
         Computes reciprocal of input tensor with values inplace.
@@ -407,7 +431,7 @@ class IntTensor(BaseTensor):
             Caller with values inplace
         """
         return self.no_params_func("reciprocal_")
-      
+
     def trace(self):
         """
         Returns a new tensor with the sum along diagonals of a 2D tensor.
@@ -417,7 +441,7 @@ class IntTensor(BaseTensor):
             Output tensor
         """
         return self.no_params_func("trace", return_response=True)
-      
+
     def __repr__(self, verbose=True):
 
         tensor_str = str(self.to_numpy())
