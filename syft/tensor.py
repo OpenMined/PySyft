@@ -417,6 +417,18 @@ class IntTensor(BaseTensor):
             Output tensor
         """
         return self.no_params_func("trace", return_response=True)
+
+    def sin(self):
+        """
+        Computes sin of each element of the tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output Tensor
+        """
+        return self.no_params_func("sin", return_response=True, return_type='FloatTensor');
       
     def __repr__(self, verbose=True):
 
