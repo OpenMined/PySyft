@@ -300,15 +300,19 @@ class Policy(Model):
 		return losses,rewards
 
 class Sequential(Model):
-
-	def __init__(self, layers=None):
+	def __init__(self, layers=None, id=None):
 		super(Sequential, self).__init__()
-		
-		self.init("sequential")
 
-		if(layers is not None):
-			for layer in layers:
-				self.add(layer)
+		if (id is not None):
+			self.id = id
+			self.sc = controller
+			self.type = "model"
+			self._layer_type = "sequential"
+		else:
+			self.init("sequential")
+			if(layers is not None):
+				for layer in layers:
+					self.add(layer)
 
 	def add(self, model):
 		self.sc.params_func(self.cmd,"add",[model.id], delete_after_use=False)
