@@ -444,6 +444,25 @@ class IntTensor(BaseTensor):
 
         return tensor_str + "\n" + desc
 
+    def T(self, dim1=None, dim2=None):
+        """
+        Returns a tensor that is a transposed version of input. The given dimensions dim1 and dim0 are swapped.
+        Parameters:
+
+            input (Tensor) – the input IntTensor
+            dim0 (int) – the first dimension to be transposed
+            dim1 (int) – the second dimension to be transposed
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        if isinstance(dim1, int) and isinstance(dim2, int):
+            return self.params_func("transpose", [dim1, dim2], return_response=True)
+        else:
+            return self.no_params_func("transpose", return_response=True)
+
     def params_func(self, name, params, return_response=False, return_type='IntTensor'):
         # send the command
         res = self.controller.send_json(

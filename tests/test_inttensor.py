@@ -13,3 +13,20 @@ def test_equal():
     assert(not different_shape_tensor.equal(a))
     assert(not a.equal(different_value_tensor))
     assert(not different_value_tensor.equal(a))
+
+
+def test_transpose():
+    a = IntTensor(np.array([[1, 2], [3, 4]]))
+    a_t = a.T()
+    a_t_ground = IntTensor(np.array([[1, 3], [2, 4]]))
+    assert(a_t.equal(a_t_ground))
+    b = IntTensor(np.array([[1, 2, 3], [4, 5, 6]]))
+    b_t = b.T()
+    b_t_ground = IntTensor(np.array([[1, 4], [2, 5], [3, 6]]))
+    assert(b_t.equal(b_t_ground))
+    c = IntTensor(np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
+    c_t = c.T(0, 1)
+    c_t_ground = IntTensor(np.array([[[1, 2], [5, 6]], [[3, 4], [7, 8]]]))
+    assert (c_t.equal(c_t_ground))
+
+
