@@ -292,6 +292,18 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs_", return_response=True)
 
+    def cos(self):
+        """
+        Computes cos of each element of the tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output Tensor
+        """
+        return self.no_params_func("cos", return_response=True, return_type='FloatTensor')
+
     def lt(self, other):
         """
         Performs element-wise > comparison and returns 1 if the element
