@@ -1,3 +1,5 @@
+import syft.optim as optim
+
 class RMSprop(object):
 
 	def __init__(self, **hyperparameters):
