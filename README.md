@@ -20,8 +20,7 @@ The goal of this library is to give the user the ability to efficiently train De
 
 - Make sure Python 3.5+ in installed on your machine by checking `python3 --version`
 - Set up a virtual environment for the Python libraries (optional, recommended)
-- Install our OpenMined Unity app by following the guidelines [here]
-(https://github.com/OpenMined/OpenMined)
+- Install our OpenMined Unity app by following the guidelines [here](https://github.com/OpenMined/OpenMined)
 
 ### Python Requirements
 

@@ -292,6 +292,18 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs_", return_response=True)
 
+    def cos(self):
+        """
+        Computes cos of each element of the tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output Tensor
+        """
+        return self.no_params_func("cos", return_response=True, return_type='FloatTensor')
+
     def lt(self, other):
         """
         Performs element-wise > comparison and returns 1 if the element
@@ -442,6 +454,18 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("trace", return_response=True)
 
+    def sin(self):
+        """
+        Computes sin of each element of the tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output Tensor
+        """
+        return self.no_params_func("sin", return_response=True, return_type='FloatTensor');
+
     def __repr__(self, verbose=True):
 
         tensor_str = str(self.to_numpy())
@@ -455,6 +479,25 @@ class IntTensor(BaseTensor):
         desc = "[syft.IntTensor:"+str(self.id) + " size:" + type_str + "]" + "\n"
 
         return tensor_str + "\n" + desc
+
+    def T(self, dim1=None, dim2=None):
+        """
+        Returns a tensor that is a transposed version of input. The given dimensions dim1 and dim0 are swapped.
+        Parameters:
+
+            input (Tensor) – the input IntTensor
+            dim0 (int) – the first dimension to be transposed
+            dim1 (int) – the second dimension to be transposed
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        if isinstance(dim1, int) and isinstance(dim2, int):
+            return self.params_func("transpose", [dim1, dim2], return_response=True)
+        else:
+            return self.no_params_func("transpose", return_response=True)
 
     def params_func(self, name, params, return_response=False, return_type='IntTensor'):
         # send the command
