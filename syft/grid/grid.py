@@ -7,8 +7,8 @@ class Grid():
     def __init__(self):
         self.controller = syft.controller
 
-    def configuration(self, model, lr):
-        configuration = GridConfiguration(model, lr)
+    def configuration(self, model, lr, criterion, iters):
+        configuration = GridConfiguration(model, lr, criterion, iters)
         return configuration
 
     def learn(self, input, target, configurations):
@@ -33,10 +33,16 @@ class ExperimentResults():
         self.results = models
 
 class GridConfiguration():
-    def __init__(self, model, lr):
+    def __init__(self, model, lr, criterion, iters, name=None):
         self.model = model
         self.lr = lr
+        self.criterion = criterion
+        self.iters = iters
 
     def toJSON(self):
-        return {"model": self.model.id,
-                "lr": self.lr}
+        return {
+            "model": self.model.id,
+            "lr": self.lr,
+            "criterion": self.criterion,
+            "iters": self.iters
+        }
