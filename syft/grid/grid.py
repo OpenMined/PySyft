@@ -11,6 +11,7 @@ class Grid():
 
     def __init__(self):
         self.controller = syft.controller
+        self.jobId = None
 
     def configuration(self, model, lr, criterion, iters):
         configuration = GridConfiguration(model, lr, criterion, iters)
@@ -84,7 +85,10 @@ class Grid():
                     if experiment == __experiment["uuid"]:
                         usedJob = __experiment["jobId"]
 
-        if usedJob is None:
+        if usedJob is None and not experiment is None:
+            raise Exception(f"No experiments matching {Fore.GREEN}{experiment}{Style.RESET_ALL}")
+
+        if usedJob is None and not self.jobId is None:
             usedJob = self.jobId
 
         if usedJob is None:
