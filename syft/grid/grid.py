@@ -6,6 +6,9 @@ import os
 
 import uuid
 from colorama import Fore, Back, Style
+import ipywidgets as widget
+import threading
+import time
 
 class Grid():
 
@@ -26,21 +29,44 @@ class Grid():
 
         self.store_job(self.jobId, name)
 
+    def check_experiment_status(self, experiments, status_widgets):
+        for i in range(0, len(experiments)):
+            experiment = experiments[i]
+            widget = status_widgets[i]
+
+            widget.value = self.controller.send_json({
+                "objectType": "Grid",
+                "functionCall": "checkStatus",
+                "experimentId": experiment["jobId"]
+            })
+
     def get_experiments(self):
         if not os.path.exists(".openmined/grid/experiments.json"):
             print(f'{Back.RED}{Fore.WHITE} No experiments found {Style.RESET_ALL}')
             return
 
+        names = []
+        uuids = []
+        status = []
+
         with open('.openmined/grid/experiments.json', 'r') as outfile:
             d = json.loads(outfile.read())
             print(f"{Back.BLACK}{Fore.WHITE} ALL EXPERIMENTS {Style.RESET_ALL}")
-            print(f"Get the result of your experiment by calling {Fore.GREEN}get_results{Style.RESET_ALL} with the highlighted uuid")
-            print("")
             for experiment in d:
-                name = experiment["name"]
-                uuid = experiment["uuid"]
+                names.append(widget.Label(experiment["name"]))
+                uuids.append(widget.Label(experiment["uuid"]))
+                status.append(widget.Label("Checking..."))
 
-                print(f"    - {name} ({Fore.GREEN}{uuid}{Style.RESET_ALL})")
+            names_column = widget.VBox(names)
+            uuid_column = widget.VBox(uuids)
+            status_column = widget.VBox(status)
+
+            check_status_thread = threading.Thread(target=self.check_experiment_status, args=(d, status))
+            check_status_thread.start()
+
+            box = widget.HBox([names_column, uuid_column, status_column])
+            box.border = '10'
+            return box
 
     def store_job(self, jobId, name=None):
         if name is None:
