@@ -66,7 +66,7 @@ class Sequential(object):
 		if(type(x) == np.array or type(x) == np.ndarray):
 			x = FloatTensor(x,autograd=True, delete_after_use=False)
 
-		return self.syft.forward(input=x)
+		return self.syft.forward(input=x).to_numpy()
 
 	def get_weights(self):
 		return self.syft.parameters()
