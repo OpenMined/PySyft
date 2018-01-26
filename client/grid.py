@@ -9,6 +9,7 @@ import ipywidgets as widget
 import threading
 import time
 from tempfile import TemporaryFile
+import bygone as by
 
 class Grid():
 
@@ -72,6 +73,9 @@ class Grid():
 
         experiment_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=experiment_config)
         print(experiment_r.text)
+
+        by.addExperiment(experiment_r.json()['Hash'], all_jobs)
+        self.store_job(experiment_r.json()['Hash'], name=name)
 
         os.remove('tmp-input.npy')
         os.remove('tmp-target.npy')
@@ -173,13 +177,10 @@ class Grid():
         if usedJob is None:
             raise Exception("There are no saved experiments and you have not submitted a job.")
 
-        results = self.controller.send_json({
-            "objectType": "Grid",
-            "functionCall": "getResults",
-            "experimentId": usedJob
-        })
+        results = by.getResults(usedJob)
+        if results == '':
+            return null
 
-        modelIds = json.loads(results)
         return ExperimentResults(list(map(lambda id: nn.Sequential(id=id), modelIds)))
 
 class ExperimentResults():
