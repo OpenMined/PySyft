@@ -20,6 +20,18 @@ class Grid():
         return configuration
 
     def fit(self, input, target, configurations, name=None):
+
+        # save input / target arrays
+
+        np.save('tmp-input', input)
+        np.save('tmp-target', target)
+
+        input_config = { 'file': ('input', open('tmp-input.npy', 'rb'), 'application/octet-stram')}
+        target_config = { 'file': ('target', open('tmp-target.npy', 'rb'), 'application/octet-stream')}
+
+        input_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=input_config)
+        target_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=target_config)
+
         all_jobs = []
         for i in range(0, len(configurations)):
             config = configurations[i]
@@ -37,7 +49,9 @@ class Grid():
             job_config_json = {
                 'model': model_response["Hash"],
                 'epochs': config.epochs,
-                'batch_size': config.batch_size
+                'batch_size': config.batch_size,
+                'input': json.loads(input_r.text)["Hash"],
+                'target': json.loads(target_r.text)["Hash"]
             }
 
             job_config = {
@@ -48,20 +62,7 @@ class Grid():
             all_jobs.append(json.loads(r.text)["Hash"])
 
 
-        # save input / target arrays
-
-        np.save('tmp-input', input)
-        np.save('tmp-target', target)
-
-        input_config = { 'file': ('input', open('tmp-input.npy', 'rb'), 'application/octet-stram')}
-        target_config = { 'file': ('target', open('tmp-target.npy', 'rb'), 'application/octet-stream')}
-
-        input_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=input_config)
-        target_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=target_config)
-
         experiment_config_json = {
-            'input': json.loads(input_r.text)["Hash"],
-            'target': json.loads(target_r.text)["Hash"],
             'jobs': all_jobs
         }
 
