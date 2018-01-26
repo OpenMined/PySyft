@@ -44,6 +44,8 @@ class Model():
 			return Log(id = self.id)
 		elif(self._layer_type == 'policy'):
 			return Policy(id = self.id)
+		elif(self._layer_type == 'sequential'):
+			return Sequential(id = self.id)
 		else:
 			sys.stderr.write("Attempted to discover the type - but it wasn't supported. Has the layer type '"
 			 + self._layer_type + "' been added to the discover() method in nn.py?")
@@ -228,6 +230,9 @@ class Model():
 
 		return loss, metrics_result
 
+	def to_json(self):
+		return self.sc.no_params_func(self.cmd, "config", return_type='string')
+
 	def __repr__(self,verbose=True):
 
 		if(verbose):
@@ -300,6 +305,7 @@ class Policy(Model):
 		return losses,rewards
 
 class Sequential(Model):
+
 	def __init__(self, layers=None, id=None):
 		super(Sequential, self).__init__()
 

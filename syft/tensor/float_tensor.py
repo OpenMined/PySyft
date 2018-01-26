@@ -1,6 +1,6 @@
 import numpy as np
 import syft.controller
-from base_tensor import BaseTensor
+from .base_tensor import BaseTensor
 
 class FloatTensor(BaseTensor):
     def __init__(self, data, autograd=False, data_is_pointer=False, delete_after_use=True):

@@ -128,6 +128,8 @@ def params_func(cmd_func, name, params, return_type=None, delete_after_use=True)
                 return False
             else:
                 return res
+        elif return_type == 'Model':
+            return get_model(int(res))
         else:
             return res
 
