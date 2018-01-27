@@ -16,6 +16,19 @@ class Grid():
         self.controller = syft.controller
         self.jobId = None
 
+    def __getitem__(self, key):
+        if not os.path.exists(".openmined/grid/experiments.json"):
+            print(f'{Back.RED}{Fore.WHITE} No experiments found {Style.RESET_ALL}')
+            return
+
+        with open('.openmined/grid/experiments.json', 'r') as outfile:
+            d = json.loads(outfile.read())
+            for i, experiment in enumerate(d):
+                if key == i:
+                    return experiment["uuid"]
+                elif key == experiment["name"]:
+                    return experiment["uuid"]
+
     def configuration(self, model, lr, criterion, iters):
         configuration = GridConfiguration(model, lr, criterion, iters)
         return configuration
