@@ -1,3 +1,3 @@
 # Grid
 
-Proof of concept for a totally python based GRID.
+Proof of concept for python based GRID edge nodes.
