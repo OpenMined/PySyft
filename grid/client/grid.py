@@ -9,9 +9,9 @@ import ipywidgets as widget
 import threading
 import time
 from tempfile import TemporaryFile
-import bygone as by
+import grid.bygone as by
 
-class Grid():
+class Grid:
 
     def __init__(self):
         self.jobId = None
