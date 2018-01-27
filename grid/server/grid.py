@@ -4,10 +4,29 @@ import keras
 import os
 import numpy as np
 
+import grid.bygone as by
+
 ## Base IPFS Address
 IPFS_ADDR = 'https://ipfs.infura.io/ipfs'
 
 class Server():
+
+    def poll(self):
+        job = by.get_job()
+        model = self.run_experiment(job)
+        self.save_experiment(job, model)
+
+    def save_experiment(self, job, model):
+        model_file = f'trained-model.h5'
+        model = config.model.save(model_file)
+        model_config = {
+            'file': ('model', open(model_file, 'rb'), 'application/octet-stream'),
+        }
+        r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=model_config)
+        model_response = json.loads(r.text)
+
+        by.add_result(job, model_response["Hash"])
+        os.remove(model_file)
 
     def run_experiment(self, ipfs_address):
         r = requests.get(f'{IPFS_ADDR}/{ipfs_address}')
@@ -21,6 +40,8 @@ class Server():
 
         batch_size = json_response["batch_size"]
         epochs = json_response["epochs"]
+
+        model.fit(input, target, epochs=epochs, batch_size=batch_size, verbose=1)
 
 
     def load_model(self, ipfs_address):

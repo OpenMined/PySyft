@@ -82,9 +82,9 @@ class Grid:
         for f in made_files:
             os.remove(f)
 
-        print("done????")
+        print(f'wrote experiment to: {experiment_r.text}')
 
-        by.addExperiment(experiment_r.json()['Hash'], all_jobs)
+        by.add_experiment(experiment_r.json()['Hash'], all_jobs)
         self.store_job(experiment_r.json()['Hash'], name=name)
 
             # all_models.append(j["Hash"])
@@ -184,7 +184,7 @@ class Grid:
         if usedJob is None:
             raise Exception("There are no saved experiments and you have not submitted a job.")
 
-        results = by.getResults(usedJob)
+        results = by.get_results(usedJob)
         if results == '':
             return null
 

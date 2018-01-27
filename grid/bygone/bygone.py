@@ -1,19 +1,19 @@
 import requests
 
-host = "http://192.168.2.14:3000"
+host = "http://localhost:3000"
 
 
-def addExperiment(experimentAddress, jobAddresses):
+def add_experiment(experimentAddress, jobAddresses):
     payload = {'experimentAddress': experimentAddress,
                'jobAddresses': jobAddresses}
 
-    r = requests.post(host + "/experiment", json=payload)
+    r = requests.post(f'{host}/experiment', json=payload)
     print("/experiment", r)
 
     return r.status_code
 
 
-def getAvailableJobId():
+def get_available_job_id():
     r = requests.get(host + "/availableJobId")
 
     print("/availableJobId", r)
@@ -21,15 +21,16 @@ def getAvailableJobId():
     return r.json()['jobId']
 
 
-def getJob(jobId):
-    r = requests.get(host + "/job/" + jobId)
+def get_job():
+    job_id = get_available_job_id()
+    r = requests.get(host + "/job/" + job_id)
 
-    print("/job/" + jobId, r)
+    print("/job/" + job_id, r)
 
     return r.json()['jobAddress']
 
 
-def addResult(jobAddress, resultAddress):
+def add_result(jobAddress, resultAddress):
     payload = {'jobAddress': jobAddress, 'resultAddress': resultAddress}
 
     r = requests.post(host + "/result", json=payload)
@@ -38,7 +39,7 @@ def addResult(jobAddress, resultAddress):
     return r.status_code
 
 
-def getResults(jobAddress):
+def get_results(jobAddress):
     r = requests.get(host + "/results/" + jobAddress)
 
     print("/results/" + jobAddress, r)
