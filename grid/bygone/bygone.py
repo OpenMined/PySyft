@@ -18,12 +18,18 @@ def get_available_job_id():
 
     print("/availableJobId", r)
 
+    if not 'jobId' in r.json():
+        return None
+
     return r.json()['jobId']
 
 
 def get_job():
     job_id = get_available_job_id()
-    r = requests.get(host + "/job/" + job_id)
+    if job_id is None:
+        return None
+
+    r = requests.get(f'{host}/job/{job_id}')
 
     print("/job/" + job_id, r)
 
@@ -39,7 +45,7 @@ def add_result(jobAddress, resultAddress):
     return r.status_code
 
 
-def get_results(jobAddress):
+def get_result(jobAddress):
     r = requests.get(host + "/results/" + jobAddress)
 
     print("/results/" + jobAddress, r)

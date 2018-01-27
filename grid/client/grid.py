@@ -10,6 +10,7 @@ import threading
 import time
 from tempfile import TemporaryFile
 import grid.bygone as by
+import keras
 
 class Grid:
 
@@ -84,25 +85,15 @@ class Grid:
 
         print(f'wrote experiment to: {experiment_r.text}')
 
-        by.add_experiment(experiment_r.json()['Hash'], all_jobs)
-        self.store_job(experiment_r.json()['Hash'], name=name)
+        self.jobId = experiment_r.json()['Hash']
+        by.add_experiment(self.jobId, all_jobs)
+        self.store_job(self.jobId, name=name)
 
             # all_models.append(j["Hash"])
             # print(r.request.body)
 
             # https://ipfs.infura.io:5001/api/v0/add?stream-channels=true
 
-
-    def check_experiment_status(self, experiments, status_widgets):
-        for i in range(0, len(experiments)):
-            experiment = experiments[i]
-            widget = status_widgets[i]
-
-            widget.value = self.controller.send_json({
-                "objectType": "Grid",
-                "functionCall": "checkStatus",
-                "experimentId": experiment["jobId"]
-            })
 
     def get_experiments(self):
         if not os.path.exists(".openmined/grid/experiments.json"):
@@ -119,14 +110,11 @@ class Grid:
             for experiment in d:
                 names.append(widget.Label(experiment["name"]))
                 uuids.append(widget.Label(experiment["uuid"]))
-                status.append(widget.Label("Checking..."))
+                status.append(widget.Label("Unknown"))
 
             names_column = widget.VBox(names)
             uuid_column = widget.VBox(uuids)
             status_column = widget.VBox(status)
-
-            check_status_thread = threading.Thread(target=self.check_experiment_status, args=(d, status))
-            check_status_thread.start()
 
             box = widget.HBox([names_column, uuid_column, status_column])
             box.border = '10'
@@ -184,11 +172,28 @@ class Grid:
         if usedJob is None:
             raise Exception("There are no saved experiments and you have not submitted a job.")
 
-        results = by.get_results(usedJob)
-        if results == '':
-            return null
+        print(f'loading {usedJob}')
+        experiment_jobs = requests.get(f'https://ipfs.infura.io/ipfs/{usedJob}')
+        experiment_jobs_json = json.loads(experiment_jobs.text)
+        models = []
+        for job in experiment_jobs_json["jobs"]:
+            result_addr = by.get_result(job)
+            models.append(self.load_model(result_addr))
 
-        return ExperimentResults(list(map(lambda id: nn.Sequential(id=id), modelIds)))
+        return models
+
+    def load_model(self, ipfs_address):
+        r = requests.get(f'https://ipfs.infura.io/ipfs/{ipfs_address}')
+
+        # keras only loads models from files
+        with open('job-model.h5', 'wb') as model_file:
+            print(f'wrote the shit {r.content} ')
+            model_file.write(r.content)
+
+        model = keras.models.load_model('job-model.h5')
+        os.remove('job-model.h5')
+
+        return model
 
 class ExperimentResults():
     def __init__(self, models):

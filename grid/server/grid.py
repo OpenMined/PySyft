@@ -3,6 +3,7 @@ import json
 import keras
 import os
 import numpy as np
+import time
 
 import grid.bygone as by
 
@@ -13,12 +14,19 @@ class Server():
 
     def poll(self):
         job = by.get_job()
+
+        if job == None:
+            print('no jobs, tryin again in 10 seconds')
+            time.sleep(10)
+            self.poll()
+
         model = self.run_experiment(job)
         self.save_experiment(job, model)
+        self.poll()
 
     def save_experiment(self, job, model):
         model_file = f'trained-model.h5'
-        model = config.model.save(model_file)
+        model.save(model_file)
         model_config = {
             'file': ('model', open(model_file, 'rb'), 'application/octet-stream'),
         }
@@ -42,6 +50,7 @@ class Server():
         epochs = json_response["epochs"]
 
         model.fit(input, target, epochs=epochs, batch_size=batch_size, verbose=1)
+        return model
 
 
     def load_model(self, ipfs_address):
