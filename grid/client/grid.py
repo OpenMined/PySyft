@@ -21,11 +21,15 @@ class Grid:
         return configuration
 
     def fit(self, input, target, configurations, name=None):
+        # keep track of any files we create so we can delete them at the end
+        made_files = []
 
         # save input / target arrays
+        np.save('tmp-input.npy', input)
+        np.save('tmp-target.npy', target)
 
-        np.save('tmp-input', input)
-        np.save('tmp-target', target)
+        made_files.append('tmp-input.npy')
+        made_files.append('tmp-target.npy')
 
         input_config = { 'file': ('input', open('tmp-input.npy', 'rb'), 'application/octet-stram')}
         target_config = { 'file': ('target', open('tmp-target.npy', 'rb'), 'application/octet-stream')}
@@ -34,12 +38,14 @@ class Grid:
         target_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=target_config)
 
         all_jobs = []
+
         for i in range(0, len(configurations)):
             config = configurations[i]
 
             # Start by saving the model
             model_file = f'tmp-{i}.h5'
             model = config.model.save(model_file)
+            made_files.append(model_file)
             model_config = {
                 'file': ('model', open(model_file, 'rb'), 'application/octet-stream'),
             }
@@ -72,13 +78,14 @@ class Grid:
         }
 
         experiment_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=experiment_config)
-        print(experiment_r.text)
+
+        for f in made_files:
+            os.remove(f)
+
+        print("done????")
 
         by.addExperiment(experiment_r.json()['Hash'], all_jobs)
         self.store_job(experiment_r.json()['Hash'], name=name)
-
-        os.remove('tmp-input.npy')
-        os.remove('tmp-target.npy')
 
             # all_models.append(j["Hash"])
             # print(r.request.body)
