@@ -38,6 +38,6 @@ def test_view():
     b_v = a.view(8, 2)
     b_v_ground = IntTensor(np.array([[9, 3], [1, 0], [6, 8], [6, 6], [1, 6], [8, 6], [5, 0], [2, 0]]))
     assert(b_v.equal(b_v_ground))
-    c_v = a.view(4, -1, 2)
+    a.view_(4, -1, 2)
     c_v_ground = IntTensor(np.array([[[9, 3], [1, 0]], [[6, 8], [6, 6]], [[1, 6], [8, 6]], [[5, 0], [2, 0]]]))
-    assert(c_v.equal(c_v_ground))
+    assert(a.equal(c_v_ground))
