@@ -325,3 +325,38 @@ class IntTensor(BaseTensor):
             Output tensor
         """
         return self.no_params_func("sign", return_response=True)
+
+    def view(self, *args):
+        """
+        Returns a new tensor with the same data as the self tensor but of a different size.
+        Parameters
+        ----------
+        args : int
+            the desired size
+        Returns
+        -------
+        IntTensor
+            Output Tensor
+        """
+        new_dim = list(args)
+        assert type(new_dim) == list
+        assert type(new_dim[0]) == int
+        return self.params_func("view", new_dim, return_response=True)
+
+    def view_(self, *args):
+        """
+        Returns self tensor but of a different size. Inplace version of view.
+        Parameters
+        ----------
+        args : int
+            the desired size
+        Returns
+        -------
+        IntTensor
+            Output Tensor
+        """
+        new_dim = list(args)
+        assert type(new_dim) == list
+        assert type(new_dim[0]) == int
+        self.params_func("view_", new_dim, return_response=False)
+        return self
