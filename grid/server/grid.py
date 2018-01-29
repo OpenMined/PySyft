@@ -16,7 +16,7 @@ class Server():
         while True:
             job = by.get_job()
             if job == None:
-                print('no jobs, tryin again in seconds'.format(interval))
+                print('no jobs, tryin again in {} seconds'.format(interval))
                 time.sleep(interval)
             else:
                 model = self.run_experiment(job)
