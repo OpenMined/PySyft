@@ -7,7 +7,7 @@ def add_experiment(experimentAddress, jobAddresses):
     payload = {'experimentAddress': experimentAddress,
                'jobAddresses': jobAddresses}
 
-    r = requests.post(f'{host}/experiment', json=payload)
+    r = requests.post('{}/experiment'.format(host), json=payload)
     print("/experiment", r)
 
     return r.status_code
@@ -29,7 +29,7 @@ def get_job():
     if job_id is None:
         return None
 
-    r = requests.get(f'{host}/job/{job_id}')
+    r = requests.get('{}/job/{}'.format(host, job_id))
 
     print("/job/" + job_id, r)
 
