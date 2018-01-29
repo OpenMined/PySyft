@@ -164,7 +164,7 @@ class Grid:
                         usedJob = __experiment["jobId"]
 
         if usedJob is None and not experiment is None:
-            raise Exception(f"No experiments matching {Fore.GREEN}{experiment}{Style.RESET_ALL}")
+            raise Exception("No experiments matching {}{}{}".format(Fore.GREEN, experiment, Style.RESET_ALL))
 
         if usedJob is None and not self.jobId is None:
             usedJob = self.jobId
