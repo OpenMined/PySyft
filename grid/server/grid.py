@@ -12,17 +12,15 @@ IPFS_ADDR = 'https://ipfs.infura.io/ipfs'
 
 class Server():
 
-    def poll(self):
-        job = by.get_job()
-
-        if job == None:
-            print('no jobs, tryin again in 10 seconds')
-            time.sleep(10)
-            self.poll()
-
-        model = self.run_experiment(job)
-        self.save_experiment(job, model)
-        self.poll()
+    def poll(self, interval):
+        while True:
+            job = by.get_job()
+            if job == None:
+                print(f'no jobs, tryin again in {interval} seconds')
+                time.sleep(interval)
+            else:
+                model = self.run_experiment(job)
+                self.save_experiment(job, model)
 
     def save_experiment(self, job, model):
         model_file = f'trained-model.h5'
