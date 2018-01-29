@@ -178,6 +178,11 @@ class Grid:
         models = []
         for job in experiment_jobs_json["jobs"]:
             result_addr = by.get_result(job)
+            while result_addr is None:
+                print('Experiment not yet complete.  Will check again in 10 seconds')
+                time.sleep(10)
+                result_addr = by.get_result(job)
+
             models.append(self.load_model(result_addr))
 
         return models

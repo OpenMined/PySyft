@@ -49,5 +49,8 @@ def get_result(jobAddress):
     r = requests.get(host + "/results/" + jobAddress)
 
     print("/results/" + jobAddress, r)
+    addr = r.json()['resultAddress']
+    if addr == "":
+        return None
 
-    return r.json()['resultAddress']
+    return addr
