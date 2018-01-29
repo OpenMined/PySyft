@@ -13,4 +13,4 @@ class MPCTensor():
         self.data = self.data-rand_tensor
         return rand_tensor
     def __add__(self,x):
-        return self.data+x.data
+        return MPCTensor(self.data+x.data, data_as_Tensor = True)
