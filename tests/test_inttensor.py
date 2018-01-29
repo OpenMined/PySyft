@@ -29,4 +29,11 @@ def test_transpose():
     c_t_ground = IntTensor(np.array([[[1, 2], [5, 6]], [[3, 4], [7, 8]]]))
     assert (c_t.equal(c_t_ground))
 
-
+def test_max_():
+    data = np.array([4,0,6,-3,8,-2]).astype('int')
+    compare_data = np.array([1,-2,2,-3,0,-1]).astype('int')
+    tensor = IntTensor(data)
+    compare_to = IntTensor(compare_data)
+    test_value = tensor.max_(compare_to)
+    actual_value = IntTensor(np.array([4,0,6,-3,8,-1]))
+    assert(test_value.equal(actual_value))
