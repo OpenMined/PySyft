@@ -16,14 +16,14 @@ class Server():
         while True:
             job = by.get_job()
             if job == None:
-                print(f'no jobs, tryin again in {interval} seconds')
+                print('no jobs, tryin again in {} seconds'.format(interval))
                 time.sleep(interval)
             else:
                 model = self.run_experiment(job)
                 self.save_experiment(job, model)
 
     def save_experiment(self, job, model):
-        model_file = f'trained-model.h5'
+        model_file = 'trained-model.h5'
         model.save(model_file)
         model_config = {
             'file': ('model', open(model_file, 'rb'), 'application/octet-stream'),
@@ -35,10 +35,10 @@ class Server():
         os.remove(model_file)
 
     def run_experiment(self, ipfs_address):
-        r = requests.get(f'{IPFS_ADDR}/{ipfs_address}')
+        r = requests.get('{}/{}'.format(IPFS_ADDR, ipfs_address))
         json_response = json.loads(r.text)
 
-        print(f'got resp {json_response}')
+        print('got resp {}'.format(json_response))
 
         model = self.load_model(json_response["model"])
         input = self.load_tensor(json_response["input"])
@@ -52,7 +52,7 @@ class Server():
 
 
     def load_model(self, ipfs_address):
-        r = requests.get(f'{IPFS_ADDR}/{ipfs_address}')
+        r = requests.get('{}/{}'.format(IPFS_ADDR, ipfs_address))
 
         # keras only loads models from files
         with open('job-model.h5', 'wb') as model_file:
@@ -64,7 +64,7 @@ class Server():
         return model
 
     def load_tensor(self, ipfs_address):
-        r = requests.get(f'{IPFS_ADDR}/{ipfs_address}')
+        r = requests.get('{}/{}'.format(IPFS_ADDR, ipfs_address))
 
         with open('job-tensor.npy', 'wb') as tensor_file:
             tensor_file.write(r.content)

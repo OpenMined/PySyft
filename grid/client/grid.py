@@ -44,7 +44,7 @@ class Grid:
             config = configurations[i]
 
             # Start by saving the model
-            model_file = f'tmp-{i}.h5'
+            model_file = 'tmp-{}.h5'.format(i)
             model = config.model.save(model_file)
             made_files.append(model_file)
             model_config = {
@@ -83,7 +83,7 @@ class Grid:
         for f in made_files:
             os.remove(f)
 
-        print(f'wrote experiment to: {experiment_r.text}')
+        print('wrote experiment to: {}'.format(experiment_r.text))
 
         self.jobId = experiment_r.json()['Hash']
         by.add_experiment(self.jobId, all_jobs)
@@ -97,7 +97,7 @@ class Grid:
 
     def get_experiments(self):
         if not os.path.exists(".openmined/grid/experiments.json"):
-            print(f'{Back.RED}{Fore.WHITE} No experiments found {Style.RESET_ALL}')
+            print('{}{} No experiments found {}'.format(Back.RED, Fore.WHITE, Style.RESET_ALL))
             return
 
         names = []
@@ -106,7 +106,7 @@ class Grid:
 
         with open('.openmined/grid/experiments.json', 'r') as outfile:
             d = json.loads(outfile.read())
-            print(f"{Back.BLACK}{Fore.WHITE} ALL EXPERIMENTS {Style.RESET_ALL}")
+            print("{}{} ALL EXPERIMENTS {}".format(Back.BLACK, Fore.WHITE, Style.RESET_ALL))
             for experiment in d:
                 names.append(widget.Label(experiment["name"]))
                 uuids.append(widget.Label(experiment["uuid"]))
@@ -164,7 +164,7 @@ class Grid:
                         usedJob = __experiment["jobId"]
 
         if usedJob is None and not experiment is None:
-            raise Exception(f"No experiments matching {Fore.GREEN}{experiment}{Style.RESET_ALL}")
+            raise Exception("No experiments matching {}{}{}".format(Fore.GREEN, experiment, Style.RESET_ALL))
 
         if usedJob is None and not self.jobId is None:
             usedJob = self.jobId
@@ -172,8 +172,8 @@ class Grid:
         if usedJob is None:
             raise Exception("There are no saved experiments and you have not submitted a job.")
 
-        print(f'loading {usedJob}')
-        experiment_jobs = requests.get(f'https://ipfs.infura.io/ipfs/{usedJob}')
+        print('loading {}'.format(usedJob))
+        experiment_jobs = requests.get('https://ipfs.infura.io/ipfs/{}'.format(usedJob))
         experiment_jobs_json = json.loads(experiment_jobs.text)
         models = []
         for job in experiment_jobs_json["jobs"]:
@@ -188,11 +188,11 @@ class Grid:
         return models
 
     def load_model(self, ipfs_address):
-        r = requests.get(f'https://ipfs.infura.io/ipfs/{ipfs_address}')
+        r = requests.get('https://ipfs.infura.io/ipfs/{}'.format(ipfs_address))
 
         # keras only loads models from files
         with open('job-model.h5', 'wb') as model_file:
-            print(f'wrote the shit {r.content} ')
+            print('wrote the shit {}'.format(r.content))
             model_file.write(r.content)
 
         model = keras.models.load_model('job-model.h5')

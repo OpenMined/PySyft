@@ -1,13 +1,13 @@
 import requests
 
-host = "http://localhost:3000"
+host = "http://ec2-54-84-21-224.compute-1.amazonaws.com:3000"
 
 
 def add_experiment(experimentAddress, jobAddresses):
     payload = {'experimentAddress': experimentAddress,
                'jobAddresses': jobAddresses}
 
-    r = requests.post(f'{host}/experiment', json=payload)
+    r = requests.post('{}/experiment'.format(host), json=payload)
     print("/experiment", r)
 
     return r.status_code
@@ -21,7 +21,11 @@ def get_available_job_id():
     if not 'jobId' in r.json():
         return None
 
-    return r.json()['jobId']
+    job_id = r.json()['jobId']
+    if job_id == '':
+        return None
+
+    return job_id
 
 
 def get_job():
@@ -29,7 +33,7 @@ def get_job():
     if job_id is None:
         return None
 
-    r = requests.get(f'{host}/job/{job_id}')
+    r = requests.get('{}/job/{}'.format(host, job_id))
 
     print("/job/" + job_id, r)
 
