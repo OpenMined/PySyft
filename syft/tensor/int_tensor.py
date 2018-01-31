@@ -1,6 +1,7 @@
 import numpy as np
 import syft.controller
 from .base_tensor import BaseTensor
+from .float_tensor import FloatTensor
 
 class IntTensor(BaseTensor):
     def __init__(self, data, data_is_pointer=False):
