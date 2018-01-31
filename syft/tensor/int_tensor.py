@@ -1,6 +1,7 @@
 import numpy as np
 import syft.controller
 from .base_tensor import BaseTensor
+from .float_tensor import FloatTensor
 
 class IntTensor(BaseTensor):
     def __init__(self, data, data_is_pointer=False):
@@ -46,6 +47,18 @@ class IntTensor(BaseTensor):
             Output tensor
         """
         return self.no_params_func("abs_", return_response=True)
+
+    def acos(self):
+        """
+        Returns a new tensor with the arccosine of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.no_params_func("acos", return_response=True, return_type='FloatTensor')
 
     def cos(self):
         """
