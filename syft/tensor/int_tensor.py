@@ -48,6 +48,18 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs_", return_response=True)
 
+    def acos(self):
+        """
+        Returns a new tensor with the arccosine of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.no_params_func("acos", return_response=True, return_type='FloatTensor')
+
     def cos(self):
         """
         Computes cos of each element of the tensor.
