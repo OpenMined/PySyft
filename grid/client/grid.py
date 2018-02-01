@@ -6,16 +6,21 @@ import numpy as np
 import uuid
 from colorama import Fore, Back, Style
 import ipywidgets as widget
-import threading
 import time
-from tempfile import TemporaryFile
 import grid.bygone as by
 import keras
+
 
 class Grid:
 
     def __init__(self):
+        self.account_address = None
+        self.priv_key = None
         self.jobId = None
+
+    def set_identity(self, account_address, priv_key):
+        self.account_address = account_address
+        self.priv_key = priv_key
 
     def configuration(self, model, epochs, batch_size):
         configuration = GridConfiguration(model, epochs, batch_size)
@@ -32,11 +37,15 @@ class Grid:
         made_files.append('tmp-input.npy')
         made_files.append('tmp-target.npy')
 
-        input_config = { 'file': ('input', open('tmp-input.npy', 'rb'), 'application/octet-stram')}
-        target_config = { 'file': ('target', open('tmp-target.npy', 'rb'), 'application/octet-stream')}
+        input_config = {'file': ('input', open('tmp-input.npy', 'rb'),
+                                 'application/octet-stram')}
+        target_config = {'file': ('target', open('tmp-target.npy', 'rb'),
+                                  'application/octet-stream')}
 
-        input_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=input_config)
-        target_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=target_config)
+        input_r = requests.post('https://ipfs.infura.io:5001/api/v0/add',
+                                files=input_config)
+        target_r = requests.post('https://ipfs.infura.io:5001/api/v0/add',
+                                 files=target_config)
 
         all_jobs = []
 
@@ -45,12 +54,14 @@ class Grid:
 
             # Start by saving the model
             model_file = 'tmp-{}.h5'.format(i)
-            model = config.model.save(model_file)
+            config.model.save(model_file)
             made_files.append(model_file)
             model_config = {
-                'file': ('model', open(model_file, 'rb'), 'application/octet-stream'),
+                'file': ('model', open(model_file, 'rb'),
+                         'application/octet-stream'),
             }
-            r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=model_config)
+            r = requests.post('https://ipfs.infura.io:5001/api/v0/add',
+                              files=model_config)
             model_response = json.loads(r.text)
 
             # Now save the models config
@@ -63,22 +74,25 @@ class Grid:
             }
 
             job_config = {
-                'file': ('job_config', json.dumps(job_config_json), 'application/octet-stream')
+                'file': ('job_config', json.dumps(job_config_json),
+                         'application/octet-stream')
             }
 
-            r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=job_config)
+            r = requests.post('https://ipfs.infura.io:5001/api/v0/add',
+                              files=job_config)
             all_jobs.append(json.loads(r.text)["Hash"])
-
 
         experiment_config_json = {
             'jobs': all_jobs
         }
 
         experiment_config = {
-            'file': ('experiment', json.dumps(experiment_config_json), 'application/octet-stream')
+            'file': ('experiment', json.dumps(experiment_config_json),
+                     'application/octet-stream')
         }
 
-        experiment_r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=experiment_config)
+        experiment_r = requests.post('https://ipfs.infura.io:5001/api/v0/add',
+                                     files=experiment_config)
 
         for f in made_files:
             os.remove(f)
@@ -86,18 +100,24 @@ class Grid:
         print('wrote experiment to: {}'.format(experiment_r.text))
 
         self.jobId = experiment_r.json()['Hash']
-        by.add_experiment(self.jobId, all_jobs)
+
+        if self.account_address is not None and self.priv_key is not None:
+            by.add_experiment(self.jobId, all_jobs,
+                              self.priv_key, self.account_address, True)
+        else:
+            by.add_experiment(self.jobId, all_jobs)
+
         self.store_job(self.jobId, name=name)
 
-            # all_models.append(j["Hash"])
-            # print(r.request.body)
+        # all_models.append(j["Hash"])
+        # print(r.request.body)
 
-            # https://ipfs.infura.io:5001/api/v0/add?stream-channels=true
-
+        # https://ipfs.infura.io:5001/api/v0/add?stream-channels=true
 
     def get_experiments(self):
         if not os.path.exists(".openmined/grid/experiments.json"):
-            print('{}{} No experiments found {}'.format(Back.RED, Fore.WHITE, Style.RESET_ALL))
+            print('{}{} No experiments found {}'.format(Back.RED, Fore.WHITE,
+                                                        Style.RESET_ALL))
             return
 
         names = []
@@ -106,7 +126,8 @@ class Grid:
 
         with open('.openmined/grid/experiments.json', 'r') as outfile:
             d = json.loads(outfile.read())
-            print("{}{} ALL EXPERIMENTS {}".format(Back.BLACK, Fore.WHITE, Style.RESET_ALL))
+            print("{}{} ALL EXPERIMENTS {}".format(Back.BLACK, Fore.WHITE,
+                                                   Style.RESET_ALL))
             for experiment in d:
                 names.append(widget.Label(experiment["name"]))
                 uuids.append(widget.Label(experiment["uuid"]))
@@ -123,7 +144,8 @@ class Grid:
     def store_job(self, jobId, name=None):
         if name is None:
             now = datetime.datetime.now()
-            name = 'Experiment on {}-{}-{}'.format(now.day, now.month, now.year)
+            name = 'Experiment on {}-{}-{}'.format(now.day, now.month,
+                                                   now.year)
 
         if not os.path.exists(".openmined/grid"):
             os.makedirs(".openmined/grid")
@@ -200,9 +222,11 @@ class Grid:
 
         return model
 
+
 class ExperimentResults():
     def __init__(self, models):
         self.results = models
+
 
 class GridConfiguration():
     def __init__(self, model, epochs, batch_size):

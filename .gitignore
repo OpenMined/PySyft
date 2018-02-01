@@ -6,3 +6,4 @@ dist/
 *.swp
 grid.egg-info/
 notebooks/.ipynb_checkpoints/
+.ropeproject

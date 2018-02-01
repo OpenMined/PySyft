@@ -7,15 +7,24 @@ import time
 
 import grid.bygone as by
 
-## Base IPFS Address
+# Base IPFS Address
 IPFS_ADDR = 'https://ipfs.infura.io/ipfs'
 
+
 class Server():
+
+    def __init__(self):
+        self.account_address = None
+        self.priv_key = None
+
+    def set_identity(self, account_address, priv_key):
+        self.account_address = account_address
+        self.priv_key = priv_key
 
     def poll(self, interval):
         while True:
             job = by.get_job()
-            if job == None:
+            if job is None:
                 print('no jobs, tryin again in {} seconds'.format(interval))
                 time.sleep(interval)
             else:
@@ -26,12 +35,19 @@ class Server():
         model_file = 'trained-model.h5'
         model.save(model_file)
         model_config = {
-            'file': ('model', open(model_file, 'rb'), 'application/octet-stream'),
+            'file': ('model', open(model_file, 'rb'),
+                     'application/octet-stream'),
         }
-        r = requests.post('https://ipfs.infura.io:5001/api/v0/add', files=model_config)
+        r = requests.post('https://ipfs.infura.io:5001/api/v0/add',
+                          files=model_config)
         model_response = json.loads(r.text)
 
-        by.add_result(job, model_response["Hash"])
+        if self.priv_key is not None and self.account_address is not None:
+            by.add_result(job, model_response["Hash"], self.priv_key,
+                          self.account_address, True)
+        else:
+            by.add_result(job, model_response["Hash"])
+
         os.remove(model_file)
 
     def run_experiment(self, ipfs_address):
@@ -47,9 +63,9 @@ class Server():
         batch_size = json_response["batch_size"]
         epochs = json_response["epochs"]
 
-        model.fit(input, target, epochs=epochs, batch_size=batch_size, verbose=1)
+        model.fit(input, target, epochs=epochs, batch_size=batch_size,
+                  verbose=1)
         return model
-
 
     def load_model(self, ipfs_address):
         r = requests.get('{}/{}'.format(IPFS_ADDR, ipfs_address))
