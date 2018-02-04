@@ -8,7 +8,7 @@ from colorama import Fore, Back, Style
 import ipywidgets as widget
 import time
 import grid.bygone as by
-import keras
+# import keras
 
 
 class Grid:
