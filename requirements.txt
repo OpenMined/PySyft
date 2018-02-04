@@ -3,4 +3,5 @@ jupyter
 requests
 ethereum
 tensorflow
+colorama
 keras

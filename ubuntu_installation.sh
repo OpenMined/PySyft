@@ -17,6 +17,6 @@ export GOPATH=$HOME
 go get -u github.com/ipfs/ipfs-update
 ipfs-update install latest
 ipfs init
-ipfs daemon --enable-pubsub-experiment
+ipfs daemon --enable-pubsub-experiment  > ipfs.log &
 
 
