@@ -5,10 +5,10 @@ sudo pip3 install -r requirements.txt
 
 
 sudo apt-get install golang-1.9-go -y
-echo "export GOPATH=/usr/lib/go-1.9
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin" >> ~/.bashrc
+echo "alias go=\"/usr/lib/go-1.9/bin/go\"" >> ~/.bashrc
+alias go="/usr/lib/go-1.9/bin/go"
 
-source ~/.bashrc
+
 
 
 
