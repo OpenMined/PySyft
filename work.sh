@@ -1,4 +1,4 @@
-python ipfs_grid_worker_daemon.py &
+python3 ipfs_grid_worker_daemon.py &
 
 while true
 do
@@ -6,9 +6,9 @@ do
     PULL_MSG="$(git pull)"
     if [[ $PULL_MSG != *"up-to-date"* ]]; then
         echo "Pulled, rebuilding and restarting worker"
-        pkill -f ipfs_grid_worker_deamon.py
-        python setup.py install
-        python ipfs_grid_worker_daemon.py &  
+        sudo pkill python3
+        sudo python3 setup.py install
+        python3 ipfs_grid_worker_daemon.py &  
     elif [[ $PULL_MSG = *"Aborting"* ]]; then
         echo "Not able to pull, you probably neeed to commit"
         exit 1
