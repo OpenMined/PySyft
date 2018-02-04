@@ -2,3 +2,4 @@ numpy
 jupyter
 requests
 ethereum
+keras
