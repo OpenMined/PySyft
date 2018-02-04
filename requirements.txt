@@ -5,3 +5,4 @@ ethereum
 tensorflow
 colorama
 keras
+h5py
