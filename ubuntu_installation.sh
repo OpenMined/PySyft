@@ -6,11 +6,10 @@ sudo apt-get install python3.6
 sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.5 1
 sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 2
 
-
 sudo apt-get install python3-pip python3.6-dev -y
 sudo apt-get install libssl-dev  -y
 sudo pip3 install -r requirements.txt
-sudo update-alternatives --config python3
+#sudo update-alternatives --config python3
 
 
 sudo curl -O https://storage.googleapis.com/golang/go1.9.1.linux-amd64.tar.gz
