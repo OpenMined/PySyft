@@ -7,3 +7,4 @@ dist/
 grid.egg-info/
 notebooks/.ipynb_checkpoints/
 .ropeproject
+*.h5
