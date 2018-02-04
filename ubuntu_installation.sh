@@ -2,7 +2,7 @@ sudo add-apt-repository ppa:jonathonf/python-3.6
 
 sudo apt-get update
 sudo apt-get -y upgrade
-sudo apt-get install python3.6
+sudo apt-get install python3.6 -y
 sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.5 1
 sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 2
 
@@ -29,6 +29,6 @@ ipfs daemon --enable-pubsub-experiment  > ipfs.log &
 
 sudo python3 setup.py install
 
-nohup python3 ipfs_grid_worker_daemon.py > grid_worker.log &
+nohup bash work.sh
 
 
