@@ -175,10 +175,10 @@ class Grid(object):
         if(message_handler is None):
             message_handler = self.receive_model
         spec = self.generate_fit_spec(model,input,target,valid_input,valid_target,batch_size,epochs,log_interval)
-        self.publish('openmined_new_model',spec)
+        self.publish('openmined',spec)
         
         trained = self.listen_to_channel(message_handler,spec['train_channel'])
         return trained
     
     def work(self):
-        self.listen_to_channel(self.fit_worker,'openmined_new_model')
+        self.listen_to_channel(self.fit_worker,'openmined')
