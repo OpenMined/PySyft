@@ -141,7 +141,9 @@ class Grid(object):
 
             model = self.ipfs2keras(decoded['model_addr'])
 
-            np_strings = json.loads(self.api.cat(decoded['data_addr']))
+            numpy_strings = self.api.cat(decoded['data_addr'])
+            print(numpy_strings)
+            np_strings = json.loads(numpy_strings)
             input,target,valid_input,valid_target = list(map(lambda x:self.deserialize_numpy(x),np_strings))
             
             for e in range(0,decoded['epochs'],decoded['log_interval']):

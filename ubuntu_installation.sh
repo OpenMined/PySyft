@@ -18,6 +18,9 @@ go get -u github.com/ipfs/ipfs-update
 ipfs-update install latest
 ipfs init
 ipfs daemon --enable-pubsub-experiment  > ipfs.log &
-python3 ipfs_grid_worker_daemon.py > grid_worker.log &
+
+sudo python3 setup.py install
+
+nohup python3 ipfs_grid_worker_daemon.py > grid_worker.log &
 
 
