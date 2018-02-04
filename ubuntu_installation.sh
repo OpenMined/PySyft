@@ -14,7 +14,9 @@ export PATH=$PATH:/usr/local/go/bin
 echo "export GOPATH=$HOME" >> ~/.profile
 export GOPATH=$HOME
 
-
-
+go get -u github.com/ipfs/ipfs-update
+ipfs-update install latest
+ipfs init
+ipfs daemon --enable-pubsub-experiment
 
 
