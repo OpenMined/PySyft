@@ -222,6 +222,25 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("trace", return_response=True)
 
+    def topk(self,k,**kwargs):
+        """
+        Returns a new tesnor with the k largest elements 
+        
+        Parameters
+        ----------
+            `k`: int       
+            `kwargs`: could be one of the following            
+                `dim`: (int) – the dimension to sort along (-1 default)
+                `largest`: (bool) - controls whether to return largest or smallest elements              
+                `sorted`: (bool) - controls whether to return the elements in sorted order (True default) 
+        
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.params_func('top_k',[k,kwargs.get('dim',-1),kwargs.get('largest',True),kwargs.get('sorted',True)],return_response=True)
+
     def sin(self):
         """
         Computes sin of each element of the tensor.
