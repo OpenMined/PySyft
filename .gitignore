@@ -1,10 +1,10 @@
 .cache
-__pycache__
+*__pycache__*
 .eggs/
 build/
 dist/
 *.swp
 grid.egg-info/
-notebooks/.ipynb_checkpoints/
+*.ipynb_checkpoints*
 .ropeproject
 *.h5
