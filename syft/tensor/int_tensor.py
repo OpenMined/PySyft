@@ -232,7 +232,19 @@ class IntTensor(BaseTensor):
         FloatTensor
             Output Tensor
         """
-        return self.no_params_func("sin", return_response=True, return_type='FloatTensor');
+        return self.no_params_func("sin", return_response=True, return_type='FloatTensor')
+
+    def sinh(self):
+        """
+        Returns the hyperbolic sine of the input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.no_params_func("sinh", return_response=True, return_type='FloatTensor')
 
     def __repr__(self, verbose=True):
 
