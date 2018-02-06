@@ -1,4 +1,5 @@
 from . import ipfsapi
+from grid.lib import OutputPipe
 import base64
 import random
 import keras
@@ -163,7 +164,6 @@ class Grid(object):
                 if(out is not None):
                     return out
 
-
     # TODO: torch
     def keras2ipfs(self,model):
         return self.api.add_bytes(self.serialize_keras_model(model))
@@ -203,30 +203,25 @@ class Grid(object):
 
             input,target,valid_input,valid_target = list(map(lambda x:self.deserialize_numpy(x),np_strings))
 
-            for e in range(0,decoded['epochs'],decoded['log_interval']):
-                model.fit(input, target, batch_size=decoded['batch_size'], epochs=decoded['log_interval'], verbose=0)
-                eval_loss = model.evaluate(valid_input,valid_target,verbose=0)
-                spec = {}
-                spec['type'] = 'log'
-                spec['eval_loss'] = eval_loss
-                spec['epoch_id'] = e
-                spec['num_epochs'] = decoded['epochs']
-                spec['parent_model'] = decoded['model_addr']
-                spec['worker_id'] = self.id
-                self.publish(channel=decoded['train_channel'],dict_message=spec)
+            pipe = OutputPipe(
+                id=self.id,
+                publisher=self.publish,
+                channel=decoded['train_channel'],
+                epochs=decoded['epochs'],
+                model_addr=decoded['model_addr'],
+                model=model,
+                keras2ipfs=self.keras2ipfs
+            )
 
-            spec = {}
-            spec['type'] = 'transact'
-            spec['model_addr'] = self.keras2ipfs(model)
-            spec['eval_loss'] = eval_loss
-            spec['parent_model'] = decoded['model_addr']
-            spec['worker_id'] = self.id
-            self.publish(channel=decoded['train_channel'],dict_message=spec)
-
-            output = "Model:" + spec['parent_model'][-5:]
-            output += " - Epochs " + str(decoded['epochs'])
-            output += " - Valid Loss: " + str(spec['eval_loss'])[0:8]
-            print(output)
+            model.fit(
+                input,
+                target,
+                batch_size=decoded['batch_size'],
+                validation_data=(valid_input, valid_target),
+                verbose=False,
+                epochs=decoded['epochs'],
+                callbacks=[pipe]
+            )
 
         else:
             raise NotImplementedError("Only compatible with Keras at the moment")
