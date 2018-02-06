@@ -8,3 +8,4 @@ grid.egg-info/
 *.ipynb_checkpoints*
 .ropeproject
 *.h5
+*.log
