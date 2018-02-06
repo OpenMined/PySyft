@@ -5,7 +5,7 @@ Proof of concept for python based GRID edge nodes.
 ## Running
 
 ```sh
-python setup.py install
+python3.6 setup.py install
 ```
 
 # Running with PUBSUB
