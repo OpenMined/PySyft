@@ -20,7 +20,7 @@ ipfs daemon --enable-pubsub-experiment
 
 You can then run the worker daemon
 ```sh
-python ipfs_gif_worker_daemon.py
+python3.6 ipfs_grid_worker_daemon.py
 ```
 
 Start Jupyter
