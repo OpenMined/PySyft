@@ -121,7 +121,9 @@ class Grid(object):
 
         model_bin = self.serialize_keras_model(model)
         model_addr = self.api.add_bytes(model_bin)
-        model_cls = self.api.add_bytes(model_class)
+
+        if model_class is not None:
+            self.api.add_bytes(model_class)
 
         train_input = self.serialize_numpy(input)
         train_target = self.serialize_numpy(target)
