@@ -14,7 +14,7 @@ TODO: modify Client to store the source code for the model in IPFS.
             (think through logistics; introduces hurdles for packaging model source code)
 TODO: figure out a convenient way to make robust training procedure for torch -- will probably want to use ignite for this
 """
-=======
+
 
 class Grid(object):
 
