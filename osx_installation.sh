@@ -22,12 +22,12 @@ sudo pip3 install -r requirements.txt
 wget https://dist.ipfs.io/ipfs-update/v1.5.2/ipfs-update_v1.5.2_darwin-amd64.tar.gz --no-check-certificate
 tar -xvf ipfs-update_v1.5.2_darwin-amd64.tar.gz
 cd ipfs-update
-sh install.sh 
+sh install.sh
 cd ../
 rm -rf ipfs-update*
 
 ipfs-update install latest
 ipfs init
-ipfs daemon --enable-pubsub-experiment  > ipfs.log &
+ipfs daemon --enable-pubsub-experiment  > ipfs.log 2> ipfs.log.err &
 
 python3 setup.py install

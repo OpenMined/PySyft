@@ -10,7 +10,7 @@ import sys
 from colorama import Fore, Back, Style
 
 """
-TODO: modify Client to store the source code for the model in IPFS. 
+TODO: modify Client to store the source code for the model in IPFS.
             (think through logistics; introduces hurdles for packaging model source code)
 TODO: figure out a convenient way to make robust training procedure for torch -- will probably want to use ignite for this
 """
@@ -115,7 +115,7 @@ class Grid(object):
     def publish(self,channel,dict_message):
         self.api.pubsub_pub(topic=channel,payload=json.dumps(dict_message))
 
-    
+
     # TODO: framework = 'torch'
     def generate_fit_spec(self, model,input,target,valid_input=None,valid_target=None,batch_size=1,epochs=1,log_interval=1, framework = 'keras', model_class = None):
 
@@ -165,12 +165,12 @@ class Grid(object):
     # TODO: torch
     def keras2ipfs(self,model):
         return self.api.add_bytes(self.serialize_keras_model(model))
-    
+
     #TODO: torch
     def ipfs2keras(self,model_addr):
         model_bin = self.api.cat(model_addr)
         return self.deserialize_keras_model(model_bin)
-    
+
     # TODO: torch
     def receive_model(self,message, verbose=True):
         msg = json.loads(message['data'])
@@ -184,7 +184,7 @@ class Grid(object):
                     output += " - Valid Loss: " + str(msg['eval_loss'])[0:8]
                     print(output)
 
-    
+
     # TODO: torch
     def fit_worker(self,message):
 
@@ -197,7 +197,7 @@ class Grid(object):
             try:
                 np_strings = json.loads(self.api.cat(decoded['data_addr']))
             except:
-                raise NotImplementedError, "The IPFS API only supports Python 3.6. Please modify your environment."
+                raise NotImplementedError("The IPFS API only supports Python 3.6. Please modify your environment.")
 
             input,target,valid_input,valid_target = list(map(lambda x:self.deserialize_numpy(x),np_strings))
 
@@ -225,9 +225,9 @@ class Grid(object):
             output += " - Epochs " + str(decoded['epochs'])
             output += " - Valid Loss: " + str(spec['eval_loss'])[0:8]
             print(output)
-        
+
         else:
-            raise NotImplementedError, "Only compatible with Keras at the moment"
+            raise NotImplementedError("Only compatible with Keras at the moment")
 
 
     def fit(self, model,input,target,valid_input=None,valid_target=None,batch_size=1,epochs=1,log_interval=1,message_handler=None):
