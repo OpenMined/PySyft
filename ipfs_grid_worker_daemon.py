@@ -7,8 +7,8 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
 from keras.optimizers import SGD
 import numpy as np
-from grid.grid import Grid
+from grid.pubsub.worker import Worker
 
-grid = Grid()
-print("grid id: {}".format(grid.id))
-grid.work()
+gridWorker = Worker()
+print("grid id: {}".format(gridWorker.id))
+gridWorker.work()
