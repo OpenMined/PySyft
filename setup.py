@@ -1,5 +1,6 @@
 import os
 from setuptools import setup, find_packages
+import platform
 
 
 # Utility function to read the README file.
@@ -11,6 +12,9 @@ def read(fname):
 
 
 requirements = read('requirements.txt').split()
+platform = platform.system()
+if platform is 'Windows':
+    requirements.remove('ethereum')
 
 setup(
     name="grid",
