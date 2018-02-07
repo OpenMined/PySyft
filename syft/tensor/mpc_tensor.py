@@ -1,12 +1,12 @@
 import numpy as np
 import syft.controller
 from .float_tensor import FloatTensor
-from grid.grid import PubSub
+from grid import pubsub
 from uuid import uuid4
 
 
 class MPCTensor():
-    def __init__(self, data, data_as_tensor=False, id=None, shards=[0], total_shards=1, pubsub=None):
+    def __init__(self, data, data_as_tensor=False, id=None, shards=[0], total_shards=1, ipfs=None):
         if data_as_tensor:
             self.data = data
         else:
@@ -18,9 +18,9 @@ class MPCTensor():
         self.shards = shards
         self.total_shards = total_shards
         if pubsub is None:
-            self.pubsub = PubSub()
+            self.ipfs = pubsub.base.PubSub()
         else:
-            self.pubsub = pubsub
+            self.ipfs = ipfs
 
     def shard(self):
         rand_tensor = self.data.random_()
@@ -29,8 +29,8 @@ class MPCTensor():
         return MPCTensor(rand_tensor, True, self.tensor_id, [self.total_shards-1], self.total_shards, self.pubsub)
 
     def share(self):
-        temp_pubsub = self.pubsub
-        self.pubsub = None
+        temp_pubsub = self.ipfs
+        self.ipfs = None
         temp_pubsub.publish("testopenmined", self)
 
     def __add__(self, x):
@@ -40,7 +40,7 @@ class MPCTensor():
             raise ValueError("Different Shards")
 
     def receive(self):
-        self.pubsub.listen_to_channel(self.recombine, 'testopenmined')
+        self.ipfs.listen_to_channel(self.recombine, 'testopenmined')
 
     def recombine(self, x):
         if self.id == x.id:
