@@ -6,3 +6,4 @@ tensorflow
 colorama
 keras
 h5py
+mnemonic

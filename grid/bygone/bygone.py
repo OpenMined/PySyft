@@ -3,6 +3,7 @@ from ethereum import transactions
 import os
 import rlp
 import requests
+from mnemonic import Mnemonic
 
 host = "http://127.0.0.1:3000"
 
@@ -91,18 +92,27 @@ def send_raw_transaction(json, priv_key):
     return r.status_code
 
 
-def create_wallet():
-    # TODO is urandom secure??? maybe need to use something else
-    private_key = utils.sha3(os.urandom(4096))
+def create_wallet(mnemonic='', passphrase=''):
+    # TODO is this secure, maybe not trust this yet on a real network
+    # SHOULD DEFINITELY NOT BE USED IN PRODUCTION YET
+    m = Mnemonic('english')
+
+    if mnemonic is '':
+        # strenght of 256 is recommended
+        mnemonic = m.generate(strength=256)
+    print("mnemonic:", mnemonic)
+
+    seed = m.to_seed(mnemonic, passphrase)
+
+    private_key = utils.sha3(seed)
 
     # TODO encrypt and store these keys somewhere for user?!?!
     raw_address = utils.privtoaddr(private_key)
     account_address = utils.checksum_encode(raw_address)
 
-    print("DO NOT LOSS PRIVATE KEY OR PUBLIC KEY NO WAY TO RECOVER")
     print("PRIVATE KEY", private_key.hex(), "PUBLIC KEY", account_address)
 
-    return private_key, account_address
+    return private_key.hex(), account_address
 
 
 def sign_transaction(nonce, abi, priv_key, gas, to):
