@@ -2,13 +2,16 @@ from grid import ipfsapi
 from grid.lib import OutputPipe, utils
 from . import base
 
+from torch.autograd import Variable
+from colorama import Fore, Back, Style
+
 import keras
 import json
 import numpy as np
 import torch
-from torch.autograd import Variable
+import threading
 import sys
-from colorama import Fore, Back, Style
+import asyncio
 
 """
 TODO: modify Client to store the source code for the model in IPFS.
@@ -18,6 +21,13 @@ TODO: figure out a convenient way to make robust training procedure for torch --
 
 
 class Worker(base.PubSub):
+
+    def train_meta(self, message):
+        decoded = json.loads(message['data'])
+        if not 'op_code' in decoded:
+            return
+
+        self.learner_callback.stop_training = decoded['op_code'] == 'quit'
 
     # TODO: torch
     def fit_worker(self,message):
@@ -34,15 +44,21 @@ class Worker(base.PubSub):
                 raise NotImplementedError("The IPFS API only supports Python 3.6. Please modify your environment.")
 
             input,target,valid_input,valid_target = list(map(lambda x:self.deserialize_numpy(x),np_strings))
+            train_channel = decoded['train_channel']
 
-            pipe = OutputPipe(
+            self.learner_callback = OutputPipe(
                 id=self.id,
                 publisher=self.publish,
-                channel=decoded['train_channel'],
+                channel=train_channel,
                 epochs=decoded['epochs'],
                 model_addr=decoded['model_addr'],
                 model=model
             )
+
+            monitor_thread = threading.Thread(target = self.listen_to_channel, args = (self.train_meta, train_channel + ':' + self.id))
+            monitor_thread.start()
+
+            print('training model')
 
             model.fit(
                 input,
@@ -51,7 +67,7 @@ class Worker(base.PubSub):
                 validation_data=(valid_input, valid_target),
                 verbose=False,
                 epochs=decoded['epochs'],
-                callbacks=[pipe]
+                callbacks=[self.learner_callback]
             )
 
         else:
@@ -59,4 +75,4 @@ class Worker(base.PubSub):
 
 
     def work(self):
-        self.listen_to_channel(self.fit_worker,'openmined')
+        self.listen_to_channel(self.fit_worker, 'openmined')

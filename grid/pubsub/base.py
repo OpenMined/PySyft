@@ -3,6 +3,7 @@ import random
 import base64
 import json
 import numpy as np
+import asyncio
 
 class PubSub(object):
     def __init__(self, ipfs_addr='127.0.0.1', port=5001):
@@ -19,7 +20,7 @@ class PubSub(object):
     def publish(self,channel,dict_message):
         self.api.pubsub_pub(topic=channel,payload=json.dumps(dict_message))
 
-    def listen_to_channel(self,handle_message,channel):
+    def listen_to_channel(self, handle_message, channel):
         new_models = self.api.pubsub_sub(topic=channel,stream=True)
 
         for m in new_models:
