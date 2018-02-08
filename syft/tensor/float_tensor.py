@@ -149,6 +149,55 @@ class FloatTensor(BaseTensor):
         copy.params_func("addmv_", [x.id, y.id])
         return copy
 
+    def addr(self, beta=1, alpha=1, vec1, vec2):
+        """
+        Returns a new Tensor as the sum of beta*mat and alpha*(vec1*vec2')
+
+        Parameters
+        ----------
+        beta: float
+            scalar to optionally multiply each element of mat
+        self: FloatTensor
+            tensor to add to the outer product
+        alpha: float
+            scalar to optionally multiply each element of the outer product of vec1, vec2
+        vec1: FloatTensor
+            first vector in outer product with vec2
+        vec2: FloatTensor
+            second vector in outer product with vec1
+
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+
+        return self.params_func("addr", [beta, alpha, vec1, vec2], return_response=True)
+
+    def addr_(self, beta=1, alpha=1, vec1, vec2):
+        """
+        Returns Tensor as the sum of beta*self and alpha*(vec1*vec2')
+
+        Parameters
+        ----------
+        beta: float
+            scalar to optionally multiply each element of mat
+        self: FloatTensor
+            tensor to add to the outer product
+        alpha: float
+            scalar to optionally multiply each element of the outer product of vec1, vec2
+        vec1: FloatTensor
+            first vector in outer product with vec2
+        vec2: FloatTensor
+            second vector in outer product with vec1
+
+        Returns
+        -------
+        FloatTensor inline
+        """
+
+        return self.params_func("addr_",  [beta, alpha, vec1, vec2])
+
     def asin(self):
         """
         Returns a new Tensor with the arcsine of the elements of input.
