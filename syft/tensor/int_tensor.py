@@ -1,6 +1,7 @@
 import numpy as np
 import syft.controller
 from .base_tensor import BaseTensor
+from .float_tensor import FloatTensor
 
 class IntTensor(BaseTensor):
     def __init__(self, data, data_is_pointer=False):
@@ -47,6 +48,7 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs_", return_response=True)
 
+
     def max_(self, other):
         """
         Performs inline element-wise max comparison of the input tensors 
@@ -63,6 +65,18 @@ class IntTensor(BaseTensor):
             Output tensor
         """
         return self.params_func("max_", [other.id], return_response=True)
+
+    def acos(self):
+        """
+        Returns a new tensor with the arccosine of the elements of input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.no_params_func("acos", return_response=True, return_type='FloatTensor')
 
     def cos(self):
         """
@@ -226,6 +240,25 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("trace", return_response=True)
 
+    def topk(self,k,**kwargs):
+        """
+        Returns a new tesnor with the k largest elements 
+        
+        Parameters
+        ----------
+            `k`: int       
+            `kwargs`: could be one of the following            
+                `dim`: (int) – the dimension to sort along (-1 default)
+                `largest`: (bool) - controls whether to return largest or smallest elements              
+                `sorted`: (bool) - controls whether to return the elements in sorted order (True default) 
+        
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.params_func('top_k',[k,kwargs.get('dim',-1),kwargs.get('largest',True),kwargs.get('sorted',True)],return_response=True)
+
     def sin(self):
         """
         Computes sin of each element of the tensor.
@@ -236,7 +269,19 @@ class IntTensor(BaseTensor):
         FloatTensor
             Output Tensor
         """
-        return self.no_params_func("sin", return_response=True, return_type='FloatTensor');
+        return self.no_params_func("sin", return_response=True, return_type='FloatTensor')
+
+    def sinh(self):
+        """
+        Returns the hyperbolic sine of the input.
+        Parameters
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Output tensor
+        """
+        return self.no_params_func("sinh", return_response=True, return_type='FloatTensor')
 
     def __repr__(self, verbose=True):
 
@@ -342,3 +387,38 @@ class IntTensor(BaseTensor):
             Output tensor
         """
         return self.no_params_func("sign", return_response=True)
+
+    def view(self, *args):
+        """
+        Returns a new tensor with the same data as the self tensor but of a different size.
+        Parameters
+        ----------
+        args : int
+            the desired size
+        Returns
+        -------
+        IntTensor
+            Output Tensor
+        """
+        new_dim = list(args)
+        assert type(new_dim) == list
+        assert type(new_dim[0]) == int
+        return self.params_func("view", new_dim, return_response=True)
+
+    def view_(self, *args):
+        """
+        Returns self tensor but of a different size. Inplace version of view.
+        Parameters
+        ----------
+        args : int
+            the desired size
+        Returns
+        -------
+        IntTensor
+            Output Tensor
+        """
+        new_dim = list(args)
+        assert type(new_dim) == list
+        assert type(new_dim[0]) == int
+        self.params_func("view_", new_dim, return_response=False)
+        return self

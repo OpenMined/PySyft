@@ -37,3 +37,16 @@ def test_max_():
     test_value = tensor.max_(compare_to)
     actual_value = IntTensor(np.array([4,0,6,-3,8,-1]))
     assert(test_value.equal(actual_value))
+
+def test_view():
+    a = IntTensor(np.array([[[9, 3, 1, 0], [6, 8, 6, 6]], [[1, 6, 8, 6], [5, 0, 2, 0]]]))
+    a_v = a.view(-1)
+    a_t_ground = IntTensor(np.array([9, 3, 1, 0, 6, 8, 6, 6, 1, 6, 8, 6, 5, 0, 2, 0]))
+    assert(a_v.equal(a_t_ground))
+    b_v = a.view(8, 2)
+    b_v_ground = IntTensor(np.array([[9, 3], [1, 0], [6, 8], [6, 6], [1, 6], [8, 6], [5, 0], [2, 0]]))
+    assert(b_v.equal(b_v_ground))
+    a.view_(4, -1, 2)
+    c_v_ground = IntTensor(np.array([[[9, 3], [1, 0]], [[6, 8], [6, 6]], [[1, 6], [8, 6]], [[5, 0], [2, 0]]]))
+    assert(a.equal(c_v_ground))
+

@@ -467,9 +467,9 @@ class FloatTensor(BaseTensor):
         """
         return self.no_params_func("floor_")
 
-    def random_(self):
+    def random_(self, start=0, end=None):
         """
-        Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)
+        Returns a tensor filled with random integers from the range [start, ..., end - 1]
         The shape of the tensor is defined by the varargs sizes.
         ----------
         Returns
@@ -477,7 +477,13 @@ class FloatTensor(BaseTensor):
         FloatTensor
             Caller with values inplace
         """
-        return self.no_params_func("random_")
+        if not isinstance(start, int):
+            raise TypeError('Method `random_` requires int for start, not {}'.format(type(start)))
+        if not isinstance(end, [int, type(None)]):
+            raise(TypeError('Method `random_ requires an int or None for end, not {}'.format(type(end))))
+        if end is None:
+            return self.params_func("random_", params=[start])
+        return self.params_func("random_", params=[start, end])
 
     def round(self):
         """
@@ -858,6 +864,18 @@ class FloatTensor(BaseTensor):
 
     def triu_(self, k=0):
         return self.params_func("triu_", [k])
+
+    def uniform_(self, start=0, end=1):
+        """
+        Returns a tensor filled with random numbers from a uniform distribution on the interval [start,end)
+        The shape of the tensor is defined by the varargs sizes.
+        ----------
+        Returns
+        -------
+        FloatTensor
+            Caller with values inplace
+        """
+        return self.params_func("uniform_", params=[start, end])
 
     def unsqueeze(self,dim):
         return self.params_func("unsqueeze", [dim], return_response=True)
