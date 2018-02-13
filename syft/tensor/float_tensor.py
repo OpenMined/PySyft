@@ -149,7 +149,7 @@ class FloatTensor(BaseTensor):
         copy.params_func("addmv_", [x.id, y.id])
         return copy
 
-    def addr(self, beta=1, alpha=1, vec1, vec2):
+    def addr(self, vec1, vec2, beta=1, alpha=1):
         """
         Returns a new Tensor as the sum of beta*mat and alpha*(vec1*vec2')
 
@@ -172,9 +172,9 @@ class FloatTensor(BaseTensor):
             Output tensor
         """
 
-        return self.params_func("addr", [beta, alpha, vec1, vec2], return_response=True)
+        return self.params_func("addr", [vec1.id, vec2.id, beta, alpha], return_response=True)
 
-    def addr_(self, beta=1, alpha=1, vec1, vec2):
+    def addr_(self, vec1, vec2, beta=1, alpha=1):
         """
         Returns Tensor as the sum of beta*self and alpha*(vec1*vec2')
 
@@ -196,7 +196,7 @@ class FloatTensor(BaseTensor):
         FloatTensor inline
         """
 
-        return self.params_func("addr_",  [beta, alpha, vec1, vec2])
+        return self.params_func("addr_",  [vec1.id, vec2.id, beta, alpha])
 
     def asin(self):
         """
