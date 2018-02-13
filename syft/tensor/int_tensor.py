@@ -404,3 +404,15 @@ class IntTensor(BaseTensor):
         assert type(new_dim[0]) == int
         self.params_func("view_", new_dim, return_response=False)
         return self
+
+    def exp(self):
+        """
+        Computes exponential of each element of the tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("exp", return_response=True)
