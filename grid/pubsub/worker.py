@@ -70,9 +70,11 @@ class Worker(base.PubSub):
                 callbacks=[self.learner_callback]
             )
 
+            print('done')
+
         else:
             raise NotImplementedError("Only compatible with Keras at the moment")
 
 
     def work(self):
-        self.listen_to_channel(self.fit_worker, 'openmined')
+        self.listen_to_channel('openmined', self.fit_worker)
