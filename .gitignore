@@ -9,3 +9,4 @@ grid.egg-info/
 .ropeproject
 *.h5
 *.log
+.openmined
