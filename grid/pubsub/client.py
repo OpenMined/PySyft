@@ -16,7 +16,7 @@ class Client(PubSub):
         self.publish('openmined', self.spec)
 
 
-        trained = self.listen_to_channel(message_handler,
+        trained = self.listen_to_channel_sync(message_handler,
                                          self.spec['train_channel'])
         return trained
 

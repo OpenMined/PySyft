@@ -5,7 +5,7 @@ import json
 import numpy as np
 import sys
 import asyncio
-
+from threading import Thread
 
 class PubSub(object):
     def __init__(self, ipfs_addr='127.0.0.1', port=5001):
@@ -23,8 +23,29 @@ class PubSub(object):
     def publish(self, channel, dict_message):
         self.api.pubsub_pub(topic=channel, payload=json.dumps(dict_message))
 
+    def listen_to_channel_sync(self, *args):
+        """
+        Synchronous version of listen_to_channel
+        """
 
-    def listen_to_channel(self, channel, handle_message, init_function=None, ignore_from_self=False):
+        self.listen_to_channel_impl(*args)
+
+    def listen_to_channel(self, *args):
+        """
+        Listens for IPFS pubsub sub messages asynchronously.
+
+        This function will create the listener and call back your handler function
+        on a new thread.
+        """
+        
+        t1 = Thread(target = self.listen_to_channel_impl, args = args)
+        t1.start()
+
+    def listen_to_channel_impl(self, channel, handle_message, init_function=None, ignore_from_self=False):
+        """
+        Do not call directly.  Use listen_to_channel or listen_to_channel_sync instead.
+        """
+
         first_proc = True
         new_models = self.api.pubsub_sub(topic=channel, stream=True)
 
