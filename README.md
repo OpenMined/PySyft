@@ -1,6 +1,19 @@
-# Grid
+![wtf](images/banner.png)
 
-Proof of concept for python based GRID edge nodes.
+## Modes
+
+Grid currently has two modes.
+
+`--tree` -- experimental
+
+Tree is the federated learning mode.  The long term goal is to have node workers store data
+locally, and train public models to make them better.
+
+`--compute`
+
+Compute mode lets users offer compute to train models.  Data scientists can easily publish models from
+a jupyter notebook and train them remotely.  Grid also offers easy utilities to try n number of
+configurations concurrently.
 
 ## Running
 

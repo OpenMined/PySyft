@@ -1,7 +1,11 @@
 from grid.lib import utils
 from grid.pubsub.base import PubSub
-
+from grid.pubsub import channels, commands
+from bitcoin import base58
+from colorama import Fore, Back, Style
+import ipywidgets as widgets
 import json
+import os
 
 
 class Client(PubSub):
@@ -15,10 +19,8 @@ class Client(PubSub):
         self.spec = self.generate_fit_spec(model,input,target,valid_input,valid_target,batch_size,epochs,log_interval)
         self.publish('openmined', self.spec)
 
-
-        trained = self.listen_to_channel_sync(message_handler,
-                                         self.spec['train_channel'])
-        return trained
+        self.listen_to_channel_sync(self.spec['train_channel'], message_handler)
+        return self.spec
 
     def update_progress(self, parent_model, worker_id, num_epochs, epoch_id):
         if parent_model not in self.progress:
@@ -109,11 +111,38 @@ class Client(PubSub):
         spec['train_channel'] = 'openmined_train_' + str(model_addr)
         return spec
 
-    def add_task(self, name):
-        json = {"name": name}
+    """
+    Grid Tree Implementation
 
-        addr = self.api.add_json(json)
-        print(addr)
-        data = "add_task:" + str(addr)
+    Methods for Grid tree down here
+    """
 
-        self.publish('openmined', data)
+    def found_task(self, message):
+        fr = base58.encode(message['from'])
+
+        tasks = json.loads(message['data'])
+        for task in tasks:
+            # utils.store_task(task['name'], task['address'])
+            name = task['name']
+            addr = task['address']
+
+            hbox = widgets.HBox([widgets.Label(name), widgets.Label(addr)])
+            self.all_tasks.children += (hbox, )
+
+
+    def find_tasks(self):
+        self.publish(channels.list_tasks, "None")
+        self.all_tasks = widgets.VBox([widgets.HBox([widgets.Label('TASK NAME'), widgets.Label('ADDRESS')])])
+        self.listen_to_channel(channels.list_tasks_callback(self.id), self.found_task)
+
+        return self.all_tasks
+
+    def add_task(self, name, data_dir):
+        task_data = {'name': name, 'creator': self.id, 'data_dir': data_dir}
+
+        addr = self.api.add_json(task_data)
+
+        utils.store_task(name, addr)
+
+        data = json.dumps([{'name': name, 'address': addr}])
+        self.publish('openmined:add_task', data)

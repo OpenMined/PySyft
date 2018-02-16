@@ -31,7 +31,7 @@ class OutputPipe(keras.callbacks.Callback):
         spec['worker_id'] = self.id
 
         self.model.stop_training = self.stop_training
-        self.publisher(channel=self.channel, dict_message=spec)
+        self.publisher(channel=self.channel, message=spec)
 
     def on_train_end(self, logs={}):
         spec = {}
@@ -41,4 +41,6 @@ class OutputPipe(keras.callbacks.Callback):
         spec['parent_model'] = self.model_addr
         spec['worker_id'] = self.id
 
-        self.publisher(channel=self.channel, dict_message=spec)
+        print(f'finished training???????? {self.channel}')
+
+        self.publisher(channel=self.channel, message=spec)

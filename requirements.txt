@@ -7,3 +7,4 @@ colorama
 keras
 h5py
 mnemonic
+python-bitcoinlib

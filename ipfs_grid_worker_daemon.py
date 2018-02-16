@@ -10,5 +10,6 @@ import numpy as np
 from grid.pubsub.worker import Worker
 
 gridWorker = Worker()
-print("grid id: {}".format(gridWorker.id))
 gridWorker.work()
+
+print("grid id: {}".format(gridWorker.id))
