@@ -31,6 +31,14 @@ turned on.
 ipfs daemon --enable-pubsub-experiment
 ```
 
+Make sure you have installed all dependencies
+
+```sh
+python setup.py install
+```
+
+You also must have keras installed.
+
 You can then run the worker daemon
 ```sh
 python3.6 ipfs_grid_worker_daemon.py
