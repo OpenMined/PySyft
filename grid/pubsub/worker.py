@@ -48,6 +48,13 @@ TODO: figure out a convenient way to make robust training procedure for torch
 
 class Worker(base.PubSub):
 
+    def anchor(self):
+        """
+        Use as anchor node for faster initial IPFS connections.
+        """
+        self.listen_to_channel(channels.openmined)
+
+
     def train_meta(self, message):
         decoded = json.loads(message['data'])
         if 'op_code' not in decoded:
@@ -223,7 +230,6 @@ class Worker(base.PubSub):
             self.add_model(name, model, parent=task_addr)
         else:
             print("Can't train your own model so soon!!!!!")
-
 
     def discovered_tasks(self, tasks):
         print(f'{Fore.WHITE}{Back.BLACK} TASKS {Style.RESET_ALL}')
