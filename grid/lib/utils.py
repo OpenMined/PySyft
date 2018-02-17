@@ -3,6 +3,8 @@ from grid import ipfsapi
 import keras
 import os
 import json
+from colorama import Fore, Back, Style
+import sys
 
 
 def get_ipfs_api(ipfs_addr='127.0.0.1', port=5001):
