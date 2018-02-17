@@ -8,3 +8,4 @@ keras
 h5py
 mnemonic
 python-bitcoinlib
+filelock

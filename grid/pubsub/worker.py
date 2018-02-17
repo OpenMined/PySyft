@@ -135,7 +135,7 @@ class Worker(base.PubSub):
 
         my_best = utils.best_model_for_task(task)
         if my_best is not None:
-            self.send_best_model(task, my_best)
+            self.send_model(task, my_best)
 
     def list_tasks(self, message):
         fr = base58.encode(message['from'])
