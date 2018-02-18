@@ -15,29 +15,26 @@ Compute mode lets users offer compute to train models.  Data scientists can easi
 a jupyter notebook and train them remotely.  Grid also offers easy utilities to try n number of
 configurations concurrently.
 
-## Running
+# Launching a Worker
 
-```sh
-python3.6 setup.py install
-```
-
-# Running with PUBSUB
-### Running `ipfs_grid_worker_daemon.py`
+### Start the IPFS Peer-to-Peer Filesystem
 
 Grid worker daemon requires an IPFS daemon to be running with pubsub support
 turned on.
 
 ```sh
-ipfs daemon --enable-pubsub-experiment
+./bin/start_ipfs
 ```
 
 Make sure you have installed all dependencies
 
-```sh
-python setup.py install
 ```
+sh
+pip3 install -r requirements.txt
 
-You also must have keras installed.
+sh
+python3 setup.py install
+```
 
 You can then run the worker daemon
 ```sh
