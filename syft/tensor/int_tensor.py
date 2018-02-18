@@ -48,6 +48,24 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs_", return_response=True)
 
+
+    def max_(self, other):
+        """
+        Performs inline element-wise max comparison of the input tensors 
+        and returns the max value in each row.
+        
+        Parameters
+        ----------
+        other : IntTensor
+            IntTensor to compare with
+        
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.params_func("max_", [other.id], return_response=True)
+
     def acos(self):
         """
         Returns a new tensor with the arccosine of the elements of input.
