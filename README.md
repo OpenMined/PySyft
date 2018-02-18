@@ -28,11 +28,9 @@ turned on.
 
 Make sure you have installed all dependencies
 
-```
-sh
+```sh
 pip3 install -r requirements.txt
 
-sh
 python3 setup.py install
 ```
 
