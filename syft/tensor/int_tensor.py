@@ -423,6 +423,19 @@ class IntTensor(BaseTensor):
         self.params_func("view_", new_dim, return_response=False)
         return self
 
+    def exp(self):
+        """
+        Computes exponential of each element of the tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+
+            Output tensor
+        """
+        return self.no_params_func("exp", return_response=True)
+
     def unfold(self, dim, size, step):
         """
         Returns a tensor which contains all slices of size `size` from `self` tensor in the dimension `dim`.
@@ -431,10 +444,7 @@ class IntTensor(BaseTensor):
             dim (int) – dimension in which unfolding happens
             size (int) – the size of each slice that is unfolded
             step (int) – the step between each slice
-        ----------
-        Returns
-        -------
-        IntTensor
             Output Tensor
         """
         return self.params_func("unfold", [dim, size, step], return_response=True)
+
