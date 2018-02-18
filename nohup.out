@@ -1,8 +1,0 @@
-Using TensorFlow backend.
-Traceback (most recent call last):
-  File "ipfs_grid_worker_daemon.py", line 10, in <module>
-    from grid.grid import Grid
-  File "/Users/atrask/Laboratory/openmined/Grid/grid/grid.py", line 17
-    =======
-     ^
-SyntaxError: invalid syntax

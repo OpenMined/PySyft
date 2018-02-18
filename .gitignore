@@ -10,3 +10,4 @@ grid.egg-info/
 *.h5
 *.log
 .openmined
+nohup.out
