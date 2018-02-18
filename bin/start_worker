@@ -1,0 +1,1 @@
+python3.6 bin/ipfs_grid_worker_daemon.py $1
