@@ -34,12 +34,18 @@ pip3 install -r requirements.txt
 python3 setup.py install
 ```
 
-You can then run the worker daemon
-```sh
-python3.6 ipfs_grid_worker_daemon.py
+You can then run the worker daemon. If you want to run in ``compute`` mode run
+```s./bin/
+./bin/start_worker --compute
 ```
 
-Start Jupyter
+and if you want to run in ``tree`` mode, run
+
+```s./bin/
+./bin/start_worker --tree
+```
+
+Finally, to run the notebooks - in a different tab start Jupyter by running:
 ```sh
 jupyter notebook
 ```
