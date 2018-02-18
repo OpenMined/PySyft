@@ -5,7 +5,6 @@ ethereum
 tensorflow
 colorama
 keras
-torch
 h5py
 mnemonic
 python-bitcoinlib
