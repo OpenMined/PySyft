@@ -9,5 +9,6 @@ grid.egg-info/
 .ropeproject
 *.h5
 *.log
+*.lock
 .openmined
 nohup.out
