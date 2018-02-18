@@ -50,3 +50,22 @@ def test_view():
     c_v_ground = IntTensor(np.array([[[9, 3], [1, 0]], [[6, 8], [6, 6]], [[1, 6], [8, 6]], [[5, 0], [2, 0]]]))
     assert(a.equal(c_v_ground))
 
+def test_unfold():
+    a = IntTensor(np.array([[-1, 2, 3, 5], [0, 4, 6, 7], [10, 3, 2, -5]], dtype=np.int32))
+
+    # Test1
+    expected_a = IntTensor(np.array([[[-1, 2, 3, 5], [0, 4, 6, 7]], [[0, 4, 6, 7], [10, 3, 2, -5]]], dtype=np.int32))
+    actual_a = a.unfold(0, 2, 1)
+    assert(actual_a.equal(expected_a))
+
+    # Test2
+    expected_a = IntTensor(np.array([[[-1, 2, 3], [0, 4, 6], [10, 3, 2]],
+        [[2, 3, 5], [4, 6, 7], [3, 2, -5]]], dtype=np.int32))
+    actual_a = a.unfold(1, 3, 1)
+    assert(actual_a.equal(expected_a))
+
+    # Test3
+    expected_a = IntTensor(np.array([[[-1, 2], [0, 4], [10, 3]], [[3, 5], [6, 7], [2, -5]]], dtype=np.int32))
+    actual_a = a.unfold(1, 2, 2)
+    assert(actual_a.equal(expected_a))
+

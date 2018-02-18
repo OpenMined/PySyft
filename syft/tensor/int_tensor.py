@@ -422,3 +422,19 @@ class IntTensor(BaseTensor):
         assert type(new_dim[0]) == int
         self.params_func("view_", new_dim, return_response=False)
         return self
+
+    def unfold(self, dim, size, step):
+        """
+        Returns a tensor which contains all slices of size `size` from `self` tensor in the dimension `dim`.
+        
+        Parameters:
+            dim (int) – dimension in which unfolding happens
+            size (int) – the size of each slice that is unfolded
+            step (int) – the step between each slice
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output Tensor
+        """
+        return self.params_func("unfold", [dim, size, step], return_response=True)
