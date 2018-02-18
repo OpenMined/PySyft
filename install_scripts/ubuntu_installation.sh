@@ -28,7 +28,3 @@ ipfs init
 ipfs daemon --enable-pubsub-experiment  > ipfs.log &
 
 sudo python3 setup.py install
-
-nohup bash work.sh
-
-
