@@ -3,6 +3,7 @@ import syft.controller
 from .base_tensor import BaseTensor
 from .float_tensor import FloatTensor
 
+
 class IntTensor(BaseTensor):
     def __init__(self, data, data_is_pointer=False):
         self.controller = syft.controller
@@ -48,17 +49,16 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs_", return_response=True)
 
-
     def max_(self, other):
         """
         Performs inline element-wise max comparison of the input tensors 
         and returns the max value in each row.
-        
+
         Parameters
         ----------
         other : IntTensor
             IntTensor to compare with
-        
+
         Returns
         -------
         IntTensor
@@ -154,7 +154,8 @@ class IntTensor(BaseTensor):
         :param x: IntTensor
         :return: True if the given tensor has the same size and elements as this instance. Otherwise, False.
         """
-        response_string = self.params_func("equal", [x.id], return_response=True, return_type="str")
+        response_string = self.params_func(
+            "equal", [x.id], return_response=True, return_type="str")
         if response_string == "True":
             return True
         else:
@@ -240,10 +241,10 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("trace", return_response=True)
 
-    def topk(self,k,**kwargs):
+    def topk(self, k, **kwargs):
         """
         Returns a new tesnor with the k largest elements 
-        
+
         Parameters
         ----------
             `k`: int       
@@ -251,13 +252,13 @@ class IntTensor(BaseTensor):
                 `dim`: (int) – the dimension to sort along (-1 default)
                 `largest`: (bool) - controls whether to return largest or smallest elements              
                 `sorted`: (bool) - controls whether to return the elements in sorted order (True default) 
-        
+
         Returns
         -------
         IntTensor
             Output tensor
         """
-        return self.params_func('top_k',[k,kwargs.get('dim',-1),kwargs.get('largest',True),kwargs.get('sorted',True)],return_response=True)
+        return self.params_func('top_k', [k, kwargs.get('dim', -1), kwargs.get('largest', True), kwargs.get('sorted', True)], return_response=True)
 
     def sin(self):
         """
@@ -293,7 +294,8 @@ class IntTensor(BaseTensor):
 
         type_str = type_str[:-1]
 
-        desc = "[syft.IntTensor:"+str(self.id) + " size:" + type_str + "]" + "\n"
+        desc = "[syft.IntTensor:" + \
+            str(self.id) + " size:" + type_str + "]" + "\n"
 
         return tensor_str + "\n" + desc
 
@@ -443,15 +445,15 @@ class IntTensor(BaseTensor):
         ----------
         Returns
         -------
-        IntTensor
+        FloatTensor
             Output tensor
         """
-        return self.no_params_func("rsqrt", return_response=True)
+        return self.no_params_func("rsqrt", return_response=True, return_type='FloatTensor')
 
     def unfold(self, dim, size, step):
         """
         Returns a tensor which contains all slices of size `size` from `self` tensor in the dimension `dim`.
-        
+
         Parameters:
             dim (int) – dimension in which unfolding happens
             size (int) – the size of each slice that is unfolded
@@ -459,4 +461,3 @@ class IntTensor(BaseTensor):
             Output Tensor
         """
         return self.params_func("unfold", [dim, size, step], return_response=True)
-
