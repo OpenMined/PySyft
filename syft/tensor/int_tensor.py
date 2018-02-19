@@ -436,6 +436,18 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("exp", return_response=True)
 
+    def rsqrt(self):
+        """
+        Returns reciprocal of square root of tensor element wise.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("rsqrt", return_response=True)
+
     def unfold(self, dim, size, step):
         """
         Returns a tensor which contains all slices of size `size` from `self` tensor in the dimension `dim`.
