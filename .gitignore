@@ -12,3 +12,4 @@ grid.egg-info/
 *.lock
 .openmined
 nohup.out
+data
