@@ -149,22 +149,20 @@ class FloatTensor(BaseTensor):
         copy.params_func("addmv_", [x.id, y.id])
         return copy
 
-    def addr(self, vec1, vec2, beta=1, alpha=1):
+    def addr(self, *args):
         """
-        Returns a new Tensor as the sum of beta*mat and alpha*(vec1*vec2')
+        Returns a new Tensor as the sum of beta*self and alpha*(vec1*vec2^T)
 
         Parameters
         ----------
         beta: float
             scalar to optionally multiply each element of mat
-        self: FloatTensor
-            tensor to add to the outer product
-        alpha: float
-            scalar to optionally multiply each element of the outer product of vec1, vec2
         vec1: FloatTensor
             first vector in outer product with vec2
         vec2: FloatTensor
             second vector in outer product with vec1
+        alpha: float
+            scalar to optionally multiply each element of the outer product of vec1, vec2
 
         Returns
         -------
@@ -172,31 +170,75 @@ class FloatTensor(BaseTensor):
             Output tensor
         """
 
-        return self.params_func("addr", [vec1.id, vec2.id, beta, alpha], return_response=True)
+        for arg in args:
+            if type(arg) == float:
+                if 'beta' not in locals() and 'vec1' not in locals():
+                    beta = arg
+                elif 'alpha' not in locals() and 'vec2' in locals():
+                    alpha = arg
+                else:
+                    raise TypeException('Method `addr` accepts only 2 float params; they may be out of order with respect to the Tensors.')
+            elif type(arg) == FloatTensor:
+                if 'vec1' not in locals():
+                    vec1 = arg
+                elif 'vec2' not in locals():
+                    vec2 = arg
+                else:
+                    raise TypeException('Method `addr` accepts only 2 FloatTensors')
+            else:
+                raise TypeException('Unexpected argument type')
 
-    def addr_(self, vec1, vec2, beta=1, alpha=1):
+        if 'beta' not in locals():
+            beta = 1
+        if 'alpha' not in locals():
+            alpha = 1
+
+        return self.params_func("addr", [beta, vec1.id, vec2.id, alpha], return_response=True)
+
+    def addr_(self, *args):
         """
-        Returns Tensor as the sum of beta*self and alpha*(vec1*vec2')
+        Returns the sum of beta*self and alpha*(vec1*vec2') inline
 
         Parameters
         ----------
         beta: float
             scalar to optionally multiply each element of mat
-        self: FloatTensor
-            tensor to add to the outer product
-        alpha: float
-            scalar to optionally multiply each element of the outer product of vec1, vec2
         vec1: FloatTensor
             first vector in outer product with vec2
         vec2: FloatTensor
             second vector in outer product with vec1
+        alpha: float
+            scalar to optionally multiply each element of the outer product of vec1, vec2
 
         Returns
         -------
         FloatTensor inline
         """
+        
+        for arg in args:
+            if type(arg) == float:
+                if 'beta' not in locals() and 'vec1' not in locals():
+                    beta = arg
+                elif 'alpha' not in locals() and 'vec2' in locals():
+                    alpha = arg
+                else:
+                    raise TypeException('Method `addr` accepts only 2 float params; they may be out of order with respect to the Tensors.')
+            elif type(arg) == FloatTensor:
+                if 'vec1' not in locals():
+                    vec1 = arg
+                elif 'vec2' not in locals():
+                    vec2 = arg
+                else:
+                    raise TypeException('Method `addr` accepts only 2 FloatTensors')
+            else:
+                raise TypeException('Unexpected argument type')
 
-        return self.params_func("addr_",  [vec1.id, vec2.id, beta, alpha])
+        if 'beta' not in locals():
+            beta = 1
+        if 'alpha' not in locals():
+            alpha = 1
+
+        return self.params_func("addr_",  [beta, vec1.id, vec2.id, alpha])
 
     def asin(self):
         """
