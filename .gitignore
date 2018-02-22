@@ -13,3 +13,4 @@ grid.egg-info/
 .openmined
 nohup.out
 data
+grid/adapters/config.json

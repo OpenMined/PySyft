@@ -3,6 +3,7 @@ from . import base
 from grid.pubsub import commands
 from grid.pubsub import channels
 from colorama import Fore, Back, Style
+from pathlib import Path
 
 import json
 import threading
@@ -128,6 +129,7 @@ class Worker(base.PubSub):
             self.listen_to_channel(channels.list_tasks_callback(self.id), self.discovered_tasks)
             self.listen_to_channel(channels.list_models, self.list_models)
             self.publish(channels.list_tasks, commands.list_all)
+
         else:
             print(strings.compute)
             self.listen_to_channel(channels.openmined, self.fit_worker)
@@ -152,27 +154,54 @@ class Worker(base.PubSub):
     def list_tasks(self, message):
         fr = base58.encode(message['from'])
 
-        if not os.path.exists(".openmined/tasks.json"):
+        if not os.path.exists(f"{Path.home()}/.openmined/tasks.json"):
             return
 
-        with open(".openmined/tasks.json", "r") as task_list:
+        with open(f"{Path.home()}/.openmined/tasks.json", "r") as task_list:
             string_list = task_list.read()
             tasks = json.loads(string_list)
             # for t in tasks:
                 # self.listen_for_models(t['name'])
 
         callback_channel = channels.list_tasks_callback(fr)
-
+        print(f'?!?!?!?!?! {callback_channel} {string_list}')
         self.publish(callback_channel, string_list)
 
-    def added_model(self, info):
-        info = self.api.get_json(info['data'])
+    def train_model(self, model, input, target, name, task_name, task_addr):
+        hist = model.fit(
+            input,
+            target,
+            batch_size=100, # TODO config?!?!?!?!
+            verbose=True,
+            epochs=10, # TODO config?!??!??!?
+            validation_split=0.1 # TODO config??!?!?!?!?!?
+        )
 
+        loss = hist.history.get('loss')[-1]
+        print(f'{Fore.GREEN}Finished training {Fore.YELLOW} -- {loss}{Style.RESET_ALL}')
+
+        my_best_model = utils.best_model_for_task(task_name, return_model=True)
+        best_loss = 100000000
+        if not my_best_model == None:
+            best_loss = my_best_model.evaluate(input, target, batch_size=100)[0]
+            print(f'{Fore.YELLOW}Best Evaluated at: {best_loss}{Style.RESET_ALL}')
+            if best_loss < loss:
+                print(f'{Fore.RED}Trained model worse than best trained.  Ignoring.{Style.RESET_ALL}')
+                return
+
+        if loss < best_loss:
+            print(f'New best loss of {Fore.GREEN}{loss}{Style.RESET_ALL} for task {Fore.GREEN}{task_name}{Style.RESET_ALL}')
+            utils.save_best_model_for_task(task_name, model)
+
+        self.add_model(name, model, parent=task_addr)
+
+    def added_local_data_model(self, info):
         task_addr = info['task']
+        task_info = self.api.get_json(task_addr)
+
         task_name = info['name']
         model_addr = info['model']
 
-        task_info = self.api.get_json(task_addr)
         data_dir = task_info['data_dir']
         name = task_info['name']
         creator = info['creator']
@@ -206,35 +235,48 @@ class Worker(base.PubSub):
             input /= 255
 
             target = keras.utils.to_categorical(target, 10)
+            self.train_model(model, input, name, taraget, task_name, task_addr)
 
-            hist = model.fit(
-                input,
-                target,
-                batch_size=100, # TODO config?!?!?!?!
-                verbose=True,
-                epochs=10, # TODO config?!??!??!?
-                validation_split=0.1 # TODO config??!?!?!?!?!?
-            )
-
-            loss = hist.history.get('loss')[-1]
-            print(f'{Fore.GREEN}Finished training {Fore.YELLOW} -- {loss}{Style.RESET_ALL}')
-
-            my_best_model = utils.best_model_for_task(task_name, return_model=True)
-            best_loss = 100000000
-            if not my_best_model == None:
-                best_loss = my_best_model.evaluate(input, target, batch_size=100)[0]
-                print(f'{Fore.YELLOW}Best Evaluated at: {best_loss}{Style.RESET_ALL}')
-                if best_loss < loss:
-                    print(f'{Fore.RED}Trained model worse than best trained.  Ignoring.{Style.RESET_ALL}')
-                    return
-
-            if loss < best_loss:
-                print(f'New best loss of {Fore.GREEN}{loss}{Style.RESET_ALL} for task {Fore.GREEN}{task_name}{Style.RESET_ALL}')
-                utils.save_best_model_for_task(task_name, model)
-
-            self.add_model(name, model, parent=task_addr)
         else:
             print("Can't train your own model so soon!!!!!")
+
+    def added_adapter_model(self, info):
+        task_addr = info['task']
+        task_info = self.api.get_json(task_addr)
+
+        task_name = info['name']
+        model_addr = info['model']
+
+        adapter = task_info['adapter']
+        name = task_info['name']
+        creator = info['creator']
+
+        model = utils.ipfs2keras(model_addr)
+
+        utils.save_adapter(adapter)
+        import grid.adapters.adapter as grid_adapter
+        print('load next input')
+        n_test, n_target = grid_adapter.next_input()
+        self.train_model(model, n_test, n_target, name, task_name, task_addr)
+
+    def added_model(self, info):
+        info = self.api.get_json(info['data'])
+
+        task_addr = info['task']
+        task_info = self.api.get_json(task_addr)
+
+        print(f'added model {task_info}')
+
+        if 'data_dir' in task_info.keys():
+            self.added_local_data_model(info)
+        elif 'adapter' in task_info.keys():
+            self.added_adapter_model(info)
+
+    def load_adapter(self, addr):
+        b = self.api.cat(addr)
+        utils.ensure_exists(f'{Path.home()}/.openmined/grid/adapters/t.py', b)
+        exec(open(f'{Path.home()}/.openmined/grid/adapters/t.py').read())
+
 
     def discovered_tasks(self, tasks):
         print(f'{Fore.WHITE}{Back.BLACK} TASKS {Style.RESET_ALL}')
@@ -242,7 +284,7 @@ class Worker(base.PubSub):
         print('==================================================================')
 
         data = json.loads(tasks['data'])
-        fr = base58.encode(tasks['from'])
+        fr = tasks['from'] # base58.encode(tasks['from'])
 
         for task in data:
             name = task['name']
@@ -250,12 +292,16 @@ class Worker(base.PubSub):
 
             print(f'{fr}\t{name}\t{addr}')
 
-            data_dir = self.api.get_json(addr)['data_dir']
-
-            # TODO should only listen on task channels that which i have data for
-
-            if os.path.exists(f'data/{data_dir}'):
+            t = self.api.get_json(addr)
+            if 'data_dir' in t.keys():
+                data_dir = t['data_dir']
+                if os.path.exists(f'data/{data_dir}'):
+                    self.listen_for_models(name)
+                    utils.store_task(name, addr)
+                else:
+                    print(f"DON'T HAVE DATA FOR {name} DATA DIRECTORY: {data_dir}")
+            elif 'adapter' in t.keys():
                 self.listen_for_models(name)
                 utils.store_task(name, addr)
-            else:
-                print(f"DON'T HAVE DATA FOR {name} DATA DIRECTORY: {data_dir}")
+
+                self.load_adapter(t['adapter'])

@@ -13,7 +13,7 @@ class Client(PubSub):
         super().__init__('client')
         self.progress = {}
 
-    def fit(self, model,input,target,valid_input=None,valid_target=None,batch_size=1,epochs=1,log_interval=1,message_handler=None):
+    def fit(self, model, input, target, valid_input=None, valid_target=None, batch_size=1, epochs=1, log_interval=1, message_handler=None):
         if(message_handler is None):
             message_handler = self.receive_model
         self.spec = self.generate_fit_spec(model,input,target,valid_input,valid_target,batch_size,epochs,log_interval)
@@ -137,11 +137,26 @@ class Client(PubSub):
 
         return self.all_tasks
 
-    def add_task(self, name, data_dir):
-        task_data = {'name': name, 'creator': self.id, 'data_dir': data_dir}
+    def add_task(self, name, data_dir=None, adapter=None):
+        if data_dir == None and adapter == None:
+            print(f'{Fore.RED}data_dir and adapter can not both be None{Style.RESET_ALL}')
+            return
+
+        task_data = {
+            'name': name,
+            'creator': self.id
+        }
+
+        if data_dir != None:
+            task_data['data_dir'] = data_dir
+        if adapter != None:
+            with open(adapter, 'rb') as f:
+                adapter_bin = f.read()
+                f.close()
+            adapter_addr = self.api.add_bytes(adapter_bin)
+            task_data['adapter'] = adapter_addr
 
         addr = self.api.add_json(task_data)
-
         utils.store_task(name, addr)
 
         data = json.dumps([{'name': name, 'address': addr}])

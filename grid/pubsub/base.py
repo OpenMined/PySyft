@@ -12,7 +12,9 @@ class PubSub(object):
     def __init__(self, mode, ipfs_addr='127.0.0.1', port=5001):
         self.api = utils.get_ipfs_api()
         peer_id = self.api.config_show()['Identity']['PeerID']
-        self.id = f'{mode}:{peer_id}'
+        self.id = f'{peer_id}'
+        # switch to this to make local develop work
+        # self.id = f'{mode}:{peer_id}'
         self.subscribed_list = []
 
     def serialize_numpy(self, tensor):
@@ -54,7 +56,7 @@ class PubSub(object):
         first_proc = True
 
         if channel not in self.subscribed_list:
-            # print(f"SUBSCRIBING TO {channel}")
+            print(f"SUBSCRIBING TO {channel}")
             new_messages = self.api.pubsub_sub(topic=channel, stream=True)
             self.subscribed_list.append(channel)
         else:
