@@ -48,6 +48,24 @@ class IntTensor(BaseTensor):
         """
         return self.no_params_func("abs_", return_response=True)
 
+
+    def max_(self, other):
+        """
+        Performs inline element-wise max comparison of the input tensors 
+        and returns the max value in each row.
+        
+        Parameters
+        ----------
+        other : IntTensor
+            IntTensor to compare with
+        
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.params_func("max_", [other.id], return_response=True)
+
     def acos(self):
         """
         Returns a new tensor with the arccosine of the elements of input.
@@ -404,3 +422,41 @@ class IntTensor(BaseTensor):
         assert type(new_dim[0]) == int
         self.params_func("view_", new_dim, return_response=False)
         return self
+
+    def exp(self):
+        """
+        Computes exponential of each element of the tensor.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+
+            Output tensor
+        """
+        return self.no_params_func("exp", return_response=True)
+
+    def rsqrt(self):
+        """
+        Returns reciprocal of square root of tensor element wise.
+        Parameters
+        ----------
+        Returns
+        -------
+        IntTensor
+            Output tensor
+        """
+        return self.no_params_func("rsqrt", return_response=True)
+
+    def unfold(self, dim, size, step):
+        """
+        Returns a tensor which contains all slices of size `size` from `self` tensor in the dimension `dim`.
+        
+        Parameters:
+            dim (int) – dimension in which unfolding happens
+            size (int) – the size of each slice that is unfolded
+            step (int) – the step between each slice
+            Output Tensor
+        """
+        return self.params_func("unfold", [dim, size, step], return_response=True)
+
