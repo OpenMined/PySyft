@@ -15,3 +15,5 @@ nohup.out
 data
 grid/adapters/config.json
 bootstrap_nodes
+ipfs.log*
+notebooks/ipfs.log

@@ -5,13 +5,37 @@ from bitcoin import base58
 from colorama import Fore, Back, Style
 import ipywidgets as widgets
 import json
+import sys
 import os
 
 
 class Client(PubSub):
-    def __init__(self):
+    def __init__(self,min_om_nodes=1,known_workers=list(),include_github_known_workers=True):
         super().__init__('client')
         self.progress = {}
+
+        if(include_github_known_workers):
+            import requests
+
+            workers = requests.get('https://github.com/OpenMined/BootstrapNodes/raw/master/known_workers').text.split("\n")
+            for w in workers:
+                if('p2p-circuit' in w):
+                    known_workers.append(w)
+
+        known_workers = list(set(known_workers))
+
+        if(len(known_workers) > 0):
+            print(f'\n{Fore.BLUE}UPDATE: {Style.RESET_ALL}Querying known workers...')    
+            for worker in known_workers:
+                try:
+                    sys.stdout.write('\tWORKER: ' + str(worker) + '...')    
+                    self.api.swarm_connect(worker)
+                    sys.stdout.write(f'{Fore.GREEN}SUCCESS!!!{Style.RESET_ALL}\n')    
+                except:
+                    sys.stdout.write(f'{Fore.RED}FAIL!!!{Style.RESET_ALL}\n')
+                    ""
+
+        self.listen_for_openmined_nodes(min_om_nodes)
 
     def fit(self, model, input, target, valid_input=None, valid_target=None, batch_size=1, epochs=1, log_interval=1, message_handler=None):
         if(message_handler is None):

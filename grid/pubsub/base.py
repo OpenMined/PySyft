@@ -5,6 +5,9 @@ import json
 import numpy as np
 from threading import Thread
 import torch
+import time
+import sys
+from colorama import Fore, Back, Style
 from bitcoin import base58
 
 
@@ -16,6 +19,48 @@ class PubSub(object):
         # switch to this to make local develop work
         # self.id = f'{mode}:{peer_id}'
         self.subscribed_list = []
+
+    def get_openmined_nodes(self):
+        nodes = self.api.pubsub_peers('openmined')['Strings']
+        if(nodes is not None):
+            return nodes
+        else:
+            return []
+
+    def get_nodes(self):
+        nodes =  self.api.pubsub_peers()['Strings']
+        if(nodes is not None):
+            return nodes
+        else:
+            return []
+
+
+    def listen_for_openmined_nodes(self, min_om_nodes = 1):
+        
+        num_nodes_om = 0
+
+        print("")
+
+        logi = 0
+        while(True):
+            
+            time.sleep(0.25)
+            num_nodes_total = len(self.get_nodes())
+            num_nodes_om = len(self.get_openmined_nodes())
+
+            sys.stdout.write(f'\r{Fore.BLUE}UPDATE: {Style.RESET_ALL}Searching for IPFS nodes - '+str(num_nodes_total)+' found overall - '+str(num_nodes_om)+' are OpenMined workers' + ("." * (logi%10)) + (' ' * 10))
+            
+            logi += 1
+
+            if(num_nodes_om >= min_om_nodes):
+                break
+
+                
+                
+                
+                
+
+        print(f'\n\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Found '+str(num_nodes_om)+' OpenMined nodes!!!\n')    
 
     def serialize_numpy(self, tensor):
         # nested lists with same data, indices

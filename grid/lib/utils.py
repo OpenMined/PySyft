@@ -4,16 +4,48 @@ from pathlib import Path
 import keras
 import os
 import json
+import time
 from colorama import Fore, Back, Style
 import sys
 
 
-def get_ipfs_api(ipfs_addr='127.0.0.1', port=5001):
+def get_ipfs_api(ipfs_addr='127.0.0.1', port=5001, max_tries=10):
+    print(f'\n{Fore.BLUE}UPDATE: {Style.RESET_ALL}Connecting to IPFS... this can take a few seconds...')    
+
+    # out = ipfsapi.connect(ipfs_addr, port)
+    # print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!!')    
+    # return out
+
     try:
-        return ipfsapi.connect(ipfs_addr, port)
+        out = ipfsapi.connect(ipfs_addr, port)
+        print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!!')    
+        return out
     except:
-        print(f'\n{Fore.RED}ERROR: {Style.RESET_ALL}could not connect to IPFS.  Is your daemon running with pubsub support at {ipfs_addr} on port {port}')
-        sys.exit()
+        print(f'\n{Fore.RED}ERROR: {Style.RESET_ALL}could not connect to IPFS.  Is your daemon running with pubsub support at {ipfs_addr} on port {port}? Let me try to start IPFS for you... (this will take ~15 seconds)')
+        os.system('ipfs daemon --enable-pubsub-experiment  > ipfs.log 2> ipfs.log.err &')
+        for i in range(15):
+            sys.stdout.write('.')
+            time.sleep(1)
+
+            try:
+                out = ipfsapi.connect(ipfs_addr, port)
+                print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!!')    
+                return out
+            except:
+                ""
+
+
+    for try_index in range(max_tries):
+        try:
+            out = ipfsapi.connect(ipfs_addr, port)
+            print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!!')    
+            return out
+        except:
+            print(f'\n{Fore.RED}ERROR: {Style.RESET_ALL}still could not connect to IPFS.  Is your daemon running with pubsub support at {ipfs_addr} on port {port}?')
+            time.sleep(5)
+        
+    print(f'\n{Fore.RED}ERROR: {Style.RESET_ALL}could not connect to IPFS. Failed after ' + str(max_tries) + ' attempts... Is IPFS installed? Consult the README at https://github.com/OpenMined/Grid')
+    sys.exit()
 
 def save_adapter(addr):
     adapter_bin = get_ipfs_api().cat(addr)
