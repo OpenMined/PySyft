@@ -7,13 +7,13 @@ rm Anaconda3-5.1.0-Linux-x86_64.sh
 pip3 install -r requirements.txt
 # pip install -r requirements.txt
 
-sudo add-apt-repository -y ppa:jonathonf/python-3.6
+# sudo add-apt-repository -y ppa:jonathonf/python-3.6
 
 sudo apt-get update
-sudo apt-get -y upgrade
-sudo apt-get install python3.6 -y
-sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.5 1
-sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 2
+# sudo apt-get -y upgrade
+# sudo apt-get install python3.6 -y
+# sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.5 1
+# sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 2
 
 sudo apt-get install python3-pip python3.6-dev -y
 sudo apt-get install libssl-dev  -y
