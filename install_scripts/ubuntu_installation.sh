@@ -1,6 +1,7 @@
 
 wget https://repo.continuum.io/archive/Anaconda3-5.1.0-Linux-x86_64.sh
 bash Anaconda3-5.1.0-Linux-x86_64.sh
+rm Anaconda3-5.1.0-Linux-x86_64.sh
 /home/ubuntu/anaconda3/bin/conda install pytorch-cpu torchvision -c pytorch
 
 pip3 install -r requirements.txt
@@ -19,6 +20,7 @@ sudo apt-get install libssl-dev  -y
 
 curl -O https://storage.googleapis.com/golang/go1.9.1.linux-amd64.tar.gz
 tar -xvf go1.9.1.linux-amd64.tar.gz
+rm go1.9.1.linux-amd64.tar.gz
 sudo mv go /usr/local
 
 echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.profile
