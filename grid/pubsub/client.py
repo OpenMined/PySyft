@@ -44,7 +44,8 @@ class Client(PubSub):
         self.publish('openmined', self.spec)
 
         self.listen_to_channel_sync(self.spec['train_channel'], message_handler)
-        return self.spec
+
+        return self.load_model(self.spec['model_addr']),self.spec
 
     def update_progress(self, parent_model, worker_id, num_epochs, epoch_id):
         if parent_model not in self.progress:
