@@ -1,6 +1,31 @@
 import os
 from setuptools import setup, find_packages
+from setuptools.command.install import install
+from setuptools.command.develop import develop
 import platform
+import subprocess
+
+
+class PostDevelopCommand(develop):
+    def run(self):
+        # TODO windows
+        if platform == 'Darwin':
+            subprocess.call('install_scripts/osx_installation.sh', shell=True)
+        elif platform == 'Linux':
+            subprocess.call('install_scripts/ubuntu_installation.sh', shell=True)
+
+        #develop.run(self)
+
+
+class PostInstallCommand(install):
+    def run(self):
+        # TODO windows
+        if platform == 'Darwin':
+            subprocess.call('install_scripts/osx_installation.sh', shell=True)
+        elif platform == 'Linux':
+            subprocess.call('install_scripts/ubuntu_installation.sh', shell=True)
+
+        install.run(self)
 
 
 # Utility function to read the README file.
@@ -13,7 +38,7 @@ def read(fname):
 
 requirements = read('requirements.txt').split()
 platform = platform.system()
-if platform is 'Windows':
+if platform == 'Windows':
     requirements.remove('ethereum')
 
 setup(
@@ -33,5 +58,9 @@ setup(
     ],
     install_requires=requirements,
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-flake8']
+    tests_require=['pytest', 'pytest-flake8'],
+    cmdclass={
+        'install': PostInstallCommand,
+        'develop': PostDevelopCommand
+    }
 )
