@@ -14,3 +14,4 @@ grid.egg-info/
 nohup.out
 data
 grid/adapters/config.json
+bootstrap_nodes
