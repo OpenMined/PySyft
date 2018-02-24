@@ -1,3 +1,11 @@
+
+wget https://repo.continuum.io/archive/Anaconda3-5.1.0-Linux-x86_64.sh
+bash Anaconda3-5.1.0-Linux-x86_64.sh
+/home/ubuntu/anaconda3/bin/conda install pytorch-cpu torchvision -c pytorch
+
+pip3 install -r requirements.txt
+# pip install -r requirements.txt
+
 sudo add-apt-repository -y ppa:jonathonf/python-3.6
 
 sudo apt-get update
