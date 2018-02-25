@@ -18,5 +18,3 @@ class GridWorker(base.PubSub):
         # with a list of the OpenMined nodes of which it is aware.
         self.listen_to_channel(channels.list_workers,self.list_workers)
 
-        # This process listens for models that it can train.
-        self.listen_to_channel(channels.openmined, self.fit_worker)
