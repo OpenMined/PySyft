@@ -35,3 +35,23 @@ compute = f"""{Fore.GREEN}     ____________________________
  /ooooooooooooooooooooooo/ /
 /C=_____________________/_/{Style.RESET_ALL}
 """
+
+anchor = f"""{Fore.GREEN}
+             ***
+            * //*
+             //*
+   **       **/|      **
+ ************//***********
+ ***********//************
+   **      |/**       **
+            **/|
+            *//
+            //*    {Fore.YELLOW}Running Grid{Fore.GREEN}
+           |/**   {Fore.YELLOW}in Anchor Mode{Fore.GREEN}
+            **/|
+***         *//         ***
+ *****      //*      *****
+  *******  |/**   *******
+       *************
+          *******
+             *{Style.RESET_ALL}

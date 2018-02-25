@@ -143,6 +143,7 @@ class Worker(base.PubSub):
         print('\n\n')
         if args.tree:
             print(strings.tree)
+            self.listen_to_channel(channels.list_workers,self.list_workers)
             self.listen_to_channel(channels.list_tasks, self.list_tasks)
             self.listen_to_channel(channels.add_task, self.discovered_tasks)
             self.listen_to_channel(channels.list_tasks_callback(self.id), self.discovered_tasks)
@@ -150,9 +151,11 @@ class Worker(base.PubSub):
             self.publish(channels.list_tasks, commands.list_all)
 
         elif args.anchor:
+            print(strings.anchor)
             self.anchor()
         else:
             print(strings.compute)
+            self.listen_to_channel(channels.list_workers,self.list_workers)
             self.listen_to_channel(channels.openmined, self.fit_worker)
 
     def listen_for_models(self, task_name):

@@ -37,6 +37,18 @@ class PubSub(object):
 
     def listen_for_openmined_nodes(self, min_om_nodes = 1):
         
+        def load_proposed_workers(message):
+            for worker in json.loads(message['data']):
+                addr = '/p2p-circuit/ipfs/'+worker
+                try:
+                    self.api.swarm_connect(addr)
+                except:
+                    ""
+            return message
+
+        self.listen_to_channel(channels.list_workers_callback(self.id),load_proposed_workers)
+        self.publish(channel='openmined:list_workers',message={'key':'value'})
+
         num_nodes_om = 0
 
         print("")

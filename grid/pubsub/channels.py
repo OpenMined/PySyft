@@ -14,6 +14,5 @@ def list_tasks_callback(id):
 def list_workers_callback(id):
 	return f'openmined:list_workers:{id}'
 
-
 def add_model(name):
     return f'openmined:task:add:{name}'
