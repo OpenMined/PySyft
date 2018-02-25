@@ -17,6 +17,8 @@ class GridCompute(base_worker.GridWorker):
         # prints a pretty picture of a Computer
         print(strings.compute)
 
+        # This process listens for models that it can train.
+        self.listen_to_channel(channels.openmined, self.fit_worker)
 
     def train_meta(self, message):
         """
