@@ -38,12 +38,21 @@ class PubSub(object):
     def listen_for_openmined_nodes(self, min_om_nodes = 1):
         
         def load_proposed_workers(message):
+
+            failed = list()
+
             for worker in json.loads(message['data']):
                 addr = '/p2p-circuit/ipfs/'+worker
                 try:
                     self.api.swarm_connect(addr)
                 except:
-                    ""
+                    failed.append(addr)
+
+            time.sleep(5)
+
+            for addr in failed:
+                self.api.swarm_connect(addr)
+
             return message
 
         self.listen_to_channel(channels.list_workers_callback(self.id),load_proposed_workers)
