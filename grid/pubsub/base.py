@@ -35,8 +35,32 @@ class PubSub(object):
             return []
 
 
-    def listen_for_openmined_nodes(self, min_om_nodes = 1):
+    def listen_for_openmined_nodes(self, min_om_nodes = 1, include_github_known_workers=True):
         
+        # pull known workers from trusted github source (OpenMined's repo)
+        if(include_github_known_workers):
+            import requests
+
+            workers = requests.get('https://github.com/OpenMined/BootstrapNodes/raw/master/known_workers').text.split("\n")
+            for w in workers:
+                if('p2p-circuit' in w):
+                    known_workers.append(w)
+
+        # remove duplicates
+        known_workers = list(set(known_workers))
+
+        # if there are known workers - connect with them directly
+        if(len(known_workers) > 0):
+            print(f'\n{Fore.BLUE}UPDATE: {Style.RESET_ALL}Querying known workers...')    
+            for worker in known_workers:
+                try:
+                    sys.stdout.write('\tWORKER: ' + str(worker) + '...')    
+                    self.api.swarm_connect(worker)
+                    sys.stdout.write(f'{Fore.GREEN}SUCCESS!!!{Style.RESET_ALL}\n')    
+                except:
+                    sys.stdout.write(f'{Fore.RED}FAIL!!!{Style.RESET_ALL}\n')
+                    ""
+
         def load_proposed_workers(message):
 
             failed = list()
