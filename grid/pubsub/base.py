@@ -50,8 +50,20 @@ class PubSub(object):
 
             time.sleep(5)
 
+            still_failed = list()
             for addr in failed:
-                self.api.swarm_connect(addr)
+                try:
+                    self.api.swarm_connect(addr)
+                except:
+                    still_failed.append(addr)
+
+            time.sleep(10)
+
+            for addr in still_failed:
+                try:
+                    self.api.swarm_connect(addr)
+                except:
+                    "give up"
 
             return message
 

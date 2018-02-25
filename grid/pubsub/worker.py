@@ -70,6 +70,12 @@ class Worker(base.PubSub):
         print("listing workers...")
         fr = base58.encode(message['from'])
 
+        addr = '/p2p-circuit/ipfs/'+fr
+        try:
+            self.api.swarm_connect(addr)
+        except:
+            ""
+
         workers = self.get_openmined_nodes()        
         workers_json = json.dumps(workers)
 
