@@ -67,6 +67,7 @@ class Worker(base.PubSub):
         ""
 
     def list_workers(self, message):
+        print("listing workers...")
         fr = base58.encode(message['from'])
 
         workers = self.get_openmined_nodes()        
