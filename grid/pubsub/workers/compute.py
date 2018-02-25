@@ -1,6 +1,7 @@
 from . import base_worker
 from ...lib import strings
 from .. import channels
+import json
 
 class GridCompute(base_worker.GridWorker):
 
