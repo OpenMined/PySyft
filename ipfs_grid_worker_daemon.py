@@ -8,6 +8,7 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.optimizers import SGD
 import numpy as np
 from grid.pubsub.worker import Worker
+import time
 
 fail_cnt = 0
 
@@ -20,4 +21,5 @@ while(True):
 	except:
 		fail_cnt += 1
 		print("Failed " + str(fail_cnt) + " times...")
+		time.sleep(60)
 		""
