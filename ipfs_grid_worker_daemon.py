@@ -10,16 +10,9 @@ import numpy as np
 from grid.pubsub.worker import Worker
 import time
 
-fail_cnt = 0
 
-while(True):
-	try:
-		gridWorker = Worker()
-		gridWorker.work()
+gridWorker = Worker()
+gridWorker.work()
 
-		print("grid id: {}".format(gridWorker.id))
-	except:
-		fail_cnt += 1
-		print("Failed " + str(fail_cnt) + " times...")
-		time.sleep(60)
-		""
+print("grid id: {}".format(gridWorker.id))
+
