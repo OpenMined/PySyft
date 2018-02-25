@@ -62,6 +62,8 @@ class Worker(base.PubSub):
         """
         self.listen_to_channel(channels.openmined,self.just_listen)
         self.listen_to_channel(channels.list_workers,self.list_workers)
+        
+        self.listen_for_openmined_nodes(1)
 
     def just_listen(self,message):
         ""

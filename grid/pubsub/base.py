@@ -88,6 +88,9 @@ class PubSub(object):
             if(num_nodes_om >= min_om_nodes):
                 break
 
+            if(logi % 100 == 0):
+                self.publish(channel='openmined:list_workers',message={'key':'value'})
+
                 
                 
                 
