@@ -7,7 +7,7 @@ import ipywidgets as widgets
 import json
 import sys
 import os
-
+import random
 
 class Client(PubSub):
 
@@ -41,7 +41,17 @@ class Client(PubSub):
 
         self.listen_for_openmined_nodes(min_om_nodes)
 
-    def fit(self, model, input, target, valid_input=None, valid_target=None, batch_size=1, epochs=1, log_interval=1, message_handler=None, preferred_node='first_available'):
+    def fit(self, model, input, target, valid_input=None, valid_target=None, batch_size=1, epochs=1, log_interval=1, message_handler=None, preferred_node='random'):
+
+        if('p2p-circuit' in preferred_node or '/' in preferred_node):
+            preferred_node = preferred_node.split("/")[-1]
+
+        if(preferred_node == 'random'):
+            nodes = self.get_openmined_nodes()
+            preferred_node = nodes[random.randint(0,len(nodes)-1)]
+
+        print("PREFERRED NODE:" + str(preferred_node))
+
         if(message_handler is None):
             message_handler = self.receive_model
         self.spec = self.generate_fit_spec(model=model,input=input,target=target,valid_input=valid_input,valid_target=valid_target,batch_size=batch_size,epochs=epochs,log_interval=log_interval,preferred_node=preferred_node)
