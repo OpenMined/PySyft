@@ -36,7 +36,7 @@ parser.add_argument('--tree', dest='tree', action='store_const',
                    const=True, default=False,
                    help='Run grid in tree mode')
 
-parser.add_argument('--anchor', dest='tree', action='store_const',
+parser.add_argument('--anchor', dest='anchor', action='store_const',
                    const=True, default=False,
                    help='Run grid in anchor mode')
 
