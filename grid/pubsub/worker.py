@@ -70,7 +70,7 @@ class Worker(base.PubSub):
     def fit_worker(self, message):
 
         decoded = json.loads(message['data'])
-        print(decoded)
+        
         if(decoded['framework'] == 'keras'):
             if((decoded['preferred_node'] == 'first_available') or (decoded['preferred_node'] == self.id)):
                 

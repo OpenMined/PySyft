@@ -44,7 +44,7 @@ class Client(PubSub):
     def fit(self, model, input, target, valid_input=None, valid_target=None, batch_size=1, epochs=1, log_interval=1, message_handler=None, preferred_node='first_available'):
         if(message_handler is None):
             message_handler = self.receive_model
-        self.spec = self.generate_fit_spec(model,input,target,valid_input,valid_target,batch_size,epochs,log_interval,preferred_node)
+        self.spec = self.generate_fit_spec(model=model,input=input,target=target,valid_input=valid_input,valid_target=valid_target,batch_size=batch_size,epochs=epochs,log_interval=log_interval,preferred_node=preferred_node)
         self.publish('openmined', self.spec)
 
         self.listen_to_channel_sync(self.spec['train_channel'], message_handler)
