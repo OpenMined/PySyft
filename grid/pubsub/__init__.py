@@ -1,1 +1,1 @@
-from grid.pubsub import *
+from . import *

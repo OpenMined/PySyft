@@ -34,6 +34,23 @@ class PubSub(object):
         else:
             return []
 
+    def list_workers(self, message):
+        print("listing workers...")
+        fr = base58.encode(message['from'])
+
+        addr = '/p2p-circuit/ipfs/'+fr
+        try:
+            self.api.swarm_connect(addr)
+        except:
+            print("Failed to reconnect in the opposite direciton to:" + addr)
+
+        workers = self.get_openmined_nodes()        
+        workers_json = json.dumps(workers)
+
+        callback_channel = channels.list_workers_callback(fr)
+        print(f'?!?!?!?!?! {callback_channel} {workers_json}')
+        self.publish(callback_channel, workers_json)
+
 
     def listen_for_openmined_nodes(self, min_om_nodes = 1, include_github_known_workers=True):
         
@@ -117,11 +134,6 @@ class PubSub(object):
             if(logi % 100 == 99):
                 self.publish(channel='openmined:list_workers',message={'key':'value'})
                 print(">")
-
-                
-                
-                
-                
 
         print(f'\n\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Found '+str(num_nodes_om)+' OpenMined nodes!!!\n')    
 
