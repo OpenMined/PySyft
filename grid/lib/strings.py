@@ -54,4 +54,4 @@ anchor = f"""{Fore.GREEN}
   *******  |/**   *******
        *************
           *******
-             *{Style.RESET_ALL}
+             *{Style.RESET_ALL}"""
