@@ -62,7 +62,7 @@ class Worker(base.PubSub):
         """
         self.listen_to_channel(channels.openmined,self.just_listen)
         self.listen_to_channel(channels.list_workers,self.list_workers)
-        
+
         self.listen_for_openmined_nodes(1)
 
     def just_listen(self,message):
@@ -151,6 +151,7 @@ class Worker(base.PubSub):
         print('\n\n')
         if args.tree:
             print(strings.tree)
+            self.listen_for_openmined_nodes(1)
             self.listen_to_channel(channels.list_workers,self.list_workers)
             self.listen_to_channel(channels.list_tasks, self.list_tasks)
             self.listen_to_channel(channels.add_task, self.discovered_tasks)
@@ -163,6 +164,7 @@ class Worker(base.PubSub):
             self.anchor()
         else:
             print(strings.compute)
+            self.listen_for_openmined_nodes(1)
             self.listen_to_channel(channels.list_workers,self.list_workers)
             self.listen_to_channel(channels.openmined, self.fit_worker)
 
