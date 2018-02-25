@@ -60,8 +60,11 @@ class Worker(base.PubSub):
         """
         Use as anchor node for faster initial IPFS connections.
         """
-        self.listen_to_channel(channels.openmined)
+        self.listen_to_channel(channels.openmined,just_listen)
         self.listen_to_channel(channels.list_workers,self.list_workers)
+
+    def just_listen(self,message):
+        ""
 
     def list_workers(self, message):
         fr = base58.encode(message['from'])
