@@ -74,7 +74,7 @@ class Worker(base.PubSub):
         workers_json = json.dumps(workers)
 
         callback_channel = channels.list_workers_callback(fr)
-        print(f'?!?!?!?!?! {callback_channel} {string_list}')
+        print(f'?!?!?!?!?! {callback_channel} {workers_json}')
         self.publish(callback_channel, workers_json)
 
     def train_meta(self, message):
