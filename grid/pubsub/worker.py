@@ -74,7 +74,7 @@ class Worker(base.PubSub):
         try:
             self.api.swarm_connect(addr)
         except:
-            ""
+            print("Failed to reconnect in the opposite direciton to:" + addr)
 
         workers = self.get_openmined_nodes()        
         workers_json = json.dumps(workers)
