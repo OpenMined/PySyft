@@ -37,6 +37,8 @@ class PubSub(object):
 
     def listen_for_openmined_nodes(self, min_om_nodes = 1, include_github_known_workers=True):
         
+        known_workers = list()
+
         # pull known workers from trusted github source (OpenMined's repo)
         if(include_github_known_workers):
             import requests
