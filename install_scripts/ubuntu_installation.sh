@@ -4,7 +4,7 @@ wget https://repo.continuum.io/archive/Anaconda3-5.1.0-Linux-x86_64.sh
 bash Anaconda3-5.1.0-Linux-x86_64.sh
 rm Anaconda3-5.1.0-Linux-x86_64.sh
 
-/home/ubuntu/anaconda3/bin/conda create -n py36 python=3.6 anaconda
+/home/ubuntu/anaconda3/bin/conda create -n py36 python=3.6 anaconda -y
 source activate py36
 /home/ubuntu/anaconda3/bin/conda install pytorch-cpu torchvision -c pytorch
 

@@ -72,44 +72,45 @@ class Worker(base.PubSub):
         decoded = json.loads(message['data'])
 
         if(decoded['framework'] == 'keras'):
+            if(decoded['preferred_node'] == 'first_available' || decoded['preferred_node'] == self.id):
+                
+                model = utils.ipfs2keras(decoded['model_addr'])
 
-            model = utils.ipfs2keras(decoded['model_addr'])
+                try:
+                    np_strings = json.loads(self.api.cat(decoded['data_addr']))
+                except NotImplementedError:
+                    raise NotImplementedError("The IPFS API only supports Python 3.6. Please modify your environment.")
 
-            try:
-                np_strings = json.loads(self.api.cat(decoded['data_addr']))
-            except NotImplementedError:
-                raise NotImplementedError("The IPFS API only supports Python 3.6. Please modify your environment.")
+                input, target, valid_input, valid_target = list(map(lambda x: self.deserialize_numpy(x),np_strings))
+                train_channel = decoded['train_channel']
 
-            input, target, valid_input, valid_target = list(map(lambda x: self.deserialize_numpy(x),np_strings))
-            train_channel = decoded['train_channel']
+                self.learner_callback = OutputPipe(
+                    id=self.id,
+                    publisher=self.publish,
+                    channel=train_channel,
+                    epochs=decoded['epochs'],
+                    model_addr=decoded['model_addr'],
+                    model=model
+                )
 
-            self.learner_callback = OutputPipe(
-                id=self.id,
-                publisher=self.publish,
-                channel=train_channel,
-                epochs=decoded['epochs'],
-                model_addr=decoded['model_addr'],
-                model=model
-            )
+                args = (self.train_meta, train_channel + ':' + self.id)
+                monitor_thread = threading.Thread(target=self.listen_to_channel,
+                                                  args=args)
+                monitor_thread.start()
 
-            args = (self.train_meta, train_channel + ':' + self.id)
-            monitor_thread = threading.Thread(target=self.listen_to_channel,
-                                              args=args)
-            monitor_thread.start()
+                print('training model')
 
-            print('training model')
+                model.fit(
+                    input,
+                    target,
+                    batch_size=decoded['batch_size'],
+                    validation_data=(valid_input, valid_target),
+                    verbose=False,
+                    epochs=decoded['epochs'],
+                    callbacks=[self.learner_callback]
+                )
 
-            model.fit(
-                input,
-                target,
-                batch_size=decoded['batch_size'],
-                validation_data=(valid_input, valid_target),
-                verbose=False,
-                epochs=decoded['epochs'],
-                callbacks=[self.learner_callback]
-            )
-
-            print('done')
+                print('done')
 
         else:
             raise NotImplementedError("Only compatible with Keras at the moment")

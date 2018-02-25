@@ -10,10 +10,12 @@ import os
 
 
 class Client(PubSub):
+
     def __init__(self,min_om_nodes=1,known_workers=list(),include_github_known_workers=True):
         super().__init__('client')
         self.progress = {}
 
+        # pull known workers from trusted github source (OpenMined's repo)
         if(include_github_known_workers):
             import requests
 
@@ -22,8 +24,10 @@ class Client(PubSub):
                 if('p2p-circuit' in w):
                     known_workers.append(w)
 
+        # remove duplicates
         known_workers = list(set(known_workers))
 
+        # if there are known workers - connect with them directly
         if(len(known_workers) > 0):
             print(f'\n{Fore.BLUE}UPDATE: {Style.RESET_ALL}Querying known workers...')    
             for worker in known_workers:
@@ -37,10 +41,10 @@ class Client(PubSub):
 
         self.listen_for_openmined_nodes(min_om_nodes)
 
-    def fit(self, model, input, target, valid_input=None, valid_target=None, batch_size=1, epochs=1, log_interval=1, message_handler=None):
+    def fit(self, model, input, target, valid_input=None, valid_target=None, batch_size=1, epochs=1, log_interval=1, message_handler=None, preferred_node='first_available'):
         if(message_handler is None):
             message_handler = self.receive_model
-        self.spec = self.generate_fit_spec(model,input,target,valid_input,valid_target,batch_size,epochs,log_interval)
+        self.spec = self.generate_fit_spec(model,input,target,valid_input,valid_target,batch_size,epochs,log_interval,preferred_node)
         self.publish('openmined', self.spec)
 
         self.listen_to_channel_sync(self.spec['train_channel'], message_handler)
@@ -101,7 +105,7 @@ class Client(PubSub):
                                  quit)
 
     # TODO: framework = 'torch'
-    def generate_fit_spec(self, model,input,target,valid_input=None,valid_target=None,batch_size=1,epochs=1,log_interval=1, framework = 'keras', model_class = None):
+    def generate_fit_spec(self, model,input,target,valid_input=None,valid_target=None,batch_size=1,epochs=1,log_interval=1, framework = 'keras', model_class = None,preferred_node='first_available'):
 
         model_bin = utils.serialize_keras_model(model)
         model_addr = self.api.add_bytes(model_bin)
@@ -134,6 +138,8 @@ class Client(PubSub):
         spec['log_interval'] = log_interval
         spec['framework'] = framework
         spec['train_channel'] = 'openmined_train_' + str(model_addr)
+        spec['preferred_node'] = preferred_node
+        
         return spec
 
     """
