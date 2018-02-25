@@ -9,7 +9,15 @@ from keras.optimizers import SGD
 import numpy as np
 from grid.pubsub.worker import Worker
 
-gridWorker = Worker()
-gridWorker.work()
+fail_cnt = 0
 
-print("grid id: {}".format(gridWorker.id))
+while(True):
+	try:
+		gridWorker = Worker()
+		gridWorker.work()
+
+		print("grid id: {}".format(gridWorker.id))
+	except:
+		fail_cnt += 1
+		print("Failed " + str(fail_cnt) + " times...")
+		""
