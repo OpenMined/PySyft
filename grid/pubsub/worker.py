@@ -72,7 +72,7 @@ class Worker(base.PubSub):
         decoded = json.loads(message['data'])
 
         if(decoded['framework'] == 'keras'):
-            if(decoded['preferred_node'] == 'first_available' || decoded['preferred_node'] == self.id):
+            if((decoded['preferred_node'] == 'first_available') or (decoded['preferred_node'] == self.id)):
                 
                 model = utils.ipfs2keras(decoded['model_addr'])
 
