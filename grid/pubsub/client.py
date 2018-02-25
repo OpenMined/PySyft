@@ -141,6 +141,7 @@ class Client(PubSub):
         data_addr = self.api.add_str(data_json)
 
         spec = {}
+        spec['type'] = "fit"
         spec['model_addr'] = model_addr
         spec['data_addr'] = data_addr
         spec['batch_size'] = batch_size

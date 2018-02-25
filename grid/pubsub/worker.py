@@ -36,6 +36,10 @@ parser.add_argument('--tree', dest='tree', action='store_const',
                    const=True, default=False,
                    help='Run grid in tree mode')
 
+parser.add_argument('--anchor', dest='tree', action='store_const',
+                   const=True, default=False,
+                   help='Run grid in anchor mode')
+
 args = parser.parse_args()
 
 """
@@ -57,7 +61,17 @@ class Worker(base.PubSub):
         Use as anchor node for faster initial IPFS connections.
         """
         self.listen_to_channel(channels.openmined)
+        self.listen_to_channel(channels.list_workers,self.list_workers)
 
+    def list_workers(self, message):
+        fr = base58.encode(message['from'])
+
+        workers = self.get_openmined_nodes()        
+        workers_json = json.dumps(workers)
+
+        callback_channel = channels.list_workers_callback(fr)
+        print(f'?!?!?!?!?! {callback_channel} {string_list}')
+        self.publish(callback_channel, workers_json)
 
     def train_meta(self, message):
         decoded = json.loads(message['data'])
@@ -70,7 +84,7 @@ class Worker(base.PubSub):
     def fit_worker(self, message):
 
         decoded = json.loads(message['data'])
-        
+
         if(decoded['framework'] == 'keras'):
             if((decoded['preferred_node'] == 'first_available') or (decoded['preferred_node'] == self.id)):
                 
@@ -131,6 +145,8 @@ class Worker(base.PubSub):
             self.listen_to_channel(channels.list_models, self.list_models)
             self.publish(channels.list_tasks, commands.list_all)
 
+        elif args.anchor:
+            self.anchor()
         else:
             print(strings.compute)
             self.listen_to_channel(channels.openmined, self.fit_worker)
