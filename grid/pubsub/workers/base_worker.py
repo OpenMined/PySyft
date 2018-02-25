@@ -1,3 +1,4 @@
+from .. import channels
 from .. import base
 
 class GridWorker(base.PubSub):
