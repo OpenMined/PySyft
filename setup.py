@@ -62,5 +62,6 @@ setup(
     cmdclass={
         'install': PostInstallCommand,
         'develop': PostDevelopCommand
-    }
+    },
+    scripts=["bin/start_anchor", "bin/start_autoupdating_worker.sh", "bin/start_ipfs", "bin/start_worker", "bin/worker_daemon.py", "ipfs_grid_worker_daemon.py"]
 )

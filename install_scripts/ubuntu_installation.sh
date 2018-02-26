@@ -22,10 +22,9 @@ export PATH=$PATH:/usr/local/go/bin
 echo "export GOPATH=$HOME" >> ~/.profile
 export GOPATH=$HOME
 
-go get -u github.com/ipfs/ipfs-update
-ipfs-update install latest
-
 if [ ! -d "~/.ipfs" ]; then
+  go get -u github.com/ipfs/ipfs-update
+  ipfs-update install latest
   ipfs init
 fi
 
@@ -39,15 +38,3 @@ cat bootstrap_nodes | xargs ipfs bootstrap add
 ipfs daemon --enable-pubsub-experiment  > ipfs.log 2> ipfs.err &
 
 nohup ./bin/start_worker &
-
-# sudo add-apt-repository -y ppa:jonathonf/python-3.6
-
-# sudo apt-get update
-# sudo apt-get -y upgrade
-# sudo apt-get install python3.6 -y
-# sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.5 1
-# sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 2
-
-# sudo apt-get install python3-pip python3.6-dev -y
-
-# pip3 install -r requirements.txt
