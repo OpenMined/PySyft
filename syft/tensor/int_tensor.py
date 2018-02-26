@@ -460,3 +460,15 @@ class IntTensor(BaseTensor):
         """
         return self.params_func("unfold", [dim, size, step], return_response=True)
 
+    def unfold_(self, dim, size, step):
+        """
+        Computes all slices of size `size` from `self` tensor in the dimension `dim`. Inplace version of Unfold.
+        
+        Parameters:
+            dim (int) – dimension in which unfolding happens
+            size (int) – the size of each slice that is unfolded
+            step (int) – the step between each slice
+            Output Tensor
+        """
+        return self.params_func("unfold_", [dim, size, step], return_response=True)
+
