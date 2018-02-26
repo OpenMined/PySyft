@@ -69,3 +69,23 @@ def test_unfold():
     actual_a = a.unfold(1, 2, 2)
     assert(actual_a.equal(expected_a))
 
+def test_unfold_():
+    # Test1
+    a = IntTensor(np.array([[-1, 2, 3, 5], [0, 4, 6, 7], [10, 3, 2, -5]], dtype=np.int32))
+    expected_a = IntTensor(np.array([[[-1, 2, 3, 5], [0, 4, 6, 7]], [[0, 4, 6, 7], [10, 3, 2, -5]]], dtype=np.int32))
+    a.unfold_(0, 2, 1)
+    assert(a.equal(expected_a))
+
+    # Test2
+    a = IntTensor(np.array([[-1, 2, 3, 5], [0, 4, 6, 7], [10, 3, 2, -5]], dtype=np.int32))
+    expected_a = IntTensor(np.array([[[-1, 2, 3], [0, 4, 6], [10, 3, 2]],
+        [[2, 3, 5], [4, 6, 7], [3, 2, -5]]], dtype=np.int32))
+    a.unfold_(1, 3, 1)
+    assert(a.equal(expected_a))
+
+    # Test3
+    a = IntTensor(np.array([[-1, 2, 3, 5], [0, 4, 6, 7], [10, 3, 2, -5]], dtype=np.int32))
+    expected_a = IntTensor(np.array([[[-1, 2], [0, 4], [10, 3]], [[3, 5], [6, 7], [2, -5]]], dtype=np.int32))
+    a.unfold_(1, 2, 2)
+    assert(a.equal(expected_a))
+
