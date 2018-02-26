@@ -5,6 +5,15 @@ from time import sleep
 
 class OutputPipe(keras.callbacks.Callback):
 
+    """
+    Output pipe is a keras callback (https://keras.io/callbacks/)
+
+    This class hooks into training and is used to update clients on the progress
+    of training (trying to mimick keras output going back to a client).
+
+    Or, this class can be used to quit training if a client tells you to.
+    """
+
     def __init__(self, id, publisher, channel, epochs, model_addr, model):
         self.id = id
         self.publisher = publisher
@@ -30,7 +39,9 @@ class OutputPipe(keras.callbacks.Callback):
         spec['parent_model'] = self.model_addr
         spec['worker_id'] = self.id
 
+        # Quit training if the client tells you to
         self.model.stop_training = self.stop_training
+        # Update client on the latest epoch
         self.publisher(channel=self.channel, message=spec)
 
     def on_train_end(self, logs={}):
@@ -41,6 +52,5 @@ class OutputPipe(keras.callbacks.Callback):
         spec['parent_model'] = self.model_addr
         spec['worker_id'] = self.id
 
-        print(f'finished training???????? {self.channel}')
-
+        # Tell the client you are finished training this model
         self.publisher(channel=self.channel, message=spec)

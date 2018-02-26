@@ -23,36 +23,43 @@ class GridTree(base_worker.GridWorker):
 
         # LAUNCH PROCESSES - these are non-blocking and run on their own threads
 
-        # listens to the network and tells other nodes what tasks you'e working on if they ask
+        # listens to the network and tells other nodes about all the tasks you know about
         self.listen_to_channel(channels.list_tasks, self.list_tasks)
 
         # listens for folks who want to add tasks to be trained to the network
         self.listen_to_channel(channels.add_task, self.discovered_tasks)
 
-        # responds to tasks you're specificalyl asked to do
+        # Sets up the listener that is called when people tell you about tasks.
+        # When you call `self.publish(channels.list_tasks)`, workers that respond
+        # will do so on this channel.
         self.listen_to_channel(channels.list_tasks_callback(self.id), self.discovered_tasks)
 
-        # listens in case someone asks what models i've got
+        # listens to the network and tells other nodes about the best models you
+        # know for a certain task.  e.g. worker A might ask you what the best
+        # models you know of for the MNIST task.
         self.listen_to_channel(channels.list_models, self.list_models)
 
-        # if i'm turning on after having done some previous work - it publishes previous work to the network
+        # Ask the network to tell us about the tasks everyone knows about
         self.publish(channels.list_tasks, commands.list_all)
 
 
     def list_tasks(self, message):
+        """
+        Tell the network about all of the tasks you know about.
+        """
         fr = base58.encode(message['from'])
 
+        # Tasks are stored in a tasks.json file.
         if not os.path.exists(f"{Path.home()}/.openmined/tasks.json"):
             return
 
         with open(f"{Path.home()}/.openmined/tasks.json", "r") as task_list:
             string_list = task_list.read()
             tasks = json.loads(string_list)
-            # for t in tasks:
-                # self.listen_for_models(t['name'])
 
+        # Don't broadcast the known tasks to the entire network.  Someone will
+        # Ask the network for known tasks, and you respond to them directly.
         callback_channel = channels.list_tasks_callback(fr)
-        print(f'?!?!?!?!?! {callback_channel} {string_list}')
         self.publish(callback_channel, string_list)
 
 
@@ -61,7 +68,7 @@ class GridTree(base_worker.GridWorker):
     def discovered_tasks(self, tasks):
         """
         people publish new tasks to the network which get processed by this method
-        a task is a json object which has a data directory  - and that data gets processed by an 
+        a task is a json object which has a data directory  - and that data gets processed by an
         adapter which is also sent over the wire.
         """
 
@@ -70,7 +77,7 @@ class GridTree(base_worker.GridWorker):
         print('==================================================================')
 
         data = json.loads(tasks['data'])
-        fr = tasks['from'] # base58.encode(tasks['from'])
+        fr = base58.encode(tasks['from'])
 
         for task in data:
             name = task['name']
@@ -95,7 +102,7 @@ class GridTree(base_worker.GridWorker):
 
     def list_models(self, message):
         """
-        for a given task - return what models you have trained for that task
+        for a given task - return the models you know to perform the best for that task.
         """
 
         task = message['data']
@@ -113,11 +120,20 @@ class GridTree(base_worker.GridWorker):
     ############################### BEGIN SUBPROCESSES FUNCTIONS ########################
 
     def listen_for_models(self, task_name):
+        """
+        Listen for people to publish models that perform a certain task.
+
+        Whenever you are told about a new model, you will usually train it using
+        your own data.
+        """
         self.listen_to_channel(channels.add_model(task_name), self.added_model)
         self.publish(channels.list_models, task_name)
-    
+
 
     def train_model(self, model, input, target, name, task_name, task_addr):
+        """
+        Train a model in keras.
+        """
         hist = model.fit(
             input,
             target,
@@ -132,6 +148,8 @@ class GridTree(base_worker.GridWorker):
 
         my_best_model = utils.best_model_for_task(task_name, return_model=True)
         best_loss = 100000000
+
+        # Figure out if this is the best model we have seen for this task yet.
         if not my_best_model == None:
             best_loss = my_best_model.evaluate(input, target, batch_size=100)[0]
             print(f'{Fore.YELLOW}Best Evaluated at: {best_loss}{Style.RESET_ALL}')
@@ -139,6 +157,7 @@ class GridTree(base_worker.GridWorker):
                 print(f'{Fore.RED}Trained model worse than best trained.  Ignoring.{Style.RESET_ALL}')
                 return
 
+        # If this is the best model we have seen, save its ipfs location
         if loss < best_loss:
             print(f'New best loss of {Fore.GREEN}{loss}{Style.RESET_ALL} for task {Fore.GREEN}{task_name}{Style.RESET_ALL}')
             utils.save_best_model_for_task(task_name, model)
@@ -230,6 +249,3 @@ class GridTree(base_worker.GridWorker):
         b = self.api.cat(addr)
         utils.ensure_exists(f'{Path.home()}/.openmined/grid/adapters/t.py', b)
         exec(open(f'{Path.home()}/.openmined/grid/adapters/t.py').read())
-
-
-    

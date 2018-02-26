@@ -13,7 +13,7 @@ class GridCompute(base_worker.GridWorker):
 
 
     def __init__(self):
-        super().__init__()  
+        super().__init__()
 
         # prints a pretty picture of a Computer
         print(strings.compute)
@@ -23,13 +23,20 @@ class GridCompute(base_worker.GridWorker):
 
     def train_meta(self, message):
         """
-        TODO: describe the purpose of this method.
+        This method is used the handle meta data commands that can be passed
+        between client and worker during training.
+
+        The client can send the worker an `op_code` that will tell it to do something.
         """
 
         decoded = json.loads(message['data'])
         if 'op_code' not in decoded:
             return
 
+        # The only currently supported op_code is to tell the worker to quit.
+        # This is used when a node is too slow to train.  E.g. if two workers
+        # pick up the same job, and worker A is much faster than worker B.
+        # Then the client will tell worker B to quit.
         self.learner_callback.stop_training = decoded['op_code'] == 'quit'
 
 
@@ -54,7 +61,11 @@ class GridCompute(base_worker.GridWorker):
     def fit_keras(self,decoded):
 
         """
-        This method trains a Keras model according to the insttuc
+        This method trains a Keras model using params that the client specifies.
+
+        Clients can specify what data to use to train, validate, how many epochs to use, etc.
+        Long term, the client should be able to specify anything that is used in
+        keras model.fit
         """
 
         # loads keras model from ipfs
@@ -66,11 +77,15 @@ class GridCompute(base_worker.GridWorker):
         except NotImplementedError:
             raise NotImplementedError("The IPFS API only supports Python 3.6. Please modify your environment.")
 
+        # get input/validation data from ipfs
         input, target, valid_input, valid_target = list(map(lambda x: self.deserialize_numpy(x),np_strings))
 
         # sets up channel for sending logging information back to the client (so that they can see incremental progress)
         train_channel = decoded['train_channel']
 
+        # Output pipe is a keras callback
+        # https://keras.io/callbacks/
+        # See `OutputPipe` for more info.
         self.learner_callback = OutputPipe(
             id=self.id,
             publisher=self.publish,
@@ -80,6 +95,8 @@ class GridCompute(base_worker.GridWorker):
             model=model
         )
 
+        # When you train a model, you talk about it on a subchannel.
+        # Start listening on this channel for updates about training.
         _args = (self.train_meta, train_channel + ':' + self.id)
         monitor_thread = threading.Thread(target=self.listen_to_channel,
                                           args=_args)
