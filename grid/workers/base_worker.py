@@ -9,6 +9,7 @@ class GridWorker(base.PubSub):
         # LAUNCH SERVICES - these are non-blocking and run on their own threads
 
         # all service objects will live in this dictionary
+
         self.services = {}
 
         # this service serves the purpose of helping other nodes find out about nodes on the network.
