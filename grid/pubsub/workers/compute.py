@@ -1,8 +1,8 @@
 from . import base_worker
-from ...lib import strings
+from ...lib import strings, utils, output_pipe
 from .. import channels
 import json
-
+import threading
 class GridCompute(base_worker.GridWorker):
 
     """
@@ -86,7 +86,7 @@ class GridCompute(base_worker.GridWorker):
         # Output pipe is a keras callback
         # https://keras.io/callbacks/
         # See `OutputPipe` for more info.
-        self.learner_callback = OutputPipe(
+        self.learner_callback = output_pipe.OutputPipe(
             id=self.id,
             publisher=self.publish,
             channel=train_channel,
