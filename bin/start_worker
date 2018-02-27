@@ -1,1 +1,4 @@
-python3.6 ipfs_grid_worker_daemon.py $1
+while [ 1==1 ]
+do
+python3.6 ipfs_grid_worker_daemon.py --compute
+done

@@ -1,1 +1,4 @@
-./bin/start_worker --anchor
+while [ 1==1 ]
+do
+python3.6 ipfs_grid_worker_daemon.py --anchor
+done
