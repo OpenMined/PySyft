@@ -3,7 +3,6 @@ from grid.pubsub import channels
 import base64
 import json
 import numpy as np
-from threading import Thread
 import torch
 import time
 import sys
