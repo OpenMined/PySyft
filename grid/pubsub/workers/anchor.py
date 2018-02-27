@@ -7,6 +7,8 @@ class GridAnchor(base_worker.GridWorker):
 	def __init__(self):
 		super().__init__()
 
+		self.node_type = "ANCHOR"
+
 		def just_listen():
 			""
 

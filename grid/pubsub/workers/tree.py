@@ -18,6 +18,8 @@ class GridTree(base_worker.GridWorker):
     def __init__(self):
         super().__init__()
 
+        self.node_type = "TREE"
+
         # prints a pretty picture of a tree
         print(strings.tree)
 
