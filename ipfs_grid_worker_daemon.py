@@ -10,6 +10,7 @@ import os
 import numpy as np
 import keras
 import argparse
+import time
 
 title = f"""{Fore.GREEN}   ____                             _                __   ______     _     __
   / __ \____  ___  ____  ____ ___  (_____  ___  ____/ /  / _________(_____/ /
@@ -64,6 +65,7 @@ def run():
         w = workers.compute.GridCompute()
 
   except Exception as e:     # most generic exception you can catch
+    time.sleep(1000)
     logf.write("Failed to download {0}: {1}\n".format(str(download), str(e)))
     run()
 
