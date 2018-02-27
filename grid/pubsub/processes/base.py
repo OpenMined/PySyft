@@ -1,5 +1,6 @@
 from threading import Thread
 import json
+import base64
 
 class BaseProcess(object):
 	
