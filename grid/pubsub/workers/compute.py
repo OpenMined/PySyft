@@ -1,7 +1,7 @@
 from . import base_worker
 from ...lib import strings, utils, output_pipe
 from .. import channels
-from ..processes.fit_worker import fit_worker
+from ..processes.fit_worker import FitWorkerProcess
 import json
 import threading
 
@@ -28,6 +28,6 @@ class GridCompute(base_worker.GridWorker):
         self.listen_for_openmined_nodes(1)
 
         # This process listens for models that it can train.
-        self.listen_to_channel(channels.openmined, fit_worker)
+        self.fit_worker_process = FitWorkerProcess(self)        
 
     
