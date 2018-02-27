@@ -2,6 +2,7 @@ from . import base_worker
 from ...lib import strings, utils, output_pipe
 from .. import channels
 from ..processes.fit_worker import FitWorkerProcess
+from ..processes.listen_for_openmined_nodes import ListenForOpenMinedNodesProcess
 import json
 import threading
 
@@ -25,9 +26,9 @@ class GridCompute(base_worker.GridWorker):
         # Blocking until this node has found at least one other OpenMined node
         # This functionality queries https://github.com/OpenMined/BootstrapNodes for Anchor nodes
         # then asks those nodes for which other OpenMined nodes they know about on the network.
-        self.listen_for_openmined_nodes(1)
+        self.processes['listen_for_openmined_nodes'] = ListenForOpenMinedNodesProcess(self,min_om_nodes=1)
 
         # This process listens for models that it can train.
-        self.fit_worker_process = FitWorkerProcess(self)        
+        self.processes['fit_worker_process'] = FitWorkerProcess(self)        
 
     
