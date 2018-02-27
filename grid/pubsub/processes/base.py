@@ -1,4 +1,6 @@
 
+from .base import BaseProcess
+
 class BaseProcess(object):
 	
 	def __init__(self,worker):
