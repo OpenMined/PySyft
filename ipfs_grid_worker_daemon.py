@@ -50,13 +50,21 @@ TODO: figure out a convenient way to make robust training procedure for torch
       -- will probably want to use ignite for this
 """
 
+logf = open("openmined.errors", "w")
 
-print("\n\n")
+def run():
+  try:
+    print("\n\n")
 
-if(args.tree):
-    w = workers.tree.GridTree()
-elif(args.anchor):
-    w = workers.anchor.GridAnchor()
-else:
-    w = workers.compute.GridCompute()
+    if(args.tree):
+        w = workers.tree.GridTree()
+    elif(args.anchor):
+        w = workers.anchor.GridAnchor()
+    else:
+        w = workers.compute.GridCompute()
 
+  except Exception as e:     # most generic exception you can catch
+    logf.write("Failed to download {0}: {1}\n".format(str(download), str(e)))
+    run()
+
+run()
