@@ -1,5 +1,5 @@
 from grid.lib import utils
-from grid.pubsub import channels
+from grid import channels
 import base64
 import json
 import numpy as np

@@ -1,4 +1,4 @@
-from ...lib import strings, utils, output_pipe
+from ..lib import strings, utils, output_pipe
 from .. import channels
 import json
 import threading

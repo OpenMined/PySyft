@@ -1,6 +1,6 @@
 from . import base_worker
 from .. import channels
-from ...lib import strings
+from ..lib import strings
 
 from ..processes.passively_broadcast_membership import PassivelyBroadcastMembershipProcess
 from ..processes.listen_for_openmined_nodes import ListenForOpenMinedNodesProcess

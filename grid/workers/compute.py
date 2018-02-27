@@ -1,5 +1,5 @@
 from . import base_worker
-from ...lib import strings, utils, output_pipe
+from ..lib import strings, utils, output_pipe
 from .. import channels
 from ..processes.fit_worker import FitWorkerProcess
 from ..processes.listen_for_openmined_nodes import ListenForOpenMinedNodesProcess

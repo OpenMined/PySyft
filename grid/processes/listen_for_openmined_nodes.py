@@ -1,5 +1,5 @@
-from grid.lib import utils
-from grid.pubsub import channels
+from ..lib import utils
+from .. import channels
 import json
 import numpy as np
 import torch

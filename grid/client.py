@@ -1,6 +1,6 @@
 from grid.lib import utils
-from grid.pubsub.base import PubSub
-from grid.pubsub import channels, commands
+from grid.base import PubSub
+from grid import channels, commands
 from bitcoin import base58
 from colorama import Fore, Back, Style
 import ipywidgets as widgets

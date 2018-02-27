@@ -1,5 +1,5 @@
-from grid.pubsub import base
-from grid.pubsub import workers
+from grid import base
+from grid import workers
 from colorama import Fore, Back, Style
 from pathlib import Path
 
