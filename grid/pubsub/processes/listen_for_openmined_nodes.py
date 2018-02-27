@@ -1,13 +1,11 @@
 from grid.lib import utils
 from grid.pubsub import channels
-import base64
 import json
 import numpy as np
 import torch
 import time
 import sys
 from colorama import Fore, Back, Style
-from bitcoin import base58
 from .base import BaseProcess
 
 class ListenForOpenMinedNodesProcess(BaseProcess):

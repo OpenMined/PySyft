@@ -1,6 +1,7 @@
 from threading import Thread
 import json
 import base64
+from bitcoin import base58
 
 class BaseProcess(object):
 	
