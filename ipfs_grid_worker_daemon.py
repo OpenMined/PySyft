@@ -1,5 +1,5 @@
-from grid.pubsub import base
-from grid.pubsub import workers
+from grid import base
+from grid import workers
 from colorama import Fore, Back, Style
 from pathlib import Path
 
@@ -65,6 +65,7 @@ def run():
         w = workers.compute.GridCompute()
 
   except Exception as e:     # most generic exception you can catch
+    print(e)
     time.sleep(1000)
     logf.write("Failed to download {0}: {1}\n".format(str(download), str(e)))
     run()
