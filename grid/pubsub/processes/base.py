@@ -10,7 +10,7 @@ class BaseProcess(object):
 		self.api = self.worker.api
 
 	def get_openmined_nodes(self):
-		nodes = self.workerapi.pubsub_peers('openmined')['Strings']
+		nodes = self.worker.api.pubsub_peers('openmined')['Strings']
 		if(nodes is not None):
 			return nodes
 		else:

@@ -65,6 +65,7 @@ def run():
         w = workers.compute.GridCompute()
 
   except Exception as e:     # most generic exception you can catch
+    print(e)
     time.sleep(1000)
     logf.write("Failed to download {0}: {1}\n".format(str(download), str(e)))
     run()

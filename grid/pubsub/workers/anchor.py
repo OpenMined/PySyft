@@ -2,6 +2,9 @@ from . import base_worker
 from .. import channels
 from ...lib import strings
 
+from ..processes.passively_broadcast_membership import PassivelyBroadcastMembershipProcess
+from ..processes.listen_for_openmined_nodes import ListenForOpenMinedNodesProcess
+
 class GridAnchor(base_worker.GridWorker):
 
 	def __init__(self):
@@ -9,9 +12,7 @@ class GridAnchor(base_worker.GridWorker):
 
 		self.node_type = "ANCHOR"
 
-		def just_listen():
-			""
-
+		# prints a picture of an anchor :)
 		print(strings.anchor)
 
 		# Blocking until this node has found at least one other OpenMined node
@@ -19,6 +20,8 @@ class GridAnchor(base_worker.GridWorker):
 		# then asks those nodes for which other OpenMined nodes they know about on the network.
 		self.processes['listen_for_openmined_nodes'] = ListenForOpenMinedNodesProcess(self,min_om_nodes=0)
 
-		self.listen_to_channel(channels.openmined,just_listen)
-		self.listen_to_channel(channels.list_workers,self.list_workers)
+		# just lets the network know its a member of the openmined network
+		self.processes['passively_broadcast_membership'] = PassivelyBroadcastMembershipProcess(self)
+
+		
 		
