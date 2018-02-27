@@ -19,4 +19,4 @@ class GridAnchor(base_worker.GridWorker):
 
 		self.listen_to_channel(channels.openmined,just_listen)
 		self.listen_to_channel(channels.list_workers,self.list_workers)
-		self.listen_for_openmined_nodes(1)
+		
