@@ -62,7 +62,7 @@ class FitWorkerProcess(BaseProcess):
 		# See `OutputPipe` for more info.
 		self.worker.learner_callback = output_pipe.OutputPipe(
 			id=self.worker.id,
-			publisher=self.worker.publish,
+			publisher=self.publish,
 			channel=train_channel,
 			epochs=decoded['epochs'],
 			model_addr=decoded['model_addr'],
