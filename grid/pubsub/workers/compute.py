@@ -18,6 +18,11 @@ class GridCompute(base_worker.GridWorker):
         # prints a pretty picture of a Computer
         print(strings.compute)
 
+        # Blocking until this node has found at least one other OpenMined node
+        # This functionality queries https://github.com/OpenMined/BootstrapNodes for Anchor nodes
+        # then asks those nodes for which other OpenMined nodes they know about on the network.
+        self.listen_for_openmined_nodes(1)
+
         # This process listens for models that it can train.
         self.listen_to_channel(channels.openmined, self.fit_worker)
 
