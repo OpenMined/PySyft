@@ -28,7 +28,7 @@ class GridTree(base_worker.GridWorker):
         # Blocking until this node has found at least one other OpenMined node
         # This functionality queries https://github.com/OpenMined/BootstrapNodes for Anchor nodes
         # then asks those nodes for which other OpenMined nodes they know about on the network.
-        self.listen_for_openmined_nodes(1)
+        self.processes['listen_for_openmined_nodes'] = ListenForOpenMinedNodesProcess(self,min_om_nodes=1)
 
         # listens to the network and tells other nodes about all the tasks you know about
         self.listen_to_channel(channels.list_tasks, self.list_tasks)
