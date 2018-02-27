@@ -3,7 +3,7 @@ import json
 import base64
 from bitcoin import base58
 
-class BaseProcess(object):
+class BaseService(object):
 	
 	def __init__(self,worker):
 		self.worker = worker

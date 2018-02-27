@@ -2,11 +2,11 @@ from ..lib import strings, utils, output_pipe
 from .. import channels
 import json
 import threading
-from .base import BaseProcess
+from .base import BaseService
 
-class FitWorkerProcess(BaseProcess):
+class FitWorkerService(BaseService):
 
-	# The purpose of this process is to train a model that was called using the "fit" method - which is a more rigid training spec
+	# The purpose of this service is to train a model that was called using the "fit" method - which is a more rigid training spec
 	# inspired by sci-kit learn and keras.
 
 	def __init__(self,worker):

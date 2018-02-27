@@ -1,9 +1,9 @@
 from .. import channels
-from .base import BaseProcess
+from .base import BaseService
 from bitcoin import base58
 import json
 
-class BroadcastKnownWorkersProcess(BaseProcess):
+class BroadcastKnownWorkersService(BaseService):
 
 	# this process serves the purpose of helping other nodes find out about nodes on the network.
 	# if someone queries the "list_worker" channel - it'll send a message directly to the querying node

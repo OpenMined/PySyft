@@ -1,9 +1,9 @@
 from .. import channels
-from .base import BaseProcess
+from .base import BaseService
 
-class PassivelyBroadcastMembershipProcess(BaseProcess):
+class PassivelyBroadcastMembershipService(BaseService):
 
-	# this process just listens on the general "openmined" channel so that other nodes
+	# this service just listens on the general "openmined" channel so that other nodes
 	# on the network know its there.
 
 	def __init__(self,worker):
