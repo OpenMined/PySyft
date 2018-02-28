@@ -1,10 +1,19 @@
 from .. import base
 from ..services.broadcast_known_workers import BroadcastKnownWorkersService
 
-class GridWorker(base.PubSub):
+class GridWorker():
 
     def __init__(self):
-        super().__init__('worker')
+        # super().__init__('worker')
+
+
+        self.api = utils.get_ipfs_api()
+        peer_id = self.api.config_show()['Identity']['PeerID']
+        self.id = f'{peer_id}'
+        # switch to this to make local develop work
+        # self.id = f'{mode}:{peer_id}'
+        self.subscribed_list = []
+        
 
         # LAUNCH SERVICES - these are non-blocking and run on their own threads
 
