@@ -58,6 +58,36 @@ def ipfs2keras(model_addr):
     model_bin = get_ipfs_api().cat(model_addr)
     return deserialize_keras_model(model_bin)
 
+def serialize_numpy(tensor):
+    # nested lists with same data, indices
+    return json.dumps(tensor.tolist())
+
+def deserialize_numpy(json_array):
+    return np.array(json.loads(json_array)).astype('float')
+
+def serialize_torch_model(model, **kwargs):
+    """
+    kwargs are the arguments needed to instantiate the model
+    """
+    state = {'state_dict': model.state_dict(), 'kwargs': kwargs}
+    torch.save(state, 'temp_model.pth.tar')
+    with open('temp_model.pth.tar', 'rb') as f:
+        model_bin = f.read()
+    return model_bin
+
+def deserialize_torch_model(model_bin, model_class, **kwargs):
+    """
+    model_class is needed since PyTorch uses pickle for serialization
+        see https://discuss.pytorch.org/t/loading-pytorch-model-without-a-code/12469/2 for details
+    kwargs are the arguments needed to instantiate the model from model_class
+    """
+    with open('temp_model2.pth.tar', 'wb') as g:
+        g.write(model_bin)
+    state = torch.load()
+    model = model_class(**state['kwargs'])
+    model.load_state_dict(state['state_dict'])
+    return model
+
 def serialize_keras_model(model):
     lock = FileLock('temp_model.h5.lock')
     with lock:

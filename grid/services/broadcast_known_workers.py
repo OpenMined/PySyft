@@ -13,7 +13,7 @@ class BroadcastKnownWorkersService(BaseService):
 	def __init__(self,worker):
 		super().__init__(worker)
 
-		self.listen_to_channel(channels.list_workers,self.reply_with_list_of_known_workers)
+		self.worker.listen_to_channel(channels.list_workers,self.reply_with_list_of_known_workers)
 
 
 	def reply_with_list_of_known_workers(self, message):
@@ -22,7 +22,7 @@ class BroadcastKnownWorkersService(BaseService):
 
 		addr = '/p2p-circuit/ipfs/'+fr
 
-		print("sending list of known workers to " + addr)
+		# print("sending list of known workers to " + addr)
 
 		# First: adding worker that made request to my list of known workers (just in case i don't have it)
 		try:
@@ -31,7 +31,7 @@ class BroadcastKnownWorkersService(BaseService):
 			print("Failed to reconnect in the opposite direciton to:" + addr)
 
 		# fetch list of openmined workers i know about
-		workers = self.get_openmined_nodes()        
+		workers = self.worker.get_openmined_nodes()        
 
 		# encode list of openmined workers i know about
 		workers_json = json.dumps(workers)
@@ -39,7 +39,7 @@ class BroadcastKnownWorkersService(BaseService):
 		# get callback channel for sending messages directly to whomever requested the list of om workers i know about
 		callback_channel = channels.list_workers_callback(fr)
 		
-		print(f'Sending List: {callback_channel} {workers_json}')
+		# print(f'Sending List: {callback_channel} {workers_json}')
 
 		# send encoded list of openmined workers i know about to the individual who requested it
-		self.publish(callback_channel, workers_json)
+		self.worker.publish(callback_channel, workers_json)

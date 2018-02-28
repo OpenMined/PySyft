@@ -78,8 +78,8 @@ class ListenForOpenMinedNodesService(BaseService):
 
 				return message
 
-			self.listen_to_channel(channels.list_workers_callback(self.worker.id),load_proposed_workers)
-			self.publish(channel='openmined:list_workers',message={'key':'value'})
+			self.worker.listen_to_channel(channels.list_workers_callback(self.worker.id),load_proposed_workers)
+			self.worker.publish(channel='openmined:list_workers',message={'key':'value'})
 
 			num_nodes_om = 0
 
@@ -89,8 +89,8 @@ class ListenForOpenMinedNodesService(BaseService):
 			while(True):
 				
 				time.sleep(0.25)
-				num_nodes_total = len(self.get_nodes())
-				num_nodes_om = len(self.get_openmined_nodes())
+				num_nodes_total = len(self.worker.get_nodes())
+				num_nodes_om = len(self.worker.get_openmined_nodes())
 
 				sys.stdout.write(f'\r{Fore.BLUE}UPDATE: {Style.RESET_ALL}Searching for IPFS nodes - '+str(num_nodes_total)+' found overall - '+str(num_nodes_om)+' are OpenMined workers' + ("." * (logi%10)) + (' ' * 10))
 				
