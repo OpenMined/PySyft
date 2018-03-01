@@ -1,6 +1,7 @@
 from ..workers import client
 from ..lib import utils
 from ..lib import serde
+from ..lib import coinbase_helper
 import json
 
 class KerasClient(client.BaseClient):
@@ -10,6 +11,12 @@ class KerasClient(client.BaseClient):
                         known_workers=known_workers,
                         include_github_known_workers=include_github_known_workers)
 
+        self.email = None
+        self.time_taken = None
+        self.cb_helper = None
+
+    def set_coinbase_api(self, api_key, api_secret):
+        self.cb_helper = coinbase_helper.CoinbaseHelper(api_key, api_secret)
 
     def fit(self, model, input, target, valid_input=None, valid_target=None, batch_size=1, epochs=1, log_interval=1, message_handler=None, preferred_node='random'):
 
@@ -29,7 +36,10 @@ class KerasClient(client.BaseClient):
 
         self.listen_to_channel_sync(self.spec['train_channel'], message_handler)
 
-        return self.load_model(self.spec['model_addr']),self.spec
+        if self.cb_helper and self.email and self.time_taken:
+            self.cb_helper.send_ether(self.email, self.time_taken)
+
+        return self.load_model(self.spec['model_addr']), self.spec
 
     def update_progress(self, parent_model, worker_id, num_epochs, epoch_id):
         if parent_model not in self.progress:
@@ -89,10 +99,9 @@ class KerasClient(client.BaseClient):
         spec['framework'] = framework
         spec['train_channel'] = 'openmined_train_' + str(model_addr)
         spec['preferred_node'] = preferred_node
-        
+
         return spec
 
-    
     def load_model(self, addr):
         return utils.ipfs2keras(addr)
 
@@ -101,6 +110,9 @@ class KerasClient(client.BaseClient):
 
         if(msg is not None):
             if(msg['type'] == 'transact'):
+                self.email = msg['worker_email']
+                self.time_taken = msg['time_taken']
+
                 return utils.ipfs2keras(msg['model_addr']), msg
             elif(msg['type'] == 'log'):
                 if(verbose):

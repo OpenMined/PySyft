@@ -1,16 +1,7 @@
-from grid import base
 from grid import workers
-from colorama import Fore, Back, Style
-from pathlib import Path
-
-import json
-import threading
-from bitcoin import base58
-import os
-import numpy as np
-import keras
 import argparse
 import time
+from colorama import Fore, Style
 
 title = f"""{Fore.GREEN}   ____                             _                __   ______     _     __
   / __ \____  ___  ____  ____ ___  (_____  ___  ____/ /  / _________(_____/ /
@@ -41,6 +32,9 @@ parser.add_argument('--anchor', dest='anchor', action='store_const',
                    const=True, default=False,
                    help='Run grid in anchor mode')
 
+parser.add_argument('--payment-experiment', dest='payment_experiment', action='store_const',
+                    const=True, default=False, help='Run grid with payment experiment')
+
 args = parser.parse_args()
 
 """
@@ -58,13 +52,16 @@ def run():
     print("\n\n")
 
     if(args.tree):
-        w = workers.tree.GridTree()
+        workers.tree.GridTree()
     elif(args.anchor):
-        w = workers.anchor.GridAnchor()
+        workers.anchor.GridAnchor()
     else:
-        w = workers.compute.GridCompute()
+        if args.payment_experiment:
+            workers.compute.GridCompute(args.payment_experiment)
+        else:
+            workers.compute.GridCompute(False)
 
-  except Exception as e:     # most generic exception you can catch
+  except Exception as e:  # most generic exception you can catch
     print(e)
     time.sleep(1000)
     logf.write("Failed to download {0}: {1}\n".format(str(download), str(e)))

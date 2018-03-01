@@ -15,10 +15,16 @@ class GridCompute(base_worker.GridWorker):
        - SECONDARY: learn about the existence of other nodes on the network - and help others to do so when asked
     """
 
-    def __init__(self):
+    def __init__(self, payment_experiment):
         super().__init__()
 
         self.node_type = "COMPUTE"
+
+        self.email = None
+        if payment_experiment:
+            temp_email = input("Enter email for payment experiment:")
+            if temp_email != "":
+                self.email = temp_email
 
         # prints a pretty picture of a Computer
         print(strings.compute)
@@ -31,9 +37,9 @@ class GridCompute(base_worker.GridWorker):
         # KERAS
 
         # This process listens for models that it can train.
-        self.services['fit_worker_service'] = FitWorkerService(self)        
+        self.services['fit_worker_service'] = FitWorkerService(self)
 
-        
+
         # TORCH
 
         # this process listens for torch ops
