@@ -3,7 +3,7 @@ from ..lib import strings, utils, output_pipe
 from .. import channels
 from ..services.fit_worker import FitWorkerService
 from ..services.listen_for_openmined_nodes import ListenForOpenMinedNodesService
-from ..services.torch.listen_for_torch_objects import ListenForTorchObjectsService
+from ..services.torch.torch_service import TorchService
 import json
 import threading
 
@@ -15,8 +15,10 @@ class GridCompute(base_worker.GridWorker):
        - SECONDARY: learn about the existence of other nodes on the network - and help others to do so when asked
     """
 
-    def __init__(self, payment_experiment):
+    def __init__(self, payment_experiment=False):
         super().__init__()
+
+        self.payment_experiment = payment_experiment
 
         self.node_type = "COMPUTE"
 
@@ -43,4 +45,4 @@ class GridCompute(base_worker.GridWorker):
         # TORCH
 
         # this process listens for torch ops
-        self.services['listen_for_torch_objects'] = ListenForTorchObjectsService(self)
+        self.services['torch_service'] = TorchService(self)

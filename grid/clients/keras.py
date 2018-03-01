@@ -110,8 +110,10 @@ class KerasClient(client.BaseClient):
 
         if(msg is not None):
             if(msg['type'] == 'transact'):
-                self.email = msg['worker_email']
-                self.time_taken = msg['time_taken']
+                if('worker_email' in msg.keys()):
+                    self.email = msg['worker_email']
+                if('time_taken' in msg.keys()):
+                    self.time_taken = msg['time_taken']
 
                 return utils.ipfs2keras(msg['model_addr']), msg
             elif(msg['type'] == 'log'):

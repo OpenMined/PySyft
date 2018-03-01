@@ -1,1 +1,1 @@
-from . import listen_for_torch_objects
+from . import torch_service

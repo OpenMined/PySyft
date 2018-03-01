@@ -4,8 +4,8 @@ import json
 import threading
 from .base import BaseService
 
-
 class FitWorkerService(BaseService):
+
 
     # The purpose of this service is to train a model that was called using the "fit" method - which is a more rigid training spec
     # inspired by sci-kit learn and keras.
