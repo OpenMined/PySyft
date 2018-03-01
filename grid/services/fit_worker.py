@@ -52,7 +52,7 @@ class FitWorkerService(BaseService):
 			raise NotImplementedError("The IPFS API only supports Python 3.6. Please modify your environment.")
 
 		# get input/validation data from ipfs
-		input, target, valid_input, valid_target = list(map(lambda x: self.worker.deserialize_numpy(x),np_strings))
+		input, target, valid_input, valid_target = list(map(lambda x: utils.deserialize_numpy(x),np_strings))
 
 		# sets up channel for sending logging information back to the client (so that they can see incremental progress)
 		train_channel = decoded['train_channel']
