@@ -9,6 +9,6 @@ class PassivelyBroadcastMembershipService(BaseService):
 	def __init__(self,worker):
 		super().__init__(worker)
 
-		def just_listen():
+		def just_listen(msg):
 			""
 		self.worker.listen_to_channel(channels.openmined,just_listen)
