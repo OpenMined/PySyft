@@ -12,7 +12,7 @@ class FitWorkerService(BaseService):
 	def __init__(self,worker):
 		super().__init__(worker)
 
-		self.listen_to_channel(channels.openmined, self.fit_worker)
+		self.worker.listen_to_channel(channels.openmined, self.fit_worker)
 
 	# TODO: torch
 	def fit_worker(self, message):
