@@ -100,7 +100,7 @@ class ListenForOpenMinedNodesService(BaseService):
 					break
 
 				if(logi % 100 == 99):
-					self.publish(channel='openmined:list_workers',message={'key':'value'})
+					self.worker.publish(channel='openmined:list_workers',message={'key':'value'})
 					print(">")
 
 			print(f'\n\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Found '+str(num_nodes_om)+' OpenMined nodes!!!\n')

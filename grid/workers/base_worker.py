@@ -5,6 +5,7 @@ from threading import Thread
 import json
 from bitcoin import base58
 import base64
+import random
 
 class GridWorker():
 
@@ -53,13 +54,19 @@ class GridWorker():
             self.api.pubsub_pub(topic=channel, payload=message)
 
     def request_response(self,channel,message,response_handler):
+        """
+        This method makes a request over a channel to a specific node and
+        will hang until it receives a response from that node. Note that
+        the channel used for the response is random.
+        """
+
 
         random_channel = self.id + "_" + str(random.randint(0, 1e10))
 
         def send():
-            self.worker.publish(channel=channel,message=[message,random_channel])
+            self.publish(channel=channel,message=[message,random_channel])
 
-        response = self.worker.listen_to_channel_sync(random_channel, response_handler, send)
+        response = self.listen_to_channel_sync(random_channel, response_handler, send)
 
     def listen_to_channel_sync(self, *args):
         """

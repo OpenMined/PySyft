@@ -82,13 +82,19 @@ class TorchService(BaseService):
         return to.receive_command(command)
     
     def request_obj(self,obj):
-        random_channel = self.worker.id + "_" + str(random.randint(0, 1e10))
 
-        def send():
-            self.worker.publish(channel=channels.torch_listen_for_obj_req_callback(obj.owner),message=[obj.id,random_channel])
+        return self.worker.request_response(channel=channels.torch_listen_for_obj_req_callback(obj.owner),
+                                            message=obj.id,
+                                            response_handler=self.receive_obj_break)
 
-        response = self.worker.listen_to_channel_sync(random_channel, self.receive_obj_break, send)
-        return response
+    # def request_obj(self,obj):
+    #     random_channel = self.worker.id + "_" + str(random.randint(0, 1e10))
+
+    #     def send():
+    #         self.worker.publish(channel=channels.torch_listen_for_obj_req_callback(obj.owner),message=[obj.id,random_channel])
+
+    #     response = self.worker.listen_to_channel_sync(random_channel, self.receive_obj_break, send)
+    #     return response
     
     def receive_obj_request(self,msg):
         
