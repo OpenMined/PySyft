@@ -52,6 +52,15 @@ class GridWorker():
         else:
             self.api.pubsub_pub(topic=channel, payload=message)
 
+    def request_response(self,channel,message,response_handler):
+
+        random_channel = self.id + "_" + str(random.randint(0, 1e10))
+
+        def send():
+            self.worker.publish(channel=channel,message=[message,random_channel])
+
+        response = self.worker.listen_to_channel_sync(random_channel, response_handler, send)
+
     def listen_to_channel_sync(self, *args):
         """
         Synchronous version of listen_to_channel
@@ -79,7 +88,7 @@ class GridWorker():
 
         if channel not in self.subscribed_list:
             
-            print(f"SUBSCRIBING TO {channel}")
+            # print(f"SUBSCRIBING TO {channel}")
             new_messages = self.api.pubsub_sub(topic=channel, stream=True)
             self.subscribed_list.append(channel)
 

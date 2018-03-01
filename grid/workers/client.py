@@ -11,7 +11,10 @@ class BaseClient(base_worker.GridWorker):
         super().__init__()
         self.progress = {}
 
-        self.processes = {}
+        self.services = {}
 
-        self.processes['listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(self,min_om_nodes,include_github_known_workers)
+        self.services['listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(self,min_om_nodes,include_github_known_workers)
         # self.listen_for_openmined_nodes(min_om_nodes,include_github_known_workers)
+    
+    def listen(self):
+        self.services['listen_for_openmined_nodes'].listen_for_openmined_nodes()

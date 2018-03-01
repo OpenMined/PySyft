@@ -47,12 +47,7 @@ class TorchService(BaseService):
         listen_for_obj_callback_channel = channels.torch_listen_for_obj_req_callback(self.worker.id)
         self.worker.listen_to_channel(listen_for_obj_callback_channel,self.receive_obj_request)
 
-        # I listen for people to respond to my requests for tensors!!
-        listen_for_obj_req_response = channels.torch_listen_for_obj_req_response_callback(self.worker.id)
-        self.worker.listen_to_channel(listen_for_obj_req_response,self.receive_obj)
 
-        # listen_for_obj_response_callback_channel = channels.torch_listen_for_obj_response_callback(self.worker.id)
-        # self.worker.listen_to_channel(listen_for_obj_response_callback_channel,print_messages)
 
     def receive_obj(self,msg):
         self.receive_obj_break(msg)
@@ -233,7 +228,13 @@ class TorchService(BaseService):
             else:
                 return "[ torch.FloatTensor - Location:" + str(self.owner) + " ]"
 
-        torch.FloatTensor.old__repr__ = torch.FloatTensor.__repr__
+        # if haven't reserved the actual __repr__ function - reserve it now
+        try:
+            torch.FloatTensor.old__repr__
+        except:
+            torch.FloatTensor.old__repr__ = torch.FloatTensor.__repr__
+            
+
         torch.FloatTensor.__repr__ = __repr__
 
 
@@ -248,7 +249,10 @@ class TorchService(BaseService):
         
     def hook_float_tensor_get(self):
         def get(self):
-            self.worker.services['torch_service'].request_obj(self)
+
+            if(self.worker.id != self.owner):
+                self.worker.services['torch_service'].request_obj(self)
+
             return self
         torch.FloatTensor.get = get
         

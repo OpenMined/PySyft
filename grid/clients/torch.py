@@ -16,7 +16,6 @@ class TorchClient(client.BaseClient):
                         known_workers=known_workers,
                         include_github_known_workers=include_github_known_workers)
 
-        self.services = {}
 
         self.services['torch_service'] = TorchService(self)
 
