@@ -62,7 +62,7 @@ class FitWorkerService(BaseService):
 		# See `OutputPipe` for more info.
 		self.worker.learner_callback = output_pipe.OutputPipe(
 			id=self.worker.id,
-			publisher=self.publish,
+			publisher=self.worker.publish,
 			channel=train_channel,
 			epochs=decoded['epochs'],
 			model_addr=decoded['model_addr'],
@@ -72,7 +72,7 @@ class FitWorkerService(BaseService):
 		# When you train a model, you talk about it on a subchannel.
 		# Start listening on this channel for updates about training.
 		_args = (self.train_meta, train_channel + ':' + self.worker.id)
-		monitor_thread = threading.Thread(target=self.listen_to_channel,
+		monitor_thread = threading.Thread(target=self.worker.listen_to_channel,
 										  args=_args)
 		monitor_thread.start()
 

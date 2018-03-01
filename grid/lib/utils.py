@@ -7,6 +7,7 @@ import json
 import time
 from colorama import Fore, Back, Style
 import sys
+import numpy as np
 
 
 def get_ipfs_api(ipfs_addr='127.0.0.1', port=5001, max_tries=10):
