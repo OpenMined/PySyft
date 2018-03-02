@@ -19,7 +19,7 @@ def get_ipfs_api(ipfs_addr='127.0.0.1', port=5001, max_tries=10):
 
     try:
         out = ipfsapi.connect(ipfs_addr, port)
-        print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!!')    
+        print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!! - My ID: ' + str(out.config_show()['Identity']['PeerID']))    
         return out
     except:
         print(f'\n{Fore.RED}ERROR: {Style.RESET_ALL}could not connect to IPFS.  Is your daemon running with pubsub support at {ipfs_addr} on port {port}? Let me try to start IPFS for you... (this will take ~15 seconds)')

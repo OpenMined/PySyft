@@ -1,5 +1,6 @@
 from .. import base
 from ..services.broadcast_known_workers import BroadcastKnownWorkersService
+from ..services.whoami import WhoamiService
 from ..lib import utils
 from threading import Thread
 import json
@@ -16,6 +17,7 @@ class GridWorker():
         self.api = utils.get_ipfs_api()
         peer_id = self.api.config_show()['Identity']['PeerID']
         self.id = f'{peer_id}'
+
         # switch to this to make local develop work
         # self.id = f'{mode}:{peer_id}'
         self.subscribed_list = []
@@ -32,8 +34,16 @@ class GridWorker():
         # with a list of the OpenMined nodes of which it is aware.
         self.services['broadcast_known_workers'] = BroadcastKnownWorkersService(self)
 
+        # WHOMAI
+        self.services['whoami_service'] = WhoamiService(self)
 
     def get_openmined_nodes(self):
+        """
+        This method returns the list of known openmined workers on the newtork.
+        Note - not all workers are necessarily "compute" workers. Some may only be anchors
+        and will ignore any jobs you send them.
+        """
+
         nodes = self.api.pubsub_peers('openmined')['Strings']
         if(nodes is not None):
             return nodes
@@ -48,6 +58,11 @@ class GridWorker():
             return []
 
     def publish(self, channel, message):
+        """
+        This method sends a message over an IPFS channel. The number of people who receive it is
+        purely based on the number of people who happen to be listening.
+        """
+
         if isinstance(message, dict) or isinstance(message, list):
             self.api.pubsub_pub(topic=channel, payload=json.dumps(message))
         else:
@@ -66,14 +81,15 @@ class GridWorker():
         def send():
             self.publish(channel=channel,message=[message,random_channel])
 
-        response = self.listen_to_channel_sync(random_channel, response_handler, send)
+        return self.listen_to_channel_sync(random_channel, response_handler, send)
+
 
     def listen_to_channel_sync(self, *args):
         """
         Synchronous version of listen_to_channel
         """
 
-        self.listen_to_channel_impl(*args)
+        return self.listen_to_channel_impl(*args)
 
     def listen_to_channel(self, *args):
         """

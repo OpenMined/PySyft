@@ -10,3 +10,5 @@ mnemonic
 python-bitcoinlib
 filelock
 coinbase
+gpustat
+psutil

@@ -18,6 +18,13 @@ def add_model(name):
     return f'openmined:task:add:{name}'
 
 
+# Whoami Channels
+
+whoami_listener = 'openmined:whoami'
+def whoami_listener_callback(id):
+    return f'{whoami_listener}:{id}'
+
+
 # Torch Channels
 
 torch_listen_for_obj = 'openmined:torch_listen_for_obj'

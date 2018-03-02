@@ -1,10 +1,10 @@
-from ..workers import client
+from . import base
 from ..lib import utils
 from ..lib import serde
 from ..lib import coinbase_helper
 import json
 
-class KerasClient(client.BaseClient):
+class KerasClient(base.BaseClient):
 
     def __init__(self,min_om_nodes=1,known_workers=list(),include_github_known_workers=True):
         super().__init__(min_om_nodes=min_om_nodes,
