@@ -26,4 +26,6 @@ class BaseClient(base_worker.GridWorker):
         def ret(msg):
             return json.loads(msg['data'])
 
-        return self.request_response(channel=channels.whoami_listener_callback(worker_id),message=[],response_handler=ret)
+    def __len__(self):
+        return len(self.get_openmined_nodes())
+
