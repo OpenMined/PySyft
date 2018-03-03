@@ -22,7 +22,7 @@ class ListenForOpenMinedNodesService(BaseService):
 
 	def listen_for_openmined_nodes(self, min_om_nodes = 1, include_github_known_workers=True):
 			
-			known_workers = list()
+			self.known_workers = list()
 
 			# pull known workers from trusted github source (OpenMined's repo)
 			if(include_github_known_workers):
@@ -31,15 +31,15 @@ class ListenForOpenMinedNodesService(BaseService):
 				workers = requests.get('https://github.com/OpenMined/BootstrapNodes/raw/master/known_workers').text.split("\n")
 				for w in workers:
 					if('p2p-circuit' in w):
-						known_workers.append(w)
+						self.known_workers.append(w)
 
 			# remove duplicates
-			known_workers = list(set(known_workers))
+			self.known_workers = list(set(self.known_workers))
 
 			# if there are known workers - connect with them directly
-			if(len(known_workers) > 0):
+			if(len(self.known_workers) > 0):
 				print(f'\n{Fore.BLUE}UPDATE: {Style.RESET_ALL}Querying known workers...')    
-				for worker in known_workers:
+				for worker in self.known_workers:
 					try:
 						sys.stdout.write('\tWORKER: ' + str(worker) + '...')    
 						self.worker.api.swarm_connect(worker)
@@ -100,7 +100,7 @@ class ListenForOpenMinedNodesService(BaseService):
 					break
 
 				if(logi % 100 == 99):
-					self.publish(channel='openmined:list_workers',message={'key':'value'})
+					self.worker.publish(channel='openmined:list_workers',message={'key':'value'})
 					print(">")
 
 			print(f'\n\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Found '+str(num_nodes_om)+' OpenMined nodes!!!\n')

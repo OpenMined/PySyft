@@ -9,3 +9,6 @@ h5py
 mnemonic
 python-bitcoinlib
 filelock
+coinbase
+gpustat
+psutil

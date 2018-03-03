@@ -1,10 +1,13 @@
 from .. import base
 from ..services.broadcast_known_workers import BroadcastKnownWorkersService
+from ..services.whoami import WhoamiService
 from ..lib import utils
 from threading import Thread
 import json
 from bitcoin import base58
 import base64
+import time
+import random
 
 class GridWorker():
 
@@ -15,6 +18,7 @@ class GridWorker():
         self.api = utils.get_ipfs_api()
         peer_id = self.api.config_show()['Identity']['PeerID']
         self.id = f'{peer_id}'
+
         # switch to this to make local develop work
         # self.id = f'{mode}:{peer_id}'
         self.subscribed_list = []
@@ -31,8 +35,16 @@ class GridWorker():
         # with a list of the OpenMined nodes of which it is aware.
         self.services['broadcast_known_workers'] = BroadcastKnownWorkersService(self)
 
+        # WHOMAI
+        self.services['whoami_service'] = WhoamiService(self)
 
     def get_openmined_nodes(self):
+        """
+        This method returns the list of known openmined workers on the newtork.
+        Note - not all workers are necessarily "compute" workers. Some may only be anchors
+        and will ignore any jobs you send them.
+        """
+
         nodes = self.api.pubsub_peers('openmined')['Strings']
         if(nodes is not None):
             return nodes
@@ -47,17 +59,49 @@ class GridWorker():
             return []
 
     def publish(self, channel, message):
+        """
+        This method sends a message over an IPFS channel. The number of people who receive it is
+        purely based on the number of people who happen to be listening.
+        """
+
         if isinstance(message, dict) or isinstance(message, list):
             self.api.pubsub_pub(topic=channel, payload=json.dumps(message))
         else:
             self.api.pubsub_pub(topic=channel, payload=message)
+
+    def request_response(self,channel,message,response_handler,timeout=10):
+        """
+        This method makes a request over a channel to a specific node and
+        will hang until it receives a response from that node. Note that
+        the channel used for the response is random.
+        """
+
+
+        random_channel = self.id + "_" + str(random.randint(0, 1e10))
+
+        def timeout_message(seconds):
+            time.sleep(int(seconds))
+            self.publish(channel=random_channel,message=["timeout after " + str(seconds) + " seconds"])
+        
+        def send():
+            self.publish(channel=channel,message=[message,random_channel])
+            t1 = Thread(target=timeout_message, args={timeout})
+            t1.start() 
+
+        response = self.listen_to_channel_sync(random_channel, response_handler, send)
+
+        if(len(response) == 1):
+            if('timeout' in response[0]):
+                raise TimeoutError(response[0])
+        return response
+
 
     def listen_to_channel_sync(self, *args):
         """
         Synchronous version of listen_to_channel
         """
 
-        self.listen_to_channel_impl(*args)
+        return self.listen_to_channel_impl(*args)
 
     def listen_to_channel(self, *args):
         """
@@ -79,13 +123,14 @@ class GridWorker():
 
         if channel not in self.subscribed_list:
             
-            print(f"SUBSCRIBING TO {channel}")
+            # print(f"SUBSCRIBING TO {channel}")
             new_messages = self.api.pubsub_sub(topic=channel, stream=True)
             self.subscribed_list.append(channel)
 
         else:
             print(f"ALREADY SUBSCRIBED TO {channel}")
             return
+
 
         for m in new_messages:
             if init_function is not None and first_proc:

@@ -3,6 +3,7 @@ from ..lib import strings, utils, output_pipe
 from .. import channels
 from ..services.fit_worker import FitWorkerService
 from ..services.listen_for_openmined_nodes import ListenForOpenMinedNodesService
+from ..services.torch.torch_service import TorchService
 import json
 import threading
 
@@ -14,11 +15,18 @@ class GridCompute(base_worker.GridWorker):
        - SECONDARY: learn about the existence of other nodes on the network - and help others to do so when asked
     """
 
-
-    def __init__(self):
+    def __init__(self, payment_experiment=False):
         super().__init__()
 
+        self.payment_experiment = payment_experiment
+
         self.node_type = "COMPUTE"
+
+        self.email = None
+        if payment_experiment:
+            temp_email = input("Enter email for payment experiment:")
+            if temp_email != "":
+                self.email = temp_email
 
         # prints a pretty picture of a Computer
         print(strings.compute)
@@ -28,7 +36,13 @@ class GridCompute(base_worker.GridWorker):
         # then asks those nodes for which other OpenMined nodes they know about on the network.
         self.services['listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(self,min_om_nodes=1)
 
-        # This process listens for models that it can train.
-        self.services['fit_worker_service'] = FitWorkerService(self)        
+        # KERAS
 
-    
+        # This process listens for models that it can train.
+        self.services['fit_worker_service'] = FitWorkerService(self)
+
+
+        # TORCH
+
+        # this process listens for torch ops
+        self.services['torch_service'] = TorchService(self)

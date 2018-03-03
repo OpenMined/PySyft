@@ -28,7 +28,8 @@ class BroadcastKnownWorkersService(BaseService):
 		try:
 			self.api.swarm_connect(addr)
 		except:
-			print("Failed to reconnect in the opposite direciton to:" + addr)
+			""
+			# print("Failed to reconnect in the opposite direciton to:" + addr)
 
 		# fetch list of openmined workers i know about
 		workers = self.worker.get_openmined_nodes()        
