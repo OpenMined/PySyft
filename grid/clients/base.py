@@ -5,13 +5,14 @@ from ..lib import strings
 from ..services.passively_broadcast_membership import PassivelyBroadcastMembershipService
 from ..services.listen_for_openmined_nodes import ListenForOpenMinedNodesService
 
+from threading import Thread
 from colorama import Fore, Back, Style
 import json
 import time
 
 class BaseClient(base_worker.GridWorker):
 
-    def __init__(self,min_om_nodes=1,known_workers=list(),include_github_known_workers=True):
+    def __init__(self,min_om_nodes=1,known_workers=list(),include_github_known_workers=True,verbose=True):
         super().__init__()
         self.progress = {}
 
@@ -20,14 +21,18 @@ class BaseClient(base_worker.GridWorker):
         self.services['listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(self,min_om_nodes,include_github_known_workers)
         
         self.stats = list()
-        for w in self.services['listen_for_openmined_nodes'].known_workers:
-            try:
-                self.stats.append(self.get_stats(w.split("/")[-1]))
-            except:
-                ""
+        
+        def ping_known_then_refresh():
+        
+            for w in self.services['listen_for_openmined_nodes'].known_workers:
+                try:
+                    self.stats.append(self.get_stats(w.split("/")[-1]))
+                except:
+                    ""
+            self.refresh_network_stats(print_stats=verbose)
 
-
-        self.stats = self.refresh_network_stats()
+        t1 = Thread(target=ping_known_then_refresh, args=[])
+        t1.start() 
 
 
 
@@ -50,7 +55,10 @@ class BaseClient(base_worker.GridWorker):
 
     def print_network_stats(self):
         for i,n in enumerate(self.stats):
-            print(self.pretty_print_node(i,n))
+            try:
+                print(self.pretty_print_node(i,n))
+            except:
+                "was probably being written to asyncronously"
 
     def refresh_network_stats(self,print_stats=True):
         om_nodes = self.get_openmined_nodes()
@@ -68,8 +76,9 @@ class BaseClient(base_worker.GridWorker):
                 if(om_node not in existing_stats):
                     new_om_nodes.add(om_node)
 
-            stats = list()
-            for idx,old_stat in enumerate(self.stats):
+            self.old_stats = self.stats
+            self.stats = list()
+            for idx,old_stat in enumerate(self.old_stats):
 
                 if(old_stat['id'] in om_nodes):
                     start = time.time()
@@ -77,7 +86,9 @@ class BaseClient(base_worker.GridWorker):
                     try:
                         stat = self.get_stats(old_stat['id'])
                     except TimeoutError: 
-                        print(f'{Fore.LIGHTBLACK_EX}' + "NODE    - "+str(idx)+" - - timeout - - " + str(old_stat['id']) + f'{Style.RESET_ALL}')
+                        if(print_stats):
+                            print(f'{Fore.LIGHTBLACK_EX}' + "NODE    - "+str(idx)+" - - timeout - - " + str(old_stat['id']) + f'{Style.RESET_ALL}')
+
                         continue
 
                     end = time.time()
@@ -87,44 +98,47 @@ class BaseClient(base_worker.GridWorker):
                     stat = old_stat
                     stat['status'] = 'OFFLINE'
                 
-                stats.append(stat)
+                self.stats.append(stat)
                 if(print_stats):
-                    print(self.pretty_print_node(len(stats)-1,stat))
+                    print(self.pretty_print_node(len(self.stats)-1,stat))
 
             for idx_, id in enumerate(new_om_nodes):
-                idx = len(stats)
+                idx = len(self.stats)
                 start = time.time()
 
                 try:
                     stat = self.get_stats(id)
                 except TimeoutError:
-                    print(f'{Fore.LIGHTBLACK_EX}' + "NODE    - "+str(idx)+" - - timeout - - " + str(id) + f'{Style.RESET_ALL}')
+                    if(print_stats):
+                        print(f'{Fore.LIGHTBLACK_EX}' + "NODE    - "+str(idx)+" - - timeout - - " + str(id) + f'{Style.RESET_ALL}')
+
                     continue
 
                 end = time.time()
                 stat['ping_time'] = end-start
                 stat['status'] = 'ONLINE'
-                stats.append(stat)
+                self.stats.append(stat)
                 if(print_stats):
-                    print(self.pretty_print_node(len(stats)-1,stat))
+                    print(self.pretty_print_node(len(self.stats)-1,stat))
 
         else:
-            stats = list()
+            self.old_stats = self.stats
+            self.stats = list()
             for idx,id in enumerate(om_nodes):
                 start = time.time()
                 try:
                     stat = self.get_stats(id)
                 except TimeoutError:
-                    print(f'{Fore.LIGHTBLACK_EX}' + "NODE    - "+str(idx)+" - - timeout - - " + str(id) + f'{Style.RESET_ALL}')
+                    if(print_stats):
+                        print(f'{Fore.LIGHTBLACK_EX}' + "NODE    - "+str(idx)+" - - timeout - - " + str(id) + f'{Style.RESET_ALL}')
                     continue
                 end = time.time()
                 stat['ping_time'] = end-start
-                stats.append(stat)
+                self.stats.append(stat)
                 if(print_stats):
                     print(self.pretty_print_node(idx,stat))
 
-        self.stats = stats
-        return stats
+        return self.stats
 
     def pretty_print_gpu(self,gpu):
         return str(gpu['index']) + " : " + gpu['name'] + " : " + str(gpu['memory.used']) + "/" + str(gpu['memory.total'])
