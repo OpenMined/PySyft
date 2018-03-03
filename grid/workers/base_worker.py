@@ -6,6 +6,7 @@ from threading import Thread
 import json
 from bitcoin import base58
 import base64
+import time
 import random
 
 class GridWorker():
@@ -68,7 +69,7 @@ class GridWorker():
         else:
             self.api.pubsub_pub(topic=channel, payload=message)
 
-    def request_response(self,channel,message,response_handler):
+    def request_response(self,channel,message,response_handler,timeout=10):
         """
         This method makes a request over a channel to a specific node and
         will hang until it receives a response from that node. Note that
@@ -78,10 +79,21 @@ class GridWorker():
 
         random_channel = self.id + "_" + str(random.randint(0, 1e10))
 
+        def timeout_message(seconds):
+            time.sleep(int(seconds))
+            self.publish(channel=random_channel,message=["timeout after " + str(seconds) + " seconds"])
+        
         def send():
             self.publish(channel=channel,message=[message,random_channel])
+            t1 = Thread(target=timeout_message, args={timeout})
+            t1.start() 
 
-        return self.listen_to_channel_sync(random_channel, response_handler, send)
+        response = self.listen_to_channel_sync(random_channel, response_handler, send)
+
+        if(len(response) == 1):
+            if('timeout' in response[0]):
+                raise TimeoutError(response[0])
+        return response
 
 
     def listen_to_channel_sync(self, *args):
@@ -118,6 +130,7 @@ class GridWorker():
         else:
             print(f"ALREADY SUBSCRIBED TO {channel}")
             return
+
 
         for m in new_messages:
             if init_function is not None and first_proc:

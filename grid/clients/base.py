@@ -20,6 +20,16 @@ class BaseClient(base_worker.GridWorker):
         self.services['listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(self,min_om_nodes,include_github_known_workers)
         # self.listen_for_openmined_nodes(min_om_nodes,include_github_known_workers)
         
+<<<<<<< HEAD
+        self.stats = list()
+        for w in self.services['listen_for_openmined_nodes'].known_workers:
+            try:
+                self.stats.append(self.get_stats(w.split("/")[-1]))
+            except:
+                ""
+
+=======
+>>>>>>> 99c010bff65118d91a8b388434d1addad48169a7
         self.stats = self.refresh_network_stats()
 
 
@@ -30,33 +40,91 @@ class BaseClient(base_worker.GridWorker):
         if(refresh_network_stats):
             self.stats = self.refresh_network_stats()
 
-    def get_stats(self,worker_id):
+    def get_stats(self,worker_id,timeout=10):
 
         def ret(msg):
             return json.loads(msg['data'])
 
-        return self.request_response(channel=channels.whoami_listener_callback(worker_id),message=[],response_handler=ret)
+        return self.request_response(channel=channels.whoami_listener_callback(worker_id),message=[],response_handler=ret,timeout=10)
 
     def __len__(self):
         return len(self.get_openmined_nodes())
 
-    # def print_network_stats(self):
-    #     for i,n in enumerate(stats):
 
+    def print_network_stats(self):
+        for i,n in enumerate(self.stats):
+            print(self.pretty_print_node(i,n))
 
     def refresh_network_stats(self,print_stats=True):
         om_nodes = self.get_openmined_nodes()
-        om_nodes
+        
+        if(self.stats is not None):
+            # try to preserve the order to that g[idx] stays the same
+            existing_stats = set()
+            for s in self.stats:
+                existing_stats.add(s['id'])
 
-        stats = list()
-        for idx,n in enumerate(self.get_openmined_nodes()):
-            start = time.time()
-            stat = self.get_stats(n)
-            end = time.time()
-            stat['ping_time'] = end-start
-            stats.append(stat)
-            if(print_stats):
-                print(self.pretty_print_node(idx,stat))
+            ordered_om_nodes = {}
+            new_om_nodes = set()
+            
+            for om_node in om_nodes:
+                if(om_node not in existing_stats):
+                    new_om_nodes.add(om_node)
+
+            stats = list()
+            for idx,old_stat in enumerate(self.stats):
+
+                if(old_stat['id'] in om_nodes):
+                    start = time.time()
+
+                    try:
+                        stat = self.get_stats(old_stat['id'])
+                    except TimeoutError: 
+                        print("NODE    - "+str(idx)+" - - timeout - -")
+                        continue
+
+                    end = time.time()
+                    stat['ping_time'] = end-start
+                    stat['status'] = 'ONLINE'
+                else:
+                    stat = old_stat
+                    stat['status'] = 'OFFLINE'
+                
+                stats.append(stat)
+                if(print_stats):
+                    print(self.pretty_print_node(len(stats)-1,stat))
+
+            for idx_, id in enumerate(new_om_nodes):
+                idx = len(stats)
+                start = time.time()
+
+                try:
+                    stat = self.get_stats(id)
+                except TimeoutError:
+                    print("NODE    -   - - timeout - -")
+                    continue
+
+                end = time.time()
+                stat['ping_time'] = end-start
+                stat['status'] = 'ONLINE'
+                stats.append(stat)
+                if(print_stats):
+                    print(self.pretty_print_node(len(stats)-1,stat))
+
+        else:
+            stats = list()
+            for idx,id in enumerate(om_nodes):
+                start = time.time()
+                try:
+                    stat = self.get_stats(id)
+                except TimeoutError:
+                    print("NODE    - "+str(idx)+" - - timeout - -")
+                    continue
+                end = time.time()
+                stat['ping_time'] = end-start
+                stats.append(stat)
+                if(print_stats):
+                    print(self.pretty_print_node(idx,stat))
 
         self.stats = stats
         return stats
