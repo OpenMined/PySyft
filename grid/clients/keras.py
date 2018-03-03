@@ -3,6 +3,7 @@ from ..lib import utils
 from ..lib import serde
 from ..lib import coinbase_helper
 import json
+import random
 
 class KerasClient(base.BaseClient):
 
