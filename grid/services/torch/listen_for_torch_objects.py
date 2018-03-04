@@ -3,8 +3,8 @@ from ..base import BaseService
 
 class ListenForTorchObjectsService(BaseService):
 
-    # this service just listens on the general "openmined" channel so that other nodes
-    # on the network know its there.
+    # this service listens to a channel specifically made for it to receive messages containing
+    # torch objects and commands
 
     def __init__(self,worker):
         super().__init__(worker)

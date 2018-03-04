@@ -2,7 +2,7 @@
 
 ## Modes
 
-Grid currently has two modes.
+Grid currently has three modes.
 
 `--tree` -- experimental
 

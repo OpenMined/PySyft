@@ -14,8 +14,8 @@ import json
 
 class TorchService(BaseService):
 
-    # this service just listens on the general "openmined" channel so that other nodes
-    # on the network know its there.
+    # this service creates everything the client needs to be able to interact with torch on the Grid
+    # (it's really awesome, but it's a WIP)
 
     def __init__(self,worker):
         super().__init__(worker)
@@ -24,7 +24,7 @@ class TorchService(BaseService):
 
         self.objects = {}
 
-        self.hook_float_tensor_add()
+        # self.hook_float_tensor_add()
         self.hook_float_tensor___init__()
         self.hook_float_tensor_serde()
         self.hook_float_tensor_send()
@@ -154,8 +154,8 @@ class TorchService(BaseService):
 
 
     # FLOAT TENSOR FUNCTIONS
-    def hook_float_tensor___init__(self):
-        def new___init__(self,tensor,owner=self, *args, **kwargs):
+    def hook_float_tensor___init__(service_self):
+        def new___init__(self,tensor,owner=service_self, *args, **kwargs):
             super(torch.FloatTensor, self).__init__(*args, **kwargs)
             self = owner.register_object(self,False)
          
@@ -217,9 +217,9 @@ class TorchService(BaseService):
         torch.FloatTensor.de = de 
         
 
-    def hook_float_tensor___repr__(self):
+    def hook_float_tensor___repr__(service_self):
         def __repr__(self):
-            if(self.worker.id == self.owner):
+            if(service_self.worker.id == self.owner):
                 return self.old__repr__()
             else:
                 return "[ torch.FloatTensor - Location:" + str(self.owner) + " ]"
