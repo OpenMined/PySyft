@@ -1,9 +1,9 @@
 from . import base
 from ..lib import utils
-from ..lib import serde
 from ..lib import coinbase_helper
 import json
 import random
+
 
 class KerasClient(base.BaseClient):
 
@@ -13,7 +13,6 @@ class KerasClient(base.BaseClient):
                         include_github_known_workers=include_github_known_workers,
                         verbose=verbose)
 
-        self.email = None
         self.time_taken = None
         self.cb_helper = None
 
@@ -37,9 +36,6 @@ class KerasClient(base.BaseClient):
         self.publish('openmined', self.spec)
 
         self.listen_to_channel_sync(self.spec['train_channel'], message_handler)
-
-        if self.cb_helper and self.email and self.time_taken:
-            self.cb_helper.send_ether(self.email, self.time_taken)
 
         return self.load_model(self.spec['model_addr']), self.spec
 
@@ -112,11 +108,6 @@ class KerasClient(base.BaseClient):
 
         if(msg is not None):
             if(msg['type'] == 'transact'):
-                if('worker_email' in msg.keys()):
-                    self.email = msg['worker_email']
-                if('time_taken' in msg.keys()):
-                    self.time_taken = msg['time_taken']
-
                 return utils.ipfs2keras(msg['model_addr']), msg
             elif(msg['type'] == 'log'):
                 if(verbose):

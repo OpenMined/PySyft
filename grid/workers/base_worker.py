@@ -1,4 +1,3 @@
-from .. import base
 from ..services.broadcast_known_workers import BroadcastKnownWorkersService
 from ..services.whoami import WhoamiService
 from ..lib import utils
@@ -9,20 +8,33 @@ import base64
 import time
 import random
 
+
 class GridWorker():
 
     def __init__(self):
-        # super().__init__('worker')
-
-
         self.api = utils.get_ipfs_api()
         peer_id = self.api.config_show()['Identity']['PeerID']
         self.id = f'{peer_id}'
 
+        # load email and name
+        whoami = utils.load_whoami()
+        if whoami:
+            self.email = whoami['email']
+            self.name = whoami['name']
+        else:
+            self.email = input('Enter your email for payment: ')
+            self.name = input('Enter an easy name to remember you by: ')
+
+            whoami = {
+                'email': self.email,
+                'name': self.name
+            }
+
+            utils.store_whoami(whoami)
+
         # switch to this to make local develop work
         # self.id = f'{mode}:{peer_id}'
         self.subscribed_list = []
-        
 
         # LAUNCH SERVICES - these are non-blocking and run on their own threads
 
@@ -52,7 +64,7 @@ class GridWorker():
             return []
 
     def get_nodes(self):
-        nodes =  self.api.pubsub_peers()['Strings']
+        nodes = self.api.pubsub_peers()['Strings']
         if(nodes is not None):
             return nodes
         else:
@@ -69,24 +81,23 @@ class GridWorker():
         else:
             self.api.pubsub_pub(topic=channel, payload=message)
 
-    def request_response(self,channel,message,response_handler,timeout=10):
+    def request_response(self, channel, message, response_handler, timeout=10):
         """
         This method makes a request over a channel to a specific node and
         will hang until it receives a response from that node. Note that
         the channel used for the response is random.
         """
 
-
         random_channel = self.id + "_" + str(random.randint(0, 1e10))
 
         def timeout_message(seconds):
             time.sleep(int(seconds))
             self.publish(channel=random_channel,message=["timeout after " + str(seconds) + " seconds"])
-        
+
         def send():
-            self.publish(channel=channel,message=[message,random_channel])
+            self.publish(channel=channel, message=[message, random_channel])
             t1 = Thread(target=timeout_message, args={timeout})
-            t1.start() 
+            t1.start()
 
         response = self.listen_to_channel_sync(random_channel, response_handler, send)
 
@@ -122,7 +133,7 @@ class GridWorker():
         first_proc = True
 
         if channel not in self.subscribed_list:
-            
+
             # print(f"SUBSCRIBING TO {channel}")
             new_messages = self.api.pubsub_sub(topic=channel, stream=True)
             self.subscribed_list.append(channel)

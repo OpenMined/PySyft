@@ -21,7 +21,6 @@ class OutputPipe(keras.callbacks.Callback):
         self.epochs = epochs
         self.model_addr = model_addr
         self.model = model
-        self.email = email
 
         self.stop_training = False
 
@@ -53,8 +52,6 @@ class OutputPipe(keras.callbacks.Callback):
         spec['eval_loss'] = logs.get('loss')
         spec['parent_model'] = self.model_addr
         spec['worker_id'] = self.id
-        spec['worker_email'] = self.email
-        spec['time_taken'] = time() - self.startTime
 
         # Tell the client you are finished training this model
         self.publisher(channel=self.channel, message=spec)

@@ -1,25 +1,25 @@
-from filelock import Timeout, FileLock
+from filelock import FileLock
 from grid import ipfsapi
 from pathlib import Path
 import keras
 import os
 import json
 import time
-from colorama import Fore, Back, Style
+from colorama import Fore, Style
 import sys
 import numpy as np
 
 
 def get_ipfs_api(ipfs_addr='127.0.0.1', port=5001, max_tries=10):
-    print(f'\n{Fore.BLUE}UPDATE: {Style.RESET_ALL}Connecting to IPFS... this can take a few seconds...')    
+    print(f'\n{Fore.BLUE}UPDATE: {Style.RESET_ALL}Connecting to IPFS... this can take a few seconds...')
 
     # out = ipfsapi.connect(ipfs_addr, port)
-    # print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!!')    
+    # print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!!')
     # return out
 
     try:
         out = ipfsapi.connect(ipfs_addr, port)
-        print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!! - My ID: ' + str(out.config_show()['Identity']['PeerID']))    
+        print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!! - My ID: ' + str(out.config_show()['Identity']['PeerID']))
         return out
     except:
         print(f'\n{Fore.RED}ERROR: {Style.RESET_ALL}could not connect to IPFS.  Is your daemon running with pubsub support at {ipfs_addr} on port {port}? Let me try to start IPFS for you... (this will take ~15 seconds)')
@@ -30,41 +30,46 @@ def get_ipfs_api(ipfs_addr='127.0.0.1', port=5001, max_tries=10):
 
             try:
                 out = ipfsapi.connect(ipfs_addr, port)
-                print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!! - My ID: ' + str(out.config_show()['Identity']['PeerID']))    
+                print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!! - My ID: ' + str(out.config_show()['Identity']['PeerID']))
                 return out
             except:
                 ""
 
-
     for try_index in range(max_tries):
         try:
             out = ipfsapi.connect(ipfs_addr, port)
-            print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!! - My ID: ' + str(out.config_show()['Identity']['PeerID']))    
+            print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!! - My ID: ' + str(out.config_show()['Identity']['PeerID']))
             return out
         except:
             print(f'\n{Fore.RED}ERROR: {Style.RESET_ALL}still could not connect to IPFS.  Is your daemon running with pubsub support at {ipfs_addr} on port {port}?')
             time.sleep(5)
-        
+
     print(f'\n{Fore.RED}ERROR: {Style.RESET_ALL}could not connect to IPFS. Failed after ' + str(max_tries) + ' attempts... Is IPFS installed? Consult the README at https://github.com/OpenMined/Grid')
     sys.exit()
+
 
 def save_adapter(addr):
     adapter_bin = get_ipfs_api().cat(addr)
     ensure_exists(f'{Path.home()}/grid/adapters/adapter.py', adapter_bin)
 
+
 def keras2ipfs(model):
     return get_ipfs_api().add_bytes(serialize_keras_model(model))
+
 
 def ipfs2keras(model_addr):
     model_bin = get_ipfs_api().cat(model_addr)
     return deserialize_keras_model(model_bin)
 
+
 def serialize_numpy(tensor):
     # nested lists with same data, indices
     return json.dumps(tensor.tolist())
 
+
 def deserialize_numpy(json_array):
     return np.array(json.loads(json_array)).astype('float')
+
 
 def serialize_torch_model(model, **kwargs):
     """
@@ -75,6 +80,7 @@ def serialize_torch_model(model, **kwargs):
     with open('temp_model.pth.tar', 'rb') as f:
         model_bin = f.read()
     return model_bin
+
 
 def deserialize_torch_model(model_bin, model_class, **kwargs):
     """
@@ -88,6 +94,7 @@ def deserialize_torch_model(model_bin, model_class, **kwargs):
     model = model_class(**state['kwargs'])
     model.load_state_dict(state['state_dict'])
     return model
+
 
 def serialize_keras_model(model):
     lock = FileLock('temp_model.h5.lock')
@@ -108,7 +115,6 @@ def deserialize_keras_model(model_bin):
         model = keras.models.load_model('temp_model2.h5')
         return model
 
-# def load_tasks():
 
 def save_best_model_for_task(task, model):
     ensure_exists(f'{Path.home()}/.openmined/models.json', {})
@@ -135,6 +141,7 @@ def best_model_for_task(task, return_model=False):
 
     return None
 
+
 def load_task(name):
     if not os.path.exists(f'{Path.home()}/.openmined/tasks.json'):
         return None
@@ -145,6 +152,7 @@ def load_task(name):
     for task in tasks:
         if task['name'] == name:
             return task
+
 
 def store_task(name, address):
     ensure_exists(f'{Path.home()}/.openmined/tasks.json', [])
@@ -162,6 +170,18 @@ def store_task(name, address):
 
         with open(f"{Path.home()}/.openmined/tasks.json", "w") as task_file:
             json.dump(tasks, task_file)
+
+
+def store_whoami(info):
+    ensure_exists(f'{Path.home()}/.openmined/whoami.json', info)
+
+
+def load_whoami():
+    if not os.path.exists(f'{Path.home()}/.openmined/whoami.json'):
+        return None
+
+    with open(f'{Path.home()}/.openmined/whoami.json', 'r') as cb:
+        return json.loads(cb.read())
 
 
 def ensure_exists(path, default_contents=None):

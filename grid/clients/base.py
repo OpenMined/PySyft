@@ -157,8 +157,10 @@ class BaseClient(base_worker.GridWorker):
         ping = str(stat['ping_time']).split(".")
         ping = ping[0] + "." + ping[1][0:2]
 
-
-        return wtype + " - " + str(idx) + " - ID:"+str(stat['id'][-5:])+"  Ping:" + str(ping) + "sec  CPUs:" + str(ncpu) + "  CPU Load:" + str(cpu_load) + "  Disk-util:" + str(dp) + "%" + "  RAM-util:" + str(rp) + "%  GPUs:" + gpus
+        if 'name' in stat and stat['name']:
+            return wtype + " - " + str(idx) + " - NAME:"+stat['name']+"  Ping:" + str(ping) + "sec  CPUs:" + str(ncpu) + "  CPU Load:" + str(cpu_load) + "  Disk-util:" + str(dp) + "%" + "  RAM-util:" + str(rp) + "%  GPUs:" + gpus
+        else:
+            return wtype + " - " + str(idx) + " - ID:"+str(stat['id'][-5:])+"  Ping:" + str(ping) + "sec  CPUs:" + str(ncpu) + "  CPU Load:" + str(cpu_load) + "  Disk-util:" + str(dp) + "%" + "  RAM-util:" + str(rp) + "%  GPUs:" + gpus
 
     def pretty_print_node(self, idx, node):
 
