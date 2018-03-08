@@ -1,6 +1,7 @@
 from ..workers import base_worker
 from .. import channels
 from grid.lib import utils
+from .pretty_printer import PrettyPrinter
 
 from ..services.listen_for_openmined_nodes import ListenForOpenMinedNodesService
 
@@ -22,6 +23,8 @@ class BaseClient(base_worker.GridWorker):
         self.services['listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(self,min_om_nodes,known_workers,include_github_known_workers)
 
         self.stats = list()
+
+        self.pretty_printer = PrettyPrinter()
 
         def ping_known_then_refresh():
 
@@ -51,7 +54,7 @@ class BaseClient(base_worker.GridWorker):
     def print_network_stats(self):
         for i, n in enumerate(self.stats):
             try:
-                print(self.pretty_print_node(i, n))
+                print(self.pretty_printer.print_node(i, n))
             except:
                 "was probably being written to asyncronously"
 
@@ -94,7 +97,8 @@ class BaseClient(base_worker.GridWorker):
 
                 self.stats.append(stat)
                 if(print_stats):
-                    print(self.pretty_print_node(len(self.stats) - 1, stat))
+                    print(self.pretty_printer.print_node(len(self.stats) - 1,
+                                                         stat))
 
             for idx_, id in enumerate(new_om_nodes):
                 idx = len(self.stats)
@@ -113,7 +117,8 @@ class BaseClient(base_worker.GridWorker):
                 stat['status'] = 'ONLINE'
                 self.stats.append(stat)
                 if(print_stats):
-                    print(self.pretty_print_node(len(self.stats) - 1, stat))
+                    print(self.pretty_printer.print_node(len(self.stats) - 1,
+                                                         stat))
 
         else:
             self.old_stats = self.stats
@@ -130,47 +135,9 @@ class BaseClient(base_worker.GridWorker):
                 stat['ping_time'] = end-start
                 self.stats.append(stat)
                 if(print_stats):
-                    print(self.pretty_print_node(idx,stat))
+                    print(self.pretty_printer.print_node(idx, stat))
 
         return self.stats
-
-    def pretty_print_gpu(self,gpu):
-        return str(gpu['index']) + " : " + gpu['name'] + " : " + str(gpu['memory.used']) + "/" + str(gpu['memory.total'])
-
-    def pretty_print_compute(self, idx, stat):
-
-        wtype = stat['worker_type']
-        ncpu = stat['cpu_num_logical_cores']
-        cpu_load = stat['cpu_processor_percent_utilization']
-        ngpu = len(stat['gpus'])
-        dp = stat['disk_percent']
-        rp = str(100 - stat['cpu_ram_percent_available'])[0:4]
-
-        if(ngpu == 0):
-            gpus = "[]"
-        else:
-            gpus = "["
-            for g in stat['gpus']:
-                gpus += self.pretty_print_gpu(g) + ", "
-            gpus = gpus[:-2] + "]"
-
-        ping = str(stat['ping_time']).split(".")
-        ping = ping[0] + "." + ping[1][0:2]
-
-        if 'name' in stat and stat['name']:
-            return wtype + " - " + str(idx) + " - NAME:"+stat['name']+"  Ping:" + str(ping) + "sec  CPUs:" + str(ncpu) + "  CPU Load:" + str(cpu_load) + "  Disk-util:" + str(dp) + "%" + "  RAM-util:" + str(rp) + "%  GPUs:" + gpus
-        else:
-            return wtype + " - " + str(idx) + " - ID:"+str(stat['id'][-5:])+"  Ping:" + str(ping) + "sec  CPUs:" + str(ncpu) + "  CPU Load:" + str(cpu_load) + "  Disk-util:" + str(dp) + "%" + "  RAM-util:" + str(rp) + "%  GPUs:" + gpus
-
-    def pretty_print_node(self, idx, node):
-
-        if(node['worker_type'] == 'ANCHOR'):
-            node['worker_type'] = ' ANCHOR'
-        stat_str = self.pretty_print_compute(idx, node)
-        if(node['worker_type'] == ' ANCHOR'):
-            stat_str = f'{Fore.LIGHTBLACK_EX}' + stat_str + f'{Style.RESET_ALL}'
-
-        return stat_str
 
     def __getitem__(self, idx):
         return self.stats[idx]['id']
