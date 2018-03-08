@@ -1,5 +1,5 @@
 import keras
-from . import utils
+from . import utils, keras_utils
 from time import time
 
 
@@ -48,7 +48,7 @@ class OutputPipe(keras.callbacks.Callback):
     def on_train_end(self, logs={}):
         spec = {}
         spec['type'] = 'transact'
-        spec['model_addr'] = utils.keras2ipfs(self.model)
+        spec['model_addr'] = keras_utils.keras2ipfs(self.model)
         spec['eval_loss'] = logs.get('loss')
         spec['parent_model'] = self.model_addr
         spec['worker_id'] = self.id

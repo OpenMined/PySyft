@@ -1,4 +1,4 @@
-from grid.lib import utils
+from grid.lib import utils, keras_utils
 from grid import channels
 import base64
 import json
@@ -57,7 +57,7 @@ class PubSub(object):
         else:
             p = parent
 
-        model_addr = utils.keras2ipfs(model)
+        model_addr = keras_utils.keras2ipfs(model)
 
         update = {
             'name': name,

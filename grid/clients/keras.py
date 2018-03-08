@@ -4,6 +4,7 @@ from ..lib import coinbase_helper
 import json
 import random
 
+from ..lib import keras_utils
 
 class KerasClient(base.BaseClient):
 
@@ -64,7 +65,7 @@ class KerasClient(base.BaseClient):
 
     def generate_fit_spec(self, model,input,target,valid_input=None,valid_target=None,batch_size=1,epochs=1,log_interval=1, framework = 'keras', model_class = None,preferred_node='first_available'):
 
-        model_bin = utils.serialize_keras_model(model)
+        model_bin = keras_utils.serialize_keras_model(model)
         model_addr = self.api.add_bytes(model_bin)
 
         if model_class is not None:
@@ -101,14 +102,14 @@ class KerasClient(base.BaseClient):
         return spec
 
     def load_model(self, addr):
-        return utils.ipfs2keras(addr)
+        return keras_utils.ipfs2keras(addr)
 
     def receive_model(self, message, verbose=True):
         msg = json.loads(message['data'])
 
         if(msg is not None):
             if(msg['type'] == 'transact'):
-                return utils.ipfs2keras(msg['model_addr']), msg
+                return keras_utils.ipfs2keras(msg['model_addr']), msg
             elif(msg['type'] == 'log'):
                 if(verbose):
                     output = "Worker:" + msg['worker_id'][-5:]
@@ -131,3 +132,63 @@ class KerasClient(base.BaseClient):
                     quit['op_code'] = 'quit'
                     self.publish(self.spec['train_channel'] + ':' + worker_id,
                                  quit)
+
+    def best_models(self, task):
+        self.show_models = widgets.VBox([widgets.HBox([widgets.Label('Model Address')])])
+        self.listen_to_channel(channels.add_model(task), self.__added_model)
+        self.publish(channels.list_models, task)
+
+        return self.show_models
+
+    def __added_model(self, message):
+        info = self.api.get_json(message['data'])
+        model_addr = info['model']
+
+        hbox = widgets.HBox([widgets.Label(model_addr)])
+        self.show_models.children += (hbox,)
+
+    def load_model(self, addr):
+        return keras_utils.ipfs2keras(addr)
+
+    def send_model(self, name, model_addr):
+        task = utils.load_task(name)
+
+        update = {
+            'name': name,
+            'model': model_addr,
+            'task': task['address'],
+            'creator': self.id,
+            'parent': task['address']
+        }
+
+        update_addr = self.api.add_json(update)
+        self.publish(channels.add_model(name), update_addr)
+
+        print("SENDING MODEL!!!!")
+
+    def add_model(self, name, model, parent=None):
+        """
+        Propose a model as a solution to a task.
+        parent  - The name of the task.  e.g. MNIST
+        model - A keras model. Down the road we should support more frameworks.
+        """
+        task = utils.load_task(name)
+        p = None
+        if parent is None:
+            p = task['address']
+        else:
+            p = parent
+
+        model_addr = keras_utils.keras2ipfs(model)
+
+        update = {
+            'name': name,
+            'model': model_addr,
+            'task': task['address'],
+            'creator': self.id,
+            'parent': p
+        }
+
+        update_addr = self.api.add_json(update)
+        self.publish(channels.add_model(name), update_addr)
+        print(f"ADDED NEW MODELS WEIGHT TO {update_addr}")

@@ -2,7 +2,7 @@ from . import base_worker
 from ..lib import strings
 from .. import channels
 from .. import commands
-from grid.lib import utils
+from grid.lib import utils, keras_utils
 
 from ..services.listen_for_openmined_nodes import ListenForOpenMinedNodesService
 
@@ -126,7 +126,7 @@ class GridTree(base_worker.GridWorker):
         if fr == self.id:
             return
 
-        my_best = utils.best_model_for_task(task)
+        my_best = keras_utils.best_keras_model_for_task(task)
         if my_best is not None:
             self.send_model(task, my_best)
 
@@ -159,7 +159,7 @@ class GridTree(base_worker.GridWorker):
         loss = hist.history.get('loss')[-1]
         print(f'{Fore.GREEN}Finished training {Fore.YELLOW} -- {loss}{Style.RESET_ALL}')
 
-        my_best_model = utils.best_model_for_task(task_name, return_model=True)
+        my_best_model = keras_utils.best_keras_model_for_task(task_name, return_model=True)
         best_loss = 100000000
 
         # Figure out if this is the best model we have seen for this task yet.
@@ -173,7 +173,7 @@ class GridTree(base_worker.GridWorker):
         # If this is the best model we have seen, save its ipfs location
         if loss < best_loss:
             print(f'New best loss of {Fore.GREEN}{loss}{Style.RESET_ALL} for task {Fore.GREEN}{task_name}{Style.RESET_ALL}')
-            utils.save_best_model_for_task(task_name, model)
+            keras_utils.save_best_keras_model_for_task(task_name, model)
 
         self.add_model(name, model, parent=task_addr)
 
@@ -192,7 +192,7 @@ class GridTree(base_worker.GridWorker):
         print(f'FOUND NEW MODEL: {task_addr}, {model_addr}, {data_dir}, {name}, {creator}')
 
         if os.path.exists(f'data/{data_dir}') and creator != self.id:
-            model = utils.ipfs2keras(model_addr)
+            model = keras_utils.ipfs2keras(model_addr)
             input = None
             target = None
             for filename in os.listdir(f'data/{data_dir}'):
@@ -235,7 +235,7 @@ class GridTree(base_worker.GridWorker):
         name = task_info['name']
         creator = info['creator']
 
-        model = utils.ipfs2keras(model_addr)
+        model = keras_utils.ipfs2keras(model_addr)
 
         utils.save_adapter(adapter)
         import grid.adapters.adapter as grid_adapter

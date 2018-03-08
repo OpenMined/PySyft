@@ -1,4 +1,4 @@
-from ..lib import strings, utils, output_pipe
+from ..lib import strings, utils, output_pipe, keras_utils
 from .. import channels
 import json
 import threading
@@ -44,7 +44,7 @@ class FitWorkerService(BaseService):
         """
 
         # loads keras model from ipfs
-        model = utils.ipfs2keras(decoded['model_addr'])
+        model = keras_utils.ipfs2keras(decoded['model_addr'])
 
         # gets dataset from ipfs
         try:
