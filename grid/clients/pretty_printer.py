@@ -1,3 +1,5 @@
+from colorama import Fore, Style
+
 class PrettyPrinter:
     def print_gpu(self, gpu):
         return str(gpu['index']) + " : " + gpu['name'] + " : " + str(
