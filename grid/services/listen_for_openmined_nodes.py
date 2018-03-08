@@ -12,14 +12,14 @@ class ListenForOpenMinedNodesService(BaseService):
     # This functionality queries https://github.com/OpenMined/BootstrapNodes for Anchor nodes
     # then asks those nodes for which other OpenMined nodes they know about on the network.
 
-    def __init__(self,worker,min_om_nodes = 1, include_github_known_workers=True):
+    def __init__(self,worker,min_om_nodes = 1, known_workers = list(), include_github_known_workers=True):
         super().__init__(worker)
 
-        self.listen_for_openmined_nodes(min_om_nodes=min_om_nodes,include_github_known_workers=include_github_known_workers)
+        self.listen_for_openmined_nodes(min_om_nodes=min_om_nodes,known_workers=known_workers,include_github_known_workers=include_github_known_workers)
 
 
-    def listen_for_openmined_nodes(self, min_om_nodes = 1, include_github_known_workers=True):
-            self.known_workers = list()
+    def listen_for_openmined_nodes(self, min_om_nodes = 1, known_workers=list(), include_github_known_workers=True):
+            self.known_workers = known_workers
 
             # pull known workers from trusted github source (OpenMined's repo)
             if(include_github_known_workers):
