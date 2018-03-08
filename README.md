@@ -38,15 +38,16 @@ apt install python3
 apt install python3-pip3
 ```
 
-# Installing a Worker
+# Installing Grid
 
-Installing a worker can be done easily with:
-
+If you want to use an Anaconda environment, make sure you've created and activated it before installing anything else, e.g.:
 ```
-pip install git+https://github.com/OpenMined/Grid
+conda create-n openmined python=3.6 anaconda -y
+source activate openmined #(or conda activate openmined, depending on your version of conda)
 ```
+Grid requires PyTorch.  Follow the instructions at [https://pytorch.org](https://pytorch.org) to install the correct build for your platform/environment.
 
-Pass the `--upgrade` option to update the worker.
+Finally, navigate to the local clone of the Grid repository and run ```python setup.py install```.  If you're going to be developing Grid, you can replace that with ```python setup.py develop```.
 
 # Launching a Worker
 
