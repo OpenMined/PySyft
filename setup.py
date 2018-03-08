@@ -37,10 +37,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-requirements = read('requirements.txt').split()
 platform = platform.system()
-if platform == 'Windows':
-    requirements.remove('ethereum')
 
 setup(
     name="grid",
@@ -57,7 +54,7 @@ setup(
     classifiers=[
         "Development Status :: 1 - Alpha",
     ],
-    install_requires=requirements,
+    install_requires=read('requirements.txt').split(),
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-flake8'],
     cmdclass={
