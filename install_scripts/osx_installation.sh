@@ -6,8 +6,6 @@ if [[ $? != 0 ]] ; then
     # Install Homebrew
     # https://github.com/mxcl/homebrew/wiki/installation
     /usr/bin/ruby -e "$(curl -fsSL https://raw.github.com/gist/323731)"
-else
-    brew update
 fi
 
 #
@@ -31,7 +29,5 @@ if [ ! -d "$HOME/.ipfs" ]; then
   ipfs init
 fi
 
-curl https://raw.githubusercontent.com/OpenMined/BootstrapNodes/master/bootstrap_nodes --output bootstrap_nodes
-cat bootstrap_nodes | xargs ipfs bootstrap add
-
-ipfs daemon --enable-pubsub-experiment  > ipfs.log 2> ipfs.log.err &
+pip3 install http://download.pytorch.org/whl/torch-0.3.1-cp36-cp36m-macosx_10_7_x86_64.whl 
+pip3 install torchvision

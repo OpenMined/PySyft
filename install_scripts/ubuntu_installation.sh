@@ -1,5 +1,5 @@
 sudo apt-get update
-sudo apt-get install libssl-dev  -y
+sudo apt-get install curl libssl-dev  -y
 
 curl -O https://storage.googleapis.com/golang/go1.9.1.linux-amd64.tar.gz
 tar -xvf go1.9.1.linux-amd64.tar.gz
@@ -22,9 +22,5 @@ fi
 sudo apt-get install build-essential automake pkg-config libtool libffi-dev libgmp-dev -y
 pip install -r requirements.txt
 
-curl https://raw.githubusercontent.com/OpenMined/BootstrapNodes/master/bootstrap_nodes --output bootstrap_nodes
-cat bootstrap_nodes | xargs ipfs bootstrap add
-
-ipfs daemon --enable-pubsub-experiment  > ipfs.log 2> ipfs.err &
-
-nohup ./bin/start_worker &
+pip3 install http://download.pytorch.org/whl/cpu/torch-0.3.1-cp36-cp36m-linux_x86_64.whl
+pip3 install torchvision
