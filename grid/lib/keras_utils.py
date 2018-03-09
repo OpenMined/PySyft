@@ -7,14 +7,11 @@ from . import utils
 import keras
 
 
-def keras2ipfs(model):
-    return utils.get_ipfs_api().add_bytes(serialize_keras_model(model))
+def keras2ipfs(api, model):
+    return api.add_bytes(serialize_keras_model(model))
 
-
-def ipfs2keras(model_addr):
-    model_bin = utils.get_ipfs_api().cat(model_addr)
-    return deserialize_keras_model(model_bin)
-
+def ipfs2keras(api, model_addr):
+    return deserialize_keras_model(api.cat(model_addr))
 
 def serialize_keras_model(model):
     lock = FileLock('temp_model.h5.lock')
@@ -36,18 +33,18 @@ def deserialize_keras_model(model_bin):
         return model
 
 
-def save_best_keras_model_for_task(task, model):
+def save_best_keras_model_for_task(api, task, model):
     utils.ensure_exists(f'{Path.home()}/.openmined/models.json', {})
     with open(f"{Path.home()}/.openmined/models.json", "r") as model_file:
         models = json.loads(model_file.read())
 
-    models[task] = keras2ipfs(model)
+    models[task] = keras2ipfs(api, model)
 
     with open(f"{Path.home()}/.openmined/models.json", "w") as model_file:
         json.dump(models, model_file)
 
 
-def best_keras_model_for_task(task, return_model=False):
+def best_keras_model_for_task(api, task, return_model=False):
     if not os.path.exists(f'{Path.home()}/.openmined/models.json'):
         return None
 
@@ -55,7 +52,7 @@ def best_keras_model_for_task(task, return_model=False):
         models = json.loads(model_file.read())
         if task in models.keys():
             if return_model:
-                return ipfs2keras(models[task])
+                return ipfs2keras(api, models[task])
             else:
                 return models[task]
 

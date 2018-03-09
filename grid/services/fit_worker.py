@@ -1,4 +1,4 @@
-from ..lib import strings, utils, output_pipe, keras_utils
+from ..lib import utils, output_pipe, keras_utils
 from .. import channels
 import json
 import threading
@@ -44,7 +44,7 @@ class FitWorkerService(BaseService):
         """
 
         # loads keras model from ipfs
-        model = keras_utils.ipfs2keras(decoded['model_addr'])
+        model = keras_utils.ipfs2keras(self.api, decoded['model_addr'])
 
         # gets dataset from ipfs
         try:
@@ -62,6 +62,7 @@ class FitWorkerService(BaseService):
         # https://keras.io/callbacks/
         # See `OutputPipe` for more info.
         self.worker.learner_callback = output_pipe.OutputPipe(
+            api=self.worker.api,
             id=self.worker.id,
             publisher=self.worker.publish,
             channel=train_channel,

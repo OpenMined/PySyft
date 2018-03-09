@@ -1,26 +1,13 @@
 from grid.lib import utils, keras_utils
 from grid import channels
-import base64
-import json
-import numpy as np
-from threading import Thread
-import torch
-import time
-import sys
-from colorama import Fore, Back, Style
-from bitcoin import base58
-
 
 class PubSub(object):
-    def __init__(self, mode, ipfs_addr='127.0.0.1', port=5001):
-        self.api = utils.get_ipfs_api()
-        peer_id = self.api.config_show()['Identity']['PeerID']
-        self.id = f'{peer_id}'
-        # switch to this to make local develop work
-        # self.id = f'{mode}:{peer_id}'
+    def __init__(self, node_type='client', ipfs_addr='127.0.0.1', port=5001):
+        self.node_type = node_type
+        self.api = utils.get_ipfs_api(self.node_type)
+        self.id = utils.get_id(self.node_type, self.api)
         self.subscribed_list = []
 
-    
     """
     Grid Tree Implementation
 
@@ -57,7 +44,7 @@ class PubSub(object):
         else:
             p = parent
 
-        model_addr = keras_utils.keras2ipfs(model)
+        model_addr = keras_utils.keras2ipfs(self.api, model)
 
         update = {
             'name': name,

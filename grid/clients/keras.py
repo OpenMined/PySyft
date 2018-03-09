@@ -1,6 +1,8 @@
 from . import base
 from ..lib import utils
 from ..lib import coinbase_helper
+from .. import channels
+import ipywidgets as widgets
 import json
 import random
 
@@ -102,14 +104,14 @@ class KerasClient(base.BaseClient):
         return spec
 
     def load_model(self, addr):
-        return keras_utils.ipfs2keras(addr)
+        return keras_utils.ipfs2keras(self.api, addr)
 
     def receive_model(self, message, verbose=True):
         msg = json.loads(message['data'])
 
         if(msg is not None):
             if(msg['type'] == 'transact'):
-                return keras_utils.ipfs2keras(msg['model_addr']), msg
+                return keras_utils.ipfs2keras(self.api, msg['model_addr']), msg
             elif(msg['type'] == 'log'):
                 if(verbose):
                     output = "Worker:" + msg['worker_id'][-5:]
@@ -147,9 +149,6 @@ class KerasClient(base.BaseClient):
         hbox = widgets.HBox([widgets.Label(model_addr)])
         self.show_models.children += (hbox,)
 
-    def load_model(self, addr):
-        return keras_utils.ipfs2keras(addr)
-
     def send_model(self, name, model_addr):
         task = utils.load_task(name)
 
@@ -179,7 +178,7 @@ class KerasClient(base.BaseClient):
         else:
             p = parent
 
-        model_addr = keras_utils.keras2ipfs(model)
+        model_addr = keras_utils.keras2ipfs(self.api, model)
 
         update = {
             'name': name,

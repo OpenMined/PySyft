@@ -1,5 +1,4 @@
 from . import base_worker
-from .. import channels
 from ..lib import strings
 
 from ..services.passively_broadcast_membership import PassivelyBroadcastMembershipService
@@ -8,9 +7,7 @@ from ..services.listen_for_openmined_nodes import ListenForOpenMinedNodesService
 class GridAnchor(base_worker.GridWorker):
 
 	def __init__(self):
-		super().__init__()
-
-		self.node_type = "ANCHOR"
+		super().__init__('ANCHOR')
 
 		# prints a picture of an anchor :)
 		print(strings.anchor)
@@ -23,5 +20,3 @@ class GridAnchor(base_worker.GridWorker):
 		# just lets the network know its a member of the openmined network
 		self.services['passively_broadcast_membership'] = PassivelyBroadcastMembershipService(self)
 
-		
-		

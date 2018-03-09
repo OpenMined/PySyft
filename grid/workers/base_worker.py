@@ -11,10 +11,10 @@ import random
 
 class GridWorker():
 
-    def __init__(self):
-        self.api = utils.get_ipfs_api()
-        peer_id = self.api.config_show()['Identity']['PeerID']
-        self.id = f'{peer_id}'
+    def __init__(self, node_type):
+        self.node_type = node_type
+        self.api = utils.get_ipfs_api(self.node_type)
+        self.id = utils.get_id(self.node_type, self.api)
 
         # load email and name
         whoami = utils.load_whoami()
@@ -32,8 +32,6 @@ class GridWorker():
 
             utils.store_whoami(whoami)
 
-        # switch to this to make local develop work
-        # self.id = f'{mode}:{peer_id}'
         self.subscribed_list = []
 
         # LAUNCH SERVICES - these are non-blocking and run on their own threads
@@ -150,24 +148,12 @@ class GridWorker():
 
             message = self.decode_message(m)
             if message is not None:
-                fr = base58.encode(message['from'])
+                fr = utils.derive_id(self.node_type, base58.encode(message['from']))
+                if fr == self.id and ignore_from_self:
+                    print('ignored message from self')
+                    return None
 
-                if not ignore_from_self or fr != self.id:
-                    out = handle_message(message)
-                    if(out is not None):
-                        return out
-                else:
-                    print("ignored message from self")
-
-                # if(message is not None):
-                #    if handle_message is not None:
-                #        out = handle_message(message)
-                #        if (out is not None):
-                #            return out
-                #        else:
-                #            return message
-                #    else:
-                #        return message
+                return handle_message(message)
 
     def decode_message(self, encoded):
         if('from' in encoded):

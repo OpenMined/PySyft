@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 from colorama import Fore, Back, Style
 import json
+import numpy as np
 
 class GridTree(base_worker.GridWorker):
 
@@ -22,9 +23,7 @@ class GridTree(base_worker.GridWorker):
     """
 
     def __init__(self):
-        super().__init__()
-
-        self.node_type = "TREE"
+        super().__init__('TREE')
 
         # prints a pretty picture of a tree
         print(strings.tree)
@@ -68,7 +67,6 @@ class GridTree(base_worker.GridWorker):
 
         with open(f"{Path.home()}/.openmined/tasks.json", "r") as task_list:
             string_list = task_list.read()
-            tasks = json.loads(string_list)
 
         # Don't broadcast the known tasks to the entire network.  Someone will
         # Ask the network for known tasks, and you respond to them directly.
@@ -126,7 +124,7 @@ class GridTree(base_worker.GridWorker):
         if fr == self.id:
             return
 
-        my_best = keras_utils.best_keras_model_for_task(task)
+        my_best = keras_utils.best_keras_model_for_task(self.api, task)
         if my_best is not None:
             self.send_model(task, my_best)
 
@@ -159,7 +157,7 @@ class GridTree(base_worker.GridWorker):
         loss = hist.history.get('loss')[-1]
         print(f'{Fore.GREEN}Finished training {Fore.YELLOW} -- {loss}{Style.RESET_ALL}')
 
-        my_best_model = keras_utils.best_keras_model_for_task(task_name, return_model=True)
+        my_best_model = keras_utils.best_keras_model_for_task(self.api, task_name, return_model=True)
         best_loss = 100000000
 
         # Figure out if this is the best model we have seen for this task yet.
@@ -173,10 +171,9 @@ class GridTree(base_worker.GridWorker):
         # If this is the best model we have seen, save its ipfs location
         if loss < best_loss:
             print(f'New best loss of {Fore.GREEN}{loss}{Style.RESET_ALL} for task {Fore.GREEN}{task_name}{Style.RESET_ALL}')
-            keras_utils.save_best_keras_model_for_task(task_name, model)
+            keras_utils.save_best_keras_model_for_task(self.api, task_name, model)
 
         self.add_model(name, model, parent=task_addr)
-
 
     def added_local_data_model(self, info):
         task_addr = info['task']
@@ -192,7 +189,7 @@ class GridTree(base_worker.GridWorker):
         print(f'FOUND NEW MODEL: {task_addr}, {model_addr}, {data_dir}, {name}, {creator}')
 
         if os.path.exists(f'data/{data_dir}') and creator != self.id:
-            model = keras_utils.ipfs2keras(model_addr)
+            model = keras_utils.ipfs2keras(self.api, model_addr)
             input = None
             target = None
             for filename in os.listdir(f'data/{data_dir}'):
@@ -217,8 +214,8 @@ class GridTree(base_worker.GridWorker):
             input = input.astype('float32')
             input /= 255
 
-            target = keras.utils.to_categorical(target, 10)
-            self.train_model(model, input, name, taraget, task_name, task_addr)
+            target = keras_utils.to_categorical(target, 10)
+            self.train_model(model, input, name, target, task_name, task_addr)
 
         else:
             print("Can't train your own model so soon!!!!!")
@@ -233,11 +230,10 @@ class GridTree(base_worker.GridWorker):
 
         adapter = task_info['adapter']
         name = task_info['name']
-        creator = info['creator']
 
-        model = keras_utils.ipfs2keras(model_addr)
+        model = keras_utils.ipfs2keras(self.api, model_addr)
 
-        utils.save_adapter(adapter)
+        utils.save_adapter(self.api, adapter)
         import grid.adapters.adapter as grid_adapter
         print('load next input')
         n_test, n_target = grid_adapter.next_input()

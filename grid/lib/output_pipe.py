@@ -1,5 +1,5 @@
 import keras
-from . import utils, keras_utils
+from . import keras_utils
 from time import time
 
 
@@ -14,7 +14,8 @@ class OutputPipe(keras.callbacks.Callback):
     Or, this class can be used to quit training if a client tells you to.
     """
 
-    def __init__(self, id, publisher, channel, epochs, model_addr, model, email):
+    def __init__(self, api, id, publisher, channel, epochs, model_addr, model, email):
+        self.api = api
         self.id = id
         self.publisher = publisher
         self.channel = channel
@@ -29,7 +30,6 @@ class OutputPipe(keras.callbacks.Callback):
         self.startTime = time()
 
     def on_epoch_end(self, epoch, logs={}):
-        acc = logs.get('acc')
         loss = logs.get('loss')
 
         spec = {}
@@ -48,7 +48,7 @@ class OutputPipe(keras.callbacks.Callback):
     def on_train_end(self, logs={}):
         spec = {}
         spec['type'] = 'transact'
-        spec['model_addr'] = keras_utils.keras2ipfs(self.model)
+        spec['model_addr'] = keras_utils.keras2ipfs(self.api, self.model)
         spec['eval_loss'] = logs.get('loss')
         spec['parent_model'] = self.model_addr
         spec['worker_id'] = self.id

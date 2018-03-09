@@ -16,9 +16,7 @@ class GridCompute(base_worker.GridWorker):
     """
 
     def __init__(self):
-        super().__init__()
-
-        self.node_type = "COMPUTE"
+        super().__init__('COMPUTE')
 
         # prints a pretty picture of a Computer
         print(strings.compute)
