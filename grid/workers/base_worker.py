@@ -131,16 +131,15 @@ class GridWorker():
         first_proc = True
 
         if channel not in self.subscribed_list:
-
-            # print(f"SUBSCRIBING TO {channel}")
             new_messages = self.api.pubsub_sub(topic=channel, stream=True)
             self.subscribed_list.append(channel)
 
         else:
-            print(f"ALREADY SUBSCRIBED TO {channel}")
             return
 
-
+        # new_messages is a generator which will keep yield new messages until
+        # you return from the loop. If you do return from the loop, we will no
+        # longer be subscribed.
         for m in new_messages:
             if init_function is not None and first_proc:
                 init_function()
@@ -148,12 +147,13 @@ class GridWorker():
 
             message = self.decode_message(m)
             if message is not None:
-                fr = utils.derive_id(self.node_type, base58.encode(message['from']))
-                if fr == self.id and ignore_from_self:
-                    print('ignored message from self')
-                    return None
-
-                return handle_message(message)
+                fr = base58.encode(message['from'])
+                if not ignore_from_self or fr != self.id:
+                    out = handle_message(message)
+                    if out is not None:
+                        return out
+                else:
+                    print('ignore mssage from self')
 
     def decode_message(self, encoded):
         if('from' in encoded):
