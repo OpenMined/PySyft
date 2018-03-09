@@ -1,24 +1,20 @@
 import os
 import json
-import time
-from colorama import Fore, Style
-import sys
-import numpy as np
 
 from filelock import FileLock
-from grid import ipfsapi
 from pathlib import Path
-
-import utils
-
+from . import utils
 import keras
 
+
 def keras2ipfs(model):
-    return get_ipfs_api().add_bytes(serialize_keras_model(model))
+    return utils.get_ipfs_api().add_bytes(serialize_keras_model(model))
+
 
 def ipfs2keras(model_addr):
-    model_bin = get_ipfs_api().cat(model_addr)
+    model_bin = utils.get_ipfs_api().cat(model_addr)
     return deserialize_keras_model(model_bin)
+
 
 def serialize_keras_model(model):
     lock = FileLock('temp_model.h5.lock')
@@ -39,8 +35,9 @@ def deserialize_keras_model(model_bin):
         model = keras.models.load_model('temp_model2.h5')
         return model
 
+
 def save_best_keras_model_for_task(task, model):
-    ensure_exists(f'{Path.home()}/.openmined/models.json', {})
+    utils.ensure_exists(f'{Path.home()}/.openmined/models.json', {})
     with open(f"{Path.home()}/.openmined/models.json", "r") as model_file:
         models = json.loads(model_file.read())
 
@@ -48,6 +45,7 @@ def save_best_keras_model_for_task(task, model):
 
     with open(f"{Path.home()}/.openmined/models.json", "w") as model_file:
         json.dump(models, model_file)
+
 
 def best_keras_model_for_task(task, return_model=False):
     if not os.path.exists(f'{Path.home()}/.openmined/models.json'):
@@ -62,4 +60,3 @@ def best_keras_model_for_task(task, return_model=False):
                 return models[task]
 
     return None
-

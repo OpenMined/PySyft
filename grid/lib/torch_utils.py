@@ -1,23 +1,18 @@
 import os
 import json
-import time
-from colorama import Fore, Style
-import sys
-import numpy as np
 
-from filelock import FileLock
-from grid import ipfsapi
 from pathlib import Path
 
-import utils
+from . import utils
 
-# torch imports?
 
 def torch2ipfs(model):
     pass
 
+
 def ipfs2torch(model_addr):
     pass
+
 
 def serialize_torch_model(model, **kwargs):
     """
@@ -43,8 +38,9 @@ def deserialize_torch_model(model_bin, model_class, **kwargs):
     model.load_state_dict(state['state_dict'])
     return model
 
+
 def save_best_torch_model_for_task(task, model):
-    ensure_exists(f'{Path.home()}/.openmined/models.json', {})
+    utils.ensure_exists(f'{Path.home()}/.openmined/models.json', {})
     with open(f"{Path.home()}/.openmined/models.json", "r") as model_file:
         models = json.loads(model_file.read())
 
@@ -52,6 +48,7 @@ def save_best_torch_model_for_task(task, model):
 
     with open(f"{Path.home()}/.openmined/models.json", "w") as model_file:
         json.dump(models, model_file)
+
 
 def best_torch_model_for_task(task, return_model=False):
     if not os.path.exists(f'{Path.home()}/.openmined/models.json'):
@@ -66,4 +63,3 @@ def best_torch_model_for_task(task, return_model=False):
                 return models[task]
 
     return None
-    

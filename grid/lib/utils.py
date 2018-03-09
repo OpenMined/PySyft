@@ -1,4 +1,3 @@
-from filelock import FileLock
 from grid import ipfsapi
 from pathlib import Path
 import os
@@ -11,10 +10,6 @@ import numpy as np
 
 def get_ipfs_api(ipfs_addr='127.0.0.1', port=5001, max_tries=10):
     print(f'\n{Fore.BLUE}UPDATE: {Style.RESET_ALL}Connecting to IPFS... this can take a few seconds...')
-
-    # out = ipfsapi.connect(ipfs_addr, port)
-    # print(f'\n{Fore.GREEN}SUCCESS: {Style.RESET_ALL}Connected!!!')
-    # return out
 
     try:
         out = ipfsapi.connect(ipfs_addr, port)
@@ -51,6 +46,7 @@ def save_adapter(addr):
     adapter_bin = get_ipfs_api().cat(addr)
     ensure_exists(f'{Path.home()}/grid/adapters/adapter.py', adapter_bin)
 
+
 def serialize_numpy(tensor):
     # nested lists with same data, indices
     return json.dumps(tensor.tolist())
@@ -58,6 +54,7 @@ def serialize_numpy(tensor):
 
 def deserialize_numpy(json_array):
     return np.array(json.loads(json_array)).astype('float')
+
 
 def load_task(name):
     if not os.path.exists(f'{Path.home()}/.openmined/tasks.json'):
@@ -69,6 +66,7 @@ def load_task(name):
     for task in tasks:
         if task['name'] == name:
             return task
+
 
 def store_task(name, address):
     ensure_exists(f'{Path.home()}/.openmined/tasks.json', [])
@@ -87,8 +85,10 @@ def store_task(name, address):
         with open(f"{Path.home()}/.openmined/tasks.json", "w") as task_file:
             json.dump(tasks, task_file)
 
+
 def store_whoami(info):
     ensure_exists(f'{Path.home()}/.openmined/whoami.json', info)
+
 
 def load_whoami():
     if not os.path.exists(f'{Path.home()}/.openmined/whoami.json'):
@@ -96,6 +96,7 @@ def load_whoami():
 
     with open(f'{Path.home()}/.openmined/whoami.json', 'r') as cb:
         return json.loads(cb.read())
+
 
 def ensure_exists(path, default_contents=None):
     """
