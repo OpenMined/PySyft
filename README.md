@@ -42,7 +42,7 @@ apt install python3-pip3
 
 If you want to use an Anaconda environment, make sure you've created and activated it before installing anything else, e.g.:
 ```
-conda create-n openmined python=3.6 anaconda -y
+conda create -n openmined python=3.6 anaconda -y
 source activate openmined #(or conda activate openmined, depending on your version of conda)
 ```
 Grid requires PyTorch.  Follow the instructions at [https://pytorch.org](https://pytorch.org) to install the correct build for your platform/environment.
