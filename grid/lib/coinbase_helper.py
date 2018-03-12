@@ -24,8 +24,7 @@ class CoinbaseHelper():
     def send_ether(self, email, seconds):
         account = self.client.get_account("ETH")
         amount_to_send = self.get_price(seconds)
-        tx = account.send_money(to=email,
-                                amount=amount_to_send,
-                                currency='ETH')
+        tx = account.send_money(
+            to=email, amount=amount_to_send, currency='ETH')
 
         print(tx)

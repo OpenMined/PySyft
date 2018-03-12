@@ -104,3 +104,35 @@ ipfs swarm connect <ipfs_address>
 ```
 
 The swarm connect IPFS address should look something like this `/p2p-circuit/ipfs/QmXbV8HZwKYkkWAAZr1aYT3nRMCUnpp68KaxP3vccirUc8`. And can be found in the output of the daemon when you start it.
+
+## Contributing
+
+TODO make this automatic
+
+Before submitting a PR to this repo make sure the following packages are installed with pip:
+
+```
+pip install pycodestyle yapf pytest
+```
+
+First run `yapf`:
+
+```
+yapf --recursive --in-place .
+```
+
+Then run `pycodestyle`:
+
+```
+pycodestyle --max-line-length=130 --exclude=.ropeproject,ipfsapi,build,.eggs .
+```
+
+We still have some issues with long lines and bare excepts so those can be ignored for now. But everything else should be cleaned up.
+
+Then run the tests:
+
+```
+pytest
+```
+
+If everything looks good to you, submit the PR.

@@ -10,8 +10,10 @@ import keras
 def keras2ipfs(api, model):
     return api.add_bytes(serialize_keras_model(model))
 
+
 def ipfs2keras(api, model_addr):
     return deserialize_keras_model(api.cat(model_addr))
+
 
 def serialize_keras_model(model):
     lock = FileLock('temp_model.h5.lock')

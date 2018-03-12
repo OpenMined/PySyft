@@ -20,21 +20,31 @@ program_desc = f"""
 
 parser = argparse.ArgumentParser(description=program_desc)
 
-parser.add_argument('--compute', dest='compute', action='store_const',
-                    const=True, default=True,
-                    help='Run grid in compute mode')
+parser.add_argument(
+    '--compute',
+    dest='compute',
+    action='store_const',
+    const=True,
+    default=True,
+    help='Run grid in compute mode')
 
-parser.add_argument('--tree', dest='tree', action='store_const',
-                    const=True, default=False,
-                    help='Run grid in tree mode')
+parser.add_argument(
+    '--tree',
+    dest='tree',
+    action='store_const',
+    const=True,
+    default=False,
+    help='Run grid in tree mode')
 
-parser.add_argument('--anchor', dest='anchor', action='store_const',
-                    const=True, default=False,
-                    help='Run grid in anchor mode')
-
+parser.add_argument(
+    '--anchor',
+    dest='anchor',
+    action='store_const',
+    const=True,
+    default=False,
+    help='Run grid in anchor mode')
 
 args = parser.parse_args()
-
 """
 TODO: modify Client to store the source code for the model in IPFS.
       (think through logistics; introduces
@@ -50,9 +60,9 @@ def run():
     try:
         print("\n\n")
 
-        if(args.tree):
+        if (args.tree):
             workers.tree.GridTree()
-        elif(args.anchor):
+        elif (args.anchor):
             workers.anchor.GridAnchor()
         else:
             workers.compute.GridCompute()
@@ -60,7 +70,9 @@ def run():
     except Exception as e:  # most generic exception you can catch
         print(e)
         time.sleep(1000)
-        logf.write("Failed to download {0}: {1}\n".format(str(download), str(e)))
+        logf.write("Failed to download {0}: {1}\n".format(
+            str(download), str(e)))
         run()
+
 
 run()

@@ -10,7 +10,6 @@ import random
 
 
 class GridWorker():
-
     def __init__(self, node_type):
         self.node_type = node_type
         self.api = utils.get_ipfs_api(self.node_type)
@@ -25,10 +24,7 @@ class GridWorker():
             self.email = input('Enter your email for payment: ')
             self.name = input('Enter an easy name to remember you by: ')
 
-            whoami = {
-                'email': self.email,
-                'name': self.name
-            }
+            whoami = {'email': self.email, 'name': self.name}
 
             utils.store_whoami(whoami)
 
@@ -46,7 +42,8 @@ class GridWorker():
             # if someone queries the "list_worker" channel - it'll send a
             # message directly to the querying node with a list of the
             # OpenMined nodes of which it is aware.
-            self.services['broadcast_known_workers'] = BroadcastKnownWorkersService(self)
+            self.services[
+                'broadcast_known_workers'] = BroadcastKnownWorkersService(self)
 
             # WHOMAI
             self.services['whoami_service'] = WhoamiService(self)
@@ -59,14 +56,14 @@ class GridWorker():
         """
 
         nodes = self.api.pubsub_peers('openmined')['Strings']
-        if(nodes is not None):
+        if (nodes is not None):
             return nodes
         else:
             return []
 
     def get_nodes(self):
         nodes = self.api.pubsub_peers()['Strings']
-        if(nodes is not None):
+        if (nodes is not None):
             return nodes
         else:
             return []
@@ -94,17 +91,20 @@ class GridWorker():
 
         def timeout_message(seconds):
             time.sleep(int(seconds))
-            self.publish(channel=random_channel,message=["timeout after " + str(seconds) + " seconds"])
+            self.publish(
+                channel=random_channel,
+                message=["timeout after " + str(seconds) + " seconds"])
 
         def send():
             self.publish(channel=channel, message=[message, random_channel])
             t1 = Thread(target=timeout_message, args={timeout})
             t1.start()
 
-        response = self.listen_to_channel_sync(random_channel, response_handler, send)
+        response = self.listen_to_channel_sync(random_channel,
+                                               response_handler, send)
 
-        if(len(response) == 1):
-            if('timeout' in response[0]):
+        if (len(response) == 1):
+            if ('timeout' in response[0]):
                 raise TimeoutError(response[0])
         return response
 
@@ -125,8 +125,11 @@ class GridWorker():
         t1 = Thread(target=self.listen_to_channel_impl, args=args)
         t1.start()
 
-    def listen_to_channel_impl(self, channel, handle_message,
-                               init_function=None, ignore_from_self=False):
+    def listen_to_channel_impl(self,
+                               channel,
+                               handle_message,
+                               init_function=None,
+                               ignore_from_self=False):
         """
         Do not call directly.  Use listen_to_channel or listen_to_channel_sync instead.
         """
@@ -159,7 +162,7 @@ class GridWorker():
                     print('ignore mssage from self')
 
     def decode_message(self, encoded):
-        if('from' in encoded):
+        if ('from' in encoded):
             decoded = {}
             decoded['from'] = base64.standard_b64decode(encoded['from'])
             decoded['data'] = base64.standard_b64decode(

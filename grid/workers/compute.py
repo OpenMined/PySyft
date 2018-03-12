@@ -7,8 +7,8 @@ from ..services.torch.torch_service import TorchService
 import json
 import threading
 
-class GridCompute(base_worker.GridWorker):
 
+class GridCompute(base_worker.GridWorker):
     """
     This class runs a worker whose purpose is to do the following:
        - PRIMARY: use local compute resources to train models at the request of clients on the network
@@ -24,13 +24,14 @@ class GridCompute(base_worker.GridWorker):
         # Blocking until this node has found at least one other OpenMined node
         # This functionality queries https://github.com/OpenMined/BootstrapNodes for Anchor nodes
         # then asks those nodes for which other OpenMined nodes they know about on the network.
-        self.services['listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(self,min_om_nodes=1)
+        self.services[
+            'listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(
+                self, min_om_nodes=1)
 
         # KERAS
 
         # This process listens for models that it can train.
         self.services['fit_worker_service'] = FitWorkerService(self)
-
 
         # TORCH
 

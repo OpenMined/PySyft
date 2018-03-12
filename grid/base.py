@@ -1,6 +1,7 @@
 from grid.lib import utils, keras_utils
 from grid import channels
 
+
 class PubSub(object):
     def __init__(self, node_type='client', ipfs_addr='127.0.0.1', port=5001):
         self.node_type = node_type

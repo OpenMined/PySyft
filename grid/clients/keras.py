@@ -13,13 +13,12 @@ class KerasClient(base.BaseClient):
                  min_om_nodes=1,
                  known_workers=list(),
                  include_github_known_workers=True,
-                 verbose=True, discovery_timeout_1=5,
-                 discovery_timeout_2=10):
+                 verbose=True):
         super().__init__(
             min_om_nodes=min_om_nodes,
             known_workers=known_workers,
             include_github_known_workers=include_github_known_workers,
-            verbose=verbose, discovery_timeout_1=5, discovery_timeout_2=10)
+            verbose=verbose)
 
     def fit(self,
             model,

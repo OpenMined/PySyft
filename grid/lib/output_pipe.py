@@ -4,7 +4,6 @@ from time import time
 
 
 class OutputPipe(keras.callbacks.Callback):
-
     """
     Output pipe is a keras callback (https://keras.io/callbacks/)
 
@@ -14,7 +13,8 @@ class OutputPipe(keras.callbacks.Callback):
     Or, this class can be used to quit training if a client tells you to.
     """
 
-    def __init__(self, api, id, publisher, channel, epochs, model_addr, model, email):
+    def __init__(self, api, id, publisher, channel, epochs, model_addr, model,
+                 email):
         self.api = api
         self.id = id
         self.publisher = publisher

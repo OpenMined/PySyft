@@ -1,5 +1,6 @@
 from colorama import Fore, Style
 
+
 class PrettyPrinter:
     def print_gpu(self, gpu):
         return str(gpu['index']) + " : " + gpu['name'] + " : " + str(
@@ -26,15 +27,18 @@ class PrettyPrinter:
         ping = ping[0] + "." + ping[1][0:2]
 
         if 'name' in stat and stat['name']:
-            return wtype + " - " + str(idx) + " - NAME:" + stat[
-                'name'] + "  Ping:" + str(ping) + "sec  CPUs:" + str(
-                ncpu) + "  CPU Load:" + str(cpu_load) + "  Disk-util:" + str(
-                dp) + "%" + "  RAM-util:" + str(rp) + "%  GPUs:" + gpus
+            return wtype + " - " + str(
+                idx) + " - NAME:" + stat['name'] + "  Ping:" + str(
+                    ping) + "sec  CPUs:" + str(ncpu) + "  CPU Load:" + str(
+                        cpu_load) + "  Disk-util:" + str(
+                            dp) + "%" + "  RAM-util:" + str(
+                                rp) + "%  GPUs:" + gpus
         else:
             return wtype + " - " + str(idx) + " - ID:" + str(
                 stat['id'][-5:]) + "  Ping:" + str(ping) + "sec  CPUs:" + str(
-                ncpu) + "  CPU Load:" + str(cpu_load) + "  Disk-util:" + str(
-                dp) + "%" + "  RAM-util:" + str(rp) + "%  GPUs:" + gpus
+                    ncpu
+                ) + "  CPU Load:" + str(cpu_load) + "  Disk-util:" + str(
+                    dp) + "%" + "  RAM-util:" + str(rp) + "%  GPUs:" + gpus
 
     def print_node(self, idx, node):
 

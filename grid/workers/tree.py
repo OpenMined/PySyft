@@ -13,8 +13,8 @@ from colorama import Fore, Back, Style
 import json
 import numpy as np
 
-class GridTree(base_worker.GridWorker):
 
+class GridTree(base_worker.GridWorker):
     """
     This class runs a worker whose purpose is to do the following:
        - PRIMARY: to facilitate federated learning of a public model on many nodes
@@ -33,7 +33,9 @@ class GridTree(base_worker.GridWorker):
         # Blocking until this node has found at least one other OpenMined node
         # This functionality queries https://github.com/OpenMined/BootstrapNodes for Anchor nodes
         # then asks those nodes for which other OpenMined nodes they know about on the network.
-        self.services['listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(self,min_om_nodes=1)
+        self.services[
+            'listen_for_openmined_nodes'] = ListenForOpenMinedNodesService(
+                self, min_om_nodes=1)
 
         # listens to the network and tells other nodes about all the tasks you know about
         self.listen_to_channel(channels.list_tasks, self.list_tasks)
@@ -44,7 +46,8 @@ class GridTree(base_worker.GridWorker):
         # Sets up the listener that is called when people tell you about tasks.
         # When you call `self.publish(channels.list_tasks)`, workers that respond
         # will do so on this channel.
-        self.listen_to_channel(channels.list_tasks_callback(self.id), self.discovered_tasks)
+        self.listen_to_channel(
+            channels.list_tasks_callback(self.id), self.discovered_tasks)
 
         # listens to the network and tells other nodes about the best models you
         # know for a certain task.  e.g. worker A might ask you what the best
@@ -53,7 +56,6 @@ class GridTree(base_worker.GridWorker):
 
         # Ask the network to tell us about the tasks everyone knows about
         self.publish(channels.list_tasks, commands.list_all)
-
 
     def list_tasks(self, message):
         """
@@ -73,8 +75,7 @@ class GridTree(base_worker.GridWorker):
         callback_channel = channels.list_tasks_callback(fr)
         self.publish(callback_channel, string_list)
 
-
-    ############################### BEGIN PROCESS FUNCTIONS ########################
+    # ############################## BEGIN PROCESS FUNCTIONS ########################
 
     def discovered_tasks(self, tasks):
         """
@@ -85,7 +86,9 @@ class GridTree(base_worker.GridWorker):
 
         print(f'{Fore.WHITE}{Back.BLACK} TASKS {Style.RESET_ALL}')
         print(f'From\t\t\t\tName\t\t\t\tAddress')
-        print('==================================================================')
+        print(
+            '=================================================================='
+        )
 
         data = json.loads(tasks['data'])
         fr = base58.encode(tasks['from'])
@@ -103,13 +106,14 @@ class GridTree(base_worker.GridWorker):
                     self.listen_for_models(name)
                     utils.store_task(name, addr)
                 else:
-                    print(f"DON'T HAVE DATA FOR {name} DATA DIRECTORY: {data_dir}")
+                    print(
+                        f"DON'T HAVE DATA FOR {name} DATA DIRECTORY: {data_dir}"
+                    )
             elif 'adapter' in t.keys():
                 self.listen_for_models(name)
                 utils.store_task(name, addr)
 
                 self.load_adapter(t['adapter'])
-
 
     def list_models(self, message):
         """
@@ -128,7 +132,7 @@ class GridTree(base_worker.GridWorker):
         if my_best is not None:
             self.send_model(task, my_best)
 
-    ############################### BEGIN SUBPROCESSES FUNCTIONS ########################
+    # ############################## BEGIN SUBPROCESSES FUNCTIONS ########################
 
     def listen_for_models(self, task_name):
         """
@@ -140,7 +144,6 @@ class GridTree(base_worker.GridWorker):
         self.listen_to_channel(channels.add_model(task_name), self.added_model)
         self.publish(channels.list_models, task_name)
 
-
     def train_model(self, model, input, target, name, task_name, task_addr):
         """
         Train a model in keras.
@@ -148,30 +151,41 @@ class GridTree(base_worker.GridWorker):
         hist = model.fit(
             input,
             target,
-            batch_size=100, # TODO config?!?!?!?!
+            batch_size=100,  # TODO config?!?!?!?!
             verbose=True,
-            epochs=10, # TODO config?!??!??!?
-            validation_split=0.1 # TODO config??!?!?!?!?!?
+            epochs=10,  # TODO config?!??!??!?
+            validation_split=0.1  # TODO config??!?!?!?!?!?
         )
 
         loss = hist.history.get('loss')[-1]
-        print(f'{Fore.GREEN}Finished training {Fore.YELLOW} -- {loss}{Style.RESET_ALL}')
+        print(
+            f'{Fore.GREEN}Finished training {Fore.YELLOW} -- {loss}{Style.RESET_ALL}'
+        )
 
-        my_best_model = keras_utils.best_keras_model_for_task(self.api, task_name, return_model=True)
+        my_best_model = keras_utils.best_keras_model_for_task(
+            self.api, task_name, return_model=True)
         best_loss = 100000000
 
         # Figure out if this is the best model we have seen for this task yet.
-        if not my_best_model == None:
-            best_loss = my_best_model.evaluate(input, target, batch_size=100)[0]
-            print(f'{Fore.YELLOW}Best Evaluated at: {best_loss}{Style.RESET_ALL}')
+        if my_best_model is not None:
+            best_loss = my_best_model.evaluate(
+                input, target, batch_size=100)[0]
+            print(
+                f'{Fore.YELLOW}Best Evaluated at: {best_loss}{Style.RESET_ALL}'
+            )
             if best_loss < loss:
-                print(f'{Fore.RED}Trained model worse than best trained.  Ignoring.{Style.RESET_ALL}')
+                print(
+                    f'{Fore.RED}Trained model worse than best trained.  Ignoring.{Style.RESET_ALL}'
+                )
                 return
 
         # If this is the best model we have seen, save its ipfs location
         if loss < best_loss:
-            print(f'New best loss of {Fore.GREEN}{loss}{Style.RESET_ALL} for task {Fore.GREEN}{task_name}{Style.RESET_ALL}')
-            keras_utils.save_best_keras_model_for_task(self.api, task_name, model)
+            print(
+                f'New best loss of {Fore.GREEN}{loss}{Style.RESET_ALL} for task {Fore.GREEN}{task_name}{Style.RESET_ALL}'
+            )
+            keras_utils.save_best_keras_model_for_task(self.api, task_name,
+                                                       model)
 
         self.add_model(name, model, parent=task_addr)
 
@@ -186,7 +200,9 @@ class GridTree(base_worker.GridWorker):
         name = task_info['name']
         creator = info['creator']
 
-        print(f'FOUND NEW MODEL: {task_addr}, {model_addr}, {data_dir}, {name}, {creator}')
+        print(
+            f'FOUND NEW MODEL: {task_addr}, {model_addr}, {data_dir}, {name}, {creator}'
+        )
 
         if os.path.exists(f'data/{data_dir}') and creator != self.id:
             model = keras_utils.ipfs2keras(self.api, model_addr)
@@ -220,7 +236,6 @@ class GridTree(base_worker.GridWorker):
         else:
             print("Can't train your own model so soon!!!!!")
 
-
     def added_adapter_model(self, info):
         task_addr = info['task']
         task_info = self.api.get_json(task_addr)
@@ -239,7 +254,6 @@ class GridTree(base_worker.GridWorker):
         n_test, n_target = grid_adapter.next_input()
         self.train_model(model, n_test, n_target, name, task_name, task_addr)
 
-
     def added_model(self, info):
         info = self.api.get_json(info['data'])
 
@@ -252,7 +266,6 @@ class GridTree(base_worker.GridWorker):
             self.added_local_data_model(info)
         elif 'adapter' in task_info.keys():
             self.added_adapter_model(info)
-
 
     def load_adapter(self, addr):
         b = self.api.cat(addr)
