@@ -4,43 +4,46 @@ import json
 import threading
 from .base import BaseService
 
+
 class FitWorkerService(BaseService):
 
+    # The purpose of this service is to train a model that was called using
+    # the "fit" method - which is a more rigid training spec inspired by
+    # sci-kit learn and keras.
 
-    # The purpose of this service is to train a model that was called using the "fit" method - which is a more rigid training spec
-    # inspired by sci-kit learn and keras.
-
-    def __init__(self,worker):
+    def __init__(self, worker):
         super().__init__(worker)
 
         self.worker.listen_to_channel(channels.openmined, self.fit_worker)
 
-    # TODO: torch
     def fit_worker(self, message):
-
         """
-        When anyone broadcasts to the "openmined" channel, this method responds and routes the job to the appropriate framework
+        When anyone broadcasts to the "openmined" channel, this method
+        responds and routes the job to the appropriate framework
         """
 
         decoded = json.loads(message['data'])
 
-        # if this node is the one that was requested for the job (or the client simply doesn't care)
-        if((decoded['preferred_node'] == 'first_available') or (decoded['preferred_node'] == self.worker.id)):
+        # if this node is the one that was requested for the job
+        # (or the client simply doesn't care)
+        if ((decoded['preferred_node'] == 'first_available')
+                or (decoded['preferred_node'] == self.worker.id)):
 
-            if(decoded['framework'] == 'keras'):
+            if (decoded['framework'] == 'keras'):
                 return self.fit_keras(decoded)
             else:
-                raise NotImplementedError("Only compatible with Keras at the moment")
+                raise NotImplementedError(
+                    "Only compatible with Keras at the moment")
 
-
-    def fit_keras(self,decoded):
-
+    def fit_keras(self, decoded):
         """
         This method trains a Keras model using params that the client specifies.
 
-        Clients can specify what data to use to train, validate, how many epochs to use, etc.
-        Long term, the client should be able to specify anything that is used in
-        keras model.fit
+        Clients can specify what data to use to train, validate, how many
+        epochs to use, etc.
+
+        Long term, the client should be able to specify anything that is used
+        in keras model.fit
         """
 
         # loads keras model from ipfs
@@ -50,12 +53,16 @@ class FitWorkerService(BaseService):
         try:
             np_strings = json.loads(self.worker.api.cat(decoded['data_addr']))
         except NotImplementedError:
-            raise NotImplementedError("The IPFS API only supports Python 3.6. Please modify your environment.")
+            raise NotImplementedError(
+                "The IPFS API only supports Python 3.6. Please modify your environment."
+            )
 
         # get input/validation data from ipfs
-        input, target, valid_input, valid_target = list(map(lambda x: utils.deserialize_numpy(x),np_strings))
+        input, target, valid_input, valid_target = list(
+            map(lambda x: utils.deserialize_numpy(x), np_strings))
 
-        # sets up channel for sending logging information back to the client (so that they can see incremental progress)
+        # sets up channel for sending logging information back to the client
+        # (so that they can see incremental progress)
         train_channel = decoded['train_channel']
 
         # Output pipe is a keras callback
@@ -69,14 +76,13 @@ class FitWorkerService(BaseService):
             epochs=decoded['epochs'],
             model_addr=decoded['model_addr'],
             model=model,
-			email=self.worker.email
-        )
+            email=self.worker.email)
 
         # When you train a model, you talk about it on a subchannel.
         # Start listening on this channel for updates about training.
         _args = (train_channel + ':' + self.worker.id, self.train_meta)
-        monitor_thread = threading.Thread(target=self.worker.listen_to_channel,
-                                          args=_args)
+        monitor_thread = threading.Thread(
+            target=self.worker.listen_to_channel, args=_args)
         monitor_thread.start()
 
         print('training model')
@@ -89,8 +95,7 @@ class FitWorkerService(BaseService):
             validation_data=(valid_input, valid_target),
             verbose=False,
             epochs=decoded['epochs'],
-            callbacks=[self.worker.learner_callback]
-        )
+            callbacks=[self.worker.learner_callback])
 
         print('done')
 

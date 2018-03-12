@@ -40,19 +40,22 @@ class GridWorker():
 
         self.services = {}
 
-        # this service serves the purpose of helping other nodes find out about nodes on the network.
-        # if someone queries the "list_worker" channel - it'll send a message directly to the querying node
-        # with a list of the OpenMined nodes of which it is aware.
-        self.services['broadcast_known_workers'] = BroadcastKnownWorkersService(self)
+        if node_type != 'client':
+            # this service serves the purpose of helping other nodes find out
+            # about nodes on the network.
+            # if someone queries the "list_worker" channel - it'll send a
+            # message directly to the querying node with a list of the
+            # OpenMined nodes of which it is aware.
+            self.services['broadcast_known_workers'] = BroadcastKnownWorkersService(self)
 
-        # WHOMAI
-        self.services['whoami_service'] = WhoamiService(self)
+            # WHOMAI
+            self.services['whoami_service'] = WhoamiService(self)
 
     def get_openmined_nodes(self):
         """
         This method returns the list of known openmined workers on the newtork.
-        Note - not all workers are necessarily "compute" workers. Some may only be anchors
-        and will ignore any jobs you send them.
+        Note - not all workers are necessarily "compute" workers.
+        Some may only be anchors and will ignore any jobs you send them.
         """
 
         nodes = self.api.pubsub_peers('openmined')['Strings']
@@ -70,8 +73,9 @@ class GridWorker():
 
     def publish(self, channel, message):
         """
-        This method sends a message over an IPFS channel. The number of people who receive it is
-        purely based on the number of people who happen to be listening.
+        This method sends a message over an IPFS channel. The number of people
+        who receive it is purely based on the number of people who happen
+        to be listening.
         """
 
         if isinstance(message, dict) or isinstance(message, list):
@@ -103,7 +107,6 @@ class GridWorker():
             if('timeout' in response[0]):
                 raise TimeoutError(response[0])
         return response
-
 
     def listen_to_channel_sync(self, *args):
         """

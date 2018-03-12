@@ -10,14 +10,21 @@ class WhoamiService(BaseService):
     # This service just facilitates a worker describing things about itself to the outside world
     # upon request. Note - don't add anything to this service that could be dangerous if made public.
 
-    def __init__(self,worker):
+    def __init__(self, worker):
         super().__init__(worker)
 
-        self.worker.listen_to_channel(channels.whoami_listener_callback(self.worker.id), self.get_stats)
+        # TODO these below should be listening on self.worker.id but the client
+        # does not yet know to ask for info on "computer:IPFS_ADDRESS" yet
+        # so just listen on IPFS_ADDRESS
+        print(channels.whoami_listener_callback(utils.get_ipfs_id(self.api)))
+        self.worker.listen_to_channel(
+            channels.whoami_listener_callback(utils.get_ipfs_id(self.api)),
+            self.get_stats)
 
     def get_stats(self, message_and_response_channel):
 
-        msg, response_channel = json.loads(message_and_response_channel['data'])
+        msg, response_channel = json.loads(
+            message_and_response_channel['data'])
 
         stats = {}
 
@@ -28,9 +35,10 @@ class WhoamiService(BaseService):
         stats['email'] = self.worker.email
         stats['name'] = self.worker.name
 
-        if('torch_service' in self.worker.services.keys()):
+        if ('torch_service' in self.worker.services.keys()):
             stats['torch'] = {}
-            stats['torch']['objects'] = list(self.worker.services['torch_service'].objects.keys())
+            stats['torch']['objects'] = list(
+                self.worker.services['torch_service'].objects.keys())
 
         stats['cpu_processor_percent_utilization'] = psutil.cpu_percent()
         stats['cpu_num_cores'] = psutil.cpu_count(logical=False)
@@ -65,7 +73,6 @@ class WhoamiService(BaseService):
         #     local_device_protos = device_lib.list_local_devices()
         #     return [x for x in local_device_protos if x.device_type == 'CPU']
 
-
         # gpus = get_available_gpus()
         # cpus = get_available_cpus()
 
@@ -93,7 +100,9 @@ class WhoamiService(BaseService):
         for i in range(torch.cuda.device_count()):
             gpu_stats = {}
             gpu_stats['name'] = torch.cuda.get_device_name(i)
-            gpu_stats['cuda_major_verison'], gpu_stats['cuda_minor_verison'] = torch.cuda.get_device_capability(i)
+            gpu_stats['cuda_major_verison'], gpu_stats[
+                'cuda_minor_verison'] = torch.cuda.get_device_capability(i)
             stats['gpus_pytorch'].append(gpu_stats)
 
-        self.worker.publish(channel=response_channel, message=json.dumps(stats))
+        self.worker.publish(
+            channel=response_channel, message=json.dumps(stats))

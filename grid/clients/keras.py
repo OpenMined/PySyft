@@ -1,6 +1,5 @@
 from . import base
 from ..lib import utils
-from ..lib import coinbase_helper
 from .. import channels
 import ipywidgets as widgets
 import json
@@ -8,37 +7,57 @@ import random
 
 from ..lib import keras_utils
 
+
 class KerasClient(base.BaseClient):
+    def __init__(self,
+                 min_om_nodes=1,
+                 known_workers=list(),
+                 include_github_known_workers=True,
+                 verbose=True, discovery_timeout_1=5,
+                 discovery_timeout_2=10):
+        super().__init__(
+            min_om_nodes=min_om_nodes,
+            known_workers=known_workers,
+            include_github_known_workers=include_github_known_workers,
+            verbose=verbose, discovery_timeout_1=5, discovery_timeout_2=10)
 
-    def __init__(self,min_om_nodes=1,known_workers=list(),include_github_known_workers=True,verbose=True):
-        super().__init__(min_om_nodes=min_om_nodes,
-                        known_workers=known_workers,
-                        include_github_known_workers=include_github_known_workers,
-                        verbose=verbose)
+    def fit(self,
+            model,
+            input,
+            target,
+            valid_input=None,
+            valid_target=None,
+            batch_size=1,
+            epochs=1,
+            log_interval=1,
+            message_handler=None,
+            preferred_node='random'):
 
-        self.time_taken = None
-        self.cb_helper = None
-
-    def set_coinbase_api(self, api_key, api_secret):
-        self.cb_helper = coinbase_helper.CoinbaseHelper(api_key, api_secret)
-
-    def fit(self, model, input, target, valid_input=None, valid_target=None, batch_size=1, epochs=1, log_interval=1, message_handler=None, preferred_node='random'):
-
-        if('p2p-circuit' in preferred_node or '/' in preferred_node):
+        if ('p2p-circuit' in preferred_node or '/' in preferred_node):
             preferred_node = preferred_node.split("/")[-1]
 
-        if(preferred_node == 'random'):
+        if (preferred_node == 'random'):
             nodes = self.get_openmined_nodes()
-            preferred_node = nodes[random.randint(0,len(nodes)-1)]
+            preferred_node = nodes[random.randint(0, len(nodes) - 1)]
 
         print("PREFERRED NODE:" + str(preferred_node))
 
-        if(message_handler is None):
+        if (message_handler is None):
             message_handler = self.receive_model
-        self.spec = self.generate_fit_spec(model=model,input=input,target=target,valid_input=valid_input,valid_target=valid_target,batch_size=batch_size,epochs=epochs,log_interval=log_interval,preferred_node=preferred_node)
+        self.spec = self.generate_fit_spec(
+            model=model,
+            input=input,
+            target=target,
+            valid_input=valid_input,
+            valid_target=valid_target,
+            batch_size=batch_size,
+            epochs=epochs,
+            log_interval=log_interval,
+            preferred_node=preferred_node)
         self.publish('openmined', self.spec)
 
-        self.listen_to_channel_sync(self.spec['train_channel'], message_handler)
+        self.listen_to_channel_sync(self.spec['train_channel'],
+                                    message_handler)
 
         return self.load_model(self.spec['model_addr']), self.spec
 
@@ -65,7 +84,18 @@ class KerasClient(base.BaseClient):
 
         return max_progress
 
-    def generate_fit_spec(self, model,input,target,valid_input=None,valid_target=None,batch_size=1,epochs=1,log_interval=1, framework = 'keras', model_class = None,preferred_node='first_available'):
+    def generate_fit_spec(self,
+                          model,
+                          input,
+                          target,
+                          valid_input=None,
+                          valid_target=None,
+                          batch_size=1,
+                          epochs=1,
+                          log_interval=1,
+                          framework='keras',
+                          model_class=None,
+                          preferred_node='first_available'):
 
         model_bin = keras_utils.serialize_keras_model(model)
         model_addr = self.api.add_bytes(model_bin)
@@ -76,12 +106,12 @@ class KerasClient(base.BaseClient):
         train_input = utils.serialize_numpy(input)
         train_target = utils.serialize_numpy(target)
 
-        if(valid_input is None):
+        if (valid_input is None):
             valid_input = utils.serialize_numpy(input)
         else:
             valid_input = utils.serialize_numpy(valid_input)
 
-        if(valid_target is None):
+        if (valid_target is None):
             valid_target = utils.serialize_numpy(target)
         else:
             valid_target = utils.serialize_numpy(valid_target)
@@ -109,15 +139,12 @@ class KerasClient(base.BaseClient):
     def receive_model(self, message, verbose=True):
         msg = json.loads(message['data'])
 
-        if(msg is not None):
-            if(msg['type'] == 'transact'):
+        if (msg is not None):
+            if (msg['type'] == 'transact'):
                 return keras_utils.ipfs2keras(self.api, msg['model_addr']), msg
-            elif(msg['type'] == 'log'):
-                if(verbose):
-                    output = "Worker:" + msg['worker_id'][-5:]
-                    output += " - Epoch " + str(msg['epoch_id']) + " of " + str(msg['num_epochs'])
-                    output += " - Valid Loss: " + str(msg['eval_loss'])[0:8]
-                    print(output)
+            elif (msg['type'] == 'log'):
+                if (verbose):
+                    self.print_model_update(msg)
 
                 # Figure out of we should tell this worker to quit.
                 parent_model = msg['parent_model']
@@ -135,8 +162,16 @@ class KerasClient(base.BaseClient):
                     self.publish(self.spec['train_channel'] + ':' + worker_id,
                                  quit)
 
+    def print_model_update(self, msg):
+        output = "Worker:" + msg['worker_id'][-5:]
+        output += " - Epoch " + str(msg['epoch_id']) + " of " + str(
+            msg['num_epochs'])
+        output += " - Valid Loss: " + str(msg['eval_loss'])[0:8]
+        print(output)
+
     def best_models(self, task):
-        self.show_models = widgets.VBox([widgets.HBox([widgets.Label('Model Address')])])
+        self.show_models = widgets.VBox(
+            [widgets.HBox([widgets.Label('Model Address')])])
         self.listen_to_channel(channels.add_model(task), self.__added_model)
         self.publish(channels.list_models, task)
 
@@ -147,7 +182,7 @@ class KerasClient(base.BaseClient):
         model_addr = info['model']
 
         hbox = widgets.HBox([widgets.Label(model_addr)])
-        self.show_models.children += (hbox,)
+        self.show_models.children += (hbox, )
 
     def send_model(self, name, model_addr):
         task = utils.load_task(name)
