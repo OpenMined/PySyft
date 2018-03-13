@@ -162,9 +162,9 @@ class TorchService(BaseService):
 
     # FLOAT TENSOR FUNCTIONS
     def hook_float_tensor___init__(service_self):
-        def new___init__(self, tensor, owner=service_self, *args, **kwargs):
-            super(torch.FloatTensor, self).__init__(*args, **kwargs)
-            self = owner.register_object(self, False)
+        def new___init__(self, *args):
+            super(torch.FloatTensor, self).__init__()
+            self = service_self.register_object(self, False)
 
         torch.FloatTensor.__init__ = new___init__
 
