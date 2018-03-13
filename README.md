@@ -129,10 +129,12 @@ pycodestyle --max-line-length=130 --exclude=.ropeproject,ipfsapi,build,.eggs .
 
 We still have some issues with long lines and bare excepts so those can be ignored for now. But everything else should be cleaned up.
 
+To run the integration tests you MUST start up a local worker first (this is unfortunate see issue https://github.com/OpenMined/Grid/issues/146)
+
 Then run the tests:
 
 ```
-pytest
+pytest -s
 ```
 
 If everything looks good to you, submit the PR.
