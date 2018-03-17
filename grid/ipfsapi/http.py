@@ -118,7 +118,6 @@ class HTTPClient(object):
             # Raise exception for response status
             # (optionally incorpating the response message, if applicable)
             self._do_raise_for_status(res, ret)
-
             return ret
 
     @pass_defaults

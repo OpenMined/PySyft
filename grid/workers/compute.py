@@ -15,8 +15,8 @@ class GridCompute(base_worker.GridWorker):
        - SECONDARY: learn about the existence of other nodes on the network - and help others to do so when asked
     """
 
-    def __init__(self):
-        super().__init__('COMPUTE')
+    def __init__(self,email=None,name=None):
+        super().__init__('COMPUTE',email=email,name=name)
 
         # prints a pretty picture of a Computer
         print(strings.compute)

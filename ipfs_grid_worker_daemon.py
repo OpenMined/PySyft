@@ -44,6 +44,16 @@ parser.add_argument(
     default=False,
     help='Run grid in anchor mode')
 
+parser.add_argument(
+    '--email',
+    default=None,
+    help='Email account for your coinbase wallet')
+
+parser.add_argument(
+    '--name',
+    default=None,
+    help='Name of your worker for others to see.')
+
 args = parser.parse_args()
 """
 TODO: modify Client to store the source code for the model in IPFS.
@@ -61,11 +71,11 @@ def run():
         print("\n\n")
 
         if (args.tree):
-            workers.tree.GridTree()
+            workers.tree.GridTree(name=args.name,email=args.email)
         elif (args.anchor):
             workers.anchor.GridAnchor()
         else:
-            workers.compute.GridCompute()
+            workers.compute.GridCompute(name=args.name,email=args.email)
 
     except Exception as e:  # most generic exception you can catch
         print(e)
