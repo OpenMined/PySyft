@@ -23,8 +23,7 @@ class WhoamiService(BaseService):
 
     def get_stats(self, message_and_response_channel):
 
-        msg, response_channel = json.loads(
-            message_and_response_channel['data'])
+        msg, response_channel = utils.unpack(message_and_response_channel)
 
         stats = {}
 
@@ -38,7 +37,7 @@ class WhoamiService(BaseService):
         if ('torch_service' in self.worker.services.keys()):
             stats['torch'] = {}
             stats['torch']['objects'] = list(
-                self.worker.services['torch_service'].objects.keys())
+                self.worker.objects.keys())
 
         stats['cpu_processor_percent_utilization'] = psutil.cpu_percent()
         stats['cpu_num_cores'] = psutil.cpu_count(logical=False)

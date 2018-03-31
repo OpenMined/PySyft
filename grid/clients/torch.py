@@ -1,5 +1,6 @@
 from . import base
 from ..services.torch.torch_service import TorchService
+from ..services.torch.hook_service import HookService
 
 
 class TorchClient(base.BaseClient):
@@ -14,4 +15,5 @@ class TorchClient(base.BaseClient):
             include_github_known_workers=include_github_known_workers,
             verbose=verbose)
 
+        self.services['hook_service'] = HookService(self)
         self.services['torch_service'] = TorchService(self)

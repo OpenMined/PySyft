@@ -136,7 +136,7 @@ class KerasClient(base.BaseClient):
         return keras_utils.ipfs2keras(self.api, addr)
 
     def receive_model(self, message, verbose=True):
-        msg = json.loads(message['data'])
+        msg = utils.unpack(message)
 
         if (msg is not None):
             if (msg['type'] == 'transact'):

@@ -8,6 +8,10 @@ import sys
 import numpy as np
 
 
+def unpack(message):
+    return json.loads(message['data'])
+
+
 def get_ipfs_api(mode, ipfs_addr='127.0.0.1', port=5001, max_tries=25):
     print(
         f'\n{Fore.BLUE}UPDATE: {Style.RESET_ALL}Connecting to IPFS... this can take a few seconds...'

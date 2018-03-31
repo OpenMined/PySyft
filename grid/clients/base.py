@@ -54,13 +54,10 @@ class BaseClient(base_worker.GridWorker):
             self.stats = self.refresh_network_stats()
 
     def get_stats(self, worker_id, timeout=10):
-        def ret(msg):
-            return json.loads(msg['data'])
-
         return self.request_response(
             channel=channels.whoami_listener_callback(worker_id),
             message=[],
-            response_handler=ret,
+            response_handler=utils.unpack,
             timeout=10)
 
     def print_network_stats(self):
@@ -174,7 +171,7 @@ class BaseClient(base_worker.GridWorker):
     """
 
     def found_task(self, message):
-        tasks = json.loads(message['data'])
+        tasks = utils.unpack(message)
         for task in tasks:
             # utils.store_task(task['name'], task['address'])
             name = task['name']

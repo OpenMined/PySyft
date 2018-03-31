@@ -4,6 +4,7 @@ from .. import channels
 from ..services.fit_worker import FitWorkerService
 from ..services.listen_for_openmined_nodes import ListenForOpenMinedNodesService
 from ..services.torch.torch_service import TorchService
+from ..services.torch.hook_worker_service import HookWorkerService
 import json
 import threading
 
@@ -36,4 +37,6 @@ class GridCompute(base_worker.GridWorker):
         # TORCH
 
         # this process listens for torch ops
+        import torch
+        self.services['hook_worker_service'] = HookWorkerService(self)
         self.services['torch_service'] = TorchService(self)
