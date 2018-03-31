@@ -35,7 +35,7 @@ Ubuntu LTS 16.04:
 
 ```
 apt install python3
-apt install python3-pip3
+apt install python-pip3
 ```
 
 # Installing Grid
