@@ -2,6 +2,7 @@ from grid import workers
 import argparse
 import time
 from colorama import Fore, Style
+import os
 
 title = f"""{Fore.GREEN}   ____                             _                __   ______     _     __
   / __ \____  ___  ____  ____ ___  (_____  ___  ____/ /  / _________(_____/ /
@@ -15,8 +16,6 @@ print(title)
 
 program_desc = f"""
 """
-
-# print(title)
 
 parser = argparse.ArgumentParser(description=program_desc)
 
@@ -65,15 +64,22 @@ TODO: figure out a convenient way to make robust training procedure for torch
 
 logf = open("openmined.errors", "w")
 
-
 def run():
+
+    if 'GRID_MODE' in os.environ:
+        args.tree = False
+        args.compute = False
+        args.anchor = False
+        setattr(args, os.environ['GRID_MODE'], True)
+    args.email = os.environ.get('EMAIL',args.email)
+    args.name = os.environ.get('NAME',args.email)
+
     try:
         print("\n\n")
-
         if (args.tree):
             workers.tree.GridTree(name=args.name,email=args.email)
         elif (args.anchor):
-            workers.anchor.GridAnchor()
+            workers.anchor.GridAnchor(name=args.name,email=args.email)
         else:
             workers.compute.GridCompute(name=args.name,email=args.email)
 

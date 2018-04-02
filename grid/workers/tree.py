@@ -23,7 +23,7 @@ class GridTree(base_worker.GridWorker):
     """
 
     def __init__(self,email=None,name=None):
-        super().__init__('TREE',email=None,name=None)
+        super().__init__('TREE',email=email,name=name)
 
         # prints a pretty picture of a tree
         print(strings.tree)

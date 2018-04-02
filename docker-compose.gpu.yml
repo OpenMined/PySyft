@@ -1,0 +1,15 @@
+version: "2.3"
+
+services:
+
+  worker:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.gpu
+    runtime: nvidia
+
+  notebook:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.gpu
+    runtime: nvidia

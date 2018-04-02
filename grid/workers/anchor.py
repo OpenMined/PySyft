@@ -1,13 +1,14 @@
 from . import base_worker
 from ..lib import strings
-
-from ..services.passively_broadcast_membership import PassivelyBroadcastMembershipService
-from ..services.listen_for_openmined_nodes import ListenForOpenMinedNodesService
+from ..services.listen_for_openmined_nodes import \
+    ListenForOpenMinedNodesService
+from ..services.passively_broadcast_membership import \
+    PassivelyBroadcastMembershipService
 
 
 class GridAnchor(base_worker.GridWorker):
-    def __init__(self):
-        super().__init__('ANCHOR')
+    def __init__(self, email=None, name=None):
+        super().__init__('ANCHOR', email=email, name=name)
 
         # prints a picture of an anchor :)
         print(strings.anchor)
