@@ -43,6 +43,7 @@ RUN jupyter nbextension enable --py --sys-prefix widgetsnbextension && \
     python -m ipykernel.kernelspec
 
 ENV ROOT_DIR='/workdir'
+ENV PYTHONPATH=$PYTHONPATH:$ROOT_DIR
 
 WORKDIR '/workdir'
 

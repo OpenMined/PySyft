@@ -92,13 +92,13 @@ The main scrip to launch the grid is **run_grid.sh**. It has several flags
 Usage: ./run_grid.sh [-g <gpu>] [-m <grid-mode>] [-a <host_ip>] [-n <name>] [-e <email>]
 ```
 
-For instance, if I want to run a **worker** in **tree** mode with an aws instance with **gpus** on it whose ip is **10.34.23.45**, then Ill run
+For instance, if you want to run a **worker** in **tree** mode with an aws instance with **gpus** on it whose ip is **10.34.23.45**, then you can run
 
 ```
 ./run_grid.sh -g -m tree -a 10.34.23.45 -n jack -e jack@aws.com
 ```
 
-If you have only a latop without **gpus** in it, but you want to run a beautiful **amchor** because, why not
+If you have only a laptop without **gpus** in it, but you want to run an **anchor** because, why not
 
 ```
 ./run_grid.sh -m anchor -a 1.34.23.45 -n jack -e jack@laptop.com
