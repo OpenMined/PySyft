@@ -1,9 +1,11 @@
 # Syft
 
-[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
+ [![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
 [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=master)](https://travis-ci.org/OpenMined/PySyft)
 [![codecov](https://codecov.io/gh/openmined/pysyft/branch/master/graph/badge.svg)](https://codecov.io/gh/openmined/pysyft)
 [![Help Contribute to Open Source](https://www.codetriage.com/openmined/pysyft/badges/users.svg)](https://www.codetriage.com/openmined/pysyft)
+[![Backers on Open Collective](https://opencollective.com/OpenMined/backers/badge.svg)](#backers) 
+[![Sponsors on Open Collective](https://opencollective.com/OpenMined/sponsors/badge.svg)](#sponsors)
 
 > Homomorphically Encrypted Deep Learning Library
 
@@ -80,6 +82,36 @@ tools for encrypted statistical machine learning](https://arxiv.org/pdf/1508.065
 - [Distributed machine learning and partially homomorphic encryption (Part 1)](https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-1/)
 - [Distributed machine learning and partially homomorphic encryption (Part 2)](https://blog.n1analytics.com/distributed-machine-learning-and-partially-homomorphic-encryption-2/)
 - [Tutorial: How to verify crowdsourced training data using a Known Answer Review Policy](https://blog.mturk.com/tutorial-how-to-verify-crowdsourced-training-data-using-a-known-answer-review-policy-85596fb55ed)
+
+## Contributors
+
+This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
+<a href="graphs/contributors"><img src="https://opencollective.com/OpenMined/contributors.svg?width=890&button=false" /></a>
+
+
+## Backers
+
+Thank you to all our backers! 🙏 [[Become a backer](https://opencollective.com/OpenMined#backer)]
+
+<a href="https://opencollective.com/OpenMined#backers" target="_blank"><img src="https://opencollective.com/OpenMined/backers.svg?width=890"></a>
+
+
+## Sponsors
+
+Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/OpenMined#sponsor)]
+
+<a href="https://opencollective.com/OpenMined/sponsor/0/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/0/avatar.svg"></a>
+<a href="https://opencollective.com/OpenMined/sponsor/1/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/1/avatar.svg"></a>
+<a href="https://opencollective.com/OpenMined/sponsor/2/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/2/avatar.svg"></a>
+<a href="https://opencollective.com/OpenMined/sponsor/3/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/3/avatar.svg"></a>
+<a href="https://opencollective.com/OpenMined/sponsor/4/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/4/avatar.svg"></a>
+<a href="https://opencollective.com/OpenMined/sponsor/5/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/5/avatar.svg"></a>
+<a href="https://opencollective.com/OpenMined/sponsor/6/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/6/avatar.svg"></a>
+<a href="https://opencollective.com/OpenMined/sponsor/7/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/7/avatar.svg"></a>
+<a href="https://opencollective.com/OpenMined/sponsor/8/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/8/avatar.svg"></a>
+<a href="https://opencollective.com/OpenMined/sponsor/9/website" target="_blank"><img src="https://opencollective.com/OpenMined/sponsor/9/avatar.svg"></a>
+
+
 
 ## License
 [Apache-2.0](https://github.com/OpenMined/PySyft/blob/master/LICENSE) by OpenMined contributors
