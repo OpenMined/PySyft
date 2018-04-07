@@ -1,1 +1,0 @@
-import syft as syft
