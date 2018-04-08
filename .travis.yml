@@ -16,14 +16,20 @@ install:
     - pip install -r requirements.txt
     - pip install flake8
     - pip install flake8-docstrings
+    - pip install pep8-naming
     - python setup.py install
 before_script:
-    # stop the build if there are Python syntax errors or undefined names
+    # stop the build if there are Python syntax errors or undefined
+    # names
     - flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics
-    # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
+    # exit-zero treats all errors as warnings.
+    # diverting from the standard 79 character line length in
+    # accordance with this:
+    # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
     - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
 script:
     - python setup.py test
 notifications:
     on_success: change
-    on_failure: change  # `always` will be the setting once code changes slow down
+    # `always` will be the setting below once code changes slow down
+    on_failure: change
