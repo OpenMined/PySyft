@@ -15,6 +15,7 @@ matrix:
 install:
     - pip install -r requirements.txt
     - pip install flake8
+    - pip install flake8-docstrings
     - python setup.py install
 before_script:
     # stop the build if there are Python syntax errors or undefined names
