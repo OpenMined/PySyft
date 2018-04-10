@@ -39,7 +39,7 @@ class HookService(BaseService):
         """Send Torch object to recipient."""
         self.worker.publish(
             channels.torch_listen_for_obj_callback(recipient),
-            message=obj.ser(include_data=True))
+            message=obj._ser())
 
 
     def request_obj(self, obj, sender):
@@ -52,14 +52,15 @@ class HookService(BaseService):
 
     def send_command(self, command, recipient):
         """Send Torch command to recipient."""
-        torch_type, registration = self.worker.request_response(
+        # TODO: Fix the case when response contains only a numeric
+        registration, torch_type, var_data, var_grad = self.worker.request_response(
             channels.torch_listen_for_command_callback(recipient),
             message=command,
             response_handler=self.process_response)
-        return registration, torch_type
+        return registration, torch_type, var_data, var_grad
 
 
-    def assemble_result_pointer(self, registration, torch_type):
+    def assemble_result_pointer(self, registration, torch_type, var_data, var_grad):
         """
         Assembles a pointer to a remote Torch object. Pointers feel like
         real Torch objects, but they're zero-dimensional until their
@@ -71,23 +72,33 @@ class HookService(BaseService):
         """
         # TODO: extend to iterables of tensor pointers
         try:
-            torch_type = tu.types_guard(torch_type)
+            torch_type = tu.map_torch_type[torch_type]
         except KeyError:
             raise TypeError(
                 "Tried to receive a non-Torch object of type {}.".format(
-                    _tensor_type))
-        result = torch_type(0)
-        return self.register_object(result, **registration)
+                    torch_type))
+
+        if var_data is not None:
+            data = self.assemble_result_pointer(**var_data)
+            self.register_object_(data, **var_data['registration'])
+        else:
+            data = 0
+        result = torch_type(data)
+        if var_grad is not None:
+            grad = self.assemble_result_pointer(**var_grad)
+            self.register_object_(result.grad, **var_grad['registration'])
+        return self.register_object_(result, **registration)
 
 
     def process_response(self, response):
         """Processes a worker's response from a command."""
         # TODO: Extend to responses that are iterables.
+        # TODO: Fix the case when response contains only a numeric
         response = utils.unpack(response)
         try:
-            return response['torch_type'], response['registration']
+            return (response['registration'], response['torch_type'],
+                response['var_data'], response['var_grad'])
         except:
-            print(response)
             return response
 
 
@@ -119,7 +130,7 @@ class HookService(BaseService):
 
 
     ## Grid-specific method hooking
-    def hook_tensor_send(service_self, tensor_type):
+    def hook_tensor_send_(service_self, tensor_type):
         def send_(self, workers):
             """
             Sends a Tensor object to a (sequence of) Grid workers.
@@ -129,22 +140,56 @@ class HookService(BaseService):
                 of worker node(s).
             """
             workers = tu.check_workers(self, workers) # makes singleton, if needed
-            self = service_self.register_object(self, id=self.id, owners=workers)
+            self = service_self.register_object_(self, id=self.id, owners=workers)
             for worker in workers:
                 # TODO: sync or async? likely won't be worth doing async,
                 #       but should check (low priority)
                 service_self.send_obj(self, worker)
-            self = service_self.register_object(self.old_set_(tensor_type(0)),
+            self = service_self.register_object_(self.old_set_(tensor_type(0)),
                 id=self.id, owners=workers, is_pointer=True)
             return self
 
         setattr(tensor_type, 'send_', send_)
 
 
-    def hook_tensor_get(service_self, tensor_type):
+    def hook_var_send_(service_self):
+        def send_(self, workers):
+            """
+            Sends a Variable object to a (sequence of) Grid workers.
+
+            Args:
+            workers: string (or sequence) containing IPFS address(es)
+                of worker node(s).
+            """
+            workers = tu.check_workers(self, workers) # makes singleton, if needed
+            self = service_self.register_object_(self, id=self.id, owners=workers)
+            for worker in workers:
+                # TODO: sync or async? likely won't be worth doing async,
+                #       but should check (low priority)
+                service_self.send_obj(self, worker)
+            service_self.register_object_(self, id=self.id,
+                owners=self.owners, is_pointer=True)
+
+            return service_self.var_to_pointer(self)
+
+        setattr(torch.autograd.variable.Variable, 'send_', send_)
+
+
+    def var_to_pointer(self, var):
+        if var.grad is not None:
+            self.var_to_pointer(var.grad)
+
+        var.data.old_set_(var.data.__class__(0))
+        self.register_object_(var.data, id=var.data.id, owners=var.owners,
+            is_pointer=True)
+
+        return var
+
+
+    def hook_get_(service_self, torch_type):
         def get_(self, reduce=lambda x:x[0]):
             """
-            Gets a Tensor object from its current owners.
+            Gets a Torch object from its current owners.
 
             Args:
             reduce: (EXPERIMENTAL) How to reduce tensors that come from
@@ -160,14 +205,9 @@ class HookService(BaseService):
             collected = []
             for worker in self.owners:
                 x = service_self.request_obj(self, worker)
-                collected.append(service_self.register_object(x, id=x.id))  
-            return service_self.register_object(self.old_set_(reduce(collected)), id=self.id)
-        setattr(tensor_type, 'get_', get_)
-
-
-    # TODO: Variable.send, Variable.get (will need to send/get Variable
-    #       registration attributes, handling data and grad tensors properly)
-    #       Resolve Issue #148 before attempting
+                collected.append(service_self.register_object_(x, id=x.id))  
+            return service_self.register_object_(self.old_set_(reduce(collected)), id=self.id)
+        setattr(torch_type, 'get_', get_)
 
 
     ## General hooking wrappers
@@ -197,8 +237,6 @@ class HookService(BaseService):
             if has_remote:
                 multiple_owners, owners = tu.get_owners(tensorvars)
                 if multiple_owners:
-                    print(multiple_owners)
-                    print(owners)
                     raise NotImplementedError("""MPC not yet implemented: 
                     Torch objects need to be on the same machine in order
                     to compute with them.""")
@@ -206,14 +244,15 @@ class HookService(BaseService):
                     command = tu.replace_in_command(command)
                     for worker in owners:
                         # TODO: extend to iterables of pointers
-                        registration, torch_type = self.send_command(command, worker)
-                        pointer = self.assemble_result_pointer(registration,
-                            torch_type)
+                        registration, torch_type, var_data, var_grad = self.send_command(
+                            command, worker)
+                        pointer = self.assemble_result_pointer(
+                            registration, torch_type, var_data, var_grad)
                     return pointer
             else:
                 result = part.func(*args, **kwargs)
                 if type(result) in self.tensorvar_types:
-                    result = self.register_object(result, is_pointer=False)
+                    result = self.register_object_(result, is_pointer=False)
                 return result
                 
         return send_to_workers
@@ -247,15 +286,13 @@ class HookService(BaseService):
                 if has_remote and not multiple_owners:
                     for worker in owners:
                         command = tu.replace_in_command(command)
-                        registration, torch_type = service_self.send_command(
+                        registration, torch_type, var_data, var_grad = service_self.send_command(
                             command, worker)
                         # only returns last pointer, since tensors will
                         # be identical across machines for right now
                         pointer = service_self.assemble_result_pointer(
-                            registration, torch_type)
+                            registration, torch_type, var_data, var_grad)
                 else:
-                    print(multiple_owners)
-                    print(owners)
                     raise NotImplementedError("""MPC not yet implemented:
                         Torch objects need to be on the same machine in
                         order to compute with them.""")
@@ -264,7 +301,7 @@ class HookService(BaseService):
                 result = part.func(self, *args, **kwargs)
                 if (type(result) in service_self.tensorvar_types and 
                     not hasattr(result, 'owner')):
-                    result = service_self.register_object(result,
+                    result = service_self.register_object_(result,
                         is_pointer=False)
                 return result
         return send_to_workers
@@ -276,7 +313,7 @@ class HookService(BaseService):
 
         def new___init__(self, *args):
             super(tensor_type, self).__init__()
-            self = service_self.register_object(self, is_pointer=False)
+            self = service_self.register_object_(self, is_pointer=False)
 
         tensor_type.__init__ = new___init__
     
@@ -288,7 +325,7 @@ class HookService(BaseService):
             tensor_type.old___new__ = tensor_type.__new__
             def new___new__(cls, *args, **kwargs):
                 result = cls.old___new__(cls, *args,  **kwargs)
-                result = service_self.register_object(result, is_pointer=False)
+                result = service_self.register_object_(result, is_pointer=False)
                 return result
             
             tensor_type.__new__ = new___new__
@@ -317,7 +354,7 @@ class HookService(BaseService):
         torch.autograd.variable.Variable.old___new__ = torch.autograd.variable.Variable.__new__
         def new___new__(cls, *args, **kwargs):
             result = cls.old___new__(cls, *args,  **kwargs)
-            result = service_self.register_object(result, is_pointer=False)
+            result = service_self.register_object_(result, is_pointer=False)
             return result
         
         torch.autograd.variable.Variable.__new__ = new___new__
@@ -332,11 +369,15 @@ class HookService(BaseService):
             try:
                 self.data_registered
             except AttributeError:
-                self.old_data = service_self.register_object(
-                    self.old_data, id=self.id,
-                    owners=self.owners, is_pointer=self.is_pointer)
+                self.old_data = service_self.register_object_(
+                    self.old_data, owners=self.owners,
+                    is_pointer=self.is_pointer)
                 self.data_registered = True
             return self.old_data
+
+        @new_data.setter
+        def new_data(self, new):
+            self.old_data = new
         
         @property
         def new_grad(self):
@@ -345,10 +386,14 @@ class HookService(BaseService):
             except AttributeError:
                 if self.old_grad is not None:
                     self.old_grad = service_self.register_object(
-                        self.old_grad, id=self.id,
-                    owners=self.owners, is_pointer=self.is_pointer)
+                        self.old_grad, owners=self.owners,
+                        is_pointer=self.is_pointer)
                     self.grad_registered = True
             return self.old_grad
+
+        @new_grad.setter
+        def new_grad(self, new):
+            self.old_grad = new
         
         torch.autograd.variable.Variable.data = new_data
         torch.autograd.variable.Variable.grad = new_grad
@@ -413,9 +458,9 @@ class HookService(BaseService):
                     setattr(tensor_type, attr, new_attr)
 
         # Add in our own Grid-specific methods
-        self.hook_tensor_send(tensor_type)
-        self.hook_tensor_get(tensor_type)
-        tu.hook_tensor_ser(self, tensor_type)
+        self.hook_tensor_send_(tensor_type)
+        self.hook_get_(tensor_type)
+        tu.hook_tensor__ser(self, tensor_type)
 
 
     def hook_variable(self):
@@ -446,3 +491,7 @@ class HookService(BaseService):
                 setattr(torch.autograd.variable.Variable, 
                     'old_{}'.format(attr), lit)
                 setattr(torch.autograd.variable.Variable, attr, new_attr)
+
+        self.hook_var_send_()
+        self.hook_get_(torch.autograd.variable.Variable)
+        tu.hook_var__ser(self)

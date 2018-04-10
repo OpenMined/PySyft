@@ -81,7 +81,7 @@ def id_tensorvar(x):
 
 # Safety checks for serializing and deserializing torch objects
 # Desperately needs stress testing before going out in the wild
-map_torch_type = {
+map_tensor_type = {
     'torch.FloatTensor':torch.FloatTensor,
     'torch.DoubleTensor':torch.DoubleTensor,
     'torch.HalfTensor':torch.HalfTensor,
@@ -89,15 +89,23 @@ map_torch_type = {
     'torch.CharTensor':torch.CharTensor,
     'torch.ShortTensor':torch.ShortTensor,
     'torch.IntTensor':torch.IntTensor,
-    'torch.LongTensor':torch.LongTensor,
+    'torch.LongTensor':torch.LongTensor
+}
+map_var_type = {
     'torch.autograd.variable.Variable':torch.autograd.variable.Variable,
     'torch.nn.parameter.Parameter':torch.nn.parameter.Parameter
 }
+map_torch_type = dict(map_tensor_type, **map_var_type)
 
 
-def types_guard(obj_type):
-    return map_torch_type[obj_type]
-
+def types_guard(obj_msg):
+    _torch_type = obj_msg['torch_type']
+    try:
+        return map_torch_type[_torch_type]
+    except KeyError:
+        raise TypeError(
+            "Tried to receive a non-Torch object of type {}.".format(
+                _torch_type))
 
 def tensor_contents_guard(contents):
     # TODO: check to make sure the incoming list isn't dangerous to use for
@@ -139,20 +147,37 @@ def map_dict(service, kwargs, func):
         return {key:func(val) for key, val in kwargs.items()}
 
 
-def hook_tensor_ser(service_self, tensor_type):
-    def ser(self, include_data=True):
+def hook_tensor__ser(service_self, tensor_type):
+    def _ser(self, include_data=True):
         """Serializes a {} object to JSON.""".format(tensor_type)
         tensor_msg = {}
         tensor_msg['torch_type'] = self.type()
-        if (include_data):
+        if include_data:
             tensor_msg['data'] = self.tolist()
         tensor_msg['id'] = self.id
         tensor_msg['owners'] = self.owners
+        tensor_msg['is_pointer'] = not include_data
         return json.dumps(tensor_msg)
 
-    tensor_type.ser = ser
+    tensor_type._ser = _ser
 
 
-def hook_var_ser(service_self):
-    # TODO
-    pass
+def hook_var__ser(service_self):
+    def _ser(self, include_data=True):
+        var_msg = {}
+        var_msg['torch_type'] = re.search("<class '(.*)'>",
+            str(self.__class__)).group(1)
+        var_msg['requires_grad'] = self.requires_grad
+        var_msg['volatile'] = self.volatile
+        var_msg['data'] = self.data._ser(include_data)
+        if self.grad is not None:
+            var_msg['grad'] = self.grad._ser(include_data)
+        else:
+            var_msg['grad'] = None
+        var_msg['id'] = self.id
+        var_msg['owners'] = self.owners
+        var_msg['is_pointer'] = not include_data
+        return json.dumps(var_msg)
+
+    torch.autograd.variable.Variable._ser = _ser
+
