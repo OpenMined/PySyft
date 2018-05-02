@@ -38,7 +38,8 @@ class TorchService(BaseService):
         obj_msg = utils.unpack(msg)
         if (type(obj_msg) == str):
             obj_msg = json.loads(obj_msg)
-
+        if obj_msg == ['timeout after 10 seconds']:
+            raise TimeoutError("Worker timed out -- check worker for exception")
         try:
             torch_type = tu.types_guard(obj_msg)
 
@@ -46,7 +47,6 @@ class TorchService(BaseService):
                 v = self.build_var(obj_msg, torch_type)
             else:
                 v = self.build_tensor(obj_msg, torch_type)
-
             return self.handle_register(v, obj_msg)
             
         except KeyError:
@@ -95,8 +95,7 @@ class TorchService(BaseService):
         except (AttributeError, KeyError):
             # Worker case: v was never formally registered
             pass
-
         torch_object = self.register_object_(
-            torch_object, id=obj_msg['id'], owners=obj_msg['owners'])
+            torch_object, id=obj_msg['id'], owners=[self.worker.id])
         return torch_object
 

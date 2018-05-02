@@ -119,8 +119,12 @@ class GridWorker():
                                                response_handler, send)
 
         if (len(response) == 1):
-            if ('timeout' in response[0]):
-                raise TimeoutError(response[0])
+            try:
+                if ('timeout' in response[0]):
+                    raise TimeoutError(response[0])
+            except RuntimeError:
+                # response is 1d with length 1
+                pass
         return response
 
     def listen_to_channel_sync(self, *args):

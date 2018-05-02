@@ -14,6 +14,7 @@ class HookWorkerService(BaseService):
         for tensor_type in self.tensor_types:
             tu.hook_tensor__ser(self, tensor_type)
         tu.hook_var__ser(self)
+        tu.hook_var_contents(self)
 
         # Listen for torch object requests
         req_callback = channels.torch_listen_for_obj_req_callback(
@@ -32,7 +33,11 @@ class HookWorkerService(BaseService):
         # take in command message, return result of local execution
         result, owners = self.process_command(message)
         compiled = json.dumps(self.compile_result(result, owners))
-        self.return_result(compiled, response_channel)
+        if compiled is not None:
+            self.return_result(compiled, response_channel)
+        else:
+            self.return_result(dict(registration=None, torch_type=None,
+                var_data=None, var_grad=None), response_channel)
 
 
     def process_command(self, command_msg):
@@ -59,8 +64,9 @@ class HookWorkerService(BaseService):
             command = eval('torch.{}'.format(command))
 
         # we need the original tensorvar owners so that we can register
-        # the result properly
-        _, owners = tu.get_owners(combined)
+        # the result properly later on
+        tensorvars = [x for x in combined if type(x).__name__ in self.tensorvar_types_strs]
+        _, owners = tu.get_owners(tensorvars)
 
         return command(*args, **kwargs), owners
 
@@ -70,12 +76,14 @@ class HookWorkerService(BaseService):
         Converts the result to a JSON serializable message for sending
         over PubSub.
         """
+        if result is None:
+            return dict(registration=None, torch_type=None,
+                var_data=None, var_grad=None)
         try:
             # result is infrequently a numeric
             if isinstance(result, numbers.Number):
                 return {'numeric':result}
             # result is usually a tensor/variable
-            print(result)
             torch_type = re.search("<class '(torch.(.*))'>",
                 str(result.__class__)).group(1)
 
@@ -88,13 +96,15 @@ class HookWorkerService(BaseService):
                 var_grad = self.compile_result(result.grad, owners)
             except (AttributeError, AssertionError):
                 var_grad = None
-
-            result = self.register_object_(result, owners=owners)
+            try:
+                result = self.register_object_(result, id=result.id, owners=owners)
+            except AttributeError:
+                result = self.register_object_(result, owners=owners)
             registration = dict(id=result.id,
                 owners=result.owners, is_pointer=True)
             return dict(registration=registration, torch_type=torch_type,
                 var_data=var_data, var_grad=var_grad)
-        except AttributeError:
+        except AttributeError as e:
             # result is occasionally a sequence of tensors or variables
             return [self.compile_result(x, owners) for x in result]
 
@@ -113,6 +123,12 @@ class HookWorkerService(BaseService):
             new_owner = re.search('(.+)_[0-9]{1,11}', response_channel).group(1)
             obj = self.register_object_(self.worker.objects[obj_id],
                 id=obj_id, owners=[new_owner])
+            try:
+                obj.data.owners = [new_owner]
+                if obj.grad is not None:
+                    obj.grad.owners = [new_owner]
+            except RuntimeError:
+                pass
             response_str = obj._ser()
         else:
             # TODO: replace this with something that triggers a nicer
