@@ -11,7 +11,7 @@ pip install -r requirements.txt
 python3 setup.py install
 '''
 
-## Run Unit Tests
+## Run Unit Test Suite
 
 '''
 python3 setup.py test
