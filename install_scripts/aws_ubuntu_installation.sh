@@ -5,7 +5,7 @@ bash Anaconda3-5.1.0-Linux-x86_64.sh
 rm Anaconda3-5.1.0-Linux-x86_64.sh
 
 /home/ubuntu/anaconda3/bin/conda create -n py36 python=3.6 anaconda -y
-source /home/ubuntu/anaconda3/bin/conda/activate py36
+source /home/ubuntu/anaconda3/bin/activate py36
 /home/ubuntu/anaconda3/bin/conda install pytorch=0.3.1
 # pytorch-cpu torchvision -c
 
