@@ -172,7 +172,6 @@ def hook_tensor__ser(service_self, tensor_type):
         return v
 
     tensor_type._ser = _ser
-    print(tensor_type)    
     tensor_type._deser = _deser
 
 
