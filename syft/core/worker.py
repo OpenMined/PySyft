@@ -1,3 +1,5 @@
+from .torch_ import utils
+import json
 
 class BaseWorker(object):
 
@@ -16,9 +18,13 @@ class LocalWorker(BaseWorker):
         super().__init__(id)  
         
     def send(self, message, recipient):
-        recipient.receive(message)
+        recipient.receive(message._ser())
 
     def receive(self, message):
-        self.objects[message.id] = message
+
+        message_obj = json.loads(message)
+        obj_type = utils.types_guard(message_obj['torch_type'])
+        obj = obj_type._deser(obj_type,message_obj['data'])
+        self.objects[obj.id] = obj
 
     

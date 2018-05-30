@@ -103,8 +103,7 @@ map_var_type = {
 map_torch_type = dict(map_tensor_type, **map_var_type)
 
 
-def types_guard(obj_msg):
-    _torch_type = obj_msg['torch_type']
+def types_guard(_torch_type):
     try:
         return map_torch_type[_torch_type]
     except KeyError:
@@ -160,11 +159,21 @@ def hook_tensor__ser(service_self, tensor_type):
         if include_data:
             tensor_msg['data'] = self.tolist()
         tensor_msg['id'] = self.id
-        tensor_msg['owners'] = self.owners
+        tensor_msg['owners'] = list(map(lambda x:x.id,self.owners))
         tensor_msg['is_pointer'] = not include_data
+        
         return json.dumps(tensor_msg)
 
+    def _deser(self, data):
+
+        # this could be a significant failure point, security-wise    
+        data = tensor_contents_guard(data)
+        v = self(data)
+        return v
+
     tensor_type._ser = _ser
+    print(tensor_type)    
+    tensor_type._deser = _deser
 
 
 def hook_var__ser(service_self):
