@@ -9,7 +9,7 @@ import inspect
 import random
 import re
 from types import *
-
+import json
 
 class TorchHook(object):
     def __init__(self,worker=None):
@@ -17,7 +17,7 @@ class TorchHook(object):
 
         self.worker = worker
         if(self.worker is None):
-            self.worker = LocalWorker()
+            self.worker = LocalWorker(hook=self)
 
         self.torch_funcs = dir(torch)
 
@@ -33,6 +33,13 @@ class TorchHook(object):
         self.var_types = [torch.autograd.variable.Variable, torch.nn.Parameter]
         self.tensorvar_types = self.tensor_types + [torch.autograd.variable.Variable]
         self.tensorvar_types_strs = [x.__name__ for x in self.tensorvar_types]
+        self.tensorvar_methods = list(
+            set(
+                [method
+                    for tensorvar in self.tensorvar_types
+                    for method in dir(tensorvar)]
+                )
+            )
 
         # Methods that caused infinite recursion during testing
         # TODO: May want to handle the ones in "exclude" manually at
@@ -112,10 +119,11 @@ class TorchHook(object):
     def send_command(self, command, recipient):
         """Send Torch command to recipient."""
         # TODO: Fix the case when response contains only a numeric
-        registration, torch_type, var_data, var_grad = self.worker.request_response(
-            channels.torch_listen_for_command_callback(recipient),
+        response = self.worker.request_response(recipient=recipient,
             message=command,
             response_handler=self.process_response)
+        print(response)
+        registration, torch_type, var_data, var_grad = response
         return registration, torch_type, var_data, var_grad
 
 
@@ -155,7 +163,8 @@ class TorchHook(object):
         """Processes a worker's response from a command."""
         # TODO: Extend to responses that are iterables.
         # TODO: Fix the case when response contains only a numeric
-        response = utils.unpack(response)
+        # print(response)
+        # response = json.loads(response['data'])
         try:
             return (response['registration'], response['torch_type'],
                 response['var_data'], response['var_grad'])

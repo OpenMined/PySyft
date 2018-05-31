@@ -127,10 +127,10 @@ def command_guard(command, allowed):
 # Worker needs to retrieve tensor by ID before computing with it
 def retrieve_tensor(self, x):
     try:
-        return self.worker.objects[id_tensorvar(x)]
+        return self.objects[id_tensorvar(x)]
     except TypeError:
         try:
-            return [self.worker.objects[i] for i in id_tensorvar(x)]
+            return [self.objects[i] for i in id_tensorvar(x)]
         except TypeError:
             return x
     except KeyError:
