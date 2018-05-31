@@ -68,6 +68,7 @@ class TorchHook(object):
         # TODO: Assign default id more intelligently (low priority)
         #       Consider popping id from long list of unique integers
         keys = kwargs.keys()
+        
         obj.id = (kwargs['id']
             if 'id' in keys
             else random.randint(0, 1e10))
@@ -77,6 +78,7 @@ class TorchHook(object):
         obj.is_pointer = (kwargs['is_pointer']
             if 'is_pointer' in keys
             else False)
+
         mal_points_away = obj.is_pointer and self.worker.id in obj.owners
         # The following was meant to assure that we didn't try to
         # register objects we didn't have. We end up needing to register
@@ -95,22 +97,16 @@ class TorchHook(object):
     ## Registration and communication handlers
     def send_obj(self, obj, recipient):
         """Send Torch object to recipient."""
-        self.worker.send(message=obj,recipient=recipient)
+        self.worker.send_obj(obj=obj,recipient=recipient)
 
 
     def request_obj(self, obj, sender):
         """Request Torch object from sender."""
         try:
-            return self.worker.request_response(
-                channel=channels.torch_listen_for_obj_req_callback(sender),
-                message=obj.id,
-                response_handler=self.worker.services['torch_service'].receive_obj_break)
+            return self.worker.request_obj(obj_id=obj.id, sender=sender)
         except AttributeError:
             obj_id = obj
-            return self.worker.request_response(
-                channel=channels.torch_listen_for_obj_req_callback(sender),
-                message=obj_id,
-                response_handler=self.worker.services['torch_service'].receive_obj_break)
+            return self.worker.request_obj(obj_id=obj.id, sender=sender)
 
 
     def send_command(self, command, recipient):
@@ -272,6 +268,7 @@ class TorchHook(object):
                                             to a single worker right now.')
             if service_self.worker.id in self.owners:
                 return self
+            
             x = service_self.request_obj(self, self.owners[0])
             service_self.register_object_(x, id=x.id)
             # collected = []

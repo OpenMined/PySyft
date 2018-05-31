@@ -159,7 +159,10 @@ def hook_tensor__ser(service_self, tensor_type):
         if include_data:
             tensor_msg['data'] = self.tolist()
         tensor_msg['id'] = self.id
-        tensor_msg['owners'] = list(map(lambda x:x.id,self.owners))
+        if(type(self.owners[0]) is int):
+            tensor_msg['owners'] = self.owners
+        else:
+            tensor_msg['owners'] = list(map(lambda x:x.id,self.owners))
         tensor_msg['is_pointer'] = not include_data
         
         return json.dumps(tensor_msg)
