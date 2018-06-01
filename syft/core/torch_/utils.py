@@ -18,7 +18,7 @@ def check_workers(self, workers):
     elif not hasattr(workers, '__iter__'):
         raise TypeError(
             """Can only send {} to a string worker ID or an iterable of
-            string worker IDs, not {}""".format(self.__name__, type(owners))
+            string worker IDs, not {}""".format(self.__name__, workers)
             )
     return workers
 
