@@ -1,5 +1,7 @@
 from .torch_ import utils
 import json
+import numbers
+import re
 
 class BaseWorker(object):
 
@@ -32,9 +34,24 @@ class LocalWorker(BaseWorker):
         message_obj = json.loads(message)
         obj_type = utils.types_guard(message_obj['torch_type'])
         obj = obj_type._deser(obj_type,message_obj['data'])
+        self.handle_register(obj,message_obj)
 
-        self.objects[message_obj['id']] = obj
-        obj.id = message_obj['id']
+        # self.objects[message_obj['id']] = obj
+        # obj.id = message_obj['id']
+
+    def handle_register(self, torch_object, obj_msg):
+        try:
+            # TorchClient case
+            # delete registration from init; it's got the wrong id
+            del self.objects[torch_object.id]
+        except (AttributeError, KeyError):
+            # Worker case: v was never formally registered
+            pass
+    
+        torch_object = self.hook.register_object_(self,
+            torch_object, id=obj_msg['id'], owners=[self.id])
+    
+        return torch_object
 
     def request_obj(self,obj_id,sender):
         
@@ -42,21 +59,21 @@ class LocalWorker(BaseWorker):
         return self.objects[obj_id]
 
     def request_response(self, recipient, message, response_handler, timeout=10):
-        
-        return response_handler(recipient.process_command(message))
+        return response_handler(recipient.handle_command(message))
 
     def handle_command(self, message):
         """Main function that handles incoming torch commands."""
-        print(message)
-        message, response_channel = json.loads(message['data'])
+        print("Message:" + str(message))
+        message = message
         # take in command message, return result of local execution
         result, owners = self.process_command(message)
         compiled = json.dumps(self.compile_result(result, owners))
+        print("Compiled Result:" + str(compiled))
         if compiled is not None:
-            self.return_result(compiled, response_channel)
+            return compiled
         else:
-            self.return_result(dict(registration=None, torch_type=None,
-                var_data=None, var_grad=None), response_channel)
+            return dict(registration=None, torch_type=None,
+                var_data=None, var_grad=None)
 
     def process_command(self, command_msg):
         """
@@ -114,15 +131,16 @@ class LocalWorker(BaseWorker):
             except (AttributeError, AssertionError):
                 var_grad = None
             try:
-                result = self.register_object_(result, id=result.id, owners=owners)
+                result = self.hook.register_object_(self,result, id=result.id, owners=owners)
             except AttributeError:
-                result = self.register_object_(result, owners=owners)
+                result = self.hook.register_object_(self,result, owners=owners)
             registration = dict(id=result.id,
                 owners=result.owners, is_pointer=True)
             return dict(registration=registration, torch_type=torch_type,
                 var_data=var_data, var_grad=var_grad)
         except AttributeError as e:
             # result is occasionally a sequence of tensors or variables
+
             return [self.compile_result(x, owners) for x in result]
 
 

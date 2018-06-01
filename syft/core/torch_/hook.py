@@ -59,7 +59,7 @@ class TorchHook(object):
         self.hook_variable()
         print('Overloading complete.')
 
-    def register_object_(self, obj, **kwargs):
+    def register_object_(self, worker, obj, **kwargs):
         """
         Registers an object with the current worker node.
         Selects an id for the object, assigns a list of owners,
@@ -81,12 +81,14 @@ class TorchHook(object):
             else random.randint(0, 1e10))
         obj.owners = (kwargs['owners']
             if 'owners' in keys
-            else [self.worker.id])
+            else [worker.id])
         obj.is_pointer = (kwargs['is_pointer']
             if 'is_pointer' in keys
             else False)
 
-        mal_points_away = obj.is_pointer and self.worker.id in obj.owners
+        mal_points_away = obj.is_pointer and worker.id in obj.owners
+        # print("Mal Points Away:" + str(mal_points_away))
+        # print("self.worker.id in obj.owners == " + str(self.worker.id in obj.owners))
         # The following was meant to assure that we didn't try to
         # register objects we didn't have. We end up needing to register
         # objects with non-local owners on the worker side before sending
@@ -98,7 +100,7 @@ class TorchHook(object):
             raise RuntimeError(
                 'Invalid registry: is_pointer is {} but owners is {}'.format(
                     obj.is_pointer, obj.owners))
-        self.worker.objects[obj.id] = obj
+        worker.objects[obj.id] = obj
         return obj
 
     ## Registration and communication handlers
@@ -122,7 +124,7 @@ class TorchHook(object):
         response = self.worker.request_response(recipient=recipient,
             message=command,
             response_handler=self.process_response)
-        print(response)
+        
         registration, torch_type, var_data, var_grad = response
         return registration, torch_type, var_data, var_grad
 
@@ -164,7 +166,7 @@ class TorchHook(object):
         # TODO: Extend to responses that are iterables.
         # TODO: Fix the case when response contains only a numeric
         # print(response)
-        # response = json.loads(response['data'])
+        response = json.loads(response)
         try:
             return (response['registration'], response['torch_type'],
                 response['var_data'], response['var_grad'])
@@ -210,12 +212,12 @@ class TorchHook(object):
                 of worker node(s).
             """
             workers = tu.check_workers(self, workers) # makes singleton, if needed
-            self = service_self.register_object_(self, id=self.id, owners=workers)
+            self = service_self.register_object_(service_self.worker, obj=self, id=self.id, owners=workers)
             for worker in workers:
                 # TODO: sync or async? likely won't be worth doing async,
                 #       but should check (low priority)
                 service_self.send_obj(self, worker)
-            self = service_self.register_object_(self.old_set_(tensor_type(0)),
+            self = service_self.register_object_(service_self.worker, self.old_set_(tensor_type(0)),
                 id=self.id, owners=workers, is_pointer=True)
             return self
 
@@ -279,7 +281,7 @@ class TorchHook(object):
                 return self
             
             x = service_self.request_obj(self, self.owners[0])
-            service_self.register_object_(x, id=x.id)
+            service_self.register_object_(service_self.worker, x, id=x.id)
             # collected = []
             # collected_grads = []
             # for worker in self.owners:
@@ -290,18 +292,18 @@ class TorchHook(object):
             #     except AttributeError:
             #         pass
             try:
-                self =  service_self.register_object_(
+                self =  service_self.register_object_(service_self.worker,
                     self.old_set_(x.type(self.type())),
                     id=self.id, owners=[service_self.worker.id])
             except TypeError:
-                self =  service_self.register_object_(
+                self =  service_self.register_object_(service_self.worker,
                     self.old_set_(x.type(self.data.type())),
                     id=self.id, owners=[service_self.worker.id])
             try:
-                self.data = service_self.register_object_(x.data, id=x.data.id,
+                self.data = service_self.register_object_(service_self.worker,x.data, id=x.data.id,
                     owners=[service_self.worker.id])
                 try:
-                    self.grad = service_self.register_object_(x.grad,
+                    self.grad = service_self.register_object_(service_self.worker,x.grad,
                         id=x.grad.id, owners=[service_self.worker.id])
                 except AttributeError:
                     pass
@@ -362,7 +364,7 @@ class TorchHook(object):
             else:
                 result = part.func(*args, **kwargs)
                 if type(result) in self.tensorvar_types:
-                    result = self.register_object_(result, is_pointer=False)
+                    result = self.register_object_(self.worker, result, is_pointer=False)
                 return result
                 
         return send_to_workers
@@ -413,7 +415,7 @@ class TorchHook(object):
                 result = part.func(self, *args, **kwargs)
                 if (type(result) in service_self.tensorvar_types and 
                     not hasattr(result, 'owner')):
-                    result = service_self.register_object_(result,
+                    result = service_self.register_object_(service_self.worker, result,
                         is_pointer=False)
                 return result
         return send_to_workers
@@ -425,7 +427,7 @@ class TorchHook(object):
 
         def new___init__(self, *args):
             super(tensor_type, self).__init__()
-            self = service_self.register_object_(self, is_pointer=False)
+            self = service_self.register_object_(service_self.worker, self, is_pointer=False)
 
         tensor_type.__init__ = new___init__
     
@@ -437,7 +439,7 @@ class TorchHook(object):
             tensor_type.old___new__ = tensor_type.__new__
             def new___new__(cls, *args, **kwargs):
                 result = cls.old___new__(cls, *args,  **kwargs)
-                result = service_self.register_object_(result, is_pointer=False)
+                result = service_self.register_object_(service_self.worker, result, is_pointer=False)
                 return result
             
             tensor_type.__new__ = new___new__
