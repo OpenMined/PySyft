@@ -19,6 +19,9 @@ class TorchHook(object):
         if(self.worker is None):
             self.worker = LocalWorker(hook=self)
 
+        self.known_workers = {}
+        self.known_workers[self.worker.id] = self.worker
+
         self.torch_funcs = dir(torch)
 
         ## Torch-specific
@@ -46,8 +49,10 @@ class TorchHook(object):
         #       some point
         self.exclude = (['ndimension', 'nelement', 'size', 'numel',
             'type', 'tolist', 'dim', '__iter__', 'select'])
+        
         # This one wasn't in dir(Variable) -- probably a C++ thing
         self.var_exclude = ['__getattr__']
+
         # Torch functions we don't want to override
         self.torch_exclude = ['save', 'load', 'typename']
 
@@ -58,6 +63,10 @@ class TorchHook(object):
             self.hook_tensor(t_type)
         self.hook_variable()
         print('Overloading complete.')
+
+    def add_worker(self,id,worker):
+        if(id not in self.known_workers.keys()):
+            self.known_workers[id] = worker
 
     def register_object_(self, worker, obj, **kwargs):
         """
@@ -82,6 +91,16 @@ class TorchHook(object):
         obj.owners = (kwargs['owners']
             if 'owners' in keys
             else [worker.id])
+
+        # check to see if we can resolve owner id to pointer
+        owner_pointers = list()
+        for owner in obj.owners:
+            if owner in self.known_workers.keys():
+                owner_pointers.append(self.known_workers[owner])
+            else:
+                owner_pointers.append(owner)
+        obj.owners = owner_pointers
+
         obj.is_pointer = (kwargs['is_pointer']
             if 'is_pointer' in keys
             else False)
@@ -101,6 +120,7 @@ class TorchHook(object):
                 'Invalid registry: is_pointer is {} but owners is {}'.format(
                     obj.is_pointer, obj.owners))
         worker.objects[obj.id] = obj
+
         return obj
 
     ## Registration and communication handlers
@@ -129,7 +149,7 @@ class TorchHook(object):
         return registration, torch_type, var_data, var_grad
 
 
-    def assemble_result_pointer(self, registration, torch_type, var_data, var_grad):
+    def assemble_result_pointer(self, worker, registration, torch_type, var_data, var_grad):
         """
         Assembles a pointer to a remote Torch object. Pointers feel like
         real Torch objects, but they're zero-dimensional until their
@@ -157,8 +177,8 @@ class TorchHook(object):
         result = torch_type(data)
         if var_grad is not None:
             grad = self.assemble_result_pointer(**var_grad)
-            self.register_object_(result.grad, **var_grad['registration'])
-        return self.register_object_(result, **registration)
+            self.register_object_(worker, result.grad, **var_grad['registration'])
+        return self.register_object_(self.worker, result, **registration)
 
 
     def process_response(self, response):
@@ -404,7 +424,7 @@ class TorchHook(object):
                             return var_data
                         # only returns last pointer, since tensors will
                         # be identical across machines for right now
-                        pointer = service_self.assemble_result_pointer(
+                        pointer = service_self.assemble_result_pointer(worker,
                             registration, torch_type, var_data, var_grad)
                 else:
                     raise NotImplementedError("""MPC not yet implemented:
@@ -450,7 +470,7 @@ class TorchHook(object):
         if('old__repr__' not in dir(tensor_type)):
             tensor_type.old__repr__ = tensor_type.__repr__
             def new___repr__(self):
-                if service_self.worker.id in self.owners:
+                if service_self.worker in self.owners:
                     return self.old__repr__()
                 else:
                     return "[{}.{} - Locations:{}]".format(

@@ -63,12 +63,14 @@ class LocalWorker(BaseWorker):
 
     def handle_command(self, message):
         """Main function that handles incoming torch commands."""
-        print("Message:" + str(message))
+        
         message = message
         # take in command message, return result of local execution
         result, owners = self.process_command(message)
-        compiled = json.dumps(self.compile_result(result, owners))
-        print("Compiled Result:" + str(compiled))
+        
+        compiled = self.compile_result(result, owners)
+        
+        compiled = json.dumps(compiled)
         if compiled is not None:
             return compiled
         else:
@@ -103,7 +105,11 @@ class LocalWorker(BaseWorker):
         tensorvars = [x for x in combined if type(x).__name__ in self.hook.tensorvar_types_strs]
         _, owners = utils.get_owners(tensorvars)
 
-        return command(*args, **kwargs), owners
+        owner_ids = list()
+        for owner in owners:
+            owner_ids.append(owner.id)
+
+        return command(*args, **kwargs), owner_ids
 
     def compile_result(self, result, owners):
         """
@@ -114,9 +120,11 @@ class LocalWorker(BaseWorker):
             return dict(registration=None, torch_type=None,
                 var_data=None, var_grad=None)
         try:
+
             # result is infrequently a numeric
             if isinstance(result, numbers.Number):
                 return {'numeric':result}
+
             # result is usually a tensor/variable
             torch_type = re.search("<class '(torch.(.*))'>",
                 str(result.__class__)).group(1)
@@ -134,10 +142,13 @@ class LocalWorker(BaseWorker):
                 result = self.hook.register_object_(self,result, id=result.id, owners=owners)
             except AttributeError:
                 result = self.hook.register_object_(self,result, owners=owners)
+
             registration = dict(id=result.id,
-                owners=result.owners, is_pointer=True)
+                owners=owners, is_pointer=True)
+
             return dict(registration=registration, torch_type=torch_type,
                 var_data=var_data, var_grad=var_grad)
+
         except AttributeError as e:
             # result is occasionally a sequence of tensors or variables
 
