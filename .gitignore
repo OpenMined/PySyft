@@ -11,3 +11,4 @@ syft/__pycache__/
 *.swo
 *.ipynb_checkpoints
 */*.ipynb_checkpoints
+*/*/*.ipynb_checkpoints
