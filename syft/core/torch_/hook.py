@@ -579,12 +579,11 @@ class TorchHook(object):
             is_old = re.match('old*', attr) is not None
 
             # Where the overloading happens
-            if ((is_desc or (is_func and not is_service_func)) 
-                and not is_base and not is_old):
+            if ((is_desc or (is_func and not is_service_func)) and not is_base and not is_old):
                 passer = self.pass_method_args(lit)
                 new_attr = self.overload_method(passer)
-                setattr(torch.autograd.variable.Variable, 
-                    'old_{}'.format(attr), lit)
+                setattr(torch.autograd.variable.Variable,
+                        'old_{}'.format(attr), lit)
                 setattr(torch.autograd.variable.Variable, attr, new_attr)
 
         self.hook_var_send_()
