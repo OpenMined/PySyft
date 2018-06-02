@@ -3,6 +3,7 @@ import json
 import numbers
 import re
 
+
 class BaseWorker(object):
 
     def __init__(self,  hook, id=0):
@@ -11,13 +12,13 @@ class BaseWorker(object):
         self.objects = {}
         self.hook = hook
 
-    def send_obj(message,recipient):
+    def send_obj(message, recipient):
         raise NotImplementedError
 
     def receive_obj(self, message):
         raise NotImplementedError
 
-    def request_obj(self,obj_id,sender):
+    def request_obj(self, obj_id, sender):
         raise NotImplementedError
 
 
@@ -53,7 +54,7 @@ class LocalWorker(BaseWorker):
     
         return torch_object
 
-    def request_obj(self,obj_id,sender):
+    def request_obj(self, obj_id, sender):
         
         sender.send_obj(sender.objects[obj_id],self)
         return self.objects[obj_id]

@@ -1,10 +1,6 @@
-import os
+
 import json
 import re
-
-from pathlib import Path
-
-from . import utils
 import torch
 from ..worker import BaseWorker
 
@@ -13,7 +9,7 @@ from ..worker import BaseWorker
 def check_workers(self, workers):
     if type(workers) is str:
         workers = [workers]
-    if issubclass(type(workers),BaseWorker):
+    if issubclass(type(workers), BaseWorker):
         workers = [workers]
     elif not hasattr(workers, '__iter__'):
         raise TypeError(
@@ -28,8 +24,10 @@ def get_tensorvars(self, command):
     kwargs = command['kwargs']
     arg_types = command['arg_types']
     kwarg_types = command['kwarg_types']
-    tensorvar_args = [args[i] for i in range(len(args)) if arg_types[i] in self.tensorvar_types_strs]
-    tensorvar_kwvals = [kwargs[i][1] for i in range(len(kwargs)) if kwarg_types[i] in self.tensorvar_types_strs]
+    tensorvar_args = [args[i]
+                      for i in range(len(args)) if arg_types[i] in self.tensorvar_types_strs]
+    tensorvar_kwvals = [kwargs[i][1] for i in range(len(kwargs))
+                        if kwarg_types[i] in self.tensorvar_types_strs]
     if command['has_self']:
         tensorvar_args.insert(0, command['self'])
     return tensorvar_args + tensorvar_kwvals
@@ -40,9 +38,7 @@ def check_remote(tensorvars):
 
 
 def get_owners(tensorvars):
-    owners = list(set([owner
-        for tensorvar in tensorvars
-        for owner in tensorvar.owners]))
+    owners = list(set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
     multiple_owners = len(owners) > 1
     return multiple_owners, owners
 
@@ -72,6 +68,7 @@ def replace_in_command(command_msg):
         pass
     return command_msg
 
+
 # Client needs to identify a tensor before sending commands that use it
 def id_tensorvar(x):
     pat = re.compile('_fl.(.*)')
@@ -87,18 +84,18 @@ def id_tensorvar(x):
 # Safety checks for serializing and deserializing torch objects
 # Desperately needs stress testing before going out in the wild
 map_tensor_type = {
-    'torch.FloatTensor':torch.FloatTensor,
-    'torch.DoubleTensor':torch.DoubleTensor,
-    'torch.HalfTensor':torch.HalfTensor,
-    'torch.ByteTensor':torch.ByteTensor,
-    'torch.CharTensor':torch.CharTensor,
-    'torch.ShortTensor':torch.ShortTensor,
-    'torch.IntTensor':torch.IntTensor,
-    'torch.LongTensor':torch.LongTensor
+    'torch.FloatTensor': torch.FloatTensor,
+    'torch.DoubleTensor': torch.DoubleTensor,
+    'torch.HalfTensor': torch.HalfTensor,
+    'torch.ByteTensor': torch.ByteTensor,
+    'torch.CharTensor': torch.CharTensor,
+    'torch.ShortTensor': torch.ShortTensor,
+    'torch.IntTensor': torch.IntTensor,
+    'torch.LongTensor': torch.LongTensor
 }
 map_var_type = {
-    'torch.autograd.variable.Variable':torch.autograd.variable.Variable,
-    'torch.nn.parameter.Parameter':torch.nn.parameter.Parameter
+    'torch.autograd.variable.Variable': torch.autograd.variable.Variable,
+    'torch.nn.parameter.Parameter': torch.nn.parameter.Parameter
 }
 map_torch_type = dict(map_tensor_type, **map_var_type)
 
@@ -110,6 +107,7 @@ def types_guard(_torch_type):
         raise TypeError(
             "Tried to receive a non-Torch object of type {}.".format(
                 _torch_type))
+
 
 def tensor_contents_guard(contents):
     # TODO: check to make sure the incoming list isn't dangerous to use for
@@ -146,9 +144,9 @@ def map_tuple(service, args, func):
 
 def map_dict(service, kwargs, func):
     if service:
-        return {key:func(service, val) for key, val in kwargs.items()}
+        return {key: func(service, val) for key, val in kwargs.items()}
     else:
-        return {key:func(val) for key, val in kwargs.items()}
+        return {key: func(val) for key, val in kwargs.items()}
 
 
 def hook_tensor__ser(service_self, tensor_type):
@@ -162,14 +160,14 @@ def hook_tensor__ser(service_self, tensor_type):
         if(type(self.owners[0]) is int):
             tensor_msg['owners'] = self.owners
         else:
-            tensor_msg['owners'] = list(map(lambda x:x.id,self.owners))
+            tensor_msg['owners'] = list(map(lambda x: x.id, self.owners))
         tensor_msg['is_pointer'] = not include_data
-        
+
         return json.dumps(tensor_msg)
 
     def _deser(self, data):
 
-        # this could be a significant failure point, security-wise    
+        # this could be a significant failure point, security-wise
         data = tensor_contents_guard(data)
         v = self(data)
         return v
@@ -181,8 +179,7 @@ def hook_tensor__ser(service_self, tensor_type):
 def hook_var__ser(service_self):
     def _ser(self, include_data=True):
         var_msg = {}
-        var_msg['torch_type'] = re.search("<class '(.*)'>",
-            str(self.__class__)).group(1)
+        var_msg['torch_type'] = re.search("<class '(.*)'>", str(self.__class__)).group(1)
         var_msg['requires_grad'] = self.requires_grad
         var_msg['volatile'] = self.volatile
         var_msg['data'] = self.data._ser(include_data)
@@ -199,71 +196,82 @@ def hook_var__ser(service_self):
 
 
 def hook_var_contents(service_self):
-        """Overload Variable.data and Variable.grad properties."""
-        torch.autograd.variable.Variable.old_data = torch.autograd.variable.Variable.data
-        torch.autograd.variable.Variable.old_grad = torch.autograd.variable.Variable.grad
-        @property
-        def new_data(self):
+    """Overload Variable.data and Variable.grad properties."""
+    torch.autograd.variable.Variable.old_data = torch.autograd.variable.Variable.data
+    torch.autograd.variable.Variable.old_grad = torch.autograd.variable.Variable.grad
+
+    hook_new_data(service_self)
+    hook_new_grad(service_self)
+
+
+def hook_new_data(service_self):
+
+    @property
+    def new_data(self):
+        try:
+            self.data_registered
+        except AttributeError:
             try:
-                self.data_registered
+                self.old_data = service_self.register_object_(
+                    self.old_data, id=self.old_data.id, owners=self.owners,
+                    is_pointer=self.is_pointer)
+                self.data_registered = True
             except AttributeError:
                 try:
                     self.old_data = service_self.register_object_(
-                        self.old_data, id=self.old_data.id, owners=self.owners,
+                        self.old_data, owners=self.owners,
                         is_pointer=self.is_pointer)
                     self.data_registered = True
                 except AttributeError:
+                    service_self.register_object_(
+                        self, owners=[service_self.worker.id],
+                        is_pointer=False)
+                    self.old_data = service_self.register_object_(
+                        self.old_data, owners=self.owners,
+                        is_pointer=self.is_pointer)
+                    self.data_registered = True
+        return self.old_data
+
+    @new_data.setter
+    def new_data(self, new):
+        self.old_data = new
+
+    torch.autograd.variable.Variable.data = new_data
+
+
+def hook_new_grad(service_self):
+
+    @property
+    def new_grad(self):
+        try:
+            self.grad_registered
+        except AttributeError:
+            if self.old_grad is not None:
+                try:
+                    self.old_grad = service_self.register_object_(
+                        self.old_grad, owners=self.owners,
+                        id=self.old_grad.id,
+                        is_pointer=self.is_pointer)
+                    self.grad_registered = True
+                except AttributeError:
                     try:
-                        self.old_data = service_self.register_object_(
-                            self.old_data, owners=self.owners,
+                        self.old_grad = service_self.register_object_(
+                            self.old_grad, owners=self.owners,
                             is_pointer=self.is_pointer)
-                        self.data_registered = True
+                        self.grad_registered = True
                     except AttributeError:
                         service_self.register_object_(
                             self, owners=[service_self.worker.id],
                             is_pointer=False)
-                        self.old_data = service_self.register_object_(
-                            self.old_data, owners=self.owners,
-                            is_pointer=self.is_pointer)
-                        self.data_registered = True
-            return self.old_data
-
-        @new_data.setter
-        def new_data(self, new):
-            self.old_data = new
-        
-        @property
-        def new_grad(self):
-            try:
-                self.grad_registered
-            except AttributeError:
-                if self.old_grad is not None:
-                    try:
                         self.old_grad = service_self.register_object_(
                             self.old_grad, owners=self.owners,
-                            id=self.old_grad.id,
                             is_pointer=self.is_pointer)
                         self.grad_registered = True
-                    except AttributeError:
-                        try:
-                            self.old_grad = service_self.register_object_(
-                                self.old_grad, owners=self.owners,
-                                is_pointer=self.is_pointer)
-                            self.grad_registered = True
-                        except AttributeError:
-                            service_self.register_object_(
-                                self, owners=[service_self.worker.id],
-                                is_pointer=False)
-                            self.old_grad = service_self.register_object_(
-                                self.old_grad, owners=self.owners,
-                                is_pointer=self.is_pointer)
-                            self.grad_registered = True
 
-            return self.old_grad
+        return self.old_grad
 
-        @new_grad.setter
-        def new_grad(self, new):
-            self.old_grad = new
-        
-        torch.autograd.variable.Variable.data = new_data
-        torch.autograd.variable.Variable.grad = new_grad
+    @new_grad.setter
+    def new_grad(self, new):
+        self.old_grad = new
+
+    torch.autograd.variable.Variable.grad = new_grad
