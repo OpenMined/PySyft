@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'PySyft'
-copyright = '2018, Andrew Trask'
+copyright = '2018, OpenMined Contributors'
 author = 'Andrew Trask'
 
 # The version info for the project you're documenting, acts as replacement for
