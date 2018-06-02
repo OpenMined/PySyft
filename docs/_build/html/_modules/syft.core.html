@@ -1,0 +1,316 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>syft.core package &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PySyft
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.html">syft.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.torch_.html">syft.core.torch_</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>syft.core package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/syft.core.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="syft-core-package">
+<h1>syft.core package<a class="headerlink" href="#syft-core-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.torch_.html">syft.core.torch_ package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.torch_.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.torch_.html#module-syft.core.torch_.hook">syft.core.torch_.hook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.torch_.html#module-syft.core.torch_.utils">syft.core.torch_.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.torch_.html#module-syft.core.torch_">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-syft.core.worker">
+<span id="syft-core-worker-module"></span><h2>syft.core.worker module<a class="headerlink" href="#module-syft.core.worker" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.core.worker.BaseWorker">
+<em class="property">class </em><code class="descclassname">syft.core.worker.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.BaseWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="syft.core.worker.BaseWorker.receive_obj">
+<code class="descname">receive_obj</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.BaseWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.BaseWorker.request_obj">
+<code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.BaseWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.BaseWorker.send_obj">
+<code class="descname">send_obj</code><span class="sig-paren">(</span><em>message</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.BaseWorker.send_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="syft.core.worker.LocalWorker">
+<em class="property">class </em><code class="descclassname">syft.core.worker.</code><code class="descname">LocalWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.core.worker.BaseWorker" title="syft.core.worker.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.worker.BaseWorker</span></code></a></p>
+<dl class="method">
+<dt id="syft.core.worker.LocalWorker.compile_result">
+<code class="descname">compile_result</code><span class="sig-paren">(</span><em>result</em>, <em>owners</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.compile_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the result to a JSON serializable message for sending
+over PubSub.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.LocalWorker.handle_command">
+<code class="descname">handle_command</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.handle_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function that handles incoming torch commands.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.LocalWorker.handle_register">
+<code class="descname">handle_register</code><span class="sig-paren">(</span><em>torch_object</em>, <em>obj_msg</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.handle_register" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.LocalWorker.process_command">
+<code class="descname">process_command</code><span class="sig-paren">(</span><em>command_msg</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.process_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process a command message from a client worker. Returns the
+result of the computation and a list of the result&#8217;s owners.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.LocalWorker.receive_obj">
+<code class="descname">receive_obj</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.LocalWorker.request_obj">
+<code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.LocalWorker.request_response">
+<code class="descname">request_response</code><span class="sig-paren">(</span><em>recipient</em>, <em>message</em>, <em>response_handler</em>, <em>timeout=10</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.request_response" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.LocalWorker.return_result">
+<code class="descname">return_result</code><span class="sig-paren">(</span><em>compiled_result</em>, <em>response_channel</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.return_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return compiled result of a torch command</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.worker.LocalWorker.send_obj">
+<code class="descname">send_obj</code><span class="sig-paren">(</span><em>obj</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.send_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.core">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-syft.core" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
