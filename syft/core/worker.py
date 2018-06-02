@@ -23,10 +23,10 @@ class BaseWorker(object):
 
 
 class LocalWorker(BaseWorker):
-    
+
     def __init__(self, hook, id=0):
-        super().__init__(id=id,hook=hook)  
-        
+        super().__init__(id=id,hook=hook)
+
     def send_obj(self, obj, recipient):
         recipient.receive_obj(obj._ser())
 
@@ -34,8 +34,8 @@ class LocalWorker(BaseWorker):
 
         message_obj = json.loads(message)
         obj_type = utils.types_guard(message_obj['torch_type'])
-        obj = obj_type._deser(obj_type,message_obj['data'])
-        self.handle_register(obj,message_obj)
+        obj = obj_type._deser(obj_type, message_obj['data'])
+        self.handle_register(obj, message_obj)
 
         # self.objects[message_obj['id']] = obj
         # obj.id = message_obj['id']
@@ -48,15 +48,17 @@ class LocalWorker(BaseWorker):
         except (AttributeError, KeyError):
             # Worker case: v was never formally registered
             pass
-    
+
         torch_object = self.hook.register_object_(self,
-            torch_object, id=obj_msg['id'], owners=[self.id])
-    
+                                                  torch_object,
+                                                  id=obj_msg['id'],
+                                                  owners=[self.id])
+
         return torch_object
 
     def request_obj(self, obj_id, sender):
-        
-        sender.send_obj(sender.objects[obj_id],self)
+
+        sender.send_obj(sender.objects[obj_id], self)
         return self.objects[obj_id]
 
     def request_response(self, recipient, message, response_handler, timeout=10):
@@ -64,19 +66,19 @@ class LocalWorker(BaseWorker):
 
     def handle_command(self, message):
         """Main function that handles incoming torch commands."""
-        
+
         message = message
         # take in command message, return result of local execution
         result, owners = self.process_command(message)
-        
+
         compiled = self.compile_result(result, owners)
-        
+
         compiled = json.dumps(compiled)
         if compiled is not None:
             return compiled
         else:
             return dict(registration=None, torch_type=None,
-                var_data=None, var_grad=None)
+                        var_data=None, var_grad=None)
 
     def process_command(self, command_msg):
         """
@@ -93,7 +95,7 @@ class LocalWorker(BaseWorker):
 
         if has_self:
             command = utils.command_guard(command_msg['command'],
-                self.hook.tensorvar_methods)
+                                          self.hook.tensorvar_methods)
             obj_self = utils.retrieve_tensor(self, command_msg['self'])
             combined = combined + [obj_self]
             command = eval('obj_self.{}'.format(command))
@@ -119,16 +121,16 @@ class LocalWorker(BaseWorker):
         """
         if result is None:
             return dict(registration=None, torch_type=None,
-                var_data=None, var_grad=None)
+                        var_data=None, var_grad=None)
         try:
 
             # result is infrequently a numeric
             if isinstance(result, numbers.Number):
-                return {'numeric':result}
+                return {'numeric': result}
 
             # result is usually a tensor/variable
             torch_type = re.search("<class '(torch.(.*))'>",
-                str(result.__class__)).group(1)
+                                   str(result.__class__)).group(1)
 
             try:
                 var_data = self.compile_result(result.data, owners)
@@ -140,21 +142,20 @@ class LocalWorker(BaseWorker):
             except (AttributeError, AssertionError):
                 var_grad = None
             try:
-                result = self.hook.register_object_(self,result, id=result.id, owners=owners)
+                result = self.hook.register_object_(self, result, id=result.id, owners=owners)
             except AttributeError:
-                result = self.hook.register_object_(self,result, owners=owners)
+                result = self.hook.register_object_(self, result, owners=owners)
 
             registration = dict(id=result.id,
-                owners=owners, is_pointer=True)
+                                owners=owners, is_pointer=True)
 
             return dict(registration=registration, torch_type=torch_type,
-                var_data=var_data, var_grad=var_grad)
+                        var_data=var_data, var_grad=var_grad)
 
         except AttributeError as e:
             # result is occasionally a sequence of tensors or variables
 
             return [self.compile_result(x, owners) for x in result]
-
 
     def return_result(self, compiled_result, response_channel):
         """Return compiled result of a torch command"""
