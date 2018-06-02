@@ -1,5 +1,5 @@
 # PySyft
-A Library for Private, Secure Deep Learning
+A Library for Private, Secure Deep Learning - [Documentation](https://openmined.github.io/PySyft/)
 
 
 ## Installation
