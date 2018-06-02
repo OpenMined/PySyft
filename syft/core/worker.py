@@ -25,7 +25,7 @@ class BaseWorker(object):
 class LocalWorker(BaseWorker):
 
     def __init__(self, hook, id=0):
-        super().__init__(id=id,hook=hook)
+        super().__init__(id=id, hook=hook)
 
     def send_obj(self, obj, recipient):
         recipient.receive_obj(obj._ser())
