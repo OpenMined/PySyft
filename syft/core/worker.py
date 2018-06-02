@@ -160,5 +160,3 @@ class LocalWorker(BaseWorker):
         """Return compiled result of a torch command"""
         return self.worker.publish(
             channel=response_channel, message=compiled_result)
-
-
