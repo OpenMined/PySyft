@@ -26,7 +26,7 @@ before_script:
     # diverting from the standard 79 character line length in
     # accordance with this:
     # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
-    - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+    - flake8 . --count --exit-zero --max-complexity=11 --max-line-length=100 --statistics
 script:
     - python setup.py test
 notifications:
