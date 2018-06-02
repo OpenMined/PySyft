@@ -1,0 +1,485 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>syft.core.torch_ package &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PySyft
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.html">syft.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.torch_.html">syft.core.torch_</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>syft.core.torch_ package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/syft.core.torch_.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="syft-core-torch-package">
+<h1>syft.core.torch_ package<a class="headerlink" href="#syft-core-torch-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-syft.core.torch_.hook">
+<span id="syft-core-torch-hook-module"></span><h2>syft.core.torch_.hook module<a class="headerlink" href="#module-syft.core.torch_.hook" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.core.torch_.hook.TorchHook">
+<em class="property">class </em><code class="descclassname">syft.core.torch_.hook.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>worker=None</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.add_worker">
+<code class="descname">add_worker</code><span class="sig-paren">(</span><em>id</em>, <em>worker</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.add_worker" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.assemble_result_pointer">
+<code class="descname">assemble_result_pointer</code><span class="sig-paren">(</span><em>worker</em>, <em>registration</em>, <em>torch_type</em>, <em>var_data</em>, <em>var_grad</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.assemble_result_pointer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles a pointer to a remote Torch object. Pointers feel like
+real Torch objects, but they&#8217;re zero-dimensional until their
+contents are retrieved from their owners.</p>
+<p>Args
+registration (dict): registration attributes for the pointer
+torch_type: the torch class to construct the pointer from</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="syft.core.torch_.hook.TorchHook.compile_command">
+<em class="property">static </em><code class="descname">compile_command</code><span class="sig-paren">(</span><em>partial_func</em>, <em>has_self</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.compile_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles a JSON-serializable message from a partial function.</p>
+<p>Args:
+partial_func: a functools.partial or functools.partialmethod</p>
+<blockquote>
+<div>object wrapped around a torch command, its args, and its
+kwargs.</div></blockquote>
+<p>has_self: a flag for whether or not the function is a method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_get_">
+<code class="descname">hook_get_</code><span class="sig-paren">(</span><em>service_self</em>, <em>torch_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_get_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_tensor">
+<code class="descname">hook_tensor</code><span class="sig-paren">(</span><em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_tensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overloading a given tensor_type</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_tensor___init__">
+<code class="descname">hook_tensor___init__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_tensor___init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload tensor_type.__init__</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_tensor___new__">
+<code class="descname">hook_tensor___new__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_tensor___new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload tensor_type.__new__</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_tensor___repr__">
+<code class="descname">hook_tensor___repr__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_tensor___repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload tensor_type.__repr__</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_tensor_send_">
+<code class="descname">hook_tensor_send_</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_tensor_send_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_torch_module">
+<code class="descname">hook_torch_module</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_torch_module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload functions in the main torch module</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_var___new__">
+<code class="descname">hook_var___new__</code><span class="sig-paren">(</span><em>service_self</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_var___new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload Variable.__new__</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_var_send_">
+<code class="descname">hook_var_send_</code><span class="sig-paren">(</span><em>service_self</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_var_send_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.hook_variable">
+<code class="descname">hook_variable</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.hook_variable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.overload_function">
+<code class="descname">overload_function</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.overload_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper overloading partial objects of functions in the torch
+module.  Compiles command, checks for Tensors and Variables in
+the args/kwargs, determines locations of all Tensors and
+Variables involved in computation, and handles the computation
+accordingly.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.overload_method">
+<code class="descname">overload_method</code><span class="sig-paren">(</span><em>service_self</em>, <em>method</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.overload_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper overloading partialmethod objects of Torch object
+methods.  Compiles command, checks for Tensors and Variables in
+the args/kwargs, determines locations of all Tensors and
+Variables involved in computation, and handles the computation
+accordingly.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="syft.core.torch_.hook.TorchHook.pass_func_args">
+<em class="property">static </em><code class="descname">pass_func_args</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.pass_func_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper gathering partial object from function call.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="syft.core.torch_.hook.TorchHook.pass_method_args">
+<em class="property">static </em><code class="descname">pass_method_args</code><span class="sig-paren">(</span><em>method</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.pass_method_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper gathering partialmethod object from method call.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.process_response">
+<code class="descname">process_response</code><span class="sig-paren">(</span><em>response</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.process_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a worker&#8217;s response from a command.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.register_object_">
+<code class="descname">register_object_</code><span class="sig-paren">(</span><em>worker</em>, <em>obj</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.register_object_" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an object with the current worker node.
+Selects an id for the object, assigns a list of owners,
+and establishes whether it&#8217;s a pointer or not.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>obj: a Torch instance, e.g. Tensor or Variable</dd>
+<dt>Default kwargs:</dt>
+<dd>id: random integer between 0 and 1e10
+owners: list containing local worker&#8217;s IPFS id
+is_pointer: False</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.request_obj">
+<code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.request_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Request Torch object from sender.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.send_command">
+<code class="descname">send_command</code><span class="sig-paren">(</span><em>command</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.send_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send Torch command to recipient.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.send_obj">
+<code class="descname">send_obj</code><span class="sig-paren">(</span><em>obj</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.send_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send Torch object to recipient.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.torch_.hook.TorchHook.var_to_pointer">
+<code class="descname">var_to_pointer</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.hook.TorchHook.var_to_pointer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.core.torch_.utils">
+<span id="syft-core-torch-utils-module"></span><h2>syft.core.torch_.utils module<a class="headerlink" href="#module-syft.core.torch_.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="syft.core.torch_.utils.check_remote">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">check_remote</code><span class="sig-paren">(</span><em>tensorvars</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.check_remote" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.check_workers">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">check_workers</code><span class="sig-paren">(</span><em>self</em>, <em>workers</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.check_workers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.command_guard">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">command_guard</code><span class="sig-paren">(</span><em>command</em>, <em>allowed</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.command_guard" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.get_owners">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">get_owners</code><span class="sig-paren">(</span><em>tensorvars</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.get_owners" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.get_tensorvars">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">get_tensorvars</code><span class="sig-paren">(</span><em>self</em>, <em>command</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.get_tensorvars" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.hook_new_data">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">hook_new_data</code><span class="sig-paren">(</span><em>service_self</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.hook_new_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.hook_new_grad">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">hook_new_grad</code><span class="sig-paren">(</span><em>service_self</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.hook_new_grad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.hook_tensor__ser">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">hook_tensor__ser</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.hook_tensor__ser" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.hook_var__ser">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">hook_var__ser</code><span class="sig-paren">(</span><em>service_self</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.hook_var__ser" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.hook_var_contents">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">hook_var_contents</code><span class="sig-paren">(</span><em>service_self</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.hook_var_contents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload Variable.data and Variable.grad properties.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.id_tensorvar">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">id_tensorvar</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.id_tensorvar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.map_dict">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">map_dict</code><span class="sig-paren">(</span><em>service</em>, <em>kwargs</em>, <em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.map_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.map_tuple">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">map_tuple</code><span class="sig-paren">(</span><em>service</em>, <em>args</em>, <em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.map_tuple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.replace_in_command">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">replace_in_command</code><span class="sig-paren">(</span><em>command_msg</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.replace_in_command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.replace_tensorvar">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">replace_tensorvar</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.replace_tensorvar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.retrieve_tensor">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">retrieve_tensor</code><span class="sig-paren">(</span><em>self</em>, <em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.retrieve_tensor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.tensor_contents_guard">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">tensor_contents_guard</code><span class="sig-paren">(</span><em>contents</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.tensor_contents_guard" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.torch_.utils.types_guard">
+<code class="descclassname">syft.core.torch_.utils.</code><code class="descname">types_guard</code><span class="sig-paren">(</span><em>_torch_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.torch_.utils.types_guard" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-syft.core.torch_">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-syft.core.torch_" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
