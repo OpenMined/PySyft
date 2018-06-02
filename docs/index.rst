@@ -11,6 +11,7 @@ Welcome to PySyft's documentation!
    :caption: Contents:
 
 .. automodule:: syft
+   :members:
 
 API Reference
 =============
@@ -18,8 +19,9 @@ API Reference
 .. autosummary::
    :toctree: _autosummary
 
-   syft.core
-   syft.core.torch_
+   syft.core.torch_.hook
+   syft.core.torch_.utils
+   syft.core.worker
 
 Indices and tables
 ==================
