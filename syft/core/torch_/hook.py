@@ -164,8 +164,8 @@ class TorchHook(object):
                     torch_type))
 
         if var_data is not None:
-            data = self.assemble_result_pointer(**var_data)
-            data = self.register_object_(data, **var_data['registration'])
+            data = self.assemble_result_pointer(worker,**var_data)
+            data = self.register_object_(worker, data, **var_data['registration'])
         elif torch_type in self.var_types:
             data = torch.Tensor(0)
         else:
@@ -247,24 +247,25 @@ class TorchHook(object):
                 of worker node(s).
             """
             workers = tu.check_workers(self, workers)  # makes singleton, if needed
-            self = service_self.register_object_(self, id=self.id, owners=workers)
+            self = service_self.register_object_(service_self.worker, obj=self, id=self.id, owners=workers)
             for worker in workers:
                 # TODO: sync or async? likely won't be worth doing async,
                 #       but should check (low priority)
                 service_self.send_obj(self, worker)
-            service_self.register_object_(self, id=self.id,
+            service_self.register_object_(service_self.worker, obj=self, id=self.id,
                                           owners=self.owners, is_pointer=True)
 
-            return service_self.var_to_pointer(self)
+            return service_self.var_to_pointer(self,service_self)
 
         setattr(torch.autograd.variable.Variable, 'send_', send_)
 
-    def var_to_pointer(self, var):
+    def var_to_pointer(self, var, service_self):
         if var.grad is not None:
             self.var_to_pointer(var.grad)
 
         var.data.old_set_(var.data.__class__(0))
-        self.register_object_(var.data,
+        self.register_object_(service_self.worker,
+                              obj=var.data,
                               id=var.data.id,
                               owners=var.owners,
                               is_pointer=True)
@@ -467,7 +468,7 @@ class TorchHook(object):
 
         def new___new__(cls, *args, **kwargs):
             result = cls.old___new__(cls, *args,  **kwargs)
-            result = service_self.register_object_(result, is_pointer=False)
+            result = service_self.register_object_(service_self.worker, result, is_pointer=False)
             return result
 
         torch.autograd.variable.Variable.__new__ = new___new__
@@ -563,3 +564,49 @@ class TorchHook(object):
         self.hook_var_send_()
         self.hook_get_(torch.autograd.variable.Variable)
         tu.hook_var__ser(self)
+
+
+    @classmethod
+    def build_tensor(cls, obj_msg, torch_type):
+        # this could be a significant failure point, security-wise
+        if 'data' in obj_msg.keys():
+            data = obj_msg['data']
+            data = tu.tensor_contents_guard(data)
+            v = torch_type(data)
+        else:
+            v = torch.old_zeros(0).type(tensor_type)
+        return v
+
+    def build_var(self, obj_msg, torch_type):
+        
+        if 'data' in obj_msg.keys():
+            data_msg = json.loads(obj_msg['data'])
+            tensor_type = tu.types_guard(data_msg)
+            data_obj = self.build_tensor(data_msg, tensor_type)
+            data = self.handle_register(data_obj, data_msg)
+
+        if 'grad' in obj_msg.keys():
+            if obj_msg['grad'] is not None:
+                grad_msg = json.loads(obj_msg['grad'])
+                var_type = tu.types_guard(grad_msg)
+                grad_obj = self.build_var(grad_msg, var_type)
+                grad = self.handle_register(grad_obj, grad_msg)
+            else:
+                grad = None
+        var = torch_type(data, volatile=obj_msg['volatile'],
+            requires_grad=obj_msg['requires_grad'])
+        var.grad = grad
+        return var
+
+
+    def handle_register(self, torch_object, obj_msg):
+        try:
+            # TorchClient case
+            # delete registration from init; it's got the wrong id
+            del self.worker.objects[torch_object.id]
+        except (AttributeError, KeyError):
+            # Worker case: v was never formally registered
+            pass
+        torch_object = self.register_object_(self.worker,
+            obj=torch_object, id=obj_msg['id'], owners=[self.worker.id])
+        return torch_object        

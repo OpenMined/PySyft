@@ -34,7 +34,7 @@ class LocalWorker(BaseWorker):
 
         message_obj = json.loads(message)
         obj_type = utils.types_guard(message_obj['torch_type'])
-        obj = obj_type._deser(obj_type, message_obj['data'])
+        obj = obj_type._deser(obj_type, message_obj)
         self.handle_register(obj, message_obj)
 
         # self.objects[message_obj['id']] = obj
