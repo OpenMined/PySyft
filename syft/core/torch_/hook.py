@@ -164,7 +164,7 @@ class TorchHook(object):
                     torch_type))
 
         if var_data is not None:
-            data = self.assemble_result_pointer(worker,**var_data)
+            data = self.assemble_result_pointer(worker, **var_data)
             data = self.register_object_(worker, data, **var_data['registration'])
         elif torch_type in self.var_types:
             data = torch.Tensor(0)
@@ -247,7 +247,10 @@ class TorchHook(object):
                 of worker node(s).
             """
             workers = tu.check_workers(self, workers)  # makes singleton, if needed
-            self = service_self.register_object_(service_self.worker, obj=self, id=self.id, owners=workers)
+            self = service_self.register_object_(service_self.worker,
+                                                 obj=self,
+                                                 id=self.id,
+                                                 owners=workers)
             for worker in workers:
                 # TODO: sync or async? likely won't be worth doing async,
                 #       but should check (low priority)
@@ -255,7 +258,7 @@ class TorchHook(object):
             service_self.register_object_(service_self.worker, obj=self, id=self.id,
                                           owners=self.owners, is_pointer=True)
 
-            return service_self.var_to_pointer(self,service_self)
+            return service_self.var_to_pointer(self, service_self)
 
         setattr(torch.autograd.variable.Variable, 'send_', send_)
 
@@ -565,7 +568,6 @@ class TorchHook(object):
         self.hook_get_(torch.autograd.variable.Variable)
         tu.hook_var__ser(self)
 
-
     @classmethod
     def build_tensor(cls, obj_msg, torch_type):
         # this could be a significant failure point, security-wise
@@ -574,11 +576,11 @@ class TorchHook(object):
             data = tu.tensor_contents_guard(data)
             v = torch_type(data)
         else:
-            v = torch.old_zeros(0).type(tensor_type)
+            v = torch.old_zeros(0).type(torch_type)
         return v
 
     def build_var(self, obj_msg, torch_type):
-        
+
         if 'data' in obj_msg.keys():
             data_msg = json.loads(obj_msg['data'])
             tensor_type = tu.types_guard(data_msg)
@@ -594,10 +596,9 @@ class TorchHook(object):
             else:
                 grad = None
         var = torch_type(data, volatile=obj_msg['volatile'],
-            requires_grad=obj_msg['requires_grad'])
+                         requires_grad=obj_msg['requires_grad'])
         var.grad = grad
         return var
-
 
     def handle_register(self, torch_object, obj_msg):
         try:
@@ -608,5 +609,7 @@ class TorchHook(object):
             # Worker case: v was never formally registered
             pass
         torch_object = self.register_object_(self.worker,
-            obj=torch_object, id=obj_msg['id'], owners=[self.worker.id])
-        return torch_object        
+                                             obj=torch_object,
+                                             id=obj_msg['id'],
+                                             owners=[self.worker.id])
+        return torch_object
