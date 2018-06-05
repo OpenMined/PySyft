@@ -206,7 +206,7 @@ def hook_var__ser(service_self):
         if 'grad' in obj_msg.keys():
             if obj_msg['grad'] is not None:
                 grad_msg = json.loads(obj_msg['grad'])
-                var_type = types_guard(grad_msg)
+                var_type = types_guard(grad_msg['torch_type'])
                 grad_obj = service_self.build_var(grad_msg, var_type)
                 grad = service_self.handle_register(grad_obj, grad_msg)
             else:

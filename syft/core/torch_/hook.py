@@ -583,14 +583,14 @@ class TorchHook(object):
 
         if 'data' in obj_msg.keys():
             data_msg = json.loads(obj_msg['data'])
-            tensor_type = tu.types_guard(data_msg)
+            tensor_type = tu.types_guard(data_msg['torch_type'])
             data_obj = self.build_tensor(data_msg, tensor_type)
             data = self.handle_register(data_obj, data_msg)
 
         if 'grad' in obj_msg.keys():
             if obj_msg['grad'] is not None:
                 grad_msg = json.loads(obj_msg['grad'])
-                var_type = tu.types_guard(grad_msg)
+                var_type = tu.types_guard(grad_msg['torch_type'])
                 grad_obj = self.build_var(grad_msg, var_type)
                 grad = self.handle_register(grad_obj, grad_msg)
             else:
