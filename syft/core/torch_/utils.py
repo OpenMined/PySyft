@@ -175,6 +175,7 @@ def hook_tensor__ser(service_self, tensor_type):
     tensor_type._ser = _ser
     tensor_type._deser = _deser
 
+
 def hook_var__ser(service_self):
     def _ser(self, include_data=True):
         var_msg = {}
@@ -195,7 +196,7 @@ def hook_var__ser(service_self):
         return json.dumps(var_msg)
 
     def _deser(self, obj_msg):
-        
+
         if 'data' in obj_msg.keys():
             data_msg = json.loads(obj_msg['data'])
             tensor_type = types_guard(data_msg['torch_type'])
@@ -210,8 +211,7 @@ def hook_var__ser(service_self):
                 grad = service_self.handle_register(grad_obj, grad_msg)
             else:
                 grad = None
-        var = self(data, volatile=obj_msg['volatile'],
-            requires_grad=obj_msg['requires_grad'])
+        var = self(data, volatile=obj_msg['volatile'], requires_grad=obj_msg['requires_grad'])
         var.grad = grad
         return var
 
@@ -237,22 +237,27 @@ def hook_new_data(service_self):
         except AttributeError:
             try:
                 self.old_data = service_self.register_object_(service_self.worker,
-                    obj=self.old_data, id=self.old_data.id, owners=self.owners,
-                    is_pointer=self.is_pointer)
+                                                              obj=self.old_data,
+                                                              id=self.old_data.id,
+                                                              owners=self.owners,
+                                                              is_pointer=self.is_pointer)
                 self.data_registered = True
             except AttributeError:
                 try:
                     self.old_data = service_self.register_object_(service_self.worker,
-                        obj=self.old_data, owners=self.owners,
-                        is_pointer=self.is_pointer)
+                                                                  obj=self.old_data,
+                                                                  owners=self.owners,
+                                                                  is_pointer=self.is_pointer)
                     self.data_registered = True
                 except AttributeError:
                     service_self.register_object_(service_self.worker,
-                        obj=self, owners=[service_self.worker.id],
-                        is_pointer=False)
+                                                  obj=self,
+                                                  owners=[service_self.worker.id],
+                                                  is_pointer=False)
                     self.old_data = service_self.register_object_(service_self.worker,
-                        obj=self.old_data, owners=self.owners,
-                        is_pointer=self.is_pointer)
+                                                                  obj=self.old_data,
+                                                                  owners=self.owners,
+                                                                  is_pointer=self.is_pointer)
                     self.data_registered = True
         return self.old_data
 
@@ -273,23 +278,27 @@ def hook_new_grad(service_self):
             if self.old_grad is not None:
                 try:
                     self.old_grad = service_self.register_object_(service_self.worker,
-                        obj=self.old_grad, owners=self.owners,
-                        id=self.old_grad.id,
-                        is_pointer=self.is_pointer)
+                                                                  obj=self.old_grad,
+                                                                  owners=self.owners,
+                                                                  id=self.old_grad.id,
+                                                                  is_pointer=self.is_pointer)
                     self.grad_registered = True
                 except AttributeError:
                     try:
                         self.old_grad = service_self.register_object_(service_self.worker,
-                            obj=self.old_grad, owners=self.owners,
-                            is_pointer=self.is_pointer)
+                                                                      obj=self.old_grad,
+                                                                      owners=self.owners,
+                                                                      is_pointer=self.is_pointer)
                         self.grad_registered = True
                     except AttributeError:
                         service_self.register_object_(service_self.worker,
-                            obj=self, owners=[service_self.worker.id],
-                            is_pointer=False)
+                                                      obj=self,
+                                                      owners=[service_self.worker.id],
+                                                      is_pointer=False)
                         self.old_grad = service_self.register_object_(service_self.worker,
-                            obj=self.old_grad, owners=self.owners,
-                            is_pointer=self.is_pointer)
+                                                                      obj=self.old_grad,
+                                                                      owners=self.owners,
+                                                                      is_pointer=self.is_pointer)
                         self.grad_registered = True
 
         return self.old_grad
