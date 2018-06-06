@@ -1,8 +1,8 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -82,9 +82,8 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.torch_.hook.html">syft.core.torch_.hook</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.torch_.utils.html">syft.core.torch_.utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.worker.html">syft.core.worker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.hooks.html">syft.core.hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.workers.html">syft.core.workers</a></li>
 </ul>
 
             
@@ -151,99 +150,227 @@
             
   <div class="section" id="syft-core-package">
 <h1>syft.core package<a class="headerlink" href="#syft-core-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="subpackages">
-<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="syft.core.torch_.html">syft.core.torch_ package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="syft.core.torch_.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="syft.core.torch_.html#module-syft.core.torch_.hook">syft.core.torch_.hook module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="syft.core.torch_.html#module-syft.core.torch_.utils">syft.core.torch_.utils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="syft.core.torch_.html#module-syft.core.torch_">Module contents</a></li>
-</ul>
-</li>
-</ul>
-</div>
-</div>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-syft.core.worker">
-<span id="syft-core-worker-module"></span><h2>syft.core.worker module<a class="headerlink" href="#module-syft.core.worker" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-syft.core.hooks">
+<span id="syft-core-hooks-module"></span><h2>syft.core.hooks module<a class="headerlink" href="#module-syft.core.hooks" title="Permalink to this headline">¶</a></h2>
+<p>Hooks which override deep learning interfaces with remote execution functionality.</p>
 <dl class="class">
-<dt id="syft.core.worker.BaseWorker">
-<em class="property">class </em><code class="descclassname">syft.core.worker.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.BaseWorker" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.hooks.TorchHook">
+<em class="property">class </em><code class="descclassname">syft.core.hooks.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors</p>
+<p>The purpose of this class is to:</p>
+<blockquote>
+<div><ul class="simple">
+<li>extend torch methods to allow for the moving of tensors
+and variables from one worker to another</li>
+<li>override torch methods to execute commands on one worker
+that are called on tensors controlled by the local worker.</li>
+</ul>
+</div></blockquote>
+<p>This class is typically the first thing you will initialize when using PySyft with PyTorch because it
+is responsible for augmenting PyTorch with PySyft&#8217;s added functionality (such as remote execution).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>local_worker (</strong><a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>)</strong> you can optionally provide a local worker as
+a parameter which TorchHook will assume to be the worker owned by the local machine. If you leave it
+empty, TorchClient will automatically initialize a <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the 
+assumption you&#8217;re looking to do local experimentation/development.</li>
+<li><strong>is_client (bool)</strong> whether or not the TorchHook is being initialized as an end-user client.
+This can impact whether or not variables are deleted when they fall out of scope. If you set
+this incorrectly on a end user client, Tensors and Variables will never be deleted. If you set this
+incorrectly on a remote machine (not a client), tensors will not get saved. It&#8217;s really only
+important if you&#8217;re not initializing the local worker yourself.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">(</span><span class="n">is_client</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading Complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+<span class="go">[torch.FloatTensor of size 5]</span>
+</pre></div>
+</div>
+<dl class="staticmethod">
+<dt id="syft.core.hooks.TorchHook.compile_command">
+<em class="property">static </em><code class="descname">compile_command</code><span class="sig-paren">(</span><em>partial_func</em>, <em>has_self</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.compile_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles a JSON-serializable message from a partial function.</p>
+<p>Args:
+partial_func: a functools.partial or functools.partialmethod</p>
+<blockquote>
+<div>object wrapped around a torch command, its args, and its
+kwargs.</div></blockquote>
+<p>has_self: a flag for whether or not the function is a method.</p>
+</dd></dl>
+
 <dl class="method">
-<dt id="syft.core.worker.BaseWorker.receive_obj">
-<code class="descname">receive_obj</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.BaseWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.hooks.TorchHook.overload_function">
+<code class="descname">overload_function</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.overload_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper overloading partial objects of functions in the torch
+module.  Compiles command, checks for Tensors and Variables in
+the args/kwargs, determines locations of all Tensors and
+Variables involved in computation, and handles the computation
+accordingly.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="syft.core.hooks.TorchHook.pass_func_args">
+<em class="property">static </em><code class="descname">pass_func_args</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.pass_func_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper gathering partial object from function call.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.core.workers">
+<span id="syft-core-workers-module"></span><h2>syft.core.workers module<a class="headerlink" href="#module-syft.core.workers" title="Permalink to this headline">¶</a></h2>
+<p>Interfaces for communicating about objects between Clients and Workers</p>
+<dl class="class">
+<dt id="syft.core.workers.BaseWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em>, <em>is_client_worker=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Concatenates the given sequence of <code class="xref py py-attr docutils literal"><span class="pre">seq</span></code> tensors in the given dimension.
+All tensors must either have the same shape (except in the concatenating
+dimension) or be empty.</p>
+<p><code class="xref py py-func docutils literal"><span class="pre">torch.cat()</span></code> can be seen as an inverse operation for <code class="xref py py-func docutils literal"><span class="pre">torch.split()</span></code>
+and <code class="xref py py-func docutils literal"><span class="pre">torch.chunk()</span></code>.</p>
+<p><code class="xref py py-func docutils literal"><span class="pre">torch.cat()</span></code> can be best understood via examples.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>seq (sequence of Tensors)</strong> any python sequence of tensors of the same type. 
+Non-empty tensors provided must have the same shape, except in the cat dimension.</li>
+<li><strong>dim (int, optional)</strong> the dimension over which the tensors are concatenated</li>
+<li><strong>out (Tensor, optional)</strong> the output tensor</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go">tensor([[ 0.6580, -1.0969, -0.4614],</span>
+<span class="go">        [-0.1034, -0.5790,  0.1497]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">tensor([[ 0.6580, -1.0969, -0.4614],</span>
+<span class="go">        [-0.1034, -0.5790,  0.1497],</span>
+<span class="go">        [ 0.6580, -1.0969, -0.4614],</span>
+<span class="go">        [-0.1034, -0.5790,  0.1497],</span>
+<span class="go">        [ 0.6580, -1.0969, -0.4614],</span>
+<span class="go">        [-0.1034, -0.5790,  0.1497]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">tensor([[ 0.6580, -1.0969, -0.4614,  0.6580, -1.0969, -0.4614,  0.6580,</span>
+<span class="go">         -1.0969, -0.4614],</span>
+<span class="go">        [-0.1034, -0.5790,  0.1497, -0.1034, -0.5790,  0.1497, -0.1034,</span>
+<span class="go">         -0.5790,  0.1497]])</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.get_obj">
+<code class="descname">get_obj</code><span class="sig-paren">(</span><em>remote_key</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.get_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.BaseWorker.request_obj">
-<code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.BaseWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.BaseWorker.receive_obj">
+<code class="descname">receive_obj</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.BaseWorker.send_obj">
-<code class="descname">send_obj</code><span class="sig-paren">(</span><em>message</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.BaseWorker.send_obj" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.BaseWorker.request_obj">
+<code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.rm_obj">
+<code class="descname">rm_obj</code><span class="sig-paren">(</span><em>remote_key</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.rm_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.send_obj">
+<code class="descname">send_obj</code><span class="sig-paren">(</span><em>message</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.send_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.set_obj">
+<code class="descname">set_obj</code><span class="sig-paren">(</span><em>remote_key</em>, <em>value</em>, <em>force=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.set_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="syft.core.worker.LocalWorker">
-<em class="property">class </em><code class="descclassname">syft.core.worker.</code><code class="descname">LocalWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#syft.core.worker.BaseWorker" title="syft.core.worker.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.worker.BaseWorker</span></code></a></p>
+<dt id="syft.core.workers.VirtualWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">VirtualWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em>, <em>is_client_worker=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.BaseWorker</span></code></a></p>
 <dl class="method">
-<dt id="syft.core.worker.LocalWorker.compile_result">
-<code class="descname">compile_result</code><span class="sig-paren">(</span><em>result</em>, <em>owners</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.compile_result" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.VirtualWorker.compile_result">
+<code class="descname">compile_result</code><span class="sig-paren">(</span><em>result</em>, <em>owners</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.compile_result" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts the result to a JSON serializable message for sending
 over PubSub.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.LocalWorker.handle_command">
-<code class="descname">handle_command</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.handle_command" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.VirtualWorker.handle_command">
+<code class="descname">handle_command</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.handle_command" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function that handles incoming torch commands.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.LocalWorker.handle_register">
-<code class="descname">handle_register</code><span class="sig-paren">(</span><em>torch_object</em>, <em>obj_msg</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.handle_register" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.VirtualWorker.handle_register">
+<code class="descname">handle_register</code><span class="sig-paren">(</span><em>torch_object</em>, <em>obj_msg</em>, <em>force_attach_to_worker=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.handle_register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.LocalWorker.process_command">
-<code class="descname">process_command</code><span class="sig-paren">(</span><em>command_msg</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.process_command" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.VirtualWorker.process_command">
+<code class="descname">process_command</code><span class="sig-paren">(</span><em>command_msg</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.process_command" title="Permalink to this definition">¶</a></dt>
 <dd><p>Process a command message from a client worker. Returns the
 result of the computation and a list of the result&#8217;s owners.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.LocalWorker.receive_obj">
-<code class="descname">receive_obj</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.VirtualWorker.receive_obj">
+<code class="descname">receive_obj</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.LocalWorker.request_obj">
-<code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.VirtualWorker.request_obj">
+<code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.request_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.LocalWorker.request_response">
-<code class="descname">request_response</code><span class="sig-paren">(</span><em>recipient</em>, <em>message</em>, <em>response_handler</em>, <em>timeout=10</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.request_response" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.VirtualWorker.request_response">
+<code class="descname">request_response</code><span class="sig-paren">(</span><em>recipient</em>, <em>message</em>, <em>response_handler</em>, <em>timeout=10</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.request_response" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.LocalWorker.return_result">
-<code class="descname">return_result</code><span class="sig-paren">(</span><em>compiled_result</em>, <em>response_channel</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.return_result" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.VirtualWorker.return_result">
+<code class="descname">return_result</code><span class="sig-paren">(</span><em>compiled_result</em>, <em>response_channel</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.return_result" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return compiled result of a torch command</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="syft.core.worker.LocalWorker.send_obj">
-<code class="descname">send_obj</code><span class="sig-paren">(</span><em>obj</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.worker.LocalWorker.send_obj" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.workers.VirtualWorker.send_obj">
+<code class="descname">send_obj</code><span class="sig-paren">(</span><em>obj</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.send_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -288,7 +415,7 @@ result of the computation and a list of the result&#8217;s owners.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'0.1',
-            LANGUAGE:'None',
+            LANGUAGE:'python',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

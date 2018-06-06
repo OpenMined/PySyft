@@ -1,18 +1,68 @@
-from .torch_ import utils
+"""Interfaces for communicating about objects between Clients and Workers"""
+
 import json
 import numbers
 import re
 
 
 class BaseWorker(object):
+    r"""
+    Concatenates the given sequence of :attr:`seq` tensors in the given dimension.
+    All tensors must either have the same shape (except in the concatenating
+    dimension) or be empty.
 
-    def __init__(self,  hook, id=0):
+    :func:`torch.cat` can be seen as an inverse operation for :func:`torch.split`
+    and :func:`torch.chunk`.
+    
+    :func:`torch.cat` can be best understood via examples.
+
+    :Parameters:
+        
+        * **seq (sequence of Tensors)** any python sequence of tensors of the same type. 
+          Non-empty tensors provided must have the same shape, except in the cat dimension.
+        
+        * **dim (int, optional)** the dimension over which the tensors are concatenated
+        
+        * **out (Tensor, optional)** the output tensor
+    
+    :Example:
+    >>> x = torch.randn(2, 3)
+    >>> x
+    tensor([[ 0.6580, -1.0969, -0.4614],
+            [-0.1034, -0.5790,  0.1497]])
+    >>> torch.cat((x, x, x), 0)
+    tensor([[ 0.6580, -1.0969, -0.4614],
+            [-0.1034, -0.5790,  0.1497],
+            [ 0.6580, -1.0969, -0.4614],
+            [-0.1034, -0.5790,  0.1497],
+            [ 0.6580, -1.0969, -0.4614],
+            [-0.1034, -0.5790,  0.1497]])
+    >>> torch.cat((x, x, x), 1)
+    tensor([[ 0.6580, -1.0969, -0.4614,  0.6580, -1.0969, -0.4614,  0.6580,
+             -1.0969, -0.4614],
+            [-0.1034, -0.5790,  0.1497, -0.1034, -0.5790,  0.1497, -0.1034,
+             -0.5790,  0.1497]])
+    """
+    def __init__(self,  hook, id=0, is_client_worker=False):
 
         self.id = id
-        self.objects = {}
+        self.is_client_worker = is_client_worker
+        self._objects = {}
         self.hook = hook
 
-    def send_obj(message, recipient):
+    def set_obj(self, remote_key, value, force=False):
+        if(not self.is_client_worker or force):
+            self._objects[remote_key] = value
+
+    def get_obj(self, remote_key):
+        # if(not self.is_client_worker):
+        return self._objects[remote_key]
+
+    def rm_obj(self, remote_key):
+        # if(not self.is_client_worker):
+        del self._objects[remote_key]
+
+    def send_obj(self, message, recipient):
         raise NotImplementedError
 
     def receive_obj(self, message):
@@ -22,10 +72,10 @@ class BaseWorker(object):
         raise NotImplementedError
 
 
-class LocalWorker(BaseWorker):
+class VirtualWorker(BaseWorker):
 
-    def __init__(self, hook, id=0):
-        super().__init__(id=id, hook=hook)
+    def __init__(self, hook, id=0, is_client_worker=False):
+        super().__init__(id=id, hook=hook, is_client_worker=is_client_worker)
 
     def send_obj(self, obj, recipient):
         recipient.receive_obj(obj._ser())
@@ -35,16 +85,17 @@ class LocalWorker(BaseWorker):
         message_obj = json.loads(message)
         obj_type = utils.types_guard(message_obj['torch_type'])
         obj = obj_type._deser(obj_type, message_obj)
-        self.handle_register(obj, message_obj)
+        self.handle_register(obj, message_obj,force_attach_to_worker=True)
 
         # self.objects[message_obj['id']] = obj
         # obj.id = message_obj['id']
 
-    def handle_register(self, torch_object, obj_msg):
+    def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False):
+
         try:
             # TorchClient case
             # delete registration from init; it's got the wrong id
-            del self.objects[torch_object.id]
+            self.rm_obj(torch_object.id)
         except (AttributeError, KeyError):
             # Worker case: v was never formally registered
             pass
@@ -52,14 +103,16 @@ class LocalWorker(BaseWorker):
         torch_object = self.hook.register_object_(self,
                                                   torch_object,
                                                   id=obj_msg['id'],
-                                                  owners=[self.id])
+                                                  owners=[self.id],
+                                                  force_attach_to_worker=force_attach_to_worker)
 
         return torch_object
 
     def request_obj(self, obj_id, sender):
 
-        sender.send_obj(sender.objects[obj_id], self)
-        return self.objects[obj_id]
+        sender.send_obj(sender.get_obj(obj_id), self)
+
+        return self.get_obj(obj_id)
 
     def request_response(self, recipient, message, response_handler, timeout=10):
         return response_handler(recipient.handle_command(message))

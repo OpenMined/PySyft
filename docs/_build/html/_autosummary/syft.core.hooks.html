@@ -1,14 +1,14 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>syft.core.torch_.hook &mdash; PySyft 0.1 documentation</title>
+  <title>syft.core.hooks &mdash; PySyft 0.1 documentation</title>
   
 
   
@@ -29,7 +29,7 @@
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="syft.core.torch_.utils" href="syft.core.torch_.utils.html" />
+    <link rel="next" title="syft.core.workers" href="syft.core.workers.html" />
     <link rel="prev" title="Welcome to PySyft’s documentation!" href="../index.html" /> 
 
   
@@ -84,9 +84,8 @@
             
             
               <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">syft.core.torch_.hook</a></li>
-<li class="toctree-l1"><a class="reference internal" href="syft.core.torch_.utils.html">syft.core.torch_.utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="syft.core.worker.html">syft.core.worker</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">syft.core.hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.workers.html">syft.core.workers</a></li>
 </ul>
 
             
@@ -132,13 +131,13 @@
     
       <li><a href="../index.html">Docs</a> &raquo;</li>
         
-      <li>syft.core.torch_.hook</li>
+      <li>syft.core.hooks</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="../_sources/_autosummary/syft.core.torch_.hook.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/_autosummary/syft.core.hooks.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -151,20 +150,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-syft.core.torch_.hook">
-<span id="syft-core-torch-hook"></span><h1>syft.core.torch_.hook<a class="headerlink" href="#module-syft.core.torch_.hook" title="Permalink to this headline">¶</a></h1>
-<p class="rubric">Functions</p>
-<table border="1" class="longtable docutils">
-<colgroup>
-<col width="10%" />
-<col width="90%" />
-</colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">wraps</span></code>(wrapped[,&nbsp;assigned,&nbsp;updated])</td>
-<td>Decorator factory to apply update_wrapper() to a wrapper function</td>
-</tr>
-</tbody>
-</table>
+  <div class="section" id="module-syft.core.hooks">
+<span id="syft-core-hooks"></span><h1>syft.core.hooks<a class="headerlink" href="#module-syft.core.hooks" title="Permalink to this headline">¶</a></h1>
+<p>Hooks which override deep learning interfaces with remote execution functionality.</p>
 <p class="rubric">Classes</p>
 <table border="1" class="longtable docutils">
 <colgroup>
@@ -172,23 +160,8 @@
 <col width="90%" />
 </colgroup>
 <tbody valign="top">
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">BuiltinFunctionType</span></code></td>
-<td>alias of <code class="xref py py-class docutils literal"><span class="pre">builtin_function_or_method</span></code></td>
-</tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">FunctionType</span></code></td>
-<td>alias of <code class="xref py py-class docutils literal"><span class="pre">function</span></code></td>
-</tr>
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">LocalWorker</span></code>(hook[,&nbsp;id])</td>
-<td></td>
-</tr>
-<tr class="row-even"><td><a class="reference internal" href="../_modules/syft.core.torch_.html#syft.core.torch_.hook.TorchHook" title="syft.core.torch_.hook.TorchHook"><code class="xref py py-obj docutils literal"><span class="pre">TorchHook</span></code></a>([worker])</td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">partial</span></code></td>
-<td>partial(func, <a href="#id1"><span class="problematic" id="id2">*</span></a>args, <a href="#id3"><span class="problematic" id="id4">**</span></a>keywords) - new function with partial application</td>
-</tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">partialmethod</span></code>(func,&nbsp;*args,&nbsp;**keywords)</td>
-<td>Method descriptor with partial application of the given arguments and keywords.</td>
+<tr class="row-odd"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.hooks.TorchHook" title="syft.core.hooks.TorchHook"><code class="xref py py-obj docutils literal"><span class="pre">TorchHook</span></code></a>([local_worker,&nbsp;is_client])</td>
+<td>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors</td>
 </tr>
 </tbody>
 </table>
@@ -202,7 +175,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="syft.core.torch_.utils.html" class="btn btn-neutral float-right" title="syft.core.torch_.utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="syft.core.workers.html" class="btn btn-neutral float-right" title="syft.core.workers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="../index.html" class="btn btn-neutral" title="Welcome to PySyft’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -237,7 +210,7 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'0.1',
-            LANGUAGE:'None',
+            LANGUAGE:'python',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

@@ -1,14 +1,14 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>syft.core.torch_ &mdash; PySyft 0.1 documentation</title>
+  <title>syft.core.workers &mdash; PySyft 0.1 documentation</title>
   
 
   
@@ -28,7 +28,8 @@
     <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="syft.core.hooks" href="syft.core.hooks.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -81,10 +82,9 @@
               
             
             
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="syft.core.torch_.hook.html">syft.core.torch_.hook</a></li>
-<li class="toctree-l1"><a class="reference internal" href="syft.core.torch_.utils.html">syft.core.torch_.utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="syft.core.worker.html">syft.core.worker</a></li>
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="syft.core.hooks.html">syft.core.hooks</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">syft.core.workers</a></li>
 </ul>
 
             
@@ -130,13 +130,13 @@
     
       <li><a href="../index.html">Docs</a> &raquo;</li>
         
-      <li>syft.core.torch_</li>
+      <li>syft.core.workers</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="../_sources/_autosummary/syft.core.torch_.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/_autosummary/syft.core.workers.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -149,8 +149,24 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-syft.core.torch_">
-<span id="syft-core-torch"></span><h1>syft.core.torch_<a class="headerlink" href="#module-syft.core.torch_" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-syft.core.workers">
+<span id="syft-core-workers"></span><h1>syft.core.workers<a class="headerlink" href="#module-syft.core.workers" title="Permalink to this headline">¶</a></h1>
+<p>Interfaces for communicating about objects between Clients and Workers</p>
+<p class="rubric">Classes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-obj docutils literal"><span class="pre">BaseWorker</span></code></a>(hook[,&nbsp;id,&nbsp;is_client_worker])</td>
+<td>Concatenates the given sequence of <code class="xref py py-attr docutils literal"><span class="pre">seq</span></code> tensors in the given dimension.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-obj docutils literal"><span class="pre">VirtualWorker</span></code></a>(hook[,&nbsp;id,&nbsp;is_client_worker])</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 </div>
 
 
@@ -158,6 +174,13 @@
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="syft.core.hooks.html" class="btn btn-neutral" title="syft.core.hooks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -187,7 +210,7 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'0.1',
-            LANGUAGE:'None',
+            LANGUAGE:'python',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
