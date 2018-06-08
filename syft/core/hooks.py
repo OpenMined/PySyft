@@ -108,7 +108,7 @@ class TorchHook(object):
         print('Hooking into Torch...')
         self._hook_torch_module()
         # for t_type in self.tensor_types:
-        #     self.hook_tensor(t_type)
+            # self.hook_tensor(t_type)
         # self.hook_variable()
         print('Overloading complete.')
 
@@ -145,20 +145,29 @@ class TorchHook(object):
             lit = getattr(torch, attr)
             if (type(lit) in [types.FunctionType, types.BuiltinFunctionType]):
 
-                passer = self.pass_func_args(lit)
-                new_attr = self.overload_function(passer)
+                passer = self._pass_func_args(lit)
+                new_attr = self._overload_function(passer)
                 setattr(torch, 'old_{}'.format(attr), lit)
                 setattr(torch, attr, new_attr)
 
     @staticmethod
-    def pass_func_args(func):
+    def _pass_func_args(func):
         """Wrapper gathering partial object from function call."""
-        @wraps(func)
+
+        @functools.wraps(func)
         def pass_args(*args, **kwargs):
+            #Return a new partial object which when called will behave like func called with the 
+            # positional arguments args and keyword arguments keywords. If more arguments are 
+            # supplied to the call, they are appended to args. If additional keyword arguments 
+            # are supplied, they extend and override keywords. 
+
+            #The partial() is used for partial function application which “freezes” some 
+            # portion of a function’s arguments and/or keywords resulting in a new object 
+            # with a simplified signature.
             return functools.partial(func, *args, **kwargs)
         return pass_args
 
-    def overload_function(self, func):
+    def _overload_function(self, func):
         """
         Wrapper overloading partial objects of functions in the torch
         module.  Compiles command, checks for Tensors and Variables in
@@ -166,39 +175,53 @@ class TorchHook(object):
         Variables involved in computation, and handles the computation
         accordingly.
         """
-        @wraps(func)
+        @functools.wraps(func)
         def send_to_workers(*args, **kwargs):
             part = func(*args, **kwargs)
-            command = self.compile_command(part, has_self=False)
-            tensorvars = get_tensorvars(self, command)
-            has_remote = check_remote(tensorvars)
+
+            # Step 1: Compiles Command
+            command = self._compile_command(part, has_self=False)
+
+            # Step 2: checks for Tensors and Variables in the args/kwargs
+            tensorvars = self._get_tensorvars(self, command)
+
+            # Step 3: Checks to see if the tensor is local (on this machine) or is a pointer 
+            # to a remote one (on a different machine)
+            has_remote = self._check_remote(tensorvars)
+
+            # If one of the tensor arguments is remote
             if has_remote:
-                multiple_owners, owners = get_owners(tensorvars)
+
+                # Checks to see if the tensor has multiple owners (not yet fully supported func)
+                multiple_owners, owners = self._get_owners(tensorvars)
                 if multiple_owners:
                     raise NotImplementedError("""MPC not yet implemented:
                     Torch objects need to be on the same machine in order
                     to compute with them.""")
                 else:
-                    command = replace_in_command(command)
+
+                    # if the tensor only has one owner (remote)
+                    command = _replace_in_command(command)
+
                     for worker in owners:
                         # TODO: extend to iterables of pointers
-                        registration, torch_type, var_data, var_grad = self.send_command(
+                        registration, torch_type, var_data, var_grad = self._send_command(
                             command, worker)
                         if registration is None:
                             return var_data
-                        pointer = self.assemble_result_pointer(
+                        pointer = self._assemble_result_pointer(
                             registration, torch_type, var_data, var_grad)
                     return pointer
             else:
                 result = part.func(*args, **kwargs)
                 if type(result) in self.tensorvar_types:
-                    result = self.register_object_(self.worker, result, is_pointer=False)
+                    result = self._register_object(self.worker, result, is_pointer=False)
                 return result
 
         return send_to_workers
 
     @staticmethod
-    def compile_command(partial_func, has_self):
+    def _compile_command(partial_func, has_self):
         """
         Assembles a JSON-serializable message from a partial function.
 
@@ -222,6 +245,134 @@ class TorchHook(object):
         command['arg_types'] = [type(x).__name__ for x in args]
         command['kwarg_types'] = [type(kwargs[x]).__name__ for x in kwargs]
         return command
+
+    @staticmethod
+    def _get_tensorvars(command):
+        """Returns all Tensors and Variables in the args/kwargs of the command"""
+
+        args = command['args']
+        kwargs = command['kwargs']
+        arg_types = command['arg_types']
+        kwarg_types = command['kwarg_types']
+        tensorvar_args = [args[i]
+                          for i in range(len(args)) if arg_types[i] in self.tensorvar_types_strs]
+        tensorvar_kwvals = [kwargs[i][1] for i in range(len(kwargs))
+                            if kwarg_types[i] in self.tensorvar_types_strs]
+        if command['has_self']:
+            tensorvar_args.insert(0, command['self'])
+        return tensorvar_args + tensorvar_kwvals
+
+    @staticmethod
+    def _check_remote(tensorvars):
+        """Checks to see if the tensor is local (on this machine) or is a pointer 
+        to a remote one (on a different machine)"""
+
+        return any([tensorvar.is_pointer for tensorvar in tensorvars])
+
+    @staticmethod
+    def _get_owners(tensorvars):
+        """Returns owners given a list of tensors
+        Note - Andrew: This feels like a strange method."""
+
+        owners = list(set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
+        multiple_owners = len(owners) > 1
+        return multiple_owners, owners
+
+    @staticmethod
+    def _send_command(command, recipient):
+        """Send Torch command to recipient."""
+        # TODO: Fix the case when response contains only a numeric
+        response = self.worker.request_response(recipient=recipient,
+                                                message=command,
+                                                response_handler=self.process_response)
+
+        registration, torch_type, var_data, var_grad = response
+        return registration, torch_type, var_data, var_grad
+
+    @staticmethod
+    def _replace_in_command(command_msg):
+        command_msg['args'] = map_tuple(
+            None, command_msg['args'], replace_tensorvar)
+        command_msg['kwargs'] = map_dict(
+            None, command_msg['kwargs'], replace_tensorvar)
+        try:
+            command_msg['self'] = replace_tensorvar(command_msg['self'])
+        except KeyError:
+            pass
+        return command_msg     
+
+    @staticmethod
+    def _replace_tensorvar(x):
+        """This method takes a tensor/var/param and replaces it with a 
+        string containing it's ID and special flag for recognizing that 
+        it's a tensor type arg instead of a string.
+
+        This method also works for an iterable of tensors (e.g. `torch.cat([x1, x2, x3])`)
+        """
+        if hasattr(torch, 'old_is_tensor'):
+            check = torch.old_is_tensor
+        else:
+            check = torch.is_tensor
+        try:
+            if check(x) or isinstance(x, torch.autograd.Variable) or isinstance(x, torch.nn.Parameter):
+                return '_fl.{}'.format(x.id)
+            else:
+                [replace_tensorvar(i) for i in x]
+        except (AttributeError, TypeError):
+            return x
+
+    def _assemble_result_pointer(self, worker, registration, torch_type, var_data, var_grad):
+        """
+        Assembles a pointer to a remote Torch object. Pointers feel like
+        real Torch objects, but they're zero-dimensional until their
+        contents are retrieved from their owners.
+
+        Args
+        registration (dict): registration attributes for the pointer
+        torch_type: the torch class to construct the pointer from
+        """
+        # TODO: extend to iterables of tensor pointers
+        try:
+            torch_type = map_torch_type[torch_type]
+        except KeyError:
+            raise TypeError(
+                "Tried to receive a non-Torch object of type {}.".format(
+                    torch_type))
+
+        if var_data is not None:
+            data = self._assemble_result_pointer(worker, **var_data)
+            data = self._register_object(worker, data, **var_data['registration'])
+        elif torch_type in self.var_types:
+            data = torch.Tensor(0)
+        else:
+            data = 0
+        result = torch_type(data)
+        if var_grad is not None:
+            # grad = self.assemble_result_pointer(**var_grad)
+            self._register_object(worker, result.grad, **var_grad['registration'])
+        return self._register_object(self.worker, result, **registration)
+
+
+    # # Grid-specific method hooking
+    # def hook_tensor_send_(service_self, tensor_type):
+    #     def send_(self, workers):
+    #         """
+    #         Sends a Tensor object to a (sequence of) Grid workers.
+
+    #         Args:
+    #         workers: string (or sequence) containing IPFS address(es)
+    #             of worker node(s).
+    #         """
+    #         workers = check_workers(self, workers)  # makes singleton, if needed
+    #         self = service_self.register_object_(service_self.worker, obj=self,
+    #                                              id=self.id, owners=workers)
+    #         for worker in workers:
+    #             # TODO: sync or async? likely won't be worth doing async,
+    #             #       but should check (low priority)
+    #             service_self.send_obj(self, worker)
+    #         self = service_self.register_object_(service_self.worker, self.old_set_(tensor_type(0)),
+    #                                              id=self.id, owners=workers, is_pointer=True)
+    #         return self
 
     # def register_object_(self, worker, obj, force_attach_to_worker=False, **kwargs):
     #     """
@@ -292,46 +443,9 @@ class TorchHook(object):
     #     except AttributeError:
     #         return self.worker.request_obj(obj_id=obj, sender=sender)
 
-    # def send_command(self, command, recipient):
-    #     """Send Torch command to recipient."""
-    #     # TODO: Fix the case when response contains only a numeric
-    #     response = self.worker.request_response(recipient=recipient,
-    #                                             message=command,
-    #                                             response_handler=self.process_response)
 
-    #     registration, torch_type, var_data, var_grad = response
-    #     return registration, torch_type, var_data, var_grad
 
-    # def assemble_result_pointer(self, worker, registration, torch_type, var_data, var_grad):
-    #     """
-    #     Assembles a pointer to a remote Torch object. Pointers feel like
-    #     real Torch objects, but they're zero-dimensional until their
-    #     contents are retrieved from their owners.
 
-    #     Args
-    #     registration (dict): registration attributes for the pointer
-    #     torch_type: the torch class to construct the pointer from
-    #     """
-    #     # TODO: extend to iterables of tensor pointers
-    #     try:
-    #         torch_type = map_torch_type[torch_type]
-    #     except KeyError:
-    #         raise TypeError(
-    #             "Tried to receive a non-Torch object of type {}.".format(
-    #                 torch_type))
-
-    #     if var_data is not None:
-    #         data = self.assemble_result_pointer(worker, **var_data)
-    #         data = self.register_object_(worker, data, **var_data['registration'])
-    #     elif torch_type in self.var_types:
-    #         data = torch.Tensor(0)
-    #     else:
-    #         data = 0
-    #     result = torch_type(data)
-    #     if var_grad is not None:
-    #         # grad = self.assemble_result_pointer(**var_grad)
-    #         self.register_object_(worker, result.grad, **var_grad['registration'])
-    #     return self.register_object_(self.worker, result, **registration)
 
     # def process_response(self, response):
     #     """Processes a worker's response from a command."""
@@ -347,26 +461,7 @@ class TorchHook(object):
 
     
 
-#     # Grid-specific method hooking
-#     def hook_tensor_send_(service_self, tensor_type):
-#         def send_(self, workers):
-#             """
-#             Sends a Tensor object to a (sequence of) Grid workers.
 
-#             Args:
-#             workers: string (or sequence) containing IPFS address(es)
-#                 of worker node(s).
-#             """
-#             workers = check_workers(self, workers)  # makes singleton, if needed
-#             self = service_self.register_object_(service_self.worker, obj=self,
-#                                                  id=self.id, owners=workers)
-#             for worker in workers:
-#                 # TODO: sync or async? likely won't be worth doing async,
-#                 #       but should check (low priority)
-#                 service_self.send_obj(self, worker)
-#             self = service_self.register_object_(service_self.worker, self.old_set_(tensor_type(0)),
-#                                                  id=self.id, owners=workers, is_pointer=True)
-#             return self
 
 #         setattr(tensor_type, 'send_', send_)
 
@@ -463,7 +558,7 @@ class TorchHook(object):
 #     @staticmethod
 #     def pass_method_args(method):
 #         """Wrapper gathering partialmethod object from method call."""
-#         @wraps(method)
+#         @functools.wraps(method)
 #         def pass_args(*args, **kwargs):
 #             return partialmethod(method, *args, **kwargs)
 #         return pass_args
@@ -476,7 +571,7 @@ class TorchHook(object):
 #         Variables involved in computation, and handles the computation
 #         accordingly.
 #         """
-#         @wraps(method)
+#         @functools.wraps(method)
 #         def send_to_workers(self, *args, **kwargs):
 #             part = method(self, *args, **kwargs)
 #             if self.is_pointer:
@@ -703,54 +798,17 @@ class TorchHook(object):
 #     return workers
 
 
-# def get_tensorvars(self, command):
-#     args = command['args']
-#     kwargs = command['kwargs']
-#     arg_types = command['arg_types']
-#     kwarg_types = command['kwarg_types']
-#     tensorvar_args = [args[i]
-#                       for i in range(len(args)) if arg_types[i] in self.tensorvar_types_strs]
-#     tensorvar_kwvals = [kwargs[i][1] for i in range(len(kwargs))
-#                         if kwarg_types[i] in self.tensorvar_types_strs]
-#     if command['has_self']:
-#         tensorvar_args.insert(0, command['self'])
-#     return tensorvar_args + tensorvar_kwvals
 
 
-# def check_remote(tensorvars):
-#     return any([tensorvar.is_pointer for tensorvar in tensorvars])
 
 
-# def get_owners(tensorvars):
-#     owners = list(set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
-#     multiple_owners = len(owners) > 1
-#     return multiple_owners, owners
 
 
-# def replace_tensorvar(x):
-#     if hasattr(torch, 'old_is_tensor'):
-#         check = torch.old_is_tensor
-#     else:
-#         check = torch.is_tensor
-#     try:
-#         if check(x) or isinstance(x, torch.autograd.Variable) or isinstance(x, torch.nn.Parameter):
-#             return '_fl.{}'.format(x.id)
-#         else:
-#             [replace_tensorvar(i) for i in x]
-#     except (AttributeError, TypeError):
-#         return x
 
 
-# def replace_in_command(command_msg):
-#     command_msg['args'] = map_tuple(
-#         None, command_msg['args'], replace_tensorvar)
-#     command_msg['kwargs'] = map_dict(
-#         None, command_msg['kwargs'], replace_tensorvar)
-#     try:
-#         command_msg['self'] = replace_tensorvar(command_msg['self'])
-#     except KeyError:
-#         pass
-#     return command_msg
+
+
+
 
 
 # # Client needs to identify a tensor before sending commands that use it

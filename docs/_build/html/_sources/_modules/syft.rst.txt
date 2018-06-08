@@ -7,8 +7,6 @@ Subpackages
 .. toctree::
 
     syft.core
-    syft.federated
-    syft.mpc
 
 Module contents
 ---------------

@@ -208,34 +208,6 @@ important if you&#8217;re not initializing the local worker yourself.</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
-<dl class="staticmethod">
-<dt id="syft.core.hooks.TorchHook.compile_command">
-<em class="property">static </em><code class="descname">compile_command</code><span class="sig-paren">(</span><em>partial_func</em>, <em>has_self</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.compile_command" title="Permalink to this definition">¶</a></dt>
-<dd><p>Assembles a JSON-serializable message from a partial function.</p>
-<p>Args:
-partial_func: a functools.partial or functools.partialmethod</p>
-<blockquote>
-<div>object wrapped around a torch command, its args, and its
-kwargs.</div></blockquote>
-<p>has_self: a flag for whether or not the function is a method.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.hooks.TorchHook.overload_function">
-<code class="descname">overload_function</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.overload_function" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wrapper overloading partial objects of functions in the torch
-module.  Compiles command, checks for Tensors and Variables in
-the args/kwargs, determines locations of all Tensors and
-Variables involved in computation, and handles the computation
-accordingly.</p>
-</dd></dl>
-
-<dl class="staticmethod">
-<dt id="syft.core.hooks.TorchHook.pass_func_args">
-<em class="property">static </em><code class="descname">pass_func_args</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.pass_func_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wrapper gathering partial object from function call.</p>
-</dd></dl>
-
 </dd></dl>
 
 </div>
