@@ -94,7 +94,7 @@ map_tensor_type = {
     'torch.LongTensor': torch.LongTensor
 }
 map_var_type = {
-    'torch.autograd.variable.Variable': torch.autograd.variable.Variable,
+    'torch.autograd.Variable': torch.autograd.Variable,
     'torch.nn.parameter.Parameter': torch.nn.parameter.Parameter
 }
 map_torch_type = dict(map_tensor_type, **map_var_type)

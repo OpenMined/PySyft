@@ -33,8 +33,8 @@ class TorchHook(object):
                              torch.ShortTensor,
                              torch.IntTensor,
                              torch.LongTensor]
-        self.var_types = [torch.autograd.variable.Variable, torch.nn.Parameter]
-        self.tensorvar_types = self.tensor_types + [torch.autograd.variable.Variable]
+        self.var_types = [torch.autograd.Variable, torch.nn.Parameter]
+        self.tensorvar_types = self.tensor_types + [torch.autograd.Variable]
         self.tensorvar_types_strs = [x.__name__ for x in self.tensorvar_types]
         self.tensorvar_methods = list(
             set(
