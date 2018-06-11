@@ -58,7 +58,7 @@ class BaseWorker(object):
         """If you pass in an ID, it will attempt to find the worker object (pointer)
         withins self._known_workers. If you instead pass in a pointer itself, it will 
         save that as a known_worker."""
-        
+
         if(issubclass(type(id_or_worker), BaseWorker)):
             self._known_workers[id_or_worker.id] = id_or_worker
             return id_or_worker
@@ -74,8 +74,8 @@ class BaseWorker(object):
         return self._objects[remote_key]
 
     def rm_obj(self, remote_key):
-        # if(not self.is_client_worker):
-        del self._objects[remote_key]
+        if(remote_key in self._objects):
+            del self._objects[remote_key]
 
     def send_obj(self, message, recipient):
         raise NotImplementedError
@@ -146,14 +146,16 @@ class VirtualWorker(BaseWorker):
     def __init__(self, hook, id=0, is_client_worker=False):
         super().__init__(id=id, hook=hook, is_client_worker=is_client_worker)
 
-    def send_obj(self, obj, recipient):
+    def send_obj(self, obj, recipient, delete_local=True):
         recipient.receive_obj(obj.ser())
+        if(delete_local):
+            self.rm_obj(obj.id)
 
     def receive_obj(self, message):
 
         message_obj = json.loads(message)
         obj_type = self.hook.types_guard(message_obj['torch_type'])
-        obj = obj_type.deser(obj_type, message_obj['data'])
+        obj = obj_type.deser(obj_type, message_obj)
         self.handle_register(obj, message_obj,force_attach_to_worker=True)
 
         # self.objects[message_obj['id']] = obj

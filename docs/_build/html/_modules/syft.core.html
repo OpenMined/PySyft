@@ -209,6 +209,11 @@ important if you&#8217;re not initializing the local worker yourself.</li>
 </pre></div>
 </div>
 <dl class="method">
+<dt id="syft.core.hooks.TorchHook.hook_variable">
+<code class="descname">hook_variable</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_variable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
 <dt id="syft.core.hooks.TorchHook.tensor_contents_guard">
 <code class="descname">tensor_contents_guard</code><span class="sig-paren">(</span><em>contents</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.tensor_contents_guard" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -415,7 +420,7 @@ is_pointer: False</dd>
 
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.send_obj">
-<code class="descname">send_obj</code><span class="sig-paren">(</span><em>obj</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.send_obj" title="Permalink to this definition">¶</a></dt>
+<code class="descname">send_obj</code><span class="sig-paren">(</span><em>obj</em>, <em>recipient</em>, <em>delete_local=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.send_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
