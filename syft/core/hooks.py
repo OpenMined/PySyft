@@ -468,7 +468,7 @@ class TorchHook(object):
             tensor_type.old__repr__ = tensor_type.__repr__
 
             def new___repr__(self):
-                if service_self.local_worker in self.owners:
+                if (service_self.local_worker in self.owners or service_Self.local_worker.id in self.owners):
                     return self.old__repr__()
                 else:
                     return "[{}.{} - Locations:{}]".format(
