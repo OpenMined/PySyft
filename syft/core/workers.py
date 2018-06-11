@@ -1,8 +1,6 @@
 """Interfaces for communicating about objects between Clients and Workers"""
 
-import json
-import numbers
-import re
+import json, numbers, re, random
 
 
 class BaseWorker(object):
@@ -72,6 +70,20 @@ class BaseWorker(object):
     def request_obj(self, obj_id, sender):
         raise NotImplementedError
 
+    # Helpers for HookService and TorchService
+    @staticmethod
+    def _check_workers(self, workers):
+        if type(workers) is str:
+            workers = [workers]
+        if issubclass(type(workers), BaseWorker):
+            workers = [workers]
+        elif not hasattr(workers, '__iter__'):
+            raise TypeError(
+                """Can only send {} to a string worker ID or an iterable of
+                string worker IDs, not {}""".format(self.__name__, workers)
+                )
+        return workers
+
 
 class VirtualWorker(BaseWorker):
 
@@ -79,13 +91,13 @@ class VirtualWorker(BaseWorker):
         super().__init__(id=id, hook=hook, is_client_worker=is_client_worker)
 
     def send_obj(self, obj, recipient):
-        recipient.receive_obj(obj._ser())
+        recipient.receive_obj(obj.ser())
 
     def receive_obj(self, message):
 
         message_obj = json.loads(message)
-        obj_type = utils.types_guard(message_obj['torch_type'])
-        obj = obj_type._deser(obj_type, message_obj)
+        obj_type = self.hook.types_guard(message_obj['torch_type'])
+        obj = obj_type.deser(obj_type, message_obj['data'])
         self.handle_register(obj, message_obj,force_attach_to_worker=True)
 
         # self.objects[message_obj['id']] = obj
@@ -101,13 +113,70 @@ class VirtualWorker(BaseWorker):
             # Worker case: v was never formally registered
             pass
 
-        torch_object = self.hook.register_object_(self,
-                                                  torch_object,
-                                                  id=obj_msg['id'],
-                                                  owners=[self.id],
-                                                  force_attach_to_worker=force_attach_to_worker)
+        torch_object = self.register_object(self,
+                                            torch_object,
+                                            id=obj_msg['id'],
+                                            owners=[self.id],
+                                            force_attach_to_worker=force_attach_to_worker)
 
         return torch_object
+
+    def register_object(self, worker, obj, force_attach_to_worker=False, **kwargs):
+        """
+        Registers an object with the current worker node.
+        Selects an id for the object, assigns a list of owners,
+        and establishes whether it's a pointer or not.
+
+        Args:
+            obj: a Torch instance, e.g. Tensor or Variable
+        Default kwargs:
+            id: random integer between 0 and 1e10
+            owners: list containing local worker's IPFS id
+            is_pointer: False
+        """
+        # TODO: Assign default id more intelligently (low priority)
+        #       Consider popping id from long list of unique integers
+        keys = kwargs.keys()
+
+        obj.id = (kwargs['id']
+                  if 'id' in keys
+                  else random.randint(0, 1e10))
+
+        obj.owners = (kwargs['owners']
+                      if 'owners' in keys
+                      else [worker.id])
+
+        # check to see if we can resolve owner id to pointer
+        owner_pointers = list()
+        for owner in obj.owners:
+            if owner in self._known_workers.keys():
+                owner_pointers.append(self._known_workers[owner])
+            else:
+                owner_pointers.append(owner)
+        obj.owners = owner_pointers
+
+        obj.is_pointer = (kwargs['is_pointer']
+                          if 'is_pointer' in keys
+                          else False)
+
+        mal_points_away = obj.is_pointer and worker.id in obj.owners
+        # print("Mal Points Away:" + str(mal_points_away))
+        # print("self.local_worker.id in obj.owners == " + str(self.local_worker.id in obj.owners))
+        # The following was meant to assure that we didn't try to
+        # register objects we didn't have. We end up needing to register
+        # objects with non-local owners on the worker side before sending
+        # things off, so it's been relaxed.  Consider using a 'strict'
+        # kwarg for strict checking of this stuff
+        mal_points_here = False
+        # mal_points_here = not obj.is_pointer and self.local_worker.id not in obj.owners
+        if mal_points_away or mal_points_here:
+            raise RuntimeError(
+                'Invalid registry: is_pointer is {} but owners is {}'.format(
+                    obj.is_pointer, obj.owners))
+
+        self.set_obj(obj.id, obj, force=force_attach_to_worker)
+
+        return obj
 
     def request_obj(self, obj_id, sender):
 
@@ -196,9 +265,9 @@ class VirtualWorker(BaseWorker):
             except (AttributeError, AssertionError):
                 var_grad = None
             try:
-                result = self.hook.register_object_(self, result, id=result.id, owners=owners)
+                result = self.register_object(self, result, id=result.id, owners=owners)
             except AttributeError:
-                result = self.hook.register_object_(self, result, owners=owners)
+                result = self.register_object(self, result, owners=owners)
 
             registration = dict(id=result.id,
                                 owners=owners, is_pointer=True)

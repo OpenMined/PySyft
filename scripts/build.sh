@@ -9,5 +9,7 @@ rm -rf _build
 make html
 cd ../
 
+python setup.py test
+
 # uncomment if you want to open the documentation in a webpage
 # open ./docs/_build/html/index.html

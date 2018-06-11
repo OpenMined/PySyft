@@ -158,7 +158,7 @@
 <p>Hooks which override deep learning interfaces with remote execution functionality.</p>
 <dl class="class">
 <dt id="syft.core.hooks.TorchHook">
-<em class="property">class </em><code class="descclassname">syft.core.hooks.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.hooks.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors</p>
 <p>The purpose of this class is to:</p>
@@ -209,27 +209,14 @@ important if you&#8217;re not initializing the local worker yourself.</li>
 </pre></div>
 </div>
 <dl class="method">
-<dt id="syft.core.hooks.TorchHook.hook_tensor___del__">
-<code class="descname">hook_tensor___del__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_tensor___del__" title="Permalink to this definition">¶</a></dt>
+<dt id="syft.core.hooks.TorchHook.tensor_contents_guard">
+<code class="descname">tensor_contents_guard</code><span class="sig-paren">(</span><em>contents</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.tensor_contents_guard" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="syft.core.hooks.TorchHook.hook_tensor___init__">
-<code class="descname">hook_tensor___init__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_tensor___init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overload tensor_type.__init__</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.hooks.TorchHook.hook_tensor___new__">
-<code class="descname">hook_tensor___new__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_tensor___new__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overload tensor_type.__new__</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.hooks.TorchHook.hook_tensor___repr__">
-<code class="descname">hook_tensor___repr__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_tensor___repr__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overload tensor_type.__repr__</p>
-</dd></dl>
+<dt id="syft.core.hooks.TorchHook.types_guard">
+<code class="descname">types_guard</code><span class="sig-paren">(</span><em>_torch_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.types_guard" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -346,6 +333,22 @@ result of the computation and a list of the result&#8217;s owners.</p>
 <dt id="syft.core.workers.VirtualWorker.receive_obj">
 <code class="descname">receive_obj</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.VirtualWorker.register_object">
+<code class="descname">register_object</code><span class="sig-paren">(</span><em>worker</em>, <em>obj</em>, <em>force_attach_to_worker=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.register_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an object with the current worker node.
+Selects an id for the object, assigns a list of owners,
+and establishes whether it&#8217;s a pointer or not.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>obj: a Torch instance, e.g. Tensor or Variable</dd>
+<dt>Default kwargs:</dt>
+<dd>id: random integer between 0 and 1e10
+owners: list containing local worker&#8217;s IPFS id
+is_pointer: False</dd>
+</dl>
+</dd></dl>
 
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.request_obj">
