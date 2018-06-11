@@ -177,9 +177,9 @@ is responsible for augmenting PyTorch with PySyft&#8217;s added functionality (s
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>local_worker (</strong><a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>)</strong> you can optionally provide a local worker as
+<li><strong>local_worker (</strong><code class="xref py py-class docutils literal"><span class="pre">local_workers.BaseWorker</span></code> <strong>)</strong> you can optionally provide a local worker as
 a parameter which TorchHook will assume to be the worker owned by the local machine. If you leave it
-empty, TorchClient will automatically initialize a <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the 
+empty, TorchClient will automatically initialize a <code class="xref py py-class docutils literal"><span class="pre">local_workers.VirtualWorker</span></code> under the 
 assumption you&#8217;re looking to do local experimentation/development.</li>
 <li><strong>is_client (bool)</strong> whether or not the TorchHook is being initialized as an end-user client.
 This can impact whether or not variables are deleted when they fall out of scope. If you set
@@ -208,6 +208,29 @@ important if you&#8217;re not initializing the local worker yourself.</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
+<dl class="method">
+<dt id="syft.core.hooks.TorchHook.hook_tensor___del__">
+<code class="descname">hook_tensor___del__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_tensor___del__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.hooks.TorchHook.hook_tensor___init__">
+<code class="descname">hook_tensor___init__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_tensor___init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload tensor_type.__init__</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.hooks.TorchHook.hook_tensor___new__">
+<code class="descname">hook_tensor___new__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_tensor___new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload tensor_type.__new__</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.hooks.TorchHook.hook_tensor___repr__">
+<code class="descname">hook_tensor___repr__</code><span class="sig-paren">(</span><em>service_self</em>, <em>tensor_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_tensor___repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload tensor_type.__repr__</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>

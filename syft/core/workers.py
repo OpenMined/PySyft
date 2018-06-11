@@ -48,6 +48,7 @@ class BaseWorker(object):
         self.id = id
         self.is_client_worker = is_client_worker
         self._objects = {}
+        self._known_workers = {}
         self.hook = hook
 
     def set_obj(self, remote_key, value, force=False):
