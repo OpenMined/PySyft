@@ -813,7 +813,9 @@ class TorchHook(object):
                 if obj_msg['grad'] is not None:
                     grad_msg = json.loads(obj_msg['grad'])
                     var_type = hook_self.types_guard(grad_msg['torch_type'])
-                    grad_obj = hook_self.build_var(grad_msg, var_type)
+                    print("calling build_var")
+                    # grad_obj = hook_self.build_var(grad_msg, var_type)
+                    grad_obj = torch.autograd.variable.Variable.deser(var_type, grad_msg)
                     grad = hook_self.local_worker.handle_register(grad_obj, grad_msg)
                 else:
                     grad = None
@@ -826,7 +828,7 @@ class TorchHook(object):
 
     def _var_to_pointer(self, var, hook_self):
         if var.grad is not None:
-            self.var_to_pointer(var.grad)
+            self._var_to_pointer(var.grad, hook_self)
 
         var.data.old_set_(var.data.__class__(0))
         self.local_worker.register_object(hook_self.local_worker,
@@ -837,47 +839,26 @@ class TorchHook(object):
         return var
 
 
+    # def build_var(self, obj_msg, torch_type):
 
+    #     if 'data' in obj_msg.keys():
+    #         data_msg = json.loads(obj_msg['data'])
+    #         tensor_type = types_guard(data_msg['torch_type'])
+    #         data_obj = self.build_tensor(data_msg, tensor_type)
+    #         data = self.local_worker.handle_register(data_obj, data_msg)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#     def build_var(self, obj_msg, torch_type):
-
-#         if 'data' in obj_msg.keys():
-#             data_msg = json.loads(obj_msg['data'])
-#             tensor_type = types_guard(data_msg['torch_type'])
-#             data_obj = self.build_tensor(data_msg, tensor_type)
-#             data = self.handle_register(data_obj, data_msg)
-
-#         if 'grad' in obj_msg.keys():
-#             if obj_msg['grad'] is not None:
-#                 grad_msg = json.loads(obj_msg['grad'])
-#                 var_type = types_guard(grad_msg['torch_type'])
-#                 grad_obj = self.build_var(grad_msg, var_type)
-#                 grad = self.handle_register(grad_obj, grad_msg)
-#             else:
-#                 grad = None
-#         var = torch_type(data, volatile=obj_msg['volatile'],
-#                          requires_grad=obj_msg['requires_grad'])
-#         var.grad = grad
-#         return var
+    #     if 'grad' in obj_msg.keys():
+    #         if obj_msg['grad'] is not None:
+    #             grad_msg = json.loads(obj_msg['grad'])
+    #             var_type = types_guard(grad_msg['torch_type'])
+    #             grad_obj = self.build_var(grad_msg, var_type)
+    #             grad = self.local_worker.handle_register(grad_obj, grad_msg)
+    #         else:
+    #             grad = None
+    #     var = torch_type(data, volatile=obj_msg['volatile'],
+    #                      requires_grad=obj_msg['requires_grad'])
+    #     var.grad = grad
+    #     return var
 
 #     def handle_register(self, torch_object, obj_msg):
 #         try:
