@@ -205,7 +205,7 @@ class TorchHook(object):
             else:
                 result = part.func(self, *args, **kwargs)
                 if (type(result) in service_self.tensorvar_types and not hasattr(result, 'owner')):
-                    result = service_self.register_object_(service_self.local_worker, result,
+                    result = service_self._register_object(service_self.local_worker, result,
                                                            is_pointer=False)
                 return result
         return send_to_workers
@@ -468,7 +468,7 @@ class TorchHook(object):
             tensor_type.old__repr__ = tensor_type.__repr__
 
             def new___repr__(self):
-                if (service_self.local_worker in self.owners or service_Self.local_worker.id in self.owners):
+                if (service_self.local_worker in self.owners or service_self.local_worker.id in self.owners):
                     return self.old__repr__()
                 else:
                     return "[{}.{} - Locations:{}]".format(
@@ -499,13 +499,13 @@ class TorchHook(object):
                 of worker node(s).
             """
             workers = check_workers(self, workers)  # makes singleton, if needed
-            self = service_self.register_object_(service_self.local_worker, obj=self,
+            self = service_self._register_object(service_self.local_worker, obj=self,
                                                  id=self.id, owners=workers)
             for worker in workers:
                 # TODO: sync or async? likely won't be worth doing async,
                 #       but should check (low priority)
                 service_self.send_obj(self, worker)
-            self = service_self.register_object_(service_self.local_worker, self.old_set_(tensor_type(0)),
+            self = service_self._register_object(service_self.local_worker, self.old_set_(tensor_type(0)),
                                                  id=self.id, owners=workers, is_pointer=True)
             return self
 
@@ -532,21 +532,21 @@ class TorchHook(object):
                 return self
 
             x = service_self.request_obj(self, self.owners[0])
-            service_self.register_object_(service_self.local_worker, x, id=x.id)
+            service_self._register_object(service_self.local_worker, x, id=x.id)
 
             try:
-                self = service_self.register_object_(service_self.local_worker,
+                self = service_self._register_object(service_self.local_worker,
                                                      self.old_set_(x.type(self.type())),
                                                      id=self.id, owners=[service_self.local_worker.id])
             except TypeError:
-                self = service_self.register_object_(service_self.local_worker,
+                self = service_self._register_object(service_self.local_worker,
                                                      self.old_set_(x.type(self.data.type())),
                                                      id=self.id, owners=[service_self.local_worker.id])
             try:
-                self.data = service_self.register_object_(service_self.local_worker, x.data, id=x.data.id,
+                self.data = service_self._register_object(service_self.local_worker, x.data, id=x.data.id,
                                                           owners=[service_self.local_worker.id])
                 try:
-                    self.grad = service_self.register_object_(service_self.local_worker,
+                    self.grad = service_self._register_object(service_self.local_worker,
                                                               x.grad,
                                                               id=x.grad.id,
                                                               owners=[service_self.local_worker.id])
