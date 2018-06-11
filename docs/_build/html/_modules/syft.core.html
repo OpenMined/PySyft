@@ -221,6 +221,19 @@ important if you&#8217;re not initializing the local worker yourself.</li>
 </dd></dl>
 
 </div>
+<div class="section" id="module-syft.core.utils">
+<span id="syft-core-utils-module"></span><h2>syft.core.utils module<a class="headerlink" href="#module-syft.core.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="syft.core.utils.map_dict">
+<code class="descclassname">syft.core.utils.</code><code class="descname">map_dict</code><span class="sig-paren">(</span><em>service</em>, <em>kwargs</em>, <em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.map_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.utils.map_tuple">
+<code class="descclassname">syft.core.utils.</code><code class="descname">map_tuple</code><span class="sig-paren">(</span><em>service</em>, <em>args</em>, <em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.map_tuple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
 <div class="section" id="module-syft.core.workers">
 <span id="syft-core-workers-module"></span><h2>syft.core.workers module<a class="headerlink" href="#module-syft.core.workers" title="Permalink to this headline">¶</a></h2>
 <p>Interfaces for communicating about objects between Clients and Workers</p>
@@ -269,9 +282,38 @@ Non-empty tensors provided must have the same shape, except in the cat dimension
 </pre></div>
 </div>
 <dl class="method">
+<dt id="syft.core.workers.BaseWorker.add_worker">
+<code class="descname">add_worker</code><span class="sig-paren">(</span><em>worker</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.add_worker" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.command_guard">
+<code class="descname">command_guard</code><span class="sig-paren">(</span><em>command</em>, <em>allowed</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.command_guard" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.BaseWorker.get_obj">
 <code class="descname">get_obj</code><span class="sig-paren">(</span><em>remote_key</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.get_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.get_worker">
+<code class="descname">get_worker</code><span class="sig-paren">(</span><em>id_or_worker</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.get_worker" title="Permalink to this definition">¶</a></dt>
+<dd><p>If you pass in an ID, it will attempt to find the worker object (pointer)
+withins self._known_workers. If you instead pass in a pointer itself, it will 
+save that as a known_worker.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.id_tensorvar">
+<code class="descname">id_tensorvar</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.id_tensorvar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.process_response">
+<code class="descname">process_response</code><span class="sig-paren">(</span><em>response</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.process_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a worker&#8217;s response from a command.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="syft.core.workers.BaseWorker.receive_obj">
@@ -281,6 +323,11 @@ Non-empty tensors provided must have the same shape, except in the cat dimension
 <dl class="method">
 <dt id="syft.core.workers.BaseWorker.request_obj">
 <code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.retrieve_tensor">
+<code class="descname">retrieve_tensor</code><span class="sig-paren">(</span><em>self2</em>, <em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.retrieve_tensor" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">

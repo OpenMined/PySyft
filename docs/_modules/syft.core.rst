@@ -12,6 +12,14 @@ syft\.core\.hooks module
     :undoc-members:
     :show-inheritance:
 
+syft\.core\.utils module
+------------------------
+
+.. automodule:: syft.core.utils
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 syft\.core\.workers module
 --------------------------
 

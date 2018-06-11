@@ -2,6 +2,8 @@
 
 import json, numbers, re, random
 
+from . import utils
+
 
 class BaseWorker(object):
     r"""
@@ -49,6 +51,20 @@ class BaseWorker(object):
         self._known_workers = {}
         self.hook = hook
 
+    def add_worker(self, worker):
+        self._known_workers[worker.id] = worker
+
+    def get_worker(self, id_or_worker):
+        """If you pass in an ID, it will attempt to find the worker object (pointer)
+        withins self._known_workers. If you instead pass in a pointer itself, it will 
+        save that as a known_worker."""
+        
+        if(issubclass(type(id_or_worker), BaseWorker)):
+            self._known_workers[id_or_worker.id] = id_or_worker
+            return id_or_worker
+        else:
+            return self._known_workers[id_or_worker]
+
     def set_obj(self, remote_key, value, force=False):
         if(not self.is_client_worker or force):
             self._objects[remote_key] = value
@@ -84,6 +100,46 @@ class BaseWorker(object):
                 )
         return workers
 
+    def process_response(self, response):
+        """Processes a worker's response from a command."""
+        # TODO: Extend to responses that are iterables.
+        # TODO: Fix the case when response contains only a numeric
+        # print(response)
+        response = json.loads(response)
+        try:
+            return (response['registration'], response['torch_type'],
+                    response['var_data'], response['var_grad'])
+        except:
+            return response
+
+    # Worker needs to retrieve tensor by ID before computing with it
+    def retrieve_tensor(self, self2, x):
+        try:
+            return self.get_obj(self.id_tensorvar(x))
+        except TypeError:
+            try:
+                return [self.get_obj(i) for i in self.id_tensorvar(x)]
+            except TypeError:
+                return x
+        except KeyError:
+            return x
+
+    def command_guard(self, command, allowed):
+        if command not in allowed:
+            raise RuntimeError(
+                'Command "{}" is not a supported Torch operation.'.format(command))
+        return command
+
+    # # Client needs to identify a tensor before sending commands that use it
+    def id_tensorvar(self, x):
+        pat = re.compile('_fl.(.*)')
+        try:
+            if isinstance(x, str):
+                return int(pat.search(x).group(1))
+            else:
+                return [self.id_tensorvar(i) for i in x]
+        except AttributeError:
+            return x
 
 class VirtualWorker(BaseWorker):
 
@@ -179,7 +235,7 @@ class VirtualWorker(BaseWorker):
         return obj
 
     def request_obj(self, obj_id, sender):
-
+        sender = self.get_worker(sender)
         sender.send_obj(sender.get_obj(obj_id), self)
 
         return self.get_obj(obj_id)
@@ -210,30 +266,33 @@ class VirtualWorker(BaseWorker):
         """
         # Args and kwargs contain special strings in place of tensors
         # Need to retrieve the tensors from self.worker.objects
-        args = utils.map_tuple(self, command_msg['args'], utils.retrieve_tensor)
-        kwargs = utils.map_dict(self, command_msg['kwargs'], utils.retrieve_tensor)
+        args = utils.map_tuple(self, command_msg['args'], self.retrieve_tensor)
+        kwargs = utils.map_dict(self, command_msg['kwargs'], self.retrieve_tensor)
         has_self = command_msg['has_self']
         # TODO: Implement get_owners and refactor to make it prettier
         combined = list(args) + list(kwargs.values())
 
         if has_self:
-            command = utils.command_guard(command_msg['command'],
+            command = self.command_guard(command_msg['command'],
                                           self.hook.tensorvar_methods)
-            obj_self = utils.retrieve_tensor(self, command_msg['self'])
+            obj_self = self.retrieve_tensor(self, command_msg['self'])
             combined = combined + [obj_self]
             command = eval('obj_self.{}'.format(command))
         else:
-            command = utils.command_guard(command_msg['command'], self.torch_funcs)
+            command = self.command_guard(command_msg['command'], self.torch_funcs)
             command = eval('torch.{}'.format(command))
 
         # we need the original tensorvar owners so that we can register
         # the result properly later on
         tensorvars = [x for x in combined if type(x).__name__ in self.hook.tensorvar_types_strs]
-        _, owners = utils.get_owners(tensorvars)
+        _, owners = self.hook._get_owners(tensorvars)
 
         owner_ids = list()
         for owner in owners:
-            owner_ids.append(owner.id)
+            if(type(owner) == int):
+                owner_ids.append(owner)
+            else:
+                owner_ids.append(owner.id)
 
         return command(*args, **kwargs), owner_ids
 
