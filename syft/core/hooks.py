@@ -129,7 +129,7 @@ class TorchHook(object):
         self._hook_torch_module()
         for t_type in self.tensor_types:
             self._hook_tensor(t_type)
-        self.hook_variable()
+        self._hook_variable()
         if(verbose):
             print('Overloading complete.')
 
@@ -623,7 +623,7 @@ class TorchHook(object):
         return contents
 
 
-    def hook_variable(self):
+    def _hook_variable(self):
         # Overload 'special' methods here
         self._hook_var___new__()
         self._hook_var_contents()
