@@ -156,7 +156,7 @@ class VirtualWorker(BaseWorker):
         message_obj = json.loads(message)
         obj_type = self.hook.types_guard(message_obj['torch_type'])
         obj = obj_type.deser(obj_type, message_obj)
-        self.handle_register(obj, message_obj,force_attach_to_worker=True)
+        self.handle_register(obj, message_obj, force_attach_to_worker=True)
 
         # self.objects[message_obj['id']] = obj
         # obj.id = message_obj['id']
@@ -176,6 +176,7 @@ class VirtualWorker(BaseWorker):
                                             id=obj_msg['id'],
                                             owners=[self.id],
                                             force_attach_to_worker=force_attach_to_worker)
+        
 
         return torch_object
 

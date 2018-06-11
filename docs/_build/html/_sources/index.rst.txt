@@ -20,6 +20,7 @@ API Reference
    :toctree: _autosummary
 
    syft.core.hooks
+   syft.core.utils
    syft.core.workers
 
 Indices and tables
