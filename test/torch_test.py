@@ -22,6 +22,15 @@ class TestTorchOverride(TestCase):
         x = x.send_(remote)
         assert x.id in remote._objects
 
+    def test_get_(self):
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        remote = VirtualWorker(id=1, hook=hook)
+
+        x = torch.FloatTensor([1,2,3,4,5])
+        x = x.send_(remote)
+        assert((x.get_() == torch.FloatTensor([1,2,3,4,5])).float().mean() == 1)
+
 
     def test_deser(self):
 
