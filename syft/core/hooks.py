@@ -553,8 +553,8 @@ class TorchHook(object):
             if hook_self.local_worker.id in self.owners:
                 return self
 
-            x = hook_self.request_obj(self, self.owners[0])
-            hook_self.register_object(hook_self.local_worker, x, id=x.id)
+            x = hook_self.local_worker.request_obj(obj_id=self.id, sender=self.owners[0])
+            hook_self.local_worker.register_object(hook_self.local_worker, x, id=x.id)
 
             try:
                 self = hook_self.register_object(hook_self.local_worker,
