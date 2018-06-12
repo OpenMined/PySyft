@@ -552,28 +552,29 @@ class TorchHook(object):
                 return self
 
             x = hook_self.local_worker.request_obj(obj_id=self.id, sender=self.owners[0])
+
             hook_self.local_worker.register_object(hook_self.local_worker, x, id=x.id)
 
-            try:
+            # if self == tensor
+            if(type(self) != torch.autograd.variable.Variable):
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                      self.old_set_(x.type(self.type())),
                                                      id=self.id, owners=[hook_self.local_worker.id])
-            except TypeError:
+
+            else:
+
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                      self.old_set_(x.type(self.data.type())),
                                                      id=self.id, owners=[hook_self.local_worker.id])
-            try:
+
                 self.data = hook_self.local_worker.register_object(hook_self.local_worker, x.data, id=x.data.id,
                                                           owners=[hook_self.local_worker.id])
-                try:
+                if(x.grad is not None):
                     self.grad = hook_self.local_worker.register_object(hook_self.local_worker,
                                                               x.grad,
                                                               id=x.grad.id,
                                                               owners=[hook_self.local_worker.id])
-                except AttributeError:
-                    pass
-            except RuntimeError:
-                pass
+                
 
             return self
 
@@ -680,33 +681,27 @@ class TorchHook(object):
 
         @property
         def new_data(self):
-            try:
-                self.data_registered
-            except AttributeError:
-                try:
-                    self.old_data = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                  obj=self.old_data,
-                                                                  id=self.old_data.id,
-                                                                  owners=self.owners,
-                                                                  is_pointer=self.is_pointer)
-                    self.data_registered = True
-                except AttributeError:
-                    try:
-                        self.old_data = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                      obj=self.old_data,
-                                                                      owners=self.owners,
-                                                                      is_pointer=self.is_pointer)
-                        self.data_registered = True
-                    except AttributeError:
-                        hook_self.local_worker.register_object(hook_self.local_worker,
-                                                      obj=self,
-                                                      owners=[hook_self.local_worker.id],
-                                                      is_pointer=False)
-                        self.old_data = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                      obj=self.old_data,
-                                                                      owners=self.owners,
-                                                                      is_pointer=self.is_pointer)
-                        self.data_registered = True
+            if not hasattr(self, 'data_registered'):
+            
+                if(hasattr(self.old_data,'id')):
+                    obj_id = self.old_data.id
+                else:
+                    obj_id = None
+
+                if(not hasattr(self,'owners')):
+                    hook_self.local_worker.register_object(hook_self.local_worker,
+                                                          obj=self,
+                                                          owners=[hook_self.local_worker.id],
+                                                          is_pointer=False)
+
+                self.old_data = hook_self.local_worker.register_object(hook_self.local_worker,
+                                                              obj=self.old_data,
+                                                              owners=self.owners,
+                                                              id=obj_id,
+                                                              is_pointer=self.is_pointer)
+                self.data_registered = True
+
+
             return self.old_data
 
         @new_data.setter
@@ -719,34 +714,27 @@ class TorchHook(object):
 
         @property
         def new_grad(self):
-            try:
-                self.grad_registered
-            except AttributeError:
+            if not hasattr(self, 'grad_registered'):
+
                 if self.old_grad is not None:
-                    try:
-                        self.old_grad = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                      obj=self.old_grad,
-                                                                      owners=self.owners,
-                                                                      id=self.old_grad.id,
-                                                                      is_pointer=self.is_pointer)
-                        self.grad_registered = True
-                    except AttributeError:
-                        try:
-                            self.old_grad = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                          obj=self.old_grad,
-                                                                          owners=self.owners,
-                                                                          is_pointer=self.is_pointer)
-                            self.grad_registered = True
-                        except AttributeError:
-                            hook_self.local_worker.register_object(hook_self.local_worker,
+
+                    if(hasattr(self.old_grad,'id')):
+                        grad_id = self.old_grad.id
+                    else:
+                        grad_id = None
+
+                    if(not hasattr(self,'owners')):
+                        hook_self.local_worker.register_object(hook_self.local_worker,
                                                           obj=self,
                                                           owners=[hook_self.local_worker.id],
                                                           is_pointer=False)
-                            self.old_grad = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                          obj=self.old_grad,
-                                                                          owners=self.owners,
-                                                                          is_pointer=self.is_pointer)
-                            self.grad_registered = True
+
+                    self.old_grad = hook_self.local_worker.register_object(hook_self.local_worker,
+                                                                  obj=self.old_grad,
+                                                                  owners=self.owners,
+                                                                  id=grad_id,
+                                                                  is_pointer=self.is_pointer)
+                    self.grad_registered = True
 
             return self.old_grad
 
@@ -860,49 +848,3 @@ class TorchHook(object):
                          requires_grad=obj_msg['requires_grad'])
         var.grad = grad
         return var
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

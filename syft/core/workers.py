@@ -176,7 +176,7 @@ class VirtualWorker(BaseWorker):
                                             id=obj_msg['id'],
                                             owners=[self.id],
                                             force_attach_to_worker=force_attach_to_worker)
-        
+
 
         return torch_object
 
@@ -198,7 +198,7 @@ class VirtualWorker(BaseWorker):
         keys = kwargs.keys()
 
         obj.id = (kwargs['id']
-                  if 'id' in keys
+                  if ('id' in keys and kwargs['id'] is not None)
                   else random.randint(0, 1e10))
 
         obj.owners = (kwargs['owners']
