@@ -66,8 +66,8 @@ class BaseWorker(object):
             return self._known_workers[id_or_worker]
 
     def set_obj(self, remote_key, value, force=False):
-        if(not self.is_client_worker or force):
-            self._objects[remote_key] = value
+        # if(not self.is_client_worker or force):
+        self._objects[remote_key] = value
 
     def get_obj(self, remote_key):
         # if(not self.is_client_worker):
@@ -232,7 +232,7 @@ class VirtualWorker(BaseWorker):
             raise RuntimeError(
                 'Invalid registry: is_pointer is {} but owners is {}'.format(
                     obj.is_pointer, obj.owners))
-
+        # print("setting object:" + str(obj.id))
         self.set_obj(obj.id, obj, force=force_attach_to_worker)
 
         return obj

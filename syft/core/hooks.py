@@ -570,6 +570,7 @@ class TorchHook(object):
                 self.data = hook_self.local_worker.register_object(hook_self.local_worker, x.data, id=x.data.id,
                                                           owners=[hook_self.local_worker.id])
                 if(x.grad is not None):
+
                     self.grad = hook_self.local_worker.register_object(hook_self.local_worker,
                                                               x.grad,
                                                               id=x.grad.id,
@@ -801,7 +802,7 @@ class TorchHook(object):
                 if obj_msg['grad'] is not None:
                     grad_msg = json.loads(obj_msg['grad'])
                     var_type = hook_self.types_guard(grad_msg['torch_type'])
-                    print("calling build_var")
+
                     grad_obj = hook_self.build_var(grad_msg, var_type)
                     # grad_obj = torch.autograd.variable.Variable.deser(var_type, grad_msg)
                     grad = hook_self.local_worker.handle_register(grad_obj, grad_msg)
