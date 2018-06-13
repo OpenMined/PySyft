@@ -13,6 +13,7 @@ syft\.core\.hooks
 
    .. autosummary::
    
+      BaseHook
       KerasHook
       TensorflowHook
       TorchHook

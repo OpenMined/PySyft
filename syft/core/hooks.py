@@ -5,8 +5,14 @@ from . import workers
 from . import utils
 
 
-class TorchHook(object):
-    r""" A Hook which Overrides Methods on PyTorch Variables & Tensors
+class BaseHook(object):
+    r""" A abstract interface for deep learning framework hooks."""    
+
+    def __init__(self):
+        ""
+
+class TorchHook(BaseHook):
+    r""" A Hook which Overrides Methods on PyTorch Variables & Tensors - **Currently compatible with PyTorch 0.3.1**
 
     The purpose of this class is to:
 
@@ -20,20 +26,21 @@ class TorchHook(object):
 
     :Parameters:
         
-        * **local_worker (**:class:`.workers.BaseWorker` **)** you can optionally provide a local worker as
+        * **local_worker (**:class:`.workers.BaseWorker` **, optional)** you can optionally provide a local worker as
           a parameter which TorchHook will assume to be the worker owned by the local machine. If you leave it
           empty, TorchClient will automatically initialize a :class:`.workers.VirtualWorker` under the 
           assumption you're looking to do local experimentation/development.
         
-        * **is_client (bool)** whether or not the TorchHook is being initialized as an end-user client.
+        * **is_client (bool, optional)** whether or not the TorchHook is being initialized as an end-user client.
           This can impact whether or not variables are deleted when they fall out of scope. If you set
           this incorrectly on a end user client, Tensors and Variables will never be deleted. If you set this
           incorrectly on a remote machine (not a client), tensors will not get saved. It's really only
           important if you're not initializing the local worker yourself. (Default: True)
 
-        * **verbose (bool)** whether or not to print operations as they occur. (Defalt: True)
+        * **verbose (bool, optional)** whether or not to print operations as they occur. (Defalt: True)
     
     :Example:
+
     >>> from syft.core.hooks import TorchHook
     >>> from syft.core.hooks import torch
     >>> hook = TorchHook()
@@ -51,7 +58,7 @@ class TorchHook(object):
 
 
     def __init__(self, local_worker=None, is_client=True, verbose=True):
-        
+        super().__init__()
 
         self.local_worker = local_worker
         if(self.local_worker is None):
@@ -153,7 +160,11 @@ class TorchHook(object):
         
         * **torch_type_str (string)** A string representing the type of object that is to be returned.
 
+        * **out (a torch type)** The type the string refers to (if it's present in the acceptible list 
+          self.map_torch_type)
+
         :Example:
+
         >>> from syft.core.hooks import TorchHook
         >>> hook = TorchHook()
         Hooking into Torch...
@@ -187,17 +198,20 @@ class TorchHook(object):
     @staticmethod
     def get_owners(tensorvars):
         """get_owners(tensorvars) -> (bool, list(BaseWorker))
-        A static utility method which returns owners given a list of tensors. Specifically, it returns a tuple where the
-        first value is a boolean indicating whether there are multiple owners. The second object is a list of owners, where
-        each item in the list can be either an id of the owner or a :class:`.workers.BaseWorker` pointer.
+        A static utility method which returns owners given a list of tensors.
         
         :Parameters:
-        
+
         * **tensorvars (list)** A list of :class:`torch.Tensor` or :class:`torch.autograd.Variable` objects which 
           you want to know the owners of. Can pass in an empty list without breaking (but will also return an empty list
           of owners)
-        
+
+        * **out (bool, list(BaseWorker))** a tuple where the
+        first value is a boolean indicating whether there are multiple owners. The second object is a list of owners, where
+        each item in the list can be either an id of the owner or a :class:`.workers.BaseWorker` pointer.
+
         :Example:
+
         >>> from syft.core.hooks import TorchHook
         >>> from syft.core.hooks import torch
         >>> from syft.core.workers import VirtualWorker
@@ -930,9 +944,9 @@ class TorchHook(object):
         return var
 
 
-class TensorflowHook(object):
+class TensorflowHook(BaseHook):
     r""" TODO: Hook Tensorflow"""
 
 
-class KerasHook(object):
-    r""" TODO: Hook Tensorflow"""
+class KerasHook(BaseHook):
+    r""" TODO: Hook Keras"""

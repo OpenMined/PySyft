@@ -67,7 +67,8 @@ class TestTorchVariable(TestCase):
 
         hook = TorchHook(verbose=False)
         local = hook.local_worker
-        remote = VirtualWorker(id=1, hook=hook)
+        local.verbose = False
+        remote = VirtualWorker(id=1, hook=hook, verbose=False)
         local.add_worker(remote)
 
         x = Var(torch.ones(2,2),requires_grad=True).send_(remote)
