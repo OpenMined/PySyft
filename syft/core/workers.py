@@ -302,15 +302,19 @@ class BaseWorker(object):
         """
         self._tmp_objects = {}
 
-    def send_obj(self, message, recipient):
+    def send_obj(self, obj, recipient, delete_local=True):
         """An interface that all extensions of BaseWorker must implement for functionality that sends an object 
-        to another worker.
+        to another worker. It should also, by default, remove the local reference to the object. It can, however,
+        optionally choose to keep it.
     
         :Parameters:
 
-        * **message (object)** a python object to be sent
+        * **obj (object)** a python object to be sent
 
         * **recipient (** :class:`BaseWorker` **)** the worker object to send the message to.
+
+        * **delete_local (bool, optional)** when set to true, it deletes the version of the object in the local registry.
+
 
         """
         raise NotImplementedError
@@ -363,166 +367,22 @@ class BaseWorker(object):
         except:
             return response
 
-
-    # Helpers for HookService and TorchService
-    @staticmethod
-    def _check_workers(self, workers):
-        if type(workers) is str:
-            workers = [workers]
-        if issubclass(type(workers), BaseWorker):
-            workers = [workers]
-        elif not hasattr(workers, '__iter__'):
-            raise TypeError(
-                """Can only send {} to a string worker ID or an iterable of
-                string worker IDs, not {}""".format(self.__name__, workers)
-                )
-        return workers
-
-    # Worker needs to retrieve tensor by ID before computing with it
-    def _retrieve_tensor(self, self2, x):
-        try:
-            return self.get_obj(self._id_tensorvar(x))
-        except TypeError:
-            try:
-                return [self.get_obj(i) for i in self._id_tensorvar(x)]
-            except TypeError:
-                return x
-        except KeyError:
-            return x
-
-    def _command_guard(self, command, allowed):
-        if command not in allowed:
-            raise RuntimeError(
-                'Command "{}" is not a supported Torch operation.'.format(command))
-        return command
-
-    # # Client needs to identify a tensor before sending commands that use it
-    def _id_tensorvar(self, x):
-        pat = re.compile('_fl.(.*)')
-        try:
-            if isinstance(x, str):
-                return int(pat.search(x).group(1))
-            else:
-                return [self._id_tensorvar(i) for i in x]
-        except AttributeError:
-            return x
-
-class VirtualWorker(BaseWorker):
-    r"""
-    A virtualized worker simulating the existence of a remote machine. It is intended as a testing,  
-    development, and performance evaluation tool that exists independent of a live or local network
-    of workers. You don't even have to be connected to the internet to create a pool of Virtual Workers
-    and start running computations on them.
-
-    :Parameters:
-        
-        * **hook (**:class:`.hooks.BaseHook` **)** This is a reference to the hook object which overloaded the 
-          underlying deep learning framework.
-        
-        * **id (int or string, optional)** the integer or string identifier for this node
-        
-        * **is_client_worker (bool, optional)** a boolean which determines whether this worker is associeted 
-          with an end user client. If so, it assumes that the client will maintain control over when 
-          tensors/variables/models are instantiated or deleted as opposed to handling tensor/variable/model 
-          lifecycle internally.
-
-        * **objects (list of tensors, variables, or models, optional)** 
-          When the worker is NOT a client worker, it stores all tensors it receives or creates in this dictionary.
-          The key to each object is it's id.
-
-        * **tmp_objects (list of tensors, variables, or models, optional)**
-          When the worker IS a client worker, it stores some tensors temporarily in this _tmp_objects simply to ensure
-          that they do not get deallocated by the Python garbage collector while in the process of being registered.
-          This dictionary can be emptied using the clear_tmp_objects method.
-    
-        * **known_workers (list of **:class:`BaseWorker` ** objects, optional)** This dictionary can include all known workers.
-
-        * **verbose (bool, optional)** A flag for whether or not to print events to stdout.
-    
-        :Example:
-
-        >>> from syft.core.hooks import TorchHook
-        >>> from syft.core.hooks import torch
-        >>> from syft.core.workers import VirtualWorker
-        >>> hook = TorchHook()
-        Hooking into Torch...
-        Overloading complete.
-        >>> local = hook.local_worker
-        >>> remote = VirtualWorker(id=1, hook=hook)
-        >>> local.add_worker(remote)
-        >>> x = torch.FloatTensor([1,2,3,4,5])
-        >>> x
-         1
-         2
-         3
-         4
-         5
-        [torch.FloatTensor of size 5]
-        >>> x.send(remote)
-        >>> x
-        [torch.FloatTensor - Locations:[<syft.core.workers.VirtualWorker object at 0x11848bda0>]]
-        >>> x.get()
-        >>> x
-         1
-         2
-         3
-         4
-         5
-        [torch.FloatTensor of size 5]        
-        """
-
-    def __init__(self,  hook, id=0, is_client_worker=False, objects={}, tmp_objects={}, known_workers={}, verbose=False):
-        super().__init__(hook=hook, id=id, is_client_worker=is_client_worker, objects=objects, tmp_objects=tmp_objects, known_workers=known_workers, verbose=verbose)
-
-    def send_obj(self, obj, recipient, delete_local=True):
-        obj = recipient.receive_obj(obj.ser())
-        if(delete_local):
-            self.rm_obj(obj.id)
-
-        return obj
-
-    def receive_obj(self, message):
-
-        message_obj = json.loads(message)
-        obj_type = self.hook.types_guard(message_obj['torch_type'])
-        obj = obj_type.deser(obj_type, message_obj)
-
-        self.handle_register(obj, message_obj, force_attach_to_worker=True)
-
-        return obj
-
-    def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):
-
-        try:
-            # TorchClient case
-            # delete registration from init; it's got the wrong id
-            self.rm_obj(torch_object.id)
-        except (AttributeError, KeyError):
-            # Worker case: v was never formally registered
-            pass
-
-        torch_object = self.register_object(self,
-                                            torch_object,
-                                            id=obj_msg['id'],
-                                            owners=[self.id],
-                                            force_attach_to_worker=force_attach_to_worker,
-                                            temporary=temporary)
-
-
-        return torch_object
-
     def register_object(self, worker, obj, force_attach_to_worker=False, temporary=False, **kwargs):
-        """
-        Registers an object with the current worker node.
-        Selects an id for the object, assigns a list of owners,
-        and establishes whether it's a pointer or not.
+        """register_object(worker, obj, force_attach_to_worker=False, temporary=False, **kwargs) -> object
+        Registers an object with the current worker node. Selects an id for the object, assigns a list of owners,
+        and establishes whether it's a pointer or not. This method is generally not used by the client and is 
+        instead used by interal processes (hooks and workers).
 
-        Args:
-            obj: a Torch instance, e.g. Tensor or Variable
-        Default kwargs:
-            id: random integer between 0 and 1e10
-            owners: list containing local worker's IPFS id
-            is_pointer: False
+        :Parameters:
+        
+        * **obj (a torch.Tensor or torch.autograd.Variable)** a Torch instance, e.g. Tensor or Variable to be registered
+        
+        * **id (int or string)** random integer between 0 and 1e10 or string uniquely identifying the object.
+        
+        * **owners (list of ** :class:`BaseWorker` objects ** or ids)** owner(s) of the object
+
+        * **is_pointer (bool, optional)** Whether or not the tensor being registered contains the data locally or is
+          instead a pointer to a tensor that lives on a different worker.
         """
         # TODO: Assign default id more intelligently (low priority)
         #       Consider popping id from long list of unique integers
@@ -566,40 +426,6 @@ class VirtualWorker(BaseWorker):
         # print("setting object:" + str(obj.id))
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
         return obj
-
-    def request_obj(self, obj_id, sender):
-        sender = self.get_worker(sender)
-        obj = sender.send_obj(sender.get_obj(obj_id), self)
-
-        # for some reason, when returning obj from request_obj method, the gradient (obj.grad) gets 
-        # re-initialized without being re-registered and as a consequence does not have an id, causing the 
-        # x.grad.id to fail because it does not exist. As a result, we've needed to 
-        # store objects temporarily in self._tmpobjects which seems to fix it. Super strange bug which took 
-        # multiple days to figure out. The true cause is still unknown but this workaround seems to work 
-        # well for now. Anyway, so we need to return a cleanup method which is called immediately before this
-        # is returned to the client. Note that this is ONLY necessary for the client (which doesn't store objects
-        # in self._objects)
-
-        return obj, self._clear_tmp_objects
-
-    def request_response(self, recipient, message, response_handler, timeout=10):
-        return response_handler(recipient.handle_command(message))
-
-    def handle_command(self, message):
-        """Main function that handles incoming torch commands."""
-
-        message = message
-        # take in command message, return result of local execution
-        result, owners = self.process_command(message)
-
-        compiled = self.compile_result(result, owners)
-
-        compiled = json.dumps(compiled)
-        if compiled is not None:
-            return compiled
-        else:
-            return dict(registration=None, torch_type=None,
-                        var_data=None, var_grad=None)
 
     def process_command(self, command_msg):
         """
@@ -680,6 +506,211 @@ class VirtualWorker(BaseWorker):
             # result is occasionally a sequence of tensors or variables
 
             return [self.compile_result(x, owners) for x in result]
+
+
+    # Helpers for HookService and TorchService
+    @staticmethod
+    def _check_workers(self, workers):
+        if type(workers) is str:
+            workers = [workers]
+        if issubclass(type(workers), BaseWorker):
+            workers = [workers]
+        elif not hasattr(workers, '__iter__'):
+            raise TypeError(
+                """Can only send {} to a string worker ID or an iterable of
+                string worker IDs, not {}""".format(self.__name__, workers)
+                )
+        return workers
+
+    # Worker needs to retrieve tensor by ID before computing with it
+    def _retrieve_tensor(self, self2, x):
+        try:
+            return self.get_obj(self._id_tensorvar(x))
+        except TypeError:
+            try:
+                return [self.get_obj(i) for i in self._id_tensorvar(x)]
+            except TypeError:
+                return x
+        except KeyError:
+            return x
+
+    def _command_guard(self, command, allowed):
+        if command not in allowed:
+            raise RuntimeError(
+                'Command "{}" is not a supported Torch operation.'.format(command))
+        return command
+
+    # # Client needs to identify a tensor before sending commands that use it
+    def _id_tensorvar(self, x):
+        pat = re.compile('_fl.(.*)')
+        try:
+            if isinstance(x, str):
+                return int(pat.search(x).group(1))
+            else:
+                return [self._id_tensorvar(i) for i in x]
+        except AttributeError:
+            return x
+
+class VirtualWorker(BaseWorker):
+    r"""
+    A virtualized worker simulating the existence of a remote machine. It is intended as a testing,  
+    development, and performance evaluation tool that exists independent of a live or local network
+    of workers. You don't even have to be connected to the internet to create a pool of Virtual Workers
+    and start running computations on them.
+
+    :Parameters:
+    
+
+    * **hook (**:class:`.hooks.BaseHook` **)** This is a reference to the hook object which overloaded the 
+      underlying deep learning framework.
+    
+    * **id (int or string, optional)** the integer or string identifier for this node
+    
+    * **is_client_worker (bool, optional)** a boolean which determines whether this worker is associeted 
+      with an end user client. If so, it assumes that the client will maintain control over when 
+      tensors/variables/models are instantiated or deleted as opposed to handling tensor/variable/model 
+      lifecycle internally.
+
+    * **objects (list of tensors, variables, or models, optional)** 
+      When the worker is NOT a client worker, it stores all tensors it receives or creates in this dictionary.
+      The key to each object is it's id.
+
+    * **tmp_objects (list of tensors, variables, or models, optional)**
+      When the worker IS a client worker, it stores some tensors temporarily in this _tmp_objects simply to ensure
+      that they do not get deallocated by the Python garbage collector while in the process of being registered.
+      This dictionary can be emptied using the clear_tmp_objects method.
+
+    * **known_workers (list of **:class:`BaseWorker` ** objects, optional)** This dictionary can include all known workers.
+
+    * **verbose (bool, optional)** A flag for whether or not to print events to stdout.
+
+    :Example:
+
+    >>> from syft.core.hooks import TorchHook
+    >>> from syft.core.hooks import torch
+    >>> from syft.core.workers import VirtualWorker
+    >>> hook = TorchHook()
+    Hooking into Torch...
+    Overloading complete.
+    >>> local = hook.local_worker
+    >>> remote = VirtualWorker(id=1, hook=hook)
+    >>> local.add_worker(remote)
+    >>> x = torch.FloatTensor([1,2,3,4,5])
+    >>> x
+     1
+     2
+     3
+     4
+     5
+    [torch.FloatTensor of size 5]
+    >>> x.send(remote)
+    >>> x
+    [torch.FloatTensor - Locations:[<syft.core.workers.VirtualWorker object at 0x11848bda0>]]
+    >>> x.get()
+    >>> x
+     1
+     2
+     3
+     4
+     5
+    [torch.FloatTensor of size 5]        
+    """
+
+    def __init__(self,  hook, id=0, is_client_worker=False, objects={}, tmp_objects={}, known_workers={}, verbose=False):
+        super().__init__(hook=hook, id=id, is_client_worker=is_client_worker, objects=objects, tmp_objects=tmp_objects, known_workers=known_workers, verbose=verbose)
+
+    def send_obj(self, obj, recipient, delete_local=True):
+        """send_obj(self, obj, recipient, delete_local=True) -> obj
+        Sends an object to another :class:`VirtualWorker` and, by default, removes it from the local worker. It also
+        returns the object as a special case when the caller is a client. In most cases, send_obj would be handled
+        on the other side by storing it in the permament registry. However, for VirtualWorkers attached to clients, we
+        don't want this to occur. Thus, this method returns the object as a workaround. See :func:`VirtualWorker.request_obj` for 
+        more deatils.
+    
+        :Parameters:
+
+        * **obj (object)** a python object to be sent
+ 
+        * **recipient (** :class:`VirtualWorker` **)** the worker object to send the message to.
+
+        * **delete_local (bool, optional)** when set to true, it deletes the version of the object in the local registry.
+
+        """
+
+        obj = recipient.receive_obj(obj.ser())
+        if(delete_local):
+            self.rm_obj(obj.id)
+
+        return obj
+
+    def receive_obj(self, message):
+
+
+        message_obj = json.loads(message)
+        obj_type = self.hook.types_guard(message_obj['torch_type'])
+        obj = obj_type.deser(obj_type, message_obj)
+
+        self.handle_register(obj, message_obj, force_attach_to_worker=True)
+
+        return obj
+
+    def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):
+
+        try:
+            # TorchClient case
+            # delete registration from init; it's got the wrong id
+            self.rm_obj(torch_object.id)
+        except (AttributeError, KeyError):
+            # Worker case: v was never formally registered
+            pass
+
+        torch_object = self.register_object(self,
+                                            torch_object,
+                                            id=obj_msg['id'],
+                                            owners=[self.id],
+                                            force_attach_to_worker=force_attach_to_worker,
+                                            temporary=temporary)
+
+
+        return torch_object
+
+    
+
+    def request_obj(self, obj_id, sender):
+        sender = self.get_worker(sender)
+        obj = sender.send_obj(sender.get_obj(obj_id), self)
+
+        # for some reason, when returning obj from request_obj method, the gradient (obj.grad) gets 
+        # re-initialized without being re-registered and as a consequence does not have an id, causing the 
+        # x.grad.id to fail because it does not exist. As a result, we've needed to 
+        # store objects temporarily in self._tmpobjects which seems to fix it. Super strange bug which took 
+        # multiple days to figure out. The true cause is still unknown but this workaround seems to work 
+        # well for now. Anyway, so we need to return a cleanup method which is called immediately before this
+        # is returned to the client. Note that this is ONLY necessary for the client (which doesn't store objects
+        # in self._objects)
+
+        return obj, self._clear_tmp_objects
+
+    def request_response(self, recipient, message, response_handler, timeout=10):
+        return response_handler(recipient.handle_command(message))
+
+    def handle_command(self, message):
+        """Main function that handles incoming torch commands."""
+
+        message = message
+        # take in command message, return result of local execution
+        result, owners = self.process_command(message)
+
+        compiled = self.compile_result(result, owners)
+
+        compiled = json.dumps(compiled)
+        if compiled is not None:
+            return compiled
+        else:
+            return dict(registration=None, torch_type=None,
+                        var_data=None, var_grad=None)
+
+
 
     def return_result(self, compiled_result, response_channel):
         """Return compiled result of a torch command"""
