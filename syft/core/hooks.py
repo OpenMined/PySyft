@@ -4,10 +4,6 @@ import torch, inspect, random, re, json, types, functools
 from . import workers
 from . import utils
 
-# from types import FunctionType, BuiltinFunctionType
-# from functools import wraps, partial, partialmethod
-# from .local_worker import BaseWorker, LocalWorker
-
 
 class TorchHook(object):
     r""" A Hook which Overrides Methods on PyTorch Variables & Tensors
