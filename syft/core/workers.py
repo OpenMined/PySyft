@@ -166,13 +166,7 @@ class VirtualWorker(BaseWorker):
         message_obj = json.loads(message)
         obj_type = self.hook.types_guard(message_obj['torch_type'])
         obj = obj_type.deser(obj_type, message_obj)
-        # if(hasattr(obj,'grad')):
-        #     if(obj.grad is not None):
-        #         print("doule checking message obj:" + str(message_obj))
-        #         if(hasattr(obj.grad,'id')):
-        #             print("Obj:" + str(obj.id) + " Grad Is:" + str(obj.grad.id))
-        #         else:
-        #             print("Obj:" + str(obj.id) + " Grad Is: None")
+
         self.handle_register(obj, message_obj, force_attach_to_worker=True)
 
         return obj
