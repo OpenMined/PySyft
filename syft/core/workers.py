@@ -251,7 +251,7 @@ class VirtualWorker(BaseWorker):
         sender = self.get_worker(sender)
         obj = sender.send_obj(sender.get_obj(obj_id), self)
 
-        # for some reason, when retuning obj from request_obj method (above), the gradient (obj.grad) gets 
+        # for some reason, when returning obj from request_obj method, the gradient (obj.grad) gets 
         # re-initialized without being re-registered and as a consequence does not have an id, causing the 
         # x.grad.id to fail because it does not exist. As a result, we've needed to 
         # store objects temporarily in self._tmpobjects which seems to fix it. Super strange bug which took 
