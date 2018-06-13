@@ -850,3 +850,11 @@ class TorchHook(object):
                          requires_grad=obj_msg['requires_grad'])
         var.grad = grad
         return var
+
+
+class TensorflowHook(object):
+    r""" TOOD: Hook Tensorflow"""
+
+
+class KerasHook(object):
+    r""" TODO: Hook Tensorflow"""
