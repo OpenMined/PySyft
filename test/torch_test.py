@@ -3,9 +3,11 @@ from syft.core.hooks import TorchHook
 from syft.core.hooks import torch
 from syft.core.workers import VirtualWorker
 
+from torch.autograd import Variable as Var
+
 import json
 
-class TestTorchOverride(TestCase):
+class TestTorchTensor(TestCase):
     def test___repr__(self):
 
         hook = TorchHook(verbose=False)
@@ -57,6 +59,35 @@ class TestTorchOverride(TestCase):
 
         # has not been registered
         assert unregistered_tensor.id != 9756847736
+
+
+class TestTorchVariable(TestCase):
+
+    def test_remote_backprop(self):
+
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        remote = VirtualWorker(id=1, hook=hook)
+        local.add_worker(remote)
+
+        x = Var(torch.ones(2,2),requires_grad=True).send_(remote)
+        x2 = Var(torch.ones(2,2)*2,requires_grad=True).send_(remote)
+
+        y = x * x2
+
+        y.sum().backward()
+
+        # remote grads should be correct
+        assert (remote._objects[x2.id].grad.data == torch.ones(2,2)).all()
+        assert (remote._objects[x.id].grad.data == torch.ones(2,2)*2).all()
+
+        assert (y.get().data == torch.ones(2,2)*2).all()
+
+        assert (x.get().data == torch.ones(2,2)).all()
+        assert (x2.get().data == torch.ones(2,2)*2).all()
+
+        assert (x.grad.data == torch.ones(2,2)*2).all()
+        assert (x2.grad.data == torch.ones(2,2)).all()
 
 
 

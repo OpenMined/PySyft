@@ -307,7 +307,7 @@ class VirtualWorker(BaseWorker):
         # we need the original tensorvar owners so that we can register
         # the result properly later on
         tensorvars = [x for x in combined if type(x).__name__ in self.hook.tensorvar_types_strs]
-        _, owners = self.hook._get_owners(tensorvars)
+        _, owners = self.hook.get_owners(tensorvars)
 
         owner_ids = list()
         for owner in owners:

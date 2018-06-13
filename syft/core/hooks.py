@@ -20,21 +20,23 @@ class TorchHook(object):
 
     :Parameters:
         
-        * **local_worker (**:class:`.local_workers.BaseWorker` **)** you can optionally provide a local worker as
+        * **local_worker (**:class:`.workers.BaseWorker` **)** you can optionally provide a local worker as
           a parameter which TorchHook will assume to be the worker owned by the local machine. If you leave it
-          empty, TorchClient will automatically initialize a :class:`.local_workers.VirtualWorker` under the 
+          empty, TorchClient will automatically initialize a :class:`.workers.VirtualWorker` under the 
           assumption you're looking to do local experimentation/development.
         
         * **is_client (bool)** whether or not the TorchHook is being initialized as an end-user client.
           This can impact whether or not variables are deleted when they fall out of scope. If you set
           this incorrectly on a end user client, Tensors and Variables will never be deleted. If you set this
           incorrectly on a remote machine (not a client), tensors will not get saved. It's really only
-          important if you're not initializing the local worker yourself.
+          important if you're not initializing the local worker yourself. (Default: True)
+
+        * **verbose (bool)** whether or not to print operations as they occur. (Defalt: True)
     
     :Example:
     >>> from syft.core.hooks import TorchHook
     >>> from syft.core.hooks import torch
-    >>> hook = TorchHook(is_client=True)
+    >>> hook = TorchHook()
     Hooking into Torch...
     Overloading Complete.
     >>> x = torch.FloatTensor([1,2,3,4,5])
@@ -58,7 +60,15 @@ class TorchHook(object):
             # interfacing with other workers. The worker interface is what allows the Torch
             # specific code in TorchHook to be agnostic to the means by which workers communicate
             # (such as peer-to-peer, sockets, through local ports, or all within the same process)
-            self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client)
+
+            if(hasattr(torch,'local_worker')):
+                self.local_worker = torch.local_worker
+                if(verbose):
+                    print("Torch seems to already have a local_worker object... using that one instead...")
+            else:
+                self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client)
+
+        torch.local_worker = self.local_worker
 
         # this is a list of all module functions in the torch module
         self.torch_funcs = dir(torch)
@@ -119,15 +129,101 @@ class TorchHook(object):
         }
         self.map_torch_type = dict(self.map_tensor_type, **self.map_var_type)
 
-        # Perform overloading
-        if(verbose):
-            print('Hooking into Torch...')
-        self._hook_torch_module()
-        for t_type in self.tensor_types:
-            self._hook_tensor(t_type)
-        self._hook_variable()
-        if(verbose):
-            print('Overloading complete.')
+        if(not hasattr(torch,'hooked')):
+            if(verbose):
+                print('Hooking into Torch...')
+            self._hook_torch_module()
+            for t_type in self.tensor_types:
+                self._hook_tensor(t_type)
+            self._hook_variable()
+            torch.hooked = True
+            if(verbose):
+                print('Overloading complete.')
+        else:
+            if(verbose):
+                print("WARNING: Torch seems to be already overloaded... skipping...")
+        
+    def types_guard(self, torch_type_str):
+        """types_guard(torch_type_str) -> torch.Tensor or torch.autograd.Variable
+
+        This method converts strings into a type reference. This prevents deserialized JSON from being able to
+        instantiate objects of arbitrary type which would be a security concern.
+
+        :Parameters:
+        
+        * **torch_type_str (string)** A string representing the type of object that is to be returned.
+
+        :Example:
+        >>> from syft.core.hooks import TorchHook
+        >>> hook = TorchHook()
+        Hooking into Torch...
+        Overloading Complete.
+        >>> torch_type = hook.types_guard('torch.FloatTensor')
+        >>> x = torch_type([1,2,3,4,5])
+        >>> x
+         1
+         2
+         3
+         4
+         5
+        [torch.FloatTensor of size 5]
+        """
+        try:
+            return self.map_torch_type[torch_type_str]
+        except KeyError:
+            raise TypeError(
+                "Tried to receive a non-Torch object of type {}.".format(
+                    torch_type_str))
+
+    def tensor_contents_guard(self, contents):
+        """tensor_contents_guard(contents) -> contents
+        TODO: check to make sure the incoming list isn't dangerous to use for
+               constructing a tensor (likely non-trivial). Accepts the list of JSON objects 
+               and returns the list of JSON ojects. Should throw and exception if there's a 
+               security concern.
+        """
+        return contents        
+
+    @staticmethod
+    def get_owners(tensorvars):
+        """get_owners(tensorvars) -> (bool, list(BaseWorker))
+        A static utility method which returns owners given a list of tensors. Specifically, it returns a tuple where the
+        first value is a boolean indicating whether there are multiple owners. The second object is a list of owners, where
+        each item in the list can be either an id of the owner or a :class:`.workers.BaseWorker` pointer.
+        
+        :Parameters:
+        
+        * **tensorvars (list)** A list of :class:`torch.Tensor` or :class:`torch.autograd.Variable` objects which 
+          you want to know the owners of. Can pass in an empty list without breaking (but will also return an empty list
+          of owners)
+        
+        :Example:
+        >>> from syft.core.hooks import TorchHook
+        >>> from syft.core.hooks import torch
+        >>> from syft.core.workers import VirtualWorker
+        >>> from torch.autograd import Variable as Var
+        >>> hook = TorchHook()
+        Hooking into Torch...
+        Overloading Complete.
+        >>> local = hook.local_worker
+        >>> remote = VirtualWorker(id=1, hook=hook)
+        >>> local.add_worker(remote)
+        >>> x = torch.FloatTensor([1,2,3,4,5])
+        >>> y = torch.FloatTensor([2,4,6,8,10]).send(remote)
+        >>> z = Var(x)  
+        >>> (is_multiple_owners, owners) = hook.get_owners([x,y,z])      
+        >>> print(is_multiple_owners)
+        True
+        >>> print(owners)
+        [0, <syft.core.workers.VirtualWorker at 0x1109ef550>]
+        """
+        
+        # Note from Andrew: This feels like a strange method since it returns the superset of owners across all
+        # tensors. I'm surprised that the logic consuming this method doesn't have bugs.
+
+        owners = list(set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
+        multiple_owners = len(owners) > 1
+        return multiple_owners, owners        
 
     def _hook_torch_module(self):
         """
@@ -202,7 +298,7 @@ class TorchHook(object):
         has_remote = hook_self._check_remote(tensorvars)
 
         # Checks to see if the tensor has multiple owners (not yet fully supported func)
-        multiple_owners, owners = hook_self._get_owners(tensorvars)
+        multiple_owners, owners = hook_self.get_owners(tensorvars)
 
         # If one of the tensor arguments is remote
         # if the tensor only has one owner (remote)
@@ -335,15 +431,6 @@ class TorchHook(object):
         to a remote one (on a different machine)"""
 
         return any([tensorvar.is_pointer for tensorvar in tensorvars])
-
-    @staticmethod
-    def _get_owners(tensorvars):
-        """Returns owners given a list of tensors
-        Note - Andrew: This feels like a strange method."""
-
-        owners = list(set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
-        multiple_owners = len(owners) > 1
-        return multiple_owners, owners
 
     @staticmethod
     def _replace_in_command(command_msg):
@@ -609,20 +696,6 @@ class TorchHook(object):
 
         tensor_type.ser = ser
         tensor_type.deser = deser            
-
-    def types_guard(self, _torch_type):
-        try:
-            return self.map_torch_type[_torch_type]
-        except KeyError:
-            raise TypeError(
-                "Tried to receive a non-Torch object of type {}.".format(
-                    _torch_type))
-
-    def tensor_contents_guard(self, contents):
-        # TODO: check to make sure the incoming list isn't dangerous to use for
-        #       constructing a tensor (likely non-trivial)
-        return contents
-
 
     def _hook_variable(self):
         # Overload 'special' methods here
