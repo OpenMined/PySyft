@@ -1,18 +1,25 @@
 """Hooks which override deep learning interfaces with remote execution functionality."""
 
-import torch, inspect, random, re, json, types, functools
+import torch
+import inspect
+import re
+import json
+import types
+import functools
 from . import workers
 from . import utils
 
 
 class BaseHook(object):
-    r""" A abstract interface for deep learning framework hooks."""    
+    r""" A abstract interface for deep learning framework hooks."""
 
     def __init__(self):
         ""
 
+
 class TorchHook(BaseHook):
-    r""" A Hook which Overrides Methods on PyTorch Variables & Tensors - **Currently compatible with PyTorch 0.3.1**
+    r""" A Hook which Overrides Methods on PyTorch Variables & Tensors -
+    **Currently compatible with PyTorch 0.3.1**
 
     The purpose of this class is to:
 
@@ -21,24 +28,30 @@ class TorchHook(BaseHook):
         * override torch methods to execute commands on one worker
           that are called on tensors controlled by the local worker.
 
-    This class is typically the first thing you will initialize when using PySyft with PyTorch because it
-    is responsible for augmenting PyTorch with PySyft's added functionality (such as remote execution).
+    This class is typically the first thing you will initialize when
+    using PySyft with PyTorch because it is responsible for augmenting
+    PyTorch with PySyft's added functionality (such as remote execution).
 
     :Parameters:
-        
-        * **local_worker (**:class:`.workers.BaseWorker` **, optional)** you can optionally provide a local worker as
-          a parameter which TorchHook will assume to be the worker owned by the local machine. If you leave it
-          empty, TorchClient will automatically initialize a :class:`.workers.VirtualWorker` under the 
-          assumption you're looking to do local experimentation/development.
-        
-        * **is_client (bool, optional)** whether or not the TorchHook is being initialized as an end-user client.
-          This can impact whether or not variables are deleted when they fall out of scope. If you set
-          this incorrectly on a end user client, Tensors and Variables will never be deleted. If you set this
-          incorrectly on a remote machine (not a client), tensors will not get saved. It's really only
+
+        * **local_worker (**:class:`.workers.BaseWorker` **, optional)**
+          you can optionally provide a local worker as a parameter which
+          TorchHook will assume to be the worker owned by the local machine.
+          If you leave it empty, TorchClient will automatically initialize
+          a :class:`.workers.VirtualWorker` under the assumption you're
+          looking to do local experimentation/development.
+
+        * **is_client (bool, optional)** whether or not the TorchHook is
+          being initialized as an end-user client. This can impact whether
+          or not variables are deleted when they fall out of scope. If you set
+          this incorrectly on a end user client, Tensors and Variables will
+          never be deleted. If you set this incorrectly on a remote machine
+          (not a client), tensors will not get saved. It's really only
           important if you're not initializing the local worker yourself. (Default: True)
 
-        * **verbose (bool, optional)** whether or not to print operations as they occur. (Defalt: True)
-    
+        * **verbose (bool, optional)** whether or not to print operations
+          as they occur. (Defalt: True)
+
     :Example:
 
     >>> from syft.core.hooks import TorchHook
@@ -56,22 +69,22 @@ class TorchHook(BaseHook):
     [torch.FloatTensor of size 5]
     """
 
-
     def __init__(self, local_worker=None, is_client=True, verbose=True):
         super().__init__()
 
         self.local_worker = local_worker
         if(self.local_worker is None):
 
-            # Every TorchHook instance should have a local worker which is responsible for 
+            # Every TorchHook instance should have a local worker which is responsible for
             # interfacing with other workers. The worker interface is what allows the Torch
             # specific code in TorchHook to be agnostic to the means by which workers communicate
             # (such as peer-to-peer, sockets, through local ports, or all within the same process)
 
-            if(hasattr(torch,'local_worker')):
+            if(hasattr(torch, 'local_worker')):
                 self.local_worker = torch.local_worker
                 if(verbose):
-                    print("Torch seems to already have a local_worker object... using that one instead...")
+                    print("Torch seems to already have a local_worker object... \
+                          using that one instead...")
             else:
                 self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client)
 
@@ -79,7 +92,7 @@ class TorchHook(BaseHook):
 
         # this is a list of all module functions in the torch module
         self.torch_funcs = dir(torch)
-        
+
         # this is the list of torch tensor types that we will override for remote execution
         self.tensor_types = [torch.FloatTensor,
                              torch.DoubleTensor,
@@ -136,7 +149,7 @@ class TorchHook(BaseHook):
         }
         self.map_torch_type = dict(self.map_tensor_type, **self.map_var_type)
 
-        if(not hasattr(torch,'hooked')):
+        if(not hasattr(torch, 'hooked')):
             if(verbose):
                 print('Hooking into Torch...')
             self._hook_torch_module()
@@ -149,19 +162,21 @@ class TorchHook(BaseHook):
         else:
             if(verbose):
                 print("WARNING: Torch seems to be already overloaded... skipping...")
-        
+
     def types_guard(self, torch_type_str):
         """types_guard(torch_type_str) -> torch.Tensor or torch.autograd.Variable
 
-        This method converts strings into a type reference. This prevents deserialized JSON from being able to
-        instantiate objects of arbitrary type which would be a security concern.
+        This method converts strings into a type reference. This prevents
+        deserialized JSON from being able to instantiate objects of arbitrary
+        type which would be a security concern.
 
         :Parameters:
-        
-        * **torch_type_str (string)** A string representing the type of object that is to be returned.
 
-        * **out (a torch type)** The type the string refers to (if it's present in the acceptible list 
-          self.map_torch_type)
+        * **torch_type_str (string)** A string representing the type of object that is
+          to be returned.
+
+        * **out (a torch type)** The type the string refersto (if it's present in the
+          acceptible list self.map_torch_type)
 
         :Example:
 
@@ -189,26 +204,30 @@ class TorchHook(BaseHook):
     def tensor_contents_guard(self, contents):
         """tensor_contents_guard(contents) -> contents
         TODO: check to make sure the incoming list isn't dangerous to use for
-               constructing a tensor (likely non-trivial). Accepts the list of JSON objects 
-               and returns the list of JSON ojects. Should throw and exception if there's a 
+               constructing a tensor (likely non-trivial). Accepts the list of JSON objects
+               and returns the list of JSON ojects. Should throw and exception if there's a
                security concern.
         """
-        return contents        
+        return contents
 
     @staticmethod
     def get_owners(tensorvars):
         """get_owners(tensorvars) -> (bool, list(BaseWorker))
         A static utility method which returns owners given a list of tensors.
-        
+
         :Parameters:
 
-        * **tensorvars (list)** A list of :class:`torch.Tensor` or :class:`torch.autograd.Variable` objects which 
-          you want to know the owners of. Can pass in an empty list without breaking (but will also return an empty list
+        * **tensorvars (list)** A list of :class:`torch.Tensor`
+          or :class:`torch.autograd.Variable` objects which
+          you want to know the owners of. Can pass in an empty
+          list without breaking (but will also return an empty list
           of owners)
 
         * **out (bool, list(BaseWorker))** a tuple where the
-        first value is a boolean indicating whether there are multiple owners. The second object is a list of owners, where
-        each item in the list can be either an id of the owner or a :class:`.workers.BaseWorker` pointer.
+          first value is a boolean indicating whether there are multiple
+          owners. The second object is a list of owners, where
+          each item in the list can be either an id of the owner or
+          a :class:`.workers.BaseWorker` pointer.
 
         :Example:
 
@@ -224,32 +243,34 @@ class TorchHook(BaseHook):
         >>> local.add_worker(remote)
         >>> x = torch.FloatTensor([1,2,3,4,5])
         >>> y = torch.FloatTensor([2,4,6,8,10]).send(remote)
-        >>> z = Var(x)  
-        >>> (is_multiple_owners, owners) = hook.get_owners([x,y,z])      
+        >>> z = Var(x)
+        >>> (is_multiple_owners, owners) = hook.get_owners([x,y,z])
         >>> print(is_multiple_owners)
         True
         >>> print(owners)
         [0, <syft.core.workers.VirtualWorker at 0x1109ef550>]
         """
-        
-        # Note from Andrew: This feels like a strange method since it returns the superset of owners across all
-        # tensors. I'm surprised that the logic consuming this method doesn't have bugs.
+
+        # Note from Andrew: This feels like a strange method since it
+        # returns the superset of owners across all
+        # tensors. I'm surprised that the logic consuming this
+        # method doesn't have bugs.
 
         owners = list(set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
         multiple_owners = len(owners) > 1
-        return multiple_owners, owners        
+        return multiple_owners, owners
 
     def _hook_torch_module(self):
         """
         Overloads functions in the main torch module.
 
         The way this is accomplished is by first moving all existing module functions in the torch
-        module to old_<function_name_here>. Thus, the real :func:`torch.cat` will become 
-        :func:`torch.old_cat` and :func:`torch.cat` will have our hooking code. Generically, 
+        module to old_<function_name_here>. Thus, the real :func:`torch.cat` will become
+        :func:`torch.old_cat` and :func:`torch.cat` will have our hooking code. Generically,
         this hooking code checks to see if the tensor is on the current worker (aka, we can read it)
-        or on a remote opne (and we only have a pointer). If the data is local, then the method 
-        will simply execute :func:`torch.old_cat`, but if the data for a tensor is remote, then 
-        it will instead send a message to the remote machine instructing it to perform an arbitrary 
+        or on a remote opne (and we only have a pointer). If the data is local, then the method
+        will simply execute :func:`torch.old_cat`, but if the data for a tensor is remote, then
+        it will instead send a message to the remote machine instructing it to perform an arbitrary
         command (:func:`torch.old_cat` on the remote machine).
         """
 
@@ -283,23 +304,24 @@ class TorchHook(BaseHook):
 
         @functools.wraps(func)
         def pass_args(*args, **kwargs):
-            #Return a new partial object which when called will behave like func called with the 
-            # positional arguments args and keyword arguments keywords. If more arguments are 
-            # supplied to the call, they are appended to args. If additional keyword arguments 
-            # are supplied, they extend and override keywords. 
+            # Return a new partial object which when called will behave like func called with the
+            # positional arguments args and keyword arguments keywords. If more arguments are
+            # supplied to the call, they are appended to args. If additional keyword arguments
+            # are supplied, they extend and override keywords.
 
-            #The partial() is used for partial function application which “freezes” some 
-            # portion of a function’s arguments and/or keywords resulting in a new object 
+            # The partial() is used for partial function application which “freezes” some
+            # portion of a function’s arguments and/or keywords resulting in a new object
             # with a simplified signature.
             return functools.partial(func, *args, **kwargs)
         return pass_args
 
     def _overload_inner(hook_self, part, has_self=True):
         """
-        Performs the actual method/function overloading. Note that this is the method/function agnostic
-        piece and is only called from within _overload_method and _overload_function
+        Performs the actual method/function overloading.
+        Note that this is the method/function agnostic
+        piece and is only called from within _overload_method
+        and _overload_function
         """
-
 
         # Step 1: Compiles Command
         command = hook_self._compile_command(part, has_self=has_self)
@@ -307,7 +329,7 @@ class TorchHook(BaseHook):
         # Step 2: checks for Tensors and Variables in the args/kwargs
         tensorvars = hook_self._get_tensorvars(command)
 
-        # Step 3: Checks to see if the tensor is local (on this machine) or is a pointer 
+        # Step 3: Checks to see if the tensor is local (on this machine) or is a pointer
         # to a remote one (on a different machine)
         has_remote = hook_self._check_remote(tensorvars)
 
@@ -317,16 +339,15 @@ class TorchHook(BaseHook):
         # If one of the tensor arguments is remote
         # if the tensor only has one owner (remote)
         if has_remote and not multiple_owners:
-            
 
             command = hook_self._replace_in_command(command)
 
             for worker in owners:
-                
 
+                _pr = hook_self.local_worker.process_response
                 response = hook_self.local_worker.request_response(recipient=worker,
-                                        message=command,
-                                        response_handler=hook_self.local_worker.process_response)
+                                                                   message=command,
+                                                                   response_handler=_pr)
 
                 registration, torch_type, var_data, var_grad = response
 
@@ -335,10 +356,10 @@ class TorchHook(BaseHook):
                 # only returns last pointer, since tensors will
                 # be identical across machines for right now
                 pointer = hook_self._assemble_result_pointer(worker,
-                                                               registration,
-                                                               torch_type,
-                                                               var_data,
-                                                               var_grad)
+                                                             registration,
+                                                             torch_type,
+                                                             var_data,
+                                                             var_grad)
                 return pointer, has_remote, multiple_owners
 
         elif(has_remote and multiple_owners):
@@ -359,7 +380,7 @@ class TorchHook(BaseHook):
         @functools.wraps(method)
         def send_to_workers(self, *args, **kwargs):
             """
-            This method is responsible for sending a command executed 
+            This method is responsible for sending a command executed
             \on a client to a worker to be performed.
             """
             part = method(self, *args, **kwargs)
@@ -369,14 +390,12 @@ class TorchHook(BaseHook):
                 result = part.func(self, *args, **kwargs)
                 if (type(result) in hook_self.tensorvar_types and (not hasattr(result, 'owner'))):
                     result = hook_self.local_worker.register_object(hook_self.local_worker, result,
-                                                           is_pointer=False)
+                                                                    is_pointer=False)
                 return result
         return send_to_workers
 
-
-
     def _overload_function(hook_self, func):
-        
+
         """
         Wrapper overloading partial objects of functions in the torch
         module.  Compiles command, checks for Tensors and Variables in
@@ -389,11 +408,12 @@ class TorchHook(BaseHook):
             part = func(*args, **kwargs)
 
             pointer, has_remote, multiple_owners = hook_self._overload_inner(part, has_self=False)
-        
+
             if not (has_remote and not multiple_owners):
                 result = part.func(*args, **kwargs)
                 if type(result) in hook_self.tensorvar_types:
-                    result = hook_self.local_worker.register_object(hook_self.local_worker, result, is_pointer=False)
+                    result = hook_self.local_worker.register_object(hook_self.local_worker,
+                                                                    result, is_pointer=False)
                 return result
 
         return send_to_workers
@@ -441,7 +461,7 @@ class TorchHook(BaseHook):
 
     @staticmethod
     def _check_remote(tensorvars):
-        """Checks to see if the tensor is local (on this machine) or is a pointer 
+        """Checks to see if the tensor is local (on this machine) or is a pointer
         to a remote one (on a different machine)"""
 
         return any([tensorvar.is_pointer for tensorvar in tensorvars])
@@ -456,12 +476,12 @@ class TorchHook(BaseHook):
             command_msg['self'] = TorchHook._replace_tensorvar(command_msg['self'])
         except KeyError:
             pass
-        return command_msg     
+        return command_msg
 
     @staticmethod
     def _replace_tensorvar(x):
-        """This method takes a tensor/var/param and replaces it with a 
-        string containing it's ID and special flag for recognizing that 
+        """This method takes a tensor/var/param and replaces it with a
+        string containing it's ID and special flag for recognizing that
         it's a tensor type arg instead of a string.
 
         This method also works for an iterable of tensors (e.g. `torch.cat([x1, x2, x3])`)
@@ -471,7 +491,8 @@ class TorchHook(BaseHook):
         else:
             check = torch.is_tensor
         try:
-            if check(x) or isinstance(x, torch.autograd.Variable) or isinstance(x, torch.nn.Parameter):
+            _is_param = isinstance(x, torch.nn.Parameter)
+            if check(x) or isinstance(x, torch.autograd.Variable) or _is_param:
                 return '_fl.{}'.format(x.id)
             else:
                 [TorchHook._replace_tensorvar(i) for i in x]
@@ -526,7 +547,7 @@ class TorchHook(BaseHook):
                 lit = getattr(tensor_type, attr)
                 is_base = attr in dir(object)
                 is_desc = inspect.ismethoddescriptor(lit)
-                is_func = type(lit) == types.FunctionType
+                is_func = isinstance(lit, types.FunctionType)
                 try:
                     is_service_func = 'HookService' in lit.__qualname__
                 except:
@@ -551,7 +572,8 @@ class TorchHook(BaseHook):
 
         def new___init__(self, *args):
             super(tensor_type, self).__init__()
-            self = hook_self.local_worker.register_object(hook_self.local_worker, self, is_pointer=False)
+            self = hook_self.local_worker.register_object(hook_self.local_worker,
+                                                          self, is_pointer=False)
 
         tensor_type.__init__ = new___init__
 
@@ -581,7 +603,8 @@ class TorchHook(BaseHook):
             tensor_type.old__repr__ = tensor_type.__repr__
 
             def new___repr__(self):
-                if (hook_self.local_worker in self.owners or hook_self.local_worker.id in self.owners):
+                _id_in_owners = hook_self.local_worker.id in self.owners
+                if (hook_self.local_worker in self.owners or _id_in_owners):
                     return self.old__repr__()
                 else:
                     return "[{}.{} - Locations:{}]".format(
@@ -599,8 +622,6 @@ class TorchHook(BaseHook):
             return functools.partialmethod(method, *args, **kwargs)
         return pass_args
 
-    
-
     # Grid-specific method hooking
     def _hook_tensor_send_(hook_self, tensor_type):
         def send_(self, workers):
@@ -611,15 +632,19 @@ class TorchHook(BaseHook):
             workers: string (or sequence) containing IPFS address(es)
                 of worker node(s).
             """
-            workers = hook_self.local_worker._check_workers(self, workers)  # makes singleton, if needed
+
+            # makes singleton, if needed
+            workers = hook_self.local_worker._check_workers(self, workers)
             self = hook_self.local_worker.register_object(hook_self.local_worker, obj=self,
-                                                 id=self.id, owners=workers)
+                                                          id=self.id, owners=workers)
             for worker in workers:
                 # TODO: sync or async? likely won't be worth doing async,
                 #       but should check (low priority)
                 hook_self.local_worker.send_obj(self, worker)
-            self = hook_self.local_worker.register_object(hook_self.local_worker, self.old_set_(tensor_type(0)),
-                                                 id=self.id, owners=workers, is_pointer=True)
+            self = hook_self.local_worker.register_object(hook_self.local_worker,
+                                                          self.old_set_(tensor_type(0)),
+                                                          id=self.id, owners=workers,
+                                                          is_pointer=True)
             return self
         setattr(tensor_type, 'send_', send_)
         setattr(tensor_type, 'send', send_)
@@ -646,37 +671,48 @@ class TorchHook(BaseHook):
             if hook_self.local_worker.id in self.owners:
                 return self
 
-            x, request_obj_cleanup_method = hook_self.local_worker.request_obj(obj_id=self.id, sender=self.owners[0])
+            _out = hook_self.local_worker.request_obj(obj_id=self.id,
+                                                      sender=self.owners[0])
+            x, request_obj_cleanup_method = _out
 
             hook_self.local_worker.register_object(hook_self.local_worker, x, id=x.id)
 
             # if self == tensor
+            _id = hook_self.local_worker.id  # for brevity
             if(type(self) != torch.autograd.variable.Variable):
+                _os = self.old_set_(x.type(self.type()))
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                     self.old_set_(x.type(self.type())),
-                                                     id=self.id, owners=[hook_self.local_worker.id])
+                                                              _os,
+                                                              id=self.id, owners=[_id])
 
             else:
 
+                _os = self.old_set_(x.type(self.data.type()))  # for brevity
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                     self.old_set_(x.type(self.data.type())),
-                                                     id=self.id, owners=[hook_self.local_worker.id])
+                                                              _os,
+                                                              id=self.id, owners=[_id])
 
-                self.data = hook_self.local_worker.register_object(hook_self.local_worker, x.data, id=x.data.id,
-                                                          owners=[hook_self.local_worker.id])
+                self.data = hook_self.local_worker.register_object(hook_self.local_worker,
+                                                                   x.data,
+                                                                   id=x.data.id,
+                                                                   owners=[_id])
                 if(x.grad is not None):
-
                     self.grad = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                              x.grad,
-                                                              id=x.grad.id,
-                                                              owners=[hook_self.local_worker.id])
+                                                                       x.grad,
+                                                                       id=x.grad.id,
+                                                                       owners=[_id])
 
-            # for some reason, when retuning obj from request_obj method (above), the gradient gets re-initialized without 
-            # being re-registered and as a consequence does not have an id, causing the last register_object above to fail
-            # because x.grad.id does not exist. As a result, we've needed to register objects temporarily which seems to
-            # fix it. Super strange bug which took multiple days to figure out. The true cause is still unknown but this
-            # workaround seems to work well for now. Anyway, we don't need the temporary objects past this point.
-            request_obj_cleanup_method()
+            """for some reason, when retuning obj from request_obj
+            method (above), the gradient gets re-initialized without
+            being re-registered and as a consequence does not have an
+            id, causing the last register_object above to fail
+            because x.grad.id does not exist. As a result, we've needed
+            to register objects temporarily which seems to
+            fix it. Super strange bug which took multiple days to figure
+            out. The true cause is still unknown but this
+            workaround seems to work well for now. Anyway, we don't need
+            the temporary objects past this point.
+            request_obj_cleanup_method()"""
             return self
 
         setattr(torch_type, 'get_', get_)
@@ -709,7 +745,7 @@ class TorchHook(BaseHook):
             return v
 
         tensor_type.ser = ser
-        tensor_type.deser = deser            
+        tensor_type.deser = deser
 
     def _hook_variable(self):
         # Overload 'special' methods here
@@ -724,7 +760,8 @@ class TorchHook(BaseHook):
             lit = getattr(torch.autograd.variable.Variable, attr)
             is_base = attr in dir(object)
             is_desc = inspect.ismethoddescriptor(lit)
-            is_func = type(lit) == types.FunctionType
+            # is_func = isinstance(type(lit), types.FunctionType)
+            is_func = isinstance(lit, types.FunctionType)
             try:
                 is_service_func = 'HookService' in lit.__qualname__
             except:
@@ -751,7 +788,8 @@ class TorchHook(BaseHook):
 
         def new___new__(cls, *args, **kwargs):
             result = cls.old___new__(cls, *args,  **kwargs)
-            result = hook_self.local_worker.register_object(hook_self.local_worker, result, is_pointer=False)
+            result = hook_self.local_worker.register_object(hook_self.local_worker,
+                                                            result, is_pointer=False)
             return result
 
         torch.autograd.variable.Variable.__new__ = new___new__
@@ -769,25 +807,24 @@ class TorchHook(BaseHook):
         @property
         def new_data(self):
             if not hasattr(self, 'data_registered'):
-            
-                if(hasattr(self.old_data,'id')):
+
+                if(hasattr(self.old_data, 'id')):
                     obj_id = self.old_data.id
                 else:
                     obj_id = None
 
-                if(not hasattr(self,'owners')):
+                if(not hasattr(self, 'owners')):
                     hook_self.local_worker.register_object(hook_self.local_worker,
-                                                          obj=self,
-                                                          owners=[hook_self.local_worker.id],
-                                                          is_pointer=False)
+                                                           obj=self,
+                                                           owners=[hook_self.local_worker.id],
+                                                           is_pointer=False)
 
                 self.old_data = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                              obj=self.old_data,
-                                                              owners=self.owners,
-                                                              id=obj_id,
-                                                              is_pointer=self.is_pointer)
+                                                                       obj=self.old_data,
+                                                                       owners=self.owners,
+                                                                       id=obj_id,
+                                                                       is_pointer=self.is_pointer)
                 self.data_registered = True
-
 
             return self.old_data
 
@@ -805,22 +842,23 @@ class TorchHook(BaseHook):
 
                 if self.old_grad is not None:
 
-                    if(hasattr(self.old_grad,'id')):
+                    if(hasattr(self.old_grad, 'id')):
                         grad_id = self.old_grad.id
                     else:
                         grad_id = None
 
-                    if(not hasattr(self,'owners')):
+                    if(not hasattr(self, 'owners')):
                         hook_self.local_worker.register_object(hook_self.local_worker,
-                                                          obj=self,
-                                                          owners=[hook_self.local_worker.id],
-                                                          is_pointer=False)
+                                                               obj=self,
+                                                               owners=[hook_self.local_worker.id],
+                                                               is_pointer=False)
 
+                    _ip = self.is_pointer
                     self.old_grad = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                  obj=self.old_grad,
-                                                                  owners=self.owners,
-                                                                  id=grad_id,
-                                                                  is_pointer=self.is_pointer)
+                                                                           obj=self.old_grad,
+                                                                           owners=self.owners,
+                                                                           id=grad_id,
+                                                                           is_pointer=_ip)
                     self.grad_registered = True
 
             return self.old_grad
@@ -840,17 +878,20 @@ class TorchHook(BaseHook):
             workers: string (or sequence) containing IPFS address(es)
                 of worker node(s).
             """
-            workers = hook_self.local_worker._check_workers(self, workers)  # makes singleton, if needed
+
+            # makes singleton if needed
+            workers = hook_self.local_worker._check_workers(self, workers)
             self = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                 obj=self,
-                                                 id=self.id,
-                                                 owners=workers)
+                                                          obj=self,
+                                                          id=self.id,
+                                                          owners=workers)
             for worker in workers:
                 # TODO: sync or async? likely won't be worth doing async,
                 #       but should check (low priority)
                 hook_self.local_worker.send_obj(self, worker)
+
             hook_self.local_worker.register_object(hook_self.local_worker, obj=self, id=self.id,
-                                          owners=self.owners, is_pointer=True)
+                                                   owners=self.owners, is_pointer=True)
 
             return hook_self._var_to_pointer(self, hook_self)
 
@@ -889,8 +930,10 @@ class TorchHook(BaseHook):
                     grad_msg = json.loads(obj_msg['grad'])
                     var_type = hook_self.types_guard(grad_msg['torch_type'])
                     grad_obj = hook_self._build_var(grad_msg, var_type)
-                    grad = hook_self.local_worker.handle_register(grad_obj, grad_msg,force_attach_to_worker=False,temporary=True)
-                    
+                    grad = hook_self.local_worker.handle_register(grad_obj, grad_msg,
+                                                                  force_attach_to_worker=False,
+                                                                  temporary=True)
+
                 else:
                     grad = None
             var = self(data, volatile=obj_msg['volatile'], requires_grad=obj_msg['requires_grad'])
@@ -901,7 +944,7 @@ class TorchHook(BaseHook):
                 var.grad = None
 
             # this returns grad because garbage collection seems to do something really strange
-            # if grad isn't returned here. It re-initializes the gradient somehow but in a way 
+            # if grad isn't returned here. It re-initializes the gradient somehow but in a way
             # where it's not registered (which is bad)
             return var
 
@@ -914,12 +957,11 @@ class TorchHook(BaseHook):
 
         var.data.old_set_(var.data.__class__(0))
         self.local_worker.register_object(hook_self.local_worker,
-                              obj=var.data,
-                              id=var.data.id,
-                              owners=var.owners,
-                              is_pointer=True)
+                                          obj=var.data,
+                                          id=var.data.id,
+                                          owners=var.owners,
+                                          is_pointer=True)
         return var
-
 
     def _build_var(self, obj_msg, torch_type):
 
