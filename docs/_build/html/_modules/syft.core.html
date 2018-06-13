@@ -298,6 +298,11 @@ Non-empty tensors provided must have the same shape, except in the cat dimension
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="syft.core.workers.BaseWorker.clear_tmp_objects">
+<code class="descname">clear_tmp_objects</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.clear_tmp_objects" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.BaseWorker.command_guard">
 <code class="descname">command_guard</code><span class="sig-paren">(</span><em>command</em>, <em>allowed</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.command_guard" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -353,7 +358,7 @@ save that as a known_worker.</p>
 
 <dl class="method">
 <dt id="syft.core.workers.BaseWorker.set_obj">
-<code class="descname">set_obj</code><span class="sig-paren">(</span><em>remote_key</em>, <em>value</em>, <em>force=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.set_obj" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_obj</code><span class="sig-paren">(</span><em>remote_key</em>, <em>value</em>, <em>force=False</em>, <em>tmp=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.set_obj" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -377,7 +382,7 @@ over PubSub.</p>
 
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.handle_register">
-<code class="descname">handle_register</code><span class="sig-paren">(</span><em>torch_object</em>, <em>obj_msg</em>, <em>force_attach_to_worker=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.handle_register" title="Permalink to this definition">¶</a></dt>
+<code class="descname">handle_register</code><span class="sig-paren">(</span><em>torch_object</em>, <em>obj_msg</em>, <em>force_attach_to_worker=False</em>, <em>temporary=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.handle_register" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -394,7 +399,7 @@ result of the computation and a list of the result&#8217;s owners.</p>
 
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.register_object">
-<code class="descname">register_object</code><span class="sig-paren">(</span><em>worker</em>, <em>obj</em>, <em>force_attach_to_worker=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.register_object" title="Permalink to this definition">¶</a></dt>
+<code class="descname">register_object</code><span class="sig-paren">(</span><em>worker</em>, <em>obj</em>, <em>force_attach_to_worker=False</em>, <em>temporary=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.register_object" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers an object with the current worker node.
 Selects an id for the object, assigns a list of owners,
 and establishes whether it&#8217;s a pointer or not.</p>

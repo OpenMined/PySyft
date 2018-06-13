@@ -551,7 +551,7 @@ class TorchHook(object):
             if hook_self.local_worker.id in self.owners:
                 return self
 
-            x = hook_self.local_worker.request_obj(obj_id=self.id, sender=self.owners[0])
+            x, request_obj_cleanup_method = hook_self.local_worker.request_obj(obj_id=self.id, sender=self.owners[0])
 
             hook_self.local_worker.register_object(hook_self.local_worker, x, id=x.id)
 
@@ -575,8 +575,13 @@ class TorchHook(object):
                                                               x.grad,
                                                               id=x.grad.id,
                                                               owners=[hook_self.local_worker.id])
-                
 
+            # for some reason, when retuning obj from request_obj method (above), the gradient gets re-initialized without 
+            # being re-registered and as a consequence does not have an id, causing the last register_object above to fail
+            # because x.grad.id does not exist. As a result, we've needed to register objects temporarily which seems to
+            # fix it. Super strange bug which took multiple days to figure out. The true cause is still unknown but this
+            # workaround seems to work well for now. Anyway, we don't need the temporary objects past this point.
+            request_obj_cleanup_method()
             return self
 
         setattr(torch_type, 'get_', get_)
@@ -802,14 +807,23 @@ class TorchHook(object):
                 if obj_msg['grad'] is not None:
                     grad_msg = json.loads(obj_msg['grad'])
                     var_type = hook_self.types_guard(grad_msg['torch_type'])
-
+                    
                     grad_obj = hook_self.build_var(grad_msg, var_type)
                     # grad_obj = torch.autograd.variable.Variable.deser(var_type, grad_msg)
-                    grad = hook_self.local_worker.handle_register(grad_obj, grad_msg)
+                    grad = hook_self.local_worker.handle_register(grad_obj, grad_msg,force_attach_to_worker=False,temporary=True)
+                    
                 else:
                     grad = None
             var = self(data, volatile=obj_msg['volatile'], requires_grad=obj_msg['requires_grad'])
-            var.grad = grad
+            # var.grad = grad
+            if(grad is not None):
+                setattr(var, 'grad', grad)
+            else:
+                var.grad = None
+
+            # this returns grad because garbage collection seems to do something really strange
+            # if grad isn't returned here. It re-initializes the gradient somehow but in a way 
+            # where it's not registered (which is bad)
             return var
 
         torch.autograd.variable.Variable.ser = ser

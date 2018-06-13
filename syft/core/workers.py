@@ -48,6 +48,7 @@ class BaseWorker(object):
         self.id = id
         self.is_client_worker = is_client_worker
         self._objects = {}
+        self._tmp_objects = {}
         self._known_workers = {}
         self.hook = hook
 
@@ -65,17 +66,24 @@ class BaseWorker(object):
         else:
             return self._known_workers[id_or_worker]
 
-    def set_obj(self, remote_key, value, force=False):
-        # if(not self.is_client_worker or force):
-        self._objects[remote_key] = value
+    def set_obj(self, remote_key, value, force=False, tmp=False):
+        if(tmp and self.is_client_worker):
+            self._tmp_objects[remote_key] = value
+
+        if(not self.is_client_worker or force):
+            self._objects[remote_key] = value
 
     def get_obj(self, remote_key):
         # if(not self.is_client_worker):
+        
         return self._objects[remote_key]
 
     def rm_obj(self, remote_key):
         if(remote_key in self._objects):
             del self._objects[remote_key]
+
+    def clear_tmp_objects(self):
+        self._tmp_objects = {}
 
     def send_obj(self, message, recipient):
         raise NotImplementedError
@@ -147,21 +155,29 @@ class VirtualWorker(BaseWorker):
         super().__init__(id=id, hook=hook, is_client_worker=is_client_worker)
 
     def send_obj(self, obj, recipient, delete_local=True):
-        recipient.receive_obj(obj.ser())
+        obj = recipient.receive_obj(obj.ser())
         if(delete_local):
             self.rm_obj(obj.id)
+
+        return obj
 
     def receive_obj(self, message):
 
         message_obj = json.loads(message)
         obj_type = self.hook.types_guard(message_obj['torch_type'])
         obj = obj_type.deser(obj_type, message_obj)
+        # if(hasattr(obj,'grad')):
+        #     if(obj.grad is not None):
+        #         print("doule checking message obj:" + str(message_obj))
+        #         if(hasattr(obj.grad,'id')):
+        #             print("Obj:" + str(obj.id) + " Grad Is:" + str(obj.grad.id))
+        #         else:
+        #             print("Obj:" + str(obj.id) + " Grad Is: None")
         self.handle_register(obj, message_obj, force_attach_to_worker=True)
 
-        # self.objects[message_obj['id']] = obj
-        # obj.id = message_obj['id']
+        return obj
 
-    def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False):
+    def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):
 
         try:
             # TorchClient case
@@ -175,12 +191,13 @@ class VirtualWorker(BaseWorker):
                                             torch_object,
                                             id=obj_msg['id'],
                                             owners=[self.id],
-                                            force_attach_to_worker=force_attach_to_worker)
+                                            force_attach_to_worker=force_attach_to_worker,
+                                            temporary=temporary)
 
 
         return torch_object
 
-    def register_object(self, worker, obj, force_attach_to_worker=False, **kwargs):
+    def register_object(self, worker, obj, force_attach_to_worker=False, temporary=False, **kwargs):
         """
         Registers an object with the current worker node.
         Selects an id for the object, assigns a list of owners,
@@ -233,15 +250,23 @@ class VirtualWorker(BaseWorker):
                 'Invalid registry: is_pointer is {} but owners is {}'.format(
                     obj.is_pointer, obj.owners))
         # print("setting object:" + str(obj.id))
-        self.set_obj(obj.id, obj, force=force_attach_to_worker)
-
+        self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
         return obj
 
     def request_obj(self, obj_id, sender):
         sender = self.get_worker(sender)
-        sender.send_obj(sender.get_obj(obj_id), self)
+        obj = sender.send_obj(sender.get_obj(obj_id), self)
 
-        return self.get_obj(obj_id)
+        # for some reason, when retuning obj from request_obj method (above), the gradient (obj.grad) gets 
+        # re-initialized without being re-registered and as a consequence does not have an id, causing the 
+        # x.grad.id to fail because it does not exist. As a result, we've needed to 
+        # store objects temporarily in self._tmpobjects which seems to fix it. Super strange bug which took 
+        # multiple days to figure out. The true cause is still unknown but this workaround seems to work 
+        # well for now. Anyway, so we need to return a cleanup method which is called immediately before this
+        # is returned to the client. Note that this is ONLY necessary for the client (which doesn't store objects
+        # in self._objects)
+
+        return obj, self.clear_tmp_objects
 
     def request_response(self, recipient, message, response_handler, timeout=10):
         return response_handler(recipient.handle_command(message))
