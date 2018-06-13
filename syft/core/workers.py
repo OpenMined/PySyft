@@ -409,48 +409,67 @@ class BaseWorker(object):
 
 class VirtualWorker(BaseWorker):
     r"""
-    The BaseWorker class establishes a consistent interface for communicating between different machines
-    about tensors, variables, models, and other network related information. It defines base functionality
-    for storing objects within the worker (or in some cases specifically not storing them), and for keeping
-    track of known workers across a network. 
-
-    This class does NOT include any communication specific functionality such as peer-to-peer protocols, routing,
-    node discovery, or even socket architecture. Only classes that extend the BaseWorker should carry such 
-    functionality.
-
-    :func:`torch.cat` can be seen as an inverse operation for :func:`torch.split`
-    and :func:`torch.chunk`.
-    
-    :func:`torch.cat` can be best understood via examples.
+    A virtualized worker simulating the existence of a remote machine. It is intended as a testing,  
+    development, and performance evaluation tool that exists independent of a live or local network
+    of workers. You don't even have to be connected to the internet to create a pool of Virtual Workers
+    and start running computations on them.
 
     :Parameters:
         
-        * **seq (sequence of Tensors)** any python sequence of tensors of the same type. 
-          Non-empty tensors provided must have the same shape, except in the cat dimension.
+        * **hook (**:class:`.hooks.BaseHook` **)** This is a reference to the hook object which overloaded the 
+          underlying deep learning framework.
         
-        * **dim (int, optional)** the dimension over which the tensors are concatenated
+        * **id (int or string, optional)** the integer or string identifier for this node
         
-        * **out (Tensor, optional)** the output tensor
-    
-    :Example:
+        * **is_client_worker (bool, optional)** a boolean which determines whether this worker is associeted 
+          with an end user client. If so, it assumes that the client will maintain control over when 
+          tensors/variables/models are instantiated or deleted as opposed to handling tensor/variable/model 
+          lifecycle internally.
 
-    >>> x = torch.randn(2, 3)
-    >>> x
-    tensor([[ 0.6580, -1.0969, -0.4614],
-            [-0.1034, -0.5790,  0.1497]])
-    >>> torch.cat((x, x, x), 0)
-    tensor([[ 0.6580, -1.0969, -0.4614],
-            [-0.1034, -0.5790,  0.1497],
-            [ 0.6580, -1.0969, -0.4614],
-            [-0.1034, -0.5790,  0.1497],
-            [ 0.6580, -1.0969, -0.4614],
-            [-0.1034, -0.5790,  0.1497]])
-    >>> torch.cat((x, x, x), 1)
-    tensor([[ 0.6580, -1.0969, -0.4614,  0.6580, -1.0969, -0.4614,  0.6580,
-             -1.0969, -0.4614],
-            [-0.1034, -0.5790,  0.1497, -0.1034, -0.5790,  0.1497, -0.1034,
-             -0.5790,  0.1497]])
-    """
+        * **objects (list of tensors, variables, or models, optional)** 
+          When the worker is NOT a client worker, it stores all tensors it receives or creates in this dictionary.
+          The key to each object is it's id.
+
+        * **tmp_objects (list of tensors, variables, or models, optional)**
+          When the worker IS a client worker, it stores some tensors temporarily in this _tmp_objects simply to ensure
+          that they do not get deallocated by the Python garbage collector while in the process of being registered.
+          This dictionary can be emptied using the clear_tmp_objects method.
+    
+        * **known_workers (list of **:class:`BaseWorker` ** objects, optional)** This dictionary can include all known workers.
+
+        * **verbose (bool, optional)** A flag for whether or not to print events to stdout.
+    
+        :Example:
+
+        >>> from syft.core.hooks import TorchHook
+        >>> from syft.core.hooks import torch
+        >>> from syft.core.workers import VirtualWorker
+        >>> hook = TorchHook()
+        Hooking into Torch...
+        Overloading complete.
+        >>> local = hook.local_worker
+        >>> remote = VirtualWorker(id=1, hook=hook)
+        >>> local.add_worker(remote)
+        >>> x = torch.FloatTensor([1,2,3,4,5])
+        >>> x
+         1
+         2
+         3
+         4
+         5
+        [torch.FloatTensor of size 5]
+        >>> x.send(remote)
+        >>> x
+        [torch.FloatTensor - Locations:[<syft.core.workers.VirtualWorker object at 0x11848bda0>]]
+        >>> x.get()
+        >>> x
+         1
+         2
+         3
+         4
+         5
+        [torch.FloatTensor of size 5]        
+        """
 
     def __init__(self,  hook, id=0, is_client_worker=False, objects={}, tmp_objects={}, known_workers={}, verbose=False):
         super().__init__(hook=hook, id=id, is_client_worker=is_client_worker, objects=objects, tmp_objects=tmp_objects, known_workers=known_workers, verbose=verbose)
