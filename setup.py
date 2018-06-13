@@ -13,7 +13,7 @@ def read(fname):
 
 def my_test_suite():
     test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover('test', pattern='test_*.py')
+    test_suite = test_loader.discover('test', pattern='*_test.py')
     return test_suite
 
 

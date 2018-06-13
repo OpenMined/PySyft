@@ -1,9 +1,11 @@
-import torch as torch
+"""Some core imports..."""
 
-from . import torch_
-from . import worker
-# from . import _tensorflow
+from . import hooks
+from . import workers
+from . import utils
+from .hooks import torch
 
-s = str(torch)
-s += str(torch_)
-s += str(worker)
+s = str(hooks)
+s += str(utils)
+s += str(torch)
+s += str(workers)

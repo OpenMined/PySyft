@@ -1,21 +1,29 @@
 syft\.core package
 ==================
 
-Subpackages
------------
-
-.. toctree::
-
-    syft.core.tensorflow_
-    syft.core.torch_
-
 Submodules
 ----------
 
-syft\.core\.worker module
--------------------------
+syft\.core\.hooks module
+------------------------
 
-.. automodule:: syft.core.worker
+.. automodule:: syft.core.hooks
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+syft\.core\.utils module
+------------------------
+
+.. automodule:: syft.core.utils
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+syft\.core\.workers module
+--------------------------
+
+.. automodule:: syft.core.workers
     :members:
     :undoc-members:
     :show-inheritance:

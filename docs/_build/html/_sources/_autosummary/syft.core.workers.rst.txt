@@ -1,7 +1,7 @@
-syft\.core\.worker
-==================
+syft\.core\.workers
+===================
 
-.. automodule:: syft.core.worker
+.. automodule:: syft.core.workers
 
    
    
@@ -14,7 +14,7 @@ syft\.core\.worker
    .. autosummary::
    
       BaseWorker
-      LocalWorker
+      VirtualWorker
    
    
 

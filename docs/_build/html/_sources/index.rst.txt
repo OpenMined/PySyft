@@ -19,9 +19,9 @@ API Reference
 .. autosummary::
    :toctree: _autosummary
 
-   syft.core.torch_.hook
-   syft.core.torch_.utils
-   syft.core.worker
+   syft.core.hooks
+   syft.core.utils
+   syft.core.workers
 
 Indices and tables
 ==================
