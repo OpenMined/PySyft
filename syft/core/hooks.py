@@ -803,9 +803,7 @@ class TorchHook(object):
                 if obj_msg['grad'] is not None:
                     grad_msg = json.loads(obj_msg['grad'])
                     var_type = hook_self.types_guard(grad_msg['torch_type'])
-                    
                     grad_obj = hook_self.build_var(grad_msg, var_type)
-                    # grad_obj = torch.autograd.variable.Variable.deser(var_type, grad_msg)
                     grad = hook_self.local_worker.handle_register(grad_obj, grad_msg,force_attach_to_worker=False,temporary=True)
                     
                 else:
@@ -845,14 +843,14 @@ class TorchHook(object):
             tensor_type = self.types_guard(data_msg['torch_type'])
             data_obj = tensor_type.deser(tensor_type, data_msg)
             # data_obj = self.build_tensor(data_msg, tensor_type)
-            data = self.local_worker.handle_register(data_obj, data_msg)
+            data = self.local_worker.handle_register(data_obj, data_msg, temporary=True)
 
         if 'grad' in obj_msg.keys():
             if obj_msg['grad'] is not None:
                 grad_msg = json.loads(obj_msg['grad'])
                 var_type = self.types_guard(grad_msg['torch_type'])
                 grad_obj = self.build_var(grad_msg, var_type)
-                grad = self.local_worker.handle_register(grad_obj, grad_msg)
+                grad = self.local_worker.handle_register(grad_obj, grad_msg, temporary=True)
             else:
                 grad = None
         var = torch_type(data, volatile=obj_msg['volatile'],
