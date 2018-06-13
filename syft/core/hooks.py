@@ -125,7 +125,7 @@ class TorchHook(object):
         self._hook_torch_module()
         for t_type in self.tensor_types:
             self._hook_tensor(t_type)
-        self.hook_variable()
+        self._hook_variable()
         if(verbose):
             print('Overloading complete.')
 
@@ -184,7 +184,12 @@ class TorchHook(object):
             return functools.partial(func, *args, **kwargs)
         return pass_args
 
-    def overload_inner(hook_self, part, has_self=True):
+    def _overload_inner(hook_self, part, has_self=True):
+        """
+        Performs the actual method/function overloading. Note that this is the method/function agnostic
+        piece and is only called from within _overload_method and _overload_function
+        """
+
 
         # Step 1: Compiles Command
         command = hook_self._compile_command(part, has_self=has_self)
@@ -249,7 +254,7 @@ class TorchHook(object):
             """
             part = method(self, *args, **kwargs)
             if self.is_pointer:
-                return hook_self.overload_inner(part, has_self=True)[0]
+                return hook_self._overload_inner(part, has_self=True)[0]
             else:
                 result = part.func(self, *args, **kwargs)
                 if (type(result) in hook_self.tensorvar_types and (not hasattr(result, 'owner'))):
@@ -273,7 +278,7 @@ class TorchHook(object):
         def send_to_workers(*args, **kwargs):
             part = func(*args, **kwargs)
 
-            pointer, has_remote, multiple_owners = hook_self.overload_inner(part, has_self=False)
+            pointer, has_remote, multiple_owners = hook_self._overload_inner(part, has_self=False)
         
             if not (has_remote and not multiple_owners):
                 result = part.func(*args, **kwargs)
@@ -619,7 +624,7 @@ class TorchHook(object):
         return contents
 
 
-    def hook_variable(self):
+    def _hook_variable(self):
         # Overload 'special' methods here
         self._hook_var___new__()
         self._hook_var_contents()
@@ -796,7 +801,7 @@ class TorchHook(object):
                 if obj_msg['grad'] is not None:
                     grad_msg = json.loads(obj_msg['grad'])
                     var_type = hook_self.types_guard(grad_msg['torch_type'])
-                    grad_obj = hook_self.build_var(grad_msg, var_type)
+                    grad_obj = hook_self._build_var(grad_msg, var_type)
                     grad = hook_self.local_worker.handle_register(grad_obj, grad_msg,force_attach_to_worker=False,temporary=True)
                     
                 else:
@@ -829,7 +834,7 @@ class TorchHook(object):
         return var
 
 
-    def build_var(self, obj_msg, torch_type):
+    def _build_var(self, obj_msg, torch_type):
 
         if 'data' in obj_msg.keys():
             data_msg = json.loads(obj_msg['data'])
@@ -842,7 +847,7 @@ class TorchHook(object):
             if obj_msg['grad'] is not None:
                 grad_msg = json.loads(obj_msg['grad'])
                 var_type = self.types_guard(grad_msg['torch_type'])
-                grad_obj = self.build_var(grad_msg, var_type)
+                grad_obj = self._build_var(grad_msg, var_type)
                 grad = self.local_worker.handle_register(grad_obj, grad_msg, temporary=True)
             else:
                 grad = None
@@ -853,7 +858,7 @@ class TorchHook(object):
 
 
 class TensorflowHook(object):
-    r""" TOOD: Hook Tensorflow"""
+    r""" TODO: Hook Tensorflow"""
 
 
 class KerasHook(object):

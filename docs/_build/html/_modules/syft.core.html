@@ -158,6 +158,20 @@
 <span id="syft-core-hooks-module"></span><h2>syft.core.hooks module<a class="headerlink" href="#module-syft.core.hooks" title="Permalink to this headline">¶</a></h2>
 <p>Hooks which override deep learning interfaces with remote execution functionality.</p>
 <dl class="class">
+<dt id="syft.core.hooks.KerasHook">
+<em class="property">class </em><code class="descclassname">syft.core.hooks.</code><code class="descname">KerasHook</code><a class="headerlink" href="#syft.core.hooks.KerasHook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>TODO: Hook Tensorflow</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="syft.core.hooks.TensorflowHook">
+<em class="property">class </em><code class="descclassname">syft.core.hooks.</code><code class="descname">TensorflowHook</code><a class="headerlink" href="#syft.core.hooks.TensorflowHook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>TOOD: Hook Tensorflow</p>
+</dd></dl>
+
+<dl class="class">
 <dt id="syft.core.hooks.TorchHook">
 <em class="property">class </em><code class="descclassname">syft.core.hooks.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
@@ -209,21 +223,6 @@ important if you&#8217;re not initializing the local worker yourself.</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
-<dl class="method">
-<dt id="syft.core.hooks.TorchHook.build_var">
-<code class="descname">build_var</code><span class="sig-paren">(</span><em>obj_msg</em>, <em>torch_type</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.build_var" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="syft.core.hooks.TorchHook.hook_variable">
-<code class="descname">hook_variable</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.hook_variable" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="syft.core.hooks.TorchHook.overload_inner">
-<code class="descname">overload_inner</code><span class="sig-paren">(</span><em>hook_self</em>, <em>part</em>, <em>has_self=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.overload_inner" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="method">
 <dt id="syft.core.hooks.TorchHook.tensor_contents_guard">
 <code class="descname">tensor_contents_guard</code><span class="sig-paren">(</span><em>contents</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.tensor_contents_guard" title="Permalink to this definition">¶</a></dt>
