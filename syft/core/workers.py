@@ -428,9 +428,16 @@ class BaseWorker(object):
         return obj
 
     def process_command(self, command_msg):
-        """
+        """process_command(self, command_msg) -> (command output, list of owners)
         Process a command message from a client worker. Returns the
         result of the computation and a list of the result's owners.
+
+        :Parameters:
+
+        * **command_msg (dict)** The dictionary containing a command from another worker.
+
+        * **out (command output, list of ** :class:`BaseWorker` ids/objects**)** This executes the command
+        and returns its output along with a list of the owners of the tensors involved.
         """
         # Args and kwargs contain special strings in place of tensors
         # Need to retrieve the tensors from self.worker.objects
