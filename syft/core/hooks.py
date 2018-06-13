@@ -184,6 +184,55 @@ class TorchHook(object):
             return functools.partial(func, *args, **kwargs)
         return pass_args
 
+    def overload_inner(hook_self, part, has_self=True):
+
+        # Step 1: Compiles Command
+        command = hook_self._compile_command(part, has_self=has_self)
+
+        # Step 2: checks for Tensors and Variables in the args/kwargs
+        tensorvars = hook_self._get_tensorvars(command)
+
+        # Step 3: Checks to see if the tensor is local (on this machine) or is a pointer 
+        # to a remote one (on a different machine)
+        has_remote = hook_self._check_remote(tensorvars)
+
+        # Checks to see if the tensor has multiple owners (not yet fully supported func)
+        multiple_owners, owners = hook_self._get_owners(tensorvars)
+
+        # If one of the tensor arguments is remote
+        # if the tensor only has one owner (remote)
+        if has_remote and not multiple_owners:
+            
+
+            command = hook_self._replace_in_command(command)
+
+            for worker in owners:
+                
+
+                response = hook_self.local_worker.request_response(recipient=worker,
+                                        message=command,
+                                        response_handler=hook_self.local_worker.process_response)
+
+                registration, torch_type, var_data, var_grad = response
+
+                if registration is None:
+                    return var_data, has_remote, multiple_owners
+                # only returns last pointer, since tensors will
+                # be identical across machines for right now
+                pointer = hook_self._assemble_result_pointer(worker,
+                                                               registration,
+                                                               torch_type,
+                                                               var_data,
+                                                               var_grad)
+                return pointer, has_remote, multiple_owners
+
+        elif(has_remote and multiple_owners):
+            raise NotImplementedError("""MPC not yet implemented:
+                Torch objects need to be on the same machine in
+                order to compute with them.""")
+
+        return (None, has_remote, multiple_owners)
+
     def _overload_method(hook_self, method, isfunc=False):
         """
         Wrapper overloading partialmethod objects of Torch object
@@ -194,45 +243,24 @@ class TorchHook(object):
         """
         @functools.wraps(method)
         def send_to_workers(self, *args, **kwargs):
+            """
+            This method is responsible for sending a command executed 
+            \on a client to a worker to be performed.
+            """
             part = method(self, *args, **kwargs)
             if self.is_pointer:
-                command = hook_self._compile_command(part, has_self=True)
-                tensorvars = hook_self._get_tensorvars(command)
-                has_remote = hook_self._check_remote(tensorvars)
-                multiple_owners, owners = hook_self._get_owners(tensorvars)
-                if has_remote and not multiple_owners:
-                    for worker in owners:
-                        command = hook_self._replace_in_command(command)
-
-                        response = hook_self.local_worker.request_response(recipient=worker,
-                                                message=command,
-                                                response_handler=hook_self.local_worker.process_response)
-
-                        registration, torch_type, var_data, var_grad = response
-
-                        if registration is None:
-                            return var_data
-                        # only returns last pointer, since tensors will
-                        # be identical across machines for right now
-                        pointer = hook_self._assemble_result_pointer(worker,
-                                                                       registration,
-                                                                       torch_type,
-                                                                       var_data,
-                                                                       var_grad)
-                else:
-                    raise NotImplementedError("""MPC not yet implemented:
-                        Torch objects need to be on the same machine in
-                        order to compute with them.""")
-                return pointer
+                return hook_self.overload_inner(part, has_self=True)[0]
             else:
                 result = part.func(self, *args, **kwargs)
-                if (type(result) in hook_self.tensorvar_types and (not hasattr(result, 'owner') or isfunc)):
+                if (type(result) in hook_self.tensorvar_types and (not hasattr(result, 'owner'))):
                     result = hook_self.local_worker.register_object(hook_self.local_worker, result,
                                                            is_pointer=False)
                 return result
         return send_to_workers
 
-    def _overload_function(self, func):
+
+
+    def _overload_function(hook_self, func):
         
         """
         Wrapper overloading partial objects of functions in the torch
@@ -245,47 +273,12 @@ class TorchHook(object):
         def send_to_workers(*args, **kwargs):
             part = func(*args, **kwargs)
 
-            # Step 1: Compiles Command
-            command = self._compile_command(part, has_self=False)
-
-            # Step 2: checks for Tensors and Variables in the args/kwargs
-            tensorvars = self._get_tensorvars(command)
-
-            # Step 3: Checks to see if the tensor is local (on this machine) or is a pointer 
-            # to a remote one (on a different machine)
-            has_remote = self._check_remote(tensorvars)
-
-            # If one of the tensor arguments is remote
-            if has_remote:
-
-                # Checks to see if the tensor has multiple owners (not yet fully supported func)
-                multiple_owners, owners = self._get_owners(tensorvars)
-                if multiple_owners:
-                    raise NotImplementedError("""MPC not yet implemented:
-                    Torch objects need to be on the same machine in order
-                    to compute with them.""")
-                else:
-
-                    # if the tensor only has one owner (remote)
-                    command = _replace_in_command(command)
-
-                    for worker in owners:
-                        # TODO: extend to iterables of pointers
-                        response = hook_self.local_worker.request_response(recipient=worker,
-                                                message=command,
-                                                response_handler=hook_self.local_worker.process_response)
-
-                        registration, torch_type, var_data, var_grad = response
-
-                        if registration is None:
-                            return var_data
-                        pointer = self._assemble_result_pointer(
-                            registration, torch_type, var_data, var_grad)
-                    return pointer
-            else:
+            pointer, has_remote, multiple_owners = hook_self.overload_inner(part, has_self=False)
+        
+            if not (has_remote and not multiple_owners):
                 result = part.func(*args, **kwargs)
-                if type(result) in self.tensorvar_types:
-                    result = self.local_worker.register_object(self.local_worker, result, is_pointer=False)
+                if type(result) in hook_self.tensorvar_types:
+                    result = hook_self.local_worker.register_object(hook_self.local_worker, result, is_pointer=False)
                 return result
 
         return send_to_workers
