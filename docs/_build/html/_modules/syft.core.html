@@ -519,7 +519,7 @@ aware of new ones when discovered through other processes.</p>
 </tbody>
 </table>
 <ul class="simple">
-<li><strong>id_or_worker (string or int or BaseWorker)</strong> This is either the id of the object to be returned or the object itself.</li>
+<li><strong>id_or_worker (string or int or</strong> <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a> <strong>)</strong> This is either the id of the object to be returned or the object itself.</li>
 </ul>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -554,9 +554,22 @@ aware of new ones when discovered through other processes.</p>
 
 <dl class="method">
 <dt id="syft.core.workers.BaseWorker.process_command">
-<code class="descname">process_command</code><span class="sig-paren">(</span><em>command_msg</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.process_command" title="Permalink to this definition">¶</a></dt>
+<code class="descname">process_command</code><span class="sig-paren">(</span><em>self</em>, <em>command_msg) -&gt; (command output</em>, <em>list of owners</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.process_command" title="Permalink to this definition">¶</a></dt>
 <dd><p>Process a command message from a client worker. Returns the
 result of the computation and a list of the result&#8217;s owners.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>command_msg (dict)</strong> The dictionary containing a command from another worker.</li>
+<li><strong>out (command output, list of</strong> <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a> ids/objects <strong>)</strong> This executes the command</li>
+</ul>
+<p>and returns its output along with a list of the owners of the tensors involved.</p>
 </dd></dl>
 
 <dl class="method">
@@ -612,6 +625,18 @@ instead used by interal processes (hooks and workers).</p>
 </table>
 <ul class="simple">
 <li><strong>obj (a torch.Tensor or torch.autograd.Variable)</strong> a Torch instance, e.g. Tensor or Variable to be registered</li>
+<li><strong>force_attach_to_worker (bool)</strong> if set to True, it will force the object to be stored in the worker&#8217;s permanent registry</li>
+<li><strong>temporary (bool)</strong> If set to True, it will store the object in the worker&#8217;s temporary registry.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
 <li><strong>id (int or string)</strong> random integer between 0 and 1e10 or string uniquely identifying the object.</li>
 <li><strong>owners (list of ** :class:`BaseWorker` objects ** or ids)</strong> owner(s) of the object</li>
 <li><strong>is_pointer (bool, optional)</strong> Whether or not the tensor being registered contains the data locally or is
@@ -841,27 +866,81 @@ This dictionary can be emptied using the clear_tmp_objects method.</li>
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.handle_register">
 <code class="descname">handle_register</code><span class="sig-paren">(</span><em>torch_object</em>, <em>obj_msg</em>, <em>force_attach_to_worker=False</em>, <em>temporary=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.handle_register" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function is responsible for re-registering an object when it has been previously registered with the wrong id.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>torch_object (torch.Tensor or torch.autograd.Variable)</strong> the object to be re-registered.</li>
+<li><strong>obj_msg</strong> (dict)** the message containing the proper id.</li>
+<li><strong>force_attach_to_worker (bool)</strong> if set to True, it will force the object to be stored in the worker&#8217;s permanent registry
+even if the worker is a client worker.</li>
+<li><strong>temporary (bool)</strong> If set to True, it will store the object in the worker&#8217;s temporary registry.</li>
+<li><strong>out (torch.Tensor or torch.autograd.Variable)</strong> returns the object newly registered.</li>
+</ul>
+</dd></dl>
 
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.receive_obj">
-<code class="descname">receive_obj</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descname">receive_obj</code><span class="sig-paren">(</span><em>self</em>, <em>message) -&gt; (a torch.autograd.Variable or torch.Tensor object</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Functionality that receives a Tensor or Variable from another VirtualWorker (as a string), deserializes it, and registers it
+within the local permanent registry.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>message(JSON string)</strong> the message encoding the object being received.</li>
+</ul>
+</dd></dl>
 
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.request_obj">
-<code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.request_obj" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descname">request_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method requests that another VirtualWorker send an object to the local one. In the case that the local one is a client,
+it simply returns the object. In the case that the local worker is not a client, it stores the object in the permanent registry.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>obj_id (str or int)</strong> the id of the object being requested</li>
+<li><strong>sender (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker who currently has the object who is being requested to send it.</li>
+</ul>
+</dd></dl>
 
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.request_response">
-<code class="descname">request_response</code><span class="sig-paren">(</span><em>recipient</em>, <em>message</em>, <em>response_handler</em>, <em>timeout=10</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.request_response" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="syft.core.workers.VirtualWorker.return_result">
-<code class="descname">return_result</code><span class="sig-paren">(</span><em>compiled_result</em>, <em>response_channel</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.return_result" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return compiled result of a torch command</p>
+<code class="descname">request_response</code><span class="sig-paren">(</span><em>self</em>, <em>recipient</em>, <em>message</em>, <em>response_handler</em>, <em>timeout=10</em><span class="sig-paren">)</span> &#x2192; object<a class="headerlink" href="#syft.core.workers.VirtualWorker.request_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method sends a message to another worker in a way that hangs... waiting until the worker responds with a message. It then 
+processes the response using a response handler</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
+<li><strong>message (string)</strong> the message being sent</li>
+<li><strong>response_handler (func)</strong> the function that processes the response.</li>
+<li><strong>timeout (optional)</strong> a timeout. TODO: implement this or remove it?</li>
+</ul>
 </dd></dl>
 
 <dl class="method">

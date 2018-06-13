@@ -57,15 +57,15 @@ class BaseWorker(object):
         # handling tensor/variable/model lifecycle internally.
         self.is_client_worker = is_client_worker
 
-        # When the worker is NOT a client worker, it stores all tensors it receives or creates in this dictionary.
-        # The key to each object is it's id.
+        # The workers permanenet registry. When the worker is NOT a client worker, it stores all tensors it receives
+        #  or creates in this dictionary. The key to each object is it's id.
         self._objects = {}
         for k,v in objects.items():
             self._objects[k] = v
 
-        # When the worker IS a client worker, it stores some tensors temporarily in this _tmp_objects simply to ensure
-        # that they do not get deallocated by the Python garbage collector while in the process of being registered.
-        # This dictionary can be emptied using the clear_tmp_objects method.
+        # The temporary registry. When the worker IS a client worker, it stores some tensors temporarily in this 
+        # _tmp_objects simply to ensure that they do not get deallocated by the Python garbage collector while 
+        # in the process of being registered. This dictionary can be emptied using the clear_tmp_objects method.
         self._tmp_objects = {}
         for k,v in tmp_objects.items():
             self._tmp_objects[k] = v
@@ -141,7 +141,7 @@ class BaseWorker(object):
         
         :Parameters:
         
-        * **id_or_worker (string or int or BaseWorker)** This is either the id of the object to be returned or the object itself.
+        * **id_or_worker (string or int or** :class:`BaseWorker` **)** This is either the id of the object to be returned or the object itself.
         
         :Example:
 
@@ -376,7 +376,13 @@ class BaseWorker(object):
         :Parameters:
         
         * **obj (a torch.Tensor or torch.autograd.Variable)** a Torch instance, e.g. Tensor or Variable to be registered
+
+        * **force_attach_to_worker (bool)** if set to True, it will force the object to be stored in the worker's permanent registry
+
+        * **temporary (bool)** If set to True, it will store the object in the worker's temporary registry.
         
+        :kwargs:
+
         * **id (int or string)** random integer between 0 and 1e10 or string uniquely identifying the object.
         
         * **owners (list of ** :class:`BaseWorker` objects ** or ids)** owner(s) of the object
@@ -436,7 +442,7 @@ class BaseWorker(object):
 
         * **command_msg (dict)** The dictionary containing a command from another worker.
 
-        * **out (command output, list of ** :class:`BaseWorker` ids/objects**)** This executes the command
+        * **out (command output, list of** :class:`BaseWorker` ids/objects **)** This executes the command
         and returns its output along with a list of the owners of the tensors involved.
         """
         # Args and kwargs contain special strings in place of tensors
@@ -651,7 +657,16 @@ class VirtualWorker(BaseWorker):
         return obj
 
     def receive_obj(self, message):
+        """receive_obj(self, message) -> (a torch.autograd.Variable or torch.Tensor object)
+        Functionality that receives a Tensor or Variable from another VirtualWorker (as a string), deserializes it, and registers it
+        within the local permanent registry.
 
+        :Parameters:
+
+        * **message(JSON string)** the message encoding the object being received.
+
+
+        """
 
         message_obj = json.loads(message)
         obj_type = self.hook.types_guard(message_obj['torch_type'])
@@ -662,6 +677,24 @@ class VirtualWorker(BaseWorker):
         return obj
 
     def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):
+        """
+        This function is responsible for re-registering an object when it has been previously registered with the wrong id.
+
+        :Parameters:
+
+        * **torch_object (torch.Tensor or torch.autograd.Variable)** the object to be re-registered.
+
+        * **obj_msg** (dict)** the message containing the proper id.
+
+        * **force_attach_to_worker (bool)** if set to True, it will force the object to be stored in the worker's permanent registry
+          even if the worker is a client worker.
+
+        * **temporary (bool)** If set to True, it will store the object in the worker's temporary registry.
+
+        * **out (torch.Tensor or torch.autograd.Variable)** returns the object newly registered.
+        """
+
+        # TODO: pass in just the id instead of the entire obj_msg.
 
         try:
             # TorchClient case
@@ -678,12 +711,23 @@ class VirtualWorker(BaseWorker):
                                             force_attach_to_worker=force_attach_to_worker,
                                             temporary=temporary)
 
-
         return torch_object
 
     
 
     def request_obj(self, obj_id, sender):
+        """request_obj(self, obj_id, sender)
+        This method requests that another VirtualWorker send an object to the local one. In the case that the local one is a client,
+        it simply returns the object. In the case that the local worker is not a client, it stores the object in the permanent registry.
+
+        :Parameters:
+
+        * **obj_id (str or int)** the id of the object being requested
+
+        * **sender (** :class:`VirtualWorker` **)** the worker who currently has the object who is being requested to send it.
+        """
+
+
         sender = self.get_worker(sender)
         obj = sender.send_obj(sender.get_obj(obj_id), self)
 
@@ -699,10 +743,28 @@ class VirtualWorker(BaseWorker):
         return obj, self._clear_tmp_objects
 
     def request_response(self, recipient, message, response_handler, timeout=10):
+        """request_response(self, recipient, message, response_handler, timeout=10) -> object
+
+        This method sends a message to another worker in a way that hangs... waiting until the worker responds with a message. It then 
+        processes the response using a response handler
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message (string)** the message being sent
+
+        * **response_handler (func)** the function that processes the response.
+
+        * **timeout (optional)** a timeout. TODO: implement this or remove it?
+
+        """
         return response_handler(recipient.handle_command(message))
 
     def handle_command(self, message):
-        """Main function that handles incoming torch commands."""
+        """
+        Main function that handles incoming torch commands.
+        """
 
         message = message
         # take in command message, return result of local execution
@@ -716,10 +778,3 @@ class VirtualWorker(BaseWorker):
         else:
             return dict(registration=None, torch_type=None,
                         var_data=None, var_grad=None)
-
-
-
-    def return_result(self, compiled_result, response_channel):
-        """Return compiled result of a torch command"""
-        return self.worker.publish(
-            channel=response_channel, message=compiled_result)
