@@ -1,5 +1,6 @@
 """Framework agnostic static utility functions."""
 
+
 def map_tuple(service, args, func):
     if service:
         return tuple(func(service, x) for x in args)
