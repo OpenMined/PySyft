@@ -205,6 +205,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.core.html#syft.core.hooks.BaseHook">BaseHook (class in syft.core.hooks)</a>
 </li>
+      <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.base_interface.BaseInterface">BaseInterface (class in syft.mpc.interface.base_interface)</a>
+</li>
       <li><a href="_modules/syft.core.html#syft.core.workers.BaseWorker">BaseWorker (class in syft.core.workers)</a>
 </li>
   </ul></td>
@@ -226,6 +228,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.decode">decode() (in module syft.mpc.spdz)</a>
+</li>
+      <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.distributed_interface.DistributedInterface">DistributedInterface (class in syft.mpc.interface.distributed_interface)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -269,17 +273,27 @@
 </li>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.generate_mul_triple_communication">generate_mul_triple_communication() (in module syft.mpc.spdz)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.generate_sigmoid_shares_communication">generate_sigmoid_shares_communication() (in module syft.mpc.spdz)</a>
 </li>
       <li><a href="_modules/syft.core.html#syft.core.workers.BaseWorker.get_obj">get_obj() (syft.core.workers.BaseWorker method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.core.html#syft.core.hooks.TorchHook.get_owners">get_owners() (syft.core.hooks.TorchHook static method)</a>
 </li>
+      <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.base_interface.BaseInterface.get_party">get_party() (syft.mpc.interface.base_interface.BaseInterface method)</a>
+
+      <ul>
+        <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.distributed_interface.DistributedInterface.get_party">(syft.mpc.interface.distributed_interface.DistributedInterface method)</a>
+</li>
+      </ul></li>
       <li><a href="_modules/syft.core.html#syft.core.workers.BaseWorker.get_worker">get_worker() (syft.core.workers.BaseWorker method)</a>
 </li>
       <li><a href="_modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.grad">grad (syft.mpc.shared_variable.SharedVariable attribute)</a>
+</li>
+      <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.grid_client_interface.GridClientInterface">GridClientInterface (class in syft.mpc.interface.grid_client_interface)</a>
+</li>
+      <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.grid_worker_interface.GridWorkerInterface">GridWorkerInterface (class in syft.mpc.interface.grid_worker_interface)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -287,11 +301,11 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_modules/syft.core.html#syft.core.workers.VirtualWorker.handle_command">handle_command() (syft.core.workers.VirtualWorker method)</a>
+      <li><a href="_modules/syft.core.html#syft.core.workers.BaseWorker.handle_command">handle_command() (syft.core.workers.BaseWorker method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_modules/syft.core.html#syft.core.workers.VirtualWorker.handle_register">handle_register() (syft.core.workers.VirtualWorker method)</a>
+      <li><a href="_modules/syft.core.html#syft.core.workers.BaseWorker.handle_register">handle_register() (syft.core.workers.BaseWorker method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -353,10 +367,20 @@
       </ul></li>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.reconstruct">reconstruct() (in module syft.mpc.spdz)</a>
 </li>
-      <li><a href="_modules/syft.core.html#syft.core.workers.BaseWorker.register_object">register_object() (syft.core.workers.BaseWorker method)</a>
+      <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.base_interface.BaseInterface.recv">recv() (syft.mpc.interface.base_interface.BaseInterface method)</a>
+
+      <ul>
+        <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.distributed_interface.DistributedInterface.recv">(syft.mpc.interface.distributed_interface.DistributedInterface method)</a>
 </li>
+        <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.grid_client_interface.GridClientInterface.recv">(syft.mpc.interface.grid_client_interface.GridClientInterface method)</a>
+</li>
+        <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.grid_worker_interface.GridWorkerInterface.recv">(syft.mpc.interface.grid_worker_interface.GridWorkerInterface method)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_modules/syft.core.html#syft.core.workers.BaseWorker.register_object">register_object() (syft.core.workers.BaseWorker method)</a>
+</li>
       <li><a href="_modules/syft.core.html#syft.core.workers.BaseWorker.request_obj">request_obj() (syft.core.workers.BaseWorker method)</a>
 
       <ul>
@@ -373,6 +397,16 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.base_interface.BaseInterface.send">send() (syft.mpc.interface.base_interface.BaseInterface method)</a>
+
+      <ul>
+        <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.distributed_interface.DistributedInterface.send">(syft.mpc.interface.distributed_interface.DistributedInterface method)</a>
+</li>
+        <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.grid_client_interface.GridClientInterface.send">(syft.mpc.interface.grid_client_interface.GridClientInterface method)</a>
+</li>
+        <li><a href="_modules/syft.mpc.interface.html#syft.mpc.interface.grid_worker_interface.GridWorkerInterface.send">(syft.mpc.interface.grid_worker_interface.GridWorkerInterface method)</a>
+</li>
+      </ul></li>
       <li><a href="_modules/syft.core.html#syft.core.workers.BaseWorker.send_obj">send_obj() (syft.core.workers.BaseWorker method)</a>
 
       <ul>
@@ -401,10 +435,10 @@
 </li>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.spdz_add">spdz_add() (in module syft.mpc.spdz)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.spdz_matmul">spdz_matmul() (in module syft.mpc.spdz)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.spdz_mul">spdz_mul() (in module syft.mpc.spdz)</a>
 </li>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.spdz_neg">spdz_neg() (in module syft.mpc.spdz)</a>
@@ -426,6 +460,16 @@
       <li><a href="_autosummary/syft.core.workers.html#module-syft.core.workers">syft.core.workers (module)</a>, <a href="_modules/syft.core.html#module-syft.core.workers">[1]</a>
 </li>
       <li><a href="_modules/syft.mpc.html#module-syft.mpc">syft.mpc (module)</a>
+</li>
+      <li><a href="_modules/syft.mpc.interface.html#module-syft.mpc.interface">syft.mpc.interface (module)</a>
+</li>
+      <li><a href="_modules/syft.mpc.interface.html#module-syft.mpc.interface.base_interface">syft.mpc.interface.base_interface (module)</a>
+</li>
+      <li><a href="_modules/syft.mpc.interface.html#module-syft.mpc.interface.distributed_interface">syft.mpc.interface.distributed_interface (module)</a>
+</li>
+      <li><a href="_modules/syft.mpc.interface.html#module-syft.mpc.interface.grid_client_interface">syft.mpc.interface.grid_client_interface (module)</a>
+</li>
+      <li><a href="_modules/syft.mpc.interface.html#module-syft.mpc.interface.grid_worker_interface">syft.mpc.interface.grid_worker_interface (module)</a>
 </li>
       <li><a href="_modules/syft.mpc.html#module-syft.mpc.shared_variable">syft.mpc.shared_variable (module)</a>
 </li>

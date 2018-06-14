@@ -1,6 +1,13 @@
 syft\.mpc package
 =================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    syft.mpc.interface
+
 Submodules
 ----------
 

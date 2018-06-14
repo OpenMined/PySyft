@@ -1,4 +1,4 @@
-from interface.base_interface import BaseInterface
+from .base_interface import BaseInterface
 import os
 import torch
 import torch.distributed as dist
