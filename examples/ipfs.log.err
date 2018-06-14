@@ -760,3 +760,16 @@
 [0;37m15:51:36.487 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID auUi2G>: connection reset [0;37mcomm.go:36[0m
 [0;37m15:51:40.249 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID NMTsUa>: connection reset [0;37mcomm.go:36[0m
 [0;37m15:52:18.724 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID bb1DRw>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:53:57.331 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID dfQmbm> [0;37mfloodsub.go:112[0m
+[0;37m15:53:57.997 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID W5P8PZ> [0;37mfloodsub.go:112[0m
+[0;37m15:53:58.825 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID aNrWGb> [0;37mfloodsub.go:112[0m
+[0;37m15:54:00.845 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID PBTMsB> [0;37mfloodsub.go:112[0m
+[0;37m15:54:01.439 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID UZFuJ3>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:54:29.813 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID SpmNMx>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:58:48.815 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID Z6MiEY>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:58:57.190 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID Xbb7Pw> [0;37mfloodsub.go:112[0m
+[0;37m15:58:57.905 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID SoLSaf> [0;37mfloodsub.go:112[0m
+[0;37m15:58:58.151 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID WLaP1h> [0;37mfloodsub.go:112[0m
+[0;37m15:58:58.181 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID W2YuQT> [0;37mfloodsub.go:112[0m
+[0;37m15:58:59.378 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID YX1frj> [0;37mfloodsub.go:112[0m
+[0;37m15:59:01.182 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID aNrWGb>: connection reset [0;37mcomm.go:36[0m
