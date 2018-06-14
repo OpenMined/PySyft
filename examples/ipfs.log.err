@@ -741,3 +741,22 @@
 [0;37m15:38:57.695 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID Z5Gjt6> [0;37mfloodsub.go:112[0m
 [0;37m15:39:08.482 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID cBUj1L>: connection reset [0;37mcomm.go:36[0m
 [0;37m15:39:24.198 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID auUi2G>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:42:00.166 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID cKGYbW>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:43:02.564 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID SoLueR>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:43:53.760 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID NMTsUa>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:43:56.898 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID auUi2G> [0;37mfloodsub.go:112[0m
+[0;37m15:43:56.935 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID cTdRRK> [0;37mfloodsub.go:112[0m
+[0;37m15:43:57.589 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID adkBtt> [0;37mfloodsub.go:112[0m
+[0;37m15:43:59.683 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID NMTsUa> [0;37mfloodsub.go:112[0m
+[0;37m15:44:02.244 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID cKGYbW> [0;37mfloodsub.go:112[0m
+[0;37m15:45:19.147 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID cTdRRK>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:46:32.281 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID cKGYbW>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:46:33.576 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID WNGB7U>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:47:37.406 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID adkBtt>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:48:56.751 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID SoLer2>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:48:57.005 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID UZFuJ3> [0;37mfloodsub.go:112[0m
+[0;37m15:48:57.009 [31mERROR [0;34m  floodsub: [0malready have connection to peer: <peer.ID Z6MiEY> [0;37mfloodsub.go:112[0m
+[0;37m15:51:11.984 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID Z5Gjt6>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:51:36.487 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID auUi2G>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:51:40.249 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID NMTsUa>: connection reset [0;37mcomm.go:36[0m
+[0;37m15:52:18.724 [31mERROR [0;34m  floodsub: [0merror reading rpc from <peer.ID bb1DRw>: connection reset [0;37mcomm.go:36[0m
