@@ -2,5 +2,4 @@
 from . import core
 from . import mpc
 
-s = str(core)
-s += str(mpc)
+__all__ = ['core']
