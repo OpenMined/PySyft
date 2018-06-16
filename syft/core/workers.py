@@ -465,7 +465,23 @@ class BaseWorker(object):
         """
         # TODO: Assign default id more intelligently (low priority)
         #       Consider popping id from long list of unique integers
+
         keys = kwargs.keys()
+
+        # DO NOT DELETE THIS TRY/CATCH UNLESS YOU KNOW WHAT YOU'RE DOING
+        # PyTorch tensors wrapped invariables (if my_var.data) are python
+        # objects that get deleted and re-created randomly according to
+        # the whims of the PyTorch wizards. Thus, our attributes were getting
+        # deleted with them (because they are not present in the underlying
+        # C++ code.) Thus, so that these python objects do NOT get garbage
+        # collected, we're creating a secondary reference to them from the
+        # parent Variable object (which we have been told is stable). This
+        # is experimental functionality but seems to solve the symptoms we
+        # were previously experiencing.
+        try:
+            obj.data_backup = obj.data
+        except:
+            ""
 
         obj.id = (kwargs['id']
                   if ('id' in keys and kwargs['id'] is not None)
