@@ -101,10 +101,12 @@ class TestTorchVariable(TestCase):
         # attributes on the .data python objects they contain whenever the Variable
         # object is returned from a function. This bug was fixed by storing a bbackup
         # pointer to the .data object (.data_backup) so that the python object doesn't
-        # get garbage collected. This test used to error out at the last line (as 
+        # get garbage collected. This test used to error out at the last line (as
         # indcated below)
 
-        hook = TorchHook()
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        local.verbose = False
 
         def relu(x):
             """Rectified linear activation"""
@@ -114,8 +116,8 @@ class TestTorchVariable(TestCase):
             """Linear transformation of x by w"""
             return x.mm(w)
 
-        x = Var(torch.FloatTensor([[1,1],[2,2]]), requires_grad=True)
-        y = Var(torch.FloatTensor([[1,1],[2,2]]), requires_grad=True)
+        x = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
+        y = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
 
         z = linear(x, y)
 
