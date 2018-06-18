@@ -613,6 +613,7 @@ class BaseWorker(object):
             return [self.compile_result(x, owners) for x in result]
 
     # Helpers for HookService and TorchService
+    @staticmethod
     def _check_workers(self, workers):
         if type(workers) is str:
             workers = [workers]
