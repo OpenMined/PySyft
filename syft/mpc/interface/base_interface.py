@@ -15,7 +15,7 @@ class BaseInterface(ABC):
         pass
 
     @abstractmethod
-    def recv(self,var):
+    def recv(self, var):
         pass
 
     def get_party(self):

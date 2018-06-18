@@ -1,13 +1,11 @@
-from .base_interface import BaseInterface
 import os
-import torch
 import torch.distributed as dist
 
 
 class DistributedInterface(object):
 
-    def __init__(self,party, master_addr='127.0.0.1', master_port='29500'):
-        self.party=party
+    def __init__(self, party, master_addr='127.0.0.1', master_port='29500'):
+        self.party = party
         if party:
             self.other = 0
         else:
@@ -23,5 +21,6 @@ class DistributedInterface(object):
     def recv(self, var):
         dist.recv(tensor=var, src=self.other)
         return var
+
     def get_party(self):
         return self.party

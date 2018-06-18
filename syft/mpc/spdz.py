@@ -1,8 +1,4 @@
 import torch
-from torch.autograd import Variable
-import inspect
-import random
-import copy
 
 BASE = 10
 KAPPA = 3  # ~29 bits
@@ -14,22 +10,22 @@ PRECISION = PRECISION_INTEGRAL + PRECISION_FRACTIONAL
 BOUND = BASE**PRECISION
 
 # Q field
-field = 2**31 -1  # < 64 bits
-#Q = 2147483648
+field = 2**31 - 1  # < 64 bits
+# Q = 2147483648
 Q_MAXDEGREE = 1
 
 
 def encode(rational, precision_fractional=PRECISION_FRACTIONAL):
     upscaled = (rational * BASE**precision_fractional).long()
-    field_element = upscaled % field 
+    field_element = upscaled % field
     return field_element
 
 
 def decode(field_element, precision_fractional=PRECISION_FRACTIONAL):
     field_element = field_element
     neg_values = field_element.gt(field)
-    #pos_values = field_element.le(field)
-    #upscaled = field_element*(neg_valuese+pos_values)
+    # pos_values = field_element.le(field)
+    # upscaled = field_element*(neg_valuese+pos_values)
     field_element[neg_values] = field-field_element[neg_values]
     rational = field_element.float() / BASE**precision_fractional
     return rational
@@ -58,22 +54,24 @@ def swap_shares(share, interface):
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL):
     if (interface.get_party() == 0):
-        return (x/BASE**amount) %field
-    return (field-((field-x)/BASE**amount)) %field
+        return (x / BASE ** amount) % field
+    return (field - ((field - x) / BASE ** amount)) % field
 
 
 def public_add(x, y, interface):
     if (interface.get_party() == 0):
-        return (x+y)
+        return (x + y)
     elif(interface.get_party() == 1):
         return x
 
 
 def spdz_add(a, b):
-    return ((a+b) % field)
+    return ((a + b) % field)
+
 
 def spdz_neg(a):
-    return (field - a)%field
+    return (field - a) % field
+
 
 def generate_mul_triple(m, n):
     r = torch.LongTensor(m, n).random_(field)
@@ -110,13 +108,13 @@ def spdz_mul(x, y, interface):
     m, n = x.shape
     triple = generate_mul_triple_communication(m, n, interface)
     a, b, c = triple
-    d = (x - a) %field
-    e = (y - b) %field
+    d = (x - a) % field
+    e = (y - b) % field
 
     d_other = swap_shares(d, interface)
     e_other = swap_shares(e, interface)
-    delta = (d+ d_other) %field
-    epsilon = (e+  e_other) %field
+    delta = (d + d_other) % field
+    epsilon = (e + e_other) % field
     r = delta * epsilon
     s = a * epsilon
     t = b * delta
@@ -129,7 +127,7 @@ def spdz_mul(x, y, interface):
 def generate_matmul_triple(m, n, k):
     r = torch.LongTensor(m, k).random_(field)
     s = torch.LongTensor(k, n).random_(field)
-    t = r @ s 
+    t = r @ s
     return r, s, t
 
 
@@ -156,24 +154,24 @@ def generate_matmul_triple_communication(m, n, k, interface):
 
 def spdz_matmul(x, y, interface):
     x_height = x.shape[0]
-    if len(x.shape)!=1:
+    if len(x.shape) != 1:
         x_width = x.shape[1]
     else:
         x_width = 1
 
     y_height = y.shape[0]
-    if len(y.shape)!=1:
+    if len(y.shape) != 1:
         y_width = y.shape[1]
     else:
         y_width = 1
 
-    assert x_width == y_height, 'dimension mismatch: %r != %r'%(x_width,y_height)
+    assert x_width == y_height, 'dimension mismatch: %r != %r' % (x_width, y_height)
 
     r, s, t = generate_matmul_triple_communication(
         x_height, y_width, x_width, interface)
 
-    rho_local = (x - r) %field
-    sigma_local = (y - s) %field
+    rho_local = (x - r) % field
+    sigma_local = (y - s) % field
 
     # Communication
     rho_other = swap_shares(rho_local, interface)

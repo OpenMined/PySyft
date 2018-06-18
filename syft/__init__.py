@@ -2,4 +2,4 @@
 from . import core
 from . import mpc
 
-__all__ = ['core']
+__all__ = ['core', 'mpc']
