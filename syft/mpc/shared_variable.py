@@ -16,24 +16,24 @@ class SharedAdd(Function):
 
 
 class SharedNeg(Function):
-    
+
     @staticmethod
-    def forward(ctx,a):
+    def forward(ctx, a):
         return spdz.spdz_neg(a)
-    
+
     @staticmethod
-    def backward(ctx,grad_out):
+    def backward(ctx, grad_out):
         return spdz.spdz_neg(grad_out)
 
 
 class SharedSub(Function):
-    
+
     @staticmethod
-    def forward(ctx,a,b):
-        return spdz.spdz_add(a,spdz.spdz_neg(b))
-    
+    def forward(ctx, a, b):
+        return spdz.spdz_add(a, spdz.spdz_neg(b))
+
     @staticmethod
-    def backward(ctx,grad_out):
+    def backward(ctx, grad_out):
         return grad_out, spdz.spdz_neg(grad_out)
 
 
@@ -50,7 +50,9 @@ class SharedMult(Function):
         a, b = ctx.saved_tensors
         interface = ctx.interface
         grad_out = grad_out
-        return Variable(spdz.spdz_mul(grad_out.data, b, interface)), Variable(spdz.spdz_mul(grad_out.data, a, interface)),None
+        return (Variable(spdz.spdz_mul(grad_out.data, b, interface)),
+                Variable(spdz.spdz_mul(grad_out.data, a, interface)),
+                None)
 
 
 class SharedMatmul(Function):
@@ -67,8 +69,8 @@ class SharedMatmul(Function):
         interface = ctx.interface
         grad_out = grad_out.data
         a_grad = Variable(spdz.spdz_matmul(grad_out,  b.t_(), interface))
-        b_grad = Variable(spdz.spdz_matmul( a.t_(),grad_out, interface)) 
-        return a_grad,b_grad ,None
+        b_grad = Variable(spdz.spdz_matmul(a.t_(), grad_out, interface))
+        return a_grad, b_grad, None
 
 
 class SharedSigmoid(Function):
@@ -101,7 +103,7 @@ class SharedVariable(object):
 
     def __add__(self, other):
         return self.add(other)
-    
+
     def __sub__(self, other):
         return self.sub(other)
 
@@ -113,21 +115,24 @@ class SharedVariable(object):
 
     def sigmoid(self):
         return SharedVariable(SharedSigmoid.apply(self.var, self.interface), self.interface)
-    
+
     def neg(self):
-        return SharedVariable(SharedNeg.apply(self.var),self.interface)
-    
+        return SharedVariable(SharedNeg.apply(self.var), self.interface)
+
     def add(self, other):
-        return SharedVariable(SharedAdd.apply(self.var, other.var), self.interface, self.requires_grad)
-    
+        return SharedVariable(SharedAdd.apply(self.var, other.var),
+                              self.interface, self.requires_grad)
+
     def sub(self, other):
-        return SharedVariable(SharedSub.apply(self.var,other.var),self.interface)
+        return SharedVariable(SharedSub.apply(self.var, other.var), self.interface)
 
     def mul(self, other):
         return SharedVariable(SharedMult.apply(self.var, other.var, self.interface), self.interface)
 
     def matmul(self, other):
-        return SharedVariable(SharedMatmul.apply(self.var, other.var, self.interface), self.interface)
+        return SharedVariable(SharedMatmul.apply(self.var, other.var,
+                                                 self.interface),
+                              self.interface)
 
     @property
     def grad(self):
@@ -136,8 +141,8 @@ class SharedVariable(object):
     @property
     def data(self):
         return self.var.data
-    
-    def backward(self,grad):
+
+    def backward(self, grad):
         return self.var.backward(grad)
 
     def t_(self):

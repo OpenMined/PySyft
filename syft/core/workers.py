@@ -929,5 +929,3 @@ class VirtualWorker(BaseWorker):
 
         """
         return response_handler(recipient.handle_command(message))
-
-
