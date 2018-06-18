@@ -15,7 +15,10 @@ class BaseHook(object):
 
     def __init__(self):
         ""
-
+    def __enter__(self):
+        ""
+    def __exit__(self):
+        ""
 
 class TorchHook(BaseHook):
     r""" A Hook which Overrides Methods on PyTorch Variables & Tensors -
@@ -162,6 +165,10 @@ class TorchHook(BaseHook):
         else:
             if(verbose):
                 print("WARNING: Torch seems to be already overloaded... skipping...")
+    
+    def __exit__(self):
+        import torch
+
 
     def types_guard(self, torch_type_str):
         """types_guard(torch_type_str) -> torch.Tensor or torch.autograd.Variable
