@@ -614,7 +614,7 @@ class BaseWorker(object):
 
     # Helpers for HookService and TorchService
     @staticmethod
-    def _check_workers(self, workers):
+    def _check_workers(torch_obj, workers):
         if type(workers) is str:
             workers = [workers]
         if issubclass(type(workers), BaseWorker):
@@ -622,7 +622,7 @@ class BaseWorker(object):
         elif not hasattr(workers, '__iter__'):
             raise TypeError(
                 """Can only send {} to a string worker ID or an iterable of
-                string worker IDs, not {}""".format(self.__name__, workers)
+                string worker IDs, not {}""".format(torch_obj.__name__, workers)
                 )
         return workers
 
