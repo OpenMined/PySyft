@@ -21,6 +21,7 @@ class BaseHook(object):
     def __exit__(self):
         ""
 
+
 class TorchHook(BaseHook):
     r""" A Hook which Overrides Methods on PyTorch Variables & Tensors -
     **Currently compatible with PyTorch 0.3.1**
