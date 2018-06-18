@@ -14,6 +14,7 @@ syft\.core\.workers
    .. autosummary::
    
       BaseWorker
+      SocketWorker
       VirtualWorker
    
    
