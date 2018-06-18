@@ -754,6 +754,87 @@ class SocketWorker(BaseWorker):
     * **verbose (bool, optional)** A flag for whether or not to print events to stdout.
     """
 
+    def __init__(self,  hook, id=0, is_client_worker=False, objects={},
+                 tmp_objects={}, known_workers={}, verbose=False):
+
+        super().__init__(hook=hook, id=id, is_client_worker=is_client_worker,
+                         objects=objects, tmp_objects=tmp_objects,
+                         known_workers=known_workers, verbose=verbose)
+
+    def send_obj(self, obj, recipient, delete_local=True):
+        """send_obj(self, obj, recipient, delete_local=True) -> obj
+        Sends an object to another :class:`VirtualWorker` and, by default, removes it
+        from the local worker. It also returns the object as a special case when
+        the caller is a client. In most cases, send_obj would be handled
+        on the other side by storing it in the permament registry. However, for
+        VirtualWorkers attached to clients, we don't want this to occur. Thus,
+        this method returns the object as a workaround. See :func:`VirtualWorker.request_obj`
+        for more deatils.
+
+        :Parameters:
+
+        * **obj (object)** a python object to be sent
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker object to send the message to.
+
+        * **delete_local (bool, optional)** when set to true, it deletes the version of the
+        object in the local registry.
+
+        """
+
+        raise NotImplementedError
+
+    def receive_obj(self, message):
+        """receive_obj(self, message) -> (a torch.autograd.Variable or torch.Tensor object)
+        Functionality that receives a Tensor or Variable from another VirtualWorker
+        (as a string), deserializes it, and registers it within the local permanent registry.
+
+        :Parameters:
+
+        * **message(JSON string)** the message encoding the object being received.
+
+
+        """
+
+        raise NotImplementedError
+
+    def request_obj(self, obj_id, sender):
+        """request_obj(self, obj_id, sender)
+        This method requests that another VirtualWorker send an object to the local one.
+        In the case that the local one is a client,
+        it simply returns the object. In the case that the local worker is not a client,
+        it stores the object in the permanent registry.
+
+        :Parameters:
+
+        * **obj_id (str or int)** the id of the object being requested
+
+        * **sender (** :class:`VirtualWorker` **)** the worker who currently has the
+          object who is being requested to send it.
+        """
+
+        raise NotImplementedError
+
+    def request_response(self, recipient, message, response_handler, timeout=10):
+        """request_response(self, recipient, message, response_handler, timeout=10) -> object
+
+        This method sends a message to another worker in a way that hangs... waiting until the
+        worker responds with a message. It then processes the response using a response handler
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message (string)** the message being sent
+
+        * **response_handler (func)** the function that processes the response.
+
+        * **timeout (optional)** a timeout. TODO: implement this or remove it?
+
+        """
+        raise NotImplementedError
+
+
 
 class VirtualWorker(BaseWorker):
     r"""
