@@ -6,6 +6,7 @@ import re
 import json
 import types
 import functools
+import importlib
 from . import workers
 from . import utils
 
@@ -165,9 +166,13 @@ class TorchHook(BaseHook):
         else:
             if(verbose):
                 print("WARNING: Torch seems to be already overloaded... skipping...")
-    
+
+    def __enter__(self):
+        pass
+
+
     def __exit__(self):
-        import torch
+        importlib.reload(torch)
 
 
     def types_guard(self, torch_type_str):
