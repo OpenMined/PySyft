@@ -465,7 +465,23 @@ class BaseWorker(object):
         """
         # TODO: Assign default id more intelligently (low priority)
         #       Consider popping id from long list of unique integers
+
         keys = kwargs.keys()
+
+        # DO NOT DELETE THIS TRY/CATCH UNLESS YOU KNOW WHAT YOU'RE DOING
+        # PyTorch tensors wrapped invariables (if my_var.data) are python
+        # objects that get deleted and re-created randomly according to
+        # the whims of the PyTorch wizards. Thus, our attributes were getting
+        # deleted with them (because they are not present in the underlying
+        # C++ code.) Thus, so that these python objects do NOT get garbage
+        # collected, we're creating a secondary reference to them from the
+        # parent Variable object (which we have been told is stable). This
+        # is experimental functionality but seems to solve the symptoms we
+        # were previously experiencing.
+        try:
+            obj.data_backup = obj.data
+        except:
+            ""
 
         obj.id = (kwargs['id']
                   if ('id' in keys and kwargs['id'] is not None)
@@ -658,7 +674,7 @@ class BaseWorker(object):
 
     # Helpers for HookService and TorchService
     @staticmethod
-    def _check_workers(self, workers):
+    def _check_workers(torch_obj, workers):
         if type(workers) is str:
             workers = [workers]
         if issubclass(type(workers), BaseWorker):
@@ -666,7 +682,7 @@ class BaseWorker(object):
         elif not hasattr(workers, '__iter__'):
             raise TypeError(
                 """Can only send {} to a string worker ID or an iterable of
-                string worker IDs, not {}""".format(self.__name__, workers)
+                string worker IDs, not {}""".format(torch_obj.__name__, workers)
                 )
         return workers
 
@@ -698,6 +714,45 @@ class BaseWorker(object):
                 return [self._id_tensorvar(i) for i in x]
         except AttributeError:
             return x
+
+
+class SocketWorker(BaseWorker):
+    """
+    A worker capable of performing the functions of a BaseWorker across
+    a socket connection. Note that the worker is NOT responsible for
+    creating the socket connection.
+
+    :Parameters:
+
+
+    * **hook (**:class:`.hooks.BaseHook` **)** This is a reference to
+      the hook object which overloaded the underlying deep learning framework.
+
+    * **id (int or string, optional)** the integer or string identifier
+      for this node
+
+    * **is_client_worker (bool, optional)** a boolean which determines
+      whether this worker is associeted with an end user client. If so,
+      it assumes that the client will maintain control over when
+      tensors/variables/models are instantiated or deleted as opposed to
+      handling tensor/variable/model lifecycle internally.
+
+    * **objects (list of tensors, variables, or models, optional)**
+      When the worker is NOT a client worker, it stores all tensors
+      it receives or creates in this dictionary.
+      The key to each object is it's id.
+
+    * **tmp_objects (list of tensors, variables, or models, optional)**
+      When the worker IS a client worker, it stores some tensors temporarily
+      in this _tmp_objects simply to ensure that they do not get deallocated by
+      the Python garbage collector while in the process of being registered.
+      This dictionary can be emptied using the clear_tmp_objects method.
+
+    * **known_workers (list of **:class:`BaseWorker` ** objects, optional)** This dictionary
+      can include all known workers.
+
+    * **verbose (bool, optional)** A flag for whether or not to print events to stdout.
+    """
 
 
 class VirtualWorker(BaseWorker):

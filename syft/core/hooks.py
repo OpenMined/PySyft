@@ -6,6 +6,7 @@ import re
 import json
 import types
 import functools
+import importlib
 from . import workers
 from . import utils
 
@@ -14,6 +15,10 @@ class BaseHook(object):
     r""" A abstract interface for deep learning framework hooks."""
 
     def __init__(self):
+        ""
+    def __enter__(self):
+        ""
+    def __exit__(self):
         ""
 
 
@@ -162,6 +167,12 @@ class TorchHook(BaseHook):
         else:
             if(verbose):
                 print("WARNING: Torch seems to be already overloaded... skipping...")
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self):
+        importlib.reload(torch)
 
     def types_guard(self, torch_type_str):
         """types_guard(torch_type_str) -> torch.Tensor or torch.autograd.Variable
