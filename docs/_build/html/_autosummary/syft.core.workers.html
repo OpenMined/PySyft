@@ -163,7 +163,10 @@
 <tr class="row-odd"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-obj docutils literal"><span class="pre">BaseWorker</span></code></a>(hook[,&nbsp;id,&nbsp;is_client_worker,&nbsp;...])</td>
 <td>The BaseWorker class establishes a consistent interface for communicating between different machines about tensors, variables, models, and other network related information.</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-obj docutils literal"><span class="pre">VirtualWorker</span></code></a>(hook[,&nbsp;id,&nbsp;is_client_worker,&nbsp;...])</td>
+<tr class="row-even"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.workers.SocketWorker" title="syft.core.workers.SocketWorker"><code class="xref py py-obj docutils literal"><span class="pre">SocketWorker</span></code></a>(hook[,&nbsp;id,&nbsp;is_client_worker,&nbsp;...])</td>
+<td>A worker capable of performing the functions of a BaseWorker across a socket connection.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-obj docutils literal"><span class="pre">VirtualWorker</span></code></a>(hook[,&nbsp;id,&nbsp;is_client_worker,&nbsp;...])</td>
 <td>A virtualized worker simulating the existence of a remote machine.</td>
 </tr>
 </tbody>

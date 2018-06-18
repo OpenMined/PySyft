@@ -859,6 +859,46 @@ worker is a client worker.</li>
 </dd></dl>
 
 <dl class="class">
+<dt id="syft.core.workers.SocketWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">SocketWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.BaseWorker</span></code></a></p>
+<p>A worker capable of performing the functions of a BaseWorker across
+a socket connection. Note that the worker is NOT responsible for
+creating the socket connection.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>hook (</strong><a class="reference internal" href="#syft.core.hooks.BaseHook" title="syft.core.hooks.BaseHook"><code class="xref py py-class docutils literal"><span class="pre">hooks.BaseHook</span></code></a> <strong>)</strong> This is a reference to
+the hook object which overloaded the underlying deep learning framework.</li>
+<li><strong>id (int or string, optional)</strong> the integer or string identifier
+for this node</li>
+<li><strong>is_client_worker (bool, optional)</strong> a boolean which determines
+whether this worker is associeted with an end user client. If so,
+it assumes that the client will maintain control over when
+tensors/variables/models are instantiated or deleted as opposed to
+handling tensor/variable/model lifecycle internally.</li>
+<li><strong>objects (list of tensors, variables, or models, optional)</strong>
+When the worker is NOT a client worker, it stores all tensors
+it receives or creates in this dictionary.
+The key to each object is it&#8217;s id.</li>
+<li><strong>tmp_objects (list of tensors, variables, or models, optional)</strong>
+When the worker IS a client worker, it stores some tensors temporarily
+in this _tmp_objects simply to ensure that they do not get deallocated by
+the Python garbage collector while in the process of being registered.
+This dictionary can be emptied using the clear_tmp_objects method.</li>
+<li><strong>known_workers (list of **:class:`BaseWorker` ** objects, optional)</strong> This dictionary
+can include all known workers.</li>
+<li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
 <dt id="syft.core.workers.VirtualWorker">
 <em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">VirtualWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.BaseWorker</span></code></a></p>

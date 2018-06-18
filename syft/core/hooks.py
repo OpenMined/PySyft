@@ -170,10 +170,8 @@ class TorchHook(BaseHook):
     def __enter__(self):
         pass
 
-
     def __exit__(self):
         importlib.reload(torch)
-
 
     def types_guard(self, torch_type_str):
         """types_guard(torch_type_str) -> torch.Tensor or torch.autograd.Variable

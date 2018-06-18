@@ -656,6 +656,45 @@ class BaseWorker(object):
             return x
 
 
+class SocketWorker(BaseWorker):
+    """
+    A worker capable of performing the functions of a BaseWorker across
+    a socket connection. Note that the worker is NOT responsible for
+    creating the socket connection.
+
+    :Parameters:
+
+
+    * **hook (**:class:`.hooks.BaseHook` **)** This is a reference to
+      the hook object which overloaded the underlying deep learning framework.
+
+    * **id (int or string, optional)** the integer or string identifier
+      for this node
+
+    * **is_client_worker (bool, optional)** a boolean which determines
+      whether this worker is associeted with an end user client. If so,
+      it assumes that the client will maintain control over when
+      tensors/variables/models are instantiated or deleted as opposed to
+      handling tensor/variable/model lifecycle internally.
+
+    * **objects (list of tensors, variables, or models, optional)**
+      When the worker is NOT a client worker, it stores all tensors
+      it receives or creates in this dictionary.
+      The key to each object is it's id.
+
+    * **tmp_objects (list of tensors, variables, or models, optional)**
+      When the worker IS a client worker, it stores some tensors temporarily
+      in this _tmp_objects simply to ensure that they do not get deallocated by
+      the Python garbage collector while in the process of being registered.
+      This dictionary can be emptied using the clear_tmp_objects method.
+
+    * **known_workers (list of **:class:`BaseWorker` ** objects, optional)** This dictionary
+      can include all known workers.
+
+    * **verbose (bool, optional)** A flag for whether or not to print events to stdout.
+    """
+
+
 class VirtualWorker(BaseWorker):
     r"""
     A virtualized worker simulating the existence of a remote machine.
