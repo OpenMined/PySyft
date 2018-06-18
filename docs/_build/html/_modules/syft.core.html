@@ -591,6 +591,47 @@ This is either the id of the object to be returned or the object itself.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="syft.core.workers.BaseWorker.handle_command">
+<code class="descname">handle_command</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.handle_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function that handles incoming torch commands.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.handle_register">
+<code class="descname">handle_register</code><span class="sig-paren">(</span><em>torch_object</em>, <em>obj_msg</em>, <em>force_attach_to_worker=False</em>, <em>temporary=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.handle_register" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is responsible for re-registering an object when it has
+been previously registered with the wrong id.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>torch_object (torch.Tensor or torch.autograd.Variable)</strong> the object</li>
+</ul>
+<p>to be re-registered.</p>
+<ul class="simple">
+<li><strong>obj_msg</strong> (dict)** the message containing the proper id.</li>
+<li><strong>force_attach_to_worker (bool)</strong> if set to True, it will force the object</li>
+</ul>
+<dl class="docutils">
+<dt>to be stored in the worker&#8217;s permanent registry</dt>
+<dd>even if the worker is a client worker.</dd>
+</dl>
+<ul class="simple">
+<li><strong>temporary (bool)</strong> If set to True, it will store the object in the</li>
+</ul>
+<p>worker&#8217;s temporary registry.</p>
+<ul class="simple">
+<li><strong>out (torch.Tensor or torch.autograd.Variable)</strong> returns the object</li>
+</ul>
+<p>newly registered.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.BaseWorker.process_command">
 <code class="descname">process_command</code><span class="sig-paren">(</span><em>self</em>, <em>command_msg) -&gt; (command output</em>, <em>list of owners</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.process_command" title="Permalink to this definition">¶</a></dt>
 <dd><p>Process a command message from a client worker. Returns the
@@ -936,47 +977,6 @@ can include all known workers.</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
-<dl class="method">
-<dt id="syft.core.workers.VirtualWorker.handle_command">
-<code class="descname">handle_command</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.handle_command" title="Permalink to this definition">¶</a></dt>
-<dd><p>Main function that handles incoming torch commands.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.workers.VirtualWorker.handle_register">
-<code class="descname">handle_register</code><span class="sig-paren">(</span><em>torch_object</em>, <em>obj_msg</em>, <em>force_attach_to_worker=False</em>, <em>temporary=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.handle_register" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function is responsible for re-registering an object when it has
-been previously registered with the wrong id.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<ul class="simple">
-<li><strong>torch_object (torch.Tensor or torch.autograd.Variable)</strong> the object</li>
-</ul>
-<p>to be re-registered.</p>
-<ul class="simple">
-<li><strong>obj_msg</strong> (dict)** the message containing the proper id.</li>
-<li><strong>force_attach_to_worker (bool)</strong> if set to True, it will force the object</li>
-</ul>
-<dl class="docutils">
-<dt>to be stored in the worker&#8217;s permanent registry</dt>
-<dd>even if the worker is a client worker.</dd>
-</dl>
-<ul class="simple">
-<li><strong>temporary (bool)</strong> If set to True, it will store the object in the</li>
-</ul>
-<p>worker&#8217;s temporary registry.</p>
-<ul class="simple">
-<li><strong>out (torch.Tensor or torch.autograd.Variable)</strong> returns the object</li>
-</ul>
-<p>newly registered.</p>
-</dd></dl>
-
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.receive_obj">
 <code class="descname">receive_obj</code><span class="sig-paren">(</span><em>self</em>, <em>message) -&gt; (a torch.autograd.Variable or torch.Tensor object</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
