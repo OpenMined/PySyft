@@ -107,6 +107,38 @@ class BaseWorker(object):
         # A flag for whether or not to print events to stdout.
         self.verbose = verbose
 
+    def send_msg(self, message, message_type, recipient):
+        """Sends a string message to another worker with message_type information
+        indicating how the message should be processed.
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message (string)** the message being sent
+
+        * **message_type (string)** the type of message being sent. This affects how
+          the message is processed by the recipient. The types of message are described
+          in :func:`receive_msg`.
+
+        * **out (object)** the response from the message being sent. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
+        raise NotImplementedError
+
+    def receive_msg(self, message_wrapper):
+        """Receives an message from a worker and then executes its contents appropriately.
+        The message is encoded as a binary blob.
+
+        * **message (binary)** the message being sent
+
+        * **out (object)** the response. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
+        raise NotImplementedError
+
     def add_worker(self, worker):
         """add_worker(worker) -> None
         This method adds a worker to the list of _known_workers
@@ -242,7 +274,7 @@ class BaseWorker(object):
         [torch.FloatTensor - Locations:[1]]
         """
 
-        return self._objects[remote_key]
+        return self._objects[int(remote_key)]
 
     def set_obj(self, remote_key, value, force=False, tmp=False):
         """
@@ -358,51 +390,6 @@ class BaseWorker(object):
         This method releases all objects from the temporary registry.
         """
         self._tmp_objects = {}
-
-    def send_obj(self, obj, recipient, delete_local=True):
-        """An interface that all extensions of BaseWorker must implement
-        for functionality that sends an object to another worker. It
-        should also, by default, remove the local reference to the object.
-        It can, however, optionally choose to keep it.
-
-        :Parameters:
-
-        * **obj (object)** a python object to be sent
-
-        * **recipient (** :class:`BaseWorker` **)** the worker
-          object to send the message to.
-
-        * **delete_local (bool, optional)** when set to true, it deletes
-          the version of the object in the local registry.
-
-
-        """
-        raise NotImplementedError
-
-    def receive_obj(self, message):
-        """An interface that all extensions of BaseWorker must implement
-        for functionality that receives an object from another worker.
-
-        :Parameters:
-
-        * **message (object)** a string or binary object received from another worker
-        """
-
-        raise NotImplementedError
-
-    def request_obj(self, obj_id, sender):
-        """An interface that all extensions of BaseWorker must implement
-        for functionality that requests an object be sent from another worker.
-
-        :Parameters:
-
-        * **obj_id (str or int)** the id of the object requested.
-
-        * **sender (** :class:`BaseWorker` **)** the worker to request
-          the object from.
-
-        """
-        raise NotImplementedError
 
     def process_response(self, response):
         """process_response(response) -> dict
@@ -672,6 +659,119 @@ class BaseWorker(object):
 
         return torch_object
 
+    def prepare_send_object(self, obj, delete_local=True):
+
+        obj_json = obj.ser()
+
+        if(delete_local):
+            self.rm_obj(obj.id)
+
+        return obj_json
+
+    def send_obj(self, obj, recipient, delete_local=True):
+        """send_obj(self, obj, recipient, delete_local=True) -> obj
+        Sends an object to another :class:`VirtualWorker` and, by default, removes it
+        from the local worker. It also returns the object as a special case when
+        the caller is a client. In most cases, send_obj would be handled
+        on the other side by storing it in the permament registry. However, for
+        VirtualWorkers attached to clients, we don't want this to occur. Thus,
+        this method returns the object as a workaround. See :func:`VirtualWorker.request_obj`
+        for more deatils.
+
+        :Parameters:
+
+        * **obj (object)** a python object to be sent
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker object to send the message to.
+
+        * **delete_local (bool, optional)** when set to true, it deletes the version of the
+        object in the local registry.
+
+        """
+
+        # obj = recipient.receive_obj(obj.ser())
+        obj = self.send_msg(message=self.prepare_send_object(obj, delete_local),
+                            message_type='obj',
+                            recipient=recipient)
+
+        if(delete_local):
+            self.rm_obj(obj.id)
+
+        return obj
+
+    def receive_obj(self, message):
+        """receive_obj(self, message) -> (a torch.autograd.Variable or torch.Tensor object)
+        Functionality that receives a Tensor or Variable from another VirtualWorker
+        (as a string), deserializes it, and registers it within the local permanent registry.
+
+        :Parameters:
+
+        * **message(JSON string)** the message encoding the object being received.
+
+
+        """
+
+        message_obj = json.loads(message)
+        obj_type = self.hook.types_guard(message_obj['torch_type'])
+        obj = obj_type.deser(obj_type, message_obj)
+
+        self.handle_register(obj, message_obj, force_attach_to_worker=True)
+
+        return obj
+
+    def send_torch_command(self, recipient, message, response_handler, timeout=10):
+        """send_torch_command(self, recipient, message, response_handler, timeout=10) -> object
+
+        This method sends a message to another worker in a way that hangs... waiting until the
+        worker responds with a message. It then processes the response using a response handler
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message (string)** the message being sent
+
+        * **response_handler (func)** the function that processes the response.
+
+        * **timeout (optional)** a timeout. TODO: implement this or remove it?
+
+        """
+        return self.send_msg(message=message, message_type='torch_cmd', recipient=recipient)
+
+    def request_obj(self, obj_id, recipient):
+        """request_obj(self, obj_id, sender)
+        This method requests that another VirtualWorker send an object to the local one.
+        In the case that the local one is a client,
+        it simply returns the object. In the case that the local worker is not a client,
+        it stores the object in the permanent registry.
+
+        :Parameters:
+
+        * **obj_id (str or int)** the id of the object being requested
+
+        * **sender (** :class:`VirtualWorker` **)** the worker who currently has the
+          object who is being requested to send it.
+        """
+
+        # resolves IDs to worker objects
+        recipient = self.get_worker(recipient)
+
+        obj_json = self.send_msg(message=obj_id, message_type='req_obj', recipient=recipient)
+        obj = self.receive_obj(obj_json)
+
+        # for some reason, when returning obj from request_obj method, the gradient
+        # (obj.grad) gets re-initialized without being re-registered and as a
+        # consequence does not have an id, causing the x.grad.id to fail because
+        # it does not exist. As a result, we've needed to store objects temporarily
+        # in self._tmpobjects which seems to fix it. Super strange bug which took
+        # multiple days to figure out. The true cause is still unknown but this
+        # workaround seems to work well for now. Anyway, so we need to return a cleanup
+        # method which is called immediately before this is returned to the client.
+        # Note that this is ONLY necessary for the client (which doesn't store objects
+        # in self._objects)
+
+        return obj, self._clear_tmp_objects
+
     # Helpers for HookService and TorchService
     @staticmethod
     def _check_workers(torch_obj, workers):
@@ -754,6 +854,45 @@ class SocketWorker(BaseWorker):
     * **verbose (bool, optional)** A flag for whether or not to print events to stdout.
     """
 
+    def __init__(self,  hook, id=0, is_client_worker=False, objects={},
+                 tmp_objects={}, known_workers={}, verbose=False):
+
+        super().__init__(hook=hook, id=id, is_client_worker=is_client_worker,
+                         objects=objects, tmp_objects=tmp_objects,
+                         known_workers=known_workers, verbose=verbose)
+
+    def send_msg(self, message, message_type, recipient):
+        """Sends a string message to another worker with message_type information
+        indicating how the message should be processed.
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message (string)** the message being sent
+
+        * **message_type (string)** the type of message being sent. This affects how
+          the message is processed by the recipient. The types of message are described
+          in :func:`receive_msg`.
+
+        * **out (object)** the response from the message being sent. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
+        raise NotImplementedError
+
+    def receive_msg(self, message_wrapper):
+        """Receives an message from a worker and then executes its contents appropriately.
+        The message is encoded as a binary blob.
+
+        * **message (binary)** the message being sent
+
+        * **out (object)** the response. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
+        raise NotImplementedError
+
 
 class VirtualWorker(BaseWorker):
     r"""
@@ -833,89 +972,9 @@ class VirtualWorker(BaseWorker):
                          objects=objects, tmp_objects=tmp_objects,
                          known_workers=known_workers, verbose=verbose)
 
-    def send_obj(self, obj, recipient, delete_local=True):
-        """send_obj(self, obj, recipient, delete_local=True) -> obj
-        Sends an object to another :class:`VirtualWorker` and, by default, removes it
-        from the local worker. It also returns the object as a special case when
-        the caller is a client. In most cases, send_obj would be handled
-        on the other side by storing it in the permament registry. However, for
-        VirtualWorkers attached to clients, we don't want this to occur. Thus,
-        this method returns the object as a workaround. See :func:`VirtualWorker.request_obj`
-        for more deatils.
-
-        :Parameters:
-
-        * **obj (object)** a python object to be sent
-
-        * **recipient (** :class:`VirtualWorker` **)** the worker object to send the message to.
-
-        * **delete_local (bool, optional)** when set to true, it deletes the version of the
-        object in the local registry.
-
-        """
-
-        obj = recipient.receive_obj(obj.ser())
-        if(delete_local):
-            self.rm_obj(obj.id)
-
-        return obj
-
-    def receive_obj(self, message):
-        """receive_obj(self, message) -> (a torch.autograd.Variable or torch.Tensor object)
-        Functionality that receives a Tensor or Variable from another VirtualWorker
-        (as a string), deserializes it, and registers it within the local permanent registry.
-
-        :Parameters:
-
-        * **message(JSON string)** the message encoding the object being received.
-
-
-        """
-
-        message_obj = json.loads(message)
-        obj_type = self.hook.types_guard(message_obj['torch_type'])
-        obj = obj_type.deser(obj_type, message_obj)
-
-        self.handle_register(obj, message_obj, force_attach_to_worker=True)
-
-        return obj
-
-    def request_obj(self, obj_id, sender):
-        """request_obj(self, obj_id, sender)
-        This method requests that another VirtualWorker send an object to the local one.
-        In the case that the local one is a client,
-        it simply returns the object. In the case that the local worker is not a client,
-        it stores the object in the permanent registry.
-
-        :Parameters:
-
-        * **obj_id (str or int)** the id of the object being requested
-
-        * **sender (** :class:`VirtualWorker` **)** the worker who currently has the
-          object who is being requested to send it.
-        """
-
-        sender = self.get_worker(sender)
-        obj = sender.send_obj(sender.get_obj(obj_id), self)
-
-        # for some reason, when returning obj from request_obj method, the gradient
-        # (obj.grad) gets re-initialized without being re-registered and as a
-        # consequence does not have an id, causing the x.grad.id to fail because
-        # it does not exist. As a result, we've needed to store objects temporarily
-        # in self._tmpobjects which seems to fix it. Super strange bug which took
-        # multiple days to figure out. The true cause is still unknown but this
-        # workaround seems to work well for now. Anyway, so we need to return a cleanup
-        # method which is called immediately before this is returned to the client.
-        # Note that this is ONLY necessary for the client (which doesn't store objects
-        # in self._objects)
-
-        return obj, self._clear_tmp_objects
-
-    def request_response(self, recipient, message, response_handler, timeout=10):
-        """request_response(self, recipient, message, response_handler, timeout=10) -> object
-
-        This method sends a message to another worker in a way that hangs... waiting until the
-        worker responds with a message. It then processes the response using a response handler
+    def send_msg(self, message, message_type, recipient):
+        """Sends a string message to another worker with message_type information
+        indicating how the message should be processed.
 
         :Parameters:
 
@@ -923,9 +982,44 @@ class VirtualWorker(BaseWorker):
 
         * **message (string)** the message being sent
 
-        * **response_handler (func)** the function that processes the response.
+        * **message_type (string)** the type of message being sent. This affects how
+          the message is processed by the recipient. The types of message are described
+          in :func:`receive_msg`.
 
-        * **timeout (optional)** a timeout. TODO: implement this or remove it?
-
+        * **out (object)** the response from the message being sent. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
         """
-        return response_handler(recipient.handle_command(message))
+
+        message_wrapper = {}
+        message_wrapper['message'] = message
+        message_wrapper['type'] = message_type
+
+        message_wrapper_json = json.dumps(message_wrapper)
+
+        message_wrapper_json_binary = message_wrapper_json.encode()
+
+        response = recipient.receive_msg(message_wrapper_json_binary)
+        return response
+
+    def receive_msg(self, message_wrapper_json_binary):
+        """Receives an message from a worker and then executes its contents appropriately.
+        The message is encoded as a binary blob.
+
+        * **message (binary)** the message being sent
+
+        * **out (object)** the response. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
+
+        message_wrapper_json = message_wrapper_json_binary.decode('utf-8')
+        message_wrapper = json.loads(message_wrapper_json)
+        message = message_wrapper['message']
+
+        if(message_wrapper['type'] == 'obj'):
+            return self.receive_obj(message)
+        elif(message_wrapper['type'] == 'req_obj'):
+            return self.prepare_send_object(self.get_obj(message))
+        elif(message_wrapper['type'] == 'torch_cmd'):
+            return self.process_response(self.handle_command(message))
