@@ -682,6 +682,11 @@ a foreign worker or client.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="syft.core.workers.BaseWorker.receive_msg">
+<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.BaseWorker.receive_obj">
 <code class="descname">receive_obj</code><span class="sig-paren">(</span><em>self</em>, <em>message) -&gt; (a torch.autograd.Variable or torch.Tensor object</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.receive_obj" title="Permalink to this definition">¶</a></dt>
 <dd><p>Functionality that receives a Tensor or Variable from another VirtualWorker
@@ -744,9 +749,11 @@ a tensor that lives on a different worker.</li>
 
 <dl class="method">
 <dt id="syft.core.workers.BaseWorker.request_obj">
-<code class="descname">request_obj</code><span class="sig-paren">(</span><em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.request_obj" title="Permalink to this definition">¶</a></dt>
-<dd><p>An interface that all extensions of BaseWorker must implement
-for functionality that requests an object be sent from another worker.</p>
+<code class="descname">request_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method requests that another VirtualWorker send an object to the local one.
+In the case that the local one is a client,
+it simply returns the object. In the case that the local worker is not a client,
+it stores the object in the permanent registry.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -756,9 +763,9 @@ for functionality that requests an object be sent from another worker.</p>
 </tbody>
 </table>
 <ul class="simple">
-<li><strong>obj_id (str or int)</strong> the id of the object requested.</li>
-<li><strong>sender (</strong> <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a> <strong>)</strong> the worker to request
-the object from.</li>
+<li><strong>obj_id (str or int)</strong> the id of the object being requested</li>
+<li><strong>sender (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker who currently has the
+object who is being requested to send it.</li>
 </ul>
 </dd></dl>
 
@@ -781,6 +788,11 @@ if it exists.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="syft.core.workers.BaseWorker.send_msg">
+<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.send_msg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.BaseWorker.send_obj">
 <code class="descname">send_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj</em>, <em>recipient</em>, <em>delete_local=True</em><span class="sig-paren">)</span> &#x2192; obj<a class="headerlink" href="#syft.core.workers.BaseWorker.send_obj" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sends an object to another <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> and, by default, removes it
@@ -788,7 +800,7 @@ from the local worker. It also returns the object as a special case when
 the caller is a client. In most cases, send_obj would be handled
 on the other side by storing it in the permament registry. However, for
 VirtualWorkers attached to clients, we don&#8217;t want this to occur. Thus,
-this method returns the object as a workaround. See <a class="reference internal" href="#syft.core.workers.VirtualWorker.request_obj" title="syft.core.workers.VirtualWorker.request_obj"><code class="xref py py-func docutils literal"><span class="pre">VirtualWorker.request_obj()</span></code></a>
+this method returns the object as a workaround. See <code class="xref py py-func docutils literal"><span class="pre">VirtualWorker.request_obj()</span></code>
 for more deatils.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -965,70 +977,6 @@ This dictionary can be emptied using the clear_tmp_objects method.</li>
 can include all known workers.</li>
 <li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
 </ul>
-<dl class="method">
-<dt id="syft.core.workers.SocketWorker.request_obj">
-<code class="descname">request_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.request_obj" title="Permalink to this definition">¶</a></dt>
-<dd><p>This method requests that another VirtualWorker send an object to the local one.
-In the case that the local one is a client,
-it simply returns the object. In the case that the local worker is not a client,
-it stores the object in the permanent registry.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<ul class="simple">
-<li><strong>obj_id (str or int)</strong> the id of the object being requested</li>
-<li><strong>sender (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker who currently has the
-object who is being requested to send it.</li>
-</ul>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.workers.SocketWorker.send_obj">
-<code class="descname">send_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj</em>, <em>recipient</em>, <em>delete_local=True</em><span class="sig-paren">)</span> &#x2192; obj<a class="headerlink" href="#syft.core.workers.SocketWorker.send_obj" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sends an object to another <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> and, by default, removes it
-from the local worker.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<ul class="simple">
-<li><strong>obj (object)</strong> a python object to be sent</li>
-<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker object to send the message to.</li>
-<li><strong>delete_local (bool, optional)</strong> when set to true, it deletes the version of the</li>
-</ul>
-<p>object in the local registry.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.workers.SocketWorker.send_torch_command">
-<code class="descname">send_torch_command</code><span class="sig-paren">(</span><em>self</em>, <em>recipient</em>, <em>message</em>, <em>response_handler</em>, <em>timeout=10</em><span class="sig-paren">)</span> &#x2192; object<a class="headerlink" href="#syft.core.workers.SocketWorker.send_torch_command" title="Permalink to this definition">¶</a></dt>
-<dd><p>This method sends a message to another worker in a way that hangs... waiting until the
-worker responds with a message. It then processes the response using a response handler</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<ul class="simple">
-<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
-<li><strong>message (string)</strong> the message being sent</li>
-<li><strong>response_handler (func)</strong> the function that processes the response.</li>
-<li><strong>timeout (optional)</strong> a timeout. TODO: implement this or remove it?</li>
-</ul>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
@@ -1111,17 +1059,16 @@ can include all known workers.</li>
 </div>
 <dl class="method">
 <dt id="syft.core.workers.VirtualWorker.receive_msg">
-<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Receives an object from a worker and then executes its contents appropriately</p>
+<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper_json_binary</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receives an message from a worker and then executes its contents appropriately.
+The message i</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="syft.core.workers.VirtualWorker.request_obj">
-<code class="descname">request_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.request_obj" title="Permalink to this definition">¶</a></dt>
-<dd><p>This method requests that another VirtualWorker send an object to the local one.
-In the case that the local one is a client,
-it simply returns the object. In the case that the local worker is not a client,
-it stores the object in the permanent registry.</p>
+<dt id="syft.core.workers.VirtualWorker.send_msg">
+<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.send_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a string message to another worker with message_type information
+indicating how the message should be processed.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1131,16 +1078,12 @@ it stores the object in the permanent registry.</p>
 </tbody>
 </table>
 <ul class="simple">
-<li><strong>obj_id (str or int)</strong> the id of the object being requested</li>
-<li><strong>sender (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker who currently has the
-object who is being requested to send it.</li>
+<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
+<li><strong>message (string)</strong> the message being sent</li>
+<li><strong>message_type (string)</strong> the type of message being sent. This affects how
+the message is processed by the recipient. The types of message are described
+in <a class="reference internal" href="#syft.core.workers.VirtualWorker.receive_msg" title="syft.core.workers.VirtualWorker.receive_msg"><code class="xref py py-func docutils literal"><span class="pre">receive_msg()</span></code></a>.</li>
 </ul>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.workers.VirtualWorker.send_msg">
-<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.send_msg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sends a string message to another worker</p>
 </dd></dl>
 
 </dd></dl>

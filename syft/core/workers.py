@@ -107,6 +107,12 @@ class BaseWorker(object):
         # A flag for whether or not to print events to stdout.
         self.verbose = verbose
 
+    def send_msg(self, message, message_type, recipient):
+        raise NotImplementedError
+
+    def receive_msg(self, message_wrapper):
+        raise NotImplementedError
+
     def add_worker(self, worker):
         """add_worker(worker) -> None
         This method adds a worker to the list of _known_workers
@@ -358,20 +364,6 @@ class BaseWorker(object):
         This method releases all objects from the temporary registry.
         """
         self._tmp_objects = {}
-
-    def request_obj(self, obj_id, sender):
-        """An interface that all extensions of BaseWorker must implement
-        for functionality that requests an object be sent from another worker.
-
-        :Parameters:
-
-        * **obj_id (str or int)** the id of the object requested.
-
-        * **sender (** :class:`BaseWorker` **)** the worker to request
-          the object from.
-
-        """
-        raise NotImplementedError
 
     def process_response(self, response):
         """process_response(response) -> dict
@@ -843,60 +835,6 @@ class SocketWorker(BaseWorker):
                          objects=objects, tmp_objects=tmp_objects,
                          known_workers=known_workers, verbose=verbose)
 
-    def send_obj(self, obj, recipient, delete_local=True):
-        """send_obj(self, obj, recipient, delete_local=True) -> obj
-        Sends an object to another :class:`VirtualWorker` and, by default, removes it
-        from the local worker.
-
-        :Parameters:
-
-        * **obj (object)** a python object to be sent
-
-        * **recipient (** :class:`VirtualWorker` **)** the worker object to send the message to.
-
-        * **delete_local (bool, optional)** when set to true, it deletes the version of the
-        object in the local registry.
-
-        """
-
-        raise NotImplementedError
-
-    def request_obj(self, obj_id, sender):
-        """request_obj(self, obj_id, sender)
-        This method requests that another VirtualWorker send an object to the local one.
-        In the case that the local one is a client,
-        it simply returns the object. In the case that the local worker is not a client,
-        it stores the object in the permanent registry.
-
-        :Parameters:
-
-        * **obj_id (str or int)** the id of the object being requested
-
-        * **sender (** :class:`VirtualWorker` **)** the worker who currently has the
-          object who is being requested to send it.
-        """
-
-        raise NotImplementedError
-
-    def send_torch_command(self, recipient, message, response_handler, timeout=10):
-        """send_torch_command(self, recipient, message, response_handler, timeout=10) -> object
-
-        This method sends a message to another worker in a way that hangs... waiting until the
-        worker responds with a message. It then processes the response using a response handler
-
-        :Parameters:
-
-        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
-
-        * **message (string)** the message being sent
-
-        * **response_handler (func)** the function that processes the response.
-
-        * **timeout (optional)** a timeout. TODO: implement this or remove it?
-
-        """
-        raise NotImplementedError
-
 
 class VirtualWorker(BaseWorker):
     r"""
@@ -977,17 +915,36 @@ class VirtualWorker(BaseWorker):
                          known_workers=known_workers, verbose=verbose)
 
     def send_msg(self, message, message_type, recipient):
-        """Sends a string message to another worker"""
+        """Sends a string message to another worker with message_type information
+        indicating how the message should be processed.
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message (string)** the message being sent
+
+        * **message_type (string)** the type of message being sent. This affects how
+          the message is processed by the recipient. The types of message are described
+          in :func:`receive_msg`.
+        """
 
         message_wrapper = {}
         message_wrapper['message'] = message
         message_wrapper['type'] = message_type
 
-        return recipient.receive_msg(message_wrapper)
+        message_wrapper_json = json.dumps(message_wrapper)
 
-    def receive_msg(self, message_wrapper):
-        """Receives an object from a worker and then executes its contents appropriately"""
+        message_wrapper_json_binary = message_wrapper_json.encode()
 
+        return recipient.receive_msg(message_wrapper_json_binary)
+
+    def receive_msg(self, message_wrapper_json_binary):
+        """Receives an message from a worker and then executes its contents appropriately.
+        The message i"""
+
+        message_wrapper_json = message_wrapper_json_binary.decode('utf-8')
+        message_wrapper = json.loads(message_wrapper_json)
         message = message_wrapper['message']
 
         if(message_wrapper['type'] == 'obj'):
