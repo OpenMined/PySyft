@@ -108,9 +108,35 @@ class BaseWorker(object):
         self.verbose = verbose
 
     def send_msg(self, message, message_type, recipient):
+        """Sends a string message to another worker with message_type information
+        indicating how the message should be processed.
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message (string)** the message being sent
+
+        * **message_type (string)** the type of message being sent. This affects how
+          the message is processed by the recipient. The types of message are described
+          in :func:`receive_msg`.
+
+        * **out (object)** the response from the message being sent. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
         raise NotImplementedError
 
     def receive_msg(self, message_wrapper):
+        """Receives an message from a worker and then executes its contents appropriately.
+        The message is encoded as a binary blob.
+
+        * **message (binary)** the message being sent
+
+        * **out (object)** the response. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
         raise NotImplementedError
 
     def add_worker(self, worker):
@@ -835,6 +861,38 @@ class SocketWorker(BaseWorker):
                          objects=objects, tmp_objects=tmp_objects,
                          known_workers=known_workers, verbose=verbose)
 
+    def send_msg(self, message, message_type, recipient):
+        """Sends a string message to another worker with message_type information
+        indicating how the message should be processed.
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message (string)** the message being sent
+
+        * **message_type (string)** the type of message being sent. This affects how
+          the message is processed by the recipient. The types of message are described
+          in :func:`receive_msg`.
+
+        * **out (object)** the response from the message being sent. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
+        raise NotImplementedError
+
+    def receive_msg(self, message_wrapper):
+        """Receives an message from a worker and then executes its contents appropriately.
+        The message is encoded as a binary blob.
+
+        * **message (binary)** the message being sent
+
+        * **out (object)** the response. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
+        raise NotImplementedError
+
 
 class VirtualWorker(BaseWorker):
     r"""
@@ -948,7 +1006,7 @@ class VirtualWorker(BaseWorker):
         """Receives an message from a worker and then executes its contents appropriately.
         The message is encoded as a binary blob.
 
-        * **message (binary)** the message being sent        
+        * **message (binary)** the message being sent
 
         * **out (object)** the response. This can be a variety
           of object types. However, the object is typically only used during testing or
