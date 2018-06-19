@@ -359,10 +359,8 @@ class TorchHook(BaseHook):
 
             for worker in owners:
 
-                _pr = hook_self.local_worker.process_response
                 response = hook_self.local_worker.send_torch_command(recipient=worker,
-                                                                     message=command,
-                                                                     response_handler=_pr)
+                                                                     message=command)
 
                 registration, torch_type, var_data, var_grad = response
 

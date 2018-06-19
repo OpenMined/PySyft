@@ -722,7 +722,7 @@ class BaseWorker(object):
 
         return obj
 
-    def send_torch_command(self, recipient, message, response_handler, timeout=10):
+    def send_torch_command(self, recipient, message):
         """send_torch_command(self, recipient, message, response_handler, timeout=10) -> object
 
         This method sends a message to another worker in a way that hangs... waiting until the
@@ -733,11 +733,6 @@ class BaseWorker(object):
         * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
 
         * **message (string)** the message being sent
-
-        * **response_handler (func)** the function that processes the response.
-
-        * **timeout (optional)** a timeout. TODO: implement this or remove it?
-
         """
         response = self.send_msg(message=message, message_type='torch_cmd', recipient=recipient)
         response = self.process_response(response)
@@ -896,28 +891,35 @@ class SocketWorker(BaseWorker):
             # because it's going to be issuing commands.
             if(not is_client_worker or self.is_pointer):
                 print("Ready to receive commands...")
-                self.listen()
+                self._listen()
             else:
                 print("Ready!")
 
-    def listen(self):
-
+    def _listen(self):
+        """
+        Starts SocketWorker server on the correct port and handles message as they
+        are received.
+        """
         while True:
 
             # blocking until a message is received
             connection, address = self.serversocket.accept()
             try:
                 while True:
-
+                    # collapse buffer of messages into a string
                     message = self._process_buffer(connection)
+
+                    # process message and generate response
                     response = self.receive_msg(message)
+
+                    # send response back
                     connection.send(response.encode())
                     if(self.verbose):
                         print("Received Command From:",address)
             finally:
                 connection.close()
 
-    def send_msg(self, message, message_type, recipient, wait_for_response=False):
+    def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.
 
@@ -939,7 +941,6 @@ class SocketWorker(BaseWorker):
         message_wrapper = {}
         message_wrapper['message'] = message
         message_wrapper['type'] = message_type
-        message_wrapper['response'] = wait_for_response
 
         message_wrapper_json = json.dumps(message_wrapper) + "\n"
 
@@ -948,9 +949,6 @@ class SocketWorker(BaseWorker):
         recipient.clientsocket.send(message_wrapper_json_binary)
 
         response = self._process_buffer(recipient.clientsocket)
-        
-        # if(message_wrapper['type'] == 'torch_cmd'):
-            # response = self.process_response(response)
 
         return response
 

@@ -862,8 +862,6 @@ worker responds with a message. It then processes the response using a response 
 <ul class="simple">
 <li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
 <li><strong>message (string)</strong> the message being sent</li>
-<li><strong>response_handler (func)</strong> the function that processes the response.</li>
-<li><strong>timeout (optional)</strong> a timeout. TODO: implement this or remove it?</li>
 </ul>
 </dd></dl>
 
@@ -1006,11 +1004,6 @@ can include all known workers.</li>
 <li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
 </ul>
 <dl class="method">
-<dt id="syft.core.workers.SocketWorker.listen">
-<code class="descname">listen</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.listen" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
 <dt id="syft.core.workers.SocketWorker.receive_msg">
 <code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper_json</em>, <em>is_binary=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Receives an message from a worker and then executes its contents appropriately.
@@ -1025,7 +1018,7 @@ local development with <a class="reference internal" href="#syft.core.workers.Vi
 
 <dl class="method">
 <dt id="syft.core.workers.SocketWorker.send_msg">
-<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em>, <em>wait_for_response=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.send_msg" title="Permalink to this definition">¶</a></dt>
+<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.send_msg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sends a string message to another worker with message_type information
 indicating how the message should be processed.</p>
 <table class="docutils field-list" frame="void" rules="none">
