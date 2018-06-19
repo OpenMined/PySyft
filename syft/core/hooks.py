@@ -356,9 +356,9 @@ class TorchHook(BaseHook):
             for worker in owners:
 
                 _pr = hook_self.local_worker.process_response
-                response = hook_self.local_worker.request_response(recipient=worker,
-                                                                   message=command,
-                                                                   response_handler=_pr)
+                response = hook_self.local_worker.send_torch_command(recipient=worker,
+                                                                     message=command,
+                                                                     response_handler=_pr)
 
                 registration, torch_type, var_data, var_grad = response
 
@@ -683,7 +683,7 @@ class TorchHook(BaseHook):
                 return self
 
             _out = hook_self.local_worker.request_obj(obj_id=self.id,
-                                                      sender=self.owners[0])
+                                                      recipient=self.owners[0])
             x, request_obj_cleanup_method = _out
 
             hook_self.local_worker.register_object(hook_self.local_worker, x, id=x.id)
@@ -746,7 +746,7 @@ class TorchHook(BaseHook):
                 tensor_msg['owners'] = list(map(lambda x: x.id, self.owners))
             tensor_msg['is_pointer'] = not include_data
 
-            return json.dumps(tensor_msg)
+            return json.dumps(tensor_msg) + "\n"
 
         def deser(self, obj_msg):
 
