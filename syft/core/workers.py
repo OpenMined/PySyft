@@ -914,6 +914,7 @@ class SocketWorker(BaseWorker):
 
                     # send response back
                     connection.send(response.encode())
+
                     if(self.verbose):
                         print("Received Command From:", address)
             finally:
