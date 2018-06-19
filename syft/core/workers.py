@@ -412,12 +412,12 @@ class BaseWorker(object):
         # TODO: Fix the case when response contains only a numeric
 
         response = json.loads(response)
-        if(isinstance(response,str)):
+        if(isinstance(response, str)):
             response = json.loads(response)
 
         if('registration' in response and 'torch_type' in response):
             return (response['registration'], response['torch_type'],
-                        response['var_data'], response['var_grad'])
+                    response['var_data'], response['var_grad'])
         else:
             return response
 
@@ -915,7 +915,7 @@ class SocketWorker(BaseWorker):
                     # send response back
                     connection.send(response.encode())
                     if(self.verbose):
-                        print("Received Command From:",address)
+                        print("Received Command From:", address)
             finally:
                 connection.close()
 
@@ -951,7 +951,6 @@ class SocketWorker(BaseWorker):
         response = self._process_buffer(recipient.clientsocket)
 
         return response
-
 
     def receive_msg(self, message_wrapper_json, is_binary=False):
         """Receives an message from a worker and then executes its contents appropriately.
