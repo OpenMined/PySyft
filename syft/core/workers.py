@@ -739,7 +739,9 @@ class BaseWorker(object):
         * **timeout (optional)** a timeout. TODO: implement this or remove it?
 
         """
-        return self.send_msg(message=message, message_type='torch_cmd', recipient=recipient)
+        response = self.send_msg(message=message, message_type='torch_cmd', recipient=recipient)
+        response = self.process_response(response)
+        return response
 
     def request_obj(self, obj_id, recipient):
         """request_obj(self, obj_id, sender)
@@ -947,8 +949,8 @@ class SocketWorker(BaseWorker):
 
         response = self._process_buffer(recipient.clientsocket)
         
-        if(message_wrapper['type'] == 'torch_cmd'):
-            response = self.process_response(response)
+        # if(message_wrapper['type'] == 'torch_cmd'):
+            # response = self.process_response(response)
 
         return response
 
@@ -973,18 +975,18 @@ class SocketWorker(BaseWorker):
         # Receiving an object from another worker
         if(message_wrapper['type'] == 'obj'):
             response = self.receive_obj(message)  # DONE!
-            response = response.ser()
+            return response.ser()
 
         #  Receiving a request for an object from another worker
         elif(message_wrapper['type'] == 'req_obj'):
-            response = self.prepare_send_object(self.get_obj(message))
+            return self.prepare_send_object(self.get_obj(message))
 
         #  A torch command from another workerinvolving one or more tensors
         #  hosted locally
         elif(message_wrapper['type'] == 'torch_cmd'):
-            response = json.dumps(self.handle_command(message)) + "\n"
+            return json.dumps(self.handle_command(message)) + "\n"
 
-        return response
+        return "Unrecognized message type:" + message_wrapper['type']
 
     @staticmethod
     def _process_buffer(socket, buffer_size=1024, delimiter="\n"):
@@ -1111,8 +1113,7 @@ class VirtualWorker(BaseWorker):
 
         message_wrapper_json_binary = message_wrapper_json.encode()
 
-        response = recipient.receive_msg(message_wrapper_json_binary)
-        return response
+        return recipient.receive_msg(message_wrapper_json_binary)
 
     def receive_msg(self, message_wrapper_json_binary):
         """Receives an message from a worker and then executes its contents appropriately.
@@ -1134,4 +1135,4 @@ class VirtualWorker(BaseWorker):
         elif(message_wrapper['type'] == 'req_obj'):
             return self.prepare_send_object(self.get_obj(message))
         elif(message_wrapper['type'] == 'torch_cmd'):
-            return self.process_response(self.handle_command(message))
+            return self.handle_command(message)
