@@ -927,6 +927,10 @@ class VirtualWorker(BaseWorker):
         * **message_type (string)** the type of message being sent. This affects how
           the message is processed by the recipient. The types of message are described
           in :func:`receive_msg`.
+
+        * **out (object)** the response from the message being sent. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
         """
 
         message_wrapper = {}
@@ -937,11 +941,19 @@ class VirtualWorker(BaseWorker):
 
         message_wrapper_json_binary = message_wrapper_json.encode()
 
-        return recipient.receive_msg(message_wrapper_json_binary)
+        response = recipient.receive_msg(message_wrapper_json_binary)
+        return response
 
     def receive_msg(self, message_wrapper_json_binary):
         """Receives an message from a worker and then executes its contents appropriately.
-        The message i"""
+        The message is encoded as a binary blob.
+
+        * **message (binary)** the message being sent        
+
+        * **out (object)** the response. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
 
         message_wrapper_json = message_wrapper_json_binary.decode('utf-8')
         message_wrapper = json.loads(message_wrapper_json)
