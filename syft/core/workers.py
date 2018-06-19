@@ -764,12 +764,7 @@ class SocketWorker(BaseWorker):
     def send_obj(self, obj, recipient, delete_local=True):
         """send_obj(self, obj, recipient, delete_local=True) -> obj
         Sends an object to another :class:`VirtualWorker` and, by default, removes it
-        from the local worker. It also returns the object as a special case when
-        the caller is a client. In most cases, send_obj would be handled
-        on the other side by storing it in the permament registry. However, for
-        VirtualWorkers attached to clients, we don't want this to occur. Thus,
-        this method returns the object as a workaround. See :func:`VirtualWorker.request_obj`
-        for more deatils.
+        from the local worker.
 
         :Parameters:
 
@@ -833,7 +828,6 @@ class SocketWorker(BaseWorker):
 
         """
         raise NotImplementedError
-
 
 
 class VirtualWorker(BaseWorker):
