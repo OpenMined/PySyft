@@ -92,6 +92,10 @@ class TorchHook(BaseHook):
                           using that one instead...")
             else:
                 self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client)
+        else:
+            # if the local_worker already exists, then it MUST not know about the hook which is
+            # just being created. Thus, we must inform it.
+            self.local_worker.hook = self
 
         torch.local_worker = self.local_worker
 
@@ -355,10 +359,8 @@ class TorchHook(BaseHook):
 
             for worker in owners:
 
-                _pr = hook_self.local_worker.process_response
                 response = hook_self.local_worker.send_torch_command(recipient=worker,
-                                                                     message=command,
-                                                                     response_handler=_pr)
+                                                                     message=command)
 
                 registration, torch_type, var_data, var_grad = response
 

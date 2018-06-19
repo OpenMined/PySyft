@@ -4,6 +4,7 @@ import json
 import numbers
 import re
 import random
+import socket
 
 from . import utils
 
@@ -59,7 +60,7 @@ class BaseWorker(object):
           print events to stdout.
 
     """
-    def __init__(self,  hook, id=0, is_client_worker=False, objects={},
+    def __init__(self,  hook=None, id=0, is_client_worker=False, objects={},
                  tmp_objects={}, known_workers={}, verbose=True):
 
         # This is a reference to the hook object which overloaded
@@ -411,11 +412,13 @@ class BaseWorker(object):
         # TODO: Fix the case when response contains only a numeric
 
         response = json.loads(response)
+        if(isinstance(response, str)):
+            response = json.loads(response)
 
-        try:
+        if('registration' in response and 'torch_type' in response):
             return (response['registration'], response['torch_type'],
                     response['var_data'], response['var_grad'])
-        except:
+        else:
             return response
 
     def register_object(self, worker, obj, force_attach_to_worker=False,
@@ -690,14 +693,14 @@ class BaseWorker(object):
         """
 
         # obj = recipient.receive_obj(obj.ser())
-        obj = self.send_msg(message=self.prepare_send_object(obj, delete_local),
-                            message_type='obj',
-                            recipient=recipient)
+        _obj = self.send_msg(message=self.prepare_send_object(obj, delete_local),
+                             message_type='obj',
+                             recipient=recipient)
 
         if(delete_local):
             self.rm_obj(obj.id)
 
-        return obj
+        return _obj
 
     def receive_obj(self, message):
         """receive_obj(self, message) -> (a torch.autograd.Variable or torch.Tensor object)
@@ -719,7 +722,7 @@ class BaseWorker(object):
 
         return obj
 
-    def send_torch_command(self, recipient, message, response_handler, timeout=10):
+    def send_torch_command(self, recipient, message):
         """send_torch_command(self, recipient, message, response_handler, timeout=10) -> object
 
         This method sends a message to another worker in a way that hangs... waiting until the
@@ -730,13 +733,10 @@ class BaseWorker(object):
         * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
 
         * **message (string)** the message being sent
-
-        * **response_handler (func)** the function that processes the response.
-
-        * **timeout (optional)** a timeout. TODO: implement this or remove it?
-
         """
-        return self.send_msg(message=message, message_type='torch_cmd', recipient=recipient)
+        response = self.send_msg(message=message, message_type='torch_cmd', recipient=recipient)
+        response = self.process_response(response)
+        return response
 
     def request_obj(self, obj_id, recipient):
         """request_obj(self, obj_id, sender)
@@ -854,12 +854,71 @@ class SocketWorker(BaseWorker):
     * **verbose (bool, optional)** A flag for whether or not to print events to stdout.
     """
 
-    def __init__(self,  hook, id=0, is_client_worker=False, objects={},
-                 tmp_objects={}, known_workers={}, verbose=False):
+    def __init__(self,  hook=None, hostname='localhost', port=8110, max_connections=5,
+                 id=0, is_client_worker=True, objects={}, tmp_objects={},
+                 known_workers={}, verbose=True, is_pointer=False):
 
         super().__init__(hook=hook, id=id, is_client_worker=is_client_worker,
                          objects=objects, tmp_objects=tmp_objects,
                          known_workers=known_workers, verbose=verbose)
+
+        self.hostname = hostname
+        self.port = port
+
+        self.max_connections = max_connections
+        self.is_pointer = is_pointer
+
+        if(self.is_pointer):
+            if(self.verbose):
+                print("Attaching Pointer to Socket Worker...")
+            self.serversocket = None
+
+            clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            clientsocket.connect(('localhost', self.port))
+            self.clientsocket = clientsocket
+
+        else:
+
+            if(self.verbose):
+                print("Starting Socket Worker...")
+            self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.serversocket.bind((self.hostname, self.port))
+
+            # become a server socket, maximum 5 connections
+            self.serversocket.listen(self.max_connections)
+
+            # if it's a client worker, then we don't want it waiting for commands
+            # because it's going to be issuing commands.
+            if(not is_client_worker or self.is_pointer):
+                print("Ready to receive commands...")
+                self._listen()
+            else:
+                print("Ready!")
+
+    def _listen(self):
+        """
+        Starts SocketWorker server on the correct port and handles message as they
+        are received.
+        """
+        while True:
+
+            # blocking until a message is received
+            connection, address = self.serversocket.accept()
+            try:
+                while True:
+                    # collapse buffer of messages into a string
+                    message = self._process_buffer(connection)
+
+                    # process message and generate response
+                    response = self.receive_msg(message)
+
+                    # send response back
+                    connection.send(response.encode())
+
+                    if(self.verbose):
+                        print("Received Command From:", address)
+            finally:
+                connection.close()
 
     def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
@@ -879,9 +938,22 @@ class SocketWorker(BaseWorker):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
-        raise NotImplementedError
 
-    def receive_msg(self, message_wrapper):
+        message_wrapper = {}
+        message_wrapper['message'] = message
+        message_wrapper['type'] = message_type
+
+        message_wrapper_json = json.dumps(message_wrapper) + "\n"
+
+        message_wrapper_json_binary = message_wrapper_json.encode()
+
+        recipient.clientsocket.send(message_wrapper_json_binary)
+
+        response = self._process_buffer(recipient.clientsocket)
+
+        return response
+
+    def receive_msg(self, message_wrapper_json, is_binary=False):
         """Receives an message from a worker and then executes its contents appropriately.
         The message is encoded as a binary blob.
 
@@ -891,7 +963,47 @@ class SocketWorker(BaseWorker):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
-        raise NotImplementedError
+
+        if(is_binary):
+            message_wrapper_json = message_wrapper_json.decode('utf-8')
+        message_wrapper = json.loads(message_wrapper_json)
+
+        message = message_wrapper['message']
+
+        # Receiving an object from another worker
+        if(message_wrapper['type'] == 'obj'):
+            response = self.receive_obj(message)  # DONE!
+            return response.ser()
+
+        #  Receiving a request for an object from another worker
+        elif(message_wrapper['type'] == 'req_obj'):
+            return self.prepare_send_object(self.get_obj(message))
+
+        #  A torch command from another workerinvolving one or more tensors
+        #  hosted locally
+        elif(message_wrapper['type'] == 'torch_cmd'):
+            return json.dumps(self.handle_command(message)) + "\n"
+
+        return "Unrecognized message type:" + message_wrapper['type']
+
+    @staticmethod
+    def _process_buffer(socket, buffer_size=1024, delimiter="\n"):
+        # WARNING: will hang if buffer doesn't finish with newline
+
+        buffer = socket.recv(buffer_size).decode('utf-8')
+        buffering = True
+        while buffering:
+            if delimiter in buffer:
+                (line, buffer) = buffer.split(delimiter, 1)
+                return line + delimiter
+            else:
+                more = socket.recv(buffer_size).decode('utf-8')
+                if not more:
+                    buffering = False
+                else:
+                    buffer += more
+        if buffer:
+            return buffer
 
 
 class VirtualWorker(BaseWorker):
@@ -999,8 +1111,7 @@ class VirtualWorker(BaseWorker):
 
         message_wrapper_json_binary = message_wrapper_json.encode()
 
-        response = recipient.receive_msg(message_wrapper_json_binary)
-        return response
+        return recipient.receive_msg(message_wrapper_json_binary)
 
     def receive_msg(self, message_wrapper_json_binary):
         """Receives an message from a worker and then executes its contents appropriately.
@@ -1022,4 +1133,4 @@ class VirtualWorker(BaseWorker):
         elif(message_wrapper['type'] == 'req_obj'):
             return self.prepare_send_object(self.get_obj(message))
         elif(message_wrapper['type'] == 'torch_cmd'):
-            return self.process_response(self.handle_command(message))
+            return self.handle_command(message)

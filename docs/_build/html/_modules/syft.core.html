@@ -368,7 +368,7 @@ acceptible list self.map_torch_type)</li>
 <p>Interfaces for communicating about objects between Clients and Workers</p>
 <dl class="class">
 <dt id="syft.core.workers.BaseWorker">
-<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>The BaseWorker class establishes a consistent interface for
 communicating between different machines
@@ -862,8 +862,6 @@ worker responds with a message. It then processes the response using a response 
 <ul class="simple">
 <li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
 <li><strong>message (string)</strong> the message being sent</li>
-<li><strong>response_handler (func)</strong> the function that processes the response.</li>
-<li><strong>timeout (optional)</strong> a timeout. TODO: implement this or remove it?</li>
 </ul>
 </dd></dl>
 
@@ -969,7 +967,7 @@ worker is a client worker.</li>
 
 <dl class="class">
 <dt id="syft.core.workers.SocketWorker">
-<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">SocketWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">SocketWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>hostname='localhost'</em>, <em>port=8110</em>, <em>max_connections=5</em>, <em>id=0</em>, <em>is_client_worker=True</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>is_pointer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.BaseWorker</span></code></a></p>
 <p>A worker capable of performing the functions of a BaseWorker across
 a socket connection. Note that the worker is NOT responsible for
@@ -1007,7 +1005,7 @@ can include all known workers.</li>
 </ul>
 <dl class="method">
 <dt id="syft.core.workers.SocketWorker.receive_msg">
-<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
+<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper_json</em>, <em>is_binary=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Receives an message from a worker and then executes its contents appropriately.
 The message is encoded as a binary blob.</p>
 <ul class="simple">
