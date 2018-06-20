@@ -506,8 +506,8 @@ class BaseWorker(object):
         # mal_points_here = not obj.is_pointer and self.local_worker.id not in obj.owners
         if mal_points_away or mal_points_here:
             raise RuntimeError(
-                'Invalid registry: is_pointer is {} but owners is {}'.format(
-                    obj.is_pointer, obj.owners))
+                'Invalid registry: is_pointer is {} but owners is {} on tensor {}'.format(
+                    obj.is_pointer, obj.owners, obj.id))
         # print("setting object:" + str(obj.id))
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
         return obj

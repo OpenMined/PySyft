@@ -692,7 +692,7 @@ class TorchHook(BaseHook):
 
             # if self == tensor
             _id = hook_self.local_worker.id  # for brevity
-            if(type(self) != torch.autograd.variable.Variable):
+            if(type(self) != torch.autograd.variable.Variable and type(self) != torch.nn.parameter.Parameter):
                 _os = self.old_set_(x.type(self.type()))
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                               _os,
@@ -957,7 +957,8 @@ class TorchHook(BaseHook):
             if(self == torch.nn.parameter.Parameter):
                 var = self(data, requires_grad=obj_msg['requires_grad'])
             else:
-                var = self(data, volatile=obj_msg['volatile'], requires_grad=obj_msg['requires_grad'])
+                var = self(data, volatile=obj_msg['volatile'],
+                           requires_grad=obj_msg['requires_grad'])
             # var.grad = grad
             if(grad is not None):
                 setattr(var, 'grad', grad)
