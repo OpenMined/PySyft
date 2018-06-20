@@ -157,7 +157,8 @@ class BaseWorker(object):
 
         message_wrapper = {}
 
-        message_wrapper['message'] = {message_number:message for message_number,message in ennumerate(self.message_queue)}
+        message_wrapper['message'] = {
+            message_number: message for message_number, message in enumerate(self.message_queue)}
         message_wrapper['type'] = 'composite'
 
         return message_wrapper
@@ -196,7 +197,16 @@ class BaseWorker(object):
         return self.process_message_type(message_wrapper)
 
     def process_message_type(self, message_wrapper):
+        """
+        This method takes a message wrapper and attempts to process it agaist known processing methods.
+        If the method is a composite message, it unroles applies recursively
+        
+        * **message_wrapper (dict)** Dictionary containing the message and meta information
 
+        * **out (object)** the response. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
         message = message_wrapper['message']
 
         # Receiving an object from another worker
