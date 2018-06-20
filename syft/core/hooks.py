@@ -952,6 +952,8 @@ class TorchHook(BaseHook):
                 else:
                     grad = None
 
+            # nn.parameter.Parameter does not accept "volatile" as an input param.
+            # https://pytorch.org/docs/0.3.1/autograd.html#variable
             if(self == torch.nn.parameter.Parameter):
                 var = self(data, requires_grad=obj_msg['requires_grad'])
             else:
