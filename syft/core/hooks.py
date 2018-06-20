@@ -951,8 +951,7 @@ class TorchHook(BaseHook):
                                                                   temporary=True)
                 else:
                     grad = None
-            print(self)
-            print(type(self))
+
             if(self == torch.nn.parameter.Parameter):
                 var = self(data, requires_grad=obj_msg['requires_grad'])
             else:
