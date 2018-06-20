@@ -912,6 +912,8 @@ class TorchHook(BaseHook):
 
     def _hook_var_ser(hook_self):
         def ser(self, include_data=True):
+            """Serializes a variable into a JSON object"""
+
             var_msg = {}
             var_msg['torch_type'] = re.search("<class '(.*)'>", str(self.__class__)).group(1)
             var_msg['requires_grad'] = self.requires_grad
@@ -930,6 +932,7 @@ class TorchHook(BaseHook):
             return json.dumps(var_msg)
 
         def deser(self, obj_msg):
+            """Deserializes a JSON object into a variable"""
 
             if 'data' in obj_msg.keys():
                 data_msg = json.loads(obj_msg['data'])
@@ -946,10 +949,14 @@ class TorchHook(BaseHook):
                     grad = hook_self.local_worker.handle_register(grad_obj, grad_msg,
                                                                   force_attach_to_worker=False,
                                                                   temporary=True)
-
                 else:
                     grad = None
-            var = self(data, volatile=obj_msg['volatile'], requires_grad=obj_msg['requires_grad'])
+            print(self)
+            print(type(self))
+            if(self == torch.nn.parameter.Parameter):
+                var = self(data, requires_grad=obj_msg['requires_grad'])
+            else:
+                var = self(data, volatile=obj_msg['volatile'], requires_grad=obj_msg['requires_grad'])
             # var.grad = grad
             if(grad is not None):
                 setattr(var, 'grad', grad)

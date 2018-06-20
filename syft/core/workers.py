@@ -713,7 +713,7 @@ class BaseWorker(object):
 
 
         """
-
+        print(message)
         message_obj = json.loads(message)
         obj_type = self.hook.types_guard(message_obj['torch_type'])
         obj = obj_type.deser(obj_type, message_obj)
