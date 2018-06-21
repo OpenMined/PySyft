@@ -129,3 +129,9 @@ class TestTorchVariable(TestCase):
         z = relu(z)
 
         assert True
+
+    # def test_send_var_with_gradient(self):
+
+    #     # previously, there was a bug involving sending variables with graidents
+    #     # to remote tensors. This bug was documented in Issue 1350
+    #     # https://github.com/OpenMined/PySyft/issues/1350

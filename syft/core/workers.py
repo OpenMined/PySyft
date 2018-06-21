@@ -140,6 +140,16 @@ class BaseWorker(object):
         """
         raise NotImplementedError
 
+    def __str__(self):
+        out = "<"
+        out += str(type(self)).split("'")[1]
+        out += " id:" + str(self.id)
+        out += ">"
+        return out
+
+    def __repr__(self):
+        return self.__str__()
+
     def add_worker(self, worker):
         """add_worker(worker) -> None
         This method adds a worker to the list of _known_workers
@@ -510,6 +520,32 @@ class BaseWorker(object):
                     obj.is_pointer, obj.owners, obj.id))
         # print("setting object:" + str(obj.id))
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
+
+        # Perform recursive operations.
+        # If there is a child tensor (self.data)
+        if(hasattr(obj,'grad')): 
+            if(obj.grad is not None):
+                self.register_object(worker=worker,
+                                     obj=obj.grad,
+                                     force_attach_to_worker=force_attach_to_worker,
+                                     temporary=temporary,
+                                     id=obj.grad.id,
+                                     owners=obj.owners,
+                                     is_pointer=obj.is_pointer)
+        try:
+            _ = obj.data
+            if(obj.data is not None):
+                self.register_object(worker=worker,
+                                     obj=obj.data,
+                                     force_attach_to_worker=force_attach_to_worker,
+                                     temporary=temporary,
+                                     id=obj.data.id,
+                                     owners=obj.owners,
+                                     is_pointer=obj.is_pointer)
+
+        except RuntimeError:
+            ""
+
         return obj
 
     def process_command(self, command_msg):
