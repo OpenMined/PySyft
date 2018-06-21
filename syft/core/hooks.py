@@ -692,7 +692,8 @@ class TorchHook(BaseHook):
 
             # if self == tensor
             _id = hook_self.local_worker.id  # for brevity
-            if(type(self) != torch.autograd.variable.Variable and type(self) != torch.nn.parameter.Parameter):
+            if(type(self) != torch.autograd.variable.Variable and
+               type(self) != torch.nn.parameter.Parameter):
                 _os = self.old_set_(x.type(self.type()))
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                               _os,
@@ -811,7 +812,7 @@ class TorchHook(BaseHook):
     def _hook_var_owners(hook_self):
         @property
         def owners(self):
-            if(hasattr(self,'_owners')):
+            if(hasattr(self, '_owners')):
                 return self._owners
             else:
                 hook_self.local_worker.register_object(worker=hook_self.local_worker,
@@ -909,7 +910,7 @@ class TorchHook(BaseHook):
                     # also - keep this running ONLY within the if statement above that checks
                     # to see if self.grad_registered is not yet an attribute
                     self.grad_backup = self.old_grad
-                    self.grad_backup.owners_backup = self.grad_backup.owners 
+                    self.grad_backup.owners_backup = self.grad_backup.owners
 
             return self.old_grad
 
@@ -987,7 +988,7 @@ class TorchHook(BaseHook):
                 if obj_msg['grad'] is not None:
 
                     grad_msg = json.loads(obj_msg['grad'])
-                    
+
                     var_type = hook_self.types_guard(grad_msg['torch_type'])
                     grad_obj = hook_self._build_var(grad_msg, var_type)
 

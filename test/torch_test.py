@@ -146,10 +146,10 @@ class TestTorchVariable(TestCase):
         remote = VirtualWorker(id=1, hook=hook, verbose=False)
         local.add_worker(remote)
 
-        data = Var(torch.FloatTensor([[0,0],[0,1],[1,0],[1,1]]))
-        target = Var(torch.FloatTensor([[0],[0],[1],[1]]))
+        data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
+        target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
 
-        model = Var(torch.zeros(2,1), requires_grad=True)
+        model = Var(torch.zeros(2, 1), requires_grad=True)
 
         # generates grad objects on model
         pred = data.mm(model)
@@ -163,14 +163,13 @@ class TestTorchVariable(TestCase):
         model.send_(remote)
 
         assert model.data.id == original_data_id
-        assert model.grad.data.id == original_grad_id        
+        assert model.grad.data.id == original_grad_id
 
     def test_send_var_with_gradient(self):
 
         # previously, there was a bug involving sending variables with graidents
         # to remote tensors. This bug was documented in Issue 1350
         # https://github.com/OpenMined/PySyft/issues/1350
-
 
         # this is our hook
         hook = TorchHook(verbose=False)
@@ -180,10 +179,10 @@ class TestTorchVariable(TestCase):
         remote = VirtualWorker(id=1, hook=hook, verbose=False)
         local.add_worker(remote)
 
-        data = Var(torch.FloatTensor([[0,0],[0,1],[1,0],[1,1]]))
-        target = Var(torch.FloatTensor([[0],[0],[1],[1]]))
+        data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
+        target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
 
-        model = Var(torch.zeros(2,1), requires_grad=True)
+        model = Var(torch.zeros(2, 1), requires_grad=True)
 
         # generates grad objects on model
         pred = data.mm(model)
@@ -225,4 +224,3 @@ class TestTorchVariable(TestCase):
         assert model.data.id in remote._objects
         assert model.grad.id in remote._objects
         assert model.grad.data.id in remote._objects
-

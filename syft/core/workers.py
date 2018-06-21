@@ -523,7 +523,7 @@ class BaseWorker(object):
 
         # Perform recursive operations.
         # If there is a child tensor (self.data)
-        if(hasattr(obj,'grad')): 
+        if(hasattr(obj, 'grad')):
             if(obj.grad is not None):
                 self.register_object(worker=worker,
                                      obj=obj.grad,
@@ -534,6 +534,7 @@ class BaseWorker(object):
                                      is_pointer=obj.is_pointer)
         try:
             _ = obj.data
+            _ = str(_)  # just a style issue
             if(obj.data is not None):
                 self.register_object(worker=worker,
                                      obj=obj.data,
