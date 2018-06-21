@@ -180,7 +180,7 @@
 
 <dl class="class">
 <dt id="syft.core.hooks.TorchHook">
-<em class="property">class </em><code class="descclassname">syft.core.hooks.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.hooks.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#syft.core.hooks.BaseHook" title="syft.core.hooks.BaseHook"><code class="xref py py-class docutils literal"><span class="pre">syft.core.hooks.BaseHook</span></code></a></p>
 <p>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors -
 <strong>Currently compatible with PyTorch 0.3.1</strong></p>
@@ -368,7 +368,7 @@ acceptible list self.map_torch_type)</li>
 <p>Interfaces for communicating about objects between Clients and Workers</p>
 <dl class="class">
 <dt id="syft.core.workers.BaseWorker">
-<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>The BaseWorker class establishes a consistent interface for
 communicating between different machines
@@ -475,6 +475,17 @@ pointer to a remote worker, which must have a unique id.</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.compile_composite_message">
+<code class="descname">compile_composite_message</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.compile_composite_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a composite message in a dictionary from the message queue.
+Evenatually will take a recipient id.</p>
+<ul class="simple">
+<li><strong>out (dict)</strong> dictionary containing the message queue compiled</li>
+</ul>
+<p>as a composite message</p>
 </dd></dl>
 
 <dl class="method">
@@ -660,6 +671,22 @@ the owners of the tensors involved.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="syft.core.workers.BaseWorker.process_message_type">
+<code class="descname">process_message_type</code><span class="sig-paren">(</span><em>message_wrapper</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.process_message_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method takes a message wrapper and attempts to process
+it agaist known processing methods. If the method is a composite
+message, it unroles applies recursively</p>
+<ul class="simple">
+<li><strong>message_wrapper (dict)</strong> Dictionary containing the message
+and meta information</li>
+<li><strong>out (object)</strong> the response. This can be a variety
+of object types. However, the object is typically only
+used during testing or local development with
+<a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> workers.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.BaseWorker.process_response">
 <code class="descname">process_response</code><span class="sig-paren">(</span><em>response</em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#syft.core.workers.BaseWorker.process_response" title="Permalink to this definition">¶</a></dt>
 <dd><p>Processes a worker&#8217;s response from a command, converting it
@@ -683,7 +710,7 @@ a foreign worker or client.</li>
 
 <dl class="method">
 <dt id="syft.core.workers.BaseWorker.receive_msg">
-<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
+<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper_json</em>, <em>is_binary=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Receives an message from a worker and then executes its contents appropriately.
 The message is encoded as a binary blob.</p>
 <ul class="simple">
@@ -967,7 +994,7 @@ worker is a client worker.</li>
 
 <dl class="class">
 <dt id="syft.core.workers.SocketWorker">
-<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">SocketWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>hostname='localhost'</em>, <em>port=8110</em>, <em>max_connections=5</em>, <em>id=0</em>, <em>is_client_worker=True</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>is_pointer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">SocketWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>hostname='localhost'</em>, <em>port=8110</em>, <em>max_connections=5</em>, <em>id=0</em>, <em>is_client_worker=True</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>is_pointer=False</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.BaseWorker</span></code></a></p>
 <p>A worker capable of performing the functions of a BaseWorker across
 a socket connection. Note that the worker is NOT responsible for
@@ -1003,49 +1030,11 @@ This dictionary can be emptied using the clear_tmp_objects method.</li>
 can include all known workers.</li>
 <li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
 </ul>
-<dl class="method">
-<dt id="syft.core.workers.SocketWorker.receive_msg">
-<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper_json</em>, <em>is_binary=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Receives an message from a worker and then executes its contents appropriately.
-The message is encoded as a binary blob.</p>
-<ul class="simple">
-<li><strong>message (binary)</strong> the message being sent</li>
-<li><strong>out (object)</strong> the response. This can be a variety
-of object types. However, the object is typically only used during testing or
-local development with <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> workers.</li>
-</ul>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.workers.SocketWorker.send_msg">
-<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.send_msg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sends a string message to another worker with message_type information
-indicating how the message should be processed.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<ul class="simple">
-<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
-<li><strong>message (string)</strong> the message being sent</li>
-<li><strong>message_type (string)</strong> the type of message being sent. This affects how
-the message is processed by the recipient. The types of message are described
-in <a class="reference internal" href="#syft.core.workers.SocketWorker.receive_msg" title="syft.core.workers.SocketWorker.receive_msg"><code class="xref py py-func docutils literal"><span class="pre">receive_msg()</span></code></a>.</li>
-<li><strong>out (object)</strong> the response from the message being sent. This can be a variety
-of object types. However, the object is typically only used during testing or
-local development with <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> workers.</li>
-</ul>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="syft.core.workers.VirtualWorker">
-<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">VirtualWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">VirtualWorker</code><span class="sig-paren">(</span><em>hook</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=False</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.BaseWorker</span></code></a></p>
 <p>A virtualized worker simulating the existence of a remote machine.
 It is intended as a testing, development, and performance evaluation
@@ -1121,44 +1110,6 @@ can include all known workers.</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
-<dl class="method">
-<dt id="syft.core.workers.VirtualWorker.receive_msg">
-<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper_json_binary</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Receives an message from a worker and then executes its contents appropriately.
-The message is encoded as a binary blob.</p>
-<ul class="simple">
-<li><strong>message (binary)</strong> the message being sent</li>
-<li><strong>out (object)</strong> the response. This can be a variety
-of object types. However, the object is typically only used during testing or
-local development with <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> workers.</li>
-</ul>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.workers.VirtualWorker.send_msg">
-<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.VirtualWorker.send_msg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sends a string message to another worker with message_type information
-indicating how the message should be processed.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<ul class="simple">
-<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
-<li><strong>message (string)</strong> the message being sent</li>
-<li><strong>message_type (string)</strong> the type of message being sent. This affects how
-the message is processed by the recipient. The types of message are described
-in <a class="reference internal" href="#syft.core.workers.VirtualWorker.receive_msg" title="syft.core.workers.VirtualWorker.receive_msg"><code class="xref py py-func docutils literal"><span class="pre">receive_msg()</span></code></a>.</li>
-<li><strong>out (object)</strong> the response from the message being sent. This can be a variety
-of object types. However, the object is typically only used during testing or
-local development with <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> workers.</li>
-</ul>
-</dd></dl>
-
 </dd></dl>
 
 </div>

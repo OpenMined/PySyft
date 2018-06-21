@@ -150,9 +150,11 @@ class BaseWorker(object):
 
     def compile_composite_message(self):
         """
-        Returns a composite message in a dictionary from the message queue. Evenatually will take a recipient id.
+        Returns a composite message in a dictionary from the message queue.
+        Evenatually will take a recipient id.
 
-        * **out (dict)** dictionary containing the message queue compiled as a composite message
+        * **out (dict)** dictionary containing the message queue compiled
+        as a composite message
         """
 
         message_wrapper = {}
@@ -198,14 +200,17 @@ class BaseWorker(object):
 
     def process_message_type(self, message_wrapper):
         """
-        This method takes a message wrapper and attempts to process it agaist known processing methods.
-        If the method is a composite message, it unroles applies recursively
-        
-        * **message_wrapper (dict)** Dictionary containing the message and meta information
+        This method takes a message wrapper and attempts to process
+        it agaist known processing methods. If the method is a composite
+        message, it unroles applies recursively
+
+        * **message_wrapper (dict)** Dictionary containing the message
+          and meta information
 
         * **out (object)** the response. This can be a variety
-          of object types. However, the object is typically only used during testing or
-          local development with :class:`VirtualWorker` workers.
+          of object types. However, the object is typically only
+          used during testing or local development with
+          :class:`VirtualWorker` workers.
         """
         message = message_wrapper['message']
 
@@ -224,7 +229,8 @@ class BaseWorker(object):
             return json.dumps(self.handle_command(message)) + "\n"
         # A composite command. Must be unrolled
         elif(message_wrapper['type'] == 'composite'):
-            return [self.process_message_type(message[message_number]) for message_number in message]
+            return [self.process_message_type(message[message_number])
+                    for message_number in message]
 
         return "Unrecognized message type:" + message_wrapper['type']
 
