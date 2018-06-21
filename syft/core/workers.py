@@ -60,8 +60,9 @@ class BaseWorker(object):
           print events to stdout.
 
     """
+
     def __init__(self,  hook=None, id=0, is_client_worker=False, objects={},
-                 tmp_objects={}, known_workers={}, verbose=True):
+                 tmp_objects={}, known_workers={}, verbose=True, queue_size=0):
 
         # This is a reference to the hook object which overloaded
         # the underlying deep learning framework
@@ -108,6 +109,10 @@ class BaseWorker(object):
         # A flag for whether or not to print events to stdout.
         self.verbose = verbose
 
+        # A list for storing messages to be sent as well as the max size of the list
+        self.message_queue = []
+        self.queue_size = queue_size
+
     def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.
@@ -126,9 +131,55 @@ class BaseWorker(object):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
+        message_wrapper = {}
+        message_wrapper['message'] = message
+        message_wrapper['type'] = message_type
+        self.message_queue.append(message_wrapper)
+        if self.queue_size:
+            if len(self.message_queue) > self.queue_size:
+                message_wrapper = self.compile_composite_message()
+            else:
+                return None
+
+        message_wrapper_json = json.dumps(message_wrapper) + "\n"
+
+        message_wrapper_json_binary = message_wrapper_json.encode()
+
+        self.message_queue = []
+        return self._send_msg(message_wrapper_json_binary, recipient)
+
+    def compile_composite_message(self):
+        """
+        Returns a composite message in a dictionary from the message queue. Evenatually will take a recipient id.
+
+        * **out (dict)** dictionary containing the message queue compiled as a composite message
+        """
+
+        message_wrapper = {}
+
+        message_wrapper['message'] = {
+            message_number: message for message_number, message in enumerate(self.message_queue)}
+        message_wrapper['type'] = 'composite'
+
+        return message_wrapper
+
+    def _send_msg(self, message_wrapper_json_binary, recipient):
+        """Sends a string message to another worker with message_type information
+        indicating how the message should be processed.
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message_wrapper_json_binary (binary)** the message being sent encoded in binary
+
+        * **out (object)** the response from the message being sent. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
         raise NotImplementedError
 
-    def receive_msg(self, message_wrapper):
+    def receive_msg(self, message_wrapper_json, is_binary=True):
         """Receives an message from a worker and then executes its contents appropriately.
         The message is encoded as a binary blob.
 
@@ -138,7 +189,44 @@ class BaseWorker(object):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
-        raise NotImplementedError
+
+        if(is_binary):
+            message_wrapper_json = message_wrapper_json.decode('utf-8')
+        message_wrapper = json.loads(message_wrapper_json)
+
+        return self.process_message_type(message_wrapper)
+
+    def process_message_type(self, message_wrapper):
+        """
+        This method takes a message wrapper and attempts to process it agaist known processing methods.
+        If the method is a composite message, it unroles applies recursively
+        
+        * **message_wrapper (dict)** Dictionary containing the message and meta information
+
+        * **out (object)** the response. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
+        message = message_wrapper['message']
+
+        # Receiving an object from another worker
+        if(message_wrapper['type'] == 'obj'):
+            response = self.receive_obj(message)  # DONE!
+            return response.ser()
+
+        #  Receiving a request for an object from another worker
+        elif(message_wrapper['type'] == 'req_obj'):
+            return self.prepare_send_object(self.get_obj(message))
+
+        #  A torch command from another workerinvolving one or more tensors
+        #  hosted locally
+        elif(message_wrapper['type'] == 'torch_cmd'):
+            return json.dumps(self.handle_command(message)) + "\n"
+        # A composite command. Must be unrolled
+        elif(message_wrapper['type'] == 'composite'):
+            return [self.process_message_type(message[message_number]) for message_number in message]
+
+        return "Unrecognized message type:" + message_wrapper['type']
 
     def __str__(self):
         out = "<"
@@ -197,7 +285,8 @@ class BaseWorker(object):
         if(worker.id in self._known_workers and self.verbose):
             print("WARNING: Worker ID " + str(worker.id) +
                   " taken. Have I seen this worker before?")
-            print("WARNING: Replacing it anyways... this could cause unexpected behavior...")
+            print(
+                "WARNING: Replacing it anyways... this could cause unexpected behavior...")
 
         self._known_workers[worker.id] = worker
 
@@ -566,8 +655,10 @@ class BaseWorker(object):
         """
         # Args and kwargs contain special strings in place of tensors
         # Need to retrieve the tensors from self.worker.objects
-        args = utils.map_tuple(self, command_msg['args'], self._retrieve_tensor)
-        kwargs = utils.map_dict(self, command_msg['kwargs'], self._retrieve_tensor)
+        args = utils.map_tuple(
+            self, command_msg['args'], self._retrieve_tensor)
+        kwargs = utils.map_dict(
+            self, command_msg['kwargs'], self._retrieve_tensor)
         has_self = command_msg['has_self']
         # TODO: Implement get_owners and refactor to make it prettier
         combined = list(args) + list(kwargs.values())
@@ -579,12 +670,14 @@ class BaseWorker(object):
             combined = combined + [obj_self]
             command = eval('obj_self.{}'.format(command))
         else:
-            command = self._command_guard(command_msg['command'], self.torch_funcs)
+            command = self._command_guard(
+                command_msg['command'], self.torch_funcs)
             command = eval('torch.{}'.format(command))
 
         # we need the original tensorvar owners so that we can register
         # the result properly later on
-        tensorvars = [x for x in combined if type(x).__name__ in self.hook.tensorvar_types_strs]
+        tensorvars = [x for x in combined if type(
+            x).__name__ in self.hook.tensorvar_types_strs]
         _, owners = self.hook.get_owners(tensorvars)
 
         owner_ids = list()
@@ -624,7 +717,8 @@ class BaseWorker(object):
             except (AttributeError, AssertionError):
                 var_grad = None
             try:
-                result = self.register_object(self, result, id=result.id, owners=owners)
+                result = self.register_object(
+                    self, result, id=result.id, owners=owners)
             except AttributeError:
                 result = self.register_object(self, result, owners=owners)
 
@@ -771,7 +865,8 @@ class BaseWorker(object):
 
         * **message (string)** the message being sent
         """
-        response = self.send_msg(message=message, message_type='torch_cmd', recipient=recipient)
+        response = self.send_msg(
+            message=message, message_type='torch_cmd', recipient=recipient)
         response = self.process_response(response)
         return response
 
@@ -793,7 +888,8 @@ class BaseWorker(object):
         # resolves IDs to worker objects
         recipient = self.get_worker(recipient)
 
-        obj_json = self.send_msg(message=obj_id, message_type='req_obj', recipient=recipient)
+        obj_json = self.send_msg(
+            message=obj_id, message_type='req_obj', recipient=recipient)
         obj = self.receive_obj(obj_json)
 
         # for some reason, when returning obj from request_obj method, the gradient
@@ -820,7 +916,7 @@ class BaseWorker(object):
             raise TypeError(
                 """Can only send {} to a string worker ID or an iterable of
                 string worker IDs, not {}""".format(torch_obj.__name__, workers)
-                )
+            )
         return workers
 
     # Worker needs to retrieve tensor by ID before computing with it
@@ -893,11 +989,11 @@ class SocketWorker(BaseWorker):
 
     def __init__(self,  hook=None, hostname='localhost', port=8110, max_connections=5,
                  id=0, is_client_worker=True, objects={}, tmp_objects={},
-                 known_workers={}, verbose=True, is_pointer=False):
+                 known_workers={}, verbose=True, is_pointer=False, queue_size=0):
 
         super().__init__(hook=hook, id=id, is_client_worker=is_client_worker,
                          objects=objects, tmp_objects=tmp_objects,
-                         known_workers=known_workers, verbose=verbose)
+                         known_workers=known_workers, verbose=verbose, queue_size=queue_size)
 
         self.hostname = hostname
         self.port = port
@@ -918,7 +1014,8 @@ class SocketWorker(BaseWorker):
 
             if(self.verbose):
                 print("Starting Socket Worker...")
-            self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.serversocket = socket.socket(
+                socket.AF_INET, socket.SOCK_STREAM)
             self.serversocket.bind((self.hostname, self.port))
 
             # become a server socket, maximum 5 connections
@@ -957,7 +1054,7 @@ class SocketWorker(BaseWorker):
             finally:
                 connection.close()
 
-    def send_msg(self, message, message_type, recipient):
+    def _send_msg(self, message_wrapper_json_binary, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.
 
@@ -965,63 +1062,18 @@ class SocketWorker(BaseWorker):
 
         * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
 
-        * **message (string)** the message being sent
-
-        * **message_type (string)** the type of message being sent. This affects how
-          the message is processed by the recipient. The types of message are described
-          in :func:`receive_msg`.
+        * **message_wrapper_json_binary (binary)** the message being sent encoded in binary
 
         * **out (object)** the response from the message being sent. This can be a variety
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
 
-        message_wrapper = {}
-        message_wrapper['message'] = message
-        message_wrapper['type'] = message_type
-
-        message_wrapper_json = json.dumps(message_wrapper) + "\n"
-
-        message_wrapper_json_binary = message_wrapper_json.encode()
-
         recipient.clientsocket.send(message_wrapper_json_binary)
 
         response = self._process_buffer(recipient.clientsocket)
 
         return response
-
-    def receive_msg(self, message_wrapper_json, is_binary=False):
-        """Receives an message from a worker and then executes its contents appropriately.
-        The message is encoded as a binary blob.
-
-        * **message (binary)** the message being sent
-
-        * **out (object)** the response. This can be a variety
-          of object types. However, the object is typically only used during testing or
-          local development with :class:`VirtualWorker` workers.
-        """
-
-        if(is_binary):
-            message_wrapper_json = message_wrapper_json.decode('utf-8')
-        message_wrapper = json.loads(message_wrapper_json)
-
-        message = message_wrapper['message']
-
-        # Receiving an object from another worker
-        if(message_wrapper['type'] == 'obj'):
-            response = self.receive_obj(message)  # DONE!
-            return response.ser()
-
-        #  Receiving a request for an object from another worker
-        elif(message_wrapper['type'] == 'req_obj'):
-            return self.prepare_send_object(self.get_obj(message))
-
-        #  A torch command from another workerinvolving one or more tensors
-        #  hosted locally
-        elif(message_wrapper['type'] == 'torch_cmd'):
-            return json.dumps(self.handle_command(message)) + "\n"
-
-        return "Unrecognized message type:" + message_wrapper['type']
 
     @staticmethod
     def _process_buffer(socket, buffer_size=1024, delimiter="\n"):
@@ -1115,13 +1167,13 @@ class VirtualWorker(BaseWorker):
     """
 
     def __init__(self,  hook, id=0, is_client_worker=False, objects={},
-                 tmp_objects={}, known_workers={}, verbose=False):
+                 tmp_objects={}, known_workers={}, verbose=False, queue_size=0):
 
         super().__init__(hook=hook, id=id, is_client_worker=is_client_worker,
                          objects=objects, tmp_objects=tmp_objects,
-                         known_workers=known_workers, verbose=verbose)
+                         known_workers=known_workers, verbose=verbose, queue_size=queue_size)
 
-    def send_msg(self, message, message_type, recipient):
+    def _send_msg(self, message_wrapper_json_binary, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.
 
@@ -1129,45 +1181,11 @@ class VirtualWorker(BaseWorker):
 
         * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
 
-        * **message (string)** the message being sent
-
-        * **message_type (string)** the type of message being sent. This affects how
-          the message is processed by the recipient. The types of message are described
-          in :func:`receive_msg`.
+        * **message_wrapper_json_binary (binary)** the message being sent encoded in binary
 
         * **out (object)** the response from the message being sent. This can be a variety
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
 
-        message_wrapper = {}
-        message_wrapper['message'] = message
-        message_wrapper['type'] = message_type
-
-        message_wrapper_json = json.dumps(message_wrapper)
-
-        message_wrapper_json_binary = message_wrapper_json.encode()
-
         return recipient.receive_msg(message_wrapper_json_binary)
-
-    def receive_msg(self, message_wrapper_json_binary):
-        """Receives an message from a worker and then executes its contents appropriately.
-        The message is encoded as a binary blob.
-
-        * **message (binary)** the message being sent
-
-        * **out (object)** the response. This can be a variety
-          of object types. However, the object is typically only used during testing or
-          local development with :class:`VirtualWorker` workers.
-        """
-
-        message_wrapper_json = message_wrapper_json_binary.decode('utf-8')
-        message_wrapper = json.loads(message_wrapper_json)
-        message = message_wrapper['message']
-
-        if(message_wrapper['type'] == 'obj'):
-            return self.receive_obj(message)
-        elif(message_wrapper['type'] == 'req_obj'):
-            return self.prepare_send_object(self.get_obj(message))
-        elif(message_wrapper['type'] == 'torch_cmd'):
-            return self.handle_command(message)
