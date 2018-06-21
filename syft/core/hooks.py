@@ -699,32 +699,39 @@ class TorchHook(BaseHook):
 
             hook_self.local_worker.register_object(
                 hook_self.local_worker, x, id=x.id)
+            
+            # x.grad.id seems to be here!
+            # import pdb; pdb.set_trace()
 
             # if self == tensor
             _id = hook_self.local_worker.id  # for brevity
             if(type(self) != torch.autograd.variable.Variable and
                type(self) != torch.nn.parameter.Parameter):
                 _os = self.old_set_(x.type(self.type()))
+
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                               _os,
                                                               id=self.id, owners=[_id])
 
             else:
-
                 _os = self.old_set_(x.type(self.data.type()))  # for brevity
+                # import pdb; pdb.set_trace()
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                               _os,
                                                               id=self.id, owners=[_id])
-
-                self.data = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                   x.data,
-                                                                   id=x.data.id,
-                                                                   owners=[_id])
+                self.data = x.data
                 if(x.grad is not None):
-                    self.grad = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                       x.grad,
-                                                                       id=x.grad.id,
-                                                                       owners=[_id])
+                    self.grad = x.grad
+
+                # self.data = hook_self.local_worker.register_object(hook_self.local_worker,
+                #                                                    x.data,
+                #                                                    id=x.data.id,
+                #                                                    owners=[_id])
+                # if(x.grad is not None):
+                #     self.grad = hook_self.local_worker.register_object(hook_self.local_worker,
+                #                                                        x.grad,
+                #                                                        id=x.grad.id,
+                #                                                        owners=[_id])
 
             """for some reason, when retuning obj from request_obj
             method (above), the gradient gets re-initialized without
@@ -924,6 +931,9 @@ class TorchHook(BaseHook):
                     self.grad_backup = self.old_grad
                     self.grad_backup.owners_backup = self.grad_backup.owners
 
+                    self.grad.parent = self
+                    self.grad_backup.parent = self
+
             return self.old_grad
 
         @new_grad.setter
@@ -964,6 +974,7 @@ class TorchHook(BaseHook):
             return hook_self._var_to_pointer(self, hook_self)
 
         setattr(torch.autograd.variable.Variable, 'send_', send_)
+        setattr(torch.autograd.variable.Variable, 'send', send_)
 
     def _hook_var_ser(hook_self):
         def ser(self, include_data=True):

@@ -620,6 +620,7 @@ class BaseWorker(object):
         # If there is a child tensor (self.data)
         if(hasattr(obj, 'grad')):
             if(obj.grad is not None):
+                # import pdb; pdb.set_trace()
                 self.register_object(worker=worker,
                                      obj=obj.grad,
                                      force_attach_to_worker=force_attach_to_worker,
