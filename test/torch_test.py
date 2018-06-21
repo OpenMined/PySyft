@@ -4,6 +4,8 @@ from syft.core.hooks import torch
 from syft.core.workers import VirtualWorker
 
 from torch.autograd import Variable as Var
+import torch.optim as optim
+import torch.nn as nn
 
 import json
 
@@ -224,3 +226,50 @@ class TestTorchVariable(TestCase):
         assert model.data.id in remote._objects
         assert model.grad.id in remote._objects
         assert model.grad.data.id in remote._objects
+
+    def test_federated_learning(self):
+
+        hook = TorchHook(verbose=False)
+        me = hook.local_worker
+        me.verbose = False
+
+        bob = VirtualWorker(id=1, hook=hook, verbose=False)
+        alice = VirtualWorker(id=2, hook=hook, verbose=False)
+
+        me.add_worker(bob)
+        me.add_worker(alice)
+
+        # create our dataset
+        data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
+        target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
+
+        data_bob = data[0:2].send(bob)
+        target_bob = target[0:2].send(bob)
+
+        data_alice = data[2:].send(alice)
+        target_alice = target[2:].send(alice)
+
+        # create our model
+        model = nn.Linear(2, 1)
+
+        opt = optim.SGD(params=model.parameters(), lr=0.1)
+
+        datasets = [(data_bob, target_bob), (data_alice, target_alice)]
+
+        for iter in range(2):
+
+            for data, target in datasets:
+                model.send(data.owners[0])
+
+                # update the model
+                model.zero_grad()
+                pred = model(data)
+                loss = ((pred - target)**2).sum()
+                loss.backward()
+                opt.step()
+
+                model.get_()
+                if(iter == 0):
+                    first_loss = loss.get().data[0]
+
+        assert loss.get().data[0] < first_loss
