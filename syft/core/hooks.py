@@ -764,6 +764,7 @@ class TorchHook(BaseHook):
         # Overload 'special' methods here
         self._hook_var___new__()
         self._hook_var_contents()
+        self._hook_var_owners()
 
         for attr in dir(torch.autograd.variable.Variable):
 
@@ -806,6 +807,22 @@ class TorchHook(BaseHook):
             return result
 
         torch.autograd.variable.Variable.__new__ = new___new__
+
+    def _hook_var_owners(hook_self):
+        @property
+        def owners(self):
+            if(hasattr(self,'_owners')):
+                return self._owners
+            else:
+                hook_self.local_worker.register_object(worker=hook_self.local_worker,
+                                                       obj=self)
+                return self._owners
+
+        @owners.setter
+        def owners(self, value):
+            self._owners = value
+
+        torch.autograd.variable.Variable.owners = owners
 
     def _hook_var_contents(hook_self):
         """Overload Variable.data and Variable.grad properties."""
@@ -860,6 +877,9 @@ class TorchHook(BaseHook):
                     else:
                         grad_id = None
 
+                    # this seems a little sketch - why are we having to check to see whether
+                    # the parent has been registered. Is there and edge case where gradients
+                    # are created before their parents? TODO: fix
                     if(not hasattr(self, 'owners')):
                         hook_self.local_worker.register_object(hook_self.local_worker,
                                                                obj=self,
@@ -874,18 +894,22 @@ class TorchHook(BaseHook):
                                                                            is_pointer=_ip)
                     self.grad_registered = True
 
-            # DO NOT REMOVE THIS LINE UNLESS YOU KNOW WHAT YOU'RE DOING
-            # for context behidn this edit you can see the following video
-            # https://www.twitch.tv/videos/275838386
-            # long story short, we need to actually run the grad generating
-            # function (self.old_grad) and cache its value (the variable's
-            # gradient) in self.grad_backup so that python garbage collection
-            # doesn't delete the python object as a part of PyTorch's C++
-            # wrapping craziness (which does a lot of re-instantiating objects)
-            # In this case, re-instantiating the object gives it a new id because
-            # the object containing the old id goes away... this id is random which
-            # can create problems for PySyft
-            self.grad_backup = self.old_grad
+                    # DO NOT REMOVE THIS LINE UNLESS YOU KNOW WHAT YOU'RE DOING
+                    # for context behidn this edit you can see the following video
+                    # https://www.twitch.tv/videos/275838386
+                    # long story short, we need to actually run the grad generating
+                    # function (self.old_grad) and cache its value (the variable's
+                    # gradient) in self.grad_backup so that python garbage collection
+                    # doesn't delete the python object as a part of PyTorch's C++
+                    # wrapping craziness (which does a lot of re-instantiating objects)
+                    # In this case, re-instantiating the object gives it a new id because
+                    # the object containing the old id goes away... this id is random which
+                    # can create problems for PySyft
+
+                    # also - keep this running ONLY within the if statement above that checks
+                    # to see if self.grad_registered is not yet an attribute
+                    self.grad_backup = self.old_grad
+                    self.grad_backup.owners_backup = self.grad_backup.owners 
 
             return self.old_grad
 
@@ -908,39 +932,22 @@ class TorchHook(BaseHook):
             # makes singleton if needed
             workers = hook_self.local_worker._check_workers(self, workers)
 
-
-            print("\n\nBefore Owner Change")
-            print("I Am Owned By:", str(self.owners))
-
             # NEW OWNERS: this re-registers the current variable to have new owners!
             #  After this line, self.owners should point to workers (the input variable)
             self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                           obj=self,
                                                           id=self.id,
                                                           owners=workers)
-            print("After Owner Change")
-            print("I Am Owned By:", str(self.owners))
 
             for worker in workers:
                 # TODO: sync or async? likely won't be worth doing async,
                 #       but should check (low priority)
                 hook_self.local_worker.send_obj(self, worker)
 
-            print("Before Is_Pointer Change")
-            print("is_pointer=", str(self.is_pointer))
             # NEW IS_POINTER STATUS. This line changes the is_pointer flag to true.
             hook_self.local_worker.register_object(hook_self.local_worker, obj=self, id=self.id,
                                                    owners=self.owners, is_pointer=True)
-            print("After Is_Pointer Change")
-            print("is_pointer=", str(self.is_pointer))
 
-            print("self.data.id:",self.data.id)          
-            # if(hasattr(self,'grad')): 
-                # if(hasattr(self.grad, 'data')):
-            try:
-                print("self.grad.data.id:",self.grad.data.id)
-            except:
-                ""
             return hook_self._var_to_pointer(self, hook_self)
 
         setattr(torch.autograd.variable.Variable, 'send_', send_)
@@ -968,7 +975,7 @@ class TorchHook(BaseHook):
 
         def deser(self, obj_msg):
             """Deserializes a JSON object into a variable"""
-            print(obj_msg)
+
             if 'data' in obj_msg.keys():
                 data_msg = json.loads(obj_msg['data'])
                 tensor_type = hook_self.types_guard(data_msg['torch_type'])
@@ -978,17 +985,15 @@ class TorchHook(BaseHook):
 
             if 'grad' in obj_msg.keys():
                 if obj_msg['grad'] is not None:
-                    print("There is a gradient!")
+
                     grad_msg = json.loads(obj_msg['grad'])
-                    print(grad_msg)
                     
                     var_type = hook_self.types_guard(grad_msg['torch_type'])
                     grad_obj = hook_self._build_var(grad_msg, var_type)
-                    print(grad_obj)
+
                     grad = hook_self.local_worker.handle_register(grad_obj, grad_msg,
                                                                   force_attach_to_worker=False,
                                                                   temporary=True)
-                    print("\n")
                 else:
                     grad = None
 

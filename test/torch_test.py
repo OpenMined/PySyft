@@ -165,8 +165,64 @@ class TestTorchVariable(TestCase):
         assert model.data.id == original_data_id
         assert model.grad.data.id == original_grad_id        
 
-    # def test_send_var_with_gradient(self):
+    def test_send_var_with_gradient(self):
 
-    #     # previously, there was a bug involving sending variables with graidents
-    #     # to remote tensors. This bug was documented in Issue 1350
-    #     # https://github.com/OpenMined/PySyft/issues/1350
+        # previously, there was a bug involving sending variables with graidents
+        # to remote tensors. This bug was documented in Issue 1350
+        # https://github.com/OpenMined/PySyft/issues/1350
+
+
+        # this is our hook
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        local.verbose = False
+
+        remote = VirtualWorker(id=1, hook=hook, verbose=False)
+        local.add_worker(remote)
+
+        data = Var(torch.FloatTensor([[0,0],[0,1],[1,0],[1,1]]))
+        target = Var(torch.FloatTensor([[0],[0],[1],[1]]))
+
+        model = Var(torch.zeros(2,1), requires_grad=True)
+
+        # generates grad objects on model
+        pred = data.mm(model)
+        loss = ((pred - target)**2).sum()
+        loss.backward()
+
+        # ensure that model and all (grand)children are owned by the local worker
+        assert model.owners[0] == local.id
+        assert model.data.owners[0] == local.id
+
+        # if you get a failure here saying that model.grad.owners does not exist
+        # check in hooks.py - _hook_new_grad(). self.grad_backup has probably either
+        # been deleted or is being run at the wrong time (see comments there)
+        assert model.grad.owners[0] == local.id
+        assert model.grad.data.owners[0] == local.id
+
+        # ensure that objects are not yet pointers (haven't sent it yet)
+        assert not model.is_pointer
+        assert not model.data.is_pointer
+        assert not model.grad.is_pointer
+        assert not model.grad.data.is_pointer
+
+        model.send_(remote)
+
+        # ensures that object ids do not change during the sending process
+        assert model.owners[0].id == remote.id
+        assert model.data.owners[0].id == remote.id
+        assert model.grad.owners[0].id == remote.id
+        assert model.grad.data.owners[0].id == remote.id
+
+        # ensures that all local objects are now pointers
+        assert model.is_pointer
+        assert model.data.is_pointer
+        assert model.grad.is_pointer
+        assert model.grad.data.is_pointer
+
+        # makes sure that tensors actually get sent to remote worker
+        assert model.id in remote._objects
+        assert model.data.id in remote._objects
+        assert model.grad.id in remote._objects
+        assert model.grad.data.id in remote._objects
+
