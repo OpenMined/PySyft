@@ -130,6 +130,41 @@ class TestTorchVariable(TestCase):
 
         assert True
 
+    def test_var_gradient_keeps_id_during_send_(self):
+        # PyTorch has a tendency to delete var.grad python objects
+        # and re-initialize them (resulting in new/random ids)
+        # we have fixed this bug and recorded how it was fixed
+        # as well as the creation of this unit test in the following
+        # video (1:50:00 - 2:00:00) ish
+        # https://www.twitch.tv/videos/275838386
+
+        # this is our hook
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        local.verbose = False
+
+        remote = VirtualWorker(id=1, hook=hook, verbose=False)
+        local.add_worker(remote)
+
+        data = Var(torch.FloatTensor([[0,0],[0,1],[1,0],[1,1]]))
+        target = Var(torch.FloatTensor([[0],[0],[1],[1]]))
+
+        model = Var(torch.zeros(2,1), requires_grad=True)
+
+        # generates grad objects on model
+        pred = data.mm(model)
+        loss = ((pred - target)**2).sum()
+        loss.backward()
+
+        # the grad's true id
+        original_data_id = model.data.id + 0
+        original_grad_id = model.grad.data.id + 0
+
+        model.send_(remote)
+
+        assert model.data.id == original_data_id
+        assert model.grad.data.id == original_grad_id        
+
     # def test_send_var_with_gradient(self):
 
     #     # previously, there was a bug involving sending variables with graidents
