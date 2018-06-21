@@ -700,7 +700,7 @@ class TorchHook(BaseHook):
 
             hook_self.local_worker.register_object(
                 hook_self.local_worker, x, id=x.id)
-            
+
             # if self == tensor
             _id = hook_self.local_worker.id  # for brevity
             if(type(self) != torch.autograd.variable.Variable and
@@ -1095,22 +1095,23 @@ class TorchHook(BaseHook):
                 o.backward()
                 p.grad -= p.grad
 
-        def module_send_(self,dest):
+        def module_send_(self, dest):
             if(module_is_missing_grad(self)):
                 create_grad_objects(self)
 
             for p in self.parameters():
                 p.send_(dest)
-                
+
         torch.nn.Module.send_ = module_send_
         torch.nn.Module.send = module_send_
 
         def module_get_(self):
             for p in self.parameters():
                 p.get_()
-                
+
         torch.nn.Module.get_ = module_get_
         torch.nn.Module.get = module_get_
+
 
 class TensorflowHook(BaseHook):
     r""" TODO: Hook Tensorflow"""

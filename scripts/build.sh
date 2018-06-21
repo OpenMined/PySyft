@@ -17,7 +17,7 @@ make html
 cd ../
 
 # Runs Unit Tests
-# python setup.py test
+python setup.py test
 
 # uncomment if you want to open the documentation in a webpage
 # open ./docs/_build/html/index.html
