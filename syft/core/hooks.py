@@ -169,6 +169,7 @@ class TorchHook(BaseHook):
             for t_type in self.tensor_types:
                 self._hook_tensor(t_type)
             self._hook_variable()
+            self._hook_module()
             torch.hooked = True
             if(verbose):
                 print('Overloading complete.')
@@ -705,26 +706,30 @@ class TorchHook(BaseHook):
             if(type(self) != torch.autograd.variable.Variable and
                type(self) != torch.nn.parameter.Parameter):
                 _os = self.old_set_(x.type(self.type()))
+
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                               _os,
                                                               id=self.id, owners=[_id])
 
             else:
-
                 _os = self.old_set_(x.type(self.data.type()))  # for brevity
+
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                               _os,
                                                               id=self.id, owners=[_id])
-
-                self.data = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                   x.data,
-                                                                   id=x.data.id,
-                                                                   owners=[_id])
+                self.data = x.data
                 if(x.grad is not None):
-                    self.grad = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                       x.grad,
-                                                                       id=x.grad.id,
-                                                                       owners=[_id])
+                    self.grad = x.grad
+
+                # self.data = hook_self.local_worker.register_object(hook_self.local_worker,
+                #                                                    x.data,
+                #                                                    id=x.data.id,
+                #                                                    owners=[_id])
+                # if(x.grad is not None):
+                #     self.grad = hook_self.local_worker.register_object(hook_self.local_worker,
+                #                                                        x.grad,
+                #                                                        id=x.grad.id,
+                #                                                        owners=[_id])
 
             """for some reason, when retuning obj from request_obj
             method (above), the gradient gets re-initialized without
@@ -924,6 +929,9 @@ class TorchHook(BaseHook):
                     self.grad_backup = self.old_grad
                     self.grad_backup.owners_backup = self.grad_backup.owners
 
+                    self.grad.parent = self
+                    self.grad_backup.parent = self
+
             return self.old_grad
 
         @new_grad.setter
@@ -964,6 +972,7 @@ class TorchHook(BaseHook):
             return hook_self._var_to_pointer(self, hook_self)
 
         setattr(torch.autograd.variable.Variable, 'send_', send_)
+        setattr(torch.autograd.variable.Variable, 'send', send_)
 
     def _hook_var_ser(hook_self):
         def ser(self, include_data=True):
@@ -1069,6 +1078,39 @@ class TorchHook(BaseHook):
                          requires_grad=obj_msg['requires_grad'])
         var.grad = grad
         return var
+
+    def _hook_module(self):
+
+        def module_is_missing_grad(model):
+            missing_grad = False
+            for p in model.parameters():
+                if p.grad is None:
+                    missing_grad = True
+            return missing_grad
+
+        def create_grad_objects(model):
+
+            for p in model.parameters():
+                o = p.sum()
+                o.backward()
+                p.grad -= p.grad
+
+        def module_send_(self, dest):
+            if(module_is_missing_grad(self)):
+                create_grad_objects(self)
+
+            for p in self.parameters():
+                p.send_(dest)
+
+        torch.nn.Module.send_ = module_send_
+        torch.nn.Module.send = module_send_
+
+        def module_get_(self):
+            for p in self.parameters():
+                p.get_()
+
+        torch.nn.Module.get_ = module_get_
+        torch.nn.Module.get = module_get_
 
 
 class TensorflowHook(BaseHook):
