@@ -700,9 +700,6 @@ class TorchHook(BaseHook):
             hook_self.local_worker.register_object(
                 hook_self.local_worker, x, id=x.id)
             
-            # x.grad.id seems to be here!
-            # import pdb; pdb.set_trace()
-
             # if self == tensor
             _id = hook_self.local_worker.id  # for brevity
             if(type(self) != torch.autograd.variable.Variable and
