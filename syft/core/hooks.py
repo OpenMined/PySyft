@@ -712,7 +712,7 @@ class TorchHook(BaseHook):
 
             else:
                 _os = self.old_set_(x.type(self.data.type()))  # for brevity
-                # import pdb; pdb.set_trace()
+
                 self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                               _os,
                                                               id=self.id, owners=[_id])
