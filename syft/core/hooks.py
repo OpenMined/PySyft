@@ -169,6 +169,7 @@ class TorchHook(BaseHook):
             for t_type in self.tensor_types:
                 self._hook_tensor(t_type)
             self._hook_variable()
+            self._hook_module()
             torch.hooked = True
             if(verbose):
                 print('Overloading complete.')
@@ -1078,6 +1079,38 @@ class TorchHook(BaseHook):
         var.grad = grad
         return var
 
+    def _hook_module(self):
+
+        def module_is_missing_grad(model):
+            missing_grad = False
+            for p in model.parameters():
+                if p.grad is None:
+                    missing_grad = True
+            return missing_grad
+
+        def create_grad_objects(model):
+
+            for p in model.parameters():
+                o = p.sum()
+                o.backward()
+                p.grad -= p.grad
+
+        def module_send_(self,dest):
+            if(module_is_missing_grad(self)):
+                create_grad_objects(self)
+
+            for p in self.parameters():
+                p.send_(dest)
+                
+        torch.nn.Module.send_ = module_send_
+        torch.nn.Module.send = module_send_
+
+        def module_get_(self):
+            for p in self.parameters():
+                p.get_()
+                
+        torch.nn.Module.get_ = module_get_
+        torch.nn.Module.get = module_get_
 
 class TensorflowHook(BaseHook):
     r""" TODO: Hook Tensorflow"""
