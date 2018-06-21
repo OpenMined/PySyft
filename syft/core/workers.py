@@ -150,9 +150,11 @@ class BaseWorker(object):
 
     def compile_composite_message(self):
         """
-        Returns a composite message in a dictionary from the message queue. Evenatually will take a recipient id.
+        Returns a composite message in a dictionary from the message queue.
+        Evenatually will take a recipient id.
 
-        * **out (dict)** dictionary containing the message queue compiled as a composite message
+        * **out (dict)** dictionary containing the message queue compiled
+        as a composite message
         """
 
         message_wrapper = {}
@@ -198,14 +200,17 @@ class BaseWorker(object):
 
     def process_message_type(self, message_wrapper):
         """
-        This method takes a message wrapper and attempts to process it agaist known processing methods.
-        If the method is a composite message, it unroles applies recursively
-        
-        * **message_wrapper (dict)** Dictionary containing the message and meta information
+        This method takes a message wrapper and attempts to process
+        it agaist known processing methods. If the method is a composite
+        message, it unroles applies recursively
+
+        * **message_wrapper (dict)** Dictionary containing the message
+          and meta information
 
         * **out (object)** the response. This can be a variety
-          of object types. However, the object is typically only used during testing or
-          local development with :class:`VirtualWorker` workers.
+          of object types. However, the object is typically only
+          used during testing or local development with
+          :class:`VirtualWorker` workers.
         """
         message = message_wrapper['message']
 
@@ -224,9 +229,20 @@ class BaseWorker(object):
             return json.dumps(self.handle_command(message)) + "\n"
         # A composite command. Must be unrolled
         elif(message_wrapper['type'] == 'composite'):
-            return [self.process_message_type(message[message_number]) for message_number in message]
+            return [self.process_message_type(message[message_number])
+                    for message_number in message]
 
         return "Unrecognized message type:" + message_wrapper['type']
+
+    def __str__(self):
+        out = "<"
+        out += str(type(self)).split("'")[1]
+        out += " id:" + str(self.id)
+        out += ">"
+        return out
+
+    def __repr__(self):
+        return self.__str__()
 
     def add_worker(self, worker):
         """add_worker(worker) -> None
@@ -595,10 +611,37 @@ class BaseWorker(object):
         # mal_points_here = not obj.is_pointer and self.local_worker.id not in obj.owners
         if mal_points_away or mal_points_here:
             raise RuntimeError(
-                'Invalid registry: is_pointer is {} but owners is {}'.format(
-                    obj.is_pointer, obj.owners))
+                'Invalid registry: is_pointer is {} but owners is {} on tensor {}'.format(
+                    obj.is_pointer, obj.owners, obj.id))
         # print("setting object:" + str(obj.id))
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
+
+        # Perform recursive operations.
+        # If there is a child tensor (self.data)
+        if(hasattr(obj, 'grad')):
+            if(obj.grad is not None):
+                self.register_object(worker=worker,
+                                     obj=obj.grad,
+                                     force_attach_to_worker=force_attach_to_worker,
+                                     temporary=temporary,
+                                     id=obj.grad.id,
+                                     owners=obj.owners,
+                                     is_pointer=obj.is_pointer)
+        try:
+            _ = obj.data
+            _ = str(_)  # just a style issue
+            if(obj.data is not None):
+                self.register_object(worker=worker,
+                                     obj=obj.data,
+                                     force_attach_to_worker=force_attach_to_worker,
+                                     temporary=temporary,
+                                     id=obj.data.id,
+                                     owners=obj.owners,
+                                     is_pointer=obj.is_pointer)
+
+        except RuntimeError:
+            ""
+
         return obj
 
     def process_command(self, command_msg):
