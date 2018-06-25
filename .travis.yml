@@ -23,7 +23,7 @@ install:
     # Useful for debugging any issues with conda
     - conda info -a
 
-    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytorch=0.3.1 scipy -c pytorch
+    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytorch=0.3.1 scipy jupyter -c pytorch
     - source activate test-environment
 
     - pip install -r requirements.txt
@@ -42,6 +42,8 @@ before_script:
     - flake8 . --count --exit-zero --max-complexity=11 --max-line-length=100 --statistics
 script:
     - python setup.py test
+    - bash scripts/execute_notebooks.sh
+    - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
 notifications:
     on_success: change
     # `always` will be the setting below once code changes slow down

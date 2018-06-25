@@ -1,0 +1,11 @@
+name: pysyft
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.6
+  - pytorch=0.3.1
+  - scipy
+  - pip:
+    - git+https://github.com/OpenMined/PySyft
+    - sphinx_rtd_theme
