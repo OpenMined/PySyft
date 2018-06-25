@@ -1,6 +1,13 @@
 syft\.core package
 ==================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    syft.core.workers
+
 Submodules
 ----------
 
@@ -16,14 +23,6 @@ syft\.core\.utils module
 ------------------------
 
 .. automodule:: syft.core.utils
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-syft\.core\.workers module
---------------------------
-
-.. automodule:: syft.core.workers
     :members:
     :undoc-members:
     :show-inheritance:
