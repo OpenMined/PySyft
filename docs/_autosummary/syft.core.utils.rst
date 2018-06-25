@@ -11,6 +11,8 @@ syft\.core\.utils
    
       map_dict
       map_tuple
+      pass_func_args
+      pass_method_args
    
    
 
