@@ -1,8 +1,8 @@
 from unittest import TestCase
 from syft.core.hooks import TorchHook
-from syft.core.hooks import torch
 from syft.core.workers import VirtualWorker
 
+import torch
 from torch.autograd import Variable as Var
 import torch.optim as optim
 import torch.nn as nn
@@ -256,7 +256,7 @@ class TestTorchVariable(TestCase):
 
         datasets = [(data_bob, target_bob), (data_alice, target_alice)]
 
-        for iter in range(2):
+        for iter in range(3):
 
             for data, target in datasets:
                 model.send(data.owners[0])

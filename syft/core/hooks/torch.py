@@ -1,5 +1,3 @@
-"""Hooks which override deep learning interfaces with remote execution functionality."""
-
 import torch
 import inspect
 import re
@@ -7,21 +5,9 @@ import json
 import types
 import functools
 import importlib
-from . import workers
-from . import utils
-
-
-class BaseHook(object):
-    r""" A abstract interface for deep learning framework hooks."""
-
-    def __init__(self):
-        ""
-
-    def __enter__(self):
-        ""
-
-    def __exit__(self):
-        ""
+from .. import workers
+from .. import utils
+from .base import BaseHook
 
 
 class TorchHook(BaseHook):
@@ -280,7 +266,7 @@ class TorchHook(BaseHook):
     # ######## END PUBLIC METHODS #########
 
     # ######## BEGIN GENERIC method/function hooking logic #########
-    def _overload_method_in_tensor_or_var(hook_self, method, isfunc=False):
+    def _get_overload_method_in_tensor_or_var(hook_self, method, isfunc=False):
         """
         Wrapper overloading partialmethod objects of Torch object
         methods.  Compiles command, checks for Tensors and Variables in
@@ -289,24 +275,72 @@ class TorchHook(BaseHook):
         accordingly.
         """
         @functools.wraps(method)
-        def send_to_workers(self, *args, **kwargs):
+        def method_router(self, *args, **kwargs):
             """
-            This method is responsible for sending a command executed
-            \on a client to a worker to be performed.
+            This is a routing function. If self is a local
+            tensor (data stored locally), then it executes
+            the call locally. If self is a remote tensor, it
+            executes a call to a remote worker.
             """
-            part = method(self, *args, **kwargs)
-            if self.is_pointer:
-                return hook_self._overload_method_or_function_on_tensor_or_var(part,
-                                                                               has_self=True)[0]
-            else:
-                result = part.func(self, *args, **kwargs)
-                if (type(result) in hook_self.tensorvar_types and (not hasattr(result, 'owner'))):
-                    result = hook_self.local_worker.register_object(hook_self.local_worker, result,
-                                                                    is_pointer=False)
-                return result
-        return send_to_workers
+            _method = method(self, *args, **kwargs)
 
-    def _overload_method_or_function_on_tensor_or_var(hook_self, part, has_self=True):
+            if self.is_pointer:
+
+                return hook_self._execute_remote_call(_method,
+                                                      has_self=True)[0]
+            else:
+
+                return hook_self._execute_local_call(self, _method, args, kwargs)
+
+        return method_router
+
+    def _get_overload_function_in_torch_module(hook_self, func):
+        """
+        Wrapper overloading partial objects of functions in the torch
+        module.  Compiles command, checks for Tensors and Variables in
+        the args/kwargs, determines locations of all Tensors and
+        Variables involved in computation, and handles the computation
+        accordingly.
+        """
+        @functools.wraps(func)
+        def function_router(*args, **kwargs):
+            """
+            This is a routing function. If self is a local
+            tensor (data stored locally), then it executes
+            the call locally. If self is a remote tensor, it
+            executes a call to a remote worker.
+            """
+            part = func(*args, **kwargs)
+
+            _res = hook_self._execute_remote_call(
+                part, has_self=False)
+            pointer, has_remote, multiple_owners = _res
+
+            if not (has_remote and not multiple_owners):
+                result = hook_self._execute_local_call(None,
+                                                       part,
+                                                       args,
+                                                       kwargs,
+                                                       function_not_method=True)
+                return result
+
+        return function_router
+
+    def _execute_local_call(hook_self, self, _method, args, kwargs, function_not_method=False):
+        """This executes a method locally"""
+
+        if(function_not_method):
+            result = _method.func(*args, **kwargs)
+        else:
+            result = _method.func(self, *args, **kwargs)
+
+        # if the result hasn't been registered, register it
+        if (type(result) in hook_self.tensorvar_types and (not hasattr(result, 'owner'))):
+            result = hook_self.local_worker.register_object(hook_self.local_worker, result,
+                                                            is_pointer=False)
+        return result
+
+    def _execute_remote_call(hook_self, _method, has_self=True):
         """
         This function is responsible for overloading all
         TENSOR and VARIABLE methods. Note that this is the
@@ -315,7 +349,7 @@ class TorchHook(BaseHook):
         """
 
         # Step 1: Compiles Command
-        command = hook_self._compile_command(part, has_self=has_self)
+        command = hook_self._compile_command(_method, has_self=has_self)
 
         # Step 2: checks for Tensors and Variables in the args/kwargs
         tensorvars = hook_self._get_tensorvars(command)
@@ -355,6 +389,8 @@ class TorchHook(BaseHook):
             raise NotImplementedError("""MPC not yet implemented:
                 Torch objects need to be on the same machine in
                 order to compute with them.""")
+        # else:
+        #     raise NotImplementedError("""SOMETHING WENT WRONG: This should be a local call""")
 
         return (None, has_remote, multiple_owners)
 
@@ -510,34 +546,9 @@ class TorchHook(BaseHook):
             if (type(lit) in [types.FunctionType, types.BuiltinFunctionType]):
 
                 passer = utils.pass_func_args(lit)
-                new_attr = self._overload_function_in_torch_module(passer)
+                new_attr = self._get_overload_function_in_torch_module(passer)
                 setattr(torch, 'old_{}'.format(attr), lit)
                 setattr(torch, attr, new_attr)
-
-    def _overload_function_in_torch_module(hook_self, func):
-        """
-        Wrapper overloading partial objects of functions in the torch
-        module.  Compiles command, checks for Tensors and Variables in
-        the args/kwargs, determines locations of all Tensors and
-        Variables involved in computation, and handles the computation
-        accordingly.
-        """
-        @functools.wraps(func)
-        def send_to_workers(*args, **kwargs):
-            part = func(*args, **kwargs)
-
-            _res = hook_self._overload_method_or_function_on_tensor_or_var(
-                part, has_self=False)
-            pointer, has_remote, multiple_owners = _res
-
-            if not (has_remote and not multiple_owners):
-                result = part.func(*args, **kwargs)
-                if type(result) in hook_self.tensorvar_types:
-                    result = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                    result, is_pointer=False)
-                return result
-
-        return send_to_workers
 
     # ######## END torch module FUNCTION hooking #########
     # ######## BEGIN torch TENSOR hooking #########
@@ -569,7 +580,7 @@ class TorchHook(BaseHook):
                 # Where the overloading happens
                 if ((is_desc or (is_func and not is_service_func)) and not is_base and not is_old):
                     passer = utils.pass_method_args(lit)
-                    new_attr = self._overload_method_in_tensor_or_var(passer)
+                    new_attr = self._get_overload_method_in_tensor_or_var(passer)
                     setattr(tensor_type, 'old_{}'.format(attr), lit)
                     setattr(tensor_type, attr, new_attr)
 
@@ -784,7 +795,7 @@ class TorchHook(BaseHook):
             # Where the overloading happens
             if ((is_desc or (is_func and not is_service_func)) and not is_base and not is_old):
                 passer = utils.pass_method_args(lit)
-                new_attr = self._overload_method_in_tensor_or_var(passer)
+                new_attr = self._get_overload_method_in_tensor_or_var(passer)
                 setattr(torch.autograd.variable.Variable,
                         'old_{}'.format(attr), lit)
                 setattr(torch.autograd.variable.Variable, attr, new_attr)
@@ -1109,11 +1120,3 @@ class TorchHook(BaseHook):
 
     def __exit__(self):
         importlib.reload(torch)
-
-
-class TensorflowHook(BaseHook):
-    r""" TODO: Hook Tensorflow"""
-
-
-class KerasHook(BaseHook):
-    r""" TODO: Hook Keras"""
