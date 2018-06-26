@@ -4,7 +4,6 @@ import torch
 from syft.core.hooks import TorchHook
 
 
-
 class TestTorchHook(TestCase):
 
     def test_types_guard(self):

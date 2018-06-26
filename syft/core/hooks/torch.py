@@ -275,7 +275,7 @@ class TorchHook(BaseHook):
         accordingly.
         """
         @functools.wraps(method)
-        def router_method(self, *args, **kwargs):
+        def method_router(self, *args, **kwargs):
             """
             This is a routing function. If self is a local
             tensor (data stored locally), then it executes
@@ -292,7 +292,39 @@ class TorchHook(BaseHook):
 
                 return hook_self._execute_local_call(self, _method, args, kwargs)
 
-        return router_method
+        return method_router
+
+    def _get_overload_function_in_torch_module(hook_self, func):
+        """
+        Wrapper overloading partial objects of functions in the torch
+        module.  Compiles command, checks for Tensors and Variables in
+        the args/kwargs, determines locations of all Tensors and
+        Variables involved in computation, and handles the computation
+        accordingly.
+        """
+        @functools.wraps(func)
+        def function_router(*args, **kwargs):
+            """
+            This is a routing function. If self is a local
+            tensor (data stored locally), then it executes
+            the call locally. If self is a remote tensor, it
+            executes a call to a remote worker.
+            """
+            part = func(*args, **kwargs)
+
+            _res = hook_self._execute_remote_call(
+                part, has_self=False)
+            pointer, has_remote, multiple_owners = _res
+
+            if not (has_remote and not multiple_owners):
+                result = hook_self._execute_local_call(None,
+                                                       part,
+                                                       args,
+                                                       kwargs,
+                                                       function_not_method=True)
+                return result
+
+        return function_router
 
     def _execute_local_call(hook_self, self, _method, args, kwargs, function_not_method=False):
         """This executes a method locally"""
@@ -357,6 +389,8 @@ class TorchHook(BaseHook):
             raise NotImplementedError("""MPC not yet implemented:
                 Torch objects need to be on the same machine in
                 order to compute with them.""")
+        # else:
+        #     raise NotImplementedError("""SOMETHING WENT WRONG: This should be a local call""")
 
         return (None, has_remote, multiple_owners)
 
@@ -512,41 +546,9 @@ class TorchHook(BaseHook):
             if (type(lit) in [types.FunctionType, types.BuiltinFunctionType]):
 
                 passer = utils.pass_func_args(lit)
-                new_attr = self._overload_function_in_torch_module(passer)
+                new_attr = self._get_overload_function_in_torch_module(passer)
                 setattr(torch, 'old_{}'.format(attr), lit)
                 setattr(torch, attr, new_attr)
-
-    def _overload_function_in_torch_module(hook_self, func):
-        """
-        Wrapper overloading partial objects of functions in the torch
-        module.  Compiles command, checks for Tensors and Variables in
-        the args/kwargs, determines locations of all Tensors and
-        Variables involved in computation, and handles the computation
-        accordingly.
-        """
-        @functools.wraps(func)
-        def router_method(*args, **kwargs):
-            """
-            This is a routing function. If self is a local
-            tensor (data stored locally), then it executes
-            the call locally. If self is a remote tensor, it
-            executes a call to a remote worker.
-            """
-            part = func(*args, **kwargs)
-
-            _res = hook_self._execute_remote_call(
-                part, has_self=False)
-            pointer, has_remote, multiple_owners = _res
-
-            if not (has_remote and not multiple_owners):
-                result = hook_self._execute_local_call(None,
-                                                       part,
-                                                       args,
-                                                       kwargs,
-                                                       function_not_method=True)
-                return result
-
-        return router_method
 
     # ######## END torch module FUNCTION hooking #########
     # ######## BEGIN torch TENSOR hooking #########

@@ -256,7 +256,7 @@ class TestTorchVariable(TestCase):
 
         datasets = [(data_bob, target_bob), (data_alice, target_alice)]
 
-        for iter in range(2):
+        for iter in range(3):
 
             for data, target in datasets:
                 model.send(data.owners[0])
