@@ -3,8 +3,8 @@
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master)
 [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=master)](https://travis-ci.org/OpenMined/PySyft)
 
-A Library for Private, Secure Deep Learning - [Documentation](https://openmined.github.io/PySyft/) - [Tutorial](https://colab.research.google.com/drive/1vsgH0ydHyel5VRAxO2yhRQfXYUuIYkp5) - [Tutorial on Binder](https://mybinder.org/v2/gh/OpenMined/PySyft/master?filepath=examples%2FFederated%20Learning%20Example.ipynb)
-
+PySyft is a Python library for secure, private Deep Learning. PySyft decouples private data from model training, using [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) over PyTorch and tensorflow.  
+Join the movement on [Slack](http://slack.openmined.org/).
 
 
 ## Installation
