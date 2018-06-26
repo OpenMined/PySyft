@@ -29,3 +29,6 @@ python3 setup.py install
 ```
 python3 setup.py test
 ```
+
+---
+Join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.org) and help us in our mission. We are really friendly people!
