@@ -461,18 +461,17 @@ class TorchHook(BaseHook):
         if var_data is not None:
             data = self._assemble_result_pointer(worker, **var_data)
             # data = self.local_worker.register_object(
-                # worker, data, **var_data['registration'])
+            # worker, data, **var_data['registration'])
         elif torch_type in self.var_types:
             data = torch.Tensor(0)
         else:
             data = 0
         result = torch_type(data)
         # if var_grad is not None:
-            # grad = self.assemble_result_pointer(**var_grad)
-            # self.local_worker.register_object(
-                # worker, result.grad, **var_grad['registration'])
+        # grad = self.assemble_result_pointer(**var_grad)
+        # self.local_worker.register_object(
+        # worker, result.grad, **var_grad['registration'])
         return self.local_worker.register_object(self.local_worker, result, **registration)
-
 
     # ######## END GENERIC method/function hooking logic #########
     # ######## BEGIN torch module FUNCTION hooking #########
@@ -586,7 +585,7 @@ class TorchHook(BaseHook):
             super(tensor_type, self).__init__()
 
             # self = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                          # self, is_pointer=False)
+            # self, is_pointer=False)
 
         tensor_type.__init__ = new___init__
 
@@ -640,7 +639,7 @@ class TorchHook(BaseHook):
             # makes singleton, if needed
             workers = hook_self.local_worker._check_workers(self, workers)
             # self = hook_self.local_worker.register_object(hook_self.local_worker, obj=self,
-                                                          # id=self.id, owners=workers)
+            # id=self.id, owners=workers)
             for worker in workers:
                 # TODO: sync or async? likely won't be worth doing async,
                 #       but should check (low priority)
@@ -877,10 +876,10 @@ class TorchHook(BaseHook):
 
                 if self.old_grad is not None:
 
-                    if(hasattr(self.old_grad, 'id')):
-                        grad_id = self.old_grad.id
-                    else:
-                        grad_id = None
+                    # if(hasattr(self.old_grad, 'id')):
+                    #     grad_id = self.old_grad.id
+                    # else:
+                    #     grad_id = None
 
                     # this seems a little sketch - why are we having to check to see whether
                     # the parent has been registered. Is there and edge case where gradients
@@ -892,7 +891,7 @@ class TorchHook(BaseHook):
                         #                                            hook_self.local_worker.id],
                         #                                        is_pointer=False)
 
-                    _ip = self.is_pointer
+                    # _ip = self.is_pointer
                     # self.old_grad = hook_self.local_worker.register_object(hook_self.local_worker,
                     #                                                        obj=self.old_grad,
                     #                                                        owners=self.owners,
