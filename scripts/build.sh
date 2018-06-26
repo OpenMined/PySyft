@@ -3,18 +3,18 @@ rm -rf build
 python setup.py clean install
 
 # Code Style Checking
-flake8 . --count --exit-zero --max-complexity=11 --max-line-length=100 --statistics
+# flake8 . --count --exit-zero --max-complexity=11 --max-line-length=100 --statistics
 
 # Deletes Documentation
-cd docs
-rm -rf ./_modules
-rm -rf ./_autosummary
+# cd docs
+# rm -rf ./_modules
+# rm -rf ./_autosummary
 
 # Automatically Generates Documentation
-sphinx-apidoc -o ./_modules ../syft
-rm -rf _build
-make html
-cd ../
+# sphinx-apidoc -o ./_modules ../syft
+# rm -rf _build
+# make html
+# cd ../
 
 # Runs Unit Tests
 python setup.py test
