@@ -13,9 +13,13 @@ Join the movement on [Slack](http://slack.openmined.org/).
 - [Federated Learning](https://colab.research.google.com/drive/1F3ALlA3ogfeeVXuwQwVoX4PimzTDJhPy#scrollTo=PTCvX6H9JDCt) - This notebook demonstrates the model training over distributed data (data belonging to multiple owners).
 
 ## Installation
+> PySyft supports Python >= 3.6 and PyTorch 0.3.1
 
-```
-pip install -r requirements.txt
+Pick the proper PyTorch version according to your machine: [CPU](http://download.pytorch.org/whl/cpu/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [CUDA9.1](http://download.pytorch.org/whl/cu91/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [CUDA9.0](http://download.pytorch.org/whl/cu90/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [CUDA8.0](http://download.pytorch.org/whl/cu80/torch-0.3.1-cp36-cp36m-linux_x86_64.whl)
+```bash
+pip3 install <pytorch-version> torchvision
+
+pip3 install -r requirements.txt
 
 python3 setup.py install
 ```
