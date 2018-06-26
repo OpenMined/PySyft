@@ -1,8 +1,8 @@
 from unittest import TestCase
 from syft.core.hooks import TorchHook
-from syft.core.hooks import torch
 from syft.core.workers import VirtualWorker
 
+import torch
 from torch.autograd import Variable as Var
 import torch.optim as optim
 import torch.nn as nn

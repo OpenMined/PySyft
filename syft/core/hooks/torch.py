@@ -1,5 +1,3 @@
-"""Hooks which override deep learning interfaces with remote execution functionality."""
-
 import torch
 import inspect
 import re
@@ -7,21 +5,9 @@ import json
 import types
 import functools
 import importlib
-from . import workers
-from . import utils
-
-
-class BaseHook(object):
-    r""" A abstract interface for deep learning framework hooks."""
-
-    def __init__(self):
-        ""
-
-    def __enter__(self):
-        ""
-
-    def __exit__(self):
-        ""
+from .. import workers
+from .. import utils
+from .base import BaseHook
 
 
 class TorchHook(BaseHook):
@@ -1109,11 +1095,3 @@ class TorchHook(BaseHook):
 
     def __exit__(self):
         importlib.reload(torch)
-
-
-class TensorflowHook(BaseHook):
-    r""" TODO: Hook Tensorflow"""
-
-
-class KerasHook(BaseHook):
-    r""" TODO: Hook Keras"""

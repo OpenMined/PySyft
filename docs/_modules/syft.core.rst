@@ -6,18 +6,11 @@ Subpackages
 
 .. toctree::
 
+    syft.core.hooks
     syft.core.workers
 
 Submodules
 ----------
-
-syft\.core\.hooks module
-------------------------
-
-.. automodule:: syft.core.hooks
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 syft\.core\.utils module
 ------------------------

@@ -1,6 +1,8 @@
 from unittest import TestCase
+import torch
+
 from syft.core.hooks import TorchHook
-from syft.core.hooks import torch
+
 
 
 class TestTorchHook(TestCase):
