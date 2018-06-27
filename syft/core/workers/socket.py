@@ -102,7 +102,7 @@ class SocketWorker(BaseWorker):
             self.serversocket = None
 
             clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            clientsocket.connect(('localhost', self.port))
+            clientsocket.connect((self.hostname, self.port))
             self.clientsocket = clientsocket
 
         else:
