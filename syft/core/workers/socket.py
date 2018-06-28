@@ -139,7 +139,7 @@ class SocketWorker(BaseWorker):
                     message = self._process_buffer(connection)
 
                     # process message and generate response
-                    response = self.receive_msg(message)
+                    response = self.receive_msg(message, False)
 
                     # send response back
                     connection.send(response.encode())
