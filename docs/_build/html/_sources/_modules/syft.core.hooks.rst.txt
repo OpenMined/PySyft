@@ -1,6 +1,13 @@
 syft\.core\.hooks package
 =========================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    syft.core.hooks.torch
+
 Submodules
 ----------
 
@@ -24,14 +31,6 @@ syft\.core\.hooks\.tensorflow module
 ------------------------------------
 
 .. automodule:: syft.core.hooks.tensorflow
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-syft\.core\.hooks\.torch module
--------------------------------
-
-.. automodule:: syft.core.hooks.torch
     :members:
     :undoc-members:
     :show-inheritance:

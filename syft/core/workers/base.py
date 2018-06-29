@@ -445,7 +445,7 @@ class BaseWorker(object):
         >>> message_obj = json.loads(' {"torch_type": "torch.FloatTensor", \
 "data": [1.0, 2.0, 3.0, 4.0, 5.0], "id": 9756847736, "owners": \
 [1], "is_pointer": false}')
-        >>> obj_type = hook.types_guard(message_obj['torch_type'])
+        >>> obj_type = hook.guard.types_guard(message_obj['torch_type'])
         >>> unregistered_tensor = torch.FloatTensor.deser(obj_type,message_obj)
         >>> unregistered_tensor
          1
@@ -850,7 +850,7 @@ class BaseWorker(object):
         """
 
         message_obj = json.loads(message)
-        obj_type = self.hook.types_guard(message_obj['torch_type'])
+        obj_type = self.hook.guard.types_guard(message_obj['torch_type'])
         obj = obj_type.deser(obj_type, message_obj)
 
         self.handle_register(obj, message_obj, force_attach_to_worker=True)
