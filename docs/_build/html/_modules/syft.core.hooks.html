@@ -268,60 +268,6 @@ as they occur. (Defalt: True)</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
-<dl class="staticmethod">
-<dt id="syft.core.hooks.TorchHook.get_owners">
-<em class="property">static </em><code class="descname">get_owners</code><span class="sig-paren">(</span><em>tensorvars) -&gt; (bool</em>, <em>list(BaseWorker)</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.TorchHook.get_owners" title="Permalink to this definition">¶</a></dt>
-<dd><p>A static utility method which returns owners given a list of tensors.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<ul class="simple">
-<li><strong>tensorvars (list)</strong> A list of <code class="xref py py-class docutils literal"><span class="pre">torch.Tensor</span></code>
-or <code class="xref py py-class docutils literal"><span class="pre">torch.autograd.Variable</span></code> objects which
-you want to know the owners of. Can pass in an empty
-list without breaking (but will also return an empty list
-of owners)</li>
-<li><strong>out (bool, list(BaseWorker))</strong> a tuple where the
-first value is a boolean indicating whether there are multiple
-owners. The second object is a list of owners, where
-each item in the list can be either an id of the owner or
-a <a class="reference internal" href="syft.core.workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> pointer.</li>
-</ul>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">torch</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">VirtualWorker</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">torch.autograd</span> <span class="k">import</span> <span class="n">Variable</span> <span class="k">as</span> <span class="n">Var</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
-<span class="go">Hooking into Torch...</span>
-<span class="go">Overloading Complete.</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">local</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">remote</span> <span class="o">=</span> <span class="n">VirtualWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">local</span><span class="o">.</span><span class="n">add_worker</span><span class="p">(</span><span class="n">remote</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">])</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">z</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">is_multiple_owners</span><span class="p">,</span> <span class="n">owners</span><span class="p">)</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">get_owners</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">is_multiple_owners</span><span class="p">)</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">owners</span><span class="p">)</span>
-<span class="go">[0, &lt;syft.core.workers.VirtualWorker at 0x1109ef550&gt;]</span>
-</pre></div>
-</div>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="class">

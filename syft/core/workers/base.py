@@ -682,7 +682,8 @@ class BaseWorker(object):
         # the result properly later on
         tensorvars = [x for x in combined if type(
             x).__name__ in self.hook.tensorvar_types_strs]
-        _, owners = self.hook.get_owners(tensorvars)
+        owners = list(
+            set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
 
         owner_ids = list()
         for owner in owners:
