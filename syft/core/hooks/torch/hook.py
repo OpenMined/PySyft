@@ -156,6 +156,7 @@ class TorchHook(BaseHook):
         Variables involved in computation, and handles the computation
         accordingly.
         """
+
         @functools.wraps(method)
         def method_router(self, *args, **kwargs):
             """
@@ -164,6 +165,7 @@ class TorchHook(BaseHook):
             the call locally. If self is a remote tensor, it
             executes a call to a remote worker.
             """
+
             _method = method(self, *args, **kwargs)
 
             if self.is_pointer:
