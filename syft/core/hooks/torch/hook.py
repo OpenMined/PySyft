@@ -157,9 +157,7 @@ class TorchHook(BaseHook):
         accordingly.
         """
         @functools.wraps(method)
-        # def method_router(self, *args, **kwargs):
         def method_router(self, *args, **kwargs):
-
             """
             This is a routing function. If self is a local
             tensor (data stored locally), then it executes
@@ -433,8 +431,6 @@ class TorchHook(BaseHook):
     def _hook_tensor(self, tensor_type):
         """Overloading a given tensor_type"""
         # Overload 'special' methods here
-        # self._hook_tensor___init__(tensor_type)
-        # self.hook_tensor___del__(tensor_type)
         self._hook___new__(tensor_type)
         self._hook_tensor___repr__(tensor_type)
 
@@ -464,7 +460,7 @@ class TorchHook(BaseHook):
         # Add in our own Grid-specific methods
         self._hook_send_(tensor_type)
         self._hook_get_(tensor_type)
-        self._hook_tensor__ser(tensor_type)
+        self._hook_tensor__serde(tensor_type)
 
     def _hook_tensor___del__(hook_self, tensor_type):
         def new____del__(self, *args):
@@ -472,11 +468,11 @@ class TorchHook(BaseHook):
 
         tensor_type.__del__ = new____del__
 
-    def _hook___new__(hook_self, tensor_type):
-        """Overload tensor_type.__new__"""
+    def _hook___new__(hook_self, tensorvar_type):
+        """Overloads tensor_type.__new__ or Variale.__new__"""
 
-        if('old___new__' not in dir(tensor_type)):
-            tensor_type.old___new__ = tensor_type.__new__
+        if('old___new__' not in dir(tensorvar_type)):
+            tensorvar_type.old___new__ = tensorvar_type.__new__
 
             def new___new__(cls, *args, **kwargs):
                 result = cls.old___new__(cls, *args,  **kwargs)
@@ -484,7 +480,7 @@ class TorchHook(BaseHook):
                     hook_self.local_worker, result, is_pointer=False)
                 return result
 
-            tensor_type.__new__ = new___new__
+            tensorvar_type.__new__ = new___new__
 
     def _hook_tensor___repr__(hook_self, tensor_type):
         """Overload tensor_type.__repr__"""
@@ -503,10 +499,10 @@ class TorchHook(BaseHook):
 
             tensor_type.__repr__ = new___repr__
 
-    def _hook_send_(hook_self, tensor_type):
+    def _hook_send_(hook_self, tensorvar_type):
         def send_(self, workers):
             """
-            Sends a Tensor object to a (sequence of) Grid workers.
+            Sends a Tensor or Variable object to a (sequence of) Grid workers.
 
             Args:
             workers: string (or sequence) containing IPFS address(es)
@@ -519,22 +515,22 @@ class TorchHook(BaseHook):
             for worker in workers:
                 hook_self.local_worker.send_obj(self, worker)
 
-            if(tensor_type == torch.autograd.variable.Variable):
+            if(tensorvar_type == torch.autograd.variable.Variable):
                 zeroed = self
             else:
-                zeroed = self.old_set_(tensor_type(0))
+                zeroed = self.old_set_(tensorvar_type(0))
 
             self = hook_self.local_worker.register_object(hook_self.local_worker,
                                                           obj=zeroed,
                                                           id=self.id, owners=workers,
                                                           is_pointer=True)
-            if(tensor_type == torch.autograd.variable.Variable):
+            if(tensorvar_type == torch.autograd.variable.Variable):
                 return hook_self._var_to_pointer(self, hook_self)
             else:
                 return self
 
-        setattr(tensor_type, 'send_', send_)
-        setattr(tensor_type, 'send', send_)
+        setattr(tensorvar_type, 'send_', send_)
+        setattr(tensorvar_type, 'send', send_)
 
     def _hook_get_(hook_self, torch_type):
         def get_(self, reduce=lambda x: x[0]):
@@ -618,10 +614,9 @@ class TorchHook(BaseHook):
                         'old_{}'.format(attr), lit)
                 setattr(torch.autograd.variable.Variable, attr, new_attr)
 
-        # self._hook_var_send_()
         self._hook_send_(torch.autograd.variable.Variable)
         self._hook_get_(torch.autograd.variable.Variable)
-        self._hook_var_ser()
+        self._hook_var_serde()
 
     def _hook_var_owners(hook_self):
         @property
@@ -714,7 +709,8 @@ class TorchHook(BaseHook):
 
         torch.autograd.variable.Variable.grad = new_grad
 
-    def _hook_tensor__ser(hook_self, tensor_type):
+    def _hook_tensor__serde(hook_self, tensor_type):
+        """Hooks object/json serialization and deserialization for tensor_type objects"""
 
         def ser(self, include_data=True):
             """Serializes a {} object to JSON.""".format(tensor_type)
@@ -732,6 +728,7 @@ class TorchHook(BaseHook):
             return json.dumps(tensor_msg) + "\n"
 
         def deser(self, obj_msg):
+            """Deserializes a {} object from JSON.""".format(tensor_type)
 
             # this could be a significant failure point, security-wise
             data = hook_self.guard.tensor_contents_guard(obj_msg['data'])
@@ -741,7 +738,9 @@ class TorchHook(BaseHook):
         tensor_type.ser = ser
         tensor_type.deser = deser
 
-    def _hook_var_ser(hook_self):
+    def _hook_var_serde(hook_self):
+        """Hooks object/json serialization and deserialization for Variable objects"""
+
         def ser(self, include_data=True):
             """Serializes a variable into a JSON object"""
 
