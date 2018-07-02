@@ -59,7 +59,7 @@ class TestTorchTensor(TestCase):
         message_obj = json.loads(' {"torch_type": "torch.FloatTensor", "data": [1.0, 2.0, \
                                  3.0, 4.0, 5.0], "id": 9756847736, "owners": [1], "is_poin\
                                  ter": false}')
-        obj_type = hook.types_guard(message_obj['torch_type'])
+        obj_type = hook.guard.types_guard(message_obj['torch_type'])
         unregistered_tensor = torch.FloatTensor.deser(obj_type, message_obj)
 
         assert (unregistered_tensor == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5

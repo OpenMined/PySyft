@@ -1,3 +1,7 @@
+import importlib
+import torch
+
+
 class BaseHook(object):
     r""" A abstract interface for deep learning framework hooks."""
 
@@ -5,7 +9,7 @@ class BaseHook(object):
         ""
 
     def __enter__(self):
-        ""
+        pass
 
     def __exit__(self):
-        ""
+        importlib.reload(torch)

@@ -16,7 +16,7 @@ class TestTorchHook(TestCase):
         with self.assertRaises(Exception) as context:
 
             # can't serialize a randoms tring as type, so should raise a TypError
-            obj_type = hook.types_guard("asdf")
+            obj_type = hook.guard.types_guard("asdf")
 
             assert obj_type == obj_type
 
@@ -34,4 +34,4 @@ class TestTorchHook(TestCase):
         }
 
         for k, v in tensor_types.items():
-            assert hook.types_guard(k) == v
+            assert hook.guard.types_guard(k) == v
