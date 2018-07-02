@@ -168,7 +168,7 @@ class TorchHook(BaseHook):
 
             _method = method(self, *args, **kwargs)
 
-            if self.is_pointer:
+            if hasattr(self, 'is_pointer') and self.is_pointer:
 
                 return hook_self._execute_remote_call(_method,
                                                       has_self=True)[0]
