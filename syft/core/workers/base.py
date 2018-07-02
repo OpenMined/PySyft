@@ -627,7 +627,7 @@ class BaseWorker(object):
                                      is_pointer=obj.is_pointer)
         try:
             _ = obj.data
-            _ = str(_)  # just a style issue
+            _ = type(_)
             if(obj.data is not None):
                 self.register_object(worker=worker,
                                      obj=obj.data,
