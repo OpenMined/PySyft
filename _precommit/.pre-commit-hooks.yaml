@@ -1,0 +1,10 @@
+-   id: autopep8-wrapper
+    name: autopep8 wrapper
+    description: "Runs autopep8 over python source.  If you configure additional arguments you'll want to at least include -i."
+    entry: autopep8-wrapper
+    language: python
+    types: [python]
+    args: [-i]
+    # for backward compatibility
+    files: ''
+    minimum_pre_commit_version: 0.15.0

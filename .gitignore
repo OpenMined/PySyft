@@ -9,3 +9,6 @@ syft.egg-info/
 syft/__pycache__/
 *.swp
 *.swo
+*.ipynb_checkpoints
+*/*.ipynb_checkpoints
+*/*/*.ipynb_checkpoints

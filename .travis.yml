@@ -13,6 +13,19 @@ matrix:
         - python: pypy
         - python: pypy3
 install:
+    - sudo apt-get update
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - export PATH="$HOME/miniconda/bin:$PATH"
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    # Useful for debugging any issues with conda
+    - conda info -a
+
+    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytorch=0.3.1 scipy jupyter -c pytorch
+    - source activate test-environment
+
     - pip install -r requirements.txt
     - pip install flake8
     - pip install flake8-docstrings
@@ -26,9 +39,11 @@ before_script:
     # diverting from the standard 79 character line length in
     # accordance with this:
     # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
-    - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+    - flake8 . --count --exit-zero --max-complexity=11 --max-line-length=100 --statistics
 script:
     - python setup.py test
+    - bash scripts/execute_notebooks.sh
+    - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
 notifications:
     on_success: change
     # `always` will be the setting below once code changes slow down

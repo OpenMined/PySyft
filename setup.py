@@ -13,8 +13,9 @@ def read(fname):
 
 def my_test_suite():
     test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover('test', pattern='test_*.py')
+    test_suite = test_loader.discover('test', pattern='*_test.py')
     return test_suite
+
 
 requirements = read('requirements.txt').split()
 
@@ -26,7 +27,7 @@ setup(
     description=("A Library for Private, Secure Deep Learning"),
     license="Apache-2.0",
     keywords="deep learning artificial intelligence homomorphic encryption",
-    packages=find_packages(exclude=['docs','examples', 'dist']),
+    packages=find_packages(exclude=['docs', 'examples', 'dist']),
     include_package_data=True,
     long_description=read('README.md'),
     url='github.com/OpenMined/PySyft',
