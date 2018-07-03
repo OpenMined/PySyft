@@ -67,6 +67,33 @@ class TestTorchTensor(TestCase):
         # has not been registered
         assert unregistered_tensor.id != 9756847736
 
+    def test_fixed_prec_ops(self):
+        hook = TorchHook(verbose=False)
+
+        x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
+        y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+
+        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
+        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
+        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
+        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+
+        x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+        y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
+
+        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
+        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
+        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
+        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+
+        x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+        y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+
+        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
+        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
+        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
+        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+
 
 class TestTorchVariable(TestCase):
 
