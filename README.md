@@ -1,4 +1,6 @@
-![wtf](images/banner.png)
+![ASCII Art Banner](images/banner.png)
+
+[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/grid)
 
 ## Modes
 
@@ -11,8 +13,8 @@ locally, and train public models to make them better.
 
 `--compute`
 
-Compute mode lets users offer compute to train models.  Data scientists can easily publish models from
-a jupyter notebook and train them remotely.  Grid also offers easy utilities to try n number of
+Compute mode lets users offer compute to train models.  Data scientists can easily publish models from 
+a jupyter notebook and train them remotely.  Grid also offers easy utilities to try _n_ number of
 configurations concurrently.
 
 `--anchor`
@@ -80,9 +82,9 @@ start_worker --tree
 
 If you have GPU and want to use them, you will need to have [nvidia-docker2](https://github.com/nvidia/nvidia-docker/wiki/Installation-(version-2.0)). Make sure you can see your gpus using
 
- ```
+```
 docker run --runtime=nvidia --rm nvidia/cuda nvidia-smi 
- ```
+```
 
 ## launching the worker
 
@@ -171,3 +173,7 @@ pytest -s
 ```
 
 If everything looks good to you, submit the PR.
+
+## License
+
+[Apache License 2.0](https://github.com/OpenMined/Grid/blob/master/LICENSE)
