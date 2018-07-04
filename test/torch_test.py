@@ -300,3 +300,17 @@ class TestTorchVariable(TestCase):
                     first_loss = loss.get().data[0]
 
         assert loss.get().data[0] < first_loss
+
+    def test_torch_function_on_remote_var(self):
+        hook = TorchHook(verbose=False)
+        me = hook.local_worker
+        remote = VirtualWorker(id=2,hook=hook)
+        me.add_worker(remote)
+
+        x = Var(torch.FloatTensor([[1, 2], [3, 4]]))
+        y = Var(torch.FloatTensor([[1, 2], [1, 2]]))
+        x.send(remote)
+        y.send(remote)
+        z = torch.matmul(x, y)
+        z.get()
+        assert torch.equal(z, Var(torch.FloatTensor([[3, 6], [7, 14]])))

@@ -206,6 +206,9 @@ class TorchHook(BaseHook):
                 part, has_self=False)
             pointer, has_remote, multiple_owners = _res
 
+            if (has_remote and not multiple_owners):
+                return pointer
+
             if not (has_remote and not multiple_owners):
                 result = hook_self._execute_local_call(None,
                                                        part,
