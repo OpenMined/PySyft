@@ -1,3 +1,4 @@
+import torch
 import json
 import numbers
 import re
@@ -673,7 +674,7 @@ class BaseWorker(object):
             command = eval('obj_self.{}'.format(command))
         else:
             command = self._command_guard(
-                command_msg['command'], self.torch_funcs)
+                command_msg['command'], self.hook.torch_funcs)
             command = eval('torch.{}'.format(command))
 
         # we need the original tensorvar owners so that we can register

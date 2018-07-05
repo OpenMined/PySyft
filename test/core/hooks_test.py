@@ -15,7 +15,7 @@ class TestTorchHook(TestCase):
 
         with self.assertRaises(Exception) as context:
 
-            # can't serialize a randoms tring as type, so should raise a TypError
+            # can't serialize a random string as a type, so should raise a TypError
             obj_type = hook.guard.types_guard("asdf")
 
             assert obj_type == obj_type
