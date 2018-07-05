@@ -3,11 +3,12 @@ import json
 import numbers
 import re
 import random
+from abc import ABC, abstractmethod
 
 from .. import utils
 
 
-class BaseWorker(object):
+class BaseWorker(ABC):
     r"""
     The BaseWorker class establishes a consistent interface for
     communicating between different machines
@@ -163,6 +164,7 @@ class BaseWorker(object):
 
         return message_wrapper
 
+    @abstractmethod
     def _send_msg(self, message_wrapper_json_binary, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.
@@ -177,7 +179,7 @@ class BaseWorker(object):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
-        raise NotImplementedError
+        return
 
     def receive_msg(self, message_wrapper_json, is_binary=True):
         """Receives an message from a worker and then executes its contents appropriately.
@@ -661,9 +663,9 @@ class BaseWorker(object):
         # Args and kwargs contain special strings in place of tensors
         # Need to retrieve the tensors from self.worker.objects
         args = utils.map_tuple(
-            self, command_msg['args'], self._retrieve_tensor)
+            None, command_msg['args'], self._retrieve_tensor)
         kwargs = utils.map_dict(
-            self, command_msg['kwargs'], self._retrieve_tensor)
+            None, command_msg['kwargs'], self._retrieve_tensor)
         has_self = command_msg['has_self']
         # TODO: Implement get_owners and refactor to make it prettier
         combined = list(args) + list(kwargs.values())
@@ -671,7 +673,7 @@ class BaseWorker(object):
         if has_self:
             command = self._command_guard(command_msg['command'],
                                           self.hook.tensorvar_methods)
-            obj_self = self._retrieve_tensor(self, command_msg['self'])
+            obj_self = self._retrieve_tensor(command_msg['self'])
             combined = combined + [obj_self]
             command = eval('obj_self.{}'.format(command))
         else:
@@ -912,8 +914,8 @@ class BaseWorker(object):
         return obj, self._clear_tmp_objects
 
     # Helpers for HookService and TorchService
-    @staticmethod
-    def _check_workers(torch_obj, workers):
+    @classmethod
+    def _check_workers(cls, torch_obj, workers):
         if type(workers) is str:
             workers = [workers]
         if issubclass(type(workers), BaseWorker):
@@ -926,7 +928,7 @@ class BaseWorker(object):
         return workers
 
     # Worker needs to retrieve tensor by ID before computing with it
-    def _retrieve_tensor(self, self2, x):
+    def _retrieve_tensor(self, x):
         try:
             return self.get_obj(self._id_tensorvar(x))
         except TypeError:
@@ -937,7 +939,8 @@ class BaseWorker(object):
         except KeyError:
             return x
 
-    def _command_guard(self, command, allowed):
+    @classmethod
+    def _command_guard(cls, command, allowed):
         if command not in allowed:
             raise RuntimeError(
                 'Command "{}" is not a supported Torch operation.'.format(command))

@@ -480,8 +480,8 @@ class TorchHook(BaseHook):
             tensorvar_args.insert(0, command['self'])
         return tensorvar_args + tensorvar_kwvals
 
-    @staticmethod
-    def _replace_in_command(command_msg):
+    @classmethod
+    def _replace_in_command(cls, command_msg):
         command_msg['args'] = utils.map_tuple(
             None, command_msg['args'], TorchHook._replace_tensorvar)
         command_msg['kwargs'] = utils.map_dict(
@@ -493,8 +493,8 @@ class TorchHook(BaseHook):
             pass
         return command_msg
 
-    @staticmethod
-    def _compile_command(partial_func, has_self):
+    @classmethod
+    def _compile_command(cls, partial_func, has_self):
         """
         Assembles a JSON-serializable message from a partial function.
 
@@ -519,8 +519,8 @@ class TorchHook(BaseHook):
         command['kwarg_types'] = [type(kwargs[x]).__name__ for x in kwargs]
         return command
 
-    @staticmethod
-    def _replace_tensorvar(x):
+    @classmethod
+    def _replace_tensorvar(cls, x):
         """This method takes a tensor/var/param and replaces it with a
         string containing it's ID and special flag for recognizing that
         it's a tensor type arg instead of a string.
