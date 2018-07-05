@@ -531,7 +531,7 @@ local development with <code class="xref py py-class docutils literal"><span cla
 
 <dl class="method">
 <dt id="syft.core.workers.base.BaseWorker.register_object">
-<code class="descname">register_object</code><span class="sig-paren">(</span><em>worker</em>, <em>obj</em>, <em>force_attach_to_worker=False</em>, <em>temporary=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.register_object" title="Permalink to this definition">¶</a></dt>
+<code class="descname">register_object</code><span class="sig-paren">(</span><em>obj</em>, <em>force_attach_to_worker=False</em>, <em>temporary=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.register_object" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers an object with the current worker node. Selects an
 id for the object, assigns a list of owners,
 and establishes whether it&#8217;s a pointer or not. This method
@@ -878,6 +878,11 @@ can include all known workers.</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
+<dl class="method">
+<dt id="syft.core.workers.socket.SocketWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.socket.SocketWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 </div>
@@ -1342,7 +1347,7 @@ local development with <a class="reference internal" href="#syft.core.workers.Vi
 
 <dl class="method">
 <dt id="syft.core.workers.BaseWorker.register_object">
-<code class="descname">register_object</code><span class="sig-paren">(</span><em>worker</em>, <em>obj</em>, <em>force_attach_to_worker=False</em>, <em>temporary=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.register_object" title="Permalink to this definition">¶</a></dt>
+<code class="descname">register_object</code><span class="sig-paren">(</span><em>obj</em>, <em>force_attach_to_worker=False</em>, <em>temporary=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.register_object" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers an object with the current worker node. Selects an
 id for the object, assigns a list of owners,
 and establishes whether it&#8217;s a pointer or not. This method
@@ -1686,6 +1691,11 @@ can include all known workers.</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
+<dl class="method">
+<dt id="syft.core.workers.SocketWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">

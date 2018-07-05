@@ -523,7 +523,7 @@ class BaseWorker(object):
         else:
             return response
 
-    def register_object(self, worker, obj, force_attach_to_worker=False,
+    def register_object(self, obj, force_attach_to_worker=False,
                         temporary=False, **kwargs):
         """
         Registers an object with the current worker node. Selects an
@@ -581,7 +581,7 @@ class BaseWorker(object):
 
         obj.owners = (kwargs['owners']
                       if 'owners' in keys
-                      else [worker.id])
+                      else [self.id])
 
         # check to see if we can resolve owner id to pointer
         owner_pointers = list()
@@ -596,7 +596,7 @@ class BaseWorker(object):
                           if 'is_pointer' in keys
                           else False)
 
-        mal_points_away = obj.is_pointer and worker.id in obj.owners
+        mal_points_away = obj.is_pointer and self.id in obj.owners
         # print("Mal Points Away:" + str(mal_points_away))
         # print("self.local_worker.id in obj.owners == " + str(self.local_worker.id in obj.owners))
         # The following was meant to assure that we didn't try to
@@ -618,8 +618,7 @@ class BaseWorker(object):
         if(hasattr(obj, 'grad')):
             if(obj.grad is not None):
                 # import pdb; pdb.set_trace()
-                self.register_object(worker=worker,
-                                     obj=obj.grad,
+                self.register_object(obj=obj.grad,
                                      force_attach_to_worker=force_attach_to_worker,
                                      temporary=temporary,
                                      id=obj.grad.id,
@@ -629,8 +628,7 @@ class BaseWorker(object):
             _ = obj.data
             _ = type(_)
             if(obj.data is not None):
-                self.register_object(worker=worker,
-                                     obj=obj.data,
+                self.register_object(obj=obj.data,
                                      force_attach_to_worker=force_attach_to_worker,
                                      temporary=temporary,
                                      id=obj.data.id,
@@ -723,9 +721,9 @@ class BaseWorker(object):
                 var_grad = None
             try:
                 result = self.register_object(
-                    self, result, id=result.id, owners=owners)
+                    result, id=result.id, owners=owners)
             except AttributeError:
-                result = self.register_object(self, result, owners=owners)
+                result = self.register_object(result, owners=owners)
 
             registration = dict(id=result.id,
                                 owners=owners, is_pointer=True)
@@ -789,8 +787,7 @@ class BaseWorker(object):
             # Worker case: v was never formally registered
             pass
 
-        torch_object = self.register_object(self,
-                                            torch_object,
+        torch_object = self.register_object(torch_object,
                                             id=obj_msg['id'],
                                             owners=[self.id],
                                             force_attach_to_worker=force_attach_to_worker,

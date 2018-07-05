@@ -1,4 +1,5 @@
 import socket
+import json
 
 from .base import BaseWorker
 
@@ -123,6 +124,9 @@ class SocketWorker(BaseWorker):
                 self._listen()
             else:
                 print("Ready!")
+
+    def whoami(self):
+        return json.dumps({"hostname": self.hostname, "port": self.port, "id": self.id})
 
     def _listen(self):
         """
