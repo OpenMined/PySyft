@@ -91,6 +91,9 @@ class TorchHook(BaseHook):
         # this is a list of all module functions in the torch module
         self.torch_funcs = dir(torch)
 
+        # this is a list of all module functions in torch.nn.functional
+        self.torch_functional_funcs = dir(torch.nn.functional)
+
         # this is the list of torch tensor types that we will override for remote execution
         self.tensor_types = [torch.FloatTensor,
                              torch.DoubleTensor,
@@ -140,12 +143,16 @@ class TorchHook(BaseHook):
         # Torch functions we don't want to override
         self.torch_exclude = ['save', 'load', 'typename']
 
+        # Torch functions in torch.nn.functional we don't want to override
+        self.torch_functional_exclude = []
+
         self.guard = TorchGuard()
 
         if (not hasattr(torch, 'hooked')):
             if (verbose):
                 print('Hooking into Torch...')
             self._hook_torch_module()
+            self._hook_torch_functional()
             for t_type in self.tensor_types:
                 self._hook_tensor(t_type)
             self._hook_variable()
@@ -450,7 +457,6 @@ class TorchHook(BaseHook):
             command = hook_self._replace_in_command(command)
 
             for worker in owners:
-
                 response = hook_self.local_worker.send_torch_command(recipient=worker,
                                                                      message=command)
 
@@ -622,6 +628,45 @@ class TorchHook(BaseHook):
                 new_attr = self._get_overload_function_in_torch_module(passer)
                 setattr(torch, 'old_{}'.format(attr), lit)
                 setattr(torch, attr, new_attr)
+
+    def _hook_torch_functional(self):
+        """
+        Overloads functions in the torch.nn.functional
+
+        The way this is accomplished is by first moving all existing module functions in the torch
+        module to old_<function_name_here>. Thus, the real :func:`torch.nn.functional.relu` will become
+        :func:`torch.nn.functional.old_cat` and :func:`torch.cat` will have our hooking code. Generically,
+        this hooking code checks to see if the tensor is on the current worker (aka, we can read it)
+        or on a remote one (and we only have a pointer). If the data is local, then the method
+        will simply execute :func:`torch.old_cat`, but if the data for a tensor is remote, then
+        it will instead send a message to the remote machine instructing it to perform an arbitrary
+        command (:func:`torch.old_cat` on the remote machine).
+        """
+
+        for attr in self.torch_functional_funcs:
+
+            # Some functions we want to ignore (not override). Such functions have been hard coded
+            # into the attribute self.torch_exclude
+            if attr in self.torch_functional_exclude:
+                continue
+
+            # if we haven't already overloaded this function
+            if 'old_{}'.format(attr) in dir(torch.nn.functional):
+                continue
+
+            # if we haven't already overloaded this function (redundancy allowed)
+            if 'old_' in attr:
+                continue
+
+            # Where the overloading happens
+            lit = getattr(torch.nn.functional, attr)
+            if (type(lit) in [types.FunctionType, types.BuiltinFunctionType]):
+                passer = utils.pass_func_args(lit)
+                new_attr = self._get_overload_function_in_torch_module(passer)
+                setattr(torch.nn.functional, 'old_{}'.format(attr), lit)
+                setattr(torch.nn.functional, attr, new_attr)
+
+
 
     # ######## END GENERIC method/function hooking logic #########
     # ######## BEGIN torch TENSOR hooking #########
