@@ -434,7 +434,7 @@ been previously registered with the wrong id.</p>
 
 <dl class="method">
 <dt id="syft.core.workers.base.BaseWorker.prepare_send_object">
-<code class="descname">prepare_send_object</code><span class="sig-paren">(</span><em>obj</em>, <em>delete_local=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.prepare_send_object" title="Permalink to this definition">¶</a></dt>
+<code class="descname">prepare_send_object</code><span class="sig-paren">(</span><em>obj</em>, <em>delete_local=True</em>, <em>send_pointer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.prepare_send_object" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -879,6 +879,13 @@ can include all known workers.</li>
 </pre></div>
 </div>
 <dl class="method">
+<dt id="syft.core.workers.socket.SocketWorker.listen">
+<code class="descname">listen</code><span class="sig-paren">(</span><em>num_messages=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.socket.SocketWorker.listen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts SocketWorker server on the correct port and handles message as they
+are received.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.socket.SocketWorker.whoami">
 <code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.socket.SocketWorker.whoami" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -1250,7 +1257,7 @@ been previously registered with the wrong id.</p>
 
 <dl class="method">
 <dt id="syft.core.workers.BaseWorker.prepare_send_object">
-<code class="descname">prepare_send_object</code><span class="sig-paren">(</span><em>obj</em>, <em>delete_local=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.prepare_send_object" title="Permalink to this definition">¶</a></dt>
+<code class="descname">prepare_send_object</code><span class="sig-paren">(</span><em>obj</em>, <em>delete_local=True</em>, <em>send_pointer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.prepare_send_object" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -1691,6 +1698,13 @@ can include all known workers.</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
+<dl class="method">
+<dt id="syft.core.workers.SocketWorker.listen">
+<code class="descname">listen</code><span class="sig-paren">(</span><em>num_messages=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.listen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts SocketWorker server on the correct port and handles message as they
+are received.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="syft.core.workers.SocketWorker.whoami">
 <code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.whoami" title="Permalink to this definition">¶</a></dt>

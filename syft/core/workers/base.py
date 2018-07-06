@@ -786,25 +786,32 @@ class BaseWorker(object):
         except (AttributeError, KeyError):
             # Worker case: v was never formally registered
             pass
-
-        torch_object = self.register_object(torch_object,
-                                            id=obj_msg['id'],
-                                            owners=[self.id],
-                                            force_attach_to_worker=force_attach_to_worker,
-                                            temporary=temporary)
+        if('is_pointer' in obj_msg and obj_msg['is_pointer']):
+            torch_object = self.register_object(torch_object,
+                                                id=obj_msg['id'],
+                                                owners=obj_msg['owners'],
+                                                force_attach_to_worker=force_attach_to_worker,
+                                                temporary=temporary,
+                                                is_pointer=True)
+        else:
+            torch_object = self.register_object(torch_object,
+                                        id=obj_msg['id'],
+                                        owners=[self.id],
+                                        force_attach_to_worker=force_attach_to_worker,
+                                        temporary=temporary)
 
         return torch_object
 
-    def prepare_send_object(self, obj, delete_local=True):
+    def prepare_send_object(self, obj, delete_local=True, send_pointer=False):
 
-        obj_json = obj.ser()
+        obj_json = obj.ser(include_data=not send_pointer)
 
         if(delete_local):
             self.rm_obj(obj.id)
 
         return obj_json
 
-    def send_obj(self, obj, recipient, delete_local=True):
+    def send_obj(self, obj, recipient, delete_local=True, send_pointer=True):
         """send_obj(self, obj, recipient, delete_local=True) -> obj
         Sends an object to another :class:`VirtualWorker` and, by default, removes it
         from the local worker. It also returns the object as a special case when
@@ -826,7 +833,7 @@ class BaseWorker(object):
         """
 
         # obj = recipient.receive_obj(obj.ser())
-        _obj = self.send_msg(message=self.prepare_send_object(obj, delete_local),
+        _obj = self.send_msg(message=self.prepare_send_object(obj, delete_local, send_pointer=send_pointer),
                              message_type='obj',
                              recipient=recipient)
 
