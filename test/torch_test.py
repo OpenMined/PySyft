@@ -94,6 +94,51 @@ class TestTorchTensor(TestCase):
         assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
         assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
 
+    def test_local_tensor_unary_methods(self):
+        ''' Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385'''
+
+        x = torch.FloatTensor([1, 2, -3, 4, 5])
+        assert (x.abs() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+        assert (x.abs_() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+        x = x.cos()
+        assert (x.int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
+
+        x = x.cos_()
+        assert (x.int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
+
+        x = torch.FloatTensor([1, 2, -3, 4, 5])
+
+        assert (x.ceil() == x).float().sum() == 5
+        assert (x.ceil_() == x).float().sum() == 5
+        assert (x.cpu() == x).float().sum() == 5
+
+
+    def test_remote_tensor_unary_methods(self):
+        ''' Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385'''
+
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        remote = VirtualWorker(hook, 0)
+        local.add_worker(remote)
+
+        x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
+        assert (x.abs().get() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+
+        x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
+        assert (x.cos().int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
+        y = x.cos_()
+        assert (y.cos_().int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
+        x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
+        assert (x.ceil().get() == torch.FloatTensor([1, 2, -3, 4, 5])).float().sum() == 5
+
+        assert (x.cpu().get() == torch.FloatTensor([1, 2, -3, 4, 5])).float().sum() == 5
+
 
 class TestTorchVariable(TestCase):
 
@@ -219,14 +264,14 @@ class TestTorchVariable(TestCase):
         loss.backward()
 
         # ensure that model and all (grand)children are owned by the local worker
-        assert model.owners[0] == local.id
-        assert model.data.owners[0] == local.id
+        assert model.owners[0].id == local.id
+        assert model.data.owners[0].id == local.id
 
         # if you get a failure here saying that model.grad.owners does not exist
         # check in hooks.py - _hook_new_grad(). self.grad_backup has probably either
         # been deleted or is being run at the wrong time (see comments there)
-        assert model.grad.owners[0] == local.id
-        assert model.grad.data.owners[0] == local.id
+        assert model.grad.owners[0].id == local.id
+        assert model.grad.data.owners[0].id == local.id
 
         # ensure that objects are not yet pointers (haven't sent it yet)
         assert not model.is_pointer
@@ -314,3 +359,42 @@ class TestTorchVariable(TestCase):
         z = torch.matmul(x, y)
         z.get()
         assert torch.equal(z, Var(torch.FloatTensor([[3, 6], [7, 14]])))
+
+    def test_local_var_unary_methods(self):
+        ''' Unit tests for methods mentioned on issue 1385
+            https://github.com/OpenMined/PySyft/issues/1385'''
+
+        x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
+        assert torch.equal(x.abs(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
+        assert torch.equal(x.abs_(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
+        x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
+        assert torch.equal(x.cos().int(), Var(torch.IntTensor(
+            [0, 0, 0, 0, 0])))
+        x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
+        assert torch.equal(x.cos_().int(), Var(torch.IntTensor(
+            [0, 0, 0, 0, 0])))
+        x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
+        assert torch.equal(x.ceil(), x)
+        assert torch.equal(x.ceil_(), x)
+        assert torch.equal(x.cpu(), x)
+
+
+    def test_remote_var_unary_methods(self):
+        ''' Unit tests for methods mentioned on issue 1385
+            https://github.com/OpenMined/PySyft/issues/1385'''
+        hook = TorchHook()
+        local = hook.local_worker
+        remote = VirtualWorker(hook, 0)
+        local.add_worker(remote)
+
+        x = Var(torch.FloatTensor([1, 2, -3, 4, 5])).send(remote)
+        assert torch.equal(x.abs().get(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
+        assert torch.equal(x.abs_().get(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
+        assert torch.equal(x.cos().int().get(), Var(torch.IntTensor(
+            [0, 0, 0, 0, 0])))
+        assert torch.equal(x.cos_().int().get(), Var(torch.IntTensor(
+            [0, 0, 0, 0, 0])))
+        x = Var(torch.FloatTensor([1, 2, -3, 4, 5])).send(remote)
+        assert torch.equal(x.ceil().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
+        assert torch.equal(x.ceil_().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
+        assert torch.equal(x.cpu().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
