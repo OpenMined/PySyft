@@ -683,9 +683,17 @@ class BaseWorker(ABC):
             combined = combined + [obj_self]
             command = eval('obj_self.{}'.format(command))
         else:
-            command = self._command_guard(
-                command_msg['command'], self.hook.torch_funcs)
-            command = eval('torch.{}'.format(command))
+            try:
+                command = self._command_guard(
+                    command_msg['command'], self.hook.torch_funcs)
+                command = eval('torch.{}'.format(command))
+            except RuntimeError:
+                try:
+                    command = self._command_guard(
+                        command_msg['command'], self.hook.torch_functional_funcs)
+                    command = eval('torch.nn.functional.{}'.format(command))
+                except RuntimeError:
+                    pass
 
         # we need the original tensorvar owners so that we can register
         # the result properly later on
@@ -937,7 +945,7 @@ class BaseWorker(ABC):
         elif not hasattr(workers, '__iter__'):
             raise TypeError(
                 """Can only send {} to a string worker ID or an iterable of
-                string worker IDs, not {}""".format(torch_obj.__name__, workers)
+                string worker IDs, not {} of type {}""".format(str(type(torch_obj)), workers, str(type(workers)))
             )
         return workers
 
@@ -959,6 +967,14 @@ class BaseWorker(ABC):
             raise RuntimeError(
                 'Command "{}" is not a supported Torch operation.'.format(command))
         return command
+
+    @classmethod
+    def _is_command_valid_guard(cls, command, allowed):
+        try:
+            cls._command_guard(command, allowed)
+        except RuntimeError:
+            return False
+        return True
 
     # # Client needs to identify a tensor before sending commands that use it
     def _id_tensorvar(self, x):

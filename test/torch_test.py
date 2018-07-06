@@ -4,6 +4,7 @@ from syft.core.workers import VirtualWorker
 
 import torch
 from torch.autograd import Variable as Var
+import torch.nn.functional as F
 import torch.optim as optim
 import torch.nn as nn
 
@@ -359,6 +360,18 @@ class TestTorchVariable(TestCase):
         z = torch.matmul(x, y)
         z.get()
         assert torch.equal(z, Var(torch.FloatTensor([[3, 6], [7, 14]])))
+
+    def test_torch_relu_on_remote_var(self):
+        hook = TorchHook(verbose=False)
+        me = hook.local_worker
+        remote = VirtualWorker(id=2,hook=hook)
+        me.add_worker(remote)
+
+        x = Var(torch.FloatTensor([[1, -1], [-1, 1]]))
+        x.send(remote)
+        x = F.relu(x)
+        x.get()
+        assert torch.equal(x, Var(torch.FloatTensor([[1, 0], [0, 1]])))
 
     def test_local_var_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
