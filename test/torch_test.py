@@ -67,6 +67,33 @@ class TestTorchTensor(TestCase):
         # has not been registered
         assert unregistered_tensor.id != 9756847736
 
+    def test_fixed_prec_ops(self):
+        hook = TorchHook(verbose=False)
+
+        x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
+        y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+
+        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
+        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
+        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
+        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+
+        x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+        y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
+
+        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
+        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
+        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
+        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+
+        x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+        y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+
+        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
+        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
+        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
+        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+
 
 class TestTorchVariable(TestCase):
 
@@ -273,3 +300,17 @@ class TestTorchVariable(TestCase):
                     first_loss = loss.get().data[0]
 
         assert loss.get().data[0] < first_loss
+
+    def test_torch_function_on_remote_var(self):
+        hook = TorchHook(verbose=False)
+        me = hook.local_worker
+        remote = VirtualWorker(id=2,hook=hook)
+        me.add_worker(remote)
+
+        x = Var(torch.FloatTensor([[1, 2], [3, 4]]))
+        y = Var(torch.FloatTensor([[1, 2], [1, 2]]))
+        x.send(remote)
+        y.send(remote)
+        z = torch.matmul(x, y)
+        z.get()
+        assert torch.equal(z, Var(torch.FloatTensor([[3, 6], [7, 14]])))
