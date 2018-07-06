@@ -113,12 +113,6 @@ class TestTorchTensor(TestCase):
         assert (x.ceil_() == x).float().sum() == 5
         assert (x.cpu() == x).float().sum() == 5
 
-        x = torch.FloatTensor([1, -.4, 0.2, 0.4, -0.1])
-        assert (x.asin() == torch.FloatTensor(
-            [1.5707963, -0.41151688, 0.20135793, 0.41151688, -0.10016742])).float().sum() == 5
-
-        assert (x.asin_() == torch.FloatTensor(
-            [1.5707963, -0.41151688, 0.20135793, 0.41151688, -0.10016742])).float().sum() == 5
 
     def test_remote_tensor_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
@@ -142,13 +136,6 @@ class TestTorchTensor(TestCase):
 
         assert (x.cpu().get() == torch.FloatTensor([1, 2, -3, 4, 5])).float().sum() == 5
 
-        x = torch.FloatTensor([1, -.4, 0.2, 0.4, -0.1]).send(remote)
-
-        assert (x.asin().get() == torch.FloatTensor(
-            [1.5707963, -0.41151688, 0.20135793, 0.41151688, -0.10016742])).float().sum() == 5
-
-        assert (x.asin_().get() == torch.FloatTensor(
-            [1.5707963, -0.41151688, 0.20135793, 0.41151688, -0.10016742])).float().sum() == 5
 
 class TestTorchVariable(TestCase):
 
@@ -387,12 +374,7 @@ class TestTorchVariable(TestCase):
         assert torch.equal(x.ceil(), x)
         assert torch.equal(x.ceil_(), x)
         assert torch.equal(x.cpu(), x)
-        x = Var(torch.FloatTensor([1, -.4, 0.2, 0.4, -0.1]))
-        assert torch.equal(x.asin(), Var(torch.FloatTensor(
-            [1.5707963, -0.41151688, 0.20135793, 0.41151688, -0.10016742])))
 
-        assert torch.equal(x.asin_(), Var(torch.FloatTensor(
-            [1.5707963, -0.41151688, 0.20135793, 0.41151688, -0.10016742])))
 
     def test_remote_var_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
@@ -413,10 +395,3 @@ class TestTorchVariable(TestCase):
         assert torch.equal(x.ceil().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
         assert torch.equal(x.ceil_().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
         assert torch.equal(x.cpu().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
-
-        x = Var(torch.FloatTensor([1, -.4, 0.2, 0.4, -0.1])).send(remote)
-        assert torch.equal(x.asin().get(), Var(torch.FloatTensor(
-            [1.5707963, -0.41151688, 0.20135793, 0.41151688, -0.10016742])))
-
-        assert torch.equal(x.asin_().get(), Var(torch.FloatTensor(
-            [1.5707963, -0.41151688, 0.20135793, 0.41151688, -0.10016742])))
