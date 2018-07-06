@@ -116,7 +116,7 @@ class BaseWorker(object):
         function with additional metadata such as network information.
         """
 
-        return json.dumps({"id": self.id, "type":type(self)})
+        return json.dumps({"id": self.id, "type": type(self)})
 
     def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
@@ -803,10 +803,10 @@ class BaseWorker(object):
                                                 is_pointer=True)
         else:
             torch_object = self.register_object(torch_object,
-                                        id=obj_msg['id'],
-                                        owners=[self.id],
-                                        force_attach_to_worker=force_attach_to_worker,
-                                        temporary=temporary)
+                                                id=obj_msg['id'],
+                                                owners=[self.id],
+                                                force_attach_to_worker=force_attach_to_worker,
+                                                temporary=temporary)
 
         return torch_object
 
@@ -841,7 +841,9 @@ class BaseWorker(object):
         """
 
         # obj = recipient.receive_obj(obj.ser())
-        _obj = self.send_msg(message=self.prepare_send_object(obj, delete_local, send_pointer=send_pointer),
+        _obj = self.send_msg(message=self.prepare_send_object(obj,
+                                                              delete_local,
+                                                              send_pointer=send_pointer),
                              message_type='obj',
                              recipient=recipient)
 

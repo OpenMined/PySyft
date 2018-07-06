@@ -518,7 +518,7 @@ class TorchHook(BaseHook):
                 hook_self.local_worker.send_obj(self,
                                                 worker,
                                                 send_pointer=send_pointer,
-                                                delete_local=not  qsend_pointer)
+                                                delete_local=not send_pointer)
             if(not send_pointer):
                 if(tensorvar_type == torch.autograd.variable.Variable):
                     zeroed = self
@@ -807,15 +807,6 @@ class TorchHook(BaseHook):
                 setattr(var, 'grad', grad)
             else:
                 var.grad = None
-
-            if('is_pointer' in obj_msg):
-                var.is_pointer = obj_msg['is_pointer']
-            else:
-                print("is_pointer not found")
-                print(obj_msg)
-
-            if('owners' in obj_msg):
-                var.owners = obj_msg['owners']
 
             # this returns grad because garbage collection seems to do something really strange
             # if grad isn't returned here. It re-initializes the gradient somehow but in a way

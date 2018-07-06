@@ -780,6 +780,14 @@ worker is a client worker.</li>
 </div>
 </dd></dl>
 
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns metadata information about the worker. This function returns the default
+which is the id and type of the current worker. Other worker types can extend this
+function with additional metadata such as network information.</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -1601,6 +1609,14 @@ worker is a client worker.</li>
 <span class="go"> [torch.FloatTensor of size 5]}</span>
 </pre></div>
 </div>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns metadata information about the worker. This function returns the default
+which is the id and type of the current worker. Other worker types can extend this
+function with additional metadata such as network information.</p>
 </dd></dl>
 
 </dd></dl>
