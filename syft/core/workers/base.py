@@ -110,6 +110,9 @@ class BaseWorker(object):
         self.message_queue = []
         self.queue_size = queue_size
 
+    def whoami(self):
+        return {"id": self.id}
+
     def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.

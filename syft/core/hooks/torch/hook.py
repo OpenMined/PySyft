@@ -518,7 +518,7 @@ class TorchHook(BaseHook):
                 hook_self.local_worker.send_obj(self,
                                                 worker,
                                                 send_pointer=send_pointer,
-                                                delete_local=not send_pointer)
+                                                delete_local=not  qsend_pointer)
             if(not send_pointer):
                 if(tensorvar_type == torch.autograd.variable.Variable):
                     zeroed = self
@@ -526,7 +526,8 @@ class TorchHook(BaseHook):
                     zeroed = self.old_set_(tensorvar_type(0))
 
                 self = hook_self.local_worker.register_object(obj=zeroed,
-                                                              id=self.id, owners=workers,
+                                                              id=self.id,
+                                                              owners=workers,
                                                               is_pointer=True)
                 if(tensorvar_type == torch.autograd.variable.Variable):
                     return hook_self._var_to_pointer(self)
@@ -564,8 +565,7 @@ class TorchHook(BaseHook):
                                                       recipient=self.owners[0])
             x, request_obj_cleanup_method = _out
 
-            hook_self.local_worker.register_object(
-                x, id=x.id)
+            hook_self.local_worker.register_object(x, id=x.id)
 
             _id = hook_self.local_worker.id  # for brevity
             if(type(self) != torch.autograd.variable.Variable and
