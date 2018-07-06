@@ -578,7 +578,8 @@ class TorchHook(BaseHook):
                     self.grad = x.grad
 
             self = hook_self.local_worker.register_object(_os,
-                                                          id=self.id, owners=[_id])
+                                                          id=self.id,
+                                                          owners=[_id])
 
             return self
 
