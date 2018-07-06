@@ -261,14 +261,14 @@ class TestTorchVariable(TestCase):
         loss.backward()
 
         # ensure that model and all (grand)children are owned by the local worker
-        assert model.owners[0] == local.id
-        assert model.data.owners[0] == local.id
+        assert model.owners[0].id == local.id
+        assert model.data.owners[0].id == local.id
 
         # if you get a failure here saying that model.grad.owners does not exist
         # check in hooks.py - _hook_new_grad(). self.grad_backup has probably either
         # been deleted or is being run at the wrong time (see comments there)
-        assert model.grad.owners[0] == local.id
-        assert model.grad.data.owners[0] == local.id
+        assert model.grad.owners[0].id == local.id
+        assert model.grad.data.owners[0].id == local.id
 
         # ensure that objects are not yet pointers (haven't sent it yet)
         assert not model.is_pointer
