@@ -484,12 +484,7 @@ class TorchHook(BaseHook):
         return (None, has_remote, multiple_owners)
 
     def _execute_remote_fixed_precision_call(self, _method):
-        '''
-        This function is responsible for overloading remote
-        fixed precision TENSORS and their methods.
-        '''
-        #TODO: writing a function resposible for overloading remote fixed precision tensors and their methods
-        pass
+        raise NotImplementedError
 
     def _get_tensorvars(self, command):
         """Returns all Tensors and Variables in the args/kwargs of the command"""
@@ -1108,4 +1103,3 @@ class TorchHook(BaseHook):
         torch.nn.Module.get = module_get_
 
     # ######## END torch.nn.Module hooking #########
-
