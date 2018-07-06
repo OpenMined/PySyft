@@ -178,20 +178,13 @@ class TorchHook(BaseHook):
 
             _method = method(self, *args, **kwargs)
 
-            if hasattr(self, 'is_pointer') and self.is_pointer and not self.fixed_precision:
+            if hasattr(self, 'is_pointer') and self.is_pointer:
 
                 return hook_self._execute_remote_call(_method,
                                                       has_self=True)[0]
-            elif (hasattr(self, 'fixed_precision') and self.fixed_precision)\
-                    and not hasattr(self, 'is_pointer'):
+            elif (hasattr(self, 'fixed_precision') and self.fixed_precision):
 
                 return hook_self._execute_fixed_precision_call(self, _method, args, kwargs)
-
-            elif (hasattr(self, 'fixed_precision') and self.fixed_precision)\
-                    and hasattr(self, 'is_pointer'):
-
-                pass
-                #TODO: implementing _execute_remote_fixed_precision_call for remote fixed precision tensors
 
             else:
                 return hook_self._execute_local_call(self, _method, args, kwargs)
@@ -483,8 +476,6 @@ class TorchHook(BaseHook):
 
         return (None, has_remote, multiple_owners)
 
-    def _execute_remote_fixed_precision_call(self, _method):
-        raise NotImplementedError
 
     def _get_tensorvars(self, command):
         """Returns all Tensors and Variables in the args/kwargs of the command"""
