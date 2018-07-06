@@ -910,7 +910,8 @@ class TorchHook(BaseHook):
             if include_data:
                 tensor_msg['data'] = self.tolist()
             tensor_msg['id'] = self.id
-            if (type(self.owners[0]) is int):
+            owner_type = type(self.owners[0])
+            if (owner_type is int or owner_type is str):
                 tensor_msg['owners'] = self.owners
             else:
                 tensor_msg['owners'] = list(map(lambda x: x.id, self.owners))
@@ -949,7 +950,8 @@ class TorchHook(BaseHook):
             else:
                 var_msg['grad'] = None
             var_msg['id'] = self.id
-            if (type(self.owners[0]) is int):
+            owner_type = type(self.owners[0])
+            if (owner_type is int or owner_type is str):
                 var_msg['owners'] = self.owners
             else:
                 var_msg['owners'] = list(map(lambda x: x.id, self.owners))
@@ -963,7 +965,6 @@ class TorchHook(BaseHook):
                 data_msg = json.loads(obj_msg['data'])
                 tensor_type = hook_self.guard.types_guard(data_msg['torch_type'])
                 data_obj = tensor_type.deser(tensor_type, data_msg)
-                # data_obj = hook_self.build_tensor(data_msg, tensor_type)
                 data = hook_self.local_worker.handle_register(
                     data_obj, data_msg)
 
@@ -975,7 +976,8 @@ class TorchHook(BaseHook):
                     var_type = hook_self.guard.types_guard(grad_msg['torch_type'])
                     grad_obj = hook_self._build_var(grad_msg, var_type)
 
-                    grad = hook_self.local_worker.handle_register(grad_obj, grad_msg,
+                    grad = hook_self.local_worker.handle_register(grad_obj,
+                                                                  grad_msg,
                                                                   force_attach_to_worker=False,
                                                                   temporary=True)
                 else:

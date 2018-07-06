@@ -20,6 +20,14 @@ syft\.core\.hooks\.torch\.hook module
     :undoc-members:
     :show-inheritance:
 
+syft\.core\.hooks\.torch\.tensor module
+---------------------------------------
+
+.. automodule:: syft.core.hooks.torch.tensor
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

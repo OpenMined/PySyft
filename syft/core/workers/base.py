@@ -616,6 +616,7 @@ class BaseWorker(object):
         mal_points_here = False
         # mal_points_here = not obj.is_pointer and self.local_worker.id not in obj.owners
         if mal_points_away or mal_points_here:
+            print("I am worker:" + str(self.id))
             raise RuntimeError(
                 'Invalid registry: is_pointer is {} but owners is {} on tensor {}'.format(
                     obj.is_pointer, obj.owners, obj.id))

@@ -4,5 +4,6 @@ from .base import BaseHook
 from .torch import TorchHook
 from .keras import KerasHook
 from .tensorflow import TensorflowHook
+from . import torch
 
-__all__ = ['BaseHook', 'TorchHook', 'KerasHook', 'TensorflowHook']
+__all__ = ['BaseHook', 'TorchHook', 'KerasHook', 'TensorflowHook', 'torch']
