@@ -101,11 +101,13 @@ class TestTorchTensor(TestCase):
         x = torch.FloatTensor([1, 2, -3, 4, 5])
         assert (x.abs() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
         assert (x.abs_() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
-        assert (x.cos() == torch.FloatTensor(
-            [0.5403023, -0.41614684, -0.9899925, -0.6536436, 0.2836622])).float().sum() == 5
+        x = x.cos()
+        assert (x.int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
 
-        assert (x.cos_() == torch.FloatTensor(
-            [0.5403023, -0.41614684, -0.9899925, -0.6536436, 0.2836622])).float().sum() == 5
+        x = x.cos_()
+        assert (x.int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
 
         x = torch.FloatTensor([1, 2, -3, 4, 5])
 
@@ -127,10 +129,11 @@ class TestTorchTensor(TestCase):
         assert (x.abs().get() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
 
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
-        assert (x.cos().get() == torch.FloatTensor(
-            [0.5403023, -0.41614684, -0.9899925, -0.6536436, 0.2836622])).float().sum() == 5
-        assert (x.cos_().get() == torch.FloatTensor(
-            [0.5403023, -0.41614684, -0.9899925, -0.6536436, 0.2836622])).float().sum() == 5
+        assert (x.cos().int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
+        y = x.cos_()
+        assert (y.cos_().int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
         assert (x.ceil().get() == torch.FloatTensor([1, 2, -3, 4, 5])).float().sum() == 5
 
@@ -365,11 +368,11 @@ class TestTorchVariable(TestCase):
         assert torch.equal(x.abs(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
         assert torch.equal(x.abs_(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
         x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
-        assert torch.equal(x.cos(), Var(torch.FloatTensor(
-            [0.5403023, -0.41614684, -0.9899925, -0.6536436, 0.2836622])))
+        assert torch.equal(x.cos().int(), Var(torch.IntTensor(
+            [0, 0, 0, 0, 0])))
         x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
-        assert torch.equal(x.cos_(), Var(torch.FloatTensor(
-            [0.5403023, -0.41614684, -0.9899925, -0.6536436, 0.2836622])))
+        assert torch.equal(x.cos_().int(), Var(torch.IntTensor(
+            [0, 0, 0, 0, 0])))
         x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
         assert torch.equal(x.ceil(), x)
         assert torch.equal(x.ceil_(), x)
@@ -387,10 +390,10 @@ class TestTorchVariable(TestCase):
         x = Var(torch.FloatTensor([1, 2, -3, 4, 5])).send(remote)
         assert torch.equal(x.abs().get(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
         assert torch.equal(x.abs_().get(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
-        assert torch.equal(x.cos().get(), Var(torch.FloatTensor(
-            [0.5403023, -0.41614684, -0.9899925, -0.6536436, 0.2836622])))
-        assert torch.equal(x.cos_().get(), Var(torch.FloatTensor(
-            [0.5403023, -0.41614684, -0.9899925, -0.6536436, 0.2836622])))
+        assert torch.equal(x.cos().int().get(), Var(torch.IntTensor(
+            [0, 0, 0, 0, 0])))
+        assert torch.equal(x.cos_().int().get(), Var(torch.IntTensor(
+            [0, 0, 0, 0, 0])))
         x = Var(torch.FloatTensor([1, 2, -3, 4, 5])).send(remote)
         assert torch.equal(x.ceil().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
         assert torch.equal(x.ceil_().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
