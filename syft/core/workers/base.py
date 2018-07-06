@@ -112,6 +112,14 @@ class BaseWorker(ABC):
         self.message_queue = []
         self.queue_size = queue_size
 
+    def whoami(self):
+        """Returns metadata information about the worker. This function returns the default
+        which is the id and type of the current worker. Other worker types can extend this
+        function with additional metadata such as network information.
+        """
+
+        return json.dumps({"id": self.id, "type": type(self)})
+
     def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.
@@ -526,7 +534,7 @@ class BaseWorker(ABC):
         else:
             return response
 
-    def register_object(self, worker, obj, force_attach_to_worker=False,
+    def register_object(self, obj, force_attach_to_worker=False,
                         temporary=False, **kwargs):
         """
         Registers an object with the current worker node. Selects an
@@ -584,7 +592,7 @@ class BaseWorker(ABC):
 
         obj.owners = (kwargs['owners']
                       if 'owners' in keys
-                      else [worker.id])
+                      else [self.id])
 
         # check to see if we can resolve owner id to pointer
         owner_pointers = list()
@@ -599,7 +607,7 @@ class BaseWorker(ABC):
                           if 'is_pointer' in keys
                           else False)
 
-        mal_points_away = obj.is_pointer and worker.id in obj.owners
+        mal_points_away = obj.is_pointer and self.id in obj.owners
         # print("Mal Points Away:" + str(mal_points_away))
         # print("self.local_worker.id in obj.owners == " + str(self.local_worker.id in obj.owners))
         # The following was meant to assure that we didn't try to
@@ -621,8 +629,7 @@ class BaseWorker(ABC):
         if(hasattr(obj, 'grad')):
             if(obj.grad is not None):
                 # import pdb; pdb.set_trace()
-                self.register_object(worker=worker,
-                                     obj=obj.grad,
+                self.register_object(obj=obj.grad,
                                      force_attach_to_worker=force_attach_to_worker,
                                      temporary=temporary,
                                      id=obj.grad.id,
@@ -632,8 +639,7 @@ class BaseWorker(ABC):
             _ = obj.data
             _ = type(_)
             if(obj.data is not None):
-                self.register_object(worker=worker,
-                                     obj=obj.data,
+                self.register_object(obj=obj.data,
                                      force_attach_to_worker=force_attach_to_worker,
                                      temporary=temporary,
                                      id=obj.data.id,
@@ -726,9 +732,9 @@ class BaseWorker(ABC):
                 var_grad = None
             try:
                 result = self.register_object(
-                    self, result, id=result.id, owners=owners)
+                    result, id=result.id, owners=owners)
             except AttributeError:
-                result = self.register_object(self, result, owners=owners)
+                result = self.register_object(result, owners=owners)
 
             registration = dict(id=result.id,
                                 owners=owners, is_pointer=True)
@@ -791,26 +797,32 @@ class BaseWorker(ABC):
         except (AttributeError, KeyError):
             # Worker case: v was never formally registered
             pass
-
-        torch_object = self.register_object(self,
-                                            torch_object,
-                                            id=obj_msg['id'],
-                                            owners=[self.id],
-                                            force_attach_to_worker=force_attach_to_worker,
-                                            temporary=temporary)
+        if('is_pointer' in obj_msg and obj_msg['is_pointer']):
+            torch_object = self.register_object(torch_object,
+                                                id=obj_msg['id'],
+                                                owners=obj_msg['owners'],
+                                                force_attach_to_worker=force_attach_to_worker,
+                                                temporary=temporary,
+                                                is_pointer=True)
+        else:
+            torch_object = self.register_object(torch_object,
+                                                id=obj_msg['id'],
+                                                owners=[self.id],
+                                                force_attach_to_worker=force_attach_to_worker,
+                                                temporary=temporary)
 
         return torch_object
 
-    def prepare_send_object(self, obj, delete_local=True):
+    def prepare_send_object(self, obj, delete_local=True, send_pointer=False):
 
-        obj_json = obj.ser()
+        obj_json = obj.ser(include_data=not send_pointer)
 
         if(delete_local):
             self.rm_obj(obj.id)
 
         return obj_json
 
-    def send_obj(self, obj, recipient, delete_local=True):
+    def send_obj(self, obj, recipient, delete_local=True, send_pointer=True):
         """send_obj(self, obj, recipient, delete_local=True) -> obj
         Sends an object to another :class:`VirtualWorker` and, by default, removes it
         from the local worker. It also returns the object as a special case when
@@ -832,7 +844,9 @@ class BaseWorker(ABC):
         """
 
         # obj = recipient.receive_obj(obj.ser())
-        _obj = self.send_msg(message=self.prepare_send_object(obj, delete_local),
+        _obj = self.send_msg(message=self.prepare_send_object(obj,
+                                                              delete_local,
+                                                              send_pointer=send_pointer),
                              message_type='obj',
                              recipient=recipient)
 

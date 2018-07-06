@@ -406,7 +406,8 @@ class TorchHook(BaseHook):
 
         # if the result hasn't been registered, register it
         if (type(result) in hook_self.tensorvar_types and (not hasattr(result, 'owner'))):
-            result = hook_self.local_worker.register_object(hook_self.local_worker, result, is_pointer=False)
+            result = hook_self.local_worker.register_object(result,
+                                                            is_pointer=False)
         return result
 
     def _execute_remote_call(hook_self, _method, has_self=True):
@@ -449,8 +450,7 @@ class TorchHook(BaseHook):
                     return var_data, has_remote, multiple_owners
                 # only returns last pointer, since tensors will
                 # be identical across machines for right now
-                pointer = hook_self._assemble_result_pointer(worker,
-                                                             registration,
+                pointer = hook_self._assemble_result_pointer(registration,
                                                              torch_type,
                                                              var_data,
                                                              var_grad)
@@ -540,7 +540,7 @@ class TorchHook(BaseHook):
         except (AttributeError, TypeError):
             return x
 
-    def _assemble_result_pointer(self, worker, registration, torch_type, var_data, var_grad):
+    def _assemble_result_pointer(self, registration, torch_type, var_data, var_grad):
         """
         Assembles a pointer to a remote Torch object. Pointers feel like
         real Torch objects, but they're zero-dimensional until their
@@ -551,6 +551,7 @@ class TorchHook(BaseHook):
         torch_type: the torch class to construct the pointer from
         """
         # TODO: extend to iterables of tensor pointers
+
         try:
             torch_type = self.guard.types_guard(torch_type)
         except KeyError:
@@ -559,9 +560,8 @@ class TorchHook(BaseHook):
                     torch_type))
 
         if var_data is not None:
-            data = self._assemble_result_pointer(worker, **var_data)
-            # data = self.local_worker.register_object(
-            # worker, data, **var_data['registration'])
+            data = self._assemble_result_pointer(**var_data)
+
         elif torch_type in self.var_types:
             data = torch.Tensor(0)
         else:
@@ -571,7 +571,8 @@ class TorchHook(BaseHook):
         # grad = self.assemble_result_pointer(**var_grad)
         # self.local_worker.register_object(
         # worker, result.grad, **var_grad['registration'])
-        return self.local_worker.register_object(self.local_worker, result, **registration)
+
+        return self.local_worker.register_object(result, **registration)
 
     def _hook_torch_module(self):
         """
@@ -663,8 +664,7 @@ class TorchHook(BaseHook):
             def new___new__(cls, *args, **kwargs):
                 result = cls.old___new__(cls, *args, **kwargs)
                 result = hook_self.local_worker.register_object(
-                    hook_self.local_worker, result, is_pointer=False)
-
+                    result, is_pointer=False)
                 cls.fixed_precision = False
                 return result
 
@@ -690,7 +690,7 @@ class TorchHook(BaseHook):
             tensor_type.__repr__ = new___repr__
 
     def _hook_send_(hook_self, tensorvar_type):
-        def send_(self, workers):
+        def send_(self, workers, send_pointer=False):
             """
             Sends a Tensor or Variable object to a (sequence of) Grid workers.
 
@@ -703,19 +703,24 @@ class TorchHook(BaseHook):
             workers = hook_self.local_worker._check_workers(self, workers)
 
             for worker in workers:
-                hook_self.local_worker.send_obj(self, worker)
+                hook_self.local_worker.send_obj(self,
+                                                worker,
+                                                send_pointer=send_pointer,
+                                                delete_local=not send_pointer)
+            if(not send_pointer):
+                if(tensorvar_type == torch.autograd.variable.Variable):
+                    zeroed = self
+                else:
+                    zeroed = self.old_set_(tensorvar_type(0))
 
-            if (tensorvar_type == torch.autograd.variable.Variable):
-                zeroed = self
-            else:
-                zeroed = self.old_set_(tensorvar_type(0))
-
-            self = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                          obj=zeroed,
-                                                          id=self.id, owners=workers,
-                                                          is_pointer=True)
-            if (tensorvar_type == torch.autograd.variable.Variable):
-                return hook_self._var_to_pointer(self, hook_self)
+                self = hook_self.local_worker.register_object(obj=zeroed,
+                                                              id=self.id,
+                                                              owners=workers,
+                                                              is_pointer=True)
+                if(tensorvar_type == torch.autograd.variable.Variable):
+                    return hook_self._var_to_pointer(self)
+                else:
+                    return self
             else:
                 return self
 
@@ -748,8 +753,7 @@ class TorchHook(BaseHook):
                                                       recipient=self.owners[0])
             x, request_obj_cleanup_method = _out
 
-            hook_self.local_worker.register_object(
-                hook_self.local_worker, x, id=x.id)
+            hook_self.local_worker.register_object(x, id=x.id)
 
             _id = hook_self.local_worker.id  # for brevity
             if (type(self) != torch.autograd.variable.Variable and
@@ -761,9 +765,9 @@ class TorchHook(BaseHook):
                 if (x.grad is not None):
                     self.grad = x.grad
 
-            self = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                          _os,
-                                                          id=self.id, owners=[_id])
+            self = hook_self.local_worker.register_object(_os,
+                                                          id=self.id,
+                                                          owners=[_id])
 
             return self
 
@@ -814,8 +818,7 @@ class TorchHook(BaseHook):
             if (hasattr(self, '_owners')):
                 return self._owners
             else:
-                hook_self.local_worker.register_object(worker=hook_self.local_worker,
-                                                       obj=self)
+                hook_self.local_worker.register_object(obj=self)
                 return self._owners
 
         @owners.setter
@@ -846,8 +849,7 @@ class TorchHook(BaseHook):
                 if (not hasattr(self, 'owners')):
                     self.owners = [hook_self.local_worker.id]
 
-                self.old_data = hook_self.local_worker.register_object(hook_self.local_worker,
-                                                                       obj=self.old_data,
+                self.old_data = hook_self.local_worker.register_object(obj=self.old_data,
                                                                        owners=self.owners,
                                                                        id=obj_id,
                                                                        is_pointer=self.is_pointer)
@@ -920,8 +922,11 @@ class TorchHook(BaseHook):
             """Deserializes a {} object from JSON.""".format(tensor_type)
 
             # this could be a significant failure point, security-wise
-            data = hook_self.guard.tensor_contents_guard(obj_msg['data'])
-            v = self(data)
+            if('data' in obj_msg):
+                data = hook_self.guard.tensor_contents_guard(obj_msg['data'])
+                v = self(data)
+            else:
+                v = self([])
             return v
 
         tensor_type.ser = ser
@@ -998,15 +1003,18 @@ class TorchHook(BaseHook):
         torch.autograd.variable.Variable.ser = ser
         torch.autograd.variable.Variable.deser = deser
 
-    def _var_to_pointer(self, var, hook_self):
+    def _var_to_pointer(self, var):
 
         # recursively calls var_to_pointer in a depth first fashion
         # only recursive through variables (ignores .data)
         if var.grad is not None:
-            self._var_to_pointer(var.grad, hook_self)
+            self._var_to_pointer(var.grad)
 
         # deletes local data (because now it's a pointer to remote data)
         var.data.old_set_(var.data.__class__(0))
+
+        # double check
+        var.is_pointer = True
 
         return var
 

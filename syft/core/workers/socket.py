@@ -1,4 +1,5 @@
 import socket
+import json
 
 from .base import BaseWorker
 
@@ -120,32 +121,39 @@ class SocketWorker(BaseWorker):
             # because it's going to be issuing commands.
             if(not is_client_worker or self.is_pointer):
                 print("Ready to receive commands...")
-                self._listen()
+                # self._listen()
             else:
                 print("Ready!")
 
-    def _listen(self):
+    def whoami(self):
+        return json.dumps({"hostname": self.hostname, "port": self.port, "id": self.id})
+
+    def listen(self, num_messages=-1):
         """
         Starts SocketWorker server on the correct port and handles message as they
         are received.
         """
-        while True:
+        while num_messages != 0:
 
             # blocking until a message is received
             connection, address = self.serversocket.accept()
             try:
-                while True:
+                while num_messages != 0:
                     # collapse buffer of messages into a string
                     message = self._process_buffer(connection)
 
                     # process message and generate response
                     response = self.receive_msg(message, False)
 
+                    if(response[-1] != "\n"):
+                        response += "\n"
                     # send response back
                     connection.send(response.encode())
 
                     if(self.verbose):
                         print("Received Command From:", address)
+
+                    num_messages -= 1
             finally:
                 connection.close()
 
@@ -177,6 +185,7 @@ class SocketWorker(BaseWorker):
         buffer = socket.recv(buffer_size).decode('utf-8')
         buffering = True
         while buffering:
+
             if delimiter in buffer:
                 (line, buffer) = buffer.split(delimiter, 1)
                 return line + delimiter
