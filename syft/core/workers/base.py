@@ -111,7 +111,12 @@ class BaseWorker(object):
         self.queue_size = queue_size
 
     def whoami(self):
-        return {"id": self.id}
+        """Returns metadata information about the worker. This function returns the default
+        which is the id and type of the current worker. Other worker types can extend this
+        function with additional metadata such as network information.
+        """
+
+        return json.dumps({"id": self.id, "type":type(self)})
 
     def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
