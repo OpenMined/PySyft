@@ -115,8 +115,8 @@ class TestTorchTensor(TestCase):
         assert (x.ceil() == x).float().sum() == 5
         assert (x.ceil_() == x).float().sum() == 5
         assert (x.cpu() == x).float().sum() == 5
-
-
+    
+    
     def test_remote_tensor_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
         https://github.com/OpenMined/PySyft/issues/1385'''
@@ -140,6 +140,22 @@ class TestTorchTensor(TestCase):
 
         assert (x.cpu().get() == torch.FloatTensor([1, 2, -3, 4, 5])).float().sum() == 5
 
+    def test_local_tensor_binary_methods(self):
+        
+        x = torch.FloatTensor([1, 2, 3, 4, 5])
+        y = torch.FloatTensor([1, 2, 3, 4, 5])
+        assert (x.add_(y) == torch.FloatTensor([2,4,6,8,10])).float().sum() == 5
+
+    def test_remote_tensor_binary_methods(self):
+
+        hook = TorchHook(verbose = False)
+        local = hook.local_worker
+        remote = VirtualWorker(hook, 0)
+        local.add_worker(remote)
+
+        x = torch.FloatTensor([1, 2, 3, 4, 5]).send(remote)
+        y = torch.FloatTensor([1, 2, 3, 4, 5]).send(remote)
+        assert (x.add_(y) == torch.FloatTensor([2,4,6,8,10])).float().sum() == 5
 
 class TestTorchVariable(TestCase):
 
