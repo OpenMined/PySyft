@@ -155,7 +155,7 @@ class TestTorchTensor(TestCase):
 
         x = torch.FloatTensor([1, 2, 3, 4, 5]).send(remote)
         y = torch.FloatTensor([1, 2, 3, 4, 5]).send(remote)
-        assert (x.add_(y) == torch.FloatTensor([2,4,6,8,10])).float().sum() == 5
+        assert (x.add_(y).get() == torch.FloatTensor([2,4,6,8,10])).float().sum() == 5
 
 class TestTorchVariable(TestCase):
 
@@ -432,15 +432,15 @@ class TestTorchVariable(TestCase):
         
         x = Var(torch.FloatTensor([1, 2, 3, 4, 5]))
         y = Var(torch.FloatTensor([1, 2, 3, 4, 5]))
-        assert (x.add_(y) == Var(torch.FloatTensor([2,4,6,8,10]))).float().sum() == 5
+        assert  torch.equal(x.add_(y), Var(torch.FloatTensor([2,4,6,8,10])))
 
     def test_remote_var_binary_methods(self):
 
-        hook = TorchHook(verbose = False)
+        hook = TorchHook()
         local = hook.local_worker
         remote = VirtualWorker(hook, 0)
         local.add_worker(remote)
 
-        x = Var(torch.FloatTensor([1, 2, 3, 4, 5]).send(remote))
-        y = Var(torch.FloatTensor([1, 2, 3, 4, 5]).send(remote))
-        assert (x.add_(y) == Var(torch.FloatTensor([2,4,6,8,10]))).float().sum() == 5
+        x = Var(torch.FloatTensor([1, 2, 3, 4, 5])).send(remote)
+        y = Var(torch.FloatTensor([1, 2, 3, 4, 5])).send(remote)
+        assert torch.equal(x.add_(y).get(),  Var(torch.FloatTensor([2,4,6,8,10])))
