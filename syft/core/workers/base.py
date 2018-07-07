@@ -567,6 +567,11 @@ class BaseWorker(object):
         # TODO: Assign default id more intelligently (low priority)
         #       Consider popping id from long list of unique integers
 
+        
+        if(type(obj) in torch.tensor_types):
+            return obj
+            
+
         keys = kwargs.keys()
 
         # DO NOT DELETE THIS TRY/CATCH UNLESS YOU KNOW WHAT YOU'RE DOING
@@ -583,13 +588,13 @@ class BaseWorker(object):
             obj.data_backup = obj.data
         except:
             ""
-
+        
         obj.id = (kwargs['id']
-                  if ('id' in keys and kwargs['id'] is not None)
+                  if (kwargs is not None and 'id' in keys and kwargs['id'] is not None)
                   else random.randint(0, 1e10))
 
         obj.owners = (kwargs['owners']
-                      if 'owners' in keys
+                      if kwargs is not None and 'owners' in keys
                       else [self.id])
 
         # check to see if we can resolve owner id to pointer
@@ -601,52 +606,39 @@ class BaseWorker(object):
                 owner_pointers.append(owner)
         obj.owners = owner_pointers
 
-        obj.is_pointer = (kwargs['is_pointer']
-                          if 'is_pointer' in keys
-                          else False)
-
-        mal_points_away = obj.is_pointer and self.id in obj.owners
-        # print("Mal Points Away:" + str(mal_points_away))
-        # print("self.local_worker.id in obj.owners == " + str(self.local_worker.id in obj.owners))
-        # The following was meant to assure that we didn't try to
-        # register objects we didn't have. We end up needing to register
-        # objects with non-local owners on the worker side before sending
-        # things off, so it's been relaxed.  Consider using a 'strict'
-        # kwarg for strict checking of this stuff
-        mal_points_here = False
-        # mal_points_here = not obj.is_pointer and self.local_worker.id not in obj.owners
-        if mal_points_away or mal_points_here:
-            print("I am worker:" + str(self.id))
-            raise RuntimeError(
-                'Invalid registry: is_pointer is {} but owners is {} on tensor {}'.format(
-                    obj.is_pointer, obj.owners, obj.id))
-        # print("setting object:" + str(obj.id))
+        
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
 
-        # Perform recursive operations.
-        # If there is a child tensor (self.data)
-        if(hasattr(obj, 'grad')):
-            if(obj.grad is not None):
-                # import pdb; pdb.set_trace()
-                self.register_object(obj=obj.grad,
-                                     force_attach_to_worker=force_attach_to_worker,
-                                     temporary=temporary,
-                                     id=obj.grad.id,
-                                     owners=obj.owners,
-                                     is_pointer=obj.is_pointer)
-        try:
-            _ = obj.data
-            _ = type(_)
-            if(obj.data is not None):
-                self.register_object(obj=obj.data,
-                                     force_attach_to_worker=force_attach_to_worker,
-                                     temporary=temporary,
-                                     id=obj.data.id,
-                                     owners=obj.owners,
-                                     is_pointer=obj.is_pointer)
+        # # Perform recursive operations.
+        # # If there is a child tensor (self.data)
+        # if(hasattr(obj, 'grad')):
+        #     if(obj.grad is not None):
+        #         # import pdb; pdb.set_trace()
+        #         self.register_object(obj=obj.grad,
+        #                              force_attach_to_worker=force_attach_to_worker,
+        #                              temporary=temporary,
+        #                              id=obj.grad.id,
+        #                              owners=obj.owners)
 
-        except RuntimeError:
-            ""
+        # try:
+        #     _ = obj.data
+        #     _ = type(_)
+        #     if(obj.data is not None):
+        #         self.register_object(obj=obj.data,
+        #                              force_attach_to_worker=force_attach_to_worker,
+        #                              temporary=temporary,
+        #                              id=obj.data.id,
+        #                              owners=obj.owners)
+
+        # except RuntimeError:
+        #     ""
+
+        if(hasattr(obj, 'child')):
+            if(obj.child is not None and type(object) not in torch.tensorvar_types):
+                self.register_object(obj=obj.child,
+                                     force_attach_to_worker=force_attach_to_worker,
+                                     temporary=temporary,
+                                     owners=obj.owners)
 
         return obj
 
@@ -821,7 +813,7 @@ class BaseWorker(object):
 
         return obj_json
 
-    def send_obj(self, obj, recipient, delete_local=True, send_pointer=True):
+    def send_obj(self, obj, recipient, delete_local=True, send_pointer=False):
         """send_obj(self, obj, recipient, delete_local=True) -> obj
         Sends an object to another :class:`VirtualWorker` and, by default, removes it
         from the local worker. It also returns the object as a special case when
