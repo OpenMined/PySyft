@@ -427,3 +427,20 @@ class TestTorchVariable(TestCase):
         assert torch.equal(x.ceil().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
         assert torch.equal(x.ceil_().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
         assert torch.equal(x.cpu().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
+
+    def test_local_var_binary_methods(self):
+        
+        x = Var(torch.FloatTensor([1, 2, 3, 4, 5]))
+        y = Var(torch.FloatTensor([1, 2, 3, 4, 5]))
+        assert (x.add_(y) == Var(torch.FloatTensor([2,4,6,8,10]))).float().sum() == 5
+
+    def test_remote_var_binary_methods(self):
+
+        hook = TorchHook(verbose = False)
+        local = hook.local_worker
+        remote = VirtualWorker(hook, 0)
+        local.add_worker(remote)
+
+        x = Var(torch.FloatTensor([1, 2, 3, 4, 5]).send(remote))
+        y = Var(torch.FloatTensor([1, 2, 3, 4, 5]).send(remote))
+        assert (x.add_(y) == Var(torch.FloatTensor([2,4,6,8,10]))).float().sum() == 5
