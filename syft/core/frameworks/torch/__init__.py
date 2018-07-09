@@ -1,8 +1,8 @@
 from .hook import TorchHook
-from .tensor import _AbstractTensor, _LocalTensor, _PointerTensor
+from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
 from .tensor import _FixedPrecisionTensor, _TorchTensor
 
-__all__ = ['TorchHook', '_AbstractTensor', '_LocalTensor',
+__all__ = ['TorchHook', '_SyftTensor', '_LocalTensor',
            '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor']
 
 import torch

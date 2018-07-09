@@ -1,7 +1,7 @@
 import json
 import torch
 
-class _AbstractTensor(object):
+class _SyftTensor(object):
     ""
     
     def __init__(self, child):
@@ -36,7 +36,7 @@ class _AbstractTensor(object):
         obj_type = guard[msg_obj['type']]
 
         if('child' in msg_obj):
-            child, leaf = _AbstractTensor.deser(msg_obj['child'], highest_level=False)
+            child, leaf = _SyftTensor.deser(msg_obj['child'], highest_level=False)
             obj = obj_type(child)
         elif('data' in msg_obj):
             obj = obj_type(msg_obj['data'])
@@ -52,7 +52,7 @@ class _AbstractTensor(object):
         
 
 
-class _LocalTensor(_AbstractTensor):
+class _LocalTensor(_SyftTensor):
 
     def __init__(self, child):
         super().__init__(child=child)
@@ -70,12 +70,12 @@ class _LocalTensor(_AbstractTensor):
         # calling the native PyTorch functionality at the end
         return self.child.native___add__(other)
 
-class _PointerTensor(_AbstractTensor):
+class _PointerTensor(_SyftTensor):
     
     def __init__(self, child):
         super().__init__(child=child)
         
-class _FixedPrecisionTensor(_AbstractTensor):
+class _FixedPrecisionTensor(_SyftTensor):
     
     def __init__(self):
         super().__init__(child=child)
@@ -94,6 +94,16 @@ class _TorchTensor(object):
     def __repr__(self):
         return self.native___repr__()
 
+    def send(self, workers):
+
+        workers = self.owners[0]._check_workers(self, workers)
+
+        for worker in workers:
+            self.owners[0].send_obj(self,
+                                    worker,
+                                    delete_local=True)
+        # x.child = sy._PointerTensor(x.child)
+
     def ser(self, include_data=True, stop_recurse_at_torch_type=False):
         """Serializes a {} object to JSON.""".format(type(self))
         if(not stop_recurse_at_torch_type):
@@ -108,7 +118,7 @@ class _TorchTensor(object):
 
 guard = {
     'syft.core.frameworks.torch.tensor._PointerTensor': _PointerTensor,
-    'syft.core.frameworks.torch.tensor._AbstractTensor': _AbstractTensor,
+    'syft.core.frameworks.torch.tensor._SyftTensor': _SyftTensor,
     'syft.core.frameworks.torch.tensor._LocalTensor': _LocalTensor,
     'syft.core.frameworks.torch.tensor._FixedPrecisionTensor': _FixedPrecisionTensor,
     'syft.FloatTensor': torch.FloatTensor,

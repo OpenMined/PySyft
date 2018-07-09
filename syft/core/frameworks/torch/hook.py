@@ -6,7 +6,7 @@ import types
 import functools
 from ... import workers
 from ... import utils
-from .tensor import _AbstractTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor, _TorchTensor
+from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor, _TorchTensor
 
 class TorchHook(object):
     
@@ -79,7 +79,7 @@ class TorchHook(object):
 
         self._hook_LocalTensor(tensor_type)
         
-        self._hook_AbstractTensor(tensor_type)
+        self._hook_SyftTensor(tensor_type)
         
     def _add_registration_to___init__(hook_self, tensorvar_type, register_child_instead=False):
         """Overloads tensor_type.__new__ or Variale.__new__"""
@@ -93,7 +93,7 @@ class TorchHook(object):
                 _ = cls.child
             else:
                 cls.native___init__(*args, **kwargs)                
-                hook_self.local_worker.register_object(cls)
+                hook_self.local_worker.register_object(cls, owners=[hook_self.local_worker])
 #                 return result
 
         tensorvar_type.__init__ = new___init__
@@ -238,9 +238,9 @@ class TorchHook(object):
             if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
                 setattr(_LocalTensor, attr, new_attr)
     
-    def _hook_AbstractTensor(self, tensor_type):
+    def _hook_SyftTensor(self, tensor_type):
         
-        self._add_registration_to___init__(_AbstractTensor)        
+        self._add_registration_to___init__(_SyftTensor)        
         
         for attr in self.to_auto_overload[tensor_type]:
 
@@ -249,8 +249,8 @@ class TorchHook(object):
             new_attr = self._forward_call_to_child(passer, attr)
             
             # if we haven't already overloaded this method
-            if attr not in dir(_AbstractTensor) or getattr(_AbstractTensor, attr) is None:
-                setattr(_AbstractTensor, attr, new_attr)
+            if attr not in dir(_SyftTensor) or getattr(_SyftTensor, attr) is None:
+                setattr(_SyftTensor, attr, new_attr)
     
     def _forward_call_to_child(hook_self, method, attr, call_native=False):
         """

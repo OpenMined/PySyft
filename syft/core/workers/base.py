@@ -3,9 +3,10 @@ import json
 import numbers
 import re
 import random
+import syft
 
 from .. import utils
-
+from ..frameworks.torch.tensor import guard as tensor_guard
 
 class BaseWorker(object):
     r"""
@@ -567,7 +568,6 @@ class BaseWorker(object):
         # TODO: Assign default id more intelligently (low priority)
         #       Consider popping id from long list of unique integers
 
-        
         if(type(obj) in torch.tensor_types):
             return obj
             
@@ -606,7 +606,6 @@ class BaseWorker(object):
                 owner_pointers.append(owner)
         obj.owners = owner_pointers
 
-        
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
 
         # # Perform recursive operations.
@@ -788,19 +787,19 @@ class BaseWorker(object):
         except (AttributeError, KeyError):
             # Worker case: v was never formally registered
             pass
-        if('is_pointer' in obj_msg and obj_msg['is_pointer']):
-            torch_object = self.register_object(torch_object,
-                                                id=obj_msg['id'],
-                                                owners=obj_msg['owners'],
-                                                force_attach_to_worker=force_attach_to_worker,
-                                                temporary=temporary,
-                                                is_pointer=True)
-        else:
-            torch_object = self.register_object(torch_object,
-                                                id=obj_msg['id'],
-                                                owners=[self.id],
-                                                force_attach_to_worker=force_attach_to_worker,
-                                                temporary=temporary)
+        # if('is_pointer' in obj_msg and obj_msg['is_pointer']):
+        #     torch_object = self.register_object(torch_object,
+        #                                         id=obj_msg['id'],
+        #                                         owners=obj_msg['owners'],
+        #                                         force_attach_to_worker=force_attach_to_worker,
+        #                                         temporary=temporary,
+        #                                         is_pointer=True)
+        # else:
+        torch_object = self.register_object(torch_object.child,
+                                            id=obj_msg['id'],
+                                            owners=[self.id],
+                                            force_attach_to_worker=force_attach_to_worker,
+                                            temporary=temporary)
 
         return torch_object
 
@@ -859,9 +858,8 @@ class BaseWorker(object):
         """
 
         message_obj = json.loads(message)
-        obj_type = self.hook.guard.types_guard(message_obj['torch_type'])
-        obj = obj_type.deser(obj_type, message_obj)
-
+        
+        obj = syft.deser(message_obj)
         self.handle_register(obj, message_obj, force_attach_to_worker=True)
 
         return obj
