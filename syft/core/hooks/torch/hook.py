@@ -460,7 +460,13 @@ class TorchHook(BaseHook):
                 response = hook_self.local_worker.send_torch_command(recipient=worker,
                                                                      message=command)
 
-                registration, torch_type, var_data, var_grad = response
+                try:
+                    registration, torch_type, var_data, var_grad = response
+                except ValueError:
+                    var_data = response['numeric']
+                    registration = None
+                # registration, torch_type, var_data, var_grad = response
+
 
                 if registration is None:
                     return var_data, has_remote, multiple_owners
