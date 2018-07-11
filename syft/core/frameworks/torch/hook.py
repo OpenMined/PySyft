@@ -241,8 +241,8 @@ class TorchHook(object):
             new_attr = self._forward_call_to_children(passer, attr, call_native=True)
             
             # if we haven't already overloaded this method
-            # if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
-            setattr(_LocalTensor, attr, new_attr)
+            if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
+                setattr(_LocalTensor, attr, new_attr)
     
     def _hook_SyftTensor(self, tensor_type):
         

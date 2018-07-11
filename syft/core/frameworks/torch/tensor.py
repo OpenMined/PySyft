@@ -71,15 +71,21 @@ class _LocalTensor(_SyftTensor):
         """
         
         # custom stuff we can add
-        print("adding")
+        print("adding2")
         
         # calling the native PyTorch functionality at the end
         
-        out = list(map(lambda x:x.native____add__(other), self.children))
-        if(len(out) == 1):
-            return out[0]
+        # Note: for some reason you can't just call child.native___add__
+        # because it will give an error that the function doesn't
+        # exist. This seems to work fine though.
+        results = list()
+        for child in self.children:
+            results.append(sy.Tensor.native___add__(child,other))
+
+        if(len(results) == 1):
+            return results[0]
         else:
-            return out
+            return results
 
 
 
