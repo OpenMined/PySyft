@@ -71,7 +71,7 @@ class _LocalTensor(_SyftTensor):
         """
         
         # custom stuff we can add
-        print("adding2")
+        # print("adding2")
         
         # calling the native PyTorch functionality at the end
         
