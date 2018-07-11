@@ -8,7 +8,7 @@ import torch
 class PythonEncoder():
     """
         Encode python and torch objects to be JSON-able
-        Torch objects are replaced by an id.
+        In particular, (hooked) Torch objects are replaced by their id.
         Note that a python object is returned, not JSON.
     """
     def __init__(self, retrieve_tensorvar=False):
@@ -26,6 +26,10 @@ class PythonEncoder():
                                      torch.LongTensor])
 
     def encode(self, obj, retrieve_tensorvar=None):
+        """
+            Performs encoding, and retrieves if requested all the tensors and
+            Variables found
+        """
         if retrieve_tensorvar is not None:
             self.retrieve_tensorvar = retrieve_tensorvar
         if self.retrieve_tensorvar:
@@ -34,23 +38,29 @@ class PythonEncoder():
             return self.python_encode(obj)
 
     def python_encode(self, obj):
+        # Case of basic types
         if isinstance(obj, (int, float, str)) or obj is None:
             return obj
+        # Tensors and Variable encoded with their id
         elif isinstance(obj, self.tensorvar_types):
             if self.retrieve_tensorvar:
                 self.found_tensorvar.append(obj)
             key = '__'+type(obj).__name__+'__'
             return { key: '_fl.{}'.format(obj.id) }
-        elif isinstance(obj, (tuple, set, bytearray)):
-            key = '__'+type(obj).__name__+'__'
-            return {key:[self.python_encode(i) for i in obj]}
+        # Lists
         elif isinstance(obj, list):
             return [self.python_encode(i) for i in obj]
+        # Iterables non json-serializable
+        elif isinstance(obj, (tuple, set, bytearray, range)):
+            key = '__'+type(obj).__name__+'__'
+            return {key:[self.python_encode(i) for i in obj]}
+        # Dicts
         elif isinstance(obj, dict):
             return {
                 k: self.python_encode(v)
                 for k, v in obj.items()
             }
+        # Else try to encode in str the remaining function (eg slice)
         else:
             try:
                 return { '__eval__': str(obj) }
@@ -60,13 +70,14 @@ class PythonEncoder():
 
 class PythonJSONDecoder(json.JSONDecoder):
     """
-        Decode JSON and replace python types when need
+        Decode JSON and reinsert python types when needed
         Retrieve Torch objects replaced by their id
     """
     def __init__(self, worker, *args, **kwargs):
         super(PythonJSONDecoder, self).__init__(*args,
             object_hook=self.custom_obj_hook, **kwargs)
         self.worker = worker
+        self.evaluable_funcs = ['slice']
         self.tensorvar_types = tuple([torch.autograd.Variable,
                                      torch.nn.Parameter,
                                      torch.FloatTensor,
@@ -79,16 +90,37 @@ class PythonJSONDecoder(json.JSONDecoder):
                                      torch.LongTensor])
 
     def custom_obj_hook(self, dct):
+        """
+            Is called on every dict found. We check if some keys correspond
+            to special keywords referring to a type we need to re-cast
+            (e.g. tuple, or torch Variable).
+            Note that in the case we have such a keyword, we will have created
+            at encoding a dict with a single key value pair, so the return if
+            the for loop is valid.
+        """
         pat = re.compile('__(.+)__')
         for key, obj in dct.items():
             try:
                 obj_type = pat.search(key).group(1)
+                # Case of a tensor or a Variable
                 if obj_type in map(lambda x: x.__name__, self.tensorvar_types):
                     pattern_var = re.compile('_fl.(.*)')
                     id = int(pattern_var.search(obj).group(1))
                     return self.worker.get_obj(id)
-                elif obj_type in ('tuple', 'set', 'bytearray', 'eval'):
+                # Case of a iter type non json serializable
+                elif obj_type in ('tuple', 'set', 'bytearray', 'range'):
                     return eval(obj_type)(obj)
+                # Case where we should eval some expression
+                elif obj_type == 'eval':
+                    # Check that it a single function like `print(...)`
+                    if isinstance(obj, str):
+                        pattern_func = re.compile('^(\w+)\(')
+                        func_name = pattern_func.search(obj).group(1)
+                        # Check that the function can be safely evaluated
+                        if func_name in self.evaluable_funcs:
+                            return eval(obj_type)(obj)
+                    # If not, return the obj without eval
+                    return obj
             except AttributeError:
                 pass
         return dct
