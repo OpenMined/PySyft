@@ -178,8 +178,8 @@ class SocketWorker(BaseWorker):
 
         return response
 
-    @staticmethod
-    def _process_buffer(socket, buffer_size=1024, delimiter="\n"):
+    @classmethod
+    def _process_buffer(cls, socket, buffer_size=1024, delimiter="\n"):
         # WARNING: will hang if buffer doesn't finish with newline
 
         buffer = socket.recv(buffer_size).decode('utf-8')

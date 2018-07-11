@@ -2,6 +2,7 @@
 # from syft.core.hooks import TorchHook
 # from syft.core.workers import VirtualWorker
 
+
 # import torch
 # from torch.autograd import Variable as Var
 # import torch.optim as optim
@@ -93,6 +94,128 @@
 #         assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
 #         assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
 #         assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+
+    def test_local_tensor_unary_methods(self):
+        ''' Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385'''
+
+        x = torch.FloatTensor([1, 2, -3, 4, 5])
+        assert (x.abs() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+        assert (x.abs_() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+        x = x.cos()
+        assert (x.int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
+
+        x = x.cos_()
+        assert (x.int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
+
+        x = torch.FloatTensor([1, 2, -3, 4, 5])
+
+        assert (x.ceil() == x).float().sum() == 5
+        assert (x.ceil_() == x).float().sum() == 5
+        assert (x.cpu() == x).float().sum() == 5
+
+    def test_local_tensor_binary_methods(self):
+        ''' Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385'''
+
+        x = torch.FloatTensor([1, 2, 3, 4])
+        y = torch.FloatTensor([[1, 2, 3, 4]])
+        z = torch.matmul(x, y.t())
+        assert (torch.equal(z, torch.FloatTensor([30])))
+        z = torch.add(x, y)
+        assert (torch.equal(z, torch.FloatTensor([[2, 4, 6, 8]])))
+        x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+        y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+        z = torch.cross(x, y, dim=1)
+        assert (torch.equal(z, torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])))
+        x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+        y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+        z = torch.dist(x, y)
+        assert (torch.equal(torch.FloatTensor([z]), torch.FloatTensor([0])))
+        x = torch.FloatTensor([1, 2, 3])
+        y = torch.FloatTensor([1, 2, 3])
+        z = torch.dot(x, y)
+        assert torch.equal(torch.FloatTensor([z]), torch.FloatTensor([14]))
+        z = torch.eq(x, y)
+        assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
+        z = torch.ge(x, y)
+        assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
+
+    def test_remote_tensor_unary_methods(self):
+        ''' Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385'''
+
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        remote = VirtualWorker(hook, 0)
+        local.add_worker(remote)
+
+        x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
+        assert (x.abs().get() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+
+        x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
+        assert (x.cos().int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
+        y = x.cos_()
+        assert (y.cos_().int().get() == torch.IntTensor(
+            [0, 0, 0, 0, 0])).float().sum() == 5
+        x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
+        assert (x.ceil().get() == torch.FloatTensor([1, 2, -3, 4, 5])).float().sum() == 5
+
+        assert (x.cpu().get() == torch.FloatTensor([1, 2, -3, 4, 5])).float().sum() == 5
+
+    def test_local_tensor_binary_methods(self):
+        
+        x = torch.FloatTensor([1, 2, 3, 4, 5])
+        y = torch.FloatTensor([1, 2, 3, 4, 5])
+        assert (x.add_(y) == torch.FloatTensor([2,4,6,8,10])).float().sum() == 5
+
+    def test_remote_tensor_binary_methods(self):
+
+        hook = TorchHook(verbose = False)
+        local = hook.local_worker
+        remote = VirtualWorker(hook, 0)
+        local.add_worker(remote)
+
+        x = torch.FloatTensor([1, 2, 3, 4, 5]).send(remote)
+        y = torch.FloatTensor([1, 2, 3, 4, 5]).send(remote)
+        assert (x.add_(y).get() == torch.FloatTensor([2,4,6,8,10])).float().sum() == 5
+
+    def test_remote_tensor_binary_methods(self):
+        ''' Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385'''
+
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        remote = VirtualWorker(hook, 1)
+        local.add_worker(remote)
+
+        x = torch.FloatTensor([1, 2, 3, 4]).send(remote)
+        y = torch.FloatTensor([[1, 2, 3, 4]]).send(remote)
+        z = torch.matmul(x, y.t())
+        assert (torch.equal(z.get(), torch.FloatTensor([30])))
+        z = torch.add(x, y)
+        assert (torch.equal(z.get(), torch.FloatTensor([[2, 4, 6, 8]])))
+        x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(remote)
+        y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(remote)
+        z = torch.cross(x, y, dim=1)
+        assert (torch.equal(z.get().get(), torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])))
+        x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(remote)
+        y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(remote)
+        z = torch.dist(x, y)
+        t = torch.FloatTensor([z])
+        assert (torch.equal(t.get(), torch.FloatTensor([0.])))
+        x = torch.FloatTensor([1, 2, 3]).send(remote)
+        y = torch.FloatTensor([1, 2, 3]).send(remote)
+        z = torch.dot(x, y)
+        t = torch.FloatTensor([z])
+        assert torch.equal(t.get(), torch.FloatTensor([14]))
+        z = torch.eq(x, y)
+        assert (torch.equal(z.get(), torch.ByteTensor([1, 1, 1])))
+        z = torch.ge(x, y)
+        assert (torch.equal(z.get(), torch.ByteTensor([1, 1, 1])))
 
 
 # class TestTorchVariable(TestCase):
@@ -218,6 +341,7 @@
 #         loss = ((pred - target)**2).sum()
 #         loss.backward()
 
+
 #         # ensure that model and all (grand)children are owned by the local worker
 #         assert model.owners[0] == local.id
 #         assert model.data.owners[0] == local.id
@@ -314,3 +438,131 @@
 #         z = torch.matmul(x, y)
 #         z.get()
 #         assert torch.equal(z, Var(torch.FloatTensor([[3, 6], [7, 14]])))
+
+#     def test_torch_relu_on_remote_var(self):
+#         hook = TorchHook(verbose=False)
+#         me = hook.local_worker
+#         remote = VirtualWorker(id=2,hook=hook)
+#         me.add_worker(remote)
+
+#         x = Var(torch.FloatTensor([[1, -1], [-1, 1]]))
+#         x.send(remote)
+#         x = F.relu(x)
+#         x.get()
+#         assert torch.equal(x, Var(torch.FloatTensor([[1, 0], [0, 1]])))
+
+#     def test_local_var_unary_methods(self):
+#         ''' Unit tests for methods mentioned on issue 1385
+#             https://github.com/OpenMined/PySyft/issues/1385'''
+
+#         x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
+#         assert torch.equal(x.abs(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
+#         assert torch.equal(x.abs_(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
+#         x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
+#         assert torch.equal(x.cos().int(), Var(torch.IntTensor(
+#             [0, 0, 0, 0, 0])))
+#         x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
+#         assert torch.equal(x.cos_().int(), Var(torch.IntTensor(
+#             [0, 0, 0, 0, 0])))
+#         x = Var(torch.FloatTensor([1, 2, -3, 4, 5]))
+#         assert torch.equal(x.ceil(), x)
+#         assert torch.equal(x.ceil_(), x)
+#         assert torch.equal(x.cpu(), x)
+
+
+#     def test_local_var_binary_methods(self):
+#         ''' Unit tests for methods mentioned on issue 1385
+#             https://github.com/OpenMined/PySyft/issues/1385'''
+#         x = torch.FloatTensor([1, 2, 3, 4])
+#         y = torch.FloatTensor([[1, 2, 3, 4]])
+#         z = torch.matmul(x, y.t())
+#         assert (torch.equal(z, torch.FloatTensor([30])))
+#         z = torch.add(x, y)
+#         assert (torch.equal(z, torch.FloatTensor([[2, 4, 6, 8]])))
+#         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+#         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+#         z = torch.cross(x, y, dim=1)
+#         assert (torch.equal(z, torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])))
+#         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+#         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+#         z = torch.dist(x, y)
+#         t = torch.FloatTensor([z])
+#         assert (torch.equal(t, torch.FloatTensor([0.])))
+#         x = torch.FloatTensor([1, 2, 3])
+#         y = torch.FloatTensor([1, 2, 3])
+#         z = torch.dot(x, y)
+#         t = torch.FloatTensor([z])
+#         assert torch.equal(t, torch.FloatTensor([14]))
+#         z = torch.eq(x, y)
+#         assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
+#         z = torch.ge(x, y)
+#         assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
+
+#     def test_remote_var_unary_methods(self):
+#         ''' Unit tests for methods mentioned on issue 1385
+#             https://github.com/OpenMined/PySyft/issues/1385'''
+#         hook = TorchHook()
+#         local = hook.local_worker
+#         remote = VirtualWorker(hook, 0)
+#         local.add_worker(remote)
+
+#         x = Var(torch.FloatTensor([1, 2, -3, 4, 5])).send(remote)
+#         assert torch.equal(x.abs().get(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
+#         assert torch.equal(x.abs_().get(), Var(torch.FloatTensor([1, 2, 3, 4, 5])))
+#         assert torch.equal(x.cos().int().get(), Var(torch.IntTensor(
+#             [0, 0, 0, 0, 0])))
+#         assert torch.equal(x.cos_().int().get(), Var(torch.IntTensor(
+#             [0, 0, 0, 0, 0])))
+#         x = Var(torch.FloatTensor([1, 2, -3, 4, 5])).send(remote)
+#         assert torch.equal(x.ceil().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
+#         assert torch.equal(x.ceil_().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
+#         assert torch.equal(x.cpu().get(), Var(torch.FloatTensor([1, 2, -3, 4, 5])))
+
+#     def test_local_var_binary_methods(self):
+        
+#         x = Var(torch.FloatTensor([1, 2, 3, 4, 5]))
+#         y = Var(torch.FloatTensor([1, 2, 3, 4, 5]))
+#         assert  torch.equal(x.add_(y), Var(torch.FloatTensor([2,4,6,8,10])))
+
+#     def test_remote_var_binary_methods(self):
+
+#         hook = TorchHook()
+#         local = hook.local_worker
+#         remote = VirtualWorker(hook, 0)
+#         local.add_worker(remote)
+
+#         x = Var(torch.FloatTensor([1, 2, 3, 4, 5])).send(remote)
+#         y = Var(torch.FloatTensor([1, 2, 3, 4, 5])).send(remote)
+#         assert torch.equal(x.add_(y).get(),  Var(torch.FloatTensor([2,4,6,8,10])))
+
+#     def test_remote_var_binary_methods(self):
+#         ''' Unit tests for methods mentioned on issue 1385
+#             https://github.com/OpenMined/PySyft/issues/1385'''
+#         hook = TorchHook(verbose=False)
+#         local = hook.local_worker
+#         remote = VirtualWorker(hook, 1)
+#         local.add_worker(remote)
+
+#         x = Var(torch.FloatTensor([1, 2, 3, 4])).send(remote)
+#         y = Var(torch.FloatTensor([[1, 2, 3, 4]])).send(remote)
+#         z = torch.matmul(x, y.t())
+#         assert (torch.equal(z.get(), Var(torch.FloatTensor([30]))))
+#         z = torch.add(x, y)
+#         assert (torch.equal(z.get(), Var(torch.FloatTensor([[2, 4, 6, 8]]))))
+#         x = Var(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(remote)
+#         y = Var(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(remote)
+#         z = torch.cross(x, y, dim=1)
+#         assert (torch.equal(z.get(), Var(torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))))
+#         x = Var(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(remote)
+#         y = Var(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(remote)
+#         z = torch.dist(x, y)
+#         assert (torch.equal(z.get(), Var(torch.FloatTensor([0.]))))
+#         x = Var(torch.FloatTensor([1, 2, 3])).send(remote)
+#         y = Var(torch.FloatTensor([1, 2, 3])).send(remote)
+#         z = torch.dot(x, y)
+#         print(torch.equal(z.get(), Var(torch.FloatTensor([14]))))
+#         z = torch.eq(x, y)
+#         assert (torch.equal(z.get(), Var(torch.ByteTensor([1, 1, 1]))))
+#         z = torch.ge(x, y)
+#         assert (torch.equal(z.get(), Var(torch.ByteTensor([1, 1, 1]))))
+

@@ -91,6 +91,9 @@ class TorchHook(BaseHook):
         # this is a list of all module functions in the torch module
         self.torch_funcs = dir(torch)
 
+        # this is a list of all module functions in torch.nn.functional
+        self.torch_functional_funcs = dir(torch.nn.functional)
+
         # this is the list of torch tensor types that we will override for remote execution
         self.tensor_types = [torch.FloatTensor,
                              torch.DoubleTensor,
@@ -101,6 +104,7 @@ class TorchHook(BaseHook):
                              torch.IntTensor,
                              torch.LongTensor]
 
+
         # this is the list of torch tensor VARIABLE types that we will override for remote execution
         # Variables are simply tensors that are differentiable (support gradients)
         # Parameters are Variables that are also weights in a neural model
@@ -110,6 +114,12 @@ class TorchHook(BaseHook):
         self.tensorvar_types = self.tensor_types + \
                                [torch.autograd.variable.Variable]
         self.tensorvar_types_strs = [x.__name__ for x in self.tensorvar_types]
+
+        # a list of all methods in fixed precision type which will be overridden for remote execution
+        self.fixed_prec_var_methods = ['fixed_prec_add', 'fixed_prec_mul', 'fixed_prec_sub', 'fixed_prec_div',
+                                   'set_precision', 'fixed_prec_trudiv', 'free_precision',
+                                   '_execute_fixed_precision_call', '_conversion']
+
         self.tensorvar_methods = list(
             set(
                 [method
@@ -117,6 +127,9 @@ class TorchHook(BaseHook):
                  for method in dir(tensorvar)]
             )
         )
+
+        # adding fixed precision methods to the list of overriding methods for remote execution
+        self.tensorvar_methods.extend(self.fixed_prec_var_methods)
 
         # Methods that caused infinite recursion during testing
         # TODO: May want to handle the ones in "exclude" manually at
@@ -130,12 +143,16 @@ class TorchHook(BaseHook):
         # Torch functions we don't want to override
         self.torch_exclude = ['save', 'load', 'typename']
 
+        # Torch functions in torch.nn.functional we don't want to override
+        self.torch_functional_exclude = []
+
         self.guard = TorchGuard()
 
         if (not hasattr(torch, 'hooked')):
             if (verbose):
                 print('Hooking into Torch...')
             self._hook_torch_module()
+            self._hook_torch_functional()
             for t_type in self.tensor_types:
                 self._hook_tensor(t_type)
             self._hook_variable()
@@ -177,7 +194,6 @@ class TorchHook(BaseHook):
                 return hook_self._execute_fixed_precision_call(self, _method, args, kwargs)
 
             else:
-
                 return hook_self._execute_local_call(self, _method, args, kwargs)
 
         return method_router
@@ -201,6 +217,7 @@ class TorchHook(BaseHook):
             """
 
             part = func(*args, **kwargs)
+
 
             _res = hook_self._execute_remote_call(
                 part, has_self=False)
@@ -440,11 +457,16 @@ class TorchHook(BaseHook):
             command = hook_self._replace_in_command(command)
 
             for worker in owners:
-
                 response = hook_self.local_worker.send_torch_command(recipient=worker,
                                                                      message=command)
 
-                registration, torch_type, var_data, var_grad = response
+                try:
+                    registration, torch_type, var_data, var_grad = response
+                except ValueError:
+                    var_data = response['numeric']
+                    registration = None
+                # registration, torch_type, var_data, var_grad = response
+
 
                 if registration is None:
                     return var_data, has_remote, multiple_owners
@@ -454,6 +476,7 @@ class TorchHook(BaseHook):
                                                              torch_type,
                                                              var_data,
                                                              var_grad)
+
                 return pointer, has_remote, multiple_owners
 
         elif (has_remote and multiple_owners):
@@ -464,6 +487,7 @@ class TorchHook(BaseHook):
         #     raise NotImplementedError("""SOMETHING WENT WRONG: This should be a local call""")
 
         return (None, has_remote, multiple_owners)
+
 
     def _get_tensorvars(self, command):
         """Returns all Tensors and Variables in the args/kwargs of the command"""
@@ -480,8 +504,8 @@ class TorchHook(BaseHook):
             tensorvar_args.insert(0, command['self'])
         return tensorvar_args + tensorvar_kwvals
 
-    @staticmethod
-    def _replace_in_command(command_msg):
+    @classmethod
+    def _replace_in_command(cls, command_msg):
         command_msg['args'] = utils.map_tuple(
             None, command_msg['args'], TorchHook._replace_tensorvar)
         command_msg['kwargs'] = utils.map_dict(
@@ -493,8 +517,8 @@ class TorchHook(BaseHook):
             pass
         return command_msg
 
-    @staticmethod
-    def _compile_command(partial_func, has_self):
+    @classmethod
+    def _compile_command(cls, partial_func, has_self):
         """
         Assembles a JSON-serializable message from a partial function.
 
@@ -519,8 +543,8 @@ class TorchHook(BaseHook):
         command['kwarg_types'] = [type(kwargs[x]).__name__ for x in kwargs]
         return command
 
-    @staticmethod
-    def _replace_tensorvar(x):
+    @classmethod
+    def _replace_tensorvar(cls, x):
         """This method takes a tensor/var/param and replaces it with a
         string containing it's ID and special flag for recognizing that
         it's a tensor type arg instead of a string.
@@ -610,6 +634,45 @@ class TorchHook(BaseHook):
                 new_attr = self._get_overload_function_in_torch_module(passer)
                 setattr(torch, 'old_{}'.format(attr), lit)
                 setattr(torch, attr, new_attr)
+
+    def _hook_torch_functional(self):
+        """
+        Overloads functions in the torch.nn.functional
+
+        The way this is accomplished is by first moving all existing module functions in the torch
+        module to old_<function_name_here>. Thus, the real :func:`torch.nn.functional.relu` will become
+        :func:`torch.nn.functional.old_cat` and :func:`torch.cat` will have our hooking code. Generically,
+        this hooking code checks to see if the tensor is on the current worker (aka, we can read it)
+        or on a remote one (and we only have a pointer). If the data is local, then the method
+        will simply execute :func:`torch.old_cat`, but if the data for a tensor is remote, then
+        it will instead send a message to the remote machine instructing it to perform an arbitrary
+        command (:func:`torch.old_cat` on the remote machine).
+        """
+
+        for attr in self.torch_functional_funcs:
+
+            # Some functions we want to ignore (not override). Such functions have been hard coded
+            # into the attribute self.torch_exclude
+            if attr in self.torch_functional_exclude:
+                continue
+
+            # if we haven't already overloaded this function
+            if 'old_{}'.format(attr) in dir(torch.nn.functional):
+                continue
+
+            # if we haven't already overloaded this function (redundancy allowed)
+            if 'old_' in attr:
+                continue
+
+            # Where the overloading happens
+            lit = getattr(torch.nn.functional, attr)
+            if (type(lit) in [types.FunctionType, types.BuiltinFunctionType]):
+                passer = utils.pass_func_args(lit)
+                new_attr = self._get_overload_function_in_torch_module(passer)
+                setattr(torch.nn.functional, 'old_{}'.format(attr), lit)
+                setattr(torch.nn.functional, attr, new_attr)
+
+
 
     # ######## END GENERIC method/function hooking logic #########
     # ######## BEGIN torch TENSOR hooking #########
@@ -747,6 +810,8 @@ class TorchHook(BaseHook):
                 raise NotImplementedError('Only able to get_ tensors belonging \
                                             to a single worker right now.')
             if hook_self.local_worker.id in self.owners:
+
+
                 return self
 
             _out = hook_self.local_worker.request_obj(obj_id=self.id,
@@ -768,6 +833,7 @@ class TorchHook(BaseHook):
             self = hook_self.local_worker.register_object(_os,
                                                           id=self.id,
                                                           owners=[_id])
+
 
             return self
 

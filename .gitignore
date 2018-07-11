@@ -1,14 +1,12 @@
+.DS_Store
 build/
 dist/
 .cache/
 .eggs/
 .idea/
 .python-version
-__pycache__/
+*__pycache__*
 syft.egg-info/
-syft/__pycache__/
 *.swp
 *.swo
-*.ipynb_checkpoints
-*/*.ipynb_checkpoints
-*/*/*.ipynb_checkpoints
+*.ipynb_checkpoints*
