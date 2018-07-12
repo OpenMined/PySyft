@@ -92,8 +92,9 @@ class TorchHook(object):
                 cls.native___init__()
                 _ = cls.child
             else:
-                cls.native___init__(*args, **kwargs)                
-                hook_self.local_worker.register_object(cls, owners=[hook_self.local_worker])
+                cls.native___init__(*args, **kwargs)
+                print(cls)
+                hook_self.local_worker.register_object(cls, owner=hook_self.local_worker)
 #                 return result
 
         tensorvar_type.__init__ = new___init__
@@ -120,10 +121,10 @@ class TorchHook(object):
         tensor_type.id = id
         
         @property
-        def owners(self):
-            return self.child.owners
+        def owner(self):
+            return self.child.owner
         
-        tensor_type.owners = owners
+        tensor_type.owner = owner
     
     def _which_methods_should_we_auto_overload(self, tensor_type=torch.FloatTensor):
         to_overload = list()

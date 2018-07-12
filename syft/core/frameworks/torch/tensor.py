@@ -19,11 +19,11 @@ class _SyftTensor(object):
             tensor_msg['child'] = self.child.ser(include_data=include_data,
                                                  stop_recurse_at_torch_type=True)
         tensor_msg['id'] = self.id
-        owner_type = type(self.owners[0])
+        owner_type = type(self.owner)
         if (owner_type is int or owner_type is str):
-            tensor_msg['owners'] = self.owners
+            tensor_msg['owner'] = self.owner
         else:
-            tensor_msg['owners'] = list(map(lambda x: x.id, self.owners))
+            tensor_msg['owner'] = self.owner.id
 
         return tensor_msg
 
@@ -98,18 +98,16 @@ class _TorchTensor(object):
     def __repr__(self):
         return self.native___repr__()
 
-    def send(self, workers):
+    def send(self, worker):
 
-        workers = self.owners[0]._check_workers(self, workers)
 
-        for worker in workers:
-            self.owners[0].send_obj(self,
-                                    worker,
-                                    delete_local=True)
+        self.owner.send_obj(self,
+                                worker,
+                                delete_local=True)
 
         self.set_(sy.zeros(0))
 
-        self.child = sy._PointerTensor(child=workers)
+        self.child = sy._PointerTensor(child=worker)
 
         return self
 

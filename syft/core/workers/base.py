@@ -590,23 +590,20 @@ class BaseWorker(ABC):
             obj.data_backup = obj.data
         except:
             ""
-        
-        obj.id = (kwargs['id']
-                  if (kwargs is not None and 'id' in keys and kwargs['id'] is not None)
-                  else random.randint(0, 1e10))
 
-        obj.owners = (kwargs['owners']
-                      if kwargs is not None and 'owners' in keys
+        if(kwargs is not None and 'id' in kwargs):
+            obj.id = kwargs['id']
+        else:
+            obj.id = random.randint(0, 1e10)
+
+        obj.owner = (kwargs['owner']
+                      if kwargs is not None and 'owner' in keys
                       else [self.id])
 
         # check to see if we can resolve owner id to pointer
-        owner_pointers = list()
-        for owner in obj.owners:
-            if owner in self._known_workers.keys():
-                owner_pointers.append(self._known_workers[owner])
-            else:
-                owner_pointers.append(owner)
-        obj.owners = owner_pointers
+        if obj.owner in self._known_workers.keys():
+            obj.owner = self._known_workers[owner]
+        
 
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
 
@@ -639,7 +636,7 @@ class BaseWorker(ABC):
                 self.register_object(obj=obj.child,
                                      force_attach_to_worker=force_attach_to_worker,
                                      temporary=temporary,
-                                     owners=obj.owners)
+                                     owner=obj.owner)
 
         return obj
 
@@ -692,7 +689,7 @@ class BaseWorker(ABC):
         tensorvars = [x for x in combined if type(
             x).__name__ in self.hook.tensorvar_types_strs]
         owners = list(
-            set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
+            set([tensorvar.owner for tensorvar in tensorvars]))
 
         owner_ids = list()
         for owner in owners:
@@ -703,7 +700,7 @@ class BaseWorker(ABC):
 
         return command(*args, **kwargs), owner_ids
 
-    def compile_result(self, result, owners):
+    def compile_result(self, result, owner):
         """
         Converts the result to a JSON serializable message for sending
         over PubSub.
@@ -722,22 +719,22 @@ class BaseWorker(ABC):
                                    str(result.__class__)).group(1)
 
             try:
-                var_data = self.compile_result(result.data, owners)
+                var_data = self.compile_result(result.data, owner)
             except (AttributeError, RuntimeError):
                 var_data = None
             try:
                 assert result.grad is not None
-                var_grad = self.compile_result(result.grad, owners)
+                var_grad = self.compile_result(result.grad, owner)
             except (AttributeError, AssertionError):
                 var_grad = None
             try:
                 result = self.register_object(
-                    result, id=result.id, owners=owners)
+                    result, id=result.id, owner=owner)
             except AttributeError:
-                result = self.register_object(result, owners=owners)
+                result = self.register_object(result, owner=owner)
 
             registration = dict(id=result.id,
-                                owners=owners, is_pointer=True)
+                                owner=owner)
 
             return dict(registration=registration, torch_type=torch_type,
                         var_data=var_data, var_grad=var_grad)
@@ -745,7 +742,7 @@ class BaseWorker(ABC):
         except AttributeError as e:
             # result is occasionally a sequence of tensors or variables
 
-            return [self.compile_result(x, owners) for x in result]
+            return [self.compile_result(x, owner) for x in result]
 
     def handle_command(self, message):
         """
@@ -754,9 +751,9 @@ class BaseWorker(ABC):
 
         message = message
         # take in command message, return result of local execution
-        result, owners = self.process_command(message)
+        result, owner = self.process_command(message)
 
-        compiled = self.compile_result(result, owners)
+        compiled = self.compile_result(result, owner)
 
         compiled = json.dumps(compiled)
         if compiled is not None:
@@ -807,7 +804,7 @@ class BaseWorker(ABC):
         # else:
         torch_object = self.register_object(torch_object.child,
                                             id=obj_msg['id'],
-                                            owners=[self.id],
+                                            owner=self.id,
                                             force_attach_to_worker=force_attach_to_worker,
                                             temporary=temporary)
 
@@ -925,20 +922,6 @@ class BaseWorker(ABC):
         # in self._objects)
 
         return obj, self._clear_tmp_objects
-
-    # Helpers for HookService and TorchService
-    @classmethod
-    def _check_workers(cls, torch_obj, workers):
-        if type(workers) is str:
-            workers = [workers]
-        if issubclass(type(workers), BaseWorker):
-            workers = [workers]
-        elif not hasattr(workers, '__iter__'):
-            raise TypeError(
-                """Can only send {} to a string worker ID or an iterable of
-                string worker IDs, not {} of type {}""".format(str(type(torch_obj)), workers, str(type(workers)))
-            )
-        return workers
 
     # Worker needs to retrieve tensor by ID before computing with it
     def _retrieve_tensor(self, x):
