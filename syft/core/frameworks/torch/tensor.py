@@ -5,11 +5,8 @@ import syft as sy
 class _SyftTensor(object):
     ""
     
-    def __init__(self, children):
-        if(isinstance(children, list)):
-            self.children = children
-        else:
-            self.children = [children]
+    def __init__(self, child):
+        self.child = child
     
     # def __str__(self):
         # return "blah"
@@ -18,10 +15,9 @@ class _SyftTensor(object):
 
         tensor_msg = {}
         tensor_msg['type'] = str(self.__class__).split("'")[1]
-        if hasattr(self, 'children'):
-            tensor_msg['children'] = list(map(lambda child: child.ser(include_data=include_data,
-                                                                      stop_recurse_at_torch_type=True),
-                                              self.children))
+        if hasattr(self, 'child'):
+            tensor_msg['child'] = self.child.ser(include_data=include_data,
+                                                 stop_recurse_at_torch_type=True)
         tensor_msg['id'] = self.id
         owner_type = type(self.owners[0])
         if (owner_type is int or owner_type is str):
@@ -40,9 +36,9 @@ class _SyftTensor(object):
 
         obj_type = guard[msg_obj['type']]
 
-        if('children' in msg_obj):
-            children, leaf = _SyftTensor.deser(msg_obj['children'], highest_level=False)
-            obj = obj_type(children)
+        if('child' in msg_obj):
+            child, leaf = _SyftTensor.deser(msg_obj['child'], highest_level=False)
+            obj = obj_type(child)
             obj.id = msg_obj['id']
         elif('data' in msg_obj):
             obj = obj_type(msg_obj['data'])
@@ -60,8 +56,8 @@ class _SyftTensor(object):
 
 class _LocalTensor(_SyftTensor):
 
-    def __init__(self, children):
-        super().__init__(children=children)
+    def __init__(self, child):
+        super().__init__(child=child)
         
     def __add__(self, other):
         """
@@ -75,23 +71,19 @@ class _LocalTensor(_SyftTensor):
         
         # calling the native PyTorch functionality at the end
         
-        out = list(map(lambda x:x.native____add__(other), self.children))
-        if(len(out) == 1):
-            return out[0]
-        else:
-            return out
+        return self.child.native____add__(other)
 
 
 
 class _PointerTensor(_SyftTensor):
     
-    def __init__(self, children):
-        super().__init__(children=children)
+    def __init__(self, child):
+        super().__init__(child=child)
         
 class _FixedPrecisionTensor(_SyftTensor):
     
     def __init__(self):
-        super().__init__(children=children)
+        super().__init__(child=child)
 
 class _TorchTensor(object):
     """
@@ -118,14 +110,14 @@ class _TorchTensor(object):
 
         self.set_(sy.zeros(0))
 
-        self.children = [sy._PointerTensor(children=workers)]
+        self.child = [sy._PointerTensor(child=workers)]
 
         return self
 
     def ser(self, include_data=True, stop_recurse_at_torch_type=False):
         """Serializes a {} object to JSON.""".format(type(self))
         if(not stop_recurse_at_torch_type):
-            serializations = list(map(lambda child: child.ser(include_data=include_data), self.children))
+            serializations = self.child.ser(include_data=include_data)
             return json.dumps(serializations) + "\n"
         else:
             tensor_msg = {}

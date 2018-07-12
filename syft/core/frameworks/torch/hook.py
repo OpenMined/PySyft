@@ -63,7 +63,7 @@ class TorchHook(object):
         """Overloading a given tensor_type"""
         # Overload 'special' methods here
         
-        self._add_registration_to___init__(tensor_type, register_children_instead=True)
+        self._add_registration_to___init__(tensor_type, register_child_instead=True)
         
         self._hook_properties(tensor_type)
         
@@ -71,7 +71,7 @@ class TorchHook(object):
 
         self._rename_native_functions(tensor_type)
         
-        self._assign_methods_to_use_children(tensor_type)
+        self._assign_methods_to_use_child(tensor_type)
         
         self._add_methods_from__TorchTensor(tensor_type)
 
@@ -81,16 +81,16 @@ class TorchHook(object):
         
         self._hook_SyftTensor(tensor_type)
         
-    def _add_registration_to___init__(hook_self, tensorvar_type, register_children_instead=False):
+    def _add_registration_to___init__(hook_self, tensorvar_type, register_child_instead=False):
         """Overloads tensor_type.__new__ or Variale.__new__"""
 
         if ('native___init__' not in dir(tensorvar_type)):
             tensorvar_type.native___init__ = tensorvar_type.__init__
 
         def new___init__(cls, *args, **kwargs):
-            if(register_children_instead):
+            if(register_child_instead):
                 cls.native___init__()
-                _ = cls.children
+                _ = cls.child
             else:
                 cls.native___init__(*args, **kwargs)                
                 hook_self.local_worker.register_object(cls, owners=[hook_self.local_worker])
@@ -100,34 +100,28 @@ class TorchHook(object):
 
     def _hook_properties(hook_self, tensor_type):
         @property
-        def children(self):
-            if (hasattr(self, '_children') and self._children is not None):
-                if(isinstance(self._children, list)):
-                    return self._children
-                else:
-                    return [self._children]
+        def child(self):
+            if (hasattr(self, '_child') and self._child is not None):
+                return self._child
             else:
-                self._children = [_LocalTensor(self)]
-                return self._children
+                self._child = _LocalTensor(self)
+                return self._child
 
-        @children.setter
-        def children(self, value):
-            if(isinstance(value, list)):
-                self._children = value
-            else:
-                self._children = [value]
+        @child.setter
+        def child(self, value):
+            self._child = value
 
-        tensor_type.children = children
+        tensor_type.child = child
         
         @property
         def id(self):
-            return self.children[0].id
+            return self.child.id
         
         tensor_type.id = id
         
         @property
         def owners(self):
-            return set(reduce(lambda x,y:x+y,list(child.owners for child in self.children)))
+            return self.child.owners
         
         tensor_type.owners = owners
     
@@ -166,13 +160,13 @@ class TorchHook(object):
             
             setattr(tensor_type, attr, None)
 
-    def _assign_methods_to_use_children(self, tensor_type):
+    def _assign_methods_to_use_child(self, tensor_type):
 
         for attr in self.to_auto_overload[tensor_type]:
 
             lit = getattr(tensor_type, attr)
             passer = utils.pass_method_args(lit)
-            new_attr = self._forward_call_to_children(passer, attr)
+            new_attr = self._forward_call_to_child(passer, attr)
             
             # if we haven't already overloaded this method
             if attr not in dir(tensor_type) or getattr(tensor_type, attr) is None:
@@ -238,11 +232,11 @@ class TorchHook(object):
 
             lit = getattr(tensor_type, attr)
             passer = utils.pass_method_args(lit)
-            new_attr = self._forward_call_to_children(passer, attr, call_native=True)
+            new_attr = self._forward_call_to_child(passer, attr, call_native=True)
             
             # if we haven't already overloaded this method
-            # if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
-            setattr(_LocalTensor, attr, new_attr)
+            if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
+                setattr(_LocalTensor, attr, new_attr)
     
     def _hook_SyftTensor(self, tensor_type):
         
@@ -252,13 +246,13 @@ class TorchHook(object):
 
             lit = getattr(tensor_type, attr)
             passer = utils.pass_method_args(lit)
-            new_attr = self._forward_call_to_children(passer, attr)
+            new_attr = self._forward_call_to_child(passer, attr)
             
             # if we haven't already overloaded this method
             if attr not in dir(_SyftTensor) or getattr(_SyftTensor, attr) is None:
                 setattr(_SyftTensor, attr, new_attr)
     
-    def _forward_call_to_children(hook_self, method, attr, call_native=False):
+    def _forward_call_to_child(hook_self, method, attr, call_native=False):
         """
         Wrapper overloading partialmethod objects of Torch object
         methods.  Compiles command, checks for Tensors and Variables in
@@ -277,22 +271,14 @@ class TorchHook(object):
             """
             results = list()
             if(call_native):
-                for child in self.children:
-                    results.append(getattr(child, "native_"+attr)(*args, **kwargs))
+                result = getattr(self.child, "native_"+attr)(*args, **kwargs)
             else:
-                for child in self.children:
-                    results.append(getattr(child, attr)(*args, **kwargs))
+                result = getattr(self.child, attr)(*args, **kwargs)
+        
+            if(type(result) in torch.tensorvar_types and (not hasattr(result, 'owner'))):
+                hook_self.local_worker.register_object(result.child)
 
-            for result in results:
-                if(type(result) in torch.tensorvar_types and (not hasattr(result, 'owner'))):
-                    _children = list()
-                    for _child in result.children:
-                        _children.append(hook_self.local_worker.register_object(_child))
-                    result.children = _children
-            if(isinstance(results, list) and len(results) == 1):
-                return results[0]
-            else:
-                return results
+            return result
 
 
         return method_router
