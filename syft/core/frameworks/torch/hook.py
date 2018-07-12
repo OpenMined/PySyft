@@ -242,7 +242,7 @@ class TorchHook(object):
     
     def _hook_SyftTensor(self, tensor_type):
         
-        self._add_registration_to___init__(_SyftTensor)        
+        self._add_registration_to___init__(_SyftTensor)
         
         for attr in self.to_auto_overload[tensor_type]:
 
@@ -253,7 +253,18 @@ class TorchHook(object):
             # if we haven't already overloaded this method
             if attr not in dir(_SyftTensor) or getattr(_SyftTensor, attr) is None:
                 setattr(_SyftTensor, attr, new_attr)
-    
+
+    # def _hook_PointerTensor(self, tensor_type):
+
+    #     for attr in self.to_auto_overload[tensor_type]:
+    #         lit = getattr(tensor_type, attr)
+    #         passer = utils.pass_method_args(lit)
+    #         new_attr = self._forward_call_to_child(passer, attr, call_native=True)
+            
+    #         # if we haven't already overloaded this method
+    #         if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
+    #             setattr(_LocalTensor, attr, _execute_remote_call)
+
     def _forward_call_to_child(hook_self, method, attr, call_native=False):
         """
         Wrapper overloading partialmethod objects of Torch object
@@ -263,7 +274,6 @@ class TorchHook(object):
         accordingly.
         """
 
-        @functools.wraps(method)
         def method_router(self, *args, **kwargs):
             """
             This is a routing function. If self is a local

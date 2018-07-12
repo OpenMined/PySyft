@@ -22,3 +22,5 @@ torch.var_types = [torch.autograd.variable.Variable, torch.nn.Parameter]
 # a list of all classes in which we will override their methods for remote execution
 torch.tensorvar_types = torch.tensor_types + \
                        [torch.autograd.variable.Variable]
+
+torch.tensorvar_types_strs = [x.__name__ for x in torch.tensorvar_types]

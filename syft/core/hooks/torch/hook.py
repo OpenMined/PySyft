@@ -531,16 +531,20 @@ class TorchHook(BaseHook):
         func = partial_func.func
         args = partial_func.args
         kwargs = partial_func.keywords
+
         command = {}
         command['has_self'] = has_self
+
         if has_self:
             command['self'] = args[0]
             args = args[1:]
+
         command['command'] = func.__name__
         command['args'] = args
         command['kwargs'] = kwargs
         command['arg_types'] = [type(x).__name__ for x in args]
         command['kwarg_types'] = [type(kwargs[x]).__name__ for x in kwargs]
+
         return command
 
     @classmethod

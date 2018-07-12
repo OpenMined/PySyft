@@ -142,7 +142,9 @@ class BaseWorker(ABC):
         message_wrapper = {}
         message_wrapper['message'] = message
         message_wrapper['type'] = message_type
+
         self.message_queue.append(message_wrapper)
+
         if self.queue_size:
             if len(self.message_queue) > self.queue_size:
                 message_wrapper = self.compile_composite_message()
@@ -657,6 +659,7 @@ class BaseWorker(ABC):
         """
         # Args and kwargs contain special strings in place of tensors
         # Need to retrieve the tensors from self.worker.objects
+        print(command_msg)
         args = utils.map_tuple(
             None, command_msg['args'], self._retrieve_tensor)
         kwargs = utils.map_dict(
