@@ -70,8 +70,7 @@ class _LocalTensor(_SyftTensor):
         # print("adding2")
         
         # calling the native PyTorch functionality at the end
-
-        return self.child.native____add__(other)
+        return self.child.add(other)
 
 
 

@@ -203,6 +203,7 @@ class TorchHook(object):
                 if(attr in dir(tensor_type) and "native_"+str(attr) not in dir(tensor_type)):
                     setattr(tensor_type, "native_"+str(attr), getattr(tensor_type, attr))
                 setattr(tensor_type, attr, getattr(_TorchTensor, attr))
+
     # def _hook_send_(hook_self, tensorvar_type):
     #     def send_(self, workers):
     #         """
