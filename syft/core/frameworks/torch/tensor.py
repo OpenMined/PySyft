@@ -109,7 +109,7 @@ class _TorchTensor(object):
 
         self.set_(sy.zeros(0))
 
-        self.child = [sy._PointerTensor(child=workers)]
+        self.child = sy._PointerTensor(child=workers)
 
         return self
 
