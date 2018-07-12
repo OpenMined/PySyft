@@ -4,6 +4,7 @@ import functools
 import json
 import re
 import torch
+import types
 
 class PythonEncoder():
     """
@@ -54,18 +55,23 @@ class PythonEncoder():
         elif isinstance(obj, (tuple, set, bytearray, range)):
             key = '__'+type(obj).__name__+'__'
             return {key:[self.python_encode(i) for i in obj]}
-        # Dicts
+        # Slice
+        elif isinstance(obj, slice):
+            key = '__'+type(obj).__name__+'__'
+            return { key: { 'args': [obj.start, obj.stop, obj.step]}}
+        # Dict
         elif isinstance(obj, dict):
             return {
                 k: self.python_encode(v)
                 for k, v in obj.items()
             }
-        # Else try to encode in str the remaining function (eg slice)
+        # Generator (transformed to list)
+        elif isinstance(obj, types.GeneratorType):
+            print('Generator args can\'t be transmitted')
+            return []
+        # Else log the error
         else:
-            try:
-                return { '__eval__': str(obj) }
-            except:
-                print('Unknown type', type(obj))
+            print('Unknown type', type(obj))
             return None
 
 class PythonJSONDecoder(json.JSONDecoder):
@@ -77,7 +83,6 @@ class PythonJSONDecoder(json.JSONDecoder):
         super(PythonJSONDecoder, self).__init__(*args,
             object_hook=self.custom_obj_hook, **kwargs)
         self.worker = worker
-        self.evaluable_funcs = ['slice']
         self.tensorvar_types = tuple([torch.autograd.Variable,
                                      torch.nn.Parameter,
                                      torch.FloatTensor,
@@ -110,16 +115,10 @@ class PythonJSONDecoder(json.JSONDecoder):
                 # Case of a iter type non json serializable
                 elif obj_type in ('tuple', 'set', 'bytearray', 'range'):
                     return eval(obj_type)(obj)
-                # Case where we should eval some expression
-                elif obj_type == 'eval':
-                    # Check that it a single function like `print(...)`
-                    if isinstance(obj, str):
-                        pattern_func = re.compile('^(\w+)\(')
-                        func_name = pattern_func.search(obj).group(1)
-                        # Check that the function can be safely evaluated
-                        if func_name in self.evaluable_funcs:
-                            return eval(obj_type)(obj)
-                    # If not, return the obj without eval
+                # Case of a slice
+                elif obj_type == 'slice':
+                    return slice(*obj['args'])
+                else:
                     return obj
             except AttributeError:
                 pass

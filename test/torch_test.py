@@ -160,7 +160,7 @@ class TestTorchTensor(TestCase):
 
         hook = TorchHook(verbose=False)
         local = hook.local_worker
-        remote = VirtualWorker(hook, 0)
+        remote = VirtualWorker(id=2,hook=hook)
         local.add_worker(remote)
 
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
@@ -451,14 +451,14 @@ class TestTorchVariable(TestCase):
         loss.backward()
 
         # ensure that model and all (grand)children are owned by the local worker
-        assert model.owners[0].id == local.id
-        assert model.data.owners[0].id == local.id
+        assert model.owners[0] == local.id
+        assert model.data.owners[0] == local.id
 
         # if you get a failure here saying that model.grad.owners does not exist
         # check in hooks.py - _hook_new_grad(). self.grad_backup has probably either
         # been deleted or is being run at the wrong time (see comments there)
-        assert model.grad.owners[0].id == local.id
-        assert model.grad.data.owners[0].id == local.id
+        assert model.grad.owners[0] == local.id
+        assert model.grad.data.owners[0] == local.id
 
         # ensure that objects are not yet pointers (haven't sent it yet)
         assert not model.is_pointer
@@ -515,7 +515,7 @@ class TestTorchVariable(TestCase):
 
         datasets = [(data_bob, target_bob), (data_alice, target_alice)]
 
-        for iter in range(3):
+        for iter in range(6):
 
             for data, target in datasets:
                 model.send(data.owners[0])
@@ -643,7 +643,7 @@ class TestTorchVariable(TestCase):
     def test_remote_var_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
             https://github.com/OpenMined/PySyft/issues/1385'''
-        hook = TorchHook()
+        hook = TorchHook(verbose=False)
         local = hook.local_worker
         remote = VirtualWorker(id=2,hook=hook)
         local.add_worker(remote)
