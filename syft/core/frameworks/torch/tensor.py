@@ -67,10 +67,10 @@ class _LocalTensor(_SyftTensor):
         """
         
         # custom stuff we can add
-        print("adding")
+        # print("adding2")
         
         # calling the native PyTorch functionality at the end
-        
+
         return self.child.native____add__(other)
 
 
