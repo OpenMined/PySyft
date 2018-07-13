@@ -457,25 +457,27 @@ class TorchHook(BaseHook):
 
                 pointers = []
                 for response in responses:
-                    if isinstance(response, dict):
-                        response = response.values()
-
-                    try:
-                        registration, torch_type, var_data, var_grad = response
-                    except ValueError:
+                    # Case 1: numeric response
+                    if isinstance(response, dict) and 'numeric' in response.keys():
                         var_data = response['numeric']
-                        registration = None
-
-                    if registration is None:
                         pointers.append(var_data)
+                        continue
+                    # Case 2: normal response (reg, torch_type, data, grad)
                     else:
-                        # only returns last pointer, since tensors will
-                        # be identical across machines for right now
-                        pointer = hook_self._assemble_result_pointer(registration,
-                                                                     torch_type,
-                                                                     var_data,
-                                                                     var_grad)
-                        pointers.append(pointer)
+                        # if the response was send in a dict (vs list)
+                        if isinstance(response, dict):
+                            response = response.values()
+
+                        registration, torch_type, var_data, var_grad = response
+
+                        if registration is None:
+                            pointers.append(var_data)
+                        else:
+                            pointer = hook_self._assemble_result_pointer(registration,
+                                                                         torch_type,
+                                                                         var_data,
+                                                                         var_grad)
+                            pointers.append(pointer)
 
                 pointers = tuple(pointers) if len(pointers) > 1 else pointers[0]
 
