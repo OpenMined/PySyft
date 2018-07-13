@@ -488,8 +488,39 @@ class TestTorchVariable(TestCase):
         assert model.grad.id in remote._objects
         assert model.grad.data.id in remote._objects
 
+    def test_remote_optim_step(self):
+
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        local.verbose = False
+        remote = VirtualWorker(id=1, hook=hook, verbose=False)
+        local.add_worker(remote)
+
+        data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]])).send(remote)
+        target = Var(torch.FloatTensor([[0], [0], [1], [1]])).send(remote)
+
+        param = []
+
+        for i in range(2):
+            torch.manual_seed(42)
+            model = nn.Linear(2, 1)
+            opt = optim.SGD(params=model.parameters(), lr=0.1)
+            model.send_(remote)
+            model.zero_grad()
+            pred = model(data)
+            loss = ((pred - target) ** 2).sum()
+            loss.backward()
+            opt.step()
+            for i in model.parameters():
+                param.append(i.get())
+            model.reset_parameters()
+
+        assert (param[0] == param[2]).all()
+        assert (param[1] == param[3]).all()
+
     def test_federated_learning(self):
 
+        torch.manual_seed(42)
         hook = TorchHook(verbose=False)
         me = hook.local_worker
         me.verbose = False
@@ -517,7 +548,7 @@ class TestTorchVariable(TestCase):
 
         datasets = [(data_bob, target_bob), (data_alice, target_alice)]
 
-        for iter in range(6):
+        for iter in range(2):
 
             for data, target in datasets:
                 model.send(data.owners[0])
