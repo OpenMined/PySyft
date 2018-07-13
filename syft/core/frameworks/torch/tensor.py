@@ -1,5 +1,6 @@
 import json
 import torch
+import random
 import syft as sy
 from ... import utils
 
@@ -73,74 +74,18 @@ class _LocalTensor(_SyftTensor):
         # calling the native PyTorch functionality at the end
         return self.child.add(other)
 
-
-def _tensors_to_str_ids(tensor):
-    """This method takes a tensor/var/param and replaces it with a
-    string containing it's ID and special flag for recognizing that
-    it's a tensor type arg instead of a string.
-
-    This method also works for an iterable of tensors (e.g. `torch.cat([x1, x2, x3])`)
-    """
-    if hasattr(torch, 'native_is_tensor'):
-        check = torch.native_is_tensor
-    else:
-        check = torch.is_tensor
-    try:
-        _is_param = isinstance(tensor, torch.nn.Parameter)
-        if check(tensor) or isinstance(tensor, torch.autograd.Variable) or _is_param:
-            return tensor.id
-        else:
-            [_tensors_to_str_ids(i) for i in tensor]
-    except (AttributeError, TypeError):
-        return tensor
-
-def _replace_in_command(command_msg):
-    command_msg['args'] = utils.map_tuple(
-        None, command_msg['args'], _tensors_to_str_ids)
-    command_msg['kwargs'] = utils.map_dict(
-        None, command_msg['kwargs'], _tensors_to_str_ids)
-    try:
-        command_msg['self'] = _tensors_to_str_ids(
-            command_msg['self'])
-    except KeyError:
-        pass
-    return command_msg
-
-def compile_command(self, attr, args, kwargs, has_self):
-    
-    command = {}
-
-    command['has_self'] = has_self
-
-
-    command['self'] = self
-
-    command['command'] = attr
-    command['args'] = args
-    command['kwargs'] = kwargs
-    command['arg_types'] = [type(x).__name__ for x in args]
-    command['kwarg_types'] = [type(kwargs[x]).__name__ for x in kwargs]
-
-    kwarg_types = command['arg_types']
-    arg_types = command['arg_types']
-
-    # replace tensors with string ids
-    command = _replace_in_command(command)
-
-    return command#, arg_tensor_locations
-
 class _PointerTensor(_SyftTensor):
     
-    def __init__(self, child, parent, location=None):
+    def __init__(self, child, parent, location=None, id_at_location=None):
         super().__init__(child=child)
         self.location = location
+        self.id_at_location = id_at_location
         self.parent = parent
 
     def __add__(self, *args, **kwargs):
 
         # Step 1: Compiles Command
-        command = compile_command(self.parent, 
-                                  "__add__",
+        command = self.compile_command("__add__",
                                   args,
                                   kwargs,
                                   True)
@@ -148,7 +93,49 @@ class _PointerTensor(_SyftTensor):
         response = self.owner.send_torch_command(recipient=self.location,
                                                  message=command)
         
-        return response     
+        return response
+
+    def compile_command(self, attr, args, kwargs, has_self):
+    
+        command = {}
+
+        command['has_self'] = has_self
+
+
+        command['self'] = self.id_at_location
+
+        command['command'] = attr
+        command['args'] = utils.map_tuple(None, args, self._tensors_to_str_ids)
+        command['kwargs'] = utils.map_dict(None, kwargs, self._tensors_to_str_ids)
+        command['arg_types'] = [type(x).__name__ for x in args]
+        command['kwarg_types'] = [type(kwargs[x]).__name__ for x in kwargs]
+
+        kwarg_types = command['arg_types']
+        arg_types = command['arg_types']
+
+        return command
+
+    @staticmethod
+    def _tensors_to_str_ids(tensor):
+        """This method takes a tensor/var/param and replaces it with a
+        string containing it's ID and special flag for recognizing that
+        it's a tensor type arg instead of a string.
+
+        This method also works for an iterable of tensors (e.g. `torch.cat([x1, x2, x3])`)
+        """
+        if hasattr(torch, 'native_is_tensor'):
+            check = torch.native_is_tensor
+        else:
+            check = torch.is_tensor
+        try:
+            _is_param = isinstance(tensor, torch.nn.Parameter)
+            if check(tensor) or isinstance(tensor, torch.autograd.Variable) or _is_param:
+                return tensor.child.id_at_location
+            else:
+                [_tensors_to_str_ids(i) for i in tensor]
+        except (AttributeError, TypeError):
+            return tensor
+
 
 
 
@@ -172,16 +159,20 @@ class _TorchTensor(object):
     def __repr__(self):
         return self.native___repr__()
 
-    def send(self, worker):
+    def send(self, worker, new_id=random.randint(0,9999999999)):
 
 
         self.owner.send_obj(self,
+                            new_id,
                             worker,
                             delete_local=True)
 
         self.set_(sy.zeros(0))
 
-        self.child = sy._PointerTensor(child=None, parent=self, location=worker)
+        self.child = sy._PointerTensor(child=None,
+                                       parent=self,
+                                       location=worker,
+                                       id_at_location=new_id)
 
         return self
 

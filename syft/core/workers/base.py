@@ -818,16 +818,18 @@ class BaseWorker(ABC):
 
         return torch_object
 
-    def prepare_send_object(self, obj, delete_local=True, send_pointer=False):
-
-        obj_json = obj.ser(include_data=not send_pointer)
+    def prepare_send_object(self, obj, id=None, delete_local=True, send_pointer=False):
 
         if(delete_local):
             self.rm_obj(obj.id)
 
+        obj.child.id = id
+
+        obj_json = obj.ser(include_data=not send_pointer)
+
         return obj_json
 
-    def send_obj(self, obj, recipient, delete_local=True, send_pointer=False):
+    def send_obj(self, obj, new_id, recipient, delete_local=True, send_pointer=False):
         """send_obj(self, obj, recipient, delete_local=True) -> obj
         Sends an object to another :class:`VirtualWorker` and, by default, removes it
         from the local worker. It also returns the object as a special case when
@@ -850,7 +852,8 @@ class BaseWorker(ABC):
 
         # obj = recipient.receive_obj(obj.ser())
         _obj = self.send_msg(message=self.prepare_send_object(obj,
-                                                              delete_local,
+                                                              id=new_id,
+                                                              delete_local=delete_local,
                                                               send_pointer=send_pointer),
                              message_type='obj',
                              recipient=recipient)
