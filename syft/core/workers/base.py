@@ -659,9 +659,7 @@ class BaseWorker(ABC):
         """
         # Args and kwargs contain special strings in place of tensors
         # Need to retrieve the tensors from self.worker.objects
-        print(command_msg)
 
-        print(command_msg['args'])
         _self = self._objects[command_msg['self']]
         args = [self._objects[id].parent for id in command_msg['args']]
 
@@ -676,7 +674,7 @@ class BaseWorker(ABC):
         if(self.id != self.hook.local_worker.id):
             self.hook.local_worker.rm_obj(result.id)
 
-        print("Registering to:", self.id)
+
         self.register_object(result.child,
                              force_attach_to_worker=True,
                              owner=self,
