@@ -24,3 +24,11 @@ torch.tensorvar_types = torch.tensor_types + \
                        [torch.autograd.variable.Variable]
 
 torch.tensorvar_types_strs = [x.__name__ for x in torch.tensorvar_types]
+
+torch.tensorvar_methods = list(
+    set(
+        [method
+         for tensorvar in torch.tensorvar_types
+         for method in dir(tensorvar)]
+    )
+)

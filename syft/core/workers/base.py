@@ -3,7 +3,7 @@ import json
 import numbers
 import re
 import random
-import syft
+import syft as sy
 from abc import ABC, abstractmethod
 
 from .. import utils
@@ -660,48 +660,53 @@ class BaseWorker(ABC):
         # Args and kwargs contain special strings in place of tensors
         # Need to retrieve the tensors from self.worker.objects
         print(command_msg)
-        args = utils.map_tuple(
-            None, command_msg['args'], self._retrieve_tensor)
-        kwargs = utils.map_dict(
-            None, command_msg['kwargs'], self._retrieve_tensor)
-        has_self = command_msg['has_self']
-        # TODO: Implement get_owners and refactor to make it prettier
-        combined = list(args) + list(kwargs.values())
 
-        if has_self:
-            command = self._command_guard(command_msg['command'],
-                                          self.hook.tensorvar_methods)
-            obj_self = self._retrieve_tensor(command_msg['self'])
-            combined = combined + [obj_self]
-            command = eval('obj_self.{}'.format(command))
-        else:
-            try:
-                command = self._command_guard(
-                    command_msg['command'], self.hook.torch_funcs)
-                command = eval('torch.{}'.format(command))
-            except RuntimeError:
-                try:
-                    command = self._command_guard(
-                        command_msg['command'], self.hook.torch_functional_funcs)
-                    command = eval('torch.nn.functional.{}'.format(command))
-                except RuntimeError:
-                    pass
+        print(command_msg['args'])
+        args = [self._objects[id] for id in command_msg['args']]
+        print(args)
 
-        # we need the original tensorvar owners so that we can register
-        # the result properly later on
-        tensorvars = [x for x in combined if type(
-            x).__name__ in self.hook.tensorvar_types_strs]
-        owners = list(
-            set([tensorvar.owner for tensorvar in tensorvars]))
+        # args = utils.map_tuple(
+        #     None, command_msg['args'], self._retrieve_tensor)
+        # kwargs = utils.map_dict(
+        #     None, command_msg['kwargs'], self._retrieve_tensor)
+        # has_self = command_msg['has_self']
+        # # TODO: Implement get_owners and refactor to make it prettier
+        # combined = list(args) + list(kwargs.values())
 
-        owner_ids = list()
-        for owner in owners:
-            if(type(owner) == int):
-                owner_ids.append(owner)
-            else:
-                owner_ids.append(owner.id)
+        # if has_self:
+        #     command = self._command_guard(command_msg['command'],
+        #                                   sy.tensorvar_methods)
+        #     obj_self = self._retrieve_tensor(command_msg['self'])
+        #     combined = combined + [obj_self]
+        #     command = eval('obj_self.{}'.format(command))
+        # else:
+        #     try:
+        #         command = self._command_guard(
+        #             command_msg['command'], self.hook.torch_funcs)
+        #         command = eval('torch.{}'.format(command))
+        #     except RuntimeError:
+        #         try:
+        #             command = self._command_guard(
+        #                 command_msg['command'], self.hook.torch_functional_funcs)
+        #             command = eval('torch.nn.functional.{}'.format(command))
+        #         except RuntimeError:
+        #             pass
 
-        return command(*args, **kwargs), owner_ids
+        # # we need the original tensorvar owners so that we can register
+        # # the result properly later on
+        # tensorvars = [x for x in combined if type(
+        #     x).__name__ in sy.tensorvar_types_strs]
+        # owners = list(
+        #     set([tensorvar.owner for tensorvar in tensorvars]))
+
+        # owner_ids = list()
+        # for owner in owners:
+        #     if(type(owner) == int):
+        #         owner_ids.append(owner)
+        #     else:
+        #         owner_ids.append(owner.id)
+
+        # return command(*args, **kwargs), owner_ids
 
     def compile_result(self, result, owner):
         """
@@ -755,15 +760,15 @@ class BaseWorker(ABC):
         message = message
         # take in command message, return result of local execution
         result, owner = self.process_command(message)
+        print(result)
+        # compiled = self.compile_result(result, owner)
 
-        compiled = self.compile_result(result, owner)
-
-        compiled = json.dumps(compiled)
-        if compiled is not None:
-            return compiled
-        else:
-            return dict(registration=None, torch_type=None,
-                        var_data=None, var_grad=None)
+        # compiled = json.dumps(compiled)
+        # if compiled is not None:
+        #     return compiled
+        # else:
+        #     return dict(registration=None, torch_type=None,
+        #                 var_data=None, var_grad=None)
 
     def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):
         """
@@ -869,7 +874,7 @@ class BaseWorker(ABC):
 
         message_obj = json.loads(message)
         
-        obj = syft.deser(message_obj)
+        obj = sy.deser(message_obj)
         self.handle_register(obj, message_obj, force_attach_to_worker=True)
 
         return obj

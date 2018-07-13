@@ -88,11 +88,11 @@ def _tensors_to_str_ids(tensor):
     try:
         _is_param = isinstance(tensor, torch.nn.Parameter)
         if check(tensor) or isinstance(tensor, torch.autograd.Variable) or _is_param:
-            return '_fl.{}'.format(tensor.id)
+            return tensor.id
         else:
             [_tensors_to_str_ids(i) for i in tensor]
     except (AttributeError, TypeError):
-        return x
+        return tensor
 
 def _replace_in_command(command_msg):
     command_msg['args'] = utils.map_tuple(
@@ -106,16 +106,14 @@ def _replace_in_command(command_msg):
         pass
     return command_msg
 
-def compile_command(attr, args, kwargs, has_self):
+def compile_command(self, attr, args, kwargs, has_self):
     
     command = {}
 
     command['has_self'] = has_self
 
 
-    if(has_self):
-        command['self'] = args[0]
-        args = args[1:]
+    command['self'] = self
 
     command['command'] = attr
     command['args'] = args
@@ -133,17 +131,19 @@ def compile_command(attr, args, kwargs, has_self):
 
 class _PointerTensor(_SyftTensor):
     
-    def __init__(self, child, location=None):
+    def __init__(self, child, parent, location=None):
         super().__init__(child=child)
         self.location = location
+        self.parent = parent
 
     def __add__(self, *args, **kwargs):
 
         # Step 1: Compiles Command
-        command = compile_command("__add__",
+        command = compile_command(self.parent, 
+                                  "__add__",
                                   args,
                                   kwargs,
-                                  False)
+                                  True)
 
         response = self.owner.send_torch_command(recipient=self.location,
                                                  message=command)
@@ -181,7 +181,7 @@ class _TorchTensor(object):
 
         self.set_(sy.zeros(0))
 
-        self.child = sy._PointerTensor(child=None, location=worker)
+        self.child = sy._PointerTensor(child=None, parent=self, location=worker)
 
         return self
 
