@@ -1,10 +1,11 @@
 """Framework agnostic static utility functions."""
-import functools
-
 import json
 import re
-import torch
 import types
+import functools
+import logging
+
+import torch
 
 class PythonEncoder():
     """
@@ -67,12 +68,11 @@ class PythonEncoder():
             }
         # Generator (transformed to list)
         elif isinstance(obj, types.GeneratorType):
-            print('Generator args can\'t be transmitted')
+            logging.warning("Generator args can't be transmitted")
             return []
         # Else log the error
         else:
-            print('Unknown type', type(obj))
-            return None
+            raise ValueError('Unhandled type', type(obj))
 
 class PythonJSONDecoder(json.JSONDecoder):
     """
