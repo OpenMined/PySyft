@@ -449,27 +449,37 @@ class TorchHook(BaseHook):
         if has_remote and not multiple_owners:
 
             for worker in owners:
-                response = hook_self.local_worker.send_torch_command(recipient=worker,
+                responses = hook_self.local_worker.send_torch_command(recipient=worker,
                                                                      message=command)
 
-                try:
-                    registration, torch_type, var_data, var_grad = response
-                except ValueError:
-                    var_data = response['numeric']
-                    registration = None
-                # registration, torch_type, var_data, var_grad = response
+                if not isinstance(responses, list):
+                    responses = [responses]
 
+                pointers = []
+                for response in responses:
+                    if isinstance(response, dict):
+                        response = response.values()
 
-                if registration is None:
-                    return var_data, has_remote, multiple_owners
-                # only returns last pointer, since tensors will
-                # be identical across machines for right now
-                pointer = hook_self._assemble_result_pointer(registration,
-                                                             torch_type,
-                                                             var_data,
-                                                             var_grad)
+                    try:
+                        registration, torch_type, var_data, var_grad = response
+                    except ValueError:
+                        var_data = response['numeric']
+                        registration = None
 
-                return pointer, has_remote, multiple_owners
+                    if registration is None:
+                        pointers.append(var_data)
+                    else:
+                        # only returns last pointer, since tensors will
+                        # be identical across machines for right now
+                        pointer = hook_self._assemble_result_pointer(registration,
+                                                                     torch_type,
+                                                                     var_data,
+                                                                     var_grad)
+                        pointers.append(pointer)
+
+                pointers = tuple(pointers) if len(pointers) > 1 else pointers[0]
+
+                return pointers, has_remote, multiple_owners
 
         elif (has_remote and multiple_owners):
             raise NotImplementedError("""MPC not yet implemented:
