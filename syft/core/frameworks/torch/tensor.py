@@ -37,13 +37,14 @@ class _SyftTensor(object):
     @parent.setter
     def parent(self, value):
         self._parent = value
-    
+
     def create_pointer(self, register=False):
         ptr = _PointerTensor(child=None,
                              parent=None,
                              location=self.owner.id,
                              id_at_location=self.id,
-                             owner=self.owner)
+                             owner=self.owner,
+                             torch_type="syft."+type(self.find_torch_object_in_family_tree()).__name__)
 
         if(not register):
             ptr.owner.rm_obj(ptr.id)
@@ -76,7 +77,7 @@ class _SyftTensor(object):
 
     @staticmethod
     def deser(msg, highest_level=True):
-        print(msg)
+
         if isinstance(msg, str):
             msg_obj = json.loads(msg)
         else:
@@ -101,7 +102,8 @@ class _SyftTensor(object):
                            parent = None,
                            id=msg_obj['id'],
                            location = msg_obj['location'],
-                           id_at_location = msg_obj['id_at_location'])
+                           id_at_location = msg_obj['id_at_location'],
+                           torch_type = msg_obj['torch_type'])
             return obj
 
         if(highest_level):
@@ -133,10 +135,11 @@ class _LocalTensor(_SyftTensor):
 
 class _PointerTensor(_SyftTensor):
     
-    def __init__(self, child, parent, location=None, id_at_location=None, id=None, owner=None):
+    def __init__(self, child, parent, location=None, id_at_location=None, id=None, owner=None, torch_type=None):
         super().__init__(child=child, parent=parent, owner=owner, id=id)
-        self.location = location
+        self.location = self.owner.get_worker(location)
         self.id_at_location = id_at_location
+        self.torch_type = torch_type
 
     def __add__(self, *args, **kwargs):
 
@@ -148,11 +151,18 @@ class _PointerTensor(_SyftTensor):
 
         response = self.owner.send_torch_command(recipient=self.location,
                                                  message=command)
-        return sy.deser(response)
+        return sy.deser(response).wrap()
+
+    def wrap(self):
+        wrapper = guard[self.torch_type]()
+        self.owner.rm_obj(wrapper.child.id)
+        wrapper.child = self
+        return wrapper
 
     def add_type_specific_attributes(self, tensor_msg):
         tensor_msg['location'] = self.location
         tensor_msg['id_at_location'] = self.id_at_location
+        tensor_msg['torch_type'] = self.torch_type
         return tensor_msg
 
     def compile_command(self, attr, args, kwargs, has_self):

@@ -4,6 +4,7 @@ import re
 import json
 import types
 import functools
+import syft as sy
 from ... import workers
 from ... import utils
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor, _TorchTensor
@@ -104,9 +105,8 @@ class TorchHook(object):
                 _ = cls.child
             else:
                 cls.native___init__(*args, **kwargs)
-                print(cls)
                 owner.register_object(cls, owner=owner, id=id)
-#                 return result
+    #                 return result
 
         tensorvar_type.__init__ = new___init__
 

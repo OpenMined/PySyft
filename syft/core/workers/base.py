@@ -355,7 +355,10 @@ class BaseWorker(ABC):
                 self.add_worker(id_or_worker)
             return self._known_workers[id_or_worker.id]
         else:
-            return self._known_workers[id_or_worker]
+            if(id_or_worker in self._known_workers):
+                return self._known_workers[id_or_worker]
+            else:
+                return id_or_worker
 
     def get_obj(self, remote_key):
         """get_obj(remote_key) -> a torch object
