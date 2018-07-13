@@ -7,8 +7,33 @@ from ... import utils
 class _SyftTensor(object):
     ""
     
-    def __init__(self, child):
+    def __init__(self, child, parent):
         self.child = child
+        self.parent = parent
+
+        if(self.child is not None):
+            self.child.parent = self
+
+    def find_torch_object_in_family_tree(self):
+
+        ch = self.child
+        while(True):
+            if issubclass(type(ch), torch.Tensor):
+                return ch
+
+            ch = ch.child
+
+    @property
+    def parent(self):
+        if(hasattr(self, '_parent') and self._parent is not None):
+            return self._parent
+        else:
+            self._parent = self.find_torch_object_in_family_tree()
+            return self._parent
+
+    @parent.setter
+    def parent(self, value):
+        self._parent = value
     
     # def __str__(self):
         # return "blah"
@@ -40,7 +65,7 @@ class _SyftTensor(object):
 
         if('child' in msg_obj):
             child, leaf = _SyftTensor.deser(msg_obj['child'], highest_level=False)
-            obj = obj_type(child)
+            obj = obj_type(child=child, parent=None)
             obj.id = msg_obj['id']
         elif('data' in msg_obj):
             obj = obj_type(msg_obj['data'])
@@ -58,8 +83,8 @@ class _SyftTensor(object):
 
 class _LocalTensor(_SyftTensor):
 
-    def __init__(self, child):
-        super().__init__(child=child)
+    def __init__(self, child, parent):
+        super().__init__(child=child, parent=parent)
         
     def __add__(self, other):
         """
@@ -77,10 +102,9 @@ class _LocalTensor(_SyftTensor):
 class _PointerTensor(_SyftTensor):
     
     def __init__(self, child, parent, location=None, id_at_location=None):
-        super().__init__(child=child)
+        super().__init__(child=child, parent=parent)
         self.location = location
         self.id_at_location = id_at_location
-        self.parent = parent
 
     def __add__(self, *args, **kwargs):
 
@@ -137,13 +161,10 @@ class _PointerTensor(_SyftTensor):
             return tensor
 
 
-
-
-        
 class _FixedPrecisionTensor(_SyftTensor):
     
-    def __init__(self):
-        super().__init__(child=child)
+    def __init__(self, child, parent):
+        super().__init__(child=child, parent=parent)
 
 class _TorchTensor(object):
     """

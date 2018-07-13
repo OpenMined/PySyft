@@ -88,13 +88,19 @@ class TorchHook(object):
             tensorvar_type.native___init__ = tensorvar_type.__init__
 
         def new___init__(cls, *args, **kwargs):
+
+            if('owner' in kwargs):
+                owner = kwargs['owner']
+            else:
+                owner = hook_self.local_worker
+
             if(register_child_instead):
                 cls.native___init__()
                 _ = cls.child
             else:
                 cls.native___init__(*args, **kwargs)
                 print(cls)
-                hook_self.local_worker.register_object(cls, owner=hook_self.local_worker)
+                owner.register_object(cls, owner=owner)
 #                 return result
 
         tensorvar_type.__init__ = new___init__
@@ -105,7 +111,7 @@ class TorchHook(object):
             if (hasattr(self, '_child') and self._child is not None):
                 return self._child
             else:
-                self._child = _LocalTensor(self)
+                self._child = _LocalTensor(child=self, parent=self)
                 return self._child
 
         @child.setter

@@ -662,8 +662,27 @@ class BaseWorker(ABC):
         print(command_msg)
 
         print(command_msg['args'])
-        args = [self._objects[id] for id in command_msg['args']]
-        print(args)
+        _self = self._objects[command_msg['self']]
+        args = [self._objects[id].parent for id in command_msg['args']]
+
+        result = getattr(_self, command_msg['command'])(*args)
+
+        # sometimes for virtual workers the owner is not correct
+        # because it defaults to hook.local_worker
+        result.child.owner = _self.owner
+
+        # if we're using virtual workers, we need to de-register the
+        # object from the default worker
+        if(self.id != self.hook.local_worker.id):
+            self.hook.local_worker.rm_obj(result.id)
+
+        print("Registering to:", self.id)
+        self.register_object(result.child,
+                             force_attach_to_worker=True,
+                             owner=self,
+                             id=result.id)
+
+        return result.ser(include_data=False)
 
         # args = utils.map_tuple(
         #     None, command_msg['args'], self._retrieve_tensor)
@@ -708,50 +727,6 @@ class BaseWorker(ABC):
 
         # return command(*args, **kwargs), owner_ids
 
-    def compile_result(self, result, owner):
-        """
-        Converts the result to a JSON serializable message for sending
-        over PubSub.
-        """
-        if result is None:
-            return dict(registration=None, torch_type=None,
-                        var_data=None, var_grad=None)
-        try:
-
-            # result is infrequently a numeric
-            if isinstance(result, numbers.Number):
-                return {'numeric': result}
-
-            # result is usually a tensor/variable
-            torch_type = re.search("<class '(torch.(.*))'>",
-                                   str(result.__class__)).group(1)
-
-            try:
-                var_data = self.compile_result(result.data, owner)
-            except (AttributeError, RuntimeError):
-                var_data = None
-            try:
-                assert result.grad is not None
-                var_grad = self.compile_result(result.grad, owner)
-            except (AttributeError, AssertionError):
-                var_grad = None
-            try:
-                result = self.register_object(
-                    result, id=result.id, owner=owner)
-            except AttributeError:
-                result = self.register_object(result, owner=owner)
-
-            registration = dict(id=result.id,
-                                owner=owner)
-
-            return dict(registration=registration, torch_type=torch_type,
-                        var_data=var_data, var_grad=var_grad)
-
-        except AttributeError as e:
-            # result is occasionally a sequence of tensors or variables
-
-            return [self.compile_result(x, owner) for x in result]
-
     def handle_command(self, message):
         """
         Main function that handles incoming torch commands.
@@ -759,16 +734,9 @@ class BaseWorker(ABC):
 
         message = message
         # take in command message, return result of local execution
-        result, owner = self.process_command(message)
-        print(result)
-        # compiled = self.compile_result(result, owner)
-
-        # compiled = json.dumps(compiled)
-        # if compiled is not None:
-        #     return compiled
-        # else:
-        #     return dict(registration=None, torch_type=None,
-        #                 var_data=None, var_grad=None)
+        response = self.process_command(message)
+        
+        return response
 
     def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):
         """
