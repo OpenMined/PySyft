@@ -593,7 +593,7 @@ class BaseWorker(ABC):
         except:
             ""
 
-        if(kwargs is not None and 'id' in kwargs):
+        if(kwargs is not None and 'id' in kwargs and kwargs['id'] is not None):
             obj.id = kwargs['id']
         else:
             obj.id = random.randint(0, 1e10)
@@ -680,7 +680,9 @@ class BaseWorker(ABC):
                              owner=self,
                              id=result.id)
 
-        return result.ser(include_data=False)
+        ptr = result.create_pointer(register=False)
+
+        return ptr.ser(include_data=False)
 
         # args = utils.map_tuple(
         #     None, command_msg['args'], self._retrieve_tensor)

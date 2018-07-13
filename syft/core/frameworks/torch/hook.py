@@ -89,10 +89,15 @@ class TorchHook(object):
 
         def new___init__(cls, *args, **kwargs):
 
-            if('owner' in kwargs):
+            if('owner' in kwargs and kwargs['owner'] is not None):
                 owner = kwargs['owner']
             else:
                 owner = hook_self.local_worker
+
+            if('id' in kwargs):
+                id = kwargs['id']
+            else:
+                id = None
 
             if(register_child_instead):
                 cls.native___init__()
@@ -100,7 +105,7 @@ class TorchHook(object):
             else:
                 cls.native___init__(*args, **kwargs)
                 print(cls)
-                owner.register_object(cls, owner=owner)
+                owner.register_object(cls, owner=owner, id=id)
 #                 return result
 
         tensorvar_type.__init__ = new___init__

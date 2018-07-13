@@ -7,12 +7,15 @@ from ... import utils
 class _SyftTensor(object):
     ""
     
-    def __init__(self, child, parent):
+    def __init__(self, child, parent, id=None, owner=None):
         self.child = child
         self.parent = parent
 
         if(self.child is not None):
             self.child.parent = self
+
+        if(owner is not None):
+            self.owner = owner
 
     def find_torch_object_in_family_tree(self):
 
@@ -35,14 +38,29 @@ class _SyftTensor(object):
     def parent(self, value):
         self._parent = value
     
+    def create_pointer(self, register=False):
+        ptr = _PointerTensor(child=None,
+                             parent=None,
+                             location=self.owner.id,
+                             id_at_location=self.id,
+                             owner=self.owner)
+
+        if(not register):
+            ptr.owner.rm_obj(ptr.id)
+
+        return ptr
+
     # def __str__(self):
         # return "blah"
+
+    def add_type_specific_attributes(self, tensor_msg):
+        return tensor_msg
 
     def ser(self, include_data=True, *args, **kwargs):
 
         tensor_msg = {}
         tensor_msg['type'] = str(self.__class__).split("'")[1]
-        if hasattr(self, 'child'):
+        if hasattr(self, 'child') and self.child is not None:
             tensor_msg['child'] = self.child.ser(include_data=include_data,
                                                  stop_recurse_at_torch_type=True)
         tensor_msg['id'] = self.id
@@ -52,10 +70,13 @@ class _SyftTensor(object):
         else:
             tensor_msg['owner'] = self.owner.id
 
+        tensor_msg = self.add_type_specific_attributes(tensor_msg)
+
         return tensor_msg
 
     @staticmethod
     def deser(msg, highest_level=True):
+        print(msg)
         if isinstance(msg, str):
             msg_obj = json.loads(msg)
         else:
@@ -64,14 +85,25 @@ class _SyftTensor(object):
         obj_type = guard[msg_obj['type']]
 
         if('child' in msg_obj):
+            # deserialize syft object and children
+
             child, leaf = _SyftTensor.deser(msg_obj['child'], highest_level=False)
             obj = obj_type(child=child, parent=None)
             obj.id = msg_obj['id']
+
         elif('data' in msg_obj):
+            # deserialize torch variable object
             obj = obj_type(msg_obj['data'])
             return obj, obj
         else:
-            print("something went wrong...")
+            # deserialize data-less object - likely a pointer
+            obj = obj_type(child = None,
+                           parent = None,
+                           id=msg_obj['id'],
+                           location = msg_obj['location'],
+                           id_at_location = msg_obj['id_at_location'])
+            return obj
+
         if(highest_level):
             leaf.child = obj
             return leaf
@@ -83,8 +115,8 @@ class _SyftTensor(object):
 
 class _LocalTensor(_SyftTensor):
 
-    def __init__(self, child, parent):
-        super().__init__(child=child, parent=parent)
+    def __init__(self, child, parent, owner=None):
+        super().__init__(child=child, parent=parent, owner=owner)
         
     def __add__(self, other):
         """
@@ -101,8 +133,8 @@ class _LocalTensor(_SyftTensor):
 
 class _PointerTensor(_SyftTensor):
     
-    def __init__(self, child, parent, location=None, id_at_location=None):
-        super().__init__(child=child, parent=parent)
+    def __init__(self, child, parent, location=None, id_at_location=None, id=None, owner=None):
+        super().__init__(child=child, parent=parent, owner=owner, id=id)
         self.location = location
         self.id_at_location = id_at_location
 
@@ -116,8 +148,12 @@ class _PointerTensor(_SyftTensor):
 
         response = self.owner.send_torch_command(recipient=self.location,
                                                  message=command)
-        
-        return response
+        return sy.deser(response)
+
+    def add_type_specific_attributes(self, tensor_msg):
+        tensor_msg['location'] = self.location
+        tensor_msg['id_at_location'] = self.id_at_location
+        return tensor_msg
 
     def compile_command(self, attr, args, kwargs, has_self):
     
@@ -163,8 +199,8 @@ class _PointerTensor(_SyftTensor):
 
 class _FixedPrecisionTensor(_SyftTensor):
     
-    def __init__(self, child, parent):
-        super().__init__(child=child, parent=parent)
+    def __init__(self, child, parent, owner=None):
+        super().__init__(child=child, parent=parent, owner=owner)
 
 class _TorchTensor(object):
     """
@@ -179,6 +215,9 @@ class _TorchTensor(object):
 
     def __repr__(self):
         return self.native___repr__()
+
+    def create_pointer(self, register=False):
+        return self.child.create_pointer(register=register)
 
     def send(self, worker, new_id=random.randint(0,9999999999)):
 
