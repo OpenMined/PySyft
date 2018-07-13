@@ -1,6 +1,7 @@
 from unittest import TestCase
 from syft.core.hooks import TorchHook
 from syft.core.workers import VirtualWorker
+from syft.core import utils
 
 import torch
 from torch.autograd import Variable as Var
@@ -141,6 +142,8 @@ class TestTorchTensor(TestCase):
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([1, 2, 3])
         z = torch.dot(x, y)
+        # There is an issue with some Macs getting 0.0 instead
+        # Solved here: https://github.com/pytorch/pytorch/issues/5609
         assert torch.equal(torch.FloatTensor([z]), torch.FloatTensor([14]))
 
         z = torch.eq(x, y)
@@ -159,7 +162,7 @@ class TestTorchTensor(TestCase):
 
         hook = TorchHook(verbose=False)
         local = hook.local_worker
-        remote = VirtualWorker(hook, 0)
+        remote = VirtualWorker(id=2,hook=hook)
         local.add_worker(remote)
 
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
@@ -361,6 +364,35 @@ class TestTorchVariable(TestCase):
 
         assert True
 
+    def test_encode_decode_json_python(self):
+        """
+            Test that the python objects are correctly encoded and decoded in
+            json with our encoder/JSONDecoder.
+            The main focus is on non-serializable objects, such as torch Variable
+            or tuple, or even slice().
+        """
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        remote = VirtualWorker(id=1, hook=hook)
+        local.add_worker(remote)
+
+        encoder = utils.PythonEncoder(retrieve_tensorvar=True)
+        decoder = utils.PythonJSONDecoder(remote)
+        x = Var(torch.FloatTensor([[1, -1],[0,1]]))
+        x.send(remote)
+        # Note that there is two steps of encoding/decoding because the first
+        # transforms `Variable containing:[torch.FloatTensor - Locations:[
+        # <syft.core.workers.virtual.VirtualWorker id:2>]]` into
+        # Variable containing:[torch.FloatTensor - Locations:[2]]`
+        obj = [None, ({'marcel': (1, [1.3], x), 'proust': slice(0, 2, None)}, 3)]
+        enc, t = encoder.encode(obj)
+        enc = json.dumps(enc)
+        dec1 = decoder.decode(enc)
+        enc, t = encoder.encode(dec1)
+        enc = json.dumps(enc)
+        dec2 = decoder.decode(enc)
+        assert dec1 == dec2
+
     def test_var_gradient_keeps_id_during_send_(self):
         # PyTorch has a tendency to delete var.grad python objects
         # and re-initialize them (resulting in new/random ids)
@@ -485,7 +517,7 @@ class TestTorchVariable(TestCase):
 
         datasets = [(data_bob, target_bob), (data_alice, target_alice)]
 
-        for iter in range(3):
+        for iter in range(6):
 
             for data, target in datasets:
                 model.send(data.owners[0])
@@ -517,7 +549,33 @@ class TestTorchVariable(TestCase):
         z.get()
         assert torch.equal(z, Var(torch.FloatTensor([[3, 6], [7, 14]])))
 
-    def test_torch_relu_on_remote_var(self):
+    def test_torch_function_with_multiple_input_on_remote_var(self):
+        hook = TorchHook(verbose=False)
+        me = hook.local_worker
+        remote = VirtualWorker(id=2,hook=hook)
+        me.add_worker(remote)
+
+        x = Var(torch.FloatTensor([1,2]))
+        y = Var(torch.FloatTensor([3,4]))
+        x.send(remote)
+        y.send(remote)
+        z = torch.stack([x,y])
+        z.get()
+        assert torch.equal(z, Var(torch.FloatTensor([[1, 2], [3, 4]])))
+
+    def test_torch_function_with_multiple_output_on_remote_var(self):
+        hook = TorchHook(verbose=False)
+        me = hook.local_worker
+        remote = VirtualWorker(id=2,hook=hook)
+        me.add_worker(remote)
+
+        x = Var(torch.FloatTensor([[1,2],[4,3],[5,6]]))
+        x.send(remote)
+        y, z = torch.max(x, 1)
+        y.get()
+        assert torch.equal(y, Var(torch.FloatTensor([2, 4, 6])))
+
+    def test_torch_F_relu_on_remote_var(self):
         hook = TorchHook(verbose=False)
         me = hook.local_worker
         remote = VirtualWorker(id=2,hook=hook)
@@ -528,6 +586,40 @@ class TestTorchVariable(TestCase):
         x = F.relu(x)
         x.get()
         assert torch.equal(x, Var(torch.FloatTensor([[1, 0], [0, 1]])))
+
+    def test_torch_F_conv2d_on_remote_var(self):
+        hook = TorchHook(verbose=False)
+        me = hook.local_worker
+        remote = VirtualWorker(id=2,hook=hook)
+        me.add_worker(remote)
+
+        x = Var(torch.FloatTensor([[[[1, -1, 2], [-1, 0, 1], [1, 0, -2]]]]))
+        x.send(remote)
+        weight = torch.nn.Parameter(torch.FloatTensor([[[[1, -1], [-1, 1]]]]))
+        bias = torch.nn.Parameter(torch.FloatTensor([0]))
+        weight.send(remote)
+        bias.send(remote)
+        conv = F.conv2d(x, weight, bias, stride=(1,1))
+        conv.get()
+        expected_conv = Var(torch.FloatTensor([[[[3, -2], [-2, -3]]]]))
+        assert torch.equal(conv, expected_conv)
+
+    def test_torch_nn_conv2d_on_remote_var(self):
+        hook = TorchHook(verbose=False)
+        me = hook.local_worker
+        remote = VirtualWorker(id=2,hook=hook)
+        me.add_worker(remote)
+
+        x = Var(torch.FloatTensor([[[[1, -1, 2], [-1, 0, 1], [1, 0, -2]]]]))
+        x.send(remote)
+        convolute = nn.Conv2d(1, 1, 2, stride=1, padding=0)
+        convolute.weight = torch.nn.Parameter(torch.FloatTensor([[[[1, -1], [-1, 1]]]]))
+        convolute.bias = torch.nn.Parameter(torch.FloatTensor([0]))
+        convolute.send(remote)
+        conv = convolute(x)
+        conv.get()
+        expected_conv = Var(torch.FloatTensor([[[[3, -2], [-2, -3]]]]))
+        assert torch.equal(conv, expected_conv)
 
     def test_local_var_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
@@ -579,9 +671,9 @@ class TestTorchVariable(TestCase):
     def test_remote_var_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
             https://github.com/OpenMined/PySyft/issues/1385'''
-        hook = TorchHook()
+        hook = TorchHook(verbose=False)
         local = hook.local_worker
-        remote = VirtualWorker(hook, 0)
+        remote = VirtualWorker(id=2,hook=hook)
         local.add_worker(remote)
 
         x = Var(torch.FloatTensor([1, 2, -3, 4, 5])).send(remote)

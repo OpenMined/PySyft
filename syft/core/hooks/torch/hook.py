@@ -186,7 +186,6 @@ class TorchHook(BaseHook):
             _method = method(self, *args, **kwargs)
 
             if hasattr(self, 'is_pointer') and self.is_pointer:
-
                 return hook_self._execute_remote_call(_method,
                                                       has_self=True)[0]
             elif (hasattr(self, 'fixed_precision') and self.fixed_precision):
@@ -215,9 +214,7 @@ class TorchHook(BaseHook):
             the call locally. If self is a remote tensor, it
             executes a call to a remote worker.
             """
-
             part = func(*args, **kwargs)
-
 
             _res = hook_self._execute_remote_call(
                 part, has_self=False)
@@ -435,11 +432,8 @@ class TorchHook(BaseHook):
         from within _overload_method and _overload_function
         """
 
-        # Step 1: Compiles Command
-        command = hook_self._compile_command(_method, has_self=has_self)
-
-        # Step 2: checks for Tensors and Variables in the args/kwargs
-        tensorvars = hook_self._get_tensorvars(command)
+        # Step 1/2: Compiles Command in JSON and retrieve Tensors and Variables
+        command, tensorvars = hook_self._compile_command(_method, has_self=has_self)
 
         # Step 3: Checks to see if the tensor is local (on this machine) or is a pointer
         # to a remote one (on a different machine)
@@ -454,30 +448,40 @@ class TorchHook(BaseHook):
         # if the tensor only has one owner (remote)
         if has_remote and not multiple_owners:
 
-            command = hook_self._replace_in_command(command)
-
             for worker in owners:
-                response = hook_self.local_worker.send_torch_command(recipient=worker,
+                responses = hook_self.local_worker.send_torch_command(recipient=worker,
                                                                      message=command)
 
-                try:
-                    registration, torch_type, var_data, var_grad = response
-                except ValueError:
-                    var_data = response['numeric']
-                    registration = None
-                # registration, torch_type, var_data, var_grad = response
+                if not isinstance(responses, list):
+                    responses = [responses]
 
+                pointers = []
+                for response in responses:
+                    # Case 1: numeric response
+                    if isinstance(response, dict) and 'numeric' in response.keys():
+                        var_data = response['numeric']
+                        pointers.append(var_data)
+                        continue
+                    # Case 2: normal response (reg, torch_type, data, grad)
+                    else:
+                        # if the response was send in a dict (vs list)
+                        if isinstance(response, dict):
+                            response = response.values()
 
-                if registration is None:
-                    return var_data, has_remote, multiple_owners
-                # only returns last pointer, since tensors will
-                # be identical across machines for right now
-                pointer = hook_self._assemble_result_pointer(registration,
-                                                             torch_type,
-                                                             var_data,
-                                                             var_grad)
+                        registration, torch_type, var_data, var_grad = response
 
-                return pointer, has_remote, multiple_owners
+                        if registration is None:
+                            pointers.append(var_data)
+                        else:
+                            pointer = hook_self._assemble_result_pointer(registration,
+                                                                         torch_type,
+                                                                         var_data,
+                                                                         var_grad)
+                            pointers.append(pointer)
+
+                pointers = tuple(pointers) if len(pointers) > 1 else pointers[0]
+
+                return pointers, has_remote, multiple_owners
 
         elif (has_remote and multiple_owners):
             raise NotImplementedError("""MPC not yet implemented:
@@ -487,35 +491,6 @@ class TorchHook(BaseHook):
         #     raise NotImplementedError("""SOMETHING WENT WRONG: This should be a local call""")
 
         return (None, has_remote, multiple_owners)
-
-
-    def _get_tensorvars(self, command):
-        """Returns all Tensors and Variables in the args/kwargs of the command"""
-
-        args = command['args']
-        kwargs = command['kwargs']
-        arg_types = command['arg_types']
-        kwarg_types = command['kwarg_types']
-        tensorvar_args = [args[i]
-                          for i in range(len(args)) if arg_types[i] in self.tensorvar_types_strs]
-        tensorvar_kwvals = [kwargs[i][1] for i in range(len(kwargs))
-                            if kwarg_types[i] in self.tensorvar_types_strs]
-        if command['has_self']:
-            tensorvar_args.insert(0, command['self'])
-        return tensorvar_args + tensorvar_kwvals
-
-    @classmethod
-    def _replace_in_command(cls, command_msg):
-        command_msg['args'] = utils.map_tuple(
-            None, command_msg['args'], TorchHook._replace_tensorvar)
-        command_msg['kwargs'] = utils.map_dict(
-            None, command_msg['kwargs'], TorchHook._replace_tensorvar)
-        try:
-            command_msg['self'] = TorchHook._replace_tensorvar(
-                command_msg['self'])
-        except KeyError:
-            pass
-        return command_msg
 
     @classmethod
     def _compile_command(cls, partial_func, has_self):
@@ -539,30 +514,10 @@ class TorchHook(BaseHook):
         command['command'] = func.__name__
         command['args'] = args
         command['kwargs'] = kwargs
-        command['arg_types'] = [type(x).__name__ for x in args]
-        command['kwarg_types'] = [type(kwargs[x]).__name__ for x in kwargs]
-        return command
 
-    @classmethod
-    def _replace_tensorvar(cls, x):
-        """This method takes a tensor/var/param and replaces it with a
-        string containing it's ID and special flag for recognizing that
-        it's a tensor type arg instead of a string.
-
-        This method also works for an iterable of tensors (e.g. `torch.cat([x1, x2, x3])`)
-        """
-        if hasattr(torch, 'old_is_tensor'):
-            check = torch.old_is_tensor
-        else:
-            check = torch.is_tensor
-        try:
-            _is_param = isinstance(x, torch.nn.Parameter)
-            if check(x) or isinstance(x, torch.autograd.Variable) or _is_param:
-                return '_fl.{}'.format(x.id)
-            else:
-                [TorchHook._replace_tensorvar(i) for i in x]
-        except (AttributeError, TypeError):
-            return x
+        encoder = utils.PythonEncoder()
+        command, tensorvars = encoder.encode(command, retrieve_tensorvar=True)
+        return command, tensorvars
 
     def _assemble_result_pointer(self, registration, torch_type, var_data, var_grad):
         """
