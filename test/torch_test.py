@@ -43,7 +43,7 @@ class TestTorchTensor(TestCase):
         # at this point, the remote worker should have x in its objects dict
         assert x.id in remote._objects
 
-        assert((x.get_() == torch.FloatTensor([1, 2, 3, 4, 5])).float().mean() == 1)
+        assert((x.get_() == torch.FloatTensor([1, 2, 3, 4, 5])).all())
 
         # because .get_() was called, x should no longer be in the remote worker's objects dict
         assert x.id not in remote._objects
@@ -51,7 +51,7 @@ class TestTorchTensor(TestCase):
     def test_deser_tensor(self):
 
         unregistered_tensor = torch.FloatTensor.deser(torch.FloatTensor, {"data": [1, 2, 3, 4, 5]})
-        assert (unregistered_tensor == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+        assert (unregistered_tensor == torch.FloatTensor([1, 2, 3, 4, 5])).all()
 
     def test_deser_tensor_from_message(self):
 
@@ -63,7 +63,7 @@ class TestTorchTensor(TestCase):
         obj_type = hook.guard.types_guard(message_obj['torch_type'])
         unregistered_tensor = torch.FloatTensor.deser(obj_type, message_obj)
 
-        assert (unregistered_tensor == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+        assert (unregistered_tensor == torch.FloatTensor([1, 2, 3, 4, 5])).all()
 
         # has not been registered
         assert unregistered_tensor.id != 9756847736
@@ -74,47 +74,47 @@ class TestTorchTensor(TestCase):
         x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
         y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
 
-        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
-        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
-        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
-        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
+        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).all()
+        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).all()
+        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
 
         x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
         y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
 
-        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
-        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
-        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
-        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
+        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).all()
+        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).all()
+        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
 
         x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
         y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
 
-        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
-        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).float().sum() == 5
-        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).float().sum() == 5
-        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).float().sum() == 5
+        assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
+        assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).all()
+        assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).all()
+        assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
 
     def test_local_tensor_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
         https://github.com/OpenMined/PySyft/issues/1385'''
 
         x = torch.FloatTensor([1, 2, -3, 4, 5])
-        assert (x.abs() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
-        assert (x.abs_() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+        assert (x.abs() == torch.FloatTensor([1, 2, 3, 4, 5])).all()
+        assert (x.abs_() == torch.FloatTensor([1, 2, 3, 4, 5])).all()
         x = x.cos()
         assert (x.int().get() == torch.IntTensor(
-            [0, 0, 0, 0, 0])).float().sum() == 5
+            [0, 0, 0, 0, 0])).all()
 
         x = x.cos_()
         assert (x.int().get() == torch.IntTensor(
-            [0, 0, 0, 0, 0])).float().sum() == 5
+            [0, 0, 0, 0, 0])).all()
 
         x = torch.FloatTensor([1, 2, -3, 4, 5])
 
-        assert (x.ceil() == x).float().sum() == 5
-        assert (x.ceil_() == x).float().sum() == 5
-        assert (x.cpu() == x).float().sum() == 5
+        assert (x.ceil() == x).all()
+        assert (x.ceil_() == x).all()
+        assert (x.cpu() == x).all()
 
     def test_local_tensor_binary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
@@ -151,7 +151,7 @@ class TestTorchTensor(TestCase):
 
         x = torch.FloatTensor([1, 2, 3, 4, 5])
         y = torch.FloatTensor([1, 2, 3, 4, 5])
-        assert (x.add_(y) == torch.FloatTensor([2, 4, 6, 8, 10])).float().sum() == 5
+        assert (x.add_(y) == torch.FloatTensor([2, 4, 6, 8, 10])).all()
 
     def test_remote_tensor_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
@@ -163,18 +163,18 @@ class TestTorchTensor(TestCase):
         local.add_worker(remote)
 
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
-        assert (x.abs().get() == torch.FloatTensor([1, 2, 3, 4, 5])).float().sum() == 5
+        assert (x.abs().get() == torch.FloatTensor([1, 2, 3, 4, 5])).all()
 
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
         assert (x.cos().int().get() == torch.IntTensor(
-            [0, 0, 0, 0, 0])).float().sum() == 5
+            [0, 0, 0, 0, 0])).all()
         y = x.cos_()
         assert (y.cos_().int().get() == torch.IntTensor(
-            [0, 0, 0, 0, 0])).float().sum() == 5
+            [0, 0, 0, 0, 0])).all()
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(remote)
-        assert (x.ceil().get() == torch.FloatTensor([1, 2, -3, 4, 5])).float().sum() == 5
+        assert (x.ceil().get() == torch.FloatTensor([1, 2, -3, 4, 5])).all()
 
-        assert (x.cpu().get() == torch.FloatTensor([1, 2, -3, 4, 5])).float().sum() == 5
+        assert (x.cpu().get() == torch.FloatTensor([1, 2, -3, 4, 5])).all()
 
 
     def test_remote_tensor_binary_methods(self):
@@ -186,7 +186,7 @@ class TestTorchTensor(TestCase):
 
         x = torch.FloatTensor([1, 2, 3, 4, 5]).send(remote)
         y = torch.FloatTensor([1, 2, 3, 4, 5]).send(remote)
-        assert (x.add_(y).get() == torch.FloatTensor([2,4,6,8,10])).float().sum() == 5
+        assert (x.add_(y).get() == torch.FloatTensor([2,4,6,8,10])).all()
 
         x = torch.FloatTensor([1, 2, 3, 4]).send(remote)
         y = torch.FloatTensor([[1, 2, 3, 4]]).send(remote)
