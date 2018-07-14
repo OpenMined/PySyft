@@ -488,8 +488,51 @@ class TestTorchVariable(TestCase):
         assert model.grad.id in remote._objects
         assert model.grad.data.id in remote._objects
 
+    def test_remote_optim_step(self):
+
+        torch.manual_seed(42)
+        hook = TorchHook(verbose=False)
+        local = hook.local_worker
+        local.verbose = False
+        remote = VirtualWorker(id=1, hook=hook, verbose=False)
+        local.add_worker(remote)
+        param = []
+
+        data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]])).send(remote)
+        target = Var(torch.FloatTensor([[0], [0], [1], [1]])).send(remote)
+
+        model = nn.Linear(2, 1)
+        opt = optim.SGD(params=model.parameters(), lr=0.1)
+
+        for i in model.parameters():
+            param.append(i[:])
+
+        model.send_(remote)
+        model.zero_grad()
+        pred = model(data)
+        loss = ((pred - target) ** 2).sum()
+        loss.backward()
+        opt.step()
+
+        model.get_()
+        for i in model.parameters():
+            param.append(i[:])
+
+        x = []
+        for i in param:
+            if type(i.data[0]) != float:
+                x.append(i.data[0][0])
+                x.append(i.data[0][1])
+            else:
+                x.append(i.data[0])
+
+        y = [0.5406, 0.5869, -0.16565567255020142, 0.6732, 0.5103, -0.0841369703412056]
+
+        assert (self.assertAlmostEqual(X,Y) for X,Y in zip(x,y))
+
     def test_federated_learning(self):
 
+        torch.manual_seed(42)
         hook = TorchHook(verbose=False)
         me = hook.local_worker
         me.verbose = False
@@ -517,7 +560,7 @@ class TestTorchVariable(TestCase):
 
         datasets = [(data_bob, target_bob), (data_alice, target_alice)]
 
-        for iter in range(6):
+        for iter in range(2):
 
             for data, target in datasets:
                 model.send(data.owners[0])
@@ -530,10 +573,10 @@ class TestTorchVariable(TestCase):
                 opt.step()
 
                 model.get_()
-                if(iter == 0):
-                    first_loss = loss.get().data[0]
+                if(iter == 1):
+                    final_loss = loss.get().data[0]
 
-        assert loss.get().data[0] < first_loss
+        assert final_loss == 0.18085284531116486
 
     def test_torch_function_on_remote_var(self):
         hook = TorchHook(verbose=False)
