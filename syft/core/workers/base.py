@@ -202,8 +202,8 @@ class BaseWorker(ABC):
 
         if(is_binary):
             message_wrapper_json = message_wrapper_json.decode('utf-8')
-        message_wrapper = json.loads(message_wrapper_json)
-
+        decoder = utils.PythonJSONDecoder(self)
+        message_wrapper = decoder.decode(message_wrapper_json)
         return self.process_message_type(message_wrapper)
 
     def process_message_type(self, message_wrapper):
@@ -359,7 +359,7 @@ class BaseWorker(ABC):
         This method fetches a tensor from the worker's internal
         registry of tensors using its id. Note that this
         will not work on client worker because they do not
-        store objects interanlly. However, it can be used on
+        store objects internally. However, it can be used on
         remote workers, including remote :class:`VirtualWorker`
         objects, as pictured below in the example.
 
@@ -668,19 +668,19 @@ class BaseWorker(ABC):
         """
         # Args and kwargs contain special strings in place of tensors
         # Need to retrieve the tensors from self.worker.objects
-        args = utils.map_tuple(
-            None, command_msg['args'], self._retrieve_tensor)
-        kwargs = utils.map_dict(
-            None, command_msg['kwargs'], self._retrieve_tensor)
+        arg_tensors = self._retrieve_tensor(command_msg['args'])
+        args = command_msg['args']
+        kwarg_tensors = self._retrieve_tensor(list(command_msg['kwargs'].values()))
+        kwargs = command_msg['kwargs']
         has_self = command_msg['has_self']
         # TODO: Implement get_owners and refactor to make it prettier
-        combined = list(args) + list(kwargs.values())
+        tensorvars = arg_tensors + kwarg_tensors
 
         if has_self:
-            command = self._command_guard(command_msg['command'],
-                                          self.hook.tensorvar_methods)
-            obj_self = self._retrieve_tensor(command_msg['self'])
-            combined = combined + [obj_self]
+            command = self._command_guard(
+                command_msg['command'], self.hook.tensorvar_methods)
+            obj_self = self._retrieve_tensor(command_msg['self'])[0]
+            tensorvars = tensorvars + [obj_self]
             command = eval('obj_self.{}'.format(command))
         else:
             try:
@@ -692,13 +692,11 @@ class BaseWorker(ABC):
                     command = self._command_guard(
                         command_msg['command'], self.hook.torch_functional_funcs)
                     command = eval('torch.nn.functional.{}'.format(command))
-                except RuntimeError:
+                except ValueError:
                     pass
 
         # we need the original tensorvar owners so that we can register
         # the result properly later on
-        tensorvars = [x for x in combined if type(
-            x).__name__ in self.hook.tensorvar_types_strs]
         owners = list(
             set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
 
@@ -708,7 +706,6 @@ class BaseWorker(ABC):
                 owner_ids.append(owner)
             else:
                 owner_ids.append(owner.id)
-
         return command(*args, **kwargs), owner_ids
 
     def compile_result(self, result, owners):
@@ -760,7 +757,6 @@ class BaseWorker(ABC):
         Main function that handles incoming torch commands.
         """
 
-        message = message
         # take in command message, return result of local execution
         result, owners = self.process_command(message)
 
@@ -950,16 +946,14 @@ class BaseWorker(ABC):
         return workers
 
     # Worker needs to retrieve tensor by ID before computing with it
-    def _retrieve_tensor(self, x):
-        try:
-            return self.get_obj(self._id_tensorvar(x))
-        except TypeError:
-            try:
-                return [self.get_obj(i) for i in self._id_tensorvar(x)]
-            except TypeError:
-                return x
-        except KeyError:
-            return x
+    def _retrieve_tensor(self, obj):
+        """
+            Small trick to leverage the work made by the PythonEncoder:
+            recursively inspect an object and return all Tensors/Variable/etc.
+        """
+        encoder = utils.PythonEncoder(retrieve_tensorvar=True)
+        _, tensorvars = encoder.encode(obj)
+        return tensorvars
 
     @classmethod
     def _command_guard(cls, command, allowed):
@@ -975,14 +969,3 @@ class BaseWorker(ABC):
         except RuntimeError:
             return False
         return True
-
-    # # Client needs to identify a tensor before sending commands that use it
-    def _id_tensorvar(self, x):
-        pat = re.compile('_fl.(.*)')
-        try:
-            if isinstance(x, str):
-                return int(pat.search(x).group(1))
-            else:
-                return [self._id_tensorvar(i) for i in x]
-        except AttributeError:
-            return x
