@@ -1,0 +1,516 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>torch._tensor_str &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> PySyft
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../torch.html">torch</a> &raquo;</li>
+        
+      <li>torch._tensor_str</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for torch._tensor_str</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">reduce</span>
+<span class="kn">from</span> <span class="nn">._utils</span> <span class="k">import</span> <span class="n">_range</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="k">import</span> <span class="n">float_info</span>
+
+
+<span class="k">class</span> <span class="nc">__PrinterOptions</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">edgeitems</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">linewidth</span> <span class="o">=</span> <span class="mi">80</span>
+
+
+<span class="n">PRINT_OPTS</span> <span class="o">=</span> <span class="n">__PrinterOptions</span><span class="p">()</span>
+<span class="n">SCALE_FORMAT</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{:.5e}</span><span class="s1"> *</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+
+<span class="c1"># We could use **kwargs, but this will give better docs</span>
+<div class="viewcode-block" id="set_printoptions"><a class="viewcode-back" href="../../index.html#syft.set_printoptions">[docs]</a><span class="k">def</span> <span class="nf">set_printoptions</span><span class="p">(</span>
+        <span class="n">precision</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">edgeitems</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">linewidth</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">profile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Set options for printing. Items shamelessly taken from Numpy</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        precision: Number of digits of precision for floating point output</span>
+<span class="sd">            (default 8).</span>
+<span class="sd">        threshold: Total number of array elements which trigger summarization</span>
+<span class="sd">            rather than full repr (default 1000).</span>
+<span class="sd">        edgeitems: Number of array items in summary at beginning and end of</span>
+<span class="sd">            each dimension (default 3).</span>
+<span class="sd">        linewidth: The number of characters per line for the purpose of</span>
+<span class="sd">            inserting line breaks (default 80). Thresholded matricies will</span>
+<span class="sd">            ignore this parameter.</span>
+<span class="sd">        profile: Sane defaults for pretty printing. Can override with any of</span>
+<span class="sd">            the above options. (default, short, full)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">profile</span> <span class="o">==</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">precision</span> <span class="o">=</span> <span class="mi">4</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="mi">1000</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">edgeitems</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">linewidth</span> <span class="o">=</span> <span class="mi">80</span>
+        <span class="k">elif</span> <span class="n">profile</span> <span class="o">==</span> <span class="s2">&quot;short&quot;</span><span class="p">:</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">precision</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="mi">1000</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">edgeitems</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">linewidth</span> <span class="o">=</span> <span class="mi">80</span>
+        <span class="k">elif</span> <span class="n">profile</span> <span class="o">==</span> <span class="s2">&quot;full&quot;</span><span class="p">:</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">precision</span> <span class="o">=</span> <span class="mi">4</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">edgeitems</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">linewidth</span> <span class="o">=</span> <span class="mi">80</span>
+
+    <span class="k">if</span> <span class="n">precision</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">precision</span> <span class="o">=</span> <span class="n">precision</span>
+    <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+    <span class="k">if</span> <span class="n">edgeitems</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">edgeitems</span> <span class="o">=</span> <span class="n">edgeitems</span>
+    <span class="k">if</span> <span class="n">linewidth</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">linewidth</span> <span class="o">=</span> <span class="n">linewidth</span></div>
+
+
+<span class="k">def</span> <span class="nf">_get_min_log_scale</span><span class="p">():</span>
+    <span class="n">min_positive</span> <span class="o">=</span> <span class="n">float_info</span><span class="o">.</span><span class="n">min</span> <span class="o">*</span> <span class="n">float_info</span><span class="o">.</span><span class="n">epsilon</span>  <span class="c1"># get smallest denormal</span>
+    <span class="k">if</span> <span class="n">min_positive</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># use smallest normal if DAZ/FTZ is set</span>
+        <span class="n">min_positive</span> <span class="o">=</span> <span class="n">float_info</span><span class="o">.</span><span class="n">min</span>
+    <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">min_positive</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_number_format</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">min_sz</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">_min_log_scale</span> <span class="o">=</span> <span class="n">_get_min_log_scale</span><span class="p">()</span>
+    <span class="n">min_sz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_sz</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">DoubleTensor</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">size</span><span class="p">())</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span><span class="o">.</span><span class="n">abs_</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">nelement</span><span class="p">())</span>
+
+    <span class="n">pos_inf_mask</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+    <span class="n">neg_inf_mask</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">))</span>
+    <span class="n">nan_mask</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">ne</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span>
+    <span class="n">invalid_value_mask</span> <span class="o">=</span> <span class="n">pos_inf_mask</span> <span class="o">+</span> <span class="n">neg_inf_mask</span> <span class="o">+</span> <span class="n">nan_mask</span>
+    <span class="k">if</span> <span class="n">invalid_value_mask</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="n">example_value</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">example_value</span> <span class="o">=</span> <span class="n">tensor</span><span class="p">[</span><span class="n">invalid_value_mask</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="mi">0</span><span class="p">)][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">tensor</span><span class="p">[</span><span class="n">invalid_value_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">example_value</span>
+    <span class="k">if</span> <span class="n">invalid_value_mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">min_sz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_sz</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">int_mode</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1"># TODO: use fmod?</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">tensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">!=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="n">int_mode</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">break</span>
+
+    <span class="n">exp_min</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">exp_min</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">exp_min</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">exp_min</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">exp_min</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">exp_max</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">exp_max</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">exp_max</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">exp_max</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">exp_max</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">exp_max</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">exp_max</span><span class="p">)</span>
+    <span class="n">prec</span> <span class="o">=</span> <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">precision</span>
+    <span class="k">if</span> <span class="n">int_mode</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">exp_max</span> <span class="o">&gt;</span> <span class="n">prec</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="s1">&#39;{{:11.</span><span class="si">{}</span><span class="s1">e}}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prec</span><span class="p">)</span>
+            <span class="n">sz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_sz</span><span class="p">,</span> <span class="mi">7</span> <span class="o">+</span> <span class="n">prec</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_sz</span><span class="p">,</span> <span class="n">exp_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="s1">&#39;{:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">sz</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.0f}&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">exp_max</span> <span class="o">-</span> <span class="n">exp_min</span> <span class="o">&gt;</span> <span class="n">prec</span><span class="p">:</span>
+            <span class="n">sz</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">+</span> <span class="n">prec</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">exp_max</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">99</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">exp_min</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">99</span><span class="p">:</span>
+                <span class="n">sz</span> <span class="o">=</span> <span class="n">sz</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">sz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_sz</span><span class="p">,</span> <span class="n">sz</span><span class="p">)</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="s1">&#39;{{:</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">e}}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sz</span><span class="p">,</span> <span class="n">prec</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exp_max</span> <span class="o">&gt;</span> <span class="n">prec</span> <span class="o">+</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">exp_max</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_sz</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+                <span class="n">scale</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">exp_max</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">_min_log_scale</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">exp_max</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">sz</span> <span class="o">=</span> <span class="mi">7</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">sz</span> <span class="o">=</span> <span class="n">exp_max</span> <span class="o">+</span> <span class="mi">6</span>
+                <span class="n">sz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_sz</span><span class="p">,</span> <span class="n">sz</span><span class="p">)</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="s1">&#39;{{:</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">f}}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sz</span><span class="p">,</span> <span class="n">prec</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">format</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span>
+
+
+<span class="k">def</span> <span class="nf">_tensor_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">edgeitems</span>
+    <span class="n">has_hdots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span>
+    <span class="n">has_vdots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span>
+    <span class="n">print_full_mat</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">has_hdots</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_vdots</span>
+    <span class="n">formatter</span> <span class="o">=</span> <span class="n">_number_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_sz</span><span class="o">=</span><span class="mi">3</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">print_full_mat</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">print_dots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">threshold</span>
+
+    <span class="n">dim_sz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()))</span>
+    <span class="n">dim_fmt</span> <span class="o">=</span> <span class="s2">&quot;{:^&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">dim_sz</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
+    <span class="n">dot_fmt</span> <span class="o">=</span> <span class="sa">u</span><span class="s2">&quot;{:^&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">dim_sz</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
+
+    <span class="n">counter_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndimension</span><span class="p">()</span> <span class="o">-</span> <span class="mi">2</span>
+    <span class="n">counter</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongStorage</span><span class="p">(</span><span class="n">counter_dim</span><span class="p">)</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">counter</span><span class="p">[</span><span class="n">counter</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">finished</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">strt</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">nrestarted</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">counter</span><span class="p">]</span>
+        <span class="n">nskipped</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">counter</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">_range</span><span class="p">(</span><span class="n">counter_dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">counter</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">print_dots</span> <span class="ow">and</span> <span class="n">counter</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">n</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">:</span>
+                <span class="n">counter</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">-</span> <span class="n">n</span>
+                <span class="n">nskipped</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">counter</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">finished</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">counter</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">nrestarted</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">elif</span> <span class="n">print_dots</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">nskipped</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">hdot</span> <span class="ow">in</span> <span class="n">nskipped</span><span class="p">:</span>
+                    <span class="n">strt</span> <span class="o">+=</span> <span class="n">dot_fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;...&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">hdot</span> \
+                        <span class="k">else</span> <span class="n">dot_fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">nrestarted</span><span class="p">):</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39; &#39;</span>
+                <span class="k">for</span> <span class="n">vdot</span> <span class="ow">in</span> <span class="n">nrestarted</span><span class="p">:</span>
+                    <span class="n">strt</span> <span class="o">+=</span> <span class="n">dot_fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;</span><span class="se">\u22EE</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">vdot</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="n">strt</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39;(</span><span class="si">{}</span><span class="s1">,.,.) = </span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dim_fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">counter</span><span class="p">))</span>
+        <span class="n">submatrix</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span> <span class="n">counter</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="n">strt</span> <span class="o">+=</span> <span class="n">_matrix_str</span><span class="p">(</span><span class="n">submatrix</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">formatter</span><span class="p">,</span> <span class="n">print_dots</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">strt</span>
+
+
+<span class="k">def</span> <span class="nf">__repr_row</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span><span class="p">,</span> <span class="n">truncate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">truncate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dotfmt</span> <span class="o">=</span> <span class="s2">&quot; </span><span class="si">{:^5}</span><span class="s2"> &quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">indent</span> <span class="o">+</span>
+                <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[:</span><span class="n">truncate</span><span class="p">])</span> <span class="o">+</span>
+                <span class="n">dotfmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;...&#39;</span><span class="p">)</span> <span class="o">+</span>
+                <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[</span><span class="o">-</span><span class="n">truncate</span><span class="p">:])</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">indent</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">row</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_matrix_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">formatter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_truncate</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">edgeitems</span>
+    <span class="n">has_hdots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span>
+    <span class="n">has_vdots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span>
+    <span class="n">print_full_mat</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">has_hdots</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_vdots</span>
+
+    <span class="k">if</span> <span class="n">formatter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span> <span class="o">=</span> <span class="n">_number_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                        <span class="n">min_sz</span><span class="o">=</span><span class="mi">5</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">print_full_mat</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span> <span class="o">=</span> <span class="n">formatter</span>
+    <span class="n">nColumnPerLine</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">linewidth</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">indent</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">sz</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="n">strt</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">firstColumn</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">force_truncate</span> <span class="ow">and</span> \
+       <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">threshold</span> <span class="ow">or</span> <span class="n">print_full_mat</span><span class="p">):</span>
+        <span class="k">while</span> <span class="n">firstColumn</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">lastColumn</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">firstColumn</span> <span class="o">+</span> <span class="n">nColumnPerLine</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">nColumnPerLine</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">firstColumn</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39;Columns </span><span class="si">{}</span><span class="s1"> to </span><span class="si">{}</span><span class="s1"> </span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">firstColumn</span><span class="p">,</span> <span class="n">lastColumn</span><span class="p">,</span> <span class="n">indent</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">scale</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="n">SCALE_FORMAT</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">_range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="n">indent</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39; &#39;</span> <span class="k">if</span> <span class="n">scale</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                <span class="n">row_slice</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">firstColumn</span><span class="p">:</span><span class="n">lastColumn</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">row_slice</span><span class="p">)</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="n">firstColumn</span> <span class="o">=</span> <span class="n">lastColumn</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">scale</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">strt</span> <span class="o">+=</span> <span class="n">SCALE_FORMAT</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">has_vdots</span> <span class="ow">and</span> <span class="n">has_hdots</span><span class="p">:</span>
+            <span class="n">vdotfmt</span> <span class="o">=</span> <span class="s2">&quot;{:^&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">((</span><span class="n">sz</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
+            <span class="n">ddotfmt</span> <span class="o">=</span> <span class="sa">u</span><span class="s2">&quot;</span><span class="si">{:^5}</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[:</span><span class="n">n</span><span class="p">]:</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="n">__repr_row</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+            <span class="n">strt</span> <span class="o">+=</span> <span class="n">indent</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">vdotfmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;...&#39;</span><span class="p">),</span>
+                                       <span class="n">ddotfmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;</span><span class="se">\u22F1</span><span class="s1">&#39;</span><span class="p">),</span>
+                                       <span class="n">vdotfmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;...&#39;</span><span class="p">)])</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:]:</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="n">__repr_row</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">has_vdots</span> <span class="ow">and</span> <span class="n">has_hdots</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="n">__repr_row</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">has_vdots</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_hdots</span><span class="p">:</span>
+            <span class="n">vdotfmt</span> <span class="o">=</span> <span class="sa">u</span><span class="s2">&quot;{:^&quot;</span> <span class="o">+</span> \
+                <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">__repr_row</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span><span class="p">)))</span> <span class="o">+</span> \
+                <span class="s2">&quot;}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[:</span><span class="n">n</span><span class="p">]:</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="n">__repr_row</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span><span class="p">)</span>
+            <span class="n">strt</span> <span class="o">+=</span> <span class="n">vdotfmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;</span><span class="se">\u22EE</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:]:</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="n">__repr_row</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="n">strt</span> <span class="o">+=</span> <span class="n">__repr_row</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">strt</span>
+
+
+<span class="k">def</span> <span class="nf">_vector_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">fmt</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">sz</span> <span class="o">=</span> <span class="n">_number_format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="n">strt</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">ident</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">edgeitems</span>
+    <span class="n">dotfmt</span> <span class="o">=</span> <span class="sa">u</span><span class="s2">&quot;{:^&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">sz</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="n">scale</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">strt</span> <span class="o">+=</span> <span class="n">SCALE_FORMAT</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span>
+        <span class="n">ident</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">PRINT_OPTS</span><span class="o">.</span><span class="n">threshold</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">strt</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ident</span> <span class="o">+</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">strt</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ident</span> <span class="o">+</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[:</span><span class="n">n</span><span class="p">])</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="p">(</span><span class="n">ident</span> <span class="o">+</span> <span class="n">dotfmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="sa">u</span><span class="s2">&quot;</span><span class="se">\u22EE</span><span class="s2">&quot;</span><span class="p">))</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ident</span> <span class="o">+</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:])</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndimension</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;[</span><span class="si">{}</span><span class="s1"> with no dimension]</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">typename</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndimension</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">strt</span> <span class="o">=</span> <span class="n">_vector_str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndimension</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">strt</span> <span class="o">=</span> <span class="n">_matrix_str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">strt</span> <span class="o">=</span> <span class="n">_tensor_str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="n">size_str</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">size</span><span class="p">)</span> <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+    <span class="n">device_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_cuda</span> <span class="k">else</span> \
+        <span class="s1">&#39; (GPU </span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_device</span><span class="p">())</span>
+    <span class="n">strt</span> <span class="o">+=</span> <span class="s1">&#39;[</span><span class="si">{}</span><span class="s1"> of size </span><span class="si">{}{}</span><span class="s1">]</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">typename</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span>
+                                         <span class="n">size_str</span><span class="p">,</span> <span class="n">device_str</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">strt</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0.1',
+            LANGUAGE:'python',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

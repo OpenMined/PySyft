@@ -1,0 +1,529 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>torch &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PySyft
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>torch</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for torch</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The torch package contains data structures for multi-dimensional</span>
+<span class="sd">tensors and mathematical operations over these are defined.</span>
+<span class="sd">Additionally, it provides many utilities for efficient serializing of</span>
+<span class="sd">Tensors and arbitrary types, and other useful utilities.</span>
+
+<span class="sd">It has a CUDA counterpart, that enables you to run your tensor computations</span>
+<span class="sd">on an NVIDIA GPU with compute capability &gt;= 3.0.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">._utils</span> <span class="k">import</span> <span class="n">_import_dotted_name</span>
+<span class="kn">from</span> <span class="nn">.version</span> <span class="k">import</span> <span class="n">__version__</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;typename&#39;</span><span class="p">,</span> <span class="s1">&#39;is_tensor&#39;</span><span class="p">,</span> <span class="s1">&#39;is_storage&#39;</span><span class="p">,</span> <span class="s1">&#39;set_default_tensor_type&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;set_rng_state&#39;</span><span class="p">,</span> <span class="s1">&#39;get_rng_state&#39;</span><span class="p">,</span> <span class="s1">&#39;manual_seed&#39;</span><span class="p">,</span> <span class="s1">&#39;initial_seed&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;save&#39;</span><span class="p">,</span> <span class="s1">&#39;load&#39;</span><span class="p">,</span> <span class="s1">&#39;set_printoptions&#39;</span><span class="p">,</span> <span class="s1">&#39;chunk&#39;</span><span class="p">,</span> <span class="s1">&#39;split&#39;</span><span class="p">,</span> <span class="s1">&#39;stack&#39;</span><span class="p">,</span> <span class="s1">&#39;matmul&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DoubleStorage&#39;</span><span class="p">,</span> <span class="s1">&#39;FloatStorage&#39;</span><span class="p">,</span> <span class="s1">&#39;LongStorage&#39;</span><span class="p">,</span> <span class="s1">&#39;IntStorage&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ShortStorage&#39;</span><span class="p">,</span> <span class="s1">&#39;CharStorage&#39;</span><span class="p">,</span> <span class="s1">&#39;ByteStorage&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DoubleTensor&#39;</span><span class="p">,</span> <span class="s1">&#39;FloatTensor&#39;</span><span class="p">,</span> <span class="s1">&#39;LongTensor&#39;</span><span class="p">,</span> <span class="s1">&#39;IntTensor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ShortTensor&#39;</span><span class="p">,</span> <span class="s1">&#39;CharTensor&#39;</span><span class="p">,</span> <span class="s1">&#39;ByteTensor&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c1">################################################################################</span>
+<span class="c1"># Load the extension module</span>
+<span class="c1">################################################################################</span>
+
+<span class="c1"># Loading the extension with RTLD_GLOBAL option allows to not link extension</span>
+<span class="c1"># modules against the _C shared object. Their missing THP symbols will be</span>
+<span class="c1"># automatically filled by the dynamic loader.</span>
+<span class="kn">import</span> <span class="nn">os</span> <span class="k">as</span> <span class="nn">_dl_flags</span>
+
+<span class="c1"># if we have numpy, it *must* be imported before the call to setdlopenflags()</span>
+<span class="c1"># or there is risk that later c modules will segfault when importing numpy</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="c1"># first check if the os package has the required flags</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">_dl_flags</span><span class="p">,</span> <span class="s1">&#39;RTLD_GLOBAL&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">_dl_flags</span><span class="p">,</span> <span class="s1">&#39;RTLD_LAZY&#39;</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># next try if DLFCN exists</span>
+        <span class="kn">import</span> <span class="nn">DLFCN</span> <span class="k">as</span> <span class="nn">_dl_flags</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="c1"># as a last attempt, use compile-time constants</span>
+        <span class="kn">import</span> <span class="nn">torch._dl</span> <span class="k">as</span> <span class="nn">_dl_flags</span>
+
+<span class="n">old_flags</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getdlopenflags</span><span class="p">()</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setdlopenflags</span><span class="p">(</span><span class="n">_dl_flags</span><span class="o">.</span><span class="n">RTLD_GLOBAL</span> <span class="o">|</span> <span class="n">_dl_flags</span><span class="o">.</span><span class="n">RTLD_LAZY</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">torch._nvrtc</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+<span class="kn">from</span> <span class="nn">torch._C</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="n">__all__</span> <span class="o">+=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">_C</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;_&#39;</span> <span class="ow">and</span>
+            <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;Base&#39;</span><span class="p">)]</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">setdlopenflags</span><span class="p">(</span><span class="n">old_flags</span><span class="p">)</span>
+<span class="k">del</span> <span class="n">_dl_flags</span>
+<span class="k">del</span> <span class="n">old_flags</span>
+
+<span class="c1">################################################################################</span>
+<span class="c1"># Define basic utilities</span>
+<span class="c1">################################################################################</span>
+
+
+<div class="viewcode-block" id="typename"><a class="viewcode-back" href="syft.html#syft.typename">[docs]</a><span class="k">def</span> <span class="nf">typename</span><span class="p">(</span><span class="n">o</span><span class="p">):</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">class_name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="s1">&#39;__module__&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">o</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">!=</span> <span class="s1">&#39;builtins&#39;</span> \
+            <span class="ow">and</span> <span class="n">o</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">!=</span> <span class="s1">&#39;__builtin__&#39;</span> <span class="ow">and</span> <span class="n">o</span><span class="o">.</span><span class="vm">__module__</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="s1">&#39;__qualname__&#39;</span><span class="p">):</span>
+        <span class="n">class_name</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="vm">__qualname__</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="s1">&#39;__name__&#39;</span><span class="p">):</span>
+        <span class="n">class_name</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">class_name</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="k">return</span> <span class="n">module</span> <span class="o">+</span> <span class="n">class_name</span></div>
+
+
+<div class="viewcode-block" id="is_tensor"><a class="viewcode-back" href="../index.html#syft.is_tensor">[docs]</a><span class="k">def</span> <span class="nf">is_tensor</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns True if `obj` is a pytorch tensor.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj (Object): Object to test</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="ow">in</span> <span class="n">_tensor_classes</span></div>
+
+
+<div class="viewcode-block" id="is_storage"><a class="viewcode-back" href="../index.html#syft.is_storage">[docs]</a><span class="k">def</span> <span class="nf">is_storage</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns True if `obj` is a pytorch storage object.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj (Object): Object to test</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="ow">in</span> <span class="n">_storage_classes</span></div>
+
+
+<div class="viewcode-block" id="set_default_tensor_type"><a class="viewcode-back" href="syft.html#syft.set_default_tensor_type">[docs]</a><span class="k">def</span> <span class="nf">set_default_tensor_type</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">Tensor</span>
+    <span class="k">global</span> <span class="n">Storage</span>
+    <span class="n">Tensor</span> <span class="o">=</span> <span class="n">_import_dotted_name</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">Storage</span> <span class="o">=</span> <span class="n">_import_dotted_name</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;Tensor&#39;</span><span class="p">,</span> <span class="s1">&#39;Storage&#39;</span><span class="p">))</span>
+    <span class="n">_C</span><span class="o">.</span><span class="n">_set_default_tensor_type</span><span class="p">(</span><span class="n">Tensor</span><span class="p">)</span></div>
+
+
+<span class="kn">from</span> <span class="nn">.random</span> <span class="k">import</span> <span class="n">set_rng_state</span><span class="p">,</span> <span class="n">get_rng_state</span><span class="p">,</span> <span class="n">manual_seed</span><span class="p">,</span> <span class="n">initial_seed</span>
+<span class="kn">from</span> <span class="nn">.serialization</span> <span class="k">import</span> <span class="n">save</span><span class="p">,</span> <span class="n">load</span>
+<span class="kn">from</span> <span class="nn">._tensor_str</span> <span class="k">import</span> <span class="n">set_printoptions</span>
+
+<span class="c1">################################################################################</span>
+<span class="c1"># Define Storage and Tensor classes</span>
+<span class="c1">################################################################################</span>
+
+<span class="kn">from</span> <span class="nn">.storage</span> <span class="k">import</span> <span class="n">_StorageBase</span>
+<span class="kn">from</span> <span class="nn">.tensor</span> <span class="k">import</span> <span class="n">_TensorBase</span>
+
+
+<div class="viewcode-block" id="DoubleStorage"><a class="viewcode-back" href="syft.html#syft.DoubleStorage">[docs]</a><span class="k">class</span> <span class="nc">DoubleStorage</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">DoubleStorageBase</span><span class="p">,</span> <span class="n">_StorageBase</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="FloatStorage"><a class="viewcode-back" href="syft.html#syft.FloatStorage">[docs]</a><span class="k">class</span> <span class="nc">FloatStorage</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">FloatStorageBase</span><span class="p">,</span> <span class="n">_StorageBase</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<span class="k">class</span> <span class="nc">HalfStorage</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">HalfStorageBase</span><span class="p">,</span> <span class="n">_StorageBase</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="LongStorage"><a class="viewcode-back" href="syft.html#syft.LongStorage">[docs]</a><span class="k">class</span> <span class="nc">LongStorage</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">LongStorageBase</span><span class="p">,</span> <span class="n">_StorageBase</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IntStorage"><a class="viewcode-back" href="syft.html#syft.IntStorage">[docs]</a><span class="k">class</span> <span class="nc">IntStorage</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">IntStorageBase</span><span class="p">,</span> <span class="n">_StorageBase</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ShortStorage"><a class="viewcode-back" href="syft.html#syft.ShortStorage">[docs]</a><span class="k">class</span> <span class="nc">ShortStorage</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">ShortStorageBase</span><span class="p">,</span> <span class="n">_StorageBase</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CharStorage"><a class="viewcode-back" href="syft.html#syft.CharStorage">[docs]</a><span class="k">class</span> <span class="nc">CharStorage</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">CharStorageBase</span><span class="p">,</span> <span class="n">_StorageBase</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ByteStorage"><a class="viewcode-back" href="syft.html#syft.ByteStorage">[docs]</a><span class="k">class</span> <span class="nc">ByteStorage</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">ByteStorageBase</span><span class="p">,</span> <span class="n">_StorageBase</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="DoubleTensor"><a class="viewcode-back" href="syft.html#syft.DoubleTensor">[docs]</a><span class="k">class</span> <span class="nc">DoubleTensor</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">DoubleTensorBase</span><span class="p">,</span> <span class="n">_TensorBase</span><span class="p">):</span>
+
+<div class="viewcode-block" id="DoubleTensor.is_signed"><a class="viewcode-back" href="syft.html#syft.DoubleTensor.is_signed">[docs]</a>    <span class="k">def</span> <span class="nf">is_signed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DoubleTensor.storage_type"><a class="viewcode-back" href="syft.html#syft.DoubleTensor.storage_type">[docs]</a>    <span class="k">def</span> <span class="nf">storage_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">DoubleStorage</span></div></div>
+
+
+<div class="viewcode-block" id="FloatTensor"><a class="viewcode-back" href="syft.html#syft.FloatTensor">[docs]</a><span class="k">class</span> <span class="nc">FloatTensor</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">FloatTensorBase</span><span class="p">,</span> <span class="n">_TensorBase</span><span class="p">):</span>
+
+<div class="viewcode-block" id="FloatTensor.is_signed"><a class="viewcode-back" href="syft.html#syft.FloatTensor.is_signed">[docs]</a>    <span class="k">def</span> <span class="nf">is_signed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="FloatTensor.storage_type"><a class="viewcode-back" href="syft.html#syft.FloatTensor.storage_type">[docs]</a>    <span class="k">def</span> <span class="nf">storage_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FloatStorage</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">HalfTensor</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">HalfTensorBase</span><span class="p">,</span> <span class="n">_TensorBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">is_signed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">storage_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">HalfStorage</span>
+
+
+<div class="viewcode-block" id="LongTensor"><a class="viewcode-back" href="syft.html#syft.LongTensor">[docs]</a><span class="k">class</span> <span class="nc">LongTensor</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">LongTensorBase</span><span class="p">,</span> <span class="n">_TensorBase</span><span class="p">):</span>
+
+<div class="viewcode-block" id="LongTensor.is_signed"><a class="viewcode-back" href="syft.html#syft.LongTensor.is_signed">[docs]</a>    <span class="k">def</span> <span class="nf">is_signed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="LongTensor.storage_type"><a class="viewcode-back" href="syft.html#syft.LongTensor.storage_type">[docs]</a>    <span class="k">def</span> <span class="nf">storage_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">LongStorage</span></div></div>
+
+
+<div class="viewcode-block" id="IntTensor"><a class="viewcode-back" href="syft.html#syft.IntTensor">[docs]</a><span class="k">class</span> <span class="nc">IntTensor</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">IntTensorBase</span><span class="p">,</span> <span class="n">_TensorBase</span><span class="p">):</span>
+
+<div class="viewcode-block" id="IntTensor.is_signed"><a class="viewcode-back" href="syft.html#syft.IntTensor.is_signed">[docs]</a>    <span class="k">def</span> <span class="nf">is_signed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="IntTensor.storage_type"><a class="viewcode-back" href="syft.html#syft.IntTensor.storage_type">[docs]</a>    <span class="k">def</span> <span class="nf">storage_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">IntStorage</span></div></div>
+
+
+<div class="viewcode-block" id="ShortTensor"><a class="viewcode-back" href="syft.html#syft.ShortTensor">[docs]</a><span class="k">class</span> <span class="nc">ShortTensor</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">ShortTensorBase</span><span class="p">,</span> <span class="n">_TensorBase</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ShortTensor.is_signed"><a class="viewcode-back" href="syft.html#syft.ShortTensor.is_signed">[docs]</a>    <span class="k">def</span> <span class="nf">is_signed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ShortTensor.storage_type"><a class="viewcode-back" href="syft.html#syft.ShortTensor.storage_type">[docs]</a>    <span class="k">def</span> <span class="nf">storage_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ShortStorage</span></div></div>
+
+
+<div class="viewcode-block" id="CharTensor"><a class="viewcode-back" href="syft.html#syft.CharTensor">[docs]</a><span class="k">class</span> <span class="nc">CharTensor</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">CharTensorBase</span><span class="p">,</span> <span class="n">_TensorBase</span><span class="p">):</span>
+
+<div class="viewcode-block" id="CharTensor.is_signed"><a class="viewcode-back" href="syft.html#syft.CharTensor.is_signed">[docs]</a>    <span class="k">def</span> <span class="nf">is_signed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># TODO</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="CharTensor.storage_type"><a class="viewcode-back" href="syft.html#syft.CharTensor.storage_type">[docs]</a>    <span class="k">def</span> <span class="nf">storage_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CharStorage</span></div></div>
+
+
+<div class="viewcode-block" id="ByteTensor"><a class="viewcode-back" href="syft.html#syft.ByteTensor">[docs]</a><span class="k">class</span> <span class="nc">ByteTensor</span><span class="p">(</span><span class="n">_C</span><span class="o">.</span><span class="n">ByteTensorBase</span><span class="p">,</span> <span class="n">_TensorBase</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ByteTensor.is_signed"><a class="viewcode-back" href="syft.html#syft.ByteTensor.is_signed">[docs]</a>    <span class="k">def</span> <span class="nf">is_signed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ByteTensor.storage_type"><a class="viewcode-back" href="syft.html#syft.ByteTensor.storage_type">[docs]</a>    <span class="k">def</span> <span class="nf">storage_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ByteStorage</span></div></div>
+
+
+<span class="n">_storage_classes</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">DoubleStorage</span><span class="p">,</span> <span class="n">FloatStorage</span><span class="p">,</span> <span class="n">LongStorage</span><span class="p">,</span> <span class="n">IntStorage</span><span class="p">,</span> <span class="n">ShortStorage</span><span class="p">,</span>
+    <span class="n">CharStorage</span><span class="p">,</span> <span class="n">ByteStorage</span><span class="p">,</span> <span class="n">HalfStorage</span>
+<span class="p">}</span>
+
+<span class="n">_tensor_classes</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">DoubleTensor</span><span class="p">,</span> <span class="n">FloatTensor</span><span class="p">,</span> <span class="n">LongTensor</span><span class="p">,</span> <span class="n">IntTensor</span><span class="p">,</span> <span class="n">ShortTensor</span><span class="p">,</span>
+    <span class="n">CharTensor</span><span class="p">,</span> <span class="n">ByteTensor</span><span class="p">,</span> <span class="n">HalfTensor</span>
+<span class="p">}</span>
+
+
+<span class="n">set_default_tensor_type</span><span class="p">(</span><span class="s1">&#39;torch.FloatTensor&#39;</span><span class="p">)</span>
+
+<span class="c1">################################################################################</span>
+<span class="c1"># Import interface functions defined in Python</span>
+<span class="c1">################################################################################</span>
+
+<span class="kn">from</span> <span class="nn">.functional</span> <span class="k">import</span> <span class="o">*</span>
+
+
+<span class="c1">################################################################################</span>
+<span class="c1"># Initialize extension</span>
+<span class="c1">################################################################################</span>
+
+<span class="k">def</span> <span class="nf">manager_path</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)),</span> <span class="s1">&#39;lib&#39;</span><span class="p">,</span> <span class="s1">&#39;torch_shm_manager&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Unable to find torch_shm_manager at &quot;</span> <span class="o">+</span> <span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+
+
+<span class="c1"># Shared memory manager needs to know the exact location of manager executable</span>
+<span class="n">_C</span><span class="o">.</span><span class="n">_initExtension</span><span class="p">(</span><span class="n">manager_path</span><span class="p">())</span>
+<span class="k">del</span> <span class="n">manager_path</span>
+
+<span class="c1">################################################################################</span>
+<span class="c1"># Remove unnecessary members</span>
+<span class="c1">################################################################################</span>
+
+<span class="k">del</span> <span class="n">DoubleStorageBase</span>
+<span class="k">del</span> <span class="n">FloatStorageBase</span>
+<span class="k">del</span> <span class="n">LongStorageBase</span>
+<span class="k">del</span> <span class="n">IntStorageBase</span>
+<span class="k">del</span> <span class="n">ShortStorageBase</span>
+<span class="k">del</span> <span class="n">CharStorageBase</span>
+<span class="k">del</span> <span class="n">ByteStorageBase</span>
+<span class="k">del</span> <span class="n">DoubleTensorBase</span>
+<span class="k">del</span> <span class="n">FloatTensorBase</span>
+<span class="k">del</span> <span class="n">LongTensorBase</span>
+<span class="k">del</span> <span class="n">IntTensorBase</span>
+<span class="k">del</span> <span class="n">ShortTensorBase</span>
+<span class="k">del</span> <span class="n">CharTensorBase</span>
+<span class="k">del</span> <span class="n">ByteTensorBase</span>
+
+<span class="k">del</span> <span class="n">SparseDoubleTensorBase</span>
+<span class="k">del</span> <span class="n">SparseFloatTensorBase</span>
+<span class="k">del</span> <span class="n">SparseLongTensorBase</span>
+<span class="k">del</span> <span class="n">SparseIntTensorBase</span>
+<span class="k">del</span> <span class="n">SparseShortTensorBase</span>
+<span class="k">del</span> <span class="n">SparseCharTensorBase</span>
+<span class="k">del</span> <span class="n">SparseByteTensorBase</span>
+
+<span class="c1">################################################################################</span>
+<span class="c1"># Import most common subpackages</span>
+<span class="c1">################################################################################</span>
+
+<span class="kn">import</span> <span class="nn">torch.cuda</span>
+<span class="kn">import</span> <span class="nn">torch.autograd</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span>
+<span class="kn">import</span> <span class="nn">torch.optim</span>
+<span class="kn">import</span> <span class="nn">torch.multiprocessing</span>
+<span class="kn">import</span> <span class="nn">torch.sparse</span>
+<span class="kn">import</span> <span class="nn">torch.utils.backcompat</span>
+<span class="kn">import</span> <span class="nn">torch.onnx</span>
+<span class="kn">import</span> <span class="nn">torch.random</span>
+<span class="kn">import</span> <span class="nn">torch.distributions</span>
+
+<span class="n">_C</span><span class="o">.</span><span class="n">_init_names</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">_tensor_classes</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">_storage_classes</span><span class="p">))</span>
+
+<span class="c1"># attach docstrings to torch and tensor functions</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">_torch_docs</span><span class="p">,</span> <span class="n">_tensor_docs</span><span class="p">,</span> <span class="n">_storage_docs</span>
+<span class="k">del</span> <span class="n">_torch_docs</span><span class="p">,</span> <span class="n">_tensor_docs</span><span class="p">,</span> <span class="n">_storage_docs</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1',
+            LANGUAGE:'python',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
