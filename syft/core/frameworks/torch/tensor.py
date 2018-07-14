@@ -314,7 +314,9 @@ class _TorchTensor(object):
         return self
 
 
-    def send(self, worker, new_id=random.randint(0,9999999999)):
+    def send(self, worker, new_id=None):
+        if new_id is None:
+            new_id = random.randint(0,9999999999)
 
         init_id = self.id
 
