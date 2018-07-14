@@ -7,9 +7,10 @@ from ... import utils
 class _SyftTensor(object):
     ""
     
-    def __init__(self, child, parent, id=None, owner=None):
+    def __init__(self, child, parent, torch_type, id=None, owner=None, skip_register=False):
         self.child = child
         self.parent = parent
+        self.torch_type = torch_type
 
         if(self.child is not None):
             self.child.parent = self
@@ -17,14 +18,29 @@ class _SyftTensor(object):
         if(owner is not None):
             self.owner = owner
 
-    def find_torch_object_in_family_tree(self):
+    def copy_params(self, other):
+        self.id = other.id
+
+    def find_torch_object_in_family_tree(self, parent=None):
+
+        if(parent is not None and isinstance(parent, torch.Tensor)):
+            return parent
 
         ch = self.child
         while(True):
             if issubclass(type(ch), torch.Tensor):
                 return ch
+            if(hasattr(ch, 'child')):
+                ch = ch.child
+            else:
+                # FALLABCK: sometimes you have to make your
+                # own parent so that PyTorch is happy to
+                # run operations with torch tensor types
+                x = sy.FloatTensor()
+                x.child = self
+                self.parent = x
+                return x
 
-            ch = ch.child
 
     @property
     def parent(self):
@@ -38,13 +54,13 @@ class _SyftTensor(object):
     def parent(self, value):
         self._parent = value
 
-    def create_pointer(self, register=False):
+    def create_pointer(self, parent, register=False):
         ptr = _PointerTensor(child=None,
-                             parent=None,
+                             parent=parent,
                              location=self.owner.id,
                              id_at_location=self.id,
                              owner=self.owner,
-                             torch_type="syft."+type(self.find_torch_object_in_family_tree()).__name__)
+                             torch_type="syft."+type(self.find_torch_object_in_family_tree(parent)).__name__)
 
         if(not register):
             ptr.owner.rm_obj(ptr.id)
@@ -61,6 +77,7 @@ class _SyftTensor(object):
 
         tensor_msg = {}
         tensor_msg['type'] = str(self.__class__).split("'")[1]
+        tensor_msg['torch_type'] = "syft."+type(self.parent).__name__
         if hasattr(self, 'child') and self.child is not None:
             tensor_msg['child'] = self.child.ser(include_data=include_data,
                                                  stop_recurse_at_torch_type=True)
@@ -76,7 +93,7 @@ class _SyftTensor(object):
         return tensor_msg
 
     @staticmethod
-    def deser(msg, highest_level=True):
+    def deser(msg, owner=None, highest_level=True):
 
         if isinstance(msg, str):
             msg_obj = json.loads(msg)
@@ -88,22 +105,35 @@ class _SyftTensor(object):
         if('child' in msg_obj):
             # deserialize syft object and children
 
-            child, leaf = _SyftTensor.deser(msg_obj['child'], highest_level=False)
-            obj = obj_type(child=child, parent=None)
-            obj.id = msg_obj['id']
+            child, leaf = _SyftTensor.deser(msg_obj['child'], owner=owner, highest_level=False)
+            # likely using VirtualWorkers and accidentally registered this
+            # object to the default local_worker
+            if(child.owner.id != owner.id):
+                child.owner.rm_obj(child.id)
+
+            obj = obj_type.deser(msg_obj=msg_obj, child=child, owner=owner)
+            # obj = obj_type(child=child, owner=owner, id=msg_obj['id'], parent=None)
 
         elif('data' in msg_obj):
             # deserialize torch variable object
             obj = obj_type(msg_obj['data'])
+
+            # unfortunately the LocalTensor that gets initialzied when
+            # creating the lowest level torch.Tensor object is always
+            # redundant, so we need to remove it.
+            # TOOD: figure out how to avoid this performance waste.
+            obj.owner.rm_obj(obj.id)
+
             return obj, obj
         else:
             # deserialize data-less object - likely a pointer
-            obj = obj_type(child = None,
-                           parent = None,
-                           id=msg_obj['id'],
-                           location = msg_obj['location'],
-                           id_at_location = msg_obj['id_at_location'],
-                           torch_type = msg_obj['torch_type'])
+            obj = obj_type.deser(msg_obj=msg_obj, child=None, owner=owner)
+            # obj = obj_type(child = None,
+            #                parent = None,
+            #                id=msg_obj['id'],
+            #                location = msg_obj['location'],
+            #                id_at_location = msg_obj['id_at_location'],
+            #                torch_type = msg_obj['torch_type'])
             return obj
 
         if(highest_level):
@@ -112,13 +142,17 @@ class _SyftTensor(object):
         
         return obj, leaf
 
-        
+    def __str__(self):
+        return "<"+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) + ">"        
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class _LocalTensor(_SyftTensor):
 
-    def __init__(self, child, parent, owner=None):
-        super().__init__(child=child, parent=parent, owner=owner)
+    def __init__(self, child, parent, torch_type, owner=None, id=None, skip_register=False):
+        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
         
     def __add__(self, other):
         """
@@ -133,10 +167,23 @@ class _LocalTensor(_SyftTensor):
         # calling the native PyTorch functionality at the end
         return self.child.add(other)
 
+    @staticmethod
+    def deser(msg_obj, child, owner):
+        return _LocalTensor(child=child,
+                            owner=owner,
+                            torch_type=msg_obj['torch_type'],
+                            id=msg_obj['id'],
+                            parent=None)
+
+    def get(self, parent):
+        raise Exception("Cannot call .get() on a tensor you already have.")
+
 class _PointerTensor(_SyftTensor):
     
-    def __init__(self, child, parent, location=None, id_at_location=None, id=None, owner=None, torch_type=None):
-        super().__init__(child=child, parent=parent, owner=owner, id=id)
+    def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None, owner=None, skip_register=False):
+        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
+        if(location is None):
+            raise Exception("Must have location")
         self.location = self.owner.get_worker(location)
         self.id_at_location = id_at_location
         self.torch_type = torch_type
@@ -153,14 +200,47 @@ class _PointerTensor(_SyftTensor):
                                                  message=command)
         return sy.deser(response).wrap()
 
+    def __str__(self):
+        return "<"+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) +  " loc:" + str(self.location.id) + " id@loc:"+str(self.id_at_location)+">"        
+
+    def deser(msg_obj, child, owner):
+        obj = _PointerTensor(child=child,
+                             parent=None,
+                             owner=owner,
+                             id=msg_obj['id'],                             
+                             location=msg_obj['location'],
+                             id_at_location=msg_obj['id_at_location'],
+                             torch_type = msg_obj['torch_type']
+                             )
+        return obj
+
     def wrap(self):
         wrapper = guard[self.torch_type]()
         self.owner.rm_obj(wrapper.child.id)
         wrapper.child = self
         return wrapper
 
+    def get(self, parent):
+
+        obj, cleanup = self.owner.request_obj(self.id_at_location, self.location)
+
+        if(isinstance(obj, torch.Tensor)):
+            parent.native_set_(obj)
+
+        self.owner.get_worker(obj.owner).rm_obj(obj.id)
+        self.owner.set_obj(self.id, obj.child)
+
+        if(hasattr(obj, 'child') and obj.child is not None):
+            obj.child.id = self.id
+            self = obj.child
+        else:
+            obj.id = self.id
+            self = obj
+        parent.child = self
+        return self
+
     def add_type_specific_attributes(self, tensor_msg):
-        tensor_msg['location'] = self.location
+        tensor_msg['location'] = self.location if isinstance(self.location, str) else self.location.id
         tensor_msg['id_at_location'] = self.id_at_location
         tensor_msg['torch_type'] = self.torch_type
         return tensor_msg
@@ -202,15 +282,15 @@ class _PointerTensor(_SyftTensor):
             if check(tensor) or isinstance(tensor, torch.autograd.Variable) or _is_param:
                 return tensor.child.id_at_location
             else:
-                [_tensors_to_str_ids(i) for i in tensor]
+                [_PointerTensor._tensors_to_str_ids(i) for i in tensor]
         except (AttributeError, TypeError):
             return tensor
 
 
 class _FixedPrecisionTensor(_SyftTensor):
     
-    def __init__(self, child, parent, owner=None):
-        super().__init__(child=child, parent=parent, owner=owner)
+    def __init__(self, child, parent, torch_type, owner=None):
+        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner)
 
 class _TorchTensor(object):
     """
@@ -227,20 +307,28 @@ class _TorchTensor(object):
         return self.native___repr__()
 
     def create_pointer(self, register=False):
-        return self.child.create_pointer(register=register)
+        return self.child.create_pointer(parent=self, register=register)
+
+    def get(self):
+        new_child_obj = self.child.get(parent=self)
+        return self
+
 
     def send(self, worker, new_id=random.randint(0,9999999999)):
 
+        init_id = self.id
 
         self.owner.send_obj(self,
                             new_id,
                             worker,
                             delete_local=True)
 
-        self.set_(sy.zeros(0))
+        self.native_set_()
 
-        self.child = sy._PointerTensor(child=None,
+        self.child = sy._PointerTensor(child=self,
                                        parent=self,
+                                       id=init_id,
+                                       torch_type='syft.'+type(self).__name__,
                                        location=worker,
                                        id_at_location=new_id)
 
@@ -250,10 +338,12 @@ class _TorchTensor(object):
         """Serializes a {} object to JSON.""".format(type(self))
         if(not stop_recurse_at_torch_type):
             serializations = self.child.ser(include_data=include_data)
+            serializations['torch_type'] = "syft."+type(self).__name__
             return json.dumps(serializations) + "\n"
         else:
             tensor_msg = {}
             tensor_msg['type'] = str(self.__class__).split("'")[1]
+            tensor_msg['torch_type'] = "syft."+type(self).__name__
             if include_data:
                 tensor_msg['data'] = self.tolist()
 

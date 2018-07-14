@@ -105,6 +105,7 @@ class BaseWorker(ABC):
         self._known_workers = {}
         for k, v in known_workers.items():
             self._known_workers[k] = v
+        self.add_worker(self)
 
         # A flag for whether or not to print events to stdout.
         self.verbose = verbose
@@ -307,6 +308,10 @@ class BaseWorker(ABC):
 
         self._known_workers[worker.id] = worker
 
+    def add_workers(self, workers):
+        for worker in workers:
+            self.add_worker(worker)
+
     def get_worker(self, id_or_worker):
         """get_worker(self, id_or_worker) -> BaseWorker
         If you pass in an ID, it will attempt to find the worker
@@ -353,12 +358,17 @@ class BaseWorker(ABC):
         if(issubclass(type(id_or_worker), BaseWorker)):
             if(id_or_worker.id not in self._known_workers):
                 self.add_worker(id_or_worker)
-            return self._known_workers[id_or_worker.id]
+            result = self._known_workers[id_or_worker.id]
         else:
             if(id_or_worker in self._known_workers):
-                return self._known_workers[id_or_worker]
+                result = self._known_workers[id_or_worker]
             else:
-                return id_or_worker
+                result = id_or_worker
+
+        if(result is not None):
+            return result
+        else:
+            return id_or_worker
 
     def get_obj(self, remote_key):
         """get_obj(remote_key) -> a torch object
@@ -607,7 +617,7 @@ class BaseWorker(ABC):
 
         # check to see if we can resolve owner id to pointer
         if obj.owner in self._known_workers.keys():
-            obj.owner = self._known_workers[owner]
+            obj.owner = self._known_workers[obj.owner]
         
 
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
@@ -685,7 +695,9 @@ class BaseWorker(ABC):
 
         ptr = result.create_pointer(register=False)
 
-        return ptr.ser(include_data=False)
+        response = ptr.ser(include_data=False)
+
+        return response
 
         # args = utils.map_tuple(
         #     None, command_msg['args'], self._retrieve_tensor)
@@ -781,7 +793,12 @@ class BaseWorker(ABC):
         #                                         temporary=temporary,
         #                                         is_pointer=True)
         # else:
-        torch_object = self.register_object(torch_object.child,
+        if(isinstance(torch_object, torch.Tensor)):
+            register_this = torch_object.child
+        else:
+            register_this = torch_object
+
+        torch_object = self.register_object(register_this,
                                             id=obj_msg['id'],
                                             owner=self.id,
                                             force_attach_to_worker=force_attach_to_worker,
@@ -794,7 +811,8 @@ class BaseWorker(ABC):
         if(delete_local):
             self.rm_obj(obj.id)
 
-        obj.child.id = id
+        if(id is not None):
+            obj.child.id = id
 
         obj_json = obj.ser(include_data=not send_pointer)
 
@@ -829,9 +847,6 @@ class BaseWorker(ABC):
                              message_type='obj',
                              recipient=recipient)
 
-        if(delete_local):
-            self.rm_obj(obj.id)
-
         return _obj
 
     def receive_obj(self, message):
@@ -846,10 +861,10 @@ class BaseWorker(ABC):
 
         """
 
-        message_obj = json.loads(message)
-        
-        obj = sy.deser(message_obj)
-        self.handle_register(obj, message_obj, force_attach_to_worker=True)
+        if(isinstance(message, str)):
+            message = json.loads(message)
+        obj = sy.deser(message, owner=self)
+        self.handle_register(obj, message, force_attach_to_worker=True)
 
         return obj
 
