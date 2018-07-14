@@ -6,6 +6,7 @@ Subpackages
 
 .. toctree::
 
+    syft.core.frameworks
     syft.core.hooks
     syft.core.workers
 

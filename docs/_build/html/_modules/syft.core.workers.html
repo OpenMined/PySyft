@@ -81,12 +81,18 @@
               
             
             
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.hooks.html">syft.core.hooks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.utils.html">syft.core.utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.workers.html">syft.core.workers</a></li>
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">syft.core.workers package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-syft.core.workers.base">syft.core.workers.base module</a></li>
+<li><a class="reference internal" href="#module-syft.core.workers.socket">syft.core.workers.socket module</a></li>
+<li><a class="reference internal" href="#module-syft.core.workers.virtual">syft.core.workers.virtual module</a></li>
+<li><a class="reference internal" href="#module-syft.core.workers">Module contents</a></li>
 </ul>
-
+</li>
+</ul>
+</div>
             
           
         </div>
@@ -159,7 +165,7 @@
 <dl class="class">
 <dt id="syft.core.workers.base.BaseWorker">
 <em class="property">class </em><code class="descclassname">syft.core.workers.base.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">abc.ABC</span></code></p>
 <p>The BaseWorker class establishes a consistent interface for
 communicating between different machines
 about tensors, variables, models, and other network related
@@ -268,6 +274,11 @@ pointer to a remote worker, which must have a unique id.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.add_workers">
+<code class="descname">add_workers</code><span class="sig-paren">(</span><em>workers</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.add_workers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.base.BaseWorker.compile_composite_message">
 <code class="descname">compile_composite_message</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.compile_composite_message" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a composite message in a dictionary from the message queue.
@@ -276,13 +287,6 @@ Evenatually will take a recipient id.</p>
 <li><strong>out (dict)</strong> dictionary containing the message queue compiled</li>
 </ul>
 <p>as a composite message</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.workers.base.BaseWorker.compile_result">
-<code class="descname">compile_result</code><span class="sig-paren">(</span><em>result</em>, <em>owners</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.compile_result" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converts the result to a JSON serializable message for sending
-over PubSub.</p>
 </dd></dl>
 
 <dl class="method">
@@ -434,7 +438,7 @@ been previously registered with the wrong id.</p>
 
 <dl class="method">
 <dt id="syft.core.workers.base.BaseWorker.prepare_send_object">
-<code class="descname">prepare_send_object</code><span class="sig-paren">(</span><em>obj</em>, <em>delete_local=True</em>, <em>send_pointer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.prepare_send_object" title="Permalink to this definition">¶</a></dt>
+<code class="descname">prepare_send_object</code><span class="sig-paren">(</span><em>obj</em>, <em>id=None</em>, <em>delete_local=True</em>, <em>send_pointer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.prepare_send_object" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -990,7 +994,7 @@ can include all known workers.</li>
 <dl class="class">
 <dt id="syft.core.workers.BaseWorker">
 <em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">abc.ABC</span></code></p>
 <p>The BaseWorker class establishes a consistent interface for
 communicating between different machines
 about tensors, variables, models, and other network related
@@ -1099,6 +1103,11 @@ pointer to a remote worker, which must have a unique id.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="syft.core.workers.BaseWorker.add_workers">
+<code class="descname">add_workers</code><span class="sig-paren">(</span><em>workers</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.add_workers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.BaseWorker.compile_composite_message">
 <code class="descname">compile_composite_message</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.compile_composite_message" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a composite message in a dictionary from the message queue.
@@ -1107,13 +1116,6 @@ Evenatually will take a recipient id.</p>
 <li><strong>out (dict)</strong> dictionary containing the message queue compiled</li>
 </ul>
 <p>as a composite message</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.workers.BaseWorker.compile_result">
-<code class="descname">compile_result</code><span class="sig-paren">(</span><em>result</em>, <em>owners</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.compile_result" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converts the result to a JSON serializable message for sending
-over PubSub.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1265,7 +1267,7 @@ been previously registered with the wrong id.</p>
 
 <dl class="method">
 <dt id="syft.core.workers.BaseWorker.prepare_send_object">
-<code class="descname">prepare_send_object</code><span class="sig-paren">(</span><em>obj</em>, <em>delete_local=True</em>, <em>send_pointer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.prepare_send_object" title="Permalink to this definition">¶</a></dt>
+<code class="descname">prepare_send_object</code><span class="sig-paren">(</span><em>obj</em>, <em>id=None</em>, <em>delete_local=True</em>, <em>send_pointer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.prepare_send_object" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
