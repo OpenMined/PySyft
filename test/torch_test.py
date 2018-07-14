@@ -518,8 +518,17 @@ class TestTorchVariable(TestCase):
         for i in model.parameters():
             param.append(i[:])
 
-        assert not ((param[0] == param[2]).all())
-        assert not ((param[1] == param[3]).all())
+        x = []
+        for i in param:
+            if type(i.data[0]) != float:
+                x.append(i.data[0][0])
+                x.append(i.data[0][1])
+            else:
+                x.append(i.data[0])
+
+        y = [0.5406, 0.5869, -0.16565567255020142, 0.6732, 0.5103, -0.0841369703412056]
+
+        assert (self.assertAlmostEqual(X,Y) for X,Y in zip(x,y))
 
     def test_federated_learning(self):
 
