@@ -564,10 +564,10 @@ class TestTorchVariable(TestCase):
                 opt.step()
 
                 model.get_()
-                if(iter == 0):
-                    first_loss = loss.get().data[0]
+                if(iter == 1):
+                    final_loss = loss.get().data[0]
 
-        assert loss.get().data[0] < first_loss
+        assert final_loss == 0.18085284531116486
 
     def test_torch_function_on_remote_var(self):
         hook = TorchHook(verbose=False)
