@@ -632,7 +632,7 @@ class TestTorchVariable(TestCase):
                 if(iter == 1):
                     final_loss = loss.get().data[0]
 
-        assert final_loss == 0.18085284531116486
+        assert round(final_loss, 2) == 0.18
 
     def test_torch_function_on_remote_var(self):
         hook = TorchHook(verbose=False)
