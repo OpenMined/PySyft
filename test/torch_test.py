@@ -634,45 +634,6 @@ class TestTorchVariable(TestCase):
 
         assert round(final_loss, 2) == 0.18
 
-    def test_torch_function_on_remote_var(self):
-        hook = TorchHook(verbose=False)
-        me = hook.local_worker
-        remote = VirtualWorker(id=2,hook=hook)
-        me.add_worker(remote)
-
-        x = Var(torch.FloatTensor([[1, 2], [3, 4]]))
-        y = Var(torch.FloatTensor([[1, 2], [1, 2]]))
-        x.send(remote)
-        y.send(remote)
-        z = torch.matmul(x, y)
-        z.get()
-        assert torch.equal(z, Var(torch.FloatTensor([[3, 6], [7, 14]])))
-
-    def test_torch_function_with_multiple_input_on_remote_var(self):
-        hook = TorchHook(verbose=False)
-        me = hook.local_worker
-        remote = VirtualWorker(id=2,hook=hook)
-        me.add_worker(remote)
-
-        x = Var(torch.FloatTensor([1,2]))
-        y = Var(torch.FloatTensor([3,4]))
-        x.send(remote)
-        y.send(remote)
-        z = torch.stack([x,y])
-        z.get()
-        assert torch.equal(z, Var(torch.FloatTensor([[1, 2], [3, 4]])))
-
-    def test_torch_function_with_multiple_output_on_remote_var(self):
-        hook = TorchHook(verbose=False)
-        me = hook.local_worker
-        remote = VirtualWorker(id=2,hook=hook)
-        me.add_worker(remote)
-
-        x = Var(torch.FloatTensor([[1,2],[4,3],[5,6]]))
-        x.send(remote)
-        y, z = torch.max(x, 1)
-        y.get()
-        assert torch.equal(y, Var(torch.FloatTensor([2, 4, 6])))
 
     def test_torch_F_relu_on_remote_var(self):
         hook = TorchHook(verbose=False)
@@ -834,3 +795,67 @@ class TestTorchVariable(TestCase):
         assert (torch.equal(z.get(), Var(torch.ByteTensor([1, 1, 1]))))
         z = torch.ge(x, y)
         assert (torch.equal(z.get(), Var(torch.ByteTensor([1, 1, 1]))))
+
+    def test_torch_function_with_multiple_output_on_local_var(self):
+        x = Var(torch.FloatTensor([[1, 2], [2, 3], [5, 6]]))
+        t, s = torch.max(x, 1)
+        assert (t == Var(torch.FloatTensor([2, 3, 6]))).all()
+        assert (s == Var(torch.LongTensor([1, 1, 1]))).all()
+
+        x = Var(torch.FloatTensor([[0, 0], [0, 0]]))
+        y, z = torch.eig(x, True)
+        assert (y == Var(torch.FloatTensor([[0, 0], [0, 0]]))).all()
+        assert (z == Var(torch.FloatTensor([[1, 0.], [0, 1]]))).all()
+
+
+        x = Var(torch.FloatTensor([[0, 0], [1, 0]]))
+        y, z = torch.qr(x)
+        assert (y == Var(torch.FloatTensor([[0, -1], [-1, 0]]))).all()
+        assert (z == Var(torch.FloatTensor([[-1, 0], [0, 0]]))).all()
+
+        x = Var(torch.arange(1, 6))
+        y, z = torch.kthvalue(x, 4)
+        assert (y == Var(torch.FloatTensor([4]))).all()
+        assert (z == Var(torch.LongTensor([3]))).all()
+
+        x = Var(torch.zeros(3, 3))
+        w, y, z = torch.svd(x)
+        assert (w == Var(torch.FloatTensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))).all()
+        assert (y == Var(torch.FloatTensor([0, 0, 0]))).all()
+        assert (z == Var(torch.FloatTensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))).all()
+
+
+    def test_torch_function_with_multiple_output_on_remote_var(self):
+        hook = TorchHook(verbose=False)
+        me = hook.local_worker
+        remote = VirtualWorker(id=2, hook=hook)
+        me.add_worker(remote)
+
+        x = Var(torch.FloatTensor([[1, 2], [4, 3], [5, 6]]))
+        x.send(remote)
+        y, z = torch.max(x, 1)
+        y.get()
+        assert torch.equal(y, Var(torch.FloatTensor([2, 4, 6])))
+
+        x = Var(torch.FloatTensor([[0, 0], [1, 0]])).send(remote)
+        y, z = torch.qr(x)
+        assert (y.get() == Var(torch.FloatTensor([[0, -1], [-1, 0]]))).all()
+        assert (z.get() == Var(torch.FloatTensor([[-1, 0], [0, 0]]))).all()
+
+        x = Var(torch.arange(1, 6)).send(remote)
+        y, z = torch.kthvalue(x, 4)
+        assert (y.get() == Var(torch.FloatTensor([4]))).all()
+        assert (z.get() == Var(torch.LongTensor([3]))).all()
+
+        x = Var(torch.FloatTensor([[0, 0], [0, 0]]))
+        x.send(remote)
+        y, z = torch.eig(x, True)
+        assert (y.get() == Var(torch.FloatTensor([[0, 0], [0, 0]]))).all()
+        assert (z.get() == Var(torch.FloatTensor([[1, 0.], [0, 1]]))).all()
+
+
+        x = Var(torch.zeros(3, 3)).send(remote)
+        w, y, z = torch.svd(x)
+        assert (w.get() == Var(torch.FloatTensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))).all()
+        assert (y.get() == Var(torch.FloatTensor([0, 0, 0]))).all()
+        assert (z.get() == Var(torch.FloatTensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))).all()
