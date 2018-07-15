@@ -21,6 +21,13 @@ class _SyftTensor(object):
     def copy_params(self, other):
         self.id = other.id
 
+    def find_pointer(self):
+        ch = self
+        if isinstance(ch, sy._PointerTensor):
+            return ch
+        else:
+            return None
+
     def find_torch_object_in_family_tree(self, parent=None):
 
         if(parent is not None and isinstance(parent, torch.Tensor)):
@@ -273,6 +280,12 @@ class _PointerTensor(_SyftTensor):
 
         This method also works for an iterable of tensors (e.g. `torch.cat([x1, x2, x3])`)
         """
+        if issubclass(tensor.__class__, sy._SyftTensor):
+            raise TypeError('Calling _tensors_to_str_ids on non-tensor/var/param but sy._SyftTensor')
+
+        if isinstance(tensor, (int, str)):
+            return tensor
+
         if hasattr(torch, 'native_is_tensor'):
             check = torch.native_is_tensor
         else:
@@ -313,8 +326,41 @@ class _TorchTensor(object):
         new_child_obj = self.child.get(parent=self)
         return self
 
+    def move(self, worker, new_id=None):
+        """
+        Give the end leaf of the chain to worker,
+        just like if the last elmt was send its child
+        to worker
+        self->alice->obj [worker] => self->alice->worker->obj
+        """
+        if isinstance(worker, (int, str)):
+            worker = self.owner.get_worker(worker)
+
+        if new_id is None:
+            new_id = random.randint(0,9999999999)
+
+        pointer = self.child.find_pointer()
+
+        if pointer is None:
+            return self.send(worker, new_id)
+
+        command = pointer.compile_command('move',
+                                          (worker.id, new_id),
+                                          {},
+                                          True)
+
+        response = pointer.owner.send_torch_command(recipient=pointer.location,
+                                                    message=command)
+        return sy.deser(response).wrap()
 
     def send(self, worker, new_id=None):
+        """
+        Give the root of the chain held by self to worker
+        self->alice->obj [worker] => self->worker->alice->obj
+        """
+        if isinstance(worker, (int, str)):
+            worker = self.owner.get_worker(worker)
+
         if new_id is None:
             new_id = random.randint(0,9999999999)
 
