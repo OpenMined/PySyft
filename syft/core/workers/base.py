@@ -702,10 +702,12 @@ class BaseWorker(ABC):
                              owner=self,
                              id=result.id)
 
-        ptr = result.create_pointer(register=False)
+        if isinstance(result.child, sy._PointerTensor):
+            pointer = result.child
+        else:
+            pointer = result.create_pointer(register=True) #TODO =False ??
 
-        response = ptr.ser(include_data=False)
-
+        response = pointer.ser(include_data=False)
         return response
 
         # args = utils.map_tuple(
@@ -756,10 +758,9 @@ class BaseWorker(ABC):
         Main function that handles incoming torch commands.
         """
 
-        message = message
         # take in command message, return result of local execution
         response = self.process_command(message)
-        
+
         return response
 
     def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):
