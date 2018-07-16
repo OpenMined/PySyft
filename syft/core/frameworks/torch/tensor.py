@@ -256,25 +256,19 @@ class _PointerTensor(_SyftTensor):
         tensor_msg['torch_type'] = self.torch_type
         return tensor_msg
 
-    def compile_command(self, attr, args, kwargs, has_self):
-    
+    def compile_command(self, attr, args, kwargs, has_self): #self, attr, args, kwargs, has_self):
         command = {}
-
         command['has_self'] = has_self
-
-
-        command['self'] = self.id_at_location
-
+        if has_self:
+            command['self'] = self # TODO .id_at_location
+            #args = args[1:] # TODO compare to master
         command['command'] = attr
-        command['args'] = utils.map_tuple(None, args, self._tensors_to_str_ids)
-        command['kwargs'] = utils.map_dict(None, kwargs, self._tensors_to_str_ids)
-        command['arg_types'] = [type(x).__name__ for x in args]
-        command['kwarg_types'] = [type(kwargs[x]).__name__ for x in kwargs]
+        command['args'] = args
+        command['kwargs'] = kwargs
 
-        kwarg_types = command['arg_types']
-        arg_types = command['arg_types']
-
-        return command
+        encoder = utils.PythonEncoder()
+        command, tensorvars = encoder.encode(command, retrieve_tensorvar=True)
+        return command, tensorvars
 
     @staticmethod
     def _tensors_to_str_ids(tensor):

@@ -206,7 +206,9 @@ class BaseWorker(ABC):
 
         if(is_binary):
             message_wrapper_json = message_wrapper_json.decode('utf-8')
-        message_wrapper = json.loads(message_wrapper_json)
+
+        decoder = utils.PythonJSONDecoder(self)
+        message_wrapper = decoder.decode(message_wrapper_json)
 
         return self.process_message_type(message_wrapper)
 
@@ -673,42 +675,46 @@ class BaseWorker(ABC):
         # Args and kwargs contain special strings in place of tensors
         # Need to retrieve the tensors from self.worker.objects
 
-        _self = self._objects[command_msg['self']]
-        args = []
-        for id in command_msg['args']:
-            try:
-                arg = self._objects[id].parent
-            except KeyError:
-                arg = id
-            args.append(arg)
 
-        if hasattr(_self, command_msg['command']):
-            result = getattr(_self, command_msg['command'])(*args)
-        else:
-            result = getattr(_self.child, command_msg['command'])(*args)
+        arg_tensors = self._retrieve_tensor(command_msg['args'])
+        args = command_msg['args']
+        kwarg_tensors = self._retrieve_tensor(list(command_msg['kwargs'].values()))
+        kwargs = command_msg['kwargs']
+        has_self = command_msg['has_self']
 
-        # sometimes for virtual workers the owner is not correct
-        # because it defaults to hook.local_worker
-        result.child.owner = _self.owner
+        if has_self:
+            _self = command_msg['self']
+            command = command_msg['command'] # TODO Guard (self._command_guard(command_msg['command'], self.hook.tensorvar_methods))
 
-        # if we're using virtual workers, we need to de-register the
-        # object from the default worker
-        if(self.id != self.hook.local_worker.id):
-            self.hook.local_worker.rm_obj(result.id)
+            if hasattr(_self, command):
+                result = getattr(_self, command)(*args, **kwargs)
+            else:
+                result = getattr(_self.child, command)(*args, **kwargs)
+
+            # sometimes for virtual workers the owner is not correct
+            # because it defaults to hook.local_worker
+            result.child.owner = _self.owner
+
+            # if we're using virtual workers, we need to de-register the
+            # object from the default worker
+            if(self.id != self.hook.local_worker.id):
+                self.hook.local_worker.rm_obj(result.id)
 
 
-        self.register_object(result.child,
-                             force_attach_to_worker=True,
-                             owner=self,
-                             id=result.id)
+            self.register_object(result.child,
+                                 force_attach_to_worker=True,
+                                 owner=self,
+                                 id=result.id)
 
-        if isinstance(result.child, sy._PointerTensor):
-            pointer = result.child
-        else:
-            pointer = result.create_pointer(register=True) #TODO =False ??
+            if isinstance(result.child, sy._PointerTensor):
+                pointer = result.child
+            else:
+                pointer = result.create_pointer(register=True) #TODO =False ??
 
-        response = pointer.ser(include_data=False)
-        return response
+            response = pointer.ser(include_data=False)
+            return response
+
+        raise Exception("Can't deal with command without a self for now")
 
         # args = utils.map_tuple(
         #     None, command_msg['args'], self._retrieve_tensor)
@@ -931,16 +937,14 @@ class BaseWorker(ABC):
         return obj, self._clear_tmp_objects
 
     # Worker needs to retrieve tensor by ID before computing with it
-    def _retrieve_tensor(self, x):
-        try:
-            return self.get_obj(self._id_tensorvar(x))
-        except TypeError:
-            try:
-                return [self.get_obj(i) for i in self._id_tensorvar(x)]
-            except TypeError:
-                return x
-        except KeyError:
-            return x
+    def _retrieve_tensor(self, obj):
+        """
+            Small trick to leverage the work made by the PythonEncoder:
+            recursively inspect an object and return all Tensors/Variable/etc.
+        """
+        encoder = utils.PythonEncoder(retrieve_tensorvar=True)
+        _, tensorvars = encoder.encode(obj)
+        return tensorvars
 
     @classmethod
     def _command_guard(cls, command, allowed):
