@@ -263,8 +263,7 @@ class TorchHook(object):
     def _forward_call_to_remote(hook_self, attr):
 
         def _execute_remote_call(self, *args, **kwargs):
-
-            command = self.compile_command(attr,
+            command, tensorvars = self.compile_command(attr,
                           args,
                           kwargs,
                           True)
