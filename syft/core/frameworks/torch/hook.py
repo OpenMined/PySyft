@@ -45,24 +45,15 @@ class TorchHook(object):
 
         for typ in torch.tensor_types:
 
-            self._hook_native_tensor(typ)
+            self._hook_native_tensors_and_variables(typ)
 
-            # instantiating it seems to impact the propagation of the overrides
-            # some of them (particularly __new__) don't seem to show up until
-            # after a tensor has been initialized
-#             x = typ([0])
-        # self._hook_native_tensor(torch.autograd.Variable)
+        self._hook_native_tensors_and_variables(torch.autograd.Variable)
 
         for typ in torch.tensor_types:
 
             self._hook_syft_tensor_types(typ)
 
-            # instantiating it seems to impact the propagation of the overrides
-            # some of them (particularly __new__) don't seem to show up until
-            # after a tensor has been initialized            
-#             x = typ([0])
-
-    def _hook_native_tensor(self, tensor_type):
+    def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloading a given tensor_type"""
         # Overload 'special' methods here
         
@@ -76,7 +67,7 @@ class TorchHook(object):
         
         self._assign_methods_to_use_child(tensor_type)
         
-        self._add_methods_from__TorchTensor(tensor_type)
+        self._add_methods_from__TorchObject(tensor_type)
 
     def _hook_syft_tensor_types(self, tensor_type):
 
@@ -210,7 +201,7 @@ class TorchHook(object):
             
                 setattr(tensor_type, attr, new_attr)
 
-    def _add_methods_from__TorchTensor(self, tensor_type):
+    def _add_methods_from__TorchObject(self, tensor_type):
 
         exclude = ['__class__',
                    '__delattr__',
@@ -235,11 +226,17 @@ class TorchHook(object):
                    '__setattr__',
                    '__sizeof__',
                    '__subclasshook__']
-        for attr in dir(_TorchTensor):
+
+        if issubclass(sy.Tensor, sy.FloatTensor):
+            parent_syft_obj = _TorchTensor
+        else:
+            parent_syft_obj = _TorchVariable
+
+        for attr in dir(parent_syft_obj):
             if attr not in exclude:
                 if(attr in dir(tensor_type) and "native_"+str(attr) not in dir(tensor_type)):
                     setattr(tensor_type, "native_"+str(attr), getattr(tensor_type, attr))
-                setattr(tensor_type, attr, getattr(_TorchTensor, attr))
+                setattr(tensor_type, attr, getattr(parent_syft_obj, attr))
                 
     def _hook_LocalTensor(self, tensor_type):
         
@@ -308,7 +305,7 @@ class TorchHook(object):
             the call locally. If self is a remote tensor, it
             executes a call to a remote worker.
             """
-            print(str(type(self)),attr)
+
             results = list()
             if(call_native):
                 result = getattr(self.child, "native_"+attr)(*args, **kwargs)

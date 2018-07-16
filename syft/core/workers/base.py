@@ -655,30 +655,6 @@ class BaseWorker(ABC):
 
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
 
-        # # Perform recursive operations.
-        # # If there is a child tensor (self.data)
-        # if(hasattr(obj, 'grad')):
-        #     if(obj.grad is not None):
-        #         # import pdb; pdb.set_trace()
-        #         self.register_object(obj=obj.grad,
-        #                              force_attach_to_worker=force_attach_to_worker,
-        #                              temporary=temporary,
-        #                              id=obj.grad.id,
-        #                              owners=obj.owners)
-
-        # try:
-        #     _ = obj.data
-        #     _ = type(_)
-        #     if(obj.data is not None):
-        #         self.register_object(obj=obj.data,
-        #                              force_attach_to_worker=force_attach_to_worker,
-        #                              temporary=temporary,
-        #                              id=obj.data.id,
-        #                              owners=obj.owners)
-
-        # except RuntimeError:
-        #     ""
-
         if(hasattr(obj, 'child')):
             if(obj.child is not None and type(object) not in torch.tensorvar_types):
                 self.register_object(obj=obj.child,
