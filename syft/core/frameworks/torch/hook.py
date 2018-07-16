@@ -8,7 +8,7 @@ import syft as sy
 from ... import workers
 from ... import utils
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor, _TorchTensor
-
+from .tensor import _TorchVariable
 class TorchHook(object):
     
     def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
@@ -227,7 +227,7 @@ class TorchHook(object):
                    '__sizeof__',
                    '__subclasshook__']
 
-        if issubclass(sy.Tensor, sy.FloatTensor):
+        if issubclass(sy.Tensor, tensor_type):
             parent_syft_obj = _TorchTensor
         else:
             parent_syft_obj = _TorchVariable

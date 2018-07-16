@@ -102,7 +102,7 @@ class _SyftTensor(object):
         return tensor_msg
 
     @staticmethod
-    def deser(msg, owner=None, highest_level=True):
+    def deser(msg, owner, highest_level=True):
 
         if isinstance(msg, str):
             msg_obj = json.loads(msg)
@@ -111,7 +111,14 @@ class _SyftTensor(object):
 
         obj_type = guard[msg_obj['type']]
 
-        if('child' in msg_obj):
+        is_var = issubclass(obj_type, torch.autograd.Variable)
+
+        if(is_var):
+
+            data = _SyftTensor.deser(msg_obj['data'], owner=owner, highest_level=True)
+            return obj_type(data)
+
+        elif('child' in msg_obj):
             # deserialize syft object and children
 
             child, leaf = _SyftTensor.deser(msg_obj['child'], owner=owner, highest_level=False)
@@ -382,12 +389,15 @@ class _TorchObject(object):
 
 class _TorchTensor(_TorchObject):
     
-    def ser(self, include_data=True, stop_recurse_at_torch_type=False):
+    def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
         """Serializes a {} object to JSON.""".format(type(self))
         if(not stop_recurse_at_torch_type):
             serializations = self.child.ser(include_data=include_data)
             serializations['torch_type'] = "syft."+type(self).__name__
-            return json.dumps(serializations) + "\n"
+            if(as_dict):
+                return serializations
+            else:
+                return json.dumps(serializations) + "\n"
         else:
             tensor_msg = {}
             tensor_msg['type'] = str(self.__class__).split("'")[1]
@@ -395,16 +405,29 @@ class _TorchTensor(_TorchObject):
             if include_data:
                 tensor_msg['data'] = self.tolist()
 
-            return tensor_msg
+            if(as_dict):
+                return tensor_msg
+            else:
+                return json.dumps(tensor_msg) + "\n"
 
 class _TorchVariable(_TorchObject):
     
-    def ser(self, include_data=True, stop_recurse_at_torch_type=False):
+    def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
 
         serializations = {}
-        serializations['torch_type'] = "syft.core.frameworks.torch.tensor.Variable"
+        serializations['torch_type'] = "syft.Variable"
+        serializations['type'] = str(self.__class__).split("'")[1]
+        serializations['id'] = self.id
+        serializations['data'] = self.data.ser(include_data,
+                                               stop_recurse_at_torch_type,
+                                               True)
+        if(as_dict):
+            return serializations
+        else:
+            return json.dumps(serializations) + "\n"
 
 guard = {
+    'syft.core.frameworks.torch.tensor.Variable': torch.autograd.Variable,
     'syft.core.frameworks.torch.tensor._PointerTensor': _PointerTensor,
     'syft.core.frameworks.torch.tensor._SyftTensor': _SyftTensor,
     'syft.core.frameworks.torch.tensor._LocalTensor': _LocalTensor,
