@@ -674,9 +674,18 @@ class BaseWorker(ABC):
         # Need to retrieve the tensors from self.worker.objects
 
         _self = self._objects[command_msg['self']]
-        args = [self._objects[id].parent for id in command_msg['args']]
+        args = []
+        for id in command_msg['args']:
+            try:
+                arg = self._objects[id].parent
+            except KeyError:
+                arg = id
+            args.append(arg)
 
-        result = getattr(_self, command_msg['command'])(*args)
+        if hasattr(_self, command_msg['command']):
+            result = getattr(_self, command_msg['command'])(*args)
+        else:
+            result = getattr(_self.child, command_msg['command'])(*args)
 
         # sometimes for virtual workers the owner is not correct
         # because it defaults to hook.local_worker
@@ -693,10 +702,12 @@ class BaseWorker(ABC):
                              owner=self,
                              id=result.id)
 
-        ptr = result.create_pointer(register=False)
+        if isinstance(result.child, sy._PointerTensor):
+            pointer = result.child
+        else:
+            pointer = result.create_pointer(register=True) #TODO =False ??
 
-        response = ptr.ser(include_data=False)
-
+        response = pointer.ser(include_data=False)
         return response
 
         # args = utils.map_tuple(
@@ -747,10 +758,9 @@ class BaseWorker(ABC):
         Main function that handles incoming torch commands.
         """
 
-        message = message
         # take in command message, return result of local execution
         response = self.process_command(message)
-        
+
         return response
 
     def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):

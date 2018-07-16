@@ -102,16 +102,16 @@ class TorchHook(object):
             else:
                 id = None
 
-            if('skip_register' in kwargs and kwargs['skip_register']):
-                "do nothing"
+
+            if(register_child_instead):
+                cls.native___init__()
+                _ = cls.child
             else:
-                if(register_child_instead):
-                    cls.native___init__()
-                    _ = cls.child
+                cls.native___init__(*args, **kwargs)
+                if('skip_register' in kwargs and kwargs['skip_register']):
+                    "do nothing"
                 else:
-                    cls.native___init__(*args, **kwargs)
                     owner.register_object(cls, owner=owner, id=id)
-        #                 return result
 
         tensorvar_type.__init__ = new___init__
 

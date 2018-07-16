@@ -3,10 +3,11 @@ import torch
 import random
 import syft as sy
 from ... import utils
+import logging
 
 class _SyftTensor(object):
     ""
-    
+
     def __init__(self, child, parent, torch_type, id=None, owner=None, skip_register=False):
         self.child = child
         self.parent = parent
@@ -20,6 +21,13 @@ class _SyftTensor(object):
 
     def copy_params(self, other):
         self.id = other.id
+
+    def find_pointer(self):
+        ch = self
+        if isinstance(ch, sy._PointerTensor):
+            return ch
+        else:
+            return None
 
     def find_torch_object_in_family_tree(self, parent=None):
 
@@ -57,13 +65,14 @@ class _SyftTensor(object):
     def create_pointer(self, parent, register=False):
         ptr = _PointerTensor(child=None,
                              parent=parent,
+                             torch_type="syft."+type(self.find_torch_object_in_family_tree(parent)).__name__,
                              location=self.owner.id,
                              id_at_location=self.id,
                              owner=self.owner,
-                             torch_type="syft."+type(self.find_torch_object_in_family_tree(parent)).__name__)
+                             skip_register=(not register))
 
-        if(not register):
-            ptr.owner.rm_obj(ptr.id)
+        #if(not register):
+        #    ptr.owner.rm_obj(ptr.id)
 
         return ptr
 
@@ -187,6 +196,8 @@ class _PointerTensor(_SyftTensor):
         self.location = self.owner.get_worker(location)
         self.id_at_location = id_at_location
         self.torch_type = torch_type
+        if self.location == self.owner:
+            logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
 
     def __add__(self, *args, **kwargs):
 
@@ -273,6 +284,12 @@ class _PointerTensor(_SyftTensor):
 
         This method also works for an iterable of tensors (e.g. `torch.cat([x1, x2, x3])`)
         """
+        if issubclass(tensor.__class__, sy._SyftTensor):
+            raise TypeError('Calling _tensors_to_str_ids on non-tensor/var/param but sy._SyftTensor')
+
+        if isinstance(tensor, (int, str)):
+            return tensor
+
         if hasattr(torch, 'native_is_tensor'):
             check = torch.native_is_tensor
         else:
@@ -313,8 +330,43 @@ class _TorchTensor(object):
         new_child_obj = self.child.get(parent=self)
         return self
 
+    def move(self, worker, new_id=None):
+        """
+        Give the end leaf of the chain to worker,
+        just like if the last elmt was send its child
+        to worker
+        self->alice->obj [worker] => self->alice->worker->obj
+        """
+        if isinstance(worker, (int, str)):
+            worker = self.owner.get_worker(worker)
 
-    def send(self, worker, new_id=random.randint(0,9999999999)):
+        if new_id is None:
+            new_id = random.randint(0,9999999999)
+
+        pointer = self.child.find_pointer()
+
+        if pointer is None:
+            return self.send(worker, new_id)
+
+        command = pointer.compile_command('move',
+                                          (worker.id, new_id),
+                                          {},
+                                          True)
+
+        response = pointer.owner.send_torch_command(recipient=pointer.location,
+                                                    message=command)
+        return self
+
+    def send(self, worker, new_id=None):
+        """
+        Give the root of the chain held by self to worker
+        self->alice->obj [worker] => self->worker->alice->obj
+        """
+        if isinstance(worker, (int, str)):
+            worker = self.owner.get_worker(worker)
+
+        if new_id is None:
+            new_id = random.randint(0,9999999999)
 
         init_id = self.id
 
