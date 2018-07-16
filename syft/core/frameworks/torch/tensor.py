@@ -303,7 +303,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __init__(self, child, parent, torch_type, owner=None):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner)
 
-class _TorchTensor(object):
+class _TorchObject(object):
     """
     This tensor is simply a more convenient way to add custom
     functions to all Torch tensor types.
@@ -395,11 +395,25 @@ class _TorchTensor(object):
 
             return tensor_msg
 
+class _TorchTensor(_TorchObject):
+    ""
+
+class _TorchVariable(_TorchObject):
+    ""
+
 guard = {
     'syft.core.frameworks.torch.tensor._PointerTensor': _PointerTensor,
     'syft.core.frameworks.torch.tensor._SyftTensor': _SyftTensor,
     'syft.core.frameworks.torch.tensor._LocalTensor': _LocalTensor,
     'syft.core.frameworks.torch.tensor._FixedPrecisionTensor': _FixedPrecisionTensor,
+    'syft.core.frameworks.torch.tensor.FloatTensor': torch.FloatTensor,
+    'syft.core.frameworks.torch.tensor.DoubleTensor': torch.DoubleTensor,
+    'syft.core.frameworks.torch.tensor.HalfTensor': torch.HalfTensor,
+    'syft.core.frameworks.torch.tensor.ByteTensor': torch.ByteTensor,
+    'syft.core.frameworks.torch.tensor.CharTensor': torch.CharTensor,
+    'syft.core.frameworks.torch.tensor.ShortTensor': torch.ShortTensor,
+    'syft.core.frameworks.torch.tensor.IntTensor': torch.IntTensor,
+    'syft.core.frameworks.torch.tensor.LongTensor': torch.LongTensor,
     'syft.FloatTensor': torch.FloatTensor,
     'syft.DoubleTensor': torch.DoubleTensor,
     'syft.HalfTensor': torch.HalfTensor,

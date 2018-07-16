@@ -308,7 +308,7 @@ class TorchHook(object):
             the call locally. If self is a remote tensor, it
             executes a call to a remote worker.
             """
-            print(attr)
+            print(str(type(self)),attr)
             results = list()
             if(call_native):
                 result = getattr(self.child, "native_"+attr)(*args, **kwargs)
