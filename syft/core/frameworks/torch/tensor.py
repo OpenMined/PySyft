@@ -380,6 +380,8 @@ class _TorchObject(object):
 
         return self
 
+class _TorchTensor(_TorchObject):
+    
     def ser(self, include_data=True, stop_recurse_at_torch_type=False):
         """Serializes a {} object to JSON.""".format(type(self))
         if(not stop_recurse_at_torch_type):
@@ -395,11 +397,12 @@ class _TorchObject(object):
 
             return tensor_msg
 
-class _TorchTensor(_TorchObject):
-    ""
-
 class _TorchVariable(_TorchObject):
-    ""
+    
+    def ser(self, include_data=True, stop_recurse_at_torch_type=False):
+
+        serializations = {}
+        serializations['torch_type'] = "syft.core.frameworks.torch.tensor.Variable"
 
 guard = {
     'syft.core.frameworks.torch.tensor._PointerTensor': _PointerTensor,

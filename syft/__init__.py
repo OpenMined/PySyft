@@ -1,6 +1,8 @@
 """Some syft imports..."""
 from . import core
 from . import mpc
+from torch.autograd import Variable
+from torch.autograd import Variable as Var
 from .core.frameworks.torch import TorchHook
 from .core.frameworks.torch import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor
 from syft.core.workers import VirtualWorker, SocketWorker
