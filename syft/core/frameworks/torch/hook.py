@@ -50,6 +50,7 @@ class TorchHook(object):
             # some of them (particularly __new__) don't seem to show up until
             # after a tensor has been initialized
 #             x = typ([0])
+        # self._hook_native_tensor(torch.autograd.Variable)
 
         for typ in torch.tensor_types:
 
@@ -118,13 +119,29 @@ class TorchHook(object):
     def _hook_properties(hook_self, tensor_type):
         @property
         def child(self):
-            if (hasattr(self, '_child') and self._child is not None):
-                return self._child
-            else:
+
+            try:
+                if (hasattr(self, '_child') and self._child is not None):
+                    return self._child
+                else:
+                    self._child = _LocalTensor(child=self,
+                                               parent=self,
+                                               torch_type='syft.'+type(self).__name__)
+                    return self._child
+            except TypeError:
+                # for some reason, hasattr(self, '_child') returns a TypeError saying
+                # "TypeError: 'NoneType' object is not callable". It's supposed to only
+                # return False and I can't get to the bottom of it. So, for now, I'm
+                # going to break a personal rule and use try/catch for logic, but
+                # this is merely supposed to evaluate whether self has ._child as an
+                # attribute. Note this only seems to happen when self is a
+                # torch.autograd.Variable
+
                 self._child = _LocalTensor(child=self,
-                                           parent=self,
-                                           torch_type='syft.'+type(self).__name__)
+                                               parent=self,
+                                               torch_type='syft.'+type(self).__name__)
                 return self._child
+
 
         @child.setter
         def child(self, value):

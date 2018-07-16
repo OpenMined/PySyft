@@ -618,7 +618,7 @@ class BaseWorker(ABC):
         # TODO: Assign default id more intelligently (low priority)
         #       Consider popping id from long list of unique integers
 
-        if(type(obj) in torch.tensor_types):
+        if(type(obj) in torch.tensorvar_types):
             return obj
             
 
