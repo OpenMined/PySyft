@@ -38,7 +38,8 @@ class TorchHook(object):
         # TODO: May want to handle the ones in "exclude" manually at
         #       some point
         self.exclude = (['ndimension', 'nelement', 'size', 'numel',
-                         'type', 'tolist', 'dim', '__iter__', 'select'])
+                         'type', 'tolist', 'dim', '__iter__', 'select',
+                         '__getattr__'])
         
         self.to_auto_overload = {}
 
