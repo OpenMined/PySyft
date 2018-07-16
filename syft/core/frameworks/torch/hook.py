@@ -285,7 +285,7 @@ class TorchHook(object):
 
             response = self.owner.send_torch_command(recipient=self.location,
                                          message=command)
-            return sy.deser(response).wrap()
+            return sy.deser(response, owner=self.owner).wrap()
 
         return _execute_remote_call
 

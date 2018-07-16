@@ -206,7 +206,7 @@ class BaseWorker(ABC):
 
         if(is_binary):
             message_wrapper_json = message_wrapper_json.decode('utf-8')
-
+        print(message_wrapper_json)
         decoder = utils.PythonJSONDecoder(self)
         message_wrapper = decoder.decode(message_wrapper_json)
 
@@ -776,59 +776,6 @@ class BaseWorker(ABC):
 
         return response
 
-    def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):
-        """
-        This function is responsible for re-registering an object when it has
-        been previously registered with the wrong id.
-
-        :Parameters:
-
-        * **torch_object (torch.Tensor or torch.autograd.Variable)** the object
-        to be re-registered.
-
-        * **obj_msg** (dict)** the message containing the proper id.
-
-        * **force_attach_to_worker (bool)** if set to True, it will force the object
-        to be stored in the worker's permanent registry
-          even if the worker is a client worker.
-
-        * **temporary (bool)** If set to True, it will store the object in the
-        worker's temporary registry.
-
-        * **out (torch.Tensor or torch.autograd.Variable)** returns the object
-        newly registered.
-        """
-
-        # TODO: pass in just the id instead of the entire obj_msg.
-
-        try:
-            # TorchClient case
-            # delete registration from init; it's got the wrong id
-            self.rm_obj(torch_object.id)
-        except (AttributeError, KeyError):
-            # Worker case: v was never formally registered
-            pass
-        # if('is_pointer' in obj_msg and obj_msg['is_pointer']):
-        #     torch_object = self.register_object(torch_object,
-        #                                         id=obj_msg['id'],
-        #                                         owners=obj_msg['owners'],
-        #                                         force_attach_to_worker=force_attach_to_worker,
-        #                                         temporary=temporary,
-        #                                         is_pointer=True)
-        # else:
-        if(isinstance(torch_object, torch.Tensor)):
-            register_this = torch_object.child
-        else:
-            register_this = torch_object
-
-        torch_object = self.register_object(register_this,
-                                            id=obj_msg['id'],
-                                            owner=self.id,
-                                            force_attach_to_worker=force_attach_to_worker,
-                                            temporary=temporary)
-
-        return torch_object
-
     def prepare_send_object(self, obj, id=None, delete_local=True, send_pointer=False):
 
         if(delete_local):
@@ -887,7 +834,6 @@ class BaseWorker(ABC):
         if(isinstance(message, str)):
             message = json.loads(message)
         obj = sy.deser(message, owner=self)
-        self.handle_register(obj, message, force_attach_to_worker=True)
 
         return obj
 

@@ -116,7 +116,8 @@ class _SyftTensor(object):
         if(is_var):
 
             data = _SyftTensor.deser(msg_obj['data'], owner=owner, highest_level=True)
-            return obj_type(data)
+            var = obj_type(data)
+            return var
 
         elif('child' in msg_obj):
             # deserialize syft object and children
@@ -358,6 +359,29 @@ class _TorchObject(object):
                                                     message=command)
         return self
 
+class _TorchTensor(_TorchObject):
+    
+    def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
+        """Serializes a {} object to JSON.""".format(type(self))
+        if(not stop_recurse_at_torch_type):
+            serializations = self.child.ser(include_data=include_data)
+            serializations['torch_type'] = "syft."+type(self).__name__
+            if(as_dict):
+                return serializations
+            else:
+                return json.dumps(serializations) + "\n"
+        else:
+            tensor_msg = {}
+            tensor_msg['type'] = str(self.__class__).split("'")[1]
+            tensor_msg['torch_type'] = "syft."+type(self).__name__
+            if include_data:
+                tensor_msg['data'] = self.tolist()
+
+            if(as_dict):
+                return tensor_msg
+            else:
+                return json.dumps(tensor_msg) + "\n"
+
     def send(self, worker, new_id=None):
         """
         Give the root of the chain held by self to worker
@@ -387,30 +411,36 @@ class _TorchObject(object):
 
         return self
 
-class _TorchTensor(_TorchObject):
-    
-    def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
-        """Serializes a {} object to JSON.""".format(type(self))
-        if(not stop_recurse_at_torch_type):
-            serializations = self.child.ser(include_data=include_data)
-            serializations['torch_type'] = "syft."+type(self).__name__
-            if(as_dict):
-                return serializations
-            else:
-                return json.dumps(serializations) + "\n"
-        else:
-            tensor_msg = {}
-            tensor_msg['type'] = str(self.__class__).split("'")[1]
-            tensor_msg['torch_type'] = "syft."+type(self).__name__
-            if include_data:
-                tensor_msg['data'] = self.tolist()
-
-            if(as_dict):
-                return tensor_msg
-            else:
-                return json.dumps(tensor_msg) + "\n"
-
 class _TorchVariable(_TorchObject):
+
+    def send(self, worker, new_id=None):
+        """
+        Give the root of the chain held by self to worker
+        self->alice->obj [worker] => self->worker->alice->obj
+        """
+        if isinstance(worker, (int, str)):
+            worker = self.owner.get_worker(worker)
+
+        if new_id is None:
+            new_id = random.randint(0,9999999999)
+
+        init_id = self.id
+
+        self.owner.send_obj(self,
+                            new_id,
+                            worker,
+                            delete_local=True)
+
+        self.native_set_()
+
+        self.child = sy._PointerTensor(child=self,
+                                       parent=self,
+                                       id=init_id,
+                                       torch_type='syft.'+type(self).__name__,
+                                       location=worker,
+                                       id_at_location=new_id)
+
+        return self
     
     def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
 
