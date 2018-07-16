@@ -53,6 +53,8 @@ class TorchHook(object):
 
             self._hook_syft_tensor_types(typ)
 
+        self._hook_syft_tensor_types(torch.autograd.Variable)
+
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloading a given tensor_type"""
         # Overload 'special' methods here

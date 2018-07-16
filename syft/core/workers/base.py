@@ -206,7 +206,7 @@ class BaseWorker(ABC):
 
         if(is_binary):
             message_wrapper_json = message_wrapper_json.decode('utf-8')
-        print(message_wrapper_json)
+
         decoder = utils.PythonJSONDecoder(self)
         message_wrapper = decoder.decode(message_wrapper_json)
 
@@ -646,8 +646,10 @@ class BaseWorker(ABC):
 
         obj.owner = (kwargs['owner']
                       if kwargs is not None and 'owner' in keys
-                      else [self.id])
-
+                      else self.id)
+        print("in register object")
+        print(obj.owner)
+        print(self._known_workers)
         # check to see if we can resolve owner id to pointer
         if obj.owner in self._known_workers.keys():
             obj.owner = self._known_workers[obj.owner]
@@ -776,7 +778,7 @@ class BaseWorker(ABC):
 
         return response
 
-    def prepare_send_object(self, obj, id=None, delete_local=True, send_pointer=False):
+    def prepare_send_object(self, obj, id=None, delete_local=True):
 
         if(delete_local):
             self.rm_obj(obj.id)
@@ -784,11 +786,11 @@ class BaseWorker(ABC):
         if(id is not None):
             obj.child.id = id
 
-        obj_json = obj.ser(include_data=not send_pointer)
+        obj_json = obj.ser()
 
         return obj_json
 
-    def send_obj(self, obj, new_id, recipient, delete_local=True, send_pointer=False):
+    def send_obj(self, obj, new_id, recipient, delete_local=True):
         """send_obj(self, obj, recipient, delete_local=True) -> obj
         Sends an object to another :class:`VirtualWorker` and, by default, removes it
         from the local worker. It also returns the object as a special case when
@@ -809,11 +811,9 @@ class BaseWorker(ABC):
 
         """
 
-        # obj = recipient.receive_obj(obj.ser())
         _obj = self.send_msg(message=self.prepare_send_object(obj,
                                                               id=new_id,
-                                                              delete_local=delete_local,
-                                                              send_pointer=send_pointer),
+                                                              delete_local=delete_local),
                              message_type='obj',
                              recipient=recipient)
 
@@ -833,8 +833,9 @@ class BaseWorker(ABC):
 
         if(isinstance(message, str)):
             message = json.loads(message)
+        print(message)
         obj = sy.deser(message, owner=self)
-
+        print(obj.type)
         return obj
 
     def send_torch_command(self, recipient, message):

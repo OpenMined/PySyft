@@ -36,7 +36,7 @@ class _SyftTensor(object):
 
         ch = self.child
         while(True):
-            if issubclass(type(ch), torch.Tensor):
+            if type(ch) in torch.tensorvar_types:
                 return ch
             if(hasattr(ch, 'child')):
                 ch = ch.child
@@ -110,13 +110,18 @@ class _SyftTensor(object):
             msg_obj = msg
 
         obj_type = guard[msg_obj['type']]
-
         is_var = issubclass(obj_type, torch.autograd.Variable)
 
         if(is_var):
 
             data = _SyftTensor.deser(msg_obj['data'], owner=owner, highest_level=True)
+            print("variable initialied")
             var = obj_type(data)
+
+            var.owner.rm_obj(var.id)
+            print(var.child.owner)
+            var.child.owner = owner.id
+            owner.register_object(var.child, owner=owner, id=msg_obj['id'])
             return var
 
         elif('child' in msg_obj):
@@ -140,7 +145,7 @@ class _SyftTensor(object):
             # redundant, so we need to remove it.
             # TOOD: figure out how to avoid this performance waste.
             obj.owner.rm_obj(obj.id)
-
+            print("deser2 rtn:",str(type(obj)))
             return obj, obj
         else:
             # deserialize data-less object - likely a pointer
@@ -151,12 +156,14 @@ class _SyftTensor(object):
             #                location = msg_obj['location'],
             #                id_at_location = msg_obj['id_at_location'],
             #                torch_type = msg_obj['torch_type'])
+            print("deser3 rtn:",str(type(obj)))
             return obj
 
         if(highest_level):
             leaf.child = obj
+            print("deser4 rtn:",str(type(leaf)))
             return leaf
-        
+        print("deser5 rtn:",str(type(obj)))
         return obj, leaf
 
     def __str__(self):
@@ -470,6 +477,7 @@ guard = {
     'syft.core.frameworks.torch.tensor.ShortTensor': torch.ShortTensor,
     'syft.core.frameworks.torch.tensor.IntTensor': torch.IntTensor,
     'syft.core.frameworks.torch.tensor.LongTensor': torch.LongTensor,
+    'syft.Variable': torch.autograd.Variable,
     'syft.FloatTensor': torch.FloatTensor,
     'syft.DoubleTensor': torch.DoubleTensor,
     'syft.HalfTensor': torch.HalfTensor,
