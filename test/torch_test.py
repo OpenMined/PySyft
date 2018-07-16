@@ -1,18 +1,21 @@
-# from unittest import TestCase
-# from syft.core.hooks import TorchHook
-# from syft.core.workers import VirtualWorker
-# from syft.core import utils
+from unittest import TestCase
+from syft.core.hooks import TorchHook
+from syft.core.workers import VirtualWorker
+from syft.core import utils
 
-# import torch
-# from torch.autograd import Variable as Var
-# import torch.nn.functional as F
-# import torch.optim as optim
-# import torch.nn as nn
+import torch
+from torch.autograd import Variable as Var
+import torch.nn.functional as F
+import torch.optim as optim
+import torch.nn as nn
 
-# import json
+import json
 
 
-# class TestTorchTensor(TestCase):
+class TestTorchTensor(TestCase):
+
+    def test_true(self):
+        assert True
 #     def test___repr__(self):
 
 #         hook = TorchHook(verbose=False)

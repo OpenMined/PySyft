@@ -11,6 +11,7 @@ import syft
 import torch
 
 for f in dir(torch):
-    setattr(syft,f,getattr(torch,f))
+    if("_" not in f):
+        setattr(syft,f,getattr(torch,f))
 
 setattr(syft, 'deser', _SyftTensor.deser)

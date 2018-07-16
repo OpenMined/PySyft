@@ -59,7 +59,7 @@ class TorchHook(object):
             # some of them (particularly __new__) don't seem to show up until
             # after a tensor has been initialized            
 #             x = typ([0])
-    
+
     def _hook_native_tensor(self, tensor_type):
         """Overloading a given tensor_type"""
         # Overload 'special' methods here
