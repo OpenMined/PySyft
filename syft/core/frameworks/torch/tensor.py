@@ -438,7 +438,7 @@ class _TorchTensor(_TorchObject):
 
 class _TorchVariable(_TorchObject):
 
-    def send(self, worker, new_id=None):
+    def send(self, worker, new_id=None, new_data_id=None):
         """
         Give the root of the chain held by self to worker
         self->alice->obj [worker] => self->worker->alice->obj
@@ -450,12 +450,14 @@ class _TorchVariable(_TorchObject):
         if new_id is None:
             new_id = random.randint(0,9999999999)
 
-        # if new_data_id is None:
-        #     new_data_id = random.randint(0,9999999999)
+        if new_data_id is None:
+            new_data_id = random.randint(0,9999999999)
 
         # if new_grad_id is None:
         #     new_grad_id = random.randint(0,9999999999)
 
+        old_data_id = self.data.id
+        self.data.child.id = new_data_id
 
         init_id = self.id
 
@@ -472,6 +474,13 @@ class _TorchVariable(_TorchObject):
                                        torch_type='syft.'+type(self).__name__,
                                        location=worker,
                                        id_at_location=new_id)
+
+        self.data.child = sy._PointerTensor(child=self,
+                                            parent=self,
+                                            id=old_data_id,
+                                            torch_type='syft.'+type(self).__name__,
+                                            location=worker,
+                                            id_at_location=new_data_id)
 
         return self
 
