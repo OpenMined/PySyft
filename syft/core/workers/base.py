@@ -834,6 +834,7 @@ class BaseWorker(ABC):
 
         if(isinstance(message, str)):
             message = json.loads(message)
+        print(message)
         obj = sy.deser(message, owner=self)
         return obj
 

@@ -423,18 +423,41 @@ class _TorchTensor(_TorchObject):
 
 class _TorchVariable(_TorchObject):
 
-    def send(self, worker, new_id=None):
+    def send(self, worker, new_var_id=None, new_data_id=None, new_grad_id=None):
         """
-        We make pointers for the Var, the attr data, and grad if any
-        if x is a Var, then x.child, x.data are _PointerTensor
+        Give the root of the chain held by self to worker
+        self->alice->obj [worker] => self->worker->alice->obj
         """
-        if not isinstance(self, sy.autograd.Variable):
-            raise TypeError('Only ofr Variable')
-        self.data.send(worker, new_id)
-        # TODO: add pointer on attr grad: create .grad as a property
-        # which makes a special request asking if it exists
-        # which lets us fetch the pointers in a lazy way
-        self = _TorchTensor.send(self, worker, new_id)
+        if isinstance(worker, (int, str)):
+            worker = self.owner.get_worker(worker)
+
+        if new_var_id is None:
+            new_var_id = random.randint(0,9999999999)
+
+        if new_data_id is None:
+            new_data_id = random.randint(0,9999999999)
+
+        if new_grad_id is None:
+            new_grad_id = random.randint(0,9999999999)
+
+
+        init_id = self.id
+
+        self.owner.send_obj(self,
+                            new_id,
+                            worker,
+                            delete_local=True)
+
+        self.native_set_()
+
+        self.child = sy._PointerTensor(child=self,
+                                       parent=self,
+                                       id=init_id,
+                                       torch_type='syft.'+type(self).__name__,
+                                       location=worker,
+                                       id_at_location=new_id)
+
+
         return self
 
     def get(self):
