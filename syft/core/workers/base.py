@@ -473,8 +473,8 @@ class BaseWorker(ABC):
         >>> local.is_client_worker
         True
         >>> message_obj = json.loads(' {"torch_type": "torch.FloatTensor", \
-"data": [1.0, 2.0, 3.0, 4.0, 5.0], "id": 9756847736, "owners": \
-[1], "is_pointer": false}')
+        "data": [1.0, 2.0, 3.0, 4.0, 5.0], "id": 9756847736, "owners": \
+        [1], "is_pointer": false}')
         >>> obj_type = hook.guard.types_guard(message_obj['torch_type'])
         >>> unregistered_tensor = torch.FloatTensor.deser(obj_type,message_obj)
         >>> unregistered_tensor
@@ -693,8 +693,8 @@ class BaseWorker(ABC):
         has_self = command_msg['has_self']
 
         if has_self:
-            _self = command_msg['self']
             command = command_msg['command'] # TODO Guard (self._command_guard(command_msg['command'], self.hook.tensorvar_methods))
+            _self = command_msg['self']
 
             if hasattr(_self, command):
                 result = getattr(_self, command)(*args, **kwargs)
@@ -703,71 +703,47 @@ class BaseWorker(ABC):
 
             # sometimes for virtual workers the owner is not correct
             # because it defaults to hook.local_worker
+<<<<<<< HEAD
             # result.child.owner = _self.owner
+=======
+            result.child.owner = _self.owner
+        else:
+            command = command_msg['command'] # TODO Guard (command = self._command_guard(command_msg['command'], self.hook.torch_funcs))
+            command = eval('torch.{}'.format(command))
+            result = command(*args, **kwargs)
+>>>>>>> Add support of the torch functions (eg torch.add) but:
 
-            # if we're using virtual workers, we need to de-register the
-            # object from the default worker
-            if(self.id != self.hook.local_worker.id):
-                self.hook.local_worker.rm_obj(result.id)
+        # if we're using virtual workers, we need to de-register the
+        # object from the default worker
+        if(self.id != self.hook.local_worker.id):
+            self.hook.local_worker.rm_obj(result.id)
 
 
-            self.register_object(result.child,
-                                 force_attach_to_worker=True,
-                                 owner=self,
-                                 id=result.id)
-
+<<<<<<< HEAD
             if isinstance(result.child, sy._PointerTensor):
                 pointer = result.child
             else:
                 pointer = result.create_pointer(register=False)
+=======
+        self.register_object(result.child,
+                             force_attach_to_worker=True,
+                             owner=self,
+                             id=result.id)
+>>>>>>> Add support of the torch functions (eg torch.add) but:
 
+        if isinstance(result.child, sy._PointerTensor):
+            pointer = result.child
             response = pointer.ser(include_data=False)
-            return response
+        else:
+            # We don't want to create a pointer just to transfer information-> use footprint instead
+            #pointer = result.create_pointer(register=True) #TODO =False ??
+            #response = pointer.ser(include_data=False)
 
-        raise Exception("Can't deal with command without a self for now")
+            # Probably a LocalTensor (TODO and if not ? or if list ?)
+            response = result.footprint()
 
-        # args = utils.map_tuple(
-        #     None, command_msg['args'], self._retrieve_tensor)
-        # kwargs = utils.map_dict(
-        #     None, command_msg['kwargs'], self._retrieve_tensor)
-        # has_self = command_msg['has_self']
-        # # TODO: Implement get_owners and refactor to make it prettier
-        # combined = list(args) + list(kwargs.values())
-
-        # if has_self:
-        #     command = self._command_guard(command_msg['command'],
-        #                                   sy.tensorvar_methods)
-        #     obj_self = self._retrieve_tensor(command_msg['self'])
-        #     combined = combined + [obj_self]
-        #     command = eval('obj_self.{}'.format(command))
-        # else:
-        #     try:
-        #         command = self._command_guard(
-        #             command_msg['command'], self.hook.torch_funcs)
-        #         command = eval('torch.{}'.format(command))
-        #     except RuntimeError:
-        #         try:
-        #             command = self._command_guard(
-        #                 command_msg['command'], self.hook.torch_functional_funcs)
-        #             command = eval('torch.nn.functional.{}'.format(command))
-        #         except RuntimeError:
-        #             pass
-
-        # # we need the original tensorvar owners so that we can register
-        # # the result properly later on
-        # tensorvars = [x for x in combined if type(
-        #     x).__name__ in sy.tensorvar_types_strs]
-        # owners = list(
-        #     set([tensorvar.owner for tensorvar in tensorvars]))
-
-        # owner_ids = list()
-        # for owner in owners:
-        #     if(type(owner) == int):
-        #         owner_ids.append(owner)
-        #     else:
-        #         owner_ids.append(owner.id)
-
-        # return command(*args, **kwargs), owner_ids
+        #response = pointer.ser(include_data=False)
+        return response
 
     def handle_command(self, message):
         """

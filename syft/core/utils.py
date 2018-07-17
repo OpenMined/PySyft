@@ -14,9 +14,11 @@ class PythonEncoder():
         In particular, (hooked) Torch objects are replaced by their id.
         Note that a python object is returned, not JSON.
     """
-    def __init__(self, retrieve_tensorvar=False):
+    def __init__(self, retrieve_tensorvar=False, retrieve_pointers=False):
         self.retrieve_tensorvar = retrieve_tensorvar
+        self.retrieve_pointers = retrieve_pointers
         self.found_tensorvar = []
+        self.found_pointers = []
         self.tensorvar_types = tuple([torch.autograd.Variable,
                                      torch.nn.Parameter,
                                      torch.FloatTensor,
@@ -28,17 +30,23 @@ class PythonEncoder():
                                      torch.IntTensor,
                                      torch.LongTensor])
 
-    def encode(self, obj, retrieve_tensorvar=None):
+    def encode(self, obj, retrieve_tensorvar=None, retrieve_pointers=None):
         """
             Performs encoding, and retrieves if requested all the tensors and
             Variables found
         """
         if retrieve_tensorvar is not None:
             self.retrieve_tensorvar = retrieve_tensorvar
+        if retrieve_pointers is not None:
+            self.retrieve_pointers = retrieve_pointers
+
+        response = [self.python_encode(obj)]
         if self.retrieve_tensorvar:
-            return (self.python_encode(obj), self.found_tensorvar)
-        else:
-            return self.python_encode(obj)
+            response.append(self.found_tensorvar)
+        if self.retrieve_pointers:
+            response.append(self.found_pointers)
+
+        return tuple(response)
 
     def python_encode(self, obj):
         # Case of basic types
@@ -61,6 +69,8 @@ class PythonEncoder():
             try: # _PointerTensor
                 location = obj.location.id
                 id = obj.id_at_location
+                if self.retrieve_pointers:
+                    self.found_pointers.append(obj)
             except AttributeError: # _LocalTensor
                 location = obj.owner.id
                 id = obj.id

@@ -77,9 +77,6 @@ class _SyftTensor(object):
 
         return ptr
 
-    # def __str__(self):
-        # return "blah"
-
     def add_type_specific_attributes(self, tensor_msg):
         return tensor_msg
 
@@ -151,12 +148,6 @@ class _SyftTensor(object):
         else:
             # deserialize data-less object - likely a pointer
             obj = obj_type.deser(msg_obj=msg_obj, child=None, owner=owner)
-            # obj = obj_type(child = None,
-            #                parent = None,
-            #                id=msg_obj['id'],
-            #                location = msg_obj['location'],
-            #                id_at_location = msg_obj['id_at_location'],
-            #                torch_type = msg_obj['torch_type'])
             return obj
 
         if(highest_level):
@@ -175,17 +166,17 @@ class _LocalTensor(_SyftTensor):
 
     def __init__(self, child, parent, torch_type, owner=None, id=None, skip_register=False):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
-        
+
     def __add__(self, other):
         """
-        An example of how to overload a specific function given that 
+        An example of how to overload a specific function given that
         the default behavior in LocalTensor (for all other operations)
         is to simply call the native PyTorch functionality.
         """
-        
+
         # custom stuff we can add
         # print("adding2")
-        
+
         # calling the native PyTorch functionality at the end
         return self.child.add(other)
 
@@ -200,8 +191,21 @@ class _LocalTensor(_SyftTensor):
     def get(self, parent):
         raise Exception("Cannot call .get() on a tensor you already have.")
 
+    def footprint(self):
+        """
+        Return useful info (excluding data) from a LocalTensor to create pointers
+        """
+        # TODO: 'type' is compulsory to pass the guard, but is not very appropriate
+        footprint = {
+            'type': 'syft.core.frameworks.torch.tensor._PointerTensor',
+            'location': self.owner.id,
+            'id_at_location': self.id,
+            'torch_type': self.torch_type
+        }
+        return footprint
+
 class _PointerTensor(_SyftTensor):
-    
+
     def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None, owner=None, skip_register=False):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
         if(location is None):
@@ -229,13 +233,15 @@ class _PointerTensor(_SyftTensor):
         return sy.deser(response).wrap()
 
     def __str__(self):
-        return "<"+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) +  " loc:" + str(self.location.id) + " id@loc:"+str(self.id_at_location)+">"        
+        return "<"+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) +  " loc:" + str(self.location.id) + " id@loc:"+str(self.id_at_location)+">"
 
     def deser(msg_obj, child, owner):
+        if 'id' not in msg_obj.keys():
+            msg_obj['id'] = random.randint(0,9999999999)
         obj = _PointerTensor(child=child,
                              parent=None,
                              owner=owner,
-                             id=msg_obj['id'],                             
+                             id=msg_obj['id'],
                              location=msg_obj['location'],
                              id_at_location=msg_obj['id_at_location'],
                              torch_type = msg_obj['torch_type']
@@ -317,7 +323,7 @@ class _PointerTensor(_SyftTensor):
 
 
 class _FixedPrecisionTensor(_SyftTensor):
-    
+
     def __init__(self, child, parent, torch_type, owner=None):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner)
 
@@ -337,6 +343,9 @@ class _TorchObject(object):
 
     def create_pointer(self, register=False):
         return self.child.create_pointer(parent=self, register=register)
+
+    def footprint(self):
+        return self.child.footprint()
 
     def get(self):
         new_child_obj = self.child.get(parent=self)
@@ -370,7 +379,7 @@ class _TorchObject(object):
         return self
 
 class _TorchTensor(_TorchObject):
-    
+
     def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
         """Serializes a {} object to JSON.""".format(type(self))
         if(not stop_recurse_at_torch_type):
