@@ -647,13 +647,11 @@ class BaseWorker(ABC):
         obj.owner = (kwargs['owner']
                       if kwargs is not None and 'owner' in keys
                       else self.id)
-        print("in register object")
-        print(obj.owner)
-        print(self._known_workers)
+
         # check to see if we can resolve owner id to pointer
         if obj.owner in self._known_workers.keys():
             obj.owner = self._known_workers[obj.owner]
-        
+
 
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
 
@@ -833,9 +831,7 @@ class BaseWorker(ABC):
 
         if(isinstance(message, str)):
             message = json.loads(message)
-        print(message)
         obj = sy.deser(message, owner=self)
-        print(obj.type)
         return obj
 
     def send_torch_command(self, recipient, message):
