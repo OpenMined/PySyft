@@ -369,7 +369,7 @@ class _TorchObject(object):
         if pointer is None:
             return self.send(worker, new_id)
 
-        command = pointer.compile_command('move',
+        command, _ = pointer.compile_command('move',
                                           (worker.id, new_id),
                                           {},
                                           True)
