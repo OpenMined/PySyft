@@ -3,6 +3,7 @@ import json
 import numbers
 import re
 import random
+import traceback
 import syft as sy
 from abc import ABC, abstractmethod
 
@@ -620,7 +621,6 @@ class BaseWorker(ABC):
 
         if(type(obj) in torch.tensorvar_types):
             return obj
-            
 
         keys = kwargs.keys()
 
@@ -652,6 +652,9 @@ class BaseWorker(ABC):
         if obj.owner in self._known_workers.keys():
             obj.owner = self._known_workers[obj.owner]
 
+        if(obj.owner.id == 'bob'):
+            print("I am",self,"Registering ", obj.id, obj.owner)
+        # traceback.print_stack()
 
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
 
@@ -700,7 +703,7 @@ class BaseWorker(ABC):
 
             # sometimes for virtual workers the owner is not correct
             # because it defaults to hook.local_worker
-            result.child.owner = _self.owner
+            # result.child.owner = _self.owner
 
             # if we're using virtual workers, we need to de-register the
             # object from the default worker
@@ -716,7 +719,7 @@ class BaseWorker(ABC):
             if isinstance(result.child, sy._PointerTensor):
                 pointer = result.child
             else:
-                pointer = result.create_pointer(register=True) #TODO =False ??
+                pointer = result.create_pointer(register=False)
 
             response = pointer.ser(include_data=False)
             return response

@@ -1,4 +1,5 @@
 import torch
+import random
 import inspect
 import re
 import json
@@ -97,7 +98,12 @@ class TorchHook(object):
             else:
                 cls.native___init__(*args, **kwargs)
                 if('skip_register' in kwargs and kwargs['skip_register']):
-                    "do nothing"
+                    if(id is None):
+                        cls.id = random.randint(0, 1e10)
+                    else:
+                        cls.id = id
+
+                    cls.owner = owner
                 else:
                     owner.register_object(cls, owner=owner, id=id)
 
@@ -308,7 +314,7 @@ class TorchHook(object):
                 result = getattr(self.child, attr)(*args, **kwargs)
         
             if(type(result) in torch.tensorvar_types and (not hasattr(result, 'owner'))):
-                hook_self.local_worker.register_object(result.child)
+                hook_self.local_worker.register_object(result.child, owner=self.owner)
 
             return result
 

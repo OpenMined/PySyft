@@ -4,6 +4,7 @@ import random
 import syft as sy
 from ... import utils
 import logging
+import traceback
 
 class _SyftTensor(object):
     ""
@@ -71,8 +72,8 @@ class _SyftTensor(object):
                              owner=self.owner,
                              skip_register=(not register))
 
-        #if(not register):
-        #    ptr.owner.rm_obj(ptr.id)
+        if(not register):
+           ptr.owner.rm_obj(ptr.id)
 
         return ptr
 
@@ -208,9 +209,13 @@ class _PointerTensor(_SyftTensor):
         self.location = self.owner.get_worker(location)
         self.id_at_location = id_at_location
         self.torch_type = torch_type
-        if self.location == self.owner:
-            logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
 
+        # pointers to themseleves that get registered should trigger the flat
+        # if it's not getting registered the pointer is probably about to be
+        # sent over the wire
+        if self.location == self.owner and not skip_register:
+            logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
+            traceback.print_stack()
     def __add__(self, *args, **kwargs):
 
         # Step 1: Compiles Command
