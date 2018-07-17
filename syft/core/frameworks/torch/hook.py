@@ -33,52 +33,45 @@ class TorchHook(object):
             # if the local_worker already exists, then it MUST not know about the hook which is
             # just being created. Thus, we must inform it.
             self.local_worker.hook = self
-        
+
         # Methods that caused infinite recursion during testing
         # TODO: May want to handle the ones in "exclude" manually at
         #       some point
         self.exclude = (['ndimension', 'nelement', 'size', 'numel',
                          'type', 'tolist', 'dim', '__iter__', 'select',
                          '__getattr__'])
-        
+
         self.to_auto_overload = {}
 
-        for typ in torch.tensor_types:
-
+        for typ in torch.tensorvar_types:
             self._hook_native_tensors_and_variables(typ)
-
-        self._hook_native_tensors_and_variables(torch.autograd.Variable)
-
-        for typ in torch.tensor_types:
-
             self._hook_syft_tensor_types(typ)
 
-        self._hook_syft_tensor_types(torch.autograd.Variable)
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloading a given tensor_type"""
         # Overload 'special' methods here
-        
+
         self._add_registration_to___init__(tensor_type, register_child_instead=True)
-        
+
         self._hook_properties(tensor_type)
-        
+
         self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(tensor_type)
 
         self._rename_native_functions(tensor_type)
-        
+
         self._assign_methods_to_use_child(tensor_type)
-        
+
         self._add_methods_from__TorchObject(tensor_type)
 
     def _hook_syft_tensor_types(self, tensor_type):
 
         self._hook_LocalTensor(tensor_type)
-        
+
         self._hook_SyftTensor(tensor_type)
 
         self._hook_PointerTensor(tensor_type)
-        
+
     def _add_registration_to___init__(hook_self, tensorvar_type, register_child_instead=False):
         """Overloads tensor_type.__new__ or Variale.__new__"""
 

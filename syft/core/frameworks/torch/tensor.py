@@ -113,13 +113,12 @@ class _SyftTensor(object):
         is_var = issubclass(obj_type, torch.autograd.Variable)
 
         if(is_var):
-
             data = _SyftTensor.deser(msg_obj['data'], owner=owner, highest_level=True)
-            print("variable initialied")
+            if issubclass(data.__class__, sy._SyftTensor):
+                data = data.child
             var = obj_type(data)
 
             var.owner.rm_obj(var.id)
-            print(var.child.owner)
             var.child.owner = owner.id
             owner.register_object(var.child, owner=owner, id=msg_obj['id'])
             return var
@@ -127,13 +126,15 @@ class _SyftTensor(object):
         elif('child' in msg_obj):
             # deserialize syft object and children
 
-            child, leaf = _SyftTensor.deser(msg_obj['child'], owner=owner, highest_level=False)
+            child = _SyftTensor.deser(msg_obj['child'], owner=owner, highest_level=False)
             # likely using VirtualWorkers and accidentally registered this
             # object to the default local_worker
             if(child.owner.id != owner.id):
                 child.owner.rm_obj(child.id)
 
             obj = obj_type.deser(msg_obj=msg_obj, child=child, owner=owner)
+
+            return obj
             # obj = obj_type(child=child, owner=owner, id=msg_obj['id'], parent=None)
 
         elif('data' in msg_obj):
@@ -145,8 +146,7 @@ class _SyftTensor(object):
             # redundant, so we need to remove it.
             # TOOD: figure out how to avoid this performance waste.
             obj.owner.rm_obj(obj.id)
-            print("deser2 rtn:",str(type(obj)))
-            return obj, obj
+            return obj
         else:
             # deserialize data-less object - likely a pointer
             obj = obj_type.deser(msg_obj=msg_obj, child=None, owner=owner)
@@ -156,18 +156,15 @@ class _SyftTensor(object):
             #                location = msg_obj['location'],
             #                id_at_location = msg_obj['id_at_location'],
             #                torch_type = msg_obj['torch_type'])
-            print("deser3 rtn:",str(type(obj)))
             return obj
 
         if(highest_level):
             leaf.child = obj
-            print("deser4 rtn:",str(type(leaf)))
             return leaf
-        print("deser5 rtn:",str(type(obj)))
-        return obj, leaf
+        return obj
 
     def __str__(self):
-        return "<"+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) + ">"        
+        return "<"+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) + ">"
 
     def __repr__(self):
         return self.__str__()
@@ -249,6 +246,7 @@ class _PointerTensor(_SyftTensor):
     def get(self, parent):
 
         obj, cleanup = self.owner.request_obj(self.id_at_location, self.location)
+        obj = obj.child
 
         if(isinstance(obj, torch.Tensor)):
             parent.native_set_(obj)
@@ -422,33 +420,24 @@ class _TorchVariable(_TorchObject):
 
     def send(self, worker, new_id=None):
         """
-        Give the root of the chain held by self to worker
-        self->alice->obj [worker] => self->worker->alice->obj
+        We make pointers for the Var, the attr data, and grad if any
+        if x is a Var, then x.child, x.data are _PointerTensor
         """
-        if isinstance(worker, (int, str)):
-            worker = self.owner.get_worker(worker)
-
-        if new_id is None:
-            new_id = random.randint(0,9999999999)
-
-        init_id = self.id
-
-        self.owner.send_obj(self,
-                            new_id,
-                            worker,
-                            delete_local=True)
-
-        self.native_set_()
-
-        self.child = sy._PointerTensor(child=self,
-                                       parent=self,
-                                       id=init_id,
-                                       torch_type='syft.'+type(self).__name__,
-                                       location=worker,
-                                       id_at_location=new_id)
-
+        if not isinstance(self, sy.autograd.Variable):
+            raise TypeError('Only ofr Variable')
+        self.data.send(worker, new_id)
+        # TODO: add pointer on attr grad: create .grad as a property
+        # which makes a special request asking if it exists
+        # which lets us fetch the pointers in a lazy way
+        self = _TorchTensor.send(self, worker, new_id)
         return self
-    
+
+    def get(self):
+        self.data.child.get(parent=self.data)
+        new_child_obj = self.child.get(parent=self)
+        # TODO: get grad if any
+        return self
+
     def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
 
         serializations = {}
