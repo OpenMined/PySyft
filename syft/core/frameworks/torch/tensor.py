@@ -257,20 +257,26 @@ class _PointerTensor(_SyftTensor):
     def get(self, parent):
 
         obj, cleanup = self.owner.request_obj(self.id_at_location, self.location)
+        syft_obj = obj
         obj = obj.child
 
         if(isinstance(obj, torch.Tensor)):
             parent.native_set_(obj)
 
         self.owner.get_worker(obj.owner).rm_obj(obj.id)
-        self.owner.set_obj(self.id, obj.child)
+        self.owner.set_obj(self.id, syft_obj)
+        self.owner.rm_obj(syft_obj.id)
 
-        if(hasattr(obj, 'child') and obj.child is not None):
-            obj.child.id = self.id
-            self = obj.child
+        syft_obj.id = self.id
+        self = syft_obj
+
+        """if(hasattr(obj, 'child') and obj.child is not None):
+            syft_obj.id = self.id
+            self = syft_obj
         else:
+            raise Exception('Check this.')
             obj.id = self.id
-            self = obj
+            self = obj"""
         parent.child = self
         return self
 
@@ -439,7 +445,8 @@ class _TorchVariable(_TorchObject):
         """
         if not isinstance(self, sy.autograd.Variable):
             raise TypeError('Only ofr Variable')
-        self.data.send(worker, new_id)
+        # TODO: want to define a particular id ? cant use new_id 2 or 3 times
+        self.data.send(worker, new_id=None)
         # TODO: add pointer on attr grad: create .grad as a property
         # which makes a special request asking if it exists
         # which lets us fetch the pointers in a lazy way
