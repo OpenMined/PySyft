@@ -229,7 +229,7 @@ class TorchHook(object):
                    '__sizeof__',
                    '__subclasshook__']
 
-        if issubclass(sy.Tensor, tensor_type):
+        if issubclass(tensor_type, torch._TensorBase):
             parent_syft_obj = _TorchTensor
         else:
             parent_syft_obj = _TorchVariable
