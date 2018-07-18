@@ -260,7 +260,7 @@ class _PointerTensor(_SyftTensor):
         syft_obj = obj
         obj = obj.child
 
-        if(isinstance(obj, torch.Tensor)):
+        if(isinstance(obj, torch.Tensor) and isinstance(parent, torch.Tensor)):
             parent.native_set_(obj)
 
         self.owner.get_worker(obj.owner).rm_obj(obj.id)
@@ -485,10 +485,11 @@ class _TorchVariable(_TorchObject):
         return self
 
     def get(self):
-        self.data.child.get(parent=self.data)
         new_child_obj = self.child.get(parent=self)
-        # TODO: get grad if any
-        return self
+        new_data_obj = self.data.child.get(parent=self)
+        self.child = new_child_obj
+        self.data.child = new_data_obj
+        return self        
 
     def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
 
