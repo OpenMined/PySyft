@@ -541,7 +541,6 @@ class BaseWorker(ABC):
 
         """
         # TODO: Extend to responses that are iterables.
-        # TODO: Fix the case when response contains only a numeric
 
         response = json.loads(response)
         if(isinstance(response, str)):
@@ -701,38 +700,38 @@ class BaseWorker(ABC):
 
             # sometimes for virtual workers the owner is not correct
             # because it defaults to hook.local_worker
-
             result.child.owner = _self.owner
         else:
             command = command_msg['command'] # TODO Guard (command = self._command_guard(command_msg['command'], self.hook.torch_funcs))
             command = eval('torch.{}'.format(command))
             result = command(*args, **kwargs)
 
-        # if we're using virtual workers, we need to de-register the
-        # object from the default worker
-        if(self.id != self.hook.local_worker.id):
-            self.hook.local_worker.rm_obj(result.id)
+        if isinstance(result,(int, float)):
+            result = sy.FloatTensor([result])
 
+        if issubclass(result.child.__class__, sy._SyftTensor):
+            # if we're using virtual workers, we need to de-register the
+            # object from the default worker
+            if self.id != self.hook.local_worker.id :
+                self.hook.local_worker.rm_obj(result.id)
 
-        self.register_object(result.child,
-                             force_attach_to_worker=True,
-                             owner=self,
-                             id=result.id)
-
-        if isinstance(result.child, sy._PointerTensor):
-            pointer = result.child
-            # we make a pointer to this pointer to chain like the args
-            response = pointer.ser(include_data=False)
+            syft_obj = result.child
+            self.register_object(syft_obj,
+                                 force_attach_to_worker=True,
+                                 owner=self,
+                                 id=result.id)
+            if isinstance(syft_obj, sy._PointerTensor):
+                response = syft_obj.ser(include_data=False)
+            else:
+                response = syft_obj.ser()
+        # Case of a iter type non json serializable
+        elif isinstance(result,(tuple, set, bytearray, range)):
+            # TODO: Extend to responses that are iterables.
+            raise Exception('This type of output is not supported at the moment')
         else:
-            # We don't want to create a pointer just to transfer information-> use footprint instead
-            #pointer = result.create_pointer(register=True) #TODO =False ??
-            #response = pointer.ser(include_data=False)
+            # TODO: Extend to responses Variable.
+            raise Exception('The type',type(result),'is not supported at the moment')
 
-            # Probably a LocalTensor (TODO and if not ? or if list ?)
-            assert result.child.__class__.__name__ in map(lambda x: x.__name__, sy._SyftTensor.__subclasses__())
-            response = result.child.ser()
-
-        #response = pointer.ser(include_data=False)
         return response
 
     def handle_command(self, message):
