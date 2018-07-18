@@ -258,7 +258,7 @@ class _PointerTensor(_SyftTensor):
         syft_obj = obj
         obj = obj.child
 
-        if(isinstance(obj, torch.Tensor) and isinstance(parent, torch.Tensor)):
+        if isinstance(obj, torch._TensorBase) and isinstance(parent, torch._TensorBase):
             parent.native_set_(obj)
 
         self.owner.get_worker(obj.owner).rm_obj(obj.id)
@@ -495,6 +495,7 @@ class _TorchVariable(_TorchObject):
         self.data.child = new_data_obj
 
         self.native_set_(self.child.child)
+
         return self
 
     def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):

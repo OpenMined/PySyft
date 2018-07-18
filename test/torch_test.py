@@ -223,65 +223,61 @@ class TestTorchTensor(TestCase):
         z = torch.cross(x, y, dim=1)
         assert (torch.equal(z.get(), torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])))
 
-        #x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(bob)
-        #y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(bob)
-        #z = torch.dist(x, y)
-        #t = torch.FloatTensor([z])
-        #assert (torch.equal(t, torch.FloatTensor([0.])))
+        x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(bob)
+        y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(bob)
+        z = torch.dist(x, y)
+        z.get()
+        assert (torch.equal(z, torch.FloatTensor([0.])))
 
+        x = torch.FloatTensor([1, 2, 3]).send(bob).send(alice)
+        y = torch.FloatTensor([1, 2, 3]).send(bob).send(alice)
+        z = torch.dot(x, y)
+        z.get().get()
+        assert torch.equal(z, torch.FloatTensor([14]))
+
+        z = torch.eq(x, y)
+        assert (torch.equal(z.get().get(), torch.ByteTensor([1, 1, 1])))
+
+        z = torch.ge(x, y)
+        assert (torch.equal(z.get().get(), torch.ByteTensor([1, 1, 1])))
+
+
+    def test_local_tensor_tertiary_methods(self):
+
+        x = torch.FloatTensor([1, 2, 3])
+        y = torch.FloatTensor([1, 2, 3])
+        z = torch.FloatTensor([1, 2, 3])
+        assert (torch.equal(torch.addcmul(z, 2, x, y), torch.FloatTensor([3.,  10.,  21.])))
+
+        x = torch.FloatTensor([1, 2, 3])
+        y = torch.FloatTensor([1, 2, 3])
+        z = torch.FloatTensor([1, 2, 3])
+        z.addcmul_(2, x, y)
+        assert (torch.equal(z, torch.FloatTensor([3., 10., 21.])))
+
+        x = torch.FloatTensor([[1, 2]])
+        y = torch.FloatTensor([[1, 2, 3], [4, 5, 6]])
+        z = torch.FloatTensor([1, 2, 3])
+        assert(torch.equal(torch.addmm(z, x, y), torch.FloatTensor([[10., 14., 18.]])))
+
+    def test_remote_tensor_tertiary_methods(self):
+
+        x = torch.FloatTensor([1, 2, 3]).send(bob)
+        y = torch.FloatTensor([1, 2, 3]).send(bob)
+        z = torch.FloatTensor([1, 2, 3]).send(bob)
+        assert (torch.equal(torch.addcmul(z,  2, x, y).get(), torch.FloatTensor([3., 10., 21.])))
+
+        # Uses a method
         #x = torch.FloatTensor([1, 2, 3]).send(bob)
         #y = torch.FloatTensor([1, 2, 3]).send(bob)
-        #z = torch.dot(x, y)
-        #t = torch.FloatTensor([z])
-        #assert torch.equal(t, torch.FloatTensor([14]))
+        #z = torch.FloatTensor([1, 2, 3]).send(bob)
+        #z.addcmul_(2, x, y)
+        #assert (torch.equal(z.get(), torch.FloatTensor([3., 10., 21.])))
 
-        #z = torch.eq(x, y)
-        #assert (torch.equal(z.get(), torch.ByteTensor([1, 1, 1])))
-
-        #z = torch.ge(x, y)
-        #assert (torch.equal(z.get(), torch.ByteTensor([1, 1, 1])))
-
-
-#     def test_local_tensor_tertiary_methods(self):
-
-#         x = torch.FloatTensor([1, 2, 3])
-#         y = torch.FloatTensor([1, 2, 3])
-#         z = torch.FloatTensor([1, 2, 3])
-#         assert (torch.equal(torch.addcmul(z, 2, x, y), torch.FloatTensor([3.,  10.,  21.])))
-
-#         x = torch.FloatTensor([1, 2, 3])
-#         y = torch.FloatTensor([1, 2, 3])
-#         z = torch.FloatTensor([1, 2, 3])
-#         z.addcmul_(2, x, y)
-#         assert (torch.equal(z, torch.FloatTensor([3., 10., 21.])))
-
-#         x = torch.FloatTensor([[1, 2]])
-#         y = torch.FloatTensor([[1, 2, 3], [4, 5, 6]])
-#         z = torch.FloatTensor([1, 2, 3])
-#         assert(torch.equal(torch.addmm(z, x, y), torch.FloatTensor([[10., 14., 18.]])))
-
-#     def test_remote_tensor_tertiary_methods(self):
-
-#         hook = TorchHook(verbose=False)
-#         local = hook.local_worker
-#         remote = VirtualWorker(hook, 1)
-#         local.add_worker(remote)
-
-#         x = torch.FloatTensor([1, 2, 3]).send(remote)
-#         y = torch.FloatTensor([1, 2, 3]).send(remote)
-#         z = torch.FloatTensor([1, 2, 3]).send(remote)
-#         assert (torch.equal(torch.addcmul(z,  2, x, y).get(), torch.FloatTensor([3., 10., 21.])))
-
-#         x = torch.FloatTensor([1, 2, 3]).send(remote)
-#         y = torch.FloatTensor([1, 2, 3]).send(remote)
-#         z = torch.FloatTensor([1, 2, 3]).send(remote)
-#         z.addcmul_(2, x, y)
-#         assert (torch.equal(z.get(), torch.FloatTensor([3., 10., 21.])))
-
-#         x = torch.FloatTensor([[1, 2]]).send(remote)
-#         y = torch.FloatTensor([[1, 2, 3], [4, 5, 6]]).send(remote)
-#         z = torch.FloatTensor([1, 2, 3]).send(remote)
-#         assert (torch.equal(torch.addmm(z, x, y).get(), torch.FloatTensor([[10., 14., 18.]])))
+        x = torch.FloatTensor([[1, 2]]).send(bob)
+        y = torch.FloatTensor([[1, 2, 3], [4, 5, 6]]).send(bob)
+        z = torch.FloatTensor([1, 2, 3]).send(bob)
+        assert (torch.equal(torch.addmm(z, x, y).get(), torch.FloatTensor([[10., 14., 18.]])))
 
 #     def test_local_tensor_iterable_methods(self):
 
