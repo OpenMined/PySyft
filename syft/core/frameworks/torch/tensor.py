@@ -63,13 +63,13 @@ class _SyftTensor(object):
     def parent(self, value):
         self._parent = value
 
-    def create_pointer(self, owner, parent=None, register=False):
+    def create_pointer(self, parent=None, register=False):
         ptr = _PointerTensor(child=None,
                              parent=parent,
                              torch_type="syft."+type(self.find_torch_object_in_family_tree(parent)).__name__,
                              location=self.owner.id,
                              id_at_location=self.id,
-                             owner=owner,
+                             owner=self.owner,
                              skip_register=(not register))
 
         if(not register):
@@ -156,7 +156,7 @@ class _SyftTensor(object):
         return obj
 
     def __str__(self):
-        return "<"+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) + ">"
+        return "["+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) + "]"
 
     def __repr__(self):
         return self.__str__()
@@ -207,7 +207,7 @@ class _PointerTensor(_SyftTensor):
         # sent over the wire
         if self.location == self.owner and not skip_register:
             logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
-            traceback.print_stack()
+
     def __add__(self, *args, **kwargs):
 
         # Step 1: Compiles Command
@@ -221,7 +221,7 @@ class _PointerTensor(_SyftTensor):
         return sy.deser(response).wrap()
 
     def __str__(self):
-        return "<"+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) +  " loc:" + str(self.location.id) + " id@loc:"+str(self.id_at_location)+">"
+        return "["+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) +  " loc:" + str(self.location.id) + " id@loc:"+str(self.id_at_location)+"]"
 
     def deser(msg_obj, child, owner):
         if 'id' not in msg_obj.keys():
@@ -242,8 +242,18 @@ class _PointerTensor(_SyftTensor):
         wrapper.child = self
         return wrapper
 
-    def get(self, parent):
+    def get(self, parent, deregister_ptr=True):
 
+        # going to demolish this pointer
+        if (deregister_ptr):
+            self.owner.rm_obj(self.id)
+
+        # if the pointer happens to be pointing to a local object,
+        # just return that object (this is an edge case)
+        if(self.location == self.owner):
+            return self.owner._objects[self.id_at_location]
+
+        # get raw LocalTensor from remote machine
         obj, cleanup = self.owner.request_obj(self.id_at_location, self.location)
         syft_obj = obj
         obj = obj.child
@@ -255,18 +265,10 @@ class _PointerTensor(_SyftTensor):
         self.owner.set_obj(self.id, syft_obj)
         self.owner.rm_obj(syft_obj.id)
 
-        syft_obj.id = self.id
+        syft_obj.id = self.id_at_location
         self = syft_obj
 
-        """if(hasattr(obj, 'child') and obj.child is not None):
-            syft_obj.id = self.id
-            self = syft_obj
-        else:
-            raise Exception('Check this.')
-            obj.id = self.id
-            self = obj"""
-        parent.child = self
-        return self
+        return obj
 
     def add_type_specific_attributes(self, tensor_msg):
         tensor_msg['location'] = self.location if isinstance(self.location, str) else self.location.id
@@ -336,11 +338,20 @@ class _TorchObject(object):
         return self.native___repr__()
 
     def create_pointer(self, register=False):
-        return self.child.create_pointer(parent=self, register=register)
+        return self.child.create_pointer(parent=self, register=register).wrap()
 
-    def get(self):
-        new_child_obj = self.child.get(parent=self)
-        return self
+    def get(self, deregister_ptr=True, update_ptr_wrapper=True):
+
+        result = self.child.get(parent=self, deregister_ptr=deregister_ptr).parent
+
+        # this will change the pointer variable (wrapper) to instead wrap the
+        # LocalTensor object that was returned so that any variable that may
+        # still exist referencing this pointer will simply call local data instead
+        # of sending messages elsewhere
+        if(update_ptr_wrapper):
+            self.child = result.child
+
+        return result
 
     def move(self, worker, new_id=None):
         """
@@ -374,7 +385,7 @@ class _TorchTensor(_TorchObject):
     def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
         """Serializes a {} object to JSON.""".format(type(self))
         if(not stop_recurse_at_torch_type):
-            serializations = self.child.ser(include_data=include_data)
+            serializations = self.child.ser(include_data=include_data, as_dict=True)
             serializations['torch_type'] = "syft."+type(self).__name__
             if(as_dict):
                 return serializations
@@ -420,6 +431,14 @@ class _TorchTensor(_TorchObject):
                                        id_at_location=new_id)
 
         return self
+
+    def __str__(self):
+        if isinstance(self.child, _PointerTensor):
+            return type(self).__name__+self.child.__str__()+""
+        elif(isinstance(self.child, _LocalTensor)):
+            return self.child.child.native___str__()
+        else:
+            return self.native_str()
 
 class _TorchVariable(_TorchObject):
 
@@ -474,7 +493,9 @@ class _TorchVariable(_TorchObject):
         new_data_obj = self.data.child.get(parent=self)
         self.child = new_child_obj
         self.data.child = new_data_obj
-        return self        
+
+        self.native_set_(self.child.child)
+        return self
 
     def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
 

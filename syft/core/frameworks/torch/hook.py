@@ -150,6 +150,18 @@ class TorchHook(object):
         tensor_type.id = id
 
         @property
+        def location(self):
+            return self.child.location
+
+        tensor_type.location = location
+
+        @property
+        def id_at_location(self):
+            return self.child.id_at_location
+
+        tensor_type.id_at_location = id_at_location
+
+        @property
         def owner(self):
             return self.child.owner
 
@@ -280,6 +292,7 @@ class TorchHook(object):
     def _forward_call_to_remote(hook_self, attr):
 
         def _execute_remote_call(self, *args, **kwargs):
+            print("execute remote:", attr)
             command, tensorvars = self.compile_command(attr,
                           args,
                           kwargs,
@@ -287,7 +300,10 @@ class TorchHook(object):
 
             response = self.owner.send_torch_command(recipient=self.location,
                                          message=command)
-            return sy.deser(response, owner=self.owner).wrap()
+            print(response)
+            response_obj = sy.deser(response, owner=self.owner)
+            print(response_obj)
+            return response_obj.wrap()
 
         return _execute_remote_call
 
@@ -307,7 +323,6 @@ class TorchHook(object):
             the call locally. If self is a remote tensor, it
             executes a call to a remote worker.
             """
-
             results = list()
             if(call_native):
                 result = getattr(self.child, "native_"+attr)(*args, **kwargs)

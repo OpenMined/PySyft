@@ -241,7 +241,7 @@ class BaseWorker(ABC):
         #  A torch command from another workerinvolving one or more tensors
         #  hosted locally
         elif(message_wrapper['type'] == 'torch_cmd'):
-            return json.dumps(self.handle_command(message)) + "\n"
+            return json.dumps(self.process_command(message)) + "\n"
         # A composite command. Must be unrolled
         elif(message_wrapper['type'] == 'composite'):
             return [self.process_message_type(message[message_number])
@@ -639,7 +639,7 @@ class BaseWorker(ABC):
         except:
             ""
 
-        if(kwargs is not None and 'id' in kwargs and kwargs['id'] is not None):
+        if kwargs is not None and 'id' in kwargs and kwargs['id'] is not None:
             obj.id = kwargs['id']
         else:
             obj.id = random.randint(0, 1e10)
@@ -656,8 +656,8 @@ class BaseWorker(ABC):
 
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
 
-        if(hasattr(obj, 'child')):
-            if(obj.child is not None and type(object) not in torch.tensorvar_types):
+        if hasattr(obj, 'child'):
+            if obj.child is not None and type(object) not in torch.tensorvar_types:
                 self.register_object(obj=obj.child,
                                      force_attach_to_worker=force_attach_to_worker,
                                      temporary=temporary,
@@ -725,25 +725,28 @@ class BaseWorker(ABC):
             response = pointer.ser(include_data=False)
         else:
             # We don't want to create a pointer just to transfer information-> use footprint instead
-            #pointer = result.create_pointer(register=True) #TODO =False ??
-            #response = pointer.ser(include_data=False)
+            result.child = result.create_pointer(register=False) #TODO =False ??
+
+            if isinstance(result, torch.autograd.Variable):
+                result.data.child = result.data.child.create_pointer(register=False)
+            response = result.ser(include_data=False)
 
             # Probably a LocalTensor (TODO and if not ? or if list ?)
-            assert result.child.__class__.__name__ in map(lambda x: x.__name__, sy._SyftTensor.__subclasses__())
-            response = result.child.ser()
+            # assert result.child.__class__.__name__ in map(lambda x: x.__name__, sy._SyftTensor.__subclasses__())
+            # response = result.child.ser()
 
         #response = pointer.ser(include_data=False)
         return response
 
-    def handle_command(self, message):
-        """
-        Main function that handles incoming torch commands.
-        """
-
-        # take in command message, return result of local execution
-        response = self.process_command(message)
-
-        return response
+    # def handle_command(self, message):
+    #     """
+    #     Main function that handles incoming torch commands.
+    #     """
+    #
+    #     # take in command message, return result of local execution
+    #     response = self.process_command(message)
+    #
+    #     return response
 
     def prepare_send_object(self, obj, id=None, delete_local=True):
 
