@@ -438,7 +438,7 @@ class _TorchTensor(_TorchObject):
         elif(isinstance(self.child, _LocalTensor)):
             return self.child.child.native___str__()
         else:
-            return self.native_str()
+            return self.native___str__()
 
 class _TorchVariable(_TorchObject):
 
