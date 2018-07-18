@@ -63,13 +63,13 @@ class _SyftTensor(object):
     def parent(self, value):
         self._parent = value
 
-    def create_pointer(self, parent, register=False):
+    def create_pointer(self, owner, parent=None, register=False):
         ptr = _PointerTensor(child=None,
                              parent=parent,
                              torch_type="syft."+type(self.find_torch_object_in_family_tree(parent)).__name__,
                              location=self.owner.id,
                              id_at_location=self.id,
-                             owner=self.owner,
+                             owner=owner,
                              skip_register=(not register))
 
         if(not register):
@@ -191,18 +191,6 @@ class _LocalTensor(_SyftTensor):
     def get(self, parent):
         raise Exception("Cannot call .get() on a tensor you already have.")
 
-    def footprint(self):
-        """
-        Return useful info (excluding data) from a LocalTensor to create pointers
-        """
-        # TODO: 'type' is compulsory to pass the guard, but is not very appropriate
-        footprint = {
-            'type': 'syft.core.frameworks.torch.tensor._PointerTensor',
-            'location': self.owner.id,
-            'id_at_location': self.id,
-            'torch_type': self.torch_type
-        }
-        return footprint
 
 class _PointerTensor(_SyftTensor):
 
@@ -349,9 +337,6 @@ class _TorchObject(object):
 
     def create_pointer(self, register=False):
         return self.child.create_pointer(parent=self, register=register)
-
-    def footprint(self):
-        return self.child.footprint()
 
     def get(self):
         new_child_obj = self.child.get(parent=self)

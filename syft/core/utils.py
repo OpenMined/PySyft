@@ -147,9 +147,14 @@ class PythonJSONDecoder(json.JSONDecoder):
                     #   if its a pointer because the call will be forwarded to
                     #   another worker, just change the flag to Local.
                     #
-                    # If local, we render the object
+                    # If local, we render the object or syft object
                     if obj['location'] == self.worker.id:
-                        return self.worker.get_obj(obj['id']).child
+                        syft_obj = self.worker.get_obj(obj['id'])
+                        # If the object is a LocalTensor then we render the torch object
+                        if syft_obj.__class__.__name__ == '_LocalTensor':
+                            return self.worker.get_obj(obj['id']).child
+                        else:
+                            return self.worker.get_obj(obj['id'])
                     else:
                         return {key: obj}
                 # Case of a iter type non json serializable

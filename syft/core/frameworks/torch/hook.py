@@ -48,6 +48,7 @@ class TorchHook(object):
             self._hook_native_tensors_and_variables(typ)
             self._hook_syft_tensor_types(typ)
 
+        self._hook_torch_module()
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloading a given tensor_type"""
@@ -383,26 +384,82 @@ class TorchHook(object):
                 command, tensorvars, pointers = encoder.encode(command, retrieve_tensorvar=True, retrieve_pointers=True)
                 return command, tensorvars, pointers
 
-            def _execute_remote_call(attr, *args, **kwargs):
+            def _execute_call(attr, *args, **kwargs):
+                """
+                Execute a local or remote call depending on the args/kwargs
+                Returns a Tensor, always.
+                """
                 command, tensorvars, pointers = compile_command(attr,
                               args,
                               kwargs,
                               False)
 
+                # Find information about the location and owner of the pointers
                 location = None
+                owner = None
                 for pointer in pointers:
                     if location is not None and location.id != pointer.location.id:
                         raise Exception('Only identical chains are accepted.')
+                    if owner is not None and owner.id != pointer.owner.id:
+                        raise Exception('All pointers in arguments should share the same owner.')
                     location = pointer.location
+                    owner = pointer.owner
 
-                if location is None: # if there is no pointers
+                # If there is no pointer, then the call is local
+                if location is None:
                     command = eval('torch.native_{}'.format(attr))
-                    return command(*args, **kwargs) # TODO: check and validate how the registration is done
+                    response = command(*args, **kwargs)
+                    return response
 
+                # Else we send the command
                 response = hook_self.local_worker.send_torch_command(recipient=location,
                                              message=command)
-                return sy.deser(response).wrap()
+                #old-> result = sy.deser(response, None, owner)#.wrap()
 
-            return _execute_remote_call(attr, *args, **kwargs)
+                # We receive a _SyftTensor serialized. For now we don't deserialize it
+                # We just extract what is needed to make a pointer on this _SyftTensor,
+                # And we wrap it. TODO: How to use the current .wrap() function which
+                # is not woring in this case ?
+                tensor = guard[response['torch_type']]()
+                # We de-register this toy tensor
+                hook_self.local_worker.rm_obj(tensor.id)
+                new_id = random.randint(0,9999999999)
+                tensor.child = sy._PointerTensor(child=tensor,
+                                               parent=tensor,
+                                               owner=owner,
+                                               id=new_id,
+                                               torch_type=response['torch_type'],
+                                               location=response['owner'],
+                                               id_at_location=response['id'])
+
+                return tensor
+
+            return _execute_call(attr, *args, **kwargs)
 
         return function_router
+
+# TODO: put this in an appropriate place
+guard = {
+    'syft.core.frameworks.torch.tensor.Variable': torch.autograd.Variable,
+    'syft.core.frameworks.torch.tensor._PointerTensor': _PointerTensor,
+    'syft.core.frameworks.torch.tensor._SyftTensor': _SyftTensor,
+    'syft.core.frameworks.torch.tensor._LocalTensor': _LocalTensor,
+    'syft.core.frameworks.torch.tensor._FixedPrecisionTensor': _FixedPrecisionTensor,
+    'syft.core.frameworks.torch.tensor.FloatTensor': torch.FloatTensor,
+    'syft.core.frameworks.torch.tensor.DoubleTensor': torch.DoubleTensor,
+    'syft.core.frameworks.torch.tensor.HalfTensor': torch.HalfTensor,
+    'syft.core.frameworks.torch.tensor.ByteTensor': torch.ByteTensor,
+    'syft.core.frameworks.torch.tensor.CharTensor': torch.CharTensor,
+    'syft.core.frameworks.torch.tensor.ShortTensor': torch.ShortTensor,
+    'syft.core.frameworks.torch.tensor.IntTensor': torch.IntTensor,
+    'syft.core.frameworks.torch.tensor.LongTensor': torch.LongTensor,
+    'syft.Variable': torch.autograd.Variable,
+    'syft.FloatTensor': torch.FloatTensor,
+    'syft.DoubleTensor': torch.DoubleTensor,
+    'syft.HalfTensor': torch.HalfTensor,
+    'syft.ByteTensor': torch.ByteTensor,
+    'syft.CharTensor': torch.CharTensor,
+    'syft.ShortTensor': torch.ShortTensor,
+    'syft.IntTensor': torch.IntTensor,
+    'syft.LongTensor': torch.LongTensor
+}

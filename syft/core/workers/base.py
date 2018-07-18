@@ -652,8 +652,6 @@ class BaseWorker(ABC):
         if obj.owner in self._known_workers.keys():
             obj.owner = self._known_workers[obj.owner]
 
-        if(obj.owner.id == 'bob'):
-            print("I am",self,"Registering ", obj.id, obj.owner)
         # traceback.print_stack()
 
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
@@ -723,6 +721,7 @@ class BaseWorker(ABC):
 
         if isinstance(result.child, sy._PointerTensor):
             pointer = result.child
+            # we make a pointer to this pointer to chain like the args
             response = pointer.ser(include_data=False)
         else:
             # We don't want to create a pointer just to transfer information-> use footprint instead
@@ -730,7 +729,8 @@ class BaseWorker(ABC):
             #response = pointer.ser(include_data=False)
 
             # Probably a LocalTensor (TODO and if not ? or if list ?)
-            response = result.footprint()
+            assert result.child.__class__.__name__ in map(lambda x: x.__name__, sy._SyftTensor.__subclasses__())
+            response = result.child.ser()
 
         #response = pointer.ser(include_data=False)
         return response
@@ -800,7 +800,7 @@ class BaseWorker(ABC):
 
         if(isinstance(message, str)):
             message = json.loads(message)
-        print(message)
+        
         obj = sy.deser(message, owner=self)
         return obj
 
