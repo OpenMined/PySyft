@@ -24,7 +24,7 @@ class WebSocketWorker(BaseWorker):
         self.port = port
         self.max_connections = max_connections
         self.is_pointer = is_pointer
-        self.uri = 'wb://' + str(self.hostname) + ':' + str(self.port)
+        self.uri = 'ws://' + str(self.hostname) + ':' + str(self.port)
 
 
         if(self.is_pointer):
@@ -48,25 +48,6 @@ class WebSocketWorker(BaseWorker):
                 # self._listen()
             else:
                 print("Ready!")
-
-    async def _server_socket_start(socket, path):
-        request = await socket.recv()
-        buffering = True
-        while buffering:
-
-            if delimiter in buffer:
-                (line, buffer) = buffer.split(delimiter, 1)
-                return line + delimiter
-            else:
-                more = socket.recv(buffer_size).decode('utf-8')
-                if not more:
-                    buffering = False
-                else:
-                    buffer += more
-        if buffer:
-            return buffer
-
-
 
     async def _client_socket_connect(self, json_request):
         async with websockets.connect(self.uri) as client_socket:
@@ -109,7 +90,7 @@ class WebSocketWorker(BaseWorker):
     def _process_buffer(cls, socket, buffer_size=1024, delimiter="\n"):
         # WARNING: will hang if buffer doesn't finish with newline
 
-        buffer = socket.recv(buffer_size).decode('utf-8')
+        buffer = socket.recv().decode('utf-8')
         buffering = True
         while buffering:
 
@@ -124,9 +105,6 @@ class WebSocketWorker(BaseWorker):
                     buffer += more
         if buffer:
             return buffer
-
-
-
 
 
     def listen(self, num_messages=-1):
