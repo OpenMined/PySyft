@@ -59,13 +59,13 @@ class WebSocketWorker(BaseWorker):
         asyncio.get_event_loop().run_forever()
 
     async def _client_socket_run(self, json_request):
-        asyncio.get_event_loop().run_until_complete(_client_socket_setup(json_request))
+        asyncio.get_event_loop().run_until_complete(_client_socket_connect(json_request))
 
     def whoami(self):
         return json.dumps({"hostname": self.hostname, "port": self.port, "id": self.id})
 
 
-    def _send_msg(self, message_wrapper_json_binary):
+    async def _send_msg(self, message_wrapper_json_binary, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.
 
@@ -81,16 +81,15 @@ class WebSocketWorker(BaseWorker):
         """
 
 
-        self._client_socket_run(message_wrapper_json_binary)
+        await self._client_socket_run(message_wrapper_json_binary)
         response = self._process_buffer(recipient.clientsocket)
 
         return response
 
     @classmethod
-    def _process_buffer(cls, socket, buffer_size=1024, delimiter="\n"):
+    async def _process_buffer(cls, socket, buffer_size=1024, delimiter="\n"):
         # WARNING: will hang if buffer doesn't finish with newline
-
-        buffer = socket.recv().decode('utf-8')
+        buffer = await socket.recv().decode('utf-8')
         buffering = True
         while buffering:
 
@@ -114,14 +113,10 @@ class WebSocketWorker(BaseWorker):
         """
         while num_messages != 0:
 
-            # blocking until a message is received
-            if self.serversocket.open:
-                connection, address = self.serversocket.remote_address
-
             try:
                 while num_messages != 0:
                     # collapse buffer of messages into a string
-                    message = self._process_buffer(connection)
+                    message = self._process_buffer(self.serversocket)
 
                     # process message and generate response
                     response = self.receive_msg(message, False)
