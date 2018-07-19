@@ -3,5 +3,6 @@
 from .base import BaseWorker
 from .socket import SocketWorker
 from .virtual import VirtualWorker
+from .websocket import WebSocketWorker
 
-__all__ = ['BaseWorker', 'SocketWorker', 'VirtualWorker']
+__all__ = ['BaseWorker', 'SocketWorker', 'VirtualWorker', 'WebSocketWorker']
