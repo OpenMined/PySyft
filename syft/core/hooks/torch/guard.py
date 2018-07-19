@@ -37,6 +37,20 @@ class TorchGuard():
 
         * **out (a torch type)** The type the string refersto (if it's present in the
           acceptible list self.map_torch_type)
+          :Example:
+           >>> from syft.core.hooks import TorchHook
+           >>> hook = TorchHook()
+           Hooking into Torch...
+           Overloading Complete.
+           >>> torch_type = hook.types_guard('torch.FloatTensor')
+           >>> x = torch_type([1,2,3,4,5])
+           >>> x
+           1
+           2
+           3
+           4
+           5
+           [torch.FloatTensor of size 5]
         """
         try:
             return self.map_torch_type[torch_type_str]
