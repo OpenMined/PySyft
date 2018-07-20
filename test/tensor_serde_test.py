@@ -92,3 +92,37 @@ class TestTensorPointerSerde(): #TestCase
         # ensure that the pointer wrapper points to the same data location
         # as x
         assert (x2 == torch.FloatTensor([5, 6, 7, 8])).all()
+
+    def test_send_and_get_tensor(self):
+
+        x = sy.FloatTensor([1, 2, 3, 4, 5])
+
+        xid = x.id
+
+        x.send(bob, ptr_id=1234)
+
+        # the id of x should have changed to that of the pointer
+        assert x.id == 1234
+
+        # make sure x is not localy registered
+        assert xid not in me._objects
+
+        # make sure x is registered at bob
+        assert xid in bob._objects
+
+        # getting tensor back... putting result into x2
+        # to show that it should have updated x independently
+        x2 = x.get()
+
+        # make sure x changes id back to what it should
+        assert x.id == xid
+
+        # make sure x is now registered locally
+        assert xid in me._objects
+
+        # make sure x is not registered with bob
+        assert xid not in bob._objects
+
+        # make sure pointer is no longer registered locally
+        assert 1234 not in me._objects
+
