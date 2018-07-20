@@ -1,6 +1,7 @@
 import websockets
 import asyncio
 import json
+from .. import utils
 
 from .base import BaseWorker
 
@@ -38,8 +39,8 @@ class WebSocketWorker(BaseWorker):
 
             if(self.verbose):
                 print("Starting Socket Worker...")
-            self.serversocket = websockets.serve(self._server_socket_run, self.hostname, self.port)
 
+            self._run_server_socket()
 
             # if it's a client worker, then we don't want it waiting for commands
             # because it's going to be issuing commands.
@@ -49,17 +50,27 @@ class WebSocketWorker(BaseWorker):
             else:
                 print("Ready!")
 
+    async def _run_server_socket(self):
+        self.serversocket = websockets.serve(self._server_socket_run, self.hostname, self.port)
+        asyncio.get_event_loop().run_until_complete(self.serversocket)
+        asyncio.get_event_loop().run_forever()
+
     async def _client_socket_connect(self, json_request):
         async with websockets.connect(self.uri) as client_socket:
             await client_socket.send(json_request)
+            return await client_socket.recv()
 
 
-    async def _server_socket_run(self):
-        asyncio.get_event_loop().run_until_complete(self._start_server)
-        asyncio.get_event_loop().run_forever()
+    async def _server_socket_run(self, websocket, path):
+        message_wrapper_json = await websocket.recv()
+        decoder = utils.PythonJSONDecoder(self)
+        message_wrapper = decoder.decode(message_wrapper_json)
+        await websocket.send(self.process_message_type(message_wrapper))
+
+
 
     async def _client_socket_run(self, json_request):
-        asyncio.get_event_loop().run_until_complete(_client_socket_connect(json_request))
+        return asyncio.get_event_loop().run_until_complete(self._client_socket_connect(json_request))
 
     def whoami(self):
         return json.dumps({"hostname": self.hostname, "port": self.port, "id": self.id})
@@ -106,28 +117,30 @@ class WebSocketWorker(BaseWorker):
             return buffer
 
 
-    def listen(self, num_messages=-1):
+    async def listen(self, num_messages=-1):
         """
         Starts SocketWorker server on the correct port and handles message as they
         are received.
         """
         while num_messages != 0:
-
+            connection = self.serversocket()
+            address, port = connection.remote_address()
             try:
                 while num_messages != 0:
                     # collapse buffer of messages into a string
                     message = self._process_buffer(self.serversocket)
 
                     # process message and generate response
-                    response = self.receive_msg(message, False)
+                    response = self._client_socket_run(message)
 
                     if(response[-1] != "\n"):
                         response += "\n"
                     # send response back
-                    connection.send(response.encode())
+
+                    await connection.send(response.encode())
 
                     if(self.verbose):
-                        print("Received Command From:", address)
+                        print("Received Command From:", self.uri)
 
                     num_messages -= 1
             finally:
