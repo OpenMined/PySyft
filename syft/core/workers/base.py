@@ -1,6 +1,7 @@
 import torch
 import json
 import numbers
+import logging
 import re
 import random
 import traceback
@@ -8,7 +9,6 @@ import syft as sy
 from abc import ABC, abstractmethod
 
 from .. import utils
-from ..frameworks.torch.tensor import guard as tensor_guard
 
 class BaseWorker(ABC):
     r"""
@@ -154,11 +154,10 @@ class BaseWorker(ABC):
                 return None
 
         message_wrapper_json = json.dumps(message_wrapper) + "\n"
-
-        message_wrapper_json_binary = message_wrapper_json.encode()
-
+        # TODO: handle this conversion again if needed
+        # message_wrapper_json_binary = message_wrapper_json.encode()
         self.message_queue = []
-        return self._send_msg(message_wrapper_json_binary, recipient)
+        return self._send_msg(message_wrapper_json, recipient)
 
     def compile_composite_message(self):
         """
@@ -192,7 +191,7 @@ class BaseWorker(ABC):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
-        return
+        return sy._LocalTensor()
 
     def receive_msg(self, message_wrapper_json, is_binary=True):
         """Receives an message from a worker and then executes its contents appropriately.
@@ -205,13 +204,19 @@ class BaseWorker(ABC):
           local development with :class:`VirtualWorker` workers.
         """
 
-        if(is_binary):
-            message_wrapper_json = message_wrapper_json.decode('utf-8')
+        #if(is_binary): # Todo fix type handling
+        #    message_wrapper_json = message_wrapper_json.decode('utf-8')
 
         decoder = utils.PythonJSONDecoder(self)
         message_wrapper = decoder.decode(message_wrapper_json)
 
-        return self.process_message_type(message_wrapper)
+        response, private = self.process_message_type(message_wrapper)
+
+        encoder = utils.PythonEncoder()
+        response = encoder.encode(response, retrieve_tensorvar=False, retrieve_pointers=False, private_local=private)
+        response = json.dumps(response)
+
+        return response
 
     def process_message_type(self, message_wrapper):
         """
@@ -222,30 +227,37 @@ class BaseWorker(ABC):
         * **message_wrapper (dict)** Dictionary containing the message
           and meta information
 
-        * **out (object)** the response. This can be a variety
+        * **out (object, bool)** the response. This can be a variety
           of object types. However, the object is typically only
           used during testing or local development with
-          :class:`VirtualWorker` workers.
+          :class:`VirtualWorker` workers. The bool specifies if the
+          response is private or not (private: we don't encode the data
+          but juts info on the tensor; not private: we transmit data to be
+          acquired by the receiver)
         """
         message = message_wrapper['message']
 
         # Receiving an object from another worker
-        if(message_wrapper['type'] == 'obj'):
-            response = self.receive_obj(message)  # DONE!
-            return response.ser()
+        if message_wrapper['type'] == 'obj':
+            response = message
+            self.register(response)
+            return response, False
 
         #  Receiving a request for an object from another worker
-        elif(message_wrapper['type'] == 'req_obj'):
-            return self.prepare_send_object(self.get_obj(message))
+        elif message_wrapper['type'] == 'req_obj':
+            object = self.get_obj(message)
+            self.de_register(object)
+            return object, False
 
-        #  A torch command from another workerinvolving one or more tensors
+        #  A torch command from another worker involving one or more tensors
         #  hosted locally
-        elif(message_wrapper['type'] == 'torch_cmd'):
-            return json.dumps(self.process_command(message)) + "\n"
+        elif message_wrapper['type'] == 'torch_cmd':
+            response = self.process_command(message)
+            self.register(response)
+            return response, True
         # A composite command. Must be unrolled
-        elif(message_wrapper['type'] == 'composite'):
-            return [self.process_message_type(message[message_number])
-                    for message_number in message]
+        elif message_wrapper['type'] == 'composite':
+            raise Exception('Composite command not handled at the moment')
 
         return "Unrecognized message type:" + message_wrapper['type']
 
@@ -358,17 +370,18 @@ class BaseWorker(ABC):
         <syft.core.workers.VirtualWorker at 0x10e3a2a90>
         """
 
-        if(issubclass(type(id_or_worker), BaseWorker)):
-            if(id_or_worker.id not in self._known_workers):
+        if issubclass(type(id_or_worker), BaseWorker):
+            if id_or_worker.id not in self._known_workers:
                 self.add_worker(id_or_worker)
             result = self._known_workers[id_or_worker.id]
         else:
-            if(id_or_worker in self._known_workers):
+            if id_or_worker in self._known_workers:
                 result = self._known_workers[id_or_worker]
             else:
+                logging.warning('Worker', self.id, 'couldnt recognize worker', id_or_worker)
                 result = id_or_worker
 
-        if(result is not None):
+        if result is not None:
             return result
         else:
             return id_or_worker
@@ -387,24 +400,6 @@ class BaseWorker(ABC):
         * **remote_key (string or int)** This is the id of
           the object to be returned.
 
-        :Example:
-
-        >>> from syft.core.hooks import TorchHook
-        >>> from syft.core.hooks import torch
-        >>> from syft.core.workers import VirtualWorker
-        >>> hook = TorchHook()
-        >>> local = hook.local_worker
-        >>> remote = VirtualWorker(hook=hook, id=1)
-        >>> local.add_worker(remote)
-        Hooking into Torch...
-        Overloading complete.
-        >>> x = torch.FloatTensor([1,2,3,4,5]).send(remote)
-        >>> x
-        [torch.FloatTensor - Locations:[<VirtualWorker at 0x113f58c50>]]
-        >>> x.id
-        3214169934
-        >>> remote.get_obj(x.id)
-        [torch.FloatTensor - Locations:[1]]
         """
 
         return self._objects[int(remote_key)]
@@ -457,53 +452,13 @@ class BaseWorker(ABC):
           will not be stored in temporary memory, even if the
           worker is a client worker.
 
-        :Example:
 
-        >>> from syft.core.hooks import TorchHook
-        >>> from syft.core.hooks import torch
-        >>> from syft.core.workers import VirtualWorker
-        >>> import json
-        >>> #
-        >>> # hook pytorch and get worker
-        >>> hook = TorchHook()
-        >>> local = hook.local_worker
-        Hooking into Torch...
-        Overloading complete.
-        >>> # showing that the current worker is a client worker (default)
-        >>> local.is_client_worker
-        True
-        >>> message_obj = json.loads(' {"torch_type": "torch.FloatTensor", \
-        "data": [1.0, 2.0, 3.0, 4.0, 5.0], "id": 9756847736, "owners": \
-        [1], "is_pointer": false}')
-        >>> obj_type = hook.guard.types_guard(message_obj['torch_type'])
-        >>> unregistered_tensor = torch.FloatTensor.deser(obj_type,message_obj)
-        >>> unregistered_tensor
-         1
-         2
-         3
-         4
-         5
-        [torch.FloatTensor of size 5]
-        >>> # calling set_obj on a client worker when force=False (default)
-        >>> local.set_obj(unregistered_tensor.id, unregistered_tensor)
-        >>> local._objects
-        {}
-        >>> # calling set_obj on a client worker when force=True
-        >>> local.set_obj(unregistered_tensor.id, unregistered_tensor, force=True)
-        >>> local._objects
-        {3070459025:
-          1
-          2
-          3
-          4
-          5
-         [torch.FloatTensor of size 5]}
         """
 
-        if(tmp and self.is_client_worker):
+        if tmp and self.is_client_worker:
             self._tmp_objects[remote_key] = value
 
-        if(not self.is_client_worker or force):
+        if not self.is_client_worker or force:
             self._objects[remote_key] = value
 
     def rm_obj(self, remote_key):
@@ -515,7 +470,7 @@ class BaseWorker(ABC):
 
         * **remote_key(int or string)** the id of the object to be removed
         """
-        if(remote_key in self._objects):
+        if remote_key in self._objects:
             del self._objects[remote_key]
 
     def _clear_tmp_objects(self):
@@ -524,67 +479,35 @@ class BaseWorker(ABC):
         """
         self._tmp_objects = {}
 
-    def process_response(self, response):
-        """process_response(response) -> dict
-        Processes a worker's response from a command, converting it
-        from the raw form sent over the wire into python objects
-        leading to the execution of a command such as storing a
-        tensor or manipulating it in some way.
-
-
-        :Parameters:
-
-        * **response(string)** This is the raw message received from
-          a foreign worker or client.
-
-        * **out (dict)** the result of the parsing.
+    def de_register(self, obj):
 
         """
-        # TODO: Extend to responses that are iterables.
-
-        response = json.loads(response)
-        if(isinstance(response, str)):
-            response = json.loads(response)
-
-        if('registration' in response and 'torch_type' in response):
-            return (response['registration'], response['torch_type'],
-                    response['var_data'], response['var_grad'])
-        else:
-            return response
-
-    def de_register_object(self, obj, _recurse_torch_objs=True):
-
+        Unregisters an object and its attribute
         """
-        Unregisters an object and removes attributes which are indicative
-        of registration. Note that the way in which attributes are deleted
-        has been informed by this StackOverflow post: https://goo.gl/CBEKLK
-        """
-        is_torch_tensor = isinstance(obj, torch.Tensor)
+        is_torch_tensor = torch.is_tensor(obj)
 
-        if(not is_torch_tensor):
-
-            if(hasattr(obj, 'id')):
+        if not is_torch_tensor:
+            if hasattr(obj, 'id'):
                 self.rm_obj(obj.id)
-                del obj.id
-            if(hasattr(obj, 'owner')):
-                del obj.owner
 
-        if(hasattr(obj, 'child')):
+        if hasattr(obj, 'child'):
             if obj.child is not None:
-                if(is_torch_tensor):
-                    if(_recurse_torch_objs):
-                        self.de_register_object(obj.child,
-                                                _recurse_torch_objs=False)
-                else:
-                    self.de_register_object(obj.child,
-                                            _recurse_torch_objs=_recurse_torch_objs)
-            if(not is_torch_tensor):
-                delattr(obj, 'child')
+                self.rm_obj(obj.child.id)
 
+    def register(self, result):
+        if issubclass(result.__class__, sy._SyftTensor):
+            syft_obj = result
+            self.register_object(syft_obj)
+        # Case of a iter type non json serializable
+        elif isinstance(result, (tuple, set, bytearray, range)):
+            # TODO: Extend to response which is iterable.
+            raise Exception('This type of output is not supported at the moment')
+        else:
+            # TODO: Extend to responses Variable.
+            raise Exception('The type', type(result), 'is not supported at the moment')
+        return
 
-
-    def register_object(self, obj, force_attach_to_worker=False,
-                        temporary=False, **kwargs):
+    def register_object(self, obj, id=None):
         """
         Registers an object with the current worker node. Selects an
         id for the object, assigns a list of owners,
@@ -615,13 +538,18 @@ class BaseWorker(ABC):
           registered contains the data locally or is instead a pointer to
           a tensor that lives on a different worker.
         """
-        # TODO: Assign default id more intelligently (low priority)
-        #       Consider popping id from long list of unique integers
+        if not issubclass(obj.__class__, sy._SyftTensor):
+            raise Exception("Can't register a non-SyftTensor")
 
-        if(type(obj) in torch.tensorvar_types):
-            return obj
+        if id is None:
+            id = obj.id
 
-        keys = kwargs.keys()
+        if obj.owner.id == self.id:
+            self.set_obj(id, obj)
+        else:
+            pointer = obj.create_pointer()
+            pointer.owner = self
+            self.set_obj(pointer.id, pointer)
 
         # DO NOT DELETE THIS TRY/CATCH UNLESS YOU KNOW WHAT YOU'RE DOING
         # PyTorch tensors wrapped invariables (if my_var.data) are python
@@ -633,36 +561,10 @@ class BaseWorker(ABC):
         # parent Variable object (which we have been told is stable). This
         # is experimental functionality but seems to solve the symptoms we
         # were previously experiencing.
-        try:
-            obj.data_backup = obj.data
-        except:
-            ""
-
-        if kwargs is not None and 'id' in kwargs and kwargs['id'] is not None:
-            obj.id = kwargs['id']
-        else:
-            obj.id = random.randint(0, 1e10)
-
-        obj.owner = (kwargs['owner']
-                      if kwargs is not None and 'owner' in keys
-                      else self.id)
-
-        # check to see if we can resolve owner id to pointer
-        if obj.owner in self._known_workers.keys():
-            obj.owner = self._known_workers[obj.owner]
-
-        # traceback.print_stack()
-
-        self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
-
-        if hasattr(obj, 'child'):
-            if obj.child is not None and type(object) not in torch.tensorvar_types:
-                self.register_object(obj=obj.child,
-                                     force_attach_to_worker=force_attach_to_worker,
-                                     temporary=temporary,
-                                     owner=obj.owner)
-
-        return obj
+        # try:
+        #    obj.data_backup = obj.data
+        # except:
+        #    ""
 
     def process_command(self, command_msg):
         """process_command(self, command_msg) -> (command output, list of owners)
@@ -679,90 +581,57 @@ class BaseWorker(ABC):
           and returns its output along with a list of
           the owners of the tensors involved.
         """
-        # Args and kwargs contain special strings in place of tensors
-        # Need to retrieve the tensors from self.worker.objects
-
-
-        arg_tensors = self._retrieve_tensor(command_msg['args'])
-        args = command_msg['args']
-        kwarg_tensors = self._retrieve_tensor(list(command_msg['kwargs'].values()))
-        kwargs = command_msg['kwargs']
         has_self = command_msg['has_self']
+        args = command_msg['args']
+        kwargs = command_msg['kwargs']
 
         if has_self:
-            command = command_msg['command'] # TODO Guard (self._command_guard(command_msg['command'], self.hook.tensorvar_methods))
-            _self = command_msg['self']
-
-            if hasattr(_self, command):
-                result = getattr(_self, command)(*args, **kwargs)
-            else:
-                result = getattr(_self.child, command)(*args, **kwargs)
-
-            # sometimes for virtual workers the owner is not correct
-            # because it defaults to hook.local_worker
-            result.child.owner = _self.owner
+            command = self._command_guard(command_msg['command'], torch.tensorvar_methods)
         else:
-            command = command_msg['command'] # TODO Guard (command = self._command_guard(command_msg['command'], self.hook.torch_funcs))
-            command = eval('torch.{}'.format(command))
+            command = self._command_guard(command_msg['command'], torch.torch_funcs)
+
+        _, locations, owners = utils.compile_command(command,
+                                                     args,
+                                                     kwargs,
+                                                     False)  # We don't care about has_self, we just want the pointers
+        # If the call is local (there is no pointers anymore)
+        if len(locations) == 0:
+            # We get back to the torch variable for native execution
+            args, kwargs = utils.convert_local_syft_to_torch((args, kwargs))
+
+            if has_self:
+                _self = command_msg['self']
+                if hasattr(_self, "native_" + command):
+                    command = getattr(_self, "native_" + command)
+                else:
+                    command = getattr(_self.child, "native_" + command)
+            else:
+                command = eval('torch.native_{}'.format(command))
+
             result = command(*args, **kwargs)
 
-        if isinstance(result,(int, float)):
-            result = sy.FloatTensor([result])
+            if isinstance(result, (int, float)):
+                result = sy.FloatTensor([result])
+            utils.assert_has_only_torch_tensorvars(result)
 
-        if issubclass(result.child.__class__, sy._SyftTensor):
-            # if we're using virtual workers, we need to de-register the
-            # object from the default worker
-            if self.id != self.hook.local_worker.id :
-                self.hook.local_worker.rm_obj(result.id)
+            # And as we need to send the response, we convert to SyftTensors
+            result = utils.convert_local_syft_to_torch(result, reverse=True, worker=self)
 
-            syft_obj = result.child
-            self.register_object(syft_obj,
-                                 force_attach_to_worker=True,
-                                 owner=self,
-                                 id=result.id)
-            if isinstance(syft_obj, sy._PointerTensor):
-                response = syft_obj.ser(include_data=False)
+        else:  # The call will be forwarded to a remote
+            if has_self:
+                _self = command_msg['self']
+                if hasattr(_self, command):
+                    result = getattr(_self, command)(*args, **kwargs)
+                else:
+                    result = getattr(_self.child, command)(*args, **kwargs)
             else:
-                # We don't want to create a pointer just to transfer information-> use footprint instead
-                result.child = result.create_pointer(register=False)  # TODO =False ??
+                command = eval('torch.{}'.format(command))
+                result = command(*args, **kwargs)
 
-                if isinstance(result, torch.autograd.Variable):
-                    result.data.child = result.data.child.create_pointer(register=False)
-                response = result.ser(include_data=False)
+        utils.assert_has_only_syft_tensors(result)
+        return result
 
-        # Case of a iter type non json serializable
-        elif isinstance(result,(tuple, set, bytearray, range)):
-            # TODO: Extend to responses that are iterables.
-            raise Exception('This type of output is not supported at the moment')
-        else:
-            # TODO: Extend to responses Variable.
-            raise Exception('The type',type(result),'is not supported at the moment')
-
-        return response
-
-    # def handle_command(self, message):
-    #     """
-    #     Main function that handles incoming torch commands.
-    #     """
-    #
-    #     # take in command message, return result of local execution
-    #     response = self.process_command(message)
-    #
-    #     return response
-
-    def prepare_send_object(self, obj, id=None, delete_local=True):
-
-        if(delete_local):
-            self.rm_obj(obj.id)
-
-        if(id is not None):
-            obj.child.id = id
-
-        obj_json = obj.ser()
-
-        return obj_json
-
-    def send_obj(self, obj, new_id, recipient, delete_local=True):
+    def send_obj(self, object, new_id, recipient):
         """send_obj(self, obj, recipient, delete_local=True) -> obj
         Sends an object to another :class:`VirtualWorker` and, by default, removes it
         from the local worker. It also returns the object as a special case when
@@ -782,32 +651,16 @@ class BaseWorker(ABC):
         object in the local registry.
 
         """
+        encoder = utils.PythonEncoder()
+        object.id = new_id
+        object = encoder.encode(object, retrieve_tensorvar=False, retrieve_pointers=False, private_local=False)
+        object = self.send_msg(message=object,
+                               message_type='obj',
+                               recipient=recipient)
 
-        _obj = self.send_msg(message=self.prepare_send_object(obj,
-                                                              id=new_id,
-                                                              delete_local=delete_local),
-                             message_type='obj',
-                             recipient=recipient)
-
-        return _obj
-
-    def receive_obj(self, message):
-        """receive_obj(self, message) -> (a torch.autograd.Variable or torch.Tensor object)
-        Functionality that receives a Tensor or Variable from another VirtualWorker
-        (as a string), deserializes it, and registers it within the local permanent registry.
-
-        :Parameters:
-
-        * **message(JSON string)** the message encoding the object being received.
-
-
-        """
-
-        if(isinstance(message, str)):
-            message = json.loads(message)
-        
-        obj = sy.deser(message, owner=self)
-        return obj
+        decoder = utils.PythonJSONDecoder(worker=self)
+        pointer = decoder.decode(object)
+        return pointer
 
     def send_torch_command(self, recipient, message):
         """send_torch_command(self, recipient, message, response_handler, timeout=10) -> object
@@ -821,9 +674,16 @@ class BaseWorker(ABC):
 
         * **message (string)** the message being sent
         """
+        if isinstance(recipient, (str, int)):
+            raise Exception('Recipient should a worker object not his id.')
+
         response = self.send_msg(
-            message=message, message_type='torch_cmd', recipient=recipient)
-        response = self.process_response(response)
+            message=message,
+            message_type='torch_cmd',
+            recipient=recipient
+        )
+        decoder = utils.PythonJSONDecoder(worker=self)
+        response = decoder.decode(response)
         return response
 
     def request_obj(self, obj_id, recipient):
@@ -841,12 +701,13 @@ class BaseWorker(ABC):
           object who is being requested to send it.
         """
 
-        # resolves IDs to worker objects
-        recipient = self.get_worker(recipient)
+        object = self.send_msg(message=obj_id,
+                               message_type='req_obj',
+                               recipient=recipient)
 
-        obj_json = self.send_msg(
-            message=obj_id, message_type='req_obj', recipient=recipient)
-        obj = self.receive_obj(obj_json)
+        decoder = utils.PythonJSONDecoder(worker=self)
+        object = decoder.decode(object)
+
 
         # for some reason, when returning obj from request_obj method, the gradient
         # (obj.grad) gets re-initialized without being re-registered and as a
@@ -859,17 +720,7 @@ class BaseWorker(ABC):
         # Note that this is ONLY necessary for the client (which doesn't store objects
         # in self._objects)
 
-        return obj, self._clear_tmp_objects
-
-    # Worker needs to retrieve tensor by ID before computing with it
-    def _retrieve_tensor(self, obj):
-        """
-            Small trick to leverage the work made by the PythonEncoder:
-            recursively inspect an object and return all Tensors/Variable/etc.
-        """
-        encoder = utils.PythonEncoder(retrieve_tensorvar=True)
-        _, tensorvars = encoder.encode(obj)
-        return tensorvars
+        return object
 
     @classmethod
     def _command_guard(cls, command, allowed):
@@ -886,13 +737,4 @@ class BaseWorker(ABC):
             return False
         return True
 
-    # # Client needs to identify a tensor before sending commands that use it
-    def _id_tensorvar(self, x):
-        pat = re.compile('_fl.(.*)')
-        try:
-            if isinstance(x, str):
-                return int(pat.search(x).group(1))
-            else:
-                return [self._id_tensorvar(i) for i in x]
-        except AttributeError:
-            return x
+
