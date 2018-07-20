@@ -2,6 +2,7 @@ import torch
 import random
 import inspect
 import re
+import logging
 import json
 import types
 import functools
@@ -93,27 +94,25 @@ class TorchHook(object):
                 id = None
 
 
-            if(register_child_instead):
+            if register_child_instead:
                 cls.native___init__()
                 _ = cls.child
             else:
                 cls.native___init__(*args, **kwargs)
-                if('skip_register' in kwargs and kwargs['skip_register']):
-                    if(id is None):
-                        cls.id = random.randint(0, 1e10)
-                    else:
-                        cls.id = id
-
-                    cls.owner = owner
+                if id is None:
+                    id = random.randint(0, 1e10)
+                cls.id = id
+                cls.owner = owner
+                if 'skip_register' in kwargs and kwargs['skip_register']:
+                    pass
                 else:
-                    owner.register_object(cls, owner=owner, id=id)
+                    owner.register_object(cls, id=id)
 
         tensorvar_type.__init__ = new___init__
 
     def _hook_properties(hook_self, tensor_type):
         @property
         def child(self):
-
             try:
                 if (hasattr(self, '_child') and self._child is not None):
                     return self._child
@@ -132,8 +131,8 @@ class TorchHook(object):
                 # torch.autograd.Variable
 
                 self._child = _LocalTensor(child=self,
-                                               parent=self,
-                                               torch_type='syft.'+type(self).__name__)
+                                            parent=self,
+                                            torch_type='syft.'+type(self).__name__)
                 return self._child
 
 
@@ -208,7 +207,7 @@ class TorchHook(object):
 
             lit = getattr(tensor_type, attr)
             passer = utils.pass_method_args(lit)
-            new_attr = self._forward_call_to_child(passer, attr)
+            new_attr = self._get_overloaded_method(attr)
 
             # if we haven't already overloaded this method
             if attr not in dir(tensor_type) or getattr(tensor_type, attr) is None:
@@ -260,7 +259,7 @@ class TorchHook(object):
 
             lit = getattr(tensor_type, attr)
             passer = utils.pass_method_args(lit)
-            new_attr = self._forward_call_to_child(passer, attr, call_native=True)
+            new_attr = self._get_overloaded_method(attr)
 
             # if we haven't already overloaded this method
             if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
@@ -274,7 +273,7 @@ class TorchHook(object):
 
             lit = getattr(tensor_type, attr)
             passer = utils.pass_method_args(lit)
-            new_attr = self._forward_call_to_child(passer, attr)
+            new_attr = self._get_overloaded_method(attr)
 
             # if we haven't already overloaded this method
             if attr not in dir(_SyftTensor) or getattr(_SyftTensor, attr) is None:
@@ -287,55 +286,15 @@ class TorchHook(object):
             # # if we haven't already overloaded this method
             # if attr not in dir(_PointerTensor) or getattr(_PointerTensor, attr) is None:
 
-            setattr(_PointerTensor, attr, self._forward_call_to_remote(attr))
+            setattr(_PointerTensor, attr, self._get_overloaded_method(attr))
 
-    def _forward_call_to_remote(hook_self, attr):
+    def _get_overloaded_method(hook_self, attr):
 
-        def _execute_remote_call(self, *args, **kwargs):
-            print("execute remote:", attr)
-            command, tensorvars = self.compile_command(attr,
-                          args,
-                          kwargs,
-                          True)
+        def _execute_method_call(self, *args, **kwargs):
 
-            response = self.owner.send_torch_command(recipient=self.location,
-                                         message=command)
-            print(response)
-            response_obj = sy.deser(response, owner=self.owner)
-            print(response_obj)
-            return response_obj.wrap()
+            return hook_self._execute_call(attr, self, *args, **kwargs)
 
-        return _execute_remote_call
-
-    def _forward_call_to_child(hook_self, method, attr, call_native=False):
-        """
-        Wrapper overloading partialmethod objects of Torch object
-        methods.  Compiles command, checks for Tensors and Variables in
-        the args/kwargs, determines locations of all Tensors and
-        Variables involved in computation, and handles the computation
-        accordingly.
-        """
-
-        def method_router(self, *args, **kwargs):
-            """
-            This is a routing function. If self is a local
-            tensor (data stored locally), then it executes
-            the call locally. If self is a remote tensor, it
-            executes a call to a remote worker.
-            """
-            results = list()
-            if(call_native):
-                result = getattr(self.child, "native_"+attr)(*args, **kwargs)
-            else:
-                result = getattr(self.child, attr)(*args, **kwargs)
-
-            if(type(result) in torch.tensorvar_types and (not hasattr(result, 'owner'))):
-                hook_self.local_worker.register_object(result.child, owner=self.owner)
-
-            return result
-
-
-        return method_router
+        return _execute_method_call
 
     def _hook_torch_module(self):
         """
@@ -363,13 +322,11 @@ class TorchHook(object):
             # Where the overloading happens
             lit = getattr(torch, attr)
             if (type(lit) in [types.FunctionType, types.BuiltinFunctionType]):
-                passer = utils.pass_func_args(lit)
-                new_attr = self._get_overload_function_in_torch_module(attr)
-                #new_attr = self._forward_call_to_child(passer, attr)
+                new_attr = self._get_overloaded_function(attr)
                 setattr(torch, 'native_{}'.format(attr), lit)
                 setattr(torch, attr, new_attr)
 
-    def _get_overload_function_in_torch_module(hook_self, attr):
+    def _get_overloaded_function(hook_self, attr):
         """
         Wrapper overloading partial objects of functions in the torch
         module.  Compiles command, checks for Tensors and Variables in
@@ -378,80 +335,61 @@ class TorchHook(object):
         accordingly.
         """
 
-        def function_router(*args, **kwargs):
-            """
-            This is a routing function. If self is a local
-            tensor (data stored locally), then it executes
-            the call locally. If self is a remote tensor, it
-            executes a call to a remote worker.
-            """
 
-            def compile_command(attr, args, kwargs, has_self): #self, attr, args, kwargs, has_self):
-                command = {}
-                command['has_self'] = has_self
-                if has_self:
-                    raise Exception('Cannot have self')
-                command['command'] = attr
-                command['args'] = args
-                command['kwargs'] = kwargs
+        def _execute_function_call(*args, **kwargs):
 
-                encoder = utils.PythonEncoder()
-                command, tensorvars, pointers = encoder.encode(command, retrieve_tensorvar=True, retrieve_pointers=True)
-                return command, tensorvars, pointers
+            return hook_self._execute_call(attr, None, *args, **kwargs)
 
-            def _execute_call(attr, *args, **kwargs):
-                """
-                Execute a local or remote call depending on the args/kwargs
-                Returns a Tensor, always.
-                """
-                command, tensorvars, pointers = compile_command(attr,
-                              args,
-                              kwargs,
-                              False)
+        return _execute_function_call
 
-                # Find information about the location and owner of the pointers
-                location = None
-                owner = None
-                for pointer in pointers:
-                    if location is not None and location.id != pointer.location.id:
-                        raise Exception('Only identical chains are accepted.')
-                    if owner is not None and owner.id != pointer.owner.id:
-                        raise Exception('All pointers in arguments should share the same owner.')
-                    location = pointer.location
-                    owner = pointer.owner
+    def _execute_call(hook_self, attr, self, *args, **kwargs):
+        """
+        Execute a local or remote call depending on the args/kwargs
 
-                # If there is no pointer, then the call is local
-                if location is None:
-                    command = eval('torch.native_{}'.format(attr))
-                    response = command(*args, **kwargs)
-                    return response
+        """
+        has_self = self is not None
 
-                # Else we send the command
-                response = hook_self.local_worker.send_torch_command(recipient=location,
-                                             message=command)
-                #old-> result = sy.deser(response, None, owner)#.wrap()
+        command, locations, owners = utils.compile_command(attr,
+                                                           args,
+                                                           kwargs,
+                                                           has_self=has_self,
+                                                           self=self)
 
-                # We receive a _SyftTensor serialized. For now we don't deserialize it
-                # We just extract what is needed to make a pointer on this _SyftTensor,
-                # And we wrap it. TODO: How to use the current .wrap() function which
-                # is not woring in this case ?
-                tensor = guard[response['torch_type']]()
-                # We de-register this toy tensor
-                hook_self.local_worker.rm_obj(tensor.id)
-                new_id = random.randint(0,9999999999)
-                tensor.child = sy._PointerTensor(child=tensor,
-                                               parent=tensor,
-                                               owner=owner,
-                                               id=new_id,
-                                               torch_type=response['torch_type'],
-                                               location=response['owner'],
-                                               id_at_location=response['id'])
+        # If there is no pointer, then the call is local
+        if len(locations) == 0:
+            # This is only intended for a local call (not a remote local call), so owner=local_worker
+            utils.assert_has_only_torch_tensorvars((args, kwargs))
+            if has_self:
+                # TODO Guard
+                if hasattr(self, "native_" + attr):
+                    command = getattr(self, "native_" + attr)
+                else:
+                    command = getattr(self.child, "native_" + attr)
+            else:
+                command = eval('torch.native_{}'.format(attr)) # TODO Guard
+            response = command(*args, **kwargs)
+            return response
+        else:
+            location = locations[0]
+            owner = owners[0]
 
-                return tensor
+        # Else we send the command
+        response = hook_self.local_worker.send_torch_command(recipient=location,
+                                                             message=command)
 
-            return _execute_call(attr, *args, **kwargs)
+        utils.assert_has_only_syft_tensors(response)
 
-        return function_router
+        pointer = response.create_pointer(register=True, owner=owner)
+
+        if owner.id == 0:
+            x = sy.FloatTensor()
+            pointer.child = x
+            owner.de_register(x.child)
+            x.child = pointer
+            return pointer.child
+
+        return pointer
+
 
 # TODO: put this in an appropriate place
 guard = {

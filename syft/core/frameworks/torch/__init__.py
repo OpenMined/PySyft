@@ -39,4 +39,4 @@ torch.tensorvar_methods = list(
     )
 )
 
-torch.torch_exclude = ['save', 'load', 'typename']
+torch.torch_exclude = ['save', 'load', 'typename', 'is_tensor']

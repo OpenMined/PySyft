@@ -30,7 +30,7 @@ class PythonEncoder():
                                      torch.IntTensor,
                                      torch.LongTensor])
 
-    def encode(self, obj, retrieve_tensorvar=None, retrieve_pointers=None):
+    def encode(self, obj, retrieve_tensorvar=None, retrieve_pointers=None, private_local=True):
         """
             Performs encoding, and retrieves if requested all the tensors and
             Variables found
@@ -40,68 +40,91 @@ class PythonEncoder():
         if retrieve_pointers is not None:
             self.retrieve_pointers = retrieve_pointers
 
-        response = [self.python_encode(obj)]
+        response = [self.python_encode(obj, private_local)]
         if self.retrieve_tensorvar:
             response.append(self.found_tensorvar)
         if self.retrieve_pointers:
             response.append(self.found_pointers)
 
-        return tuple(response)
+        if len(response) == 1:
+            return response[0]
+        else:
+            return tuple(response)
 
-    def python_encode(self, obj):
+    def python_encode(self, obj, private_local):
         # Case of basic types
         if isinstance(obj, (int, float, str)) or obj is None:
             return obj
         # Tensors and Variable encoded with their id
-        #elif obj.__name__ in map(lambda x: x.__name__, self.tensorvar_types):
         elif isinstance(obj, self.tensorvar_types):
             if not is_tensor_empty(obj):
                 if self.retrieve_tensorvar:
                     self.found_tensorvar.append(obj)
                 key = '__'+type(obj).__name__+'__'
-                return { key: '_fl.{}'.format(obj.id) }
-            else: # we have a _PointerTensor
-                return self.python_encode(obj.child)
+                tensor = {
+                    'type': str(obj.__class__).split("'")[1],
+                    'torch_type': 'syft.' + type(obj).__name__,
+                    'data': obj.tolist()
+                }
+                return {key: tensor}
+            else:  # we have a _PointerTensor
+                return self.python_encode(obj.child, private_local)
         # sy._SyftTensor (Pointer, Local)
         elif issubclass(obj.__class__, sy._SyftTensor):
             key = '__'+type(obj).__name__+'__'
-            # loc: obj.location.id,
-            try: # _PointerTensor
-                location = obj.location.id
-                id = obj.id_at_location
+            # If is _PointerTensor
+            if isinstance(obj, sy._PointerTensor):
+                data = {
+                    'owner': obj.owner.id,
+                    'id': obj.id,
+                    'location': obj.location.id,
+                    'id_at_location': obj.id_at_location,
+                    'torch_type': obj.torch_type
+                }
+                if not private_local:
+                    data['child'] = 'child'
                 if self.retrieve_pointers:
                     self.found_pointers.append(obj)
-            except AttributeError: # _LocalTensor
-                location = obj.owner.id
-                id = obj.id
-            return { key: {
-                        'location': location,
-                        'id': id
-                    }}
+            # If is _LocalTensor
+            elif isinstance(obj, sy._LocalTensor):
+                data = {
+                    'owner': obj.owner.id,
+                    'id': obj.id,
+                    'torch_type': obj.torch_type
+                }
+                if not private_local:
+                    data['child'] = self.python_encode(obj.child, private_local)
+            else:
+                raise Exception('This SyftTensor <', type(obj.child), '> is not yet supported.')
+            return {key: data}
         # Lists
         elif isinstance(obj, list):
-            return [self.python_encode(i) for i in obj]
+            return [self.python_encode(i, private_local) for i in obj]
         # Iterables non json-serializable
         elif isinstance(obj, (tuple, set, bytearray, range)):
             key = '__'+type(obj).__name__+'__'
-            return {key:[self.python_encode(i) for i in obj]}
+            return {key: [self.python_encode(i, private_local) for i in obj]}
         # Slice
         elif isinstance(obj, slice):
             key = '__'+type(obj).__name__+'__'
-            return { key: { 'args': [obj.start, obj.stop, obj.step]}}
+            return {key: {'args': [obj.start, obj.stop, obj.step]}}
         # Dict
         elif isinstance(obj, dict):
             return {
-                k: self.python_encode(v)
+                k: self.python_encode(v, private_local)
                 for k, v in obj.items()
             }
         # Generator (transformed to list)
         elif isinstance(obj, types.GeneratorType):
             logging.warning("Generator args can't be transmitted")
             return []
+        # worker
+        elif isinstance(obj, (sy.SocketWorker, sy.VirtualWorker)):
+            return {'__worker__': obj.id}
         # Else log the error
         else:
             raise ValueError('Unhandled type', type(obj))
+
 
 class PythonJSONDecoder(json.JSONDecoder):
     """
@@ -109,8 +132,7 @@ class PythonJSONDecoder(json.JSONDecoder):
         Retrieve Torch objects replaced by their id
     """
     def __init__(self, worker, *args, **kwargs):
-        super(PythonJSONDecoder, self).__init__(*args,
-            object_hook=self.custom_obj_hook, **kwargs)
+        super(PythonJSONDecoder, self).__init__(*args, object_hook=self.custom_obj_hook, **kwargs)
         self.worker = worker
         self.tensorvar_types = tuple([torch.autograd.Variable,
                                      torch.nn.Parameter,
@@ -132,46 +154,196 @@ class PythonJSONDecoder(json.JSONDecoder):
             at encoding a dict with a single key value pair, so the return if
             the for loop is valid. TODO: fix this.
         """
+        return self._dict_decode(dct)
+
+    def _dict_decode(self, dct):
         pat = re.compile('__(.+)__')
         for key, obj in dct.items():
-            try:
+            if pat.search(key) is not None:
                 obj_type = pat.search(key).group(1)
                 # Case of a tensor or a Variable
                 if obj_type in map(lambda x: x.__name__, self.tensorvar_types):
-                    pattern_var = re.compile('_fl.(.*)')
-                    id = int(pattern_var.search(obj).group(1))
-                    return self.worker.get_obj(id)
+                    # TODO: Find a smart way to skip register and not leaking the info to the local worker
+                    tensorvar = eval('sy.'+obj_type)(obj['data'])
+                    self.worker.hook.local_worker.de_register(tensorvar)
+                    return tensorvar
                 # Syft tensor
                 elif obj_type in map(lambda x: x.__name__, sy._SyftTensor.__subclasses__()):
-                    #   TODO: if there are more pointers, we shoudn't give back the obj
-                    #   if its a pointer because the call will be forwarded to
-                    #   another worker, just change the flag to Local.
-                    #
-                    # If local, we render the object or syft object
-                    if obj['location'] == self.worker.id:
-                        syft_obj = self.worker.get_obj(obj['id'])
-                        # If the object is a LocalTensor then we render the torch object
-                        if syft_obj.__class__.__name__ == '_LocalTensor':
-                            return self.worker.get_obj(obj['id']).child
+                    if obj_type == '_LocalTensor':
+                        if obj['owner'] == self.worker.id:  # If it's one of his own LocalTensor
+                            syft_obj = self.worker.get_obj(obj['id'])
+                        else:  # Else, it received it from someone else
+                            # If there is data:
+                            if 'child' in obj:
+                                # We acquire the tensor
+                                torch_obj = obj['child']
+                                syft_obj = sy._LocalTensor(child=torch_obj,
+                                                           parent=torch_obj,
+                                                           torch_type='syft.' + type(torch_obj).__name__,
+                                                           owner=self.worker,
+                                                           id=obj['id'],
+                                                           skip_register=True
+                                                           )
+                            else:  # Else there is no data
+                                # We make a empty envelope/footprint of it
+                                owner = self.worker.get_worker(obj['owner'])
+                                syft_obj = sy._LocalTensor(child=None,
+                                                           parent=None,
+                                                           torch_type=obj['torch_type'],
+                                                           owner=owner,
+                                                           id=obj['id'],
+                                                           skip_register=True
+                                                           )
+                        return syft_obj
+                    elif obj_type == '_PointerTensor':
+                        # If local, we render the object or syft object
+                        if obj['location'] == self.worker.id:
+                            syft_obj = self.worker.get_obj(obj['id_at_location'])
+                            return syft_obj
                         else:
-                            return self.worker.get_obj(obj['id'])
+                            # If there is data transmission:
+                            if 'child' in obj:
+                                # We acquire the tensor pointer
+                                syft_obj = sy._PointerTensor(child=None,
+                                                             parent=None,
+                                                             torch_type=obj['torch_type'],
+                                                             location=obj['location'],
+                                                             id_at_location=obj['id_at_location'],
+                                                             owner=self.worker,
+                                                             id=obj['id'],
+                                                             skip_register=True)
+
+                            else:
+                                # We render the pointer
+                                owner = self.worker.get_worker(obj['owner'])
+                                syft_obj = sy._PointerTensor(child=None,
+                                                             parent=None,
+                                                             torch_type=obj['torch_type'],
+                                                             location=obj['location'],
+                                                             id_at_location=obj['id_at_location'],
+                                                             owner=owner,
+                                                             id=obj['id'],
+                                                             skip_register=True)
+                            return syft_obj
                     else:
-                        return {key: obj}
+                        raise Exception('SyftTensor', obj_type, 'is not supported so far')
                 # Case of a iter type non json serializable
                 elif obj_type in ('tuple', 'set', 'bytearray', 'range'):
                     return eval(obj_type)(obj)
                 # Case of a slice
                 elif obj_type == 'slice':
                     return slice(*obj['args'])
+                # Case of a worker
+                elif obj_type == 'worker':
+                    return self.worker.get_worker(obj)
                 else:
                     return obj
-            except AttributeError:
+            else:
                 pass
         return dct
+
+
+def compile_command(attr, args, kwargs, has_self=False, self=None):
+    command = {
+        'command': attr,
+        'has_self': has_self,
+        'args': args,
+        'kwargs': kwargs
+    }
+    if has_self:
+        command['self'] = self
+
+    encoder = PythonEncoder()
+    command, tensorvars, pointers = encoder.encode(command, retrieve_tensorvar=True, retrieve_pointers=True)
+
+    # Get information about the location and owner of the pointers
+    locations = []
+    owners = []
+    for pointer in pointers:
+        locations.append(pointer.location)
+        owners.append(pointer.owner)
+    locations = list(set(locations))
+    owners = list(set(owners))
+
+    if len(locations) > 1:
+        raise Exception('All pointers should point to the same worker')
+    if len(owners) > 1:
+        raise Exception('All pointers should share the same owner.')
+
+    return command, locations, owners
+
+
+def convert_local_syft_to_torch(obj, reverse=False, worker=None):
+    # Case of basic types and slice
+    if isinstance(obj, (int, float, str, slice)) or obj is None:
+        return obj
+    # Tensors and Variable
+    elif isinstance(obj, tuple(torch.tensorvar_types)):
+        return obj.create_local_tensor(worker) if reverse else obj
+    # sy._SyftTensor (Pointer, Local)
+    elif issubclass(obj.__class__, sy._SyftTensor):
+        return obj.child if not reverse else obj
+    # Lists
+    elif isinstance(obj, list):
+        return [convert_local_syft_to_torch(i, reverse=reverse) for i in obj]
+    # Iterables non json-serializable
+    elif isinstance(obj, (tuple, set, bytearray, range)):
+        return type(obj)(convert_local_syft_to_torch(list(obj), reverse=reverse))
+    # Dict
+    elif isinstance(obj, dict):
+        return {
+            k: convert_local_syft_to_torch(v, reverse=reverse)
+            for k, v in obj.items()
+        }
+    # Generator (transformed to list)
+    elif isinstance(obj, types.GeneratorType):
+        logging.warning("Generator args can't be transmitted")
+        return []
+    elif isinstance(obj, (sy.SocketWorker, sy.VirtualWorker)):
+        return obj
+    # Else log the error
+    else:
+        raise ValueError('Unhandled type', type(obj))
+
+
+def assert_has_only_torch_tensorvars(obj):
+    if isinstance(obj, (int, float, str)):
+        return True
+    elif torch.is_tensor(obj):
+        return True
+    elif isinstance(obj, (torch.autograd.Variable, )):
+        return True
+    elif isinstance(obj, (list, tuple)):
+        rep = [assert_has_only_torch_tensorvars(o) for o in obj]
+        return all(rep)
+    elif isinstance(obj, dict):
+        rep = [assert_has_only_torch_tensorvars(o) for o in obj.values()]
+        return all(rep)
+    else:
+        logging.warning('Obj is not tensorvar', obj)
+        assert False
+
+
+def assert_has_only_syft_tensors(obj):
+    if isinstance(obj, (int, float, str)):
+        return True
+    elif issubclass(obj.__class__, sy._SyftTensor):
+        return True
+    elif isinstance(obj, (list, tuple)):
+        rep = [assert_has_only_syft_tensors(o) for o in obj]
+        return all(rep)
+    elif isinstance(obj, dict):
+        rep = [assert_has_only_torch_tensorvars(o) for o in obj.values()]
+        return all(rep)
+    else:
+        logging.warning('Obj is not syft tensor', obj)
+        assert False
+
 
 def is_tensor_empty(obj):
     # TODO Will break with PyTorch >= 0.4
     return obj.dim() == 0
+
 
 def map_tuple(hook, args, func):
     if hook:
@@ -204,9 +376,8 @@ def pass_func_args(func):
         # positional arguments args and keyword arguments keywords. If more arguments are
         # supplied to the call, they are appended to args. If additional keyword arguments
         # are supplied, they extend and override keywords.
-
-        # The partial() is used for partial function application which “freezes” some
-        # portion of a function’s arguments and/or keywords resulting in a new object
+        # The partial() is used for partial function application which "freezes" some
+        # portion of a function's arguments and/or keywords resulting in a new object
         # with a simplified signature.
         return functools.partial(func, *args, **kwargs)
     return pass_args
