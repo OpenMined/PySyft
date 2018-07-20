@@ -4,6 +4,7 @@ import random
 import syft as sy
 from ... import utils
 import logging
+
 import traceback
 
 class _SyftTensor(object):
@@ -18,6 +19,8 @@ class _SyftTensor(object):
             self.child.parent = self
 
         if(owner is not None):
+            if not isinstance(owner, sy.core.workers.BaseWorker):
+                owner = self.child.owner.get_worker(owner)
             self.owner = owner
 
     def copy_params(self, other):
@@ -45,11 +48,16 @@ class _SyftTensor(object):
                 # FALLABCK: sometimes you have to make your
                 # own parent so that PyTorch is happy to
                 # run operations with torch tensor types
-                x = sy.FloatTensor()
+                x = guard[self.torch_type]()
                 x.child = self
                 self.parent = x
                 return x
 
+    def wrap(self):
+
+        wrapper = self.find_torch_object_in_family_tree()
+        wrapper.child = self
+        return wrapper
 
     @property
     def parent(self):
@@ -82,25 +90,6 @@ class _SyftTensor(object):
         return ptr
 
     def add_type_specific_attributes(self, tensor_msg):
-        return tensor_msg
-
-    def ser(self, include_data=True, *args, **kwargs):
-
-        tensor_msg = {}
-        tensor_msg['type'] = str(self.__class__).split("'")[1]
-        tensor_msg['torch_type'] = "syft."+type(self.parent).__name__
-        if hasattr(self, 'child') and self.child is not None:
-            tensor_msg['child'] = self.child.ser(include_data=include_data,
-                                                 stop_recurse_at_torch_type=True)
-        tensor_msg['id'] = self.id
-        owner_type = type(self.owner)
-        if (owner_type is int or owner_type is str):
-            tensor_msg['owner'] = self.owner
-        else:
-            tensor_msg['owner'] = self.owner.id
-
-        tensor_msg = self.add_type_specific_attributes(tensor_msg)
-
         return tensor_msg
 
     @staticmethod
@@ -171,6 +160,27 @@ class _LocalTensor(_SyftTensor):
     def __init__(self, child, parent, torch_type, owner=None, id=None, skip_register=False):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
 
+    def ser(self, include_data=True, *args, **kwargs):
+
+        tensor_msg = {}
+
+        tensor_msg['type'] = str(self.__class__).split("'")[1]
+        tensor_msg['torch_type'] = "syft."+type(self.parent).__name__
+
+        if hasattr(self, 'child') and self.child is not None:
+            tensor_msg['child'] = self.child.ser(include_data=include_data,
+                                                 stop_recurse_at_torch_type=True)
+        tensor_msg['id'] = self.id
+        owner_type = type(self.owner)
+        if (owner_type is int or owner_type is str):
+            tensor_msg['owner'] = self.owner
+        else:
+            tensor_msg['owner'] = self.owner.id
+
+        tensor_msg = self.add_type_specific_attributes(tensor_msg)
+
+        return tensor_msg
+
     def __add__(self, other):
         """
         An example of how to overload a specific function given that
@@ -185,12 +195,53 @@ class _LocalTensor(_SyftTensor):
         return self.child.add(other)
 
     @staticmethod
-    def deser(msg_obj, child, owner):
-        return _LocalTensor(child=child,
-                            owner=owner,
-                            torch_type=msg_obj['torch_type'],
-                            id=msg_obj['id'],
-                            parent=None)
+    def deser(msg_obj, register=True):
+
+        if('child' not in msg_obj):
+
+            # create empty object as a backup if no child is provided
+            if('torch_type' in msg_obj):
+                child_type = guard[msg_obj['torch_type']]
+                child = child_type()
+            else:
+                raise Exception("Object must either have a child object or at least"+\
+                                "a decided Torch type in which data will be stored")
+        else:
+            # get the type of the child to call the correct deser function
+            child_type = guard[msg_obj['child']['type']]
+
+            if(child_type not in torch.tensor_types):
+                raise Exception("LocalTensor child object must be a Torch tensor")
+
+            # create child object - don't deregister it yet because we need to get a
+            # reference to the local worker
+            child = child_type.deser(msg_obj['child'], register=True, suppress_warning=True)
+
+        # get reference to child owner (to have access to the local_worker object)
+        child_worker_reference = child.owner
+
+        # ok... now we can deregister it. This is a little bit of a hack but it works
+        # TODO: perhaps there's a better strategy for getting access to the local_worker
+        # object?
+        child.owner.de_register_object(child)
+
+        owner = child_worker_reference.get_worker(msg_obj['owner'])
+
+        if(register):
+            if msg_obj['id'] in owner._objects:
+                msg = "Cannot deserialize and register a tensor that already exists.\n"
+                msg += "Either set register=False, remove the current tensor, or initialize\n"
+                msg += "this tensor with a different id."
+                raise Exception(msg)
+
+        result = _LocalTensor(child=child,
+                             owner=owner,
+                             torch_type=msg_obj['torch_type'],
+                             id=msg_obj['id'],
+                             parent=child,
+                             skip_register=not register)
+
+        return result
 
     def get(self, parent):
         raise Exception("Cannot call .get() on a tensor you already have.")
@@ -227,6 +278,7 @@ class _PointerTensor(_SyftTensor):
     def __str__(self):
         return "["+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) +  " loc:" + str(self.location.id) + " id@loc:"+str(self.id_at_location)+"]"
 
+    @staticmethod
     def deser(msg_obj, child, owner):
         if 'id' not in msg_obj.keys():
             msg_obj['id'] = random.randint(0,9999999999)
@@ -239,12 +291,6 @@ class _PointerTensor(_SyftTensor):
                              torch_type = msg_obj['torch_type']
                              )
         return obj
-
-    def wrap(self):
-        wrapper = guard[self.torch_type]()
-        self.owner.rm_obj(wrapper.child.id)
-        wrapper.child = self
-        return wrapper
 
     def get(self, parent, deregister_ptr=True):
 
@@ -381,7 +427,7 @@ class _TorchObject(object):
 
 class _TorchTensor(_TorchObject):
 
-    def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=False):
+    def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=True):
         """Serializes a {} object to JSON.""".format(type(self))
         if(not stop_recurse_at_torch_type):
             serializations = self.child.ser(include_data=include_data, as_dict=True)
@@ -401,6 +447,29 @@ class _TorchTensor(_TorchObject):
                 return tensor_msg
             else:
                 return json.dumps(tensor_msg) + "\n"
+
+    @staticmethod
+    def deser(msg_obj, register=True, suppress_warning=False):
+
+        if('data' in msg_obj):
+            if register and not suppress_warning:
+                msg = "Registering a data holding tensor is not advised.\n"
+                msg += "our system is designed for data tensors to only be \n"
+                msg += "called by LocalTensor pointers which are themselves registered.\n"
+                msg += "The system will attempt to handle this gracefully but this could\n"
+                msg += "result in undefined behavior. Are you sure you want to do this?"
+                msg += "If so, set suppress_warning=True to not display this message."
+                logging.warn(msg)
+            torch_type = guard[msg_obj['torch_type']]
+            result = torch_type(msg_obj['data'])
+
+            if(not register):
+                result.owner.de_register_object(result)
+        else:
+            child_type = guard[msg_obj['type']]
+            result = child_type.deser(msg_obj=msg_obj, register=register).wrap()
+
+        return result
 
     def send(self, worker, ptr_id=None):
         """
@@ -438,7 +507,10 @@ class _TorchTensor(_TorchObject):
         if isinstance(self.child, _PointerTensor):
             return type(self).__name__+self.child.__str__()+""
         elif(isinstance(self.child, _LocalTensor)):
-            return self.child.child.native___str__()
+            if(hasattr(self.child, 'child')):
+                return self.child.child.native___str__()
+            else:
+                return "Empty Wrapper:\n" + self.native___str__()
         else:
             return self.native___str__()
 
