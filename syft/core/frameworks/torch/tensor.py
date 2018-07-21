@@ -70,6 +70,24 @@ class _SyftTensor(object):
     def parent(self, value):
         self._parent = value
 
+    # def create_pointer(self, parent=None, register=False, location=None, ptr_id=None):
+    #     if location is None:
+    #         location = self.owner.id
+    #
+    #     ptr = _PointerTensor(child=None,
+    #                          parent=parent,
+    #                          id = ptr_id,
+    #                          torch_type="syft."+type(self.find_torch_object_in_family_tree(parent)).__name__,
+    #                          location=location,
+    #                          id_at_location=self.id,
+    #                          owner=self.owner,
+    #                          skip_register=(not register))
+    #
+    #     if(not register):
+    #        ptr.owner.rm_obj(ptr.id)
+    #
+    #     return ptr
+
     def create_pointer(self, parent=None, ptr_id=None, owner=None,location=None, id_at_location=None, register=False):
         if location is None:
             location = self.owner.id
@@ -83,7 +101,7 @@ class _SyftTensor(object):
             id_at_location = self.id
 
         if ptr_id is None:
-            ptr_id = self.id
+            raise Exception("pointer must have an id")
 
         if hasattr(self, 'torch_type'):
             torch_type = self.torch_type
