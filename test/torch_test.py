@@ -1,24 +1,21 @@
+# python -m  unittest -v test/torch_test.py
+
+
+import unittest
 from unittest import TestCase
-
-from torch.autograd import Variable as Var
-import torch.nn.functional as F
-import torch.optim as optim
-import torch.nn as nn
-
-import json
-
-# If you run multiple times this code, there will be unexpected behaviour
-# For instance _PointerTensor.ser() will be hooked as a method of _SyftTensor
-# A behaviour we don't want to have...
 import syft as sy
-from syft.core import utils
 import torch
-hook = sy.TorchHook(verbose=False)
+
+
+hook = sy.TorchHook(verbose=True)
+
 me = hook.local_worker
-bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
-alice = sy.VirtualWorker(id="alice",hook=hook, is_client_worker=False)
-james = sy.VirtualWorker(id="james",hook=hook, is_client_worker=False)
 me.is_client_worker = False
+
+bob = sy.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
+alice = sy.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
+james = sy.VirtualWorker(id="james", hook=hook, is_client_worker=False)
+
 me.add_workers([bob, alice, james])
 bob.add_workers([me, alice, james])
 alice.add_workers([me, bob, james])
@@ -39,9 +36,6 @@ class TestTorchTensor(TestCase):
 #         assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[torch.FloatTensor of size 5]\n'
 
     def test_send_get_tensor(self):
-        # We check that at the end no extra objects were created
-        me_keys = list(me._objects.keys())
-        bob_keys = list(bob._objects.keys())
 
         x = torch.FloatTensor([1, 2, 3, 4, 5])
         x_id = x.id
@@ -50,11 +44,10 @@ class TestTorchTensor(TestCase):
         assert x_id in me._objects
 
         ptr = me._objects[x_id]
-        assert x.id == ptr.id
-        assert torch.equal(x.child, ptr.child)
+        assert x.child == ptr
         assert isinstance(ptr, sy._PointerTensor)
         assert ptr.id_at_location == ptr_id
-        assert ptr.location == bob.id
+        assert ptr.location.id == bob.id
 
         assert ptr_id in bob._objects
         remote_x = bob._objects[ptr_id]
@@ -64,15 +57,12 @@ class TestTorchTensor(TestCase):
         x.get()
         # Check that it's still registered
         assert x.id in me._objects
-        assert me._objects[x.id] == x
+        assert torch.equal(me._objects[x.id].child, x)
 
-        assert((x == torch.FloatTensor([1, 2, 3, 4, 5])).all())
+        assert ((x == torch.FloatTensor([1, 2, 3, 4, 5])).all())
 
         # because .get_() was called, x should no longer be in the remote worker's objects dict
         assert ptr_id not in bob._objects
-
-        assert me_keys == list(me._objects.keys())
-        assert bob_keys == list(bob._objects.keys())
 
     def test_chain_send_get_tensor(self):
 
@@ -818,3 +808,7 @@ class TestTorchTensor(TestCase):
 #         assert (torch.equal(z.get(), Var(torch.ByteTensor([1, 1, 1]))))
 #         z = torch.ge(x, y)
 #         assert (torch.equal(z.get(), Var(torch.ByteTensor([1, 1, 1]))))
+
+
+if __name__ == '__main__':
+    unittest.main()

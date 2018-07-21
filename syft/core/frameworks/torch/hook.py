@@ -14,8 +14,13 @@ from .tensor import _TorchVariable
 class TorchHook(object):
 
     def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
-
         self.local_worker = local_worker
+
+        if not hasattr(torch, 'torch_hooked'):
+            torch.torch_hooked = 0
+        else:
+            torch.torch_hooked += 1
+
         if (self.local_worker is None):
 
             # Every TorchHook instance should have a local worker which is responsible for
@@ -23,14 +28,7 @@ class TorchHook(object):
             # specific code in TorchHook to be agnostic to the means by which workers communicate
             # (such as peer-to-peer, sockets, through local ports, or all within the same process)
 
-            if (hasattr(torch, 'local_worker')):
-                self.local_worker = torch.local_worker
-                if (verbose):
-                    print("Torch seems to already have a local_worker object... \
-                          using that one instead...")
-            else:
-                self.local_worker = workers.VirtualWorker(
-                    hook=self, is_client_worker=is_client, queue_size=queue_size)
+            self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client, queue_size=queue_size)
         else:
             # if the local_worker already exists, then it MUST not know about the hook which is
             # just being created. Thus, we must inform it.
@@ -50,6 +48,9 @@ class TorchHook(object):
             self._hook_syft_tensor_types(typ)
 
         self._hook_torch_module()
+
+        if torch.torch_hooked > 0:
+            raise Exception('Torch was already hooked')
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloading a given tensor_type"""
