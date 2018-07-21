@@ -100,6 +100,10 @@ class _SyftTensor(object):
         if id_at_location is None:
             id_at_location = self.id
 
+        if ptr_id is not None:
+            if(ptr_id == id_at_location):
+                raise Exception("The PointerTensor and the tensor being pointed to cannot have the same id.")
+
         if hasattr(self, 'torch_type'):
             torch_type = self.torch_type
         else:
