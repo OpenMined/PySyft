@@ -39,27 +39,49 @@ class TestTorchTensor(TestCase):
 #         assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[torch.FloatTensor of size 5]\n'
 
     def test_send_get_tensor(self):
+        # We check that at the end no extra objects were created
+        me_keys = list(me._objects.keys())
+        bob_keys = list(bob._objects.keys())
 
         x = torch.FloatTensor([1, 2, 3, 4, 5])
-        new_id = 1000
-        x.send(bob, new_id=new_id)
-        assert new_id in bob._objects
+        x_id = x.id
+        ptr_id = 1000
+        x.send(bob, ptr_id=ptr_id)
+        assert x_id in me._objects
+
+        ptr = me._objects[x_id]
+        assert x.id == ptr.id
+        assert torch.equal(x.child, ptr.child)
+        assert isinstance(ptr, sy._PointerTensor)
+        assert ptr.id_at_location == ptr_id
+        assert ptr.location == bob.id
+
+        assert ptr_id in bob._objects
+        remote_x = bob._objects[ptr_id]
+        assert isinstance(remote_x, sy._LocalTensor)
+        assert torch.equal(remote_x.child, torch.FloatTensor([1, 2, 3, 4, 5]))
 
         x.get()
+        # Check that it's still registered
+        assert x.id in me._objects
+        assert me._objects[x.id] == x
 
         assert((x == torch.FloatTensor([1, 2, 3, 4, 5])).all())
 
         # because .get_() was called, x should no longer be in the remote worker's objects dict
-        assert new_id not in bob._objects
+        assert ptr_id not in bob._objects
+
+        assert me_keys == list(me._objects.keys())
+        assert bob_keys == list(bob._objects.keys())
 
     def test_chain_send_get_tensor(self):
 
         x = torch.FloatTensor([1, 2, 3, 4, 5])
-        x.send(bob, new_id=1000)
+        x.send(bob, ptr_id=1000)
         assert 1000 in bob._objects
-        x.send(alice, new_id=2000)
+        x.send(alice, ptr_id=2000)
         assert 2000 in alice._objects
-        x.send(james, new_id=3000)
+        x.send(james, ptr_id=3000)
         assert 3000 in james._objects
         x.get()
         x.get()
@@ -73,11 +95,11 @@ class TestTorchTensor(TestCase):
 
     def test_add_remote_tensor(self):
         x = sy.FloatTensor([1,2,3,4])
-        x.send(bob, new_id=1000)
-        x.send(alice, new_id=2000)
+        x.send(bob, ptr_id=1000)
+        x.send(alice, ptr_id=2000)
         y = sy.FloatTensor([2,3,4,5])
-        y.send(bob, new_id=1001)
-        y.send(alice, new_id=2001)
+        y.send(bob, ptr_id=1001)
+        y.send(alice, ptr_id=2001)
         z = torch.add(x, y)
         z.get().get()
         assert torch.equal(z, torch.FloatTensor([3, 5, 7, 9]))

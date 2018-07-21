@@ -214,7 +214,7 @@ class PythonJSONDecoder(json.JSONDecoder):
                                                              skip_register=True)
 
                             else:
-                                # We render the pointer
+                                # We recreate the pointer to be transmitted
                                 owner = self.worker.get_worker(obj['owner'])
                                 syft_obj = sy._PointerTensor(child=None,
                                                              parent=None,
