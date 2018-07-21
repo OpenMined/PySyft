@@ -376,7 +376,24 @@ class _TorchTensor(_TorchObject):
 
     def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=True):
         """Serializes a {} object to JSON.""".format(type(self))
-        pass
+        if(not stop_recurse_at_torch_type):
+            serializations = self.child.ser(include_data=include_data, as_dict=True)
+            serializations['torch_type'] = "syft."+type(self).__name__
+            if(as_dict):
+                return serializations
+            else:
+                return json.dumps(serializations) + "\n"
+        else:
+            tensor_msg = {}
+            tensor_msg['type'] = str(self.__class__).split("'")[1]
+            tensor_msg['torch_type'] = "syft."+type(self).__name__
+            if include_data:
+                tensor_msg['data'] = self.tolist()
+
+            if(as_dict):
+                return tensor_msg
+            else:
+                return json.dumps(tensor_msg) + "\n"
 
     @staticmethod
     def deser(msg_obj, register=True, suppress_warning=False):
