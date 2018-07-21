@@ -64,11 +64,11 @@ class TorchGuard():
         """tensor_contents_guard(contents) -> contents
         check to make sure the incoming list isn't dangerous to use for
                constructing a tensor (likely non-trivial). Accepts the list of JSON objects
-               and returns the list of JSON ojects.Throws an exception if there's a
+               and returns the list of JSON ojects. Throws an exception if there's a
                security concern.
         """
         
-        is_instance = lambda tensor : all(isinstance(digit, (int, float)) for digit in tensor)
+        is_instance = lambda tensor : all(isinstance(digit, (int, float, bool)) for digit in tensor)
         assert type(contents) in (list,tuple) , "A list of JSON objects is expected"
         for json_object in contents : 
             try :
@@ -79,8 +79,7 @@ class TorchGuard():
             Tensor_Values = list(json_object.values())
             for tensor in Tensor_Values[0]:
                 if is_instance(tensor) == False:
-                    raise Exception("Values are expected to be in dtype int and float")
-                    break
+                    raise Exception("Values are expected to be in dtype int , bool , float")
             tensor_length = map(len,Tensor_Values[0])
             assert len(set(tensor_length)) == 1 , "Tensor dimensions are not same, can't be stacked" 
         return contents
