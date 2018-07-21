@@ -241,7 +241,7 @@ class BaseWorker(ABC):
         if message_wrapper['type'] == 'obj':
             response = message
             self.register(response)
-            return response, False
+            return response, True
 
         #  Receiving a request for an object from another worker
         elif message_wrapper['type'] == 'req_obj':
