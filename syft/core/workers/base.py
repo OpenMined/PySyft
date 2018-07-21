@@ -494,6 +494,39 @@ class BaseWorker(ABC):
             if obj.child is not None:
                 self.rm_obj(obj.child.id)
 
+    def de_register_object(self, obj, _recurse_torch_objs=True):
+
+        """
+        Unregisters an object and removes attributes which are indicative
+        of registration. Note that the way in which attributes are deleted
+        has been informed by this StackOverflow post: https://goo.gl/CBEKLK
+        """
+        is_torch_tensor = isinstance(obj, torch.Tensor)
+
+        if(not is_torch_tensor):
+
+            if(hasattr(obj, 'id')):
+                self.rm_obj(obj.id)
+                del obj.id
+            if(hasattr(obj, 'owner')):
+                del obj.owner
+
+        if(hasattr(obj, 'child')):
+            if obj.child is not None:
+                if(is_torch_tensor):
+                    if(_recurse_torch_objs):
+                        self.de_register_object(obj.child,
+                                                _recurse_torch_objs=False)
+                else:
+                    self.de_register_object(obj.child,
+                                            _recurse_torch_objs=_recurse_torch_objs)
+            if(not is_torch_tensor):
+                delattr(obj, 'child')
+
+
+
+
+
     def register(self, result):
         if issubclass(result.__class__, sy._SyftTensor):
             syft_obj = result
