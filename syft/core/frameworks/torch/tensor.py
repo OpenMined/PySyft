@@ -100,9 +100,6 @@ class _SyftTensor(object):
         if id_at_location is None:
             id_at_location = self.id
 
-        if ptr_id is None:
-            raise Exception("pointer must have an id")
-
         if hasattr(self, 'torch_type'):
             torch_type = self.torch_type
         else:
