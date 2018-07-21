@@ -7,10 +7,10 @@ class BaseHook(object):
     def __init__(self):
         pass
 
-    # TODO: decorate with abstractmethod after TorchHook is extended
+    @abstractmethod
     def __enter__(self):
         return self
 
-    # TODO: decorate with abstractmethod after TorchHook is extended
+    @abstractmethod
     def __exit__(self):
         pass
