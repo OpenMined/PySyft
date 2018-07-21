@@ -319,6 +319,8 @@ def assert_has_only_torch_tensorvars(obj):
     elif isinstance(obj, dict):
         rep = [assert_has_only_torch_tensorvars(o) for o in obj.values()]
         return all(rep)
+    elif isinstance(obj, slice):
+        return True
     else:
         logging.warning('Obj is not tensorvar', obj)
         assert False
@@ -335,6 +337,8 @@ def assert_has_only_syft_tensors(obj):
     elif isinstance(obj, dict):
         rep = [assert_has_only_torch_tensorvars(o) for o in obj.values()]
         return all(rep)
+    elif isinstance(obj, slice):
+        return True
     else:
         logging.warning('Obj is not syft tensor', obj)
         assert False

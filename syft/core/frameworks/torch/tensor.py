@@ -70,32 +70,18 @@ class _SyftTensor(object):
     def parent(self, value):
         self._parent = value
 
-    # def create_pointer(self, parent=None, register=False, location=None, ptr_id=None):
-    #     if location is None:
-    #         location = self.owner.id
-    #
-    #     ptr = _PointerTensor(child=None,
-    #                          parent=parent,
-    #                          id = ptr_id,
-    #                          torch_type="syft."+type(self.find_torch_object_in_family_tree(parent)).__name__,
-    #                          location=location,
-    #                          id_at_location=self.id,
-    #                          owner=self.owner,
-    #                          skip_register=(not register))
-    #
-    #     if(not register):
-    #        ptr.owner.rm_obj(ptr.id)
-    #
-    #     return ptr
 
-    def create_pointer(self, parent=None, ptr_id=None, owner=None,location=None, id_at_location=None, register=False):
-        if location is None:
-            location = self.owner.id
+    def create_pointer(self, parent=None, ptr_id=None, owner=None, location=None, id_at_location=None, register=False):
 
         if owner is None:
             owner = self.owner
-        elif isinstance(owner, (str, int)):
+        if isinstance(owner, (str, int)):
             owner = self.owner.get_worker(owner)
+
+        local_pointer = False
+        if location is None:
+            location = self.owner.id
+            local_pointer = True
 
         if id_at_location is None:
             id_at_location = self.id
@@ -104,13 +90,20 @@ class _SyftTensor(object):
             if(ptr_id == id_at_location):
                 raise Exception("The PointerTensor and the tensor being pointed to cannot have the same id.")
 
+        else:
+            # Normally if there is no id specified, we keep the same as the original pointer
+            # Except if the pointer is local (we don't want to overwrite!)
+            if not local_pointer:
+                ptr_id = self.id
+            else:
+                ptr_id = random.randint(0, 9999999999)
+
         if hasattr(self, 'torch_type'):
             torch_type = self.torch_type
         else:
             logging.warning('The tensor has not torch_type. Is it well formed?')
             torch_type = "syft." + type(self.find_torch_object_in_family_tree(parent)).__name__
 
-        logging.info('Create pointer ', owner.id, ':', ptr_id, '->', location, ':', self.id)
         ptr = _PointerTensor(child=None,
                              parent=parent,
                              id = ptr_id,
@@ -120,7 +113,7 @@ class _SyftTensor(object):
                              owner=owner,
                              skip_register=(not register))
 
-        if(not register):
+        if not register:
            ptr.owner.rm_obj(ptr.id)
 
         return ptr
@@ -229,7 +222,7 @@ class _LocalTensor(_SyftTensor):
 
         return result
 
-    def get(self, parent):
+    def get(self, parent, deregister_ptr=None):
         raise Exception("Cannot call .get() on a tensor you already have.")
 
 
@@ -276,12 +269,12 @@ class _PointerTensor(_SyftTensor):
     def get(self, parent, deregister_ptr=True):
 
         # Remove this pointer
-        if (deregister_ptr):
+        if deregister_ptr:
            self.owner.rm_obj(self.id)
 
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
-        if(self.location == self.owner):
+        if self.location == self.owner:
             return self.owner._objects[self.id_at_location]
 
         # get SyftTensor (Local or Pointer) from remote machine
@@ -349,9 +342,6 @@ class _TorchObject(object):
         return self.native___repr__()
 
     def create_pointer(self, register=False, location=None, ptr_id=None):
-
-        if(location is None):
-            location = self.owner.id
 
         return self.child.create_pointer(parent=self, register=register, location=location, ptr_id=ptr_id).wrap()
 
