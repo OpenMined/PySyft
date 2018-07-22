@@ -21,7 +21,7 @@ class WebSocketWorker(BaseWorker):
       for this node
 
     * **is_client_worker (bool, optional)** a boolean which determines
-      whether this worker is associeted with an end user client. If so,
+      whether this worker is associated with an end user client. If so,
       it assumes that the client will maintain control over when
       tensors/variables/models are instantiated or deleted as opposed to
       handling tensor/variable/model lifecycle internally.
@@ -43,7 +43,52 @@ class WebSocketWorker(BaseWorker):
     * **verbose (bool, optional)** A flag for whether or not to print events to stdout.
 
 
+    :Example Server:
+
+    >>> from syft.core.hooks import TorchHook
+    >>> from syft.core.workers import WebSocketWorker
+    >>> hook = TorchHook()
+    Hooking into Torch...
+    Overloading complete.
+    >>> local_worker = WebSocketWorker(hook=hook,
+                            id=2,
+                            port=8181,
+                            is_pointer=False,
+                            is_client_worker=False)
+    Starting a Websocket Worker....
+    Ready to receive commands....
+    Server Socket has been initialized
+
+
+    :Example Client:
+
+    >>> import torch
+    >>> from syft.core.hooks import TorchHook
+    >>> from syft.core.workers import WebSocketWorker
+    >>> hook = TorchHook(local_worker=WebSocketWorker(id=0, port=8182))
+    Starting Socket Worker...
+    Ready!
+    Hooking into Torch...
+    Overloading complete.
+    >>> remote_client = WebSocketWorker(hook=hook,id=2, port=8181, is_pointer=True)
+    >>> hook.local_worker.add_worker(remote_client)
+    Attaching Pointer to Socket Worker...
+    >>> x = torch.FloatTensor([1,2,3,4,5]).send(remote_client)
+    >>> x2 = torch.FloatTensor([1,2,3,4,4]).send(remote_client)
+    >>> y = x + x2 + x
+    >>> y
+    [torch.FloatTensor - Locations:[<syft.core.workers.SocketWorker object at 0x7f94eaaa6630>]]
+    >>> y.get()
+      3
+      6
+      9
+     12
+     14
+    [torch.FloatTensor of size 5]
+
+
     """
+
 
     def __init__(self,  hook=None, hostname='localhost', port=8110, max_connections=5,
                  id=0, is_client_worker=True, objects={}, tmp_objects={},
@@ -103,6 +148,17 @@ class WebSocketWorker(BaseWorker):
             return recieved_msg
 
     async def _server_socket_listener(self, websocket, path):
+        """
+        A listener for the server socket so whenever a message is sent by a client to the
+        server socket, this method is called and the server responses accordingly.
+
+        :Parameters:
+
+        * **websocket** The incoming socket, which messages are recieved from and sent to.
+
+        * **path** The path which messages are recieved from and sent to.
+        """
+
         msg_wrapper_byte = await websocket.recv()
         msg_wrapper_str = msg_wrapper_byte.decode('utf-8')
         if (self.verbose):
@@ -112,12 +168,17 @@ class WebSocketWorker(BaseWorker):
         await websocket.send(self.process_message_type(msg_wrapper))
 
     def whoami(self):
+        """
+        Returns metadata information about the worker. This method returns the default
+        which is the id and uri of the worker.     
+        """
         return json.dumps({"uri": self.uri, "id": self.id})
 
     async def _send_msg(self, message_wrapper_json_binary, recipient):
         response = await recipient._client_socket_listener(message_wrapper_json_binary)
         response = self._process_buffer(response=response)
         return response
+
 
     def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
