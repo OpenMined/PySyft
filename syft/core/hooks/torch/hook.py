@@ -4,6 +4,7 @@ import re
 import json
 import types
 import functools
+import importlib
 from ... import workers
 from ... import utils
 from ..base import BaseHook
@@ -104,10 +105,10 @@ class TorchHook(BaseHook):
                              torch.IntTensor,
                              torch.LongTensor]
 
-
-        # this is the list of torch tensor VARIABLE types that we will override for remote execution
+        # this is the list of torch VARIABLE types that we will override for remote execution
         # Variables are simply tensors that are differentiable (support gradients)
-        # Parameters are Variables that are also weights in a neural model
+        # Parameters are Variables with requires_grad set to True by default
+        # and are used heavily in the torch.nn package
         self.var_types = [torch.autograd.variable.Variable, torch.nn.Parameter]
 
         # a list of all classes in which we will override their methods for remote execution
@@ -115,7 +116,8 @@ class TorchHook(BaseHook):
                                [torch.autograd.variable.Variable]
         self.tensorvar_types_strs = [x.__name__ for x in self.tensorvar_types]
 
-        # a list of all methods in fixed precision type which will be overridden for remote execution
+        # a list of all methods in fixed precision type which will be overridden
+        # for remote execution
         self.fixed_prec_var_methods = ['fixed_prec_add', 'fixed_prec_mul', 'fixed_prec_sub', 'fixed_prec_div',
                                    'set_precision', 'fixed_prec_trudiv', 'free_precision',
                                    '_execute_fixed_precision_call', '_conversion']
@@ -148,6 +150,10 @@ class TorchHook(BaseHook):
 
         self.guard = TorchGuard()
 
+        self.set_hooks(verbose)
+
+    def set_hooks(self, verbose):
+        """Overload functions in torch with our own versions to enable routing"""
         if (not hasattr(torch, 'hooked')):
             if (verbose):
                 print('Hooking into Torch...')
@@ -164,10 +170,24 @@ class TorchHook(BaseHook):
             if (verbose):
                 print("WARNING: Torch seems to be already overloaded... skipping...")
 
+    def __enter__(self):
+        """Allow for using TorchHook as a context manager"""
+        if hasattr(torch, 'hooked'):
+            self.previously_hooked = torch.hooked
+        else:
+            self.previously_hooked = False
+        self.set_hooks(verbose=False)
+
+    def __exit__(self):
+        """When using TorchHook as a context manager,
+        reimport the original module if torch wasn't previously hooked
+        """
+        if not self.previously_hooked:
+            importlib.reload(torch)
+
     # ######## BEGIN GENERIC method/function hooking logic #########
     def _get_overload_method_in_tensor_or_var(hook_self, method):
-        """
-        Wrapper overloading partialmethod objects of Torch object
+        """Wrapper overloading partialmethod objects of Torch object
         methods.  Compiles command, checks for Tensors and Variables in
         the args/kwargs, determines locations of all Tensors and
         Variables involved in computation, and handles the computation
@@ -176,8 +196,7 @@ class TorchHook(BaseHook):
 
         @functools.wraps(method)
         def method_router(self, *args, **kwargs):
-            """
-            This is a routing function. If self is a local
+            """This is a routing function. If self is a local
             tensor (data stored locally), then it executes
             the call locally. If self is a remote tensor, it
             executes a call to a remote worker.
@@ -198,8 +217,7 @@ class TorchHook(BaseHook):
         return method_router
 
     def _get_overload_function_in_torch_module(hook_self, func):
-        """
-        Wrapper overloading partial objects of functions in the torch
+        """Wrapper overloading partial objects of functions in the torch
         module.  Compiles command, checks for Tensors and Variables in
         the args/kwargs, determines locations of all Tensors and
         Variables involved in computation, and handles the computation
@@ -208,8 +226,7 @@ class TorchHook(BaseHook):
 
         @functools.wraps(func)
         def function_router(*args, **kwargs):
-            """
-            This is a routing function. If self is a local
+            """This is a routing function. If self is a local
             tensor (data stored locally), then it executes
             the call locally. If self is a remote tensor, it
             executes a call to a remote worker.
@@ -387,10 +404,10 @@ class TorchHook(BaseHook):
         tensor_type.fixed_prec_trudiv = fixed_prec_div
 
     def _execute_fixed_precision_call(hookself, self, _method, args, kwargs):
-        '''Creates a fixed precision tensor'''
+        """Creates a fixed precision tensor"""
 
         def _conversion(self):
-            '''Returns converted tensor after math operations are applied'''
+            """Returns converted tensor after math operations are applied"""
 
             if hasattr(self, 'precision'):
                 return self.old_div(10 ** self.precision)
@@ -425,8 +442,7 @@ class TorchHook(BaseHook):
         return result
 
     def _execute_remote_call(hook_self, _method, has_self=True):
-        """
-        This function is responsible for overloading all
+        """This function is responsible for overloading all
         TENSOR and VARIABLE methods. Note that this is the
         method/function agnostic piece and is only called
         from within _overload_method and _overload_function
@@ -494,8 +510,7 @@ class TorchHook(BaseHook):
 
     @classmethod
     def _compile_command(cls, partial_func, has_self):
-        """
-        Assembles a JSON-serializable message from a partial function.
+        """Assembles a JSON-serializable message from a partial function.
 
         Args:
         partial_func: a functools.partial or functools.partialmethod
@@ -520,8 +535,7 @@ class TorchHook(BaseHook):
         return command, tensorvars
 
     def _assemble_result_pointer(self, registration, torch_type, var_data, var_grad):
-        """
-        Assembles a pointer to a remote Torch object. Pointers feel like
+        """Assembles a pointer to a remote Torch object. Pointers feel like
         real Torch objects, but they're zero-dimensional until their
         contents are retrieved from their owners.
 
@@ -554,8 +568,7 @@ class TorchHook(BaseHook):
         return self.local_worker.register_object(result, **registration)
 
     def _hook_torch_module(self):
-        """
-        Overloads functions in the main torch module.
+        """Overloads functions in the main torch module.
 
         The way this is accomplished is by first moving all existing module functions in the torch
         module to old_<function_name_here>. Thus, the real :func:`torch.cat` will become
@@ -591,8 +604,7 @@ class TorchHook(BaseHook):
                 setattr(torch, attr, new_attr)
 
     def _hook_torch_functional(self):
-        """
-        Overloads functions in the torch.nn.functional
+        """Overloads functions in the torch.nn.functional
 
         The way this is accomplished is by first moving all existing module functions in the torch
         module to old_<function_name_here>. Thus, the real :func:`torch.nn.functional.relu` will become
@@ -709,8 +721,7 @@ class TorchHook(BaseHook):
 
     def _hook_send_(hook_self, tensorvar_type):
         def send_(self, workers, send_pointer=False):
-            """
-            Sends a Tensor or Variable object to a (sequence of) Grid workers.
+            """Sends a Tensor or Variable object to a (sequence of) Grid workers.
 
             Args:
             workers: string (or sequence) containing IPFS address(es)
@@ -747,8 +758,7 @@ class TorchHook(BaseHook):
 
     def _hook_get_(hook_self, torch_type):
         def get_(self, reduce=lambda x: x[0]):
-            """
-            Gets a Torch object from its current owners.
+            """Gets a Torch object from its current owners.
 
             Args:
             reduce: (EXPERIMENTAL) How to reduce tensors that come from
@@ -800,6 +810,7 @@ class TorchHook(BaseHook):
     # ######## BEGIN torch VARIABLE hooking #########
 
     def _hook_variable(self):
+        """Responsible for hooking Variable methods"""
         # Overload 'special' methods here
         self._hook___new__(torch.autograd.variable.Variable)
         self._hook_var_contents()
@@ -834,6 +845,7 @@ class TorchHook(BaseHook):
         self._hook_var_serde()
 
     def _hook_var_owners(hook_self):
+        """Responsible for managing the 'owners' attribute"""
         @property
         def owners(self):
             if (hasattr(self, '_owners')):
@@ -894,7 +906,7 @@ class TorchHook(BaseHook):
                     self.grad_registered = True
 
                     # DO NOT REMOVE THIS LINE UNLESS YOU KNOW WHAT YOU'RE DOING
-                    # for context behidn this edit you can see the following video
+                    # for context behind this edit you can see the following video
                     # https://www.twitch.tv/videos/275838386
                     # long story short, we need to actually run the grad generating
                     # function (self.old_grad) and cache its value (the variable's

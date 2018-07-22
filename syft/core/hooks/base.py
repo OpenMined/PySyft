@@ -1,15 +1,16 @@
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
-class BaseHook(ABC):
-    r""" A abstract interface for deep learning framework hooks."""
+class BaseHook(object):
+    __metaclass__ = ABCMeta
+    """An abstract interface for deep learning framework hooks."""
     @abstractmethod
     def __init__(self):
         pass
 
-    # TODO: decorate with abstractmethod after TorchHook is extended
+    @abstractmethod
     def __enter__(self):
-        raise NotImplementedError
+        return self
 
-    # TODO: decorate with abstractmethod after TorchHook is extended
+    @abstractmethod
     def __exit__(self):
-        raise NotImplementedError
+        pass
