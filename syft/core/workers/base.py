@@ -3,6 +3,7 @@ import json
 import numbers
 import re
 import random
+import asyncio
 from abc import ABC, abstractmethod
 
 from .. import utils
@@ -158,7 +159,7 @@ class BaseWorker(ABC):
     def compile_composite_message(self):
         """
         Returns a composite message in a dictionary from the message queue.
-        Evenatually will take a recipient id.
+        Eventually will take a recipient id.
 
         * **out (dict)** dictionary containing the message queue compiled
         as a composite message
@@ -209,7 +210,7 @@ class BaseWorker(ABC):
     def process_message_type(self, message_wrapper):
         """
         This method takes a message wrapper and attempts to process
-        it agaist known processing methods. If the method is a composite
+        it against known processing methods. If the method is a composite
         message, it unroles applies recursively
 
         * **message_wrapper (dict)** Dictionary containing the message
@@ -231,7 +232,7 @@ class BaseWorker(ABC):
         elif(message_wrapper['type'] == 'req_obj'):
             return self.prepare_send_object(self.get_obj(message))
 
-        #  A torch command from another workerinvolving one or more tensors
+        #  A torch command from another worker involving one or more tensors
         #  hosted locally
         elif(message_wrapper['type'] == 'torch_cmd'):
             return json.dumps(self.handle_command(message)) + "\n"
