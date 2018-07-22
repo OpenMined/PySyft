@@ -83,7 +83,7 @@ class TestTensorPointerSerde(TestCase):
         assert len(x) == 4
 
         # correct data
-        # assert (x[0:4] == sy.FloatTensor([1, 2, 3, 4])).all()
+        assert (x[0:4] == sy.FloatTensor([1, 2, 3, 4])).all()
 
         # object shouldn't be in registry yet because we
         # set register=False
@@ -140,8 +140,8 @@ class TestTensorPointerSerde(TestCase):
         # make sure it works (can do operations)
         y = x2 + x2
 
-        # assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
-        # assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
+        assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
+        assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
 
         assert x2.id not in me._objects
 
@@ -178,13 +178,13 @@ class TestTensorPointerSerde(TestCase):
         #  since we're returning the pointer to an object that is hosted
         # locally, it should return that oject explicitly
         x += 2
-        # assert (x2 == torch.FloatTensor([3, 4, 5, 6])).all()
-        #
-        # x_ptr += 2
-        #
-        # # ensure that the pointer wrapper points to the same data location
-        # # as x
-        # assert (x2 == torch.FloatTensor([5, 6, 7, 8])).all()
+        assert (x2 == torch.FloatTensor([3, 4, 5, 6])).all()
+
+        x_ptr += 2
+
+        # ensure that the pointer wrapper points to the same data location
+        # as x
+        assert (x2 == torch.FloatTensor([5, 6, 7, 8])).all()
 
     def test_tensor2registered_pointer2tensor(self):
         # Tensor: Local -> Pointer (unregistered) -> Local
@@ -214,14 +214,14 @@ class TestTensorPointerSerde(TestCase):
 
         #  since we're returning the pointer to an object that is hosted
         # locally, it should return that oject explicitly
-        # x += 2
-        # assert (x2 == torch.FloatTensor([3, 4, 5, 6])).all()
-        #
-        # x_ptr += 2
-        #
-        # # ensure that the pointer wrapper points to the same data location
-        # # as x
-        # assert (x2 == torch.FloatTensor([5, 6, 7, 8])).all()
+        x += 2
+        assert (x2 == torch.FloatTensor([3, 4, 5, 6])).all()
+
+        x_ptr += 2
+
+        # ensure that the pointer wrapper points to the same data location
+        # as x
+        assert (x2 == torch.FloatTensor([5, 6, 7, 8])).all()
 
 
     def test_send_and_get_tensor(self):

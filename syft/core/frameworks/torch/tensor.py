@@ -364,9 +364,18 @@ class _TorchObject(object):
         # still exist referencing this pointer will simply call local data instead
         # of sending messages elsewhere, or a closer pointer
         if update_ptr_wrapper:
-            # TODO: modifying self is maybe not a good practice, but it's the only way I found
-            # to ensure that x.get() which shows a tensor is in fact of x.dim() = 1 and not 0
             self.child = syft_tensor
+            # In case we have a final get() (ie returning a FloatTensor), we have e.g.
+            # x = Float(...)
+            # x.send(...)
+            # x2 = x.get()
+            # We  have x2: [no dim]->[_Local]->[Float()]
+            # Whereas we expect x2: [Float()]
+            # So we use the .set_() method, to change the storage of [no dim]
+            if not isinstance(syft_tensor, sy._PointerTensor) \
+              and syft_tensor.child is not None \
+              and syft_tensor.child.dim() > 0:
+                self.set_(syft_tensor.child)
 
         return self
 
