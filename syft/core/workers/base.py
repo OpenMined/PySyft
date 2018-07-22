@@ -240,12 +240,17 @@ class BaseWorker(ABC):
         # Receiving an object from another worker
         if message_wrapper['type'] == 'obj':
             response = message
+            if response.torch_type == 'syft.Variable':
+                self.register(response.parent.data.parent)
             self.register(response)
             return response, True
 
         #  Receiving a request for an object from another worker
         elif message_wrapper['type'] == 'req_obj':
             object = self.get_obj(message)
+            if object.torch_type == 'syft.Variable':
+                data_object = object.parent.data.parent
+                self.de_register(data_object)
             self.de_register(object)
             return object, False
 
@@ -253,8 +258,13 @@ class BaseWorker(ABC):
         #  hosted locally
         elif message_wrapper['type'] == 'torch_cmd':
             response = self.process_command(message)
+
+            if response.torch_type == 'syft.Variable':
+                response.child.data.child.owner = self
+                self.register(response.parent.data.child)
             self.register(response)
-            return response, True
+            return response, True  # Result is private
+
         # A composite command. Must be unrolled
         elif message_wrapper['type'] == 'composite':
             raise Exception('Composite command not handled at the moment')
@@ -664,7 +674,7 @@ class BaseWorker(ABC):
         utils.assert_has_only_syft_tensors(result)
         return result
 
-    def send_obj(self, object, new_id, recipient):
+    def send_obj(self, object, new_id, recipient, new_data_id=None):
         """send_obj(self, obj, recipient, delete_local=True) -> obj
         Sends an object to another :class:`VirtualWorker` and, by default, removes it
         from the local worker. It also returns the object as a special case when
@@ -686,7 +696,12 @@ class BaseWorker(ABC):
         """
         encoder = utils.PythonEncoder()
         object.id = new_id
+        if object.torch_type == 'syft.Variable':
+            if new_data_id is None:
+                raise Exception('Please provide a new_data_id arg, to be able to point to Var.data')
+            object.parent.data.parent.id = new_data_id
         object = encoder.encode(object, retrieve_tensorvar=False, retrieve_pointers=False, private_local=False)
+
         object = self.send_msg(message=object,
                                message_type='obj',
                                recipient=recipient)
@@ -715,8 +730,10 @@ class BaseWorker(ABC):
             message_type='torch_cmd',
             recipient=recipient
         )
+
         decoder = utils.PythonJSONDecoder(worker=self)
         response = decoder.decode(response)
+
         return response
 
     def request_obj(self, obj_id, recipient):

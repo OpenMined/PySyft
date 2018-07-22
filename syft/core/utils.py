@@ -6,6 +6,7 @@ import functools
 import logging
 
 import torch
+import syft
 import syft as sy
 
 class PythonEncoder():
@@ -61,10 +62,14 @@ class PythonEncoder():
                 if self.retrieve_tensorvar:
                     self.found_tensorvar.append(obj)
                 key = '__'+type(obj).__name__+'__'
+                if isinstance(obj, torch.autograd.Variable):
+                    data = self.python_encode(obj.data.parent, private_local)
+                else:
+                    data = obj.tolist()
                 tensor = {
                     'type': str(obj.__class__).split("'")[1],
                     'torch_type': 'syft.' + type(obj).__name__,
-                    'data': obj.tolist()
+                    'data': data
                 }
                 return {key: tensor}
             else:  # we have a _PointerTensor
@@ -82,7 +87,12 @@ class PythonEncoder():
                     'torch_type': obj.torch_type
                 }
                 if not private_local:
-                    data['child'] = 'child'
+                    if obj.torch_type == 'syft.Variable' and obj.parent.data is not None:
+                        data['child'] = self.python_encode(obj.parent.data.child, private_local) #.parent??
+                    else:
+                        data['child'] = None
+                elif private_local and obj.torch_type == 'syft.Variable':
+                    data['child'] = self.python_encode(obj.child, private_local)
                 if self.retrieve_pointers:
                     self.found_pointers.append(obj)
             # If is _LocalTensor
@@ -93,6 +103,11 @@ class PythonEncoder():
                     'torch_type': obj.torch_type
                 }
                 if not private_local:
+                    if not is_tensor_empty(obj.child):
+                        data['child'] = self.python_encode(obj.child, private_local)
+                    else:
+                        data['child'] = None
+                elif private_local and obj.torch_type == 'syft.Variable':
                     data['child'] = self.python_encode(obj.child, private_local)
             else:
                 raise Exception('This SyftTensor <', type(obj.child), '> is not yet supported.')
@@ -164,7 +179,11 @@ class PythonJSONDecoder(json.JSONDecoder):
                 # Case of a tensor or a Variable
                 if obj_type in map(lambda x: x.__name__, self.tensorvar_types):
                     # TODO: Find a smart way to skip register and not leaking the info to the local worker
-                    tensorvar = eval('sy.'+obj_type)(obj['data'])
+                    if obj_type == 'Variable':
+                        data = obj['data'].child
+                    else:
+                        data = obj['data']
+                    tensorvar = eval('sy.'+obj_type)(data)
                     self.worker.hook.local_worker.de_register(tensorvar)
                     return tensorvar
                 # Syft tensor
@@ -176,6 +195,7 @@ class PythonJSONDecoder(json.JSONDecoder):
                             # If there is data:
                             if 'child' in obj:
                                 # We acquire the tensor
+                                # (as it is a leaf it is already deserialized, see custom_obj_hook behaviour)
                                 torch_obj = obj['child']
                                 syft_obj = sy._LocalTensor(child=torch_obj,
                                                            parent=torch_obj,
@@ -187,13 +207,16 @@ class PythonJSONDecoder(json.JSONDecoder):
                             else:  # Else there is no data
                                 # We make a empty envelope/footprint of it
                                 owner = self.worker.get_worker(obj['owner'])
-                                syft_obj = sy._LocalTensor(child=None,
-                                                           parent=None,
+                                tensor = eval(obj['torch_type'])() # TODO Guard
+                                tensor.id = obj['id']
+                                syft_obj = sy._LocalTensor(child=tensor,
+                                                           parent=tensor,
                                                            torch_type=obj['torch_type'],
                                                            owner=owner,
                                                            id=obj['id'],
                                                            skip_register=True
                                                            )
+                                self.worker.hook.local_worker.de_register(tensor)
                         return syft_obj
                     elif obj_type == '_PointerTensor':
                         # If local, we render the object or syft object
@@ -212,6 +235,8 @@ class PythonJSONDecoder(json.JSONDecoder):
                                                              owner=self.worker,
                                                              id=obj['id'],
                                                              skip_register=True)
+                                if syft_obj.torch_type == 'syft.Variable' and 'child' is not None:
+                                    syft_obj.parent.data.parent = obj['child']
 
                             else:
                                 # We recreate the pointer to be transmitted

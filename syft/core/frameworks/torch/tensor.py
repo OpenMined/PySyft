@@ -48,6 +48,7 @@ class _SyftTensor(object):
                 # own parent so that PyTorch is happy to
                 # run operations with torch tensor types
                 x = guard[self.torch_type]()
+                self.owner.de_register(x.child)
                 x.child = self
                 self.parent = x
                 return x
@@ -267,10 +268,11 @@ class _PointerTensor(_SyftTensor):
         return wrapper
 
     def get(self, parent, deregister_ptr=True):
-
         # Remove this pointer
         if deregister_ptr:
-           self.owner.rm_obj(self.id)
+            if self.torch_type == 'syft.Variable':
+                self.owner.rm_obj(self.parent.data.child.id)
+            self.owner.rm_obj(self.id)
 
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
@@ -280,11 +282,15 @@ class _PointerTensor(_SyftTensor):
         # get SyftTensor (Local or Pointer) from remote machine
         syft_tensor = self.owner.request_obj(self.id_at_location, self.location)
         utils.assert_has_only_syft_tensors(syft_tensor)
-        # TODO: Maybe we x.get() should change its id with the id of the remote (but then beware that the registration is properly done), but maybe not.
+
         syft_tensor.id = self.id
+        if self.torch_type == 'syft.Variable':
+            syft_tensor.parent.data.child.id = self.parent.data.child.id
 
         # Register the result
         self.owner.register(syft_tensor)
+        if syft_tensor.torch_type == 'syft.Variable':
+            self.owner.register(syft_tensor.parent.data.child)
 
         return syft_tensor
 
@@ -524,40 +530,56 @@ class _TorchVariable(_TorchObject):
         # if new_grad_id is None:
         #     new_grad_id = random.randint(0,9999999999)
 
-        old_data_id = self.data.id
-        self.data.child.id = new_data_id
+        obj_id = self.child.id
+        obj_data_id = self.data.child.id
 
-        init_id = self.id
+        # creates a pointer to LocalTensor without a Torch object wrapping it because
+        # we're going to set self.child to be this pointer.
+        # we set register=True because we want it to be registered locally
 
-        self.owner.send_obj(self,
+
+        self.child.parent.data = self.data
+
+        p = self.owner.send_obj(self.child,
                             new_id,
-                            worker)
+                            worker,
+                            new_data_id=new_data_id)
 
+
+        # clears data which could be cached in the wrapper (which is self)
+        # which would be confusing for folks
         self.native_set_()
 
-        self.child = sy._PointerTensor(child=self,
-                                       parent=self,
-                                       id=init_id,
-                                       torch_type='syft.'+type(self).__name__,
-                                       location=worker,
-                                       id_at_location=new_id)
+        # set this wrapper's child to be the newly created PointerTensor
+        self.child.id = obj_id
+        x_ptr = self.child.create_pointer(location=worker, id_at_location=new_id, register=True)
+        self.child = x_ptr
 
-        self.data.child = sy._PointerTensor(child=self,
-                                            parent=self,
-                                            id=old_data_id,
-                                            torch_type='syft.'+type(self).__name__,
-                                            location=worker,
-                                            id_at_location=new_data_id)
+        # same for data
+        self.data.child.id = obj_data_id
+        var_data_ptr = self.data.child.create_pointer(location=worker, id_at_location=new_data_id, register=True)
+        self.data.child = var_data_ptr
 
+        self.child.parent.data = self.data
         return self
 
-    def get(self):
-        new_child_obj = self.child.get(parent=self)
-        new_data_obj = self.data.child.get(parent=self)
-        self.child = new_child_obj
-        self.data.child = new_data_obj
+    def get(self, deregister_ptr=True, update_ptr_wrapper=True):
 
-        self.native_set_(self.child.child)
+        # returns a SyftTensor object (Local or Pointer) without a parent wrapper
+        syft_tensor = self.child.get(parent=self, deregister_ptr=deregister_ptr)
+
+        # this will change the pointer variable (wrapper) to instead wrap the
+        # SyftTensor object that was returned so that any variable that may
+        # still exist referencing this pointer will simply call local data instead
+        # of sending messages elsewhere, or a closer pointer
+        if update_ptr_wrapper:
+            self.child = syft_tensor
+            # In case we have a final get() (ie returning a Variable)
+            if not isinstance(syft_tensor, sy._PointerTensor) \
+              and syft_tensor.child is not None \
+              and syft_tensor.child.dim() > 0:
+                self.set_(syft_tensor.child)
+                self.data = syft_tensor.child.data
 
         return self
 

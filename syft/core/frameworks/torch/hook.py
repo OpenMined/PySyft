@@ -147,6 +147,13 @@ class TorchHook(object):
         def id(self):
             return self.child.id
 
+        # TODO: this should not be possible, but it should also be possible to define a FloatTensor with
+        # a specific id. This is in theory possible, but it doesnt seem to work in practice
+        @id.setter
+        def id(self, new_id):
+            self.child.id = new_id
+            return self
+
         tensor_type.id = id
 
         @property
@@ -380,16 +387,45 @@ class TorchHook(object):
 
         utils.assert_has_only_syft_tensors(response)
 
-        pointer = response.create_pointer(register=True, owner=owner)
+        # Todo there is a pb with decode because it acquire a Variable in any case (it has a child),
+        # while it can also be a enveloppe
+        if response.torch_type == 'syft.Variable':
+            response.owner = location
+            response.child.data.child.owner = location
 
-        if owner.id == 0:
-            x = sy.FloatTensor()
-            pointer.child = x
-            owner.de_register(x.child)
-            x.child = pointer
-            return pointer.child
+        # TODO: There are extra registrations to prevent, because this means we don't compeletely control the memory
 
-        return pointer
+        if response.torch_type == 'syft.Variable':
+
+            pointer = response.create_pointer(register=True, owner=owner)
+            data_pointer = response.child.data.child.create_pointer(register=True, owner=owner)
+
+            if owner.id == 0:
+
+                owner.de_register(response.child)
+                owner.de_register(response.child.data.child)
+
+                response.child.child = pointer
+                response.child.data.child = data_pointer
+
+                return response.child
+            else:
+                pointer.child = response.child
+                pointer.child.data.child = data_pointer
+
+            return pointer
+        else:
+            pointer = response.create_pointer(register=True, owner=owner)
+
+            if owner.id == 0:
+                x = sy.FloatTensor()
+                pointer.child = x
+                owner.de_register(x.child)
+                x.child = pointer
+                return pointer.child
+
+
+            return pointer
 
 
 # TODO: put this in an appropriate place
