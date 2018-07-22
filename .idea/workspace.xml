@@ -2,118 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d98b7aaa-608b-4ef5-bc2d-21a6951aa4c7" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/start_anchor" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/start_autoupdating_worker.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/start_ipfs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/start_with_payment_experiment" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/start_worker" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/worker_daemon.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker/Dockerfile.gpu" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker/jupyter_notebook_config.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker/run_jupyter.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/adapters/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/adapters/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/adapters/adapter.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/adapters/config.example.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/adapters/imdb.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/adapters/tweets.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/base.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/channels.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/clients/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/clients/base.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/clients/keras.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/clients/pretty_printer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/clients/torch.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/commands.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/ipfsapi/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/ipfsapi/client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/ipfsapi/encoding.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/ipfsapi/exceptions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/ipfsapi/http.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/ipfsapi/multipart.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/ipfsapi/utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/ipfsapi/version.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/ipfsapi/version_tree.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/MPCDataDemo.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/MPCModelDemo.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/Untitled.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/coinbase_helper.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/interface/base_interface.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/interface/distributed_interface.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/interface/grid_client_interface.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/interface/grid_worker_interface.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/keras_utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/output_pipe.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/shared_variable.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/spdz.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/strings.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/torch_utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/lib/utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/base.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/broadcast_known_workers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/fit_worker.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/listen_for_openmined_nodes.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/passively_broadcast_membership.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/torch/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/torch/hook_service.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/torch/hook_worker_service.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/torch/listen_for_torch_objects.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/torch/torch_service.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/tree/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/services/whoami.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/workers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/workers/anchor.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/workers/base_worker.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/workers/compute.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/grid/workers/tree.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/banner.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/install_scripts/aws_ubuntu_installation.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/install_scripts/integration_ubuntu_install.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/install_scripts/osx_installation.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/install_scripts/ubuntu_installation.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/DenverMLGridDemo.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/IPFS - OpenMined Context.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/Keras Federated Learning (Tree Mode) - User Story.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/Keras On-Demand Compute Grid - User Story.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/PyTorch On-Demand Compute Grid - User Story.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/Roadmap.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/deprecated/AutomateTorchHooks-variables.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/deprecated/Keras Grid.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/deprecated/Pytorch Grid.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/CRT.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/Client Worker Tree.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/CoinbasePayment.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/Federated Learning-Keras User Story.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/Generic IPFS Version Tree.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/Grid Client.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/IMDB.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/MPC PubSub Alice - Prototype.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/MPC PubSub Bob - Prototype.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/OpenGrid - PyTorch Tutorial.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/PyTorch MPCTensor.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/Ring Model.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/Weights_version_control.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/AutomateTorchHooks-ForceHooksForGrad-Failed.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/AutomateTorchHooks.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/Grid_MultiNode_Demo.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/Overriding PyTorch Autograd Example.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/PyTorch Federated Learning Example.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/PyTorch Network Tensor.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/TestHookService.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/Torch0.3.1Grid.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/Torch0.3.2Grid.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/Torch0.3.3Grid.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/Torch0.3.4Grid.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/Torch0.4.0GridExperiment.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/TorchIPFSTesting.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/experimental/torch_integration/VariableRemoteTesting.ipynb" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -128,8 +17,8 @@
         <entry file="file://$PROJECT_DIR$/README.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="45">
-                <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
+              <first_editor relative-caret-position="30">
+                <caret line="2" lean-forward="true" selection-start-line="2" selection-end-line="2" />
               </first_editor>
               <second_editor />
             </state>
@@ -209,9 +98,10 @@
     <frame x="0" y="23" width="1920" height="1177" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info active="true" anchor="bottom" id="Find" order="1" visible="true" weight="0.32910246" />
       <window_info anchor="bottom" id="Run" order="2" />
       <window_info anchor="bottom" id="Version Control" />
       <window_info anchor="bottom" id="Python Console" />
@@ -219,7 +109,6 @@
       <window_info anchor="bottom" id="Terminal" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info id="Favorites" side_tool="true" />
-      <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -235,8 +124,8 @@
     <entry file="file://$PROJECT_DIR$/README.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="45">
-            <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
+          <first_editor relative-caret-position="30">
+            <caret line="2" lean-forward="true" selection-start-line="2" selection-end-line="2" />
           </first_editor>
           <second_editor />
         </state>
