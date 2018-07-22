@@ -1,4 +1,4 @@
-_server_socket_listenerimport websockets
+import websockets
 import asyncio
 import json
 
@@ -53,10 +53,11 @@ class WebSocketWorker(BaseWorker):
                          objects=objects, tmp_objects=tmp_objects,
                          known_workers=known_workers, verbose=verbose, queue_size=queue_size)
 
+        self.is_asyncronous = True
         self.hook = hook
         self.hostname = hostname
         self.port = port
-        self.uri = 'ws://' + self.hostname + ':' + self.port
+        self.uri = "ws://" + self.hostname + ":" + str(self.port)
 
         self.max_connections = max_connections
         self.is_pointer = is_pointer
@@ -73,21 +74,15 @@ class WebSocketWorker(BaseWorker):
                 print("Starting a Websocket Worker....")
                 if (not is_client_worker or self.is_pointer):
                     print("Ready to recieve commands....")
+                    self.serversocket = websockets.serve(self._server_socket_listener,
+                                                            self.hostname, self.port)
+                    print('Server Socket has been initialized')
+                    asyncio.get_event_loop().run_until_complete(self.serversocket)
+                    asyncio.get_event_loop().run_forever()
+
                 else:
                     print("Ready...")
-            self._server_socket_run()
 
-
-
-    async def _server_socket(self):
-        """
-        Initilizes the server socket, which later is in charge of performing
-        operations.
-
-        """
-
-        self.serversocket = websockets.serve(self._server_socket_listener,
-                                                self.hostname, self.port)
 
     async def _client_socket_connect(self, json_request):
         """
@@ -108,24 +103,61 @@ class WebSocketWorker(BaseWorker):
             return recieved_msg
 
     async def _server_socket_listener(self, websocket, path):
-        msg_wrapper_json = await websocket.recv()
+        msg_wrapper_byte = await websocket.recv()
+        msg_wrapper_str = msg_wrapper_byte.decode('utf-8')
         if (self.verbose):
-            print("Recieved Command From:", self.hostname)
-
+            print("Recieved Command From:", self.uri)
         decoder = utils.PythonJSONDecoder(self)
-        msg_wrapper = decoder.decode(msg_wrapper_json)
+        msg_wrapper = decoder.decode(msg_wrapper_str)
         await websocket.send(self.process_message_type(msg_wrapper))
 
     def whoami(self):
         return json.dumps({"uri": self.uri, "id": self.id})
 
     async def _send_msg(self, message_wrapper_json_binary, recipient):
+        response = await recipient._client_socket_listener(message_wrapper_json_binary)
+        response = self._process_buffer(response=response)
+        return response
+
+    def send_msg(self, message, message_type, recipient):
+        """Sends a string message to another worker with message_type information
+        indicating how the message should be processed.
+
+        :Parameters:
+
+        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.
+
+        * **message (string)** the message being sent
+
+        * **message_type (string)** the type of message being sent. This affects how
+          the message is processed by the recipient. The types of message are described
+          in :func:`receive_msg`.
+
+        * **out (object)** the response from the message being sent. This can be a variety
+          of object types. However, the object is typically only used during testing or
+          local development with :class:`VirtualWorker` workers.
+        """
+        message_wrapper = {}
+        message_wrapper['message'] = message
+        message_wrapper['type'] = message_type
+        self.message_queue.append(message_wrapper)
+        if self.queue_size:
+            if len(self.message_queue) > self.queue_size:
+                message_wrapper = self.compile_composite_message()
+            else:
+                return None
+
+        message_wrapper_json = json.dumps(message_wrapper) + "\n"
+
+        message_wrapper_json_binary = message_wrapper_json.encode()
+
+        self.message_queue = []
         response = recipient._client_socket_listener(message_wrapper_json_binary)
         response = self._process_buffer(response=response)
         return response
 
-    def _process_buffer(cls, response, buffer_size=1024, delimiter="\n"):
-        buffer = response.decode('utf-8')
+    def _process_buffer(cls, response, delimiter="\n"):
+        buffer = response
         buffering = True
         if delimiter in buffer:
             (line, buffer) = buffer.split(delimiter, 1)
@@ -133,20 +165,9 @@ class WebSocketWorker(BaseWorker):
         else:
             return buffer
 
-    async def _client_socket_listener(cls, message_wrapper_json_binary):
-        response = asyncio.get_event_loop().run_until_complete_complete(
-                            cls._client_socket_connect(message_wrapper_json_binary))
+    def _client_socket_listener(cls, message_wrapper_json_binary):
+        response = asyncio.get_event_loop().run_until_complete(
+            cls._client_socket_connect(message_wrapper_json_binary))
         return response
 
-    async def _server_socket_close(self):
-        asyncio.get_event_loop().close()
 
-    async def _server_socket_run(self):
-        asyncio.get_event_loop().run_until_complete(self._server_socket_listener)
-        try:
-            asyncio.get_event_loop().run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            self.serversocket.close()
-            asyncio.get_event_loop().close()
