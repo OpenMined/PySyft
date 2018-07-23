@@ -239,30 +239,35 @@ class BaseWorker(ABC):
 
         # Receiving an object from another worker
         if message_wrapper['type'] == 'obj':
-            response = message
-            if response.torch_type == 'syft.Variable':
-                self.register(response.parent.data.parent)
-            self.register(response)
+            response = message # response is a tensorvar
+            utils.fix_chain_ends(response)
+            utils.assert_is_chain_well_formed(response)
+            if response.child.torch_type == 'syft.Variable':
+                self.register(response.data.child)
+            self.register(response.child)
             return response, True
 
         #  Receiving a request for an object from another worker
         elif message_wrapper['type'] == 'req_obj':
-            object = self.get_obj(message)
-            if object.torch_type == 'syft.Variable':
-                data_object = object.parent.data.parent
-                self.de_register(data_object)
-            self.de_register(object)
-            return object, False
+            # Because it was pointed at, it's the first syft_object of the chain, so its parent is the tensorvar
+            syft_object = self.get_obj(message)
+            tensorvar = syft_object.parent
+            if syft_object.torch_type == 'syft.Variable':
+                syft_data_object = tensorvar.data.child
+                self.de_register(syft_data_object)
+            self.de_register(syft_object)
+
+            return tensorvar, False
 
         #  A torch command from another worker involving one or more tensors
         #  hosted locally
         elif message_wrapper['type'] == 'torch_cmd':
             response = self.process_command(message)
 
-            if response.torch_type == 'syft.Variable':
-                response.child.data.child.owner = self
-                self.register(response.parent.data.child)
-            self.register(response)
+            if response.child.torch_type == 'syft.Variable':
+                #response.data.child.owner = self
+                self.register(response.data.child)
+            self.register(response.child)
             return response, True  # Result is private
 
         # A composite command. Must be unrolled
@@ -326,10 +331,8 @@ class BaseWorker(ABC):
         [torch.FloatTensor of size 5]
         """
         if(worker.id in self._known_workers and self.verbose):
-            print("WARNING: Worker ID " + str(worker.id) +
-                  " taken. Have I seen this worker before?")
-            print(
-                "WARNING: Replacing it anyways... this could cause unexpected behavior...")
+            logging.warning("Worker ID " + str(worker.id) + " taken. Have I seen this worker before?")
+            logging.warning("Replacing it anyways... this could cause unexpected behavior...")
 
         self._known_workers[worker.id] = worker
 
@@ -593,7 +596,6 @@ class BaseWorker(ABC):
             pointer = obj.create_pointer()
             pointer.owner = self
             self.set_obj(pointer.id, pointer)
-
         # DO NOT DELETE THIS TRY/CATCH UNLESS YOU KNOW WHAT YOU'RE DOING
         # PyTorch tensors wrapped invariables (if my_var.data) are python
         # objects that get deleted and re-created randomly according to
@@ -695,17 +697,15 @@ class BaseWorker(ABC):
 
         """
         encoder = utils.PythonEncoder()
-        object.id = new_id
-        if object.torch_type == 'syft.Variable':
+        object.child.id = new_id
+        if object.child.torch_type == 'syft.Variable':
             if new_data_id is None:
                 raise Exception('Please provide a new_data_id arg, to be able to point to Var.data')
-            object.parent.data.parent.id = new_data_id
+            object.data.child.id = new_data_id
         object = encoder.encode(object, retrieve_tensorvar=False, retrieve_pointers=False, private_local=False)
-
         object = self.send_msg(message=object,
                                message_type='obj',
                                recipient=recipient)
-
         decoder = utils.PythonJSONDecoder(worker=self)
         pointer = decoder.decode(object)
         return pointer

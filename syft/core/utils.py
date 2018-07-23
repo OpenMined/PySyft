@@ -58,22 +58,21 @@ class PythonEncoder():
             return obj
         # Tensors and Variable encoded with their id
         elif isinstance(obj, self.tensorvar_types):
-            if not is_tensor_empty(obj):
-                if self.retrieve_tensorvar:
-                    self.found_tensorvar.append(obj)
-                key = '__'+type(obj).__name__+'__'
-                if isinstance(obj, torch.autograd.Variable):
-                    data = self.python_encode(obj.data.parent, private_local)
-                else:
-                    data = obj.tolist()
-                tensor = {
-                    'type': str(obj.__class__).split("'")[1],
-                    'torch_type': 'syft.' + type(obj).__name__,
-                    'data': data
-                }
-                return {key: tensor}
-            else:  # we have a _PointerTensor
-                return self.python_encode(obj.child, private_local)
+            if self.retrieve_tensorvar:
+                self.found_tensorvar.append(obj)
+            key = '__'+type(obj).__name__+'__'
+            if isinstance(obj, sy.Variable):
+                data = self.python_encode(obj.data.child, private_local)
+            else:
+                data = obj.tolist()
+            tensor = {
+                'type': str(obj.__class__).split("'")[1],
+                'torch_type': 'syft.' + type(obj).__name__,
+                'data': data
+            }
+            if obj.child is not None:
+                tensor['child'] = self.python_encode(obj.child, private_local)
+            return {key: tensor}
         # sy._SyftTensor (Pointer, Local)
         elif issubclass(obj.__class__, sy._SyftTensor):
             key = '__'+type(obj).__name__+'__'
@@ -87,12 +86,7 @@ class PythonEncoder():
                     'torch_type': obj.torch_type
                 }
                 if not private_local:
-                    if obj.torch_type == 'syft.Variable' and obj.parent.data is not None:
-                        data['child'] = self.python_encode(obj.parent.data.child, private_local) #.parent??
-                    else:
-                        data['child'] = None
-                elif private_local and obj.torch_type == 'syft.Variable':
-                    data['child'] = self.python_encode(obj.child, private_local)
+                    data['acquire'] = True
                 if self.retrieve_pointers:
                     self.found_pointers.append(obj)
             # If is _LocalTensor
@@ -102,13 +96,6 @@ class PythonEncoder():
                     'id': obj.id,
                     'torch_type': obj.torch_type
                 }
-                if not private_local:
-                    if not is_tensor_empty(obj.child):
-                        data['child'] = self.python_encode(obj.child, private_local)
-                    else:
-                        data['child'] = None
-                elif private_local and obj.torch_type == 'syft.Variable':
-                    data['child'] = self.python_encode(obj.child, private_local)
             else:
                 raise Exception('This SyftTensor <', type(obj.child), '> is not yet supported.')
             return {key: data}
@@ -184,7 +171,12 @@ class PythonJSONDecoder(json.JSONDecoder):
                     else:
                         data = obj['data']
                     tensorvar = eval('sy.'+obj_type)(data)
+                    if obj_type == 'Variable':
+                        self.worker.hook.local_worker.de_register(data)
                     self.worker.hook.local_worker.de_register(tensorvar)
+                    if 'child' in obj:
+                        tensorvar.child = obj['child']
+                        obj['child'].parent = tensorvar
                     return tensorvar
                 # Syft tensor
                 elif obj_type in map(lambda x: x.__name__, sy._SyftTensor.__subclasses__()):
@@ -192,31 +184,13 @@ class PythonJSONDecoder(json.JSONDecoder):
                         if obj['owner'] == self.worker.id:  # If it's one of his own LocalTensor
                             syft_obj = self.worker.get_obj(obj['id'])
                         else:  # Else, it received it from someone else
-                            # If there is data:
-                            if 'child' in obj:
-                                # We acquire the tensor
-                                # (as it is a leaf it is already deserialized, see custom_obj_hook behaviour)
-                                torch_obj = obj['child']
-                                syft_obj = sy._LocalTensor(child=torch_obj,
-                                                           parent=torch_obj,
-                                                           torch_type='syft.' + type(torch_obj).__name__,
-                                                           owner=self.worker,
-                                                           id=obj['id'],
-                                                           skip_register=True
-                                                           )
-                            else:  # Else there is no data
-                                # We make a empty envelope/footprint of it
-                                owner = self.worker.get_worker(obj['owner'])
-                                tensor = eval(obj['torch_type'])() # TODO Guard
-                                tensor.id = obj['id']
-                                syft_obj = sy._LocalTensor(child=tensor,
-                                                           parent=tensor,
-                                                           torch_type=obj['torch_type'],
-                                                           owner=owner,
-                                                           id=obj['id'],
-                                                           skip_register=True
-                                                           )
-                                self.worker.hook.local_worker.de_register(tensor)
+                            syft_obj = sy._LocalTensor(child=None,
+                                                       parent=None,
+                                                       torch_type=obj['torch_type'],
+                                                       owner=self.worker,
+                                                       id=obj['id'],
+                                                       skip_register=True
+                                                       )
                         return syft_obj
                     elif obj_type == '_PointerTensor':
                         # If local, we render the object or syft object
@@ -225,7 +199,7 @@ class PythonJSONDecoder(json.JSONDecoder):
                             return syft_obj
                         else:
                             # If there is data transmission:
-                            if 'child' in obj:
+                            if 'acquire' in obj and obj['acquire'] is True:
                                 # We acquire the tensor pointer
                                 syft_obj = sy._PointerTensor(child=None,
                                                              parent=None,
@@ -235,9 +209,6 @@ class PythonJSONDecoder(json.JSONDecoder):
                                                              owner=self.worker,
                                                              id=obj['id'],
                                                              skip_register=True)
-                                if syft_obj.torch_type == 'syft.Variable' and 'child' is not None:
-                                    syft_obj.parent.data.parent = obj['child']
-
                             else:
                                 # We recreate the pointer to be transmitted
                                 owner = self.worker.get_worker(obj['owner'])
@@ -368,6 +339,74 @@ def assert_has_only_syft_tensors(obj):
         logging.warning('Obj is not syft tensor', obj)
         assert False
 
+def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=None, end_chain=None):
+    if start_id is None:
+        start_id = obj.id
+        start_type = type(obj)
+    else:
+        if start_id == obj.id and start_type == type(obj):
+            raise Exception('The chain looped downward=', downward,'on id', obj.child.id, 'with obj', obj.child)
+    if end_chain is not None \
+      and (isinstance(obj, torch.autograd.Variable) or torch.is_tensor(obj)):
+        if isinstance(end_chain, sy._PointerTensor):
+            assert obj.parent is None, "Tensorvar linked to Pointer should not have a parent"
+            assert end_chain.child is None, "Pointer shouldnt have a child"
+            return True
+        elif isinstance(end_chain, sy._LocalTensor):
+            assert obj.parent.id == end_chain.id, "TensorVar parent should be the tail LocalTensor" + str(obj.parent.id) + ',' + str(end_chain.id)
+            assert end_chain.child.id == obj.id, "Tail LocalTensor child should be the Tensor Var"
+            return True
+        else:
+            raise Exception('Unsupported end_chain type:', obj)
+
+    elif isinstance(obj, sy._PointerTensor):
+        downward = False
+        end_chain = obj
+        start_id = obj.id
+        start_type = type(obj)
+    elif isinstance(obj, sy._LocalTensor):
+        downward = False
+        end_chain = obj
+        start_id = obj.id
+        start_type = type(obj)
+
+    if downward:
+        if obj.child is None:
+            raise Exception('Chain broken downward without a Pointer at the end, but', obj)
+        else:
+            return assert_is_chain_well_formed(obj.child, downward, start_id, start_type, end_chain)
+    else:
+        if obj.parent is None:
+            raise Exception('Chain broken upward, at', obj)
+        else:
+            return assert_is_chain_well_formed(obj.parent, downward, start_id, start_type, end_chain)
+
+def find_tail_of_chain(obj, start_id=None, start_type=None):
+    if start_id is None:
+        start_id = obj.id
+        start_type = type(obj)
+    else:
+        if start_id == obj.id and start_type == type(obj):
+            raise Exception('The chain looped downward on id', obj.child.id, 'with obj', obj.child)
+
+    if isinstance(obj, (sy._LocalTensor, sy._PointerTensor)):
+        return obj
+    else:
+        if obj.child is None:
+            raise Exception('Chain is broken on', obj)
+        else:
+            return find_tail_of_chain(obj.child, start_id, start_type)
+
+def fix_chain_ends(obj):
+    end_obj = find_tail_of_chain(obj)
+    if isinstance(end_obj, sy._LocalTensor):
+        end_obj.child = obj
+        obj.parent = end_obj
+    elif isinstance(end_obj, sy._PointerTensor):
+        end_obj.child = None
+        obj.parent = None
+    else:
+        raise Exception('Unsupported end of chain:', end_obj)
 
 def is_tensor_empty(obj):
     # TODO Will break with PyTorch >= 0.4
