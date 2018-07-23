@@ -608,15 +608,15 @@ class TestTorchTensor(TestCase):
 
 #         assert final_loss == 0.18085284531116486
 
-    def test_torch_function_on_remote_var(self):
-
-        x = sy.Variable(torch.FloatTensor([[1, 2], [3, 4]]))
-        y = sy.Variable(torch.FloatTensor([[1, 2], [1, 2]]))
-        x.send(bob)
-        y.send(bob)
-        z = torch.matmul(x, y)
-        z.get()
-        assert torch.equal(z, sy.Variable(torch.FloatTensor([[3, 6], [7, 14]])))
+    # def test_torch_function_on_remote_var(self):
+    #
+    #     x = sy.Variable(torch.FloatTensor([[1, 2], [3, 4]]))
+    #     y = sy.Variable(torch.FloatTensor([[1, 2], [1, 2]]))
+    #     x.send(bob)
+    #     y.send(bob)
+    #     z = torch.matmul(x, y)
+    #     z.get()
+    #     assert torch.equal(z, sy.Variable(torch.FloatTensor([[3, 6], [7, 14]])))
 
     #def test_torch_function_with_multiple_input_on_remote_var(self):
 

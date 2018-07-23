@@ -65,7 +65,7 @@ class _SyftTensor(object):
             return self._parent
         else:
             self._parent = self.find_torch_object_in_family_tree()
-            return self._parent
+            return None
 
     @parent.setter
     def parent(self, value):
@@ -89,7 +89,7 @@ class _SyftTensor(object):
 
         if ptr_id is not None:
             if(ptr_id == id_at_location):
-                raise Exception("The PointerTensor and the tensor being pointed to cannot have the same id.")
+                raise AttributeError("The PointerTensor and the tensor being pointed to cannot have the same id.")
 
         else:
             # Normally if there is no id specified, we keep the same as the original pointer
@@ -224,15 +224,15 @@ class _LocalTensor(_SyftTensor):
         return result
 
     def get(self, parent, deregister_ptr=None):
-        raise Exception("Cannot call .get() on a tensor you already have.")
+        raise TypeError("Cannot call .get() on a tensor you already have.")
 
 
 class _PointerTensor(_SyftTensor):
 
     def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None, owner=None, skip_register=False):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
-        if(location is None):
-            raise Exception("Must have location")
+        if location is None:
+            raise AttributeError("Pointer must have a location specified")
         self.location = self.owner.get_worker(location)
         self.id_at_location = id_at_location
         self.torch_type = torch_type
@@ -267,7 +267,7 @@ class _PointerTensor(_SyftTensor):
         wrapper.child = self
         return wrapper
 
-    def get(self, parent, deregister_ptr=True):
+    def get(self, deregister_ptr=True):
         # Remove this pointer
         if deregister_ptr:
             if self.torch_type == 'syft.Variable':
@@ -366,7 +366,7 @@ class _TorchObject(object):
     def get(self, deregister_ptr=True, update_ptr_wrapper=True):
 
         # returns a Tensor object wrapping a SyftTensor
-        tensor = self.child.get(parent=self, deregister_ptr=deregister_ptr)
+        tensor = self.child.get(deregister_ptr=deregister_ptr)
         # this will change the pointer variable (wrapper) to instead wrap the
         # SyftTensor object that was returned so that any variable that may
         # still exist referencing this pointer will simply call local data instead
@@ -397,7 +397,7 @@ class _TorchObject(object):
         to worker
         self->alice->obj [worker] => self->alice->worker->obj
         """
-        raise Exception('Move is not supported anymore.')
+        raise NotImplementedError('Move is not supported anymore.')
         if isinstance(worker, (int, str)):
             worker = self.owner.get_worker(worker)
 

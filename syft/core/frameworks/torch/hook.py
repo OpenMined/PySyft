@@ -355,6 +355,7 @@ class TorchHook(object):
         Execute a local or remote call depending on the args/kwargs
 
         """
+        utils.assert_has_only_torch_tensorvars((args, kwargs))
         has_self = self is not None
 
         command, locations, owners = utils.compile_command(attr,
@@ -366,7 +367,6 @@ class TorchHook(object):
         # If there is no pointer, then the call is local
         if len(locations) == 0:
             # This is only intended for a local call (not a remote local call), so owner=local_worker
-            utils.assert_has_only_torch_tensorvars((args, kwargs))
             if has_self:
                 # TODO Guard
                 if hasattr(self, "native_" + attr):
@@ -382,20 +382,21 @@ class TorchHook(object):
             owner = owners[0]
 
         # Else we send the command
-        response = hook_self.local_worker.send_torch_command(recipient=location,
+        response = owner.send_torch_command(recipient=location,
                                                              message=command)
 
-        utils.assert_has_only_syft_tensors(response)
+        utils.assert_has_only_torch_tensorvars(response)
 
         # Todo there is a pb with decode because it acquire a Variable in any case (it has a child),
         # while it can also be a enveloppe
-        if response.torch_type == 'syft.Variable':
-            response.owner = location
-            response.child.data.child.owner = location
+        #if response.child.torch_type == 'syft.Variable':
+        #    response.childowner = location
+        #    response.child.data.child.owner = location
 
         # TODO: There are extra registrations to prevent, because this means we don't compeletely control the memory
 
-        if response.torch_type == 'syft.Variable':
+        if response.child.torch_type == 'syft.Variable':
+            raise Exception('Var not supported')
 
             pointer = response.create_pointer(register=True, owner=owner)
             data_pointer = response.child.data.child.create_pointer(register=True, owner=owner)
@@ -415,17 +416,7 @@ class TorchHook(object):
 
             return pointer
         else:
-            pointer = response.create_pointer(register=True, owner=owner)
-
-            if owner.id == 0:
-                x = sy.FloatTensor()
-                pointer.child = x
-                owner.de_register(x.child)
-                x.child = pointer
-                return pointer.child
-
-
-            return pointer
+            return response
 
 
 # TODO: put this in an appropriate place
