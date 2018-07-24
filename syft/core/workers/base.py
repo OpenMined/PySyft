@@ -206,7 +206,7 @@ class BaseWorker(ABC):
 
         response, private = self.process_message_type(message_wrapper)
 
-        response = utils.encode(response, retrieve_tensorvar=False, retrieve_pointers=False, private_local=private)
+        response = utils.encode(response, retrieve_pointers=False, private_local=private)
         response = json.dumps(response).encode()
 
 
@@ -685,7 +685,7 @@ class BaseWorker(ABC):
             if new_data_id is None:
                 raise AttributeError('Please provide a new_data_id arg, to be able to point to Var.data')
             object.data.child.id = new_data_id
-        object = utils.encode(object, retrieve_tensorvar=False, retrieve_pointers=False, private_local=False)
+        object = utils.encode(object, retrieve_pointers=False, private_local=False)
 
         # We don't need any response to proceed to registration
         self.send_msg(message=object,
