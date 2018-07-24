@@ -193,8 +193,11 @@ class _LocalTensor(_SyftTensor):
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
+        if not 'owner' in msg_obj:
+            raise TypeError("sy._LocalTensor can't deserialize a non-valid sy._LocalTensor. "
+                            "Do you wan to call sy.FloatTensor.deser() instead?")
         if msg_obj['owner'] == worker.id:
-            raise Exception('_LocalTensor sent to itself')
+            logging.warning('_LocalTensor sent to itself')
         if acquire:  # We need to register the info given
             syft_obj = sy._LocalTensor(child=None,
                                        parent=None,
