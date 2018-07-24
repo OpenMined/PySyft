@@ -382,41 +382,16 @@ class TorchHook(object):
             owner = owners[0]
 
         # Else we send the command
-        response = owner.send_torch_command(recipient=location,
-                                                             message=command)
+        response = owner.send_torch_command(recipient=location, message=command)
 
         utils.assert_has_only_torch_tensorvars(response)
 
-        # Todo there is a pb with decode because it acquire a Variable in any case (it has a child),
-        # while it can also be a enveloppe
-        #if response.child.torch_type == 'syft.Variable':
-        #    response.childowner = location
-        #    response.child.data.child.owner = location
+        # Register results
+        owner.register(response.child)
+        if isinstance(response, sy.Variable):
+            owner.register(response.data.child)
 
-        # TODO: There are extra registrations to prevent, because this means we don't compeletely control the memory
-
-        if response.child.torch_type == 'syft.Variable':
-            raise Exception('Var not supported')
-
-            pointer = response.create_pointer(register=True, owner=owner)
-            data_pointer = response.child.data.child.create_pointer(register=True, owner=owner)
-
-            if owner.id == 0:
-
-                owner.de_register(response.child)
-                owner.de_register(response.child.data.child)
-
-                response.child.child = pointer
-                response.child.data.child = data_pointer
-
-                return response.child
-            else:
-                pointer.child = response.child
-                pointer.child.data.child = data_pointer
-
-            return pointer
-        else:
-            return response
+        return response
 
 
 # TODO: put this in an appropriate place

@@ -193,8 +193,11 @@ class PythonJSONDecoder:
             (e.g. tuple, or torch Variable).
 
         """
+        # TODO: Stop with this prior that data should be a dict, which require the following lines to fix with real cases
         if isinstance(dct, (int, str)):
             return dct
+        if isinstance(dct, (list, )):
+            return [self.python_decode(o) for o in dct]
         if not isinstance(dct, dict):
             raise TypeError('Type not handled', dct)
 
@@ -307,9 +310,14 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
 
     In practice, we also check for unexpected loops.
     """
+    # Is only executed at the first iteration
     if start_id is None:
         start_id = obj.id
         start_type = type(obj)
+        if isinstance(obj, sy.Variable):
+            # We don't care about the return, as the main object has to return true anyway
+            # All we care is about Exception raising
+            assert_is_chain_well_formed(obj.data)
     else:
         if start_id == obj.id and start_type == type(obj):
             raise StopIteration('The chain looped downward=', downward,'on id', obj.child.id, 'with obj', obj.child)
@@ -387,6 +395,9 @@ def fix_chain_ends(obj):
     else:
         raise TypeError('Unsupported end of chain:', end_obj)
 
+    if isinstance(obj, sy.Variable):
+        fix_chain_ends(obj.data)
+
 
 def is_tensor_empty(obj):
     # TODO Will break with PyTorch >= 0.4
@@ -403,6 +414,20 @@ def is_syft_tensor(obj):
             return True
     else:
         if issubclass(obj.__class__, sy._SyftTensor):
+            return True
+    return False
+
+
+def is_tensor(obj):
+    """
+    Determines whether the arg is a subclass of a Torch Tensor
+    or is the name of a subclass of a Torch Tensor
+    """
+    if isinstance(obj, str):
+        if obj in map(lambda x: x.__name__, torch.tensor_types):
+            return True
+    else:
+        if isinstance(obj, tuple(torch.tensor_types)):
             return True
     return False
 

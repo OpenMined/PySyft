@@ -258,7 +258,6 @@ class BaseWorker(ABC):
         elif message_wrapper['type'] == 'torch_cmd':
             response = self.process_command(message)
             if response.child.torch_type == 'syft.Variable':
-                #response.data.child.owner = self
                 self.register(response.data.child)
             self.register(response.child)
             return response, True  # Result is private
@@ -652,6 +651,11 @@ class BaseWorker(ABC):
             self.hook.local_worker.de_register(result.child)
             result.child.owner = self
             self.register(result.child)
+            if isinstance(result, sy.Variable):
+                self.hook.local_worker.de_register(result.data.child)
+                result.data.child.owner = self
+                self.register(result.data.child)
+            # end of to do
 
             utils.assert_has_only_torch_tensorvars(result)
 
