@@ -24,9 +24,9 @@
 
   
 
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
 
@@ -50,6 +50,9 @@
             <a href="../index.html" class="icon icon-home"> PySyft
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -175,103 +178,193 @@
 <dl class="class">
 <dt id="syft.mpc.shared_variable.SharedAdd">
 <em class="property">class </em><code class="descclassname">syft.mpc.shared_variable.</code><code class="descname">SharedAdd</code><a class="headerlink" href="#syft.mpc.shared_variable.SharedAdd" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">torch.autograd.function.Function</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.autograd.function.Function</span></code></p>
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedAdd.backward">
 <em class="property">static </em><code class="descname">backward</code><span class="sig-paren">(</span><em>ctx</em>, <em>grad_out</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedAdd.backward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Defines a formula for differentiating the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by as many
+outputs did <a class="reference internal" href="#syft.mpc.shared_variable.SharedAdd.forward" title="syft.mpc.shared_variable.SharedAdd.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> return, and it should return as many
+tensors, as there were inputs to <a class="reference internal" href="#syft.mpc.shared_variable.SharedAdd.forward" title="syft.mpc.shared_variable.SharedAdd.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the
+gradient w.r.t the given output, and each returned value should be the
+gradient w.r.t. the corresponding input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass.</p>
+</dd></dl>
 
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedAdd.forward">
 <em class="property">static </em><code class="descname">forward</code><span class="sig-paren">(</span><em>ctx</em>, <em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedAdd.forward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Performs the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by any
+number of arguments (tensors or other types).</p>
+<p>The context can be used to store tensors that can be then retrieved
+during the backward pass.</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="syft.mpc.shared_variable.SharedMatmul">
 <em class="property">class </em><code class="descclassname">syft.mpc.shared_variable.</code><code class="descname">SharedMatmul</code><a class="headerlink" href="#syft.mpc.shared_variable.SharedMatmul" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">torch.autograd.function.Function</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.autograd.function.Function</span></code></p>
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedMatmul.backward">
 <em class="property">static </em><code class="descname">backward</code><span class="sig-paren">(</span><em>ctx</em>, <em>grad_out</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedMatmul.backward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Defines a formula for differentiating the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by as many
+outputs did <a class="reference internal" href="#syft.mpc.shared_variable.SharedMatmul.forward" title="syft.mpc.shared_variable.SharedMatmul.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> return, and it should return as many
+tensors, as there were inputs to <a class="reference internal" href="#syft.mpc.shared_variable.SharedMatmul.forward" title="syft.mpc.shared_variable.SharedMatmul.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the
+gradient w.r.t the given output, and each returned value should be the
+gradient w.r.t. the corresponding input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass.</p>
+</dd></dl>
 
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedMatmul.forward">
 <em class="property">static </em><code class="descname">forward</code><span class="sig-paren">(</span><em>ctx</em>, <em>a</em>, <em>b</em>, <em>interface</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedMatmul.forward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Performs the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by any
+number of arguments (tensors or other types).</p>
+<p>The context can be used to store tensors that can be then retrieved
+during the backward pass.</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="syft.mpc.shared_variable.SharedMult">
 <em class="property">class </em><code class="descclassname">syft.mpc.shared_variable.</code><code class="descname">SharedMult</code><a class="headerlink" href="#syft.mpc.shared_variable.SharedMult" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">torch.autograd.function.Function</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.autograd.function.Function</span></code></p>
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedMult.backward">
 <em class="property">static </em><code class="descname">backward</code><span class="sig-paren">(</span><em>ctx</em>, <em>grad_out</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedMult.backward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Defines a formula for differentiating the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by as many
+outputs did <a class="reference internal" href="#syft.mpc.shared_variable.SharedMult.forward" title="syft.mpc.shared_variable.SharedMult.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> return, and it should return as many
+tensors, as there were inputs to <a class="reference internal" href="#syft.mpc.shared_variable.SharedMult.forward" title="syft.mpc.shared_variable.SharedMult.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the
+gradient w.r.t the given output, and each returned value should be the
+gradient w.r.t. the corresponding input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass.</p>
+</dd></dl>
 
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedMult.forward">
 <em class="property">static </em><code class="descname">forward</code><span class="sig-paren">(</span><em>ctx</em>, <em>a</em>, <em>b</em>, <em>interface</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedMult.forward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Performs the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by any
+number of arguments (tensors or other types).</p>
+<p>The context can be used to store tensors that can be then retrieved
+during the backward pass.</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="syft.mpc.shared_variable.SharedNeg">
 <em class="property">class </em><code class="descclassname">syft.mpc.shared_variable.</code><code class="descname">SharedNeg</code><a class="headerlink" href="#syft.mpc.shared_variable.SharedNeg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">torch.autograd.function.Function</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.autograd.function.Function</span></code></p>
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedNeg.backward">
 <em class="property">static </em><code class="descname">backward</code><span class="sig-paren">(</span><em>ctx</em>, <em>grad_out</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedNeg.backward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Defines a formula for differentiating the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by as many
+outputs did <a class="reference internal" href="#syft.mpc.shared_variable.SharedNeg.forward" title="syft.mpc.shared_variable.SharedNeg.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> return, and it should return as many
+tensors, as there were inputs to <a class="reference internal" href="#syft.mpc.shared_variable.SharedNeg.forward" title="syft.mpc.shared_variable.SharedNeg.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the
+gradient w.r.t the given output, and each returned value should be the
+gradient w.r.t. the corresponding input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass.</p>
+</dd></dl>
 
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedNeg.forward">
 <em class="property">static </em><code class="descname">forward</code><span class="sig-paren">(</span><em>ctx</em>, <em>a</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedNeg.forward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Performs the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by any
+number of arguments (tensors or other types).</p>
+<p>The context can be used to store tensors that can be then retrieved
+during the backward pass.</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="syft.mpc.shared_variable.SharedSigmoid">
 <em class="property">class </em><code class="descclassname">syft.mpc.shared_variable.</code><code class="descname">SharedSigmoid</code><a class="headerlink" href="#syft.mpc.shared_variable.SharedSigmoid" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">torch.autograd.function.Function</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.autograd.function.Function</span></code></p>
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedSigmoid.backward">
 <em class="property">static </em><code class="descname">backward</code><span class="sig-paren">(</span><em>ctx</em>, <em>grad_out</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedSigmoid.backward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Defines a formula for differentiating the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by as many
+outputs did <a class="reference internal" href="#syft.mpc.shared_variable.SharedSigmoid.forward" title="syft.mpc.shared_variable.SharedSigmoid.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> return, and it should return as many
+tensors, as there were inputs to <a class="reference internal" href="#syft.mpc.shared_variable.SharedSigmoid.forward" title="syft.mpc.shared_variable.SharedSigmoid.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the
+gradient w.r.t the given output, and each returned value should be the
+gradient w.r.t. the corresponding input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass.</p>
+</dd></dl>
 
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedSigmoid.forward">
 <em class="property">static </em><code class="descname">forward</code><span class="sig-paren">(</span><em>ctx</em>, <em>a</em>, <em>interface</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedSigmoid.forward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Performs the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by any
+number of arguments (tensors or other types).</p>
+<p>The context can be used to store tensors that can be then retrieved
+during the backward pass.</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="syft.mpc.shared_variable.SharedSub">
 <em class="property">class </em><code class="descclassname">syft.mpc.shared_variable.</code><code class="descname">SharedSub</code><a class="headerlink" href="#syft.mpc.shared_variable.SharedSub" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">torch.autograd.function.Function</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.autograd.function.Function</span></code></p>
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedSub.backward">
 <em class="property">static </em><code class="descname">backward</code><span class="sig-paren">(</span><em>ctx</em>, <em>grad_out</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedSub.backward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Defines a formula for differentiating the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by as many
+outputs did <a class="reference internal" href="#syft.mpc.shared_variable.SharedSub.forward" title="syft.mpc.shared_variable.SharedSub.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> return, and it should return as many
+tensors, as there were inputs to <a class="reference internal" href="#syft.mpc.shared_variable.SharedSub.forward" title="syft.mpc.shared_variable.SharedSub.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the
+gradient w.r.t the given output, and each returned value should be the
+gradient w.r.t. the corresponding input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass.</p>
+</dd></dl>
 
 <dl class="staticmethod">
 <dt id="syft.mpc.shared_variable.SharedSub.forward">
 <em class="property">static </em><code class="descname">forward</code><span class="sig-paren">(</span><em>ctx</em>, <em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedSub.forward" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Performs the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by any
+number of arguments (tensors or other types).</p>
+<p>The context can be used to store tensors that can be then retrieved
+during the backward pass.</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="syft.mpc.shared_variable.SharedVariable">
 <em class="property">class </em><code class="descclassname">syft.mpc.shared_variable.</code><code class="descname">SharedVariable</code><span class="sig-paren">(</span><em>var</em>, <em>interface</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedVariable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="method">
 <dt id="syft.mpc.shared_variable.SharedVariable.add">
 <code class="descname">add</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.shared_variable.SharedVariable.add" title="Permalink to this definition">¶</a></dt>
@@ -467,14 +560,11 @@
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {

@@ -24,9 +24,9 @@
 
   
 
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
 
@@ -50,6 +50,9 @@
             <a href="../index.html" class="icon icon-home"> PySyft
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -190,14 +193,54 @@
 <div class="section" id="module-syft.core.utils">
 <span id="syft-core-utils-module"></span><h2>syft.core.utils module<a class="headerlink" href="#module-syft.core.utils" title="Permalink to this headline">¶</a></h2>
 <p>Framework agnostic static utility functions.</p>
+<dl class="class">
+<dt id="syft.core.utils.PythonEncoder">
+<em class="property">class </em><code class="descclassname">syft.core.utils.</code><code class="descname">PythonEncoder</code><span class="sig-paren">(</span><em>retrieve_tensorvar=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.PythonEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Encode python and torch objects to be JSON-able
+In particular, (hooked) Torch objects are replaced by their id.
+Note that a python object is returned, not JSON.</p>
+<dl class="method">
+<dt id="syft.core.utils.PythonEncoder.encode">
+<code class="descname">encode</code><span class="sig-paren">(</span><em>obj</em>, <em>retrieve_tensorvar=None</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.PythonEncoder.encode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs encoding, and retrieves if requested all the tensors and
+Variables found</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.utils.PythonEncoder.python_encode">
+<code class="descname">python_encode</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.PythonEncoder.python_encode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="syft.core.utils.PythonJSONDecoder">
+<em class="property">class </em><code class="descclassname">syft.core.utils.</code><code class="descname">PythonJSONDecoder</code><span class="sig-paren">(</span><em>worker</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.PythonJSONDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">json.decoder.JSONDecoder</span></code></p>
+<p>Decode JSON and reinsert python types when needed
+Retrieve Torch objects replaced by their id</p>
+<dl class="method">
+<dt id="syft.core.utils.PythonJSONDecoder.custom_obj_hook">
+<code class="descname">custom_obj_hook</code><span class="sig-paren">(</span><em>dct</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.PythonJSONDecoder.custom_obj_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is called on every dict found. We check if some keys correspond
+to special keywords referring to a type we need to re-cast
+(e.g. tuple, or torch Variable).
+Note that in the case we have such a keyword, we will have created
+at encoding a dict with a single key value pair, so the return if
+the for loop is valid.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="function">
 <dt id="syft.core.utils.map_dict">
-<code class="descclassname">syft.core.utils.</code><code class="descname">map_dict</code><span class="sig-paren">(</span><em>service</em>, <em>kwargs</em>, <em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.map_dict" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.utils.</code><code class="descname">map_dict</code><span class="sig-paren">(</span><em>hook</em>, <em>kwargs</em>, <em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.map_dict" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="syft.core.utils.map_tuple">
-<code class="descclassname">syft.core.utils.</code><code class="descname">map_tuple</code><span class="sig-paren">(</span><em>service</em>, <em>args</em>, <em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.map_tuple" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.utils.</code><code class="descname">map_tuple</code><span class="sig-paren">(</span><em>hook</em>, <em>args</em>, <em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.utils.map_tuple" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
@@ -263,14 +306,11 @@
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {
