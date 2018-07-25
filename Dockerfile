@@ -30,5 +30,4 @@ python3 -m ipykernel.kernelspec
 RUN mkdir /notebooks
 WORKDIR /notebooks
 
-#ENTRYPOINT ["jupyter", "notebook", "--Notebookapp.ip='0.0.0.0'", "--NotebookApp.port=8888","--Notebook.open_browser=False", "--NotebookApp.allow_root=True", "--NotebookApp.token=''", "--allow-root"]
 ENTRYPOINT ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--Notebook.open_browser=False", "--NotebookApp.token=''", "--allow-root"]
