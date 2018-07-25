@@ -21,10 +21,7 @@ cd PySyft
 scripts/run_docker.sh
 ```
 > Image size: 769.4MB
-<<<<<<< HEAD
 
-=======
->>>>>>> 8df6f74c8e4df0669e32af246bb29a0f57e00aa5
 The container mount the examples folder on a volume so every change on the notebooks is persistent. 
 Furthermore the container is deleted when it is stopped, in a way to facilitate development. You just have to change PySyft code, and run the run_docker.sh script to observe changes you've made on notebooks. 
 ## Installation
