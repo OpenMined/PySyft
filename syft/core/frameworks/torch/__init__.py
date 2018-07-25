@@ -13,6 +13,12 @@ torch.torch_funcs = dir(torch)
 # this is a list of all module functions in torch.nn.functional
 torch.torch_functional_funcs = dir(torch.nn.functional)
 
+# Gathers all the functions from above
+torch.torch_modules = {
+            'torch': torch.torch_funcs,
+            'torch.nn.functional': torch.torch_functional_funcs
+        }
+
 # this is the list of torch tensor types that we will override for remote execution
 torch.tensor_types = [torch.FloatTensor,
                      torch.DoubleTensor,
@@ -39,4 +45,5 @@ torch.tensorvar_methods = list(
     )
 )
 
+# Torch functions we don't want to override
 torch.torch_exclude = ['save', 'load', 'typename', 'is_tensor']

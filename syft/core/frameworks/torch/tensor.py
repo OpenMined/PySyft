@@ -1,4 +1,5 @@
 import json
+import re
 import torch
 import random
 import syft as sy
@@ -65,7 +66,7 @@ class _SyftTensor(object):
             return self._parent
         else:
             self._parent = self.find_torch_object_in_family_tree()
-            return self._parent
+            return None
 
     @parent.setter
     def parent(self, value):
@@ -89,7 +90,7 @@ class _SyftTensor(object):
 
         if ptr_id is not None:
             if(ptr_id == id_at_location):
-                raise Exception("The PointerTensor and the tensor being pointed to cannot have the same id.")
+                raise AttributeError("The PointerTensor and the tensor being pointed to cannot have the same id.")
 
         else:
             # Normally if there is no id specified, we keep the same as the original pointer
@@ -119,15 +120,22 @@ class _SyftTensor(object):
 
         return ptr
 
-    def add_type_specific_attributes(self, tensor_msg):
-        return tensor_msg
-
-    def ser(self, include_data=True, *args, **kwargs):
-        pass
+    def ser(self, private, as_dict=True):
+        raise NotImplementedError('No general ser() function for Syft')
 
     @staticmethod
-    def deser(msg, owner, highest_level=True):
-        pass
+    def deser(dct, worker, acquire):
+        pat = re.compile('__(.+)__')
+        for key, obj in dct.items(): # A trick, we don't really loop
+            obj_type = pat.search(key).group(1)
+            if utils.is_syft_tensor(obj_type):
+                if obj_type == '_LocalTensor':
+                    return sy._LocalTensor.deser(obj, worker, acquire)
+                elif obj_type == '_PointerTensor':
+                    return sy._PointerTensor.deser(obj, worker, acquire)
+                else:
+                    raise TypeError('SyftTensor', obj_type, 'is not supported so far')
+
 
     def __str__(self):
         return "["+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) + "]"
@@ -141,26 +149,16 @@ class _LocalTensor(_SyftTensor):
     def __init__(self, child, parent, torch_type, owner=None, id=None, skip_register=False):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
 
-    def ser(self, include_data=True, *args, **kwargs):
-
-        tensor_msg = {}
-
-        tensor_msg['type'] = str(self.__class__).split("'")[1]
-        tensor_msg['torch_type'] = "syft."+type(self.parent).__name__
-
-        if hasattr(self, 'child') and self.child is not None:
-            tensor_msg['child'] = self.child.ser(include_data=include_data,
-                                                 stop_recurse_at_torch_type=True)
-        tensor_msg['id'] = self.id
-        owner_type = type(self.owner)
-        if (owner_type is int or owner_type is str):
-            tensor_msg['owner'] = self.owner
+    def ser(self, private, as_dict=True):
+        data = {
+            'owner': self.owner.id,
+            'id': self.id,
+            'torch_type': self.torch_type
+        }
+        if as_dict:
+            return {'___LocalTensor__': data}
         else:
-            tensor_msg['owner'] = self.owner.id
-
-        tensor_msg = self.add_type_specific_attributes(tensor_msg)
-
-        return tensor_msg
+            return json.dumps({'___LocalTensor__': data}) + "\n"
 
     def __add__(self, other):
         """
@@ -175,64 +173,41 @@ class _LocalTensor(_SyftTensor):
         return self.child.add(other)
 
     @staticmethod
-    def deser(msg_obj, register=True):
-
-        if('child' not in msg_obj):
-
-            # create empty object as a backup if no child is provided
-            if('torch_type' in msg_obj):
-                child_type = guard[msg_obj['torch_type']]
-                child = child_type()
-            else:
-                raise Exception("Object must either have a child object or at least"+\
-                                "a decided Torch type in which data will be stored")
-        else:
-            # get the type of the child to call the correct deser function
-            child_type = guard[msg_obj['child']['type']]
-
-            if(child_type not in torch.tensor_types):
-                raise Exception("LocalTensor child object must be a Torch tensor")
-
-            # create child object - don't deregister it yet because we need to get a
-            # reference to the local worker
-            child = child_type.deser(msg_obj['child'], register=True, suppress_warning=True)
-
-        # get reference to child owner (to have access to the local_worker object)
-        child_worker_reference = child.owner
-
-        # ok... now we can deregister it. This is a little bit of a hack but it works
-        # TODO: perhaps there's a better strategy for getting access to the local_worker
-        # object?
-        child.owner.de_register_object(child)
-
-        owner = child_worker_reference.get_worker(msg_obj['owner'])
-
-        if(register):
-            if msg_obj['id'] in owner._objects:
-                msg = "Cannot deserialize and register a tensor that already exists.\n"
-                msg += "Either set register=False, remove the current tensor, or initialize\n"
-                msg += "this tensor with a different id."
-                raise Exception(msg)
-
-        result = _LocalTensor(child=child,
-                             owner=owner,
-                             torch_type=msg_obj['torch_type'],
-                             id=msg_obj['id'],
-                             parent=child,
-                             skip_register=not register)
-
-        return result
+    def deser(msg_obj, worker, acquire):
+        if not 'owner' in msg_obj:
+            raise TypeError("sy._LocalTensor can't deserialize a non-valid sy._LocalTensor. "
+                            "Do you wan to call sy.FloatTensor.deser() instead?")
+        if msg_obj['owner'] == worker.id:
+            logging.warning('_LocalTensor sent to itself')
+        if acquire:  # We need to register the info given
+            syft_obj = sy._LocalTensor(child=None,
+                                       parent=None,
+                                       torch_type=msg_obj['torch_type'],
+                                       owner=worker,
+                                       id=msg_obj['id'],
+                                       skip_register=True
+                                       )
+        else:  # We point at the info which generally we can't really have
+            syft_obj = sy._PointerTensor(child=None,
+                                         parent=None,
+                                         torch_type=msg_obj['torch_type'],
+                                         location=msg_obj['owner'],
+                                         id_at_location=msg_obj['id'],
+                                         owner=worker,
+                                         id=None,
+                                         skip_register=True)
+        return syft_obj
 
     def get(self, parent, deregister_ptr=None):
-        raise Exception("Cannot call .get() on a tensor you already have.")
+        raise TypeError("Cannot call .get() on a tensor you already have.")
 
 
 class _PointerTensor(_SyftTensor):
 
     def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None, owner=None, skip_register=False):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
-        if(location is None):
-            raise Exception("Must have location")
+        if location is None:
+            raise AttributeError("Pointer must have a location specified")
         self.location = self.owner.get_worker(location)
         self.id_at_location = id_at_location
         self.torch_type = torch_type
@@ -246,28 +221,55 @@ class _PointerTensor(_SyftTensor):
     def __str__(self):
         return "["+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) +  " loc:" + str(self.location.id) + " id@loc:"+str(self.id_at_location)+"]"
 
-    @staticmethod
-    def deser(msg_obj, child, owner):
+    def ser(self, private, as_dict=True):
+        data = {
+            'owner': self.owner.id,
+            'id': self.id,
+            'location': self.location.id,
+            'id_at_location': self.id_at_location,
+            'torch_type': self.torch_type
+        }
+        if as_dict:
+            return {'___PointerTensor__': data}
+        else:
+            return json.dumps({'___PointerTensor__': data}) + "\n"
 
-        if 'id' not in msg_obj.keys():
-            msg_obj['id'] = random.randint(0,9999999999)
-        obj = _PointerTensor(child=child,
-                             parent=None,
-                             owner=owner,
-                             id=msg_obj['id'],
-                             location=msg_obj['location'],
-                             id_at_location=msg_obj['id_at_location'],
-                             torch_type = msg_obj['torch_type']
-                             )
-        return obj
+    @staticmethod
+    def deser(msg_obj, worker, acquire):
+        # If local, we render the object or syft object
+        if msg_obj['location'] == worker.id:
+            syft_obj = worker.get_obj(msg_obj['id_at_location'])
+        else:
+            if acquire:  # If there is data transmission, data being here Pointer
+                # We acquire the tensor pointer
+                syft_obj = sy._PointerTensor(child=None,
+                                             parent=None,
+                                             torch_type=msg_obj['torch_type'],
+                                             location=msg_obj['location'],
+                                             id_at_location=msg_obj['id_at_location'],
+                                             owner=worker,
+                                             id=msg_obj['id'],
+                                             skip_register=True)
+            else:  # We point at the Pointer
+                owner = worker.get_worker(msg_obj['owner'])
+                syft_obj = sy._PointerTensor(child=None,
+                                             parent=None,
+                                             torch_type=msg_obj['torch_type'],
+                                             location=msg_obj['owner'],
+                                             id_at_location=msg_obj['id'],
+                                             owner=worker,
+                                             id=None,
+                                             skip_register=True)
+        return syft_obj
 
     def wrap(self): # TODO do it in a smart (and dual?) way
         wrapper = guard[self.torch_type]()
         self.owner.rm_obj(wrapper.child.id)
         wrapper.child = self
+        utils.fix_chain_ends(wrapper)
         return wrapper
 
-    def get(self, parent, deregister_ptr=True):
+    def get(self, deregister_ptr=True):
         # Remove this pointer
         if deregister_ptr:
             if self.torch_type == 'syft.Variable':
@@ -277,28 +279,24 @@ class _PointerTensor(_SyftTensor):
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
         if self.location == self.owner:
-            return self.owner._objects[self.id_at_location]
+            return self.owner._objects[self.id_at_location].child
 
         # get SyftTensor (Local or Pointer) from remote machine
-        syft_tensor = self.owner.request_obj(self.id_at_location, self.location)
-        utils.assert_has_only_syft_tensors(syft_tensor)
+        tensorvar = self.owner.request_obj(self.id_at_location, self.location)
+        utils.assert_has_only_torch_tensorvars(tensorvar)
 
+        syft_tensor = tensorvar.child
         syft_tensor.id = self.id
         if self.torch_type == 'syft.Variable':
-            syft_tensor.parent.data.child.id = self.parent.data.child.id
+            tensorvar.data.child.id = self.parent.data.child.id
 
         # Register the result
         self.owner.register(syft_tensor)
         if syft_tensor.torch_type == 'syft.Variable':
-            self.owner.register(syft_tensor.parent.data.child)
+            self.owner.register(tensorvar.data.child)
 
-        return syft_tensor
-
-    def add_type_specific_attributes(self, tensor_msg):
-        tensor_msg['location'] = self.location if isinstance(self.location, str) else self.location.id
-        tensor_msg['id_at_location'] = self.id_at_location
-        tensor_msg['torch_type'] = self.torch_type
-        return tensor_msg
+        utils.fix_chain_ends(tensorvar)
+        return tensorvar
 
     @staticmethod
     def _tensors_to_str_ids(tensor):
@@ -362,14 +360,15 @@ class _TorchObject(object):
 
     def get(self, deregister_ptr=True, update_ptr_wrapper=True):
 
-        # returns a SyftTensor object (Local or Pointer) without a parent wrapper
-        syft_tensor = self.child.get(parent=self, deregister_ptr=deregister_ptr)
-
+        # returns a Tensor object wrapping a SyftTensor
+        tensor = self.child.get(deregister_ptr=deregister_ptr)
+        utils.assert_has_only_torch_tensorvars(tensor)
         # this will change the pointer variable (wrapper) to instead wrap the
         # SyftTensor object that was returned so that any variable that may
         # still exist referencing this pointer will simply call local data instead
         # of sending messages elsewhere, or a closer pointer
         if update_ptr_wrapper:
+            syft_tensor = tensor.child
             self.child = syft_tensor
             # In case we have a final get() (ie returning a FloatTensor), we have e.g.
             # x = Float(...)
@@ -379,9 +378,11 @@ class _TorchObject(object):
             # Whereas we expect x2: [Float()]
             # So we use the .set_() method, to change the storage of [no dim]
             if not isinstance(syft_tensor, sy._PointerTensor) \
-              and syft_tensor.child is not None \
-              and syft_tensor.child.dim() > 0:
-                self.set_(syft_tensor.child)
+              and tensor is not None \
+              and tensor.dim() > 0:
+                self.set_(tensor)
+            utils.fix_chain_ends(self)
+            utils.assert_is_chain_well_formed(self)
 
         return self
 
@@ -392,7 +393,7 @@ class _TorchObject(object):
         to worker
         self->alice->obj [worker] => self->alice->worker->obj
         """
-        raise Exception('Move is not supported anymore.')
+        raise NotImplementedError('Move is not supported anymore.')
         if isinstance(worker, (int, str)):
             worker = self.owner.get_worker(worker)
 
@@ -415,49 +416,37 @@ class _TorchObject(object):
 
 class _TorchTensor(_TorchObject):
 
-    def ser(self, include_data=True, stop_recurse_at_torch_type=False, as_dict=True):
-        """Serializes a {} object to JSON.""".format(type(self))
-        if(not stop_recurse_at_torch_type):
-            serializations = self.child.ser(include_data=include_data, as_dict=True)
-            serializations['torch_type'] = "syft."+type(self).__name__
-            if(as_dict):
-                return serializations
-            else:
-                return json.dumps(serializations) + "\n"
-        else:
-            tensor_msg = {}
-            tensor_msg['type'] = str(self.__class__).split("'")[1]
-            tensor_msg['torch_type'] = "syft."+type(self).__name__
-            if include_data:
-                tensor_msg['data'] = self.tolist()
+    def ser(self, private, as_dict=True):
 
-            if(as_dict):
-                return tensor_msg
-            else:
-                return json.dumps(tensor_msg) + "\n"
+        key = '__' + type(self).__name__ + '__'
+        data = self.tolist() if not private else []
+        tensor_msg = {
+            'type': str(self.__class__).split("'")[1],
+            'torch_type': 'syft.' + type(self).__name__,
+            'data': data,
+            'child': self.child.ser(private)
+        }
+        if as_dict:
+            return {key: tensor_msg}
+        else:
+            return json.dumps({key: tensor_msg}) + "\n"
+
 
     @staticmethod
-    def deser(msg_obj, register=True, suppress_warning=False):
-
-        if('data' in msg_obj):
-            if register and not suppress_warning:
-                msg = "Registering a data holding tensor is not advised.\n"
-                msg += "our system is designed for data tensors to only be \n"
-                msg += "called by LocalTensor pointers which are themselves registered.\n"
-                msg += "The system will attempt to handle this gracefully but this could\n"
-                msg += "result in undefined behavior. Are you sure you want to do this?"
-                msg += "If so, set suppress_warning=True to not display this message."
-                logging.warn(msg)
-            torch_type = guard[msg_obj['torch_type']]
-            result = torch_type(msg_obj['data'])
-
-            if(not register):
-                result.owner.de_register_object(result)
-        else:
-            child_type = guard[msg_obj['type']]
-            result = child_type.deser(msg_obj=msg_obj, register=register).wrap()
-
-        return result
+    def deser(msg_obj, worker, acquire):
+        obj_type, msg_obj = utils.extract_type_and_obj(msg_obj)
+        syft_obj = sy._SyftTensor.deser(msg_obj['child'], worker, acquire)
+        data = msg_obj['data']
+        # TODO: Find a smart way to skip register and not leaking the info to the local worker
+        # This would imply overload differently the __init__ to provide an owner for the child attr.
+        tensorvar = eval('sy.' + obj_type)(data)
+        worker.hook.local_worker.de_register(tensorvar)
+        # This is a special case where we want to get rid of the empty wrapper
+        if syft_obj.child is not None and len(data) == 0:
+            return syft_obj.child
+        tensorvar.child = syft_obj
+        syft_obj.parent = tensorvar
+        return tensorvar
 
     def send(self, worker, ptr_id=None):
         """
@@ -482,8 +471,7 @@ class _TorchTensor(_TorchObject):
         # we're going to set self.child to be this pointer.
         # we set register=True because we want it to be registered locally
 
-
-        self.owner.send_obj(self.child,
+        self.owner.send_obj(self,
                             ptr_id,
                             worker)
 
@@ -495,14 +483,15 @@ class _TorchTensor(_TorchObject):
         self.child.id = obj_id
         x_ptr = self.child.create_pointer(location=worker, id_at_location=ptr_id, register=True)
         self.child = x_ptr
+        x_ptr.parent = self
+        self.parent = None
 
         return self
-
 
     def __str__(self):
         if isinstance(self.child, _PointerTensor):
             return type(self).__name__+self.child.__str__()+""
-        elif(isinstance(self.child, _LocalTensor)):
+        elif isinstance(self.child, _LocalTensor) and utils.is_tensor_empty(self):
             if(hasattr(self.child, 'child')):
                 return self.child.child.native___str__()
             else:
@@ -533,14 +522,7 @@ class _TorchVariable(_TorchObject):
         obj_id = self.child.id
         obj_data_id = self.data.child.id
 
-        # creates a pointer to LocalTensor without a Torch object wrapping it because
-        # we're going to set self.child to be this pointer.
-        # we set register=True because we want it to be registered locally
-
-
-        self.child.parent.data = self.data
-
-        p = self.owner.send_obj(self.child,
+        self.owner.send_obj(self,
                             new_id,
                             worker,
                             new_data_id=new_data_id)
@@ -549,42 +531,86 @@ class _TorchVariable(_TorchObject):
         # clears data which could be cached in the wrapper (which is self)
         # which would be confusing for folks
         self.native_set_()
+        self.data.native_set_()
 
         # set this wrapper's child to be the newly created PointerTensor
         self.child.id = obj_id
-        x_ptr = self.child.create_pointer(location=worker, id_at_location=new_id, register=True)
-        self.child = x_ptr
+        var_ptr = self.child.create_pointer(location=worker, id_at_location=new_id, register=True)
+        self.child = var_ptr
+        var_ptr.parent = self
+        self.parent = None
 
         # same for data
         self.data.child.id = obj_data_id
         var_data_ptr = self.data.child.create_pointer(location=worker, id_at_location=new_data_id, register=True)
         self.data.child = var_data_ptr
+        var_data_ptr.parent = self.data
+        self.data.parent = None
 
-        self.child.parent.data = self.data
         return self
 
     def get(self, deregister_ptr=True, update_ptr_wrapper=True):
 
-        # returns a SyftTensor object (Local or Pointer) without a parent wrapper
-        syft_tensor = self.child.get(parent=self, deregister_ptr=deregister_ptr)
-
-        # this will change the pointer variable (wrapper) to instead wrap the
+        # returns a Variable object wrapping a SyftTensor
+        variable = self.child.get(deregister_ptr=deregister_ptr)
+        utils.assert_has_only_torch_tensorvars(variable)
+        # this will change the wrapper variable to instead wrap the
         # SyftTensor object that was returned so that any variable that may
         # still exist referencing this pointer will simply call local data instead
         # of sending messages elsewhere, or a closer pointer
         if update_ptr_wrapper:
-            self.child = syft_tensor
-            # In case we have a final get() (ie returning a Variable)
-            if not isinstance(syft_tensor, sy._PointerTensor) \
-              and syft_tensor.child is not None \
-              and syft_tensor.child.dim() > 0:
-                self.set_(syft_tensor.child)
-                self.data = syft_tensor.child.data
+            self.child = variable.child
+            self.data.child = variable.data.child
+
+            # In case we have a final get() (ie returning a FloatTensor), we have e.g.
+            # x = Float(...)
+            # x.send(...)
+            # x2 = x.get()
+            # We  have x2: [no dim]->[_Local]->[Float()]
+            # Whereas we expect x2: [Float()]
+            # So we use the .set_() method, to change the storage of [no dim]
+            if not isinstance(variable.child, sy._PointerTensor) \
+              and variable.data is not None \
+              and variable.data.dim() > 0:
+                self.set_(variable)
+            utils.fix_chain_ends(self)
+            utils.assert_is_chain_well_formed(self)
 
         return self
 
-    def ser(self):
-        pass
+    def ser(self, private, as_dict=True):
+        key = '__' + type(self).__name__ + '__'
+        data = self.data.ser(private)
+        tensor_msg = {
+            'type': str(self.__class__).split("'")[1],
+            'torch_type': 'syft.' + type(self).__name__,
+            'data': data,
+            'child': self.child.ser(private)
+        }
+        if as_dict:
+            return {key: tensor_msg}
+        else:
+            return json.dumps({key: tensor_msg}) + "\n"
+
+    @staticmethod
+    def deser(msg_obj, worker, acquire):
+        obj_type, msg_obj = utils.extract_type_and_obj(msg_obj)
+        var_syft_obj = sy._SyftTensor.deser(msg_obj['child'], worker, acquire)
+        # Deser the var.data
+        var_data_type, var_data_tensor = utils.extract_type_and_obj(msg_obj['data'])
+        if utils.is_tensor(var_data_type):
+            var_data =  eval('sy.' + var_data_type).deser(msg_obj['data'], worker, acquire)
+            worker.hook.local_worker.de_register(var_data)
+        # TODO: Find a smart way to skip register and not leaking the info to the local worker
+        # This would imply overload differently the __init__ to provide an owner for the child attr.
+        variable = sy.Variable(var_data)
+        worker.hook.local_worker.de_register(variable)
+
+        variable.child = var_syft_obj
+        var_syft_obj.parent = variable
+
+        return variable
+
 
 guard = {
     'syft.core.frameworks.torch.tensor.Variable': torch.autograd.Variable,

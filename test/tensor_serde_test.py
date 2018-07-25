@@ -26,58 +26,60 @@ class TestTensorPointerSerde(TestCase):
 
         x = sy.FloatTensor([1, 2, 3, 4, 5])
 
-        xs = {'data': [1.0, 2.0, 3.0, 4.0, 5.0],
-              'torch_type': 'syft.FloatTensor',
-              'type': 'syft.core.frameworks.torch.tensor.FloatTensor'}
+        xs = {
+                '__FloatTensor__': {
+                    'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
+                    'torch_type': 'syft.FloatTensor',
+                    'data': [1.0, 2.0, 3.0, 4.0, 5.0],
+                    'child': {
+                        '___LocalTensor__': {
+                            'owner': 0,
+                            'id': x.id,
+                            'torch_type': 'syft.FloatTensor'
+            }}}}
 
-        assert x.ser(stop_recurse_at_torch_type=True) == xs
+        assert x.ser(private=False) == xs
 
-        x2 = sy.FloatTensor.deser(xs, register=False)
-
-        # ensure it has no id
-        assert not hasattr(x2, 'id')
+        x2 = sy.FloatTensor.deser(xs, worker=me, acquire=True)
 
         # ensure values are the same as what was serialized
         assert x2.tolist() == x.tolist()
 
-        # ensure t-string specifies that the tensor has no children
-        assert x2.__str__() == 'Empty Wrapper:\n\n 1\n 2\n 3\n 4\n' + \
-               ' 5\n[syft.core.frameworks.torch.tensor.FloatTensor of size 5]\n'
-
-        # ensure tensor has no children (x2.child is automatically genreated in this case
-        # we're just making sure the generated child has no child or id.
-        assert not hasattr(x2.child, 'child')
-        assert not hasattr(x2.child, 'id')
+        # assert the objects are the same
+        assert (x == x2).all()
 
     def test_localtensor2json2localtensor(self):
-
-        xs = {'child': {'data': [1.0, 2.0, 3.0, 4.0],
-                        'torch_type': 'syft.FloatTensor',
-                        'type': 'syft.core.frameworks.torch.tensor.FloatTensor'},
-              'id': 8684158308,
-              'owner': 0,
-              'torch_type': 'syft.FloatTensor',
-              'type': 'syft.core.frameworks.torch.tensor._LocalTensor'}
+        xs = {
+            '__FloatTensor__': {
+                'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
+                'torch_type': 'syft.FloatTensor',
+                'data': [1.0, 2.0, 3.0, 4.0],
+                'child': {
+                    '___LocalTensor__': {
+                        'owner': 0,
+                        'id': 1000,
+                        'torch_type': 'syft.FloatTensor'
+                    }}}}
 
         x = sy.FloatTensor([1, 2, 3, 4])
-        x.child.id = xs['id']
+        x.child.id = xs['__FloatTensor__']['child']['___LocalTensor__']['id']
 
         # check that serialization is correct
-        assert xs == x.child.ser()
+        assert xs == x.ser(private=False)
 
         # reset ID for further testing
-        xs['id'] = 54321
+        xs['__FloatTensor__']['child']['___LocalTensor__']['id'] = 54321
 
-        x = sy._LocalTensor.deser(xs, register=False)
+        x = sy.FloatTensor.deser(xs, worker=me, acquire=True)
 
         # correct id
-        assert x.id == xs['id']
+        assert x.id == xs['__FloatTensor__']['child']['___LocalTensor__']['id']
 
         # correct owner
-        assert x.owner.id == xs['owner']
+        assert x.owner.id == xs['__FloatTensor__']['child']['___LocalTensor__']['owner']
 
         # correct type
-        assert type(x).__name__ == xs['type'].split(".")[-1]
+        assert type(x).__name__ == xs['__FloatTensor__']['type'].split(".")[-1]
 
         # correct size
         assert len(x) == 4
@@ -85,53 +87,31 @@ class TestTensorPointerSerde(TestCase):
         # correct data
         assert (x[0:4] == sy.FloatTensor([1, 2, 3, 4])).all()
 
-        # object shouldn't be in registry yet because we
-        # set register=False
+        # object shouldn't be in registry yet
         assert x.id not in me._objects
-
-        # deser again except this time allow it to be registered
-        x2 = sy._LocalTensor.deser(xs)
-
-        assert x.id in me._objects
-
-        try:
-            x2 = sy._LocalTensor.deser(xs)
-            assert False
-        except Exception as e:
-            assert "Cannot deserialize and register a tensor that already exists." in str(e)
-
-        # repeat test again except this time don't pass in a child at all
-        # let the object initialize an empty one instead
-
-        del xs['child']
-        xs['id'] = 12345
-
-        x3 = sy._LocalTensor.deser(xs)
-
-        assert x3.id == 12345
-        assert x3.owner.id == 0
-        assert x3.id in x.owner._objects
-        assert type(x3).__name__ == xs['type'].split(".")[-1]
-        assert len(x3) == 0
 
     def test_floattensor2json2floattensor(self):
 
-        xs = {'child': {'data': [1.0, 2.0, 3.0, 4.0, 5.0],
-                        'torch_type': 'syft.FloatTensor',
-                        'type': 'syft.core.frameworks.torch.tensor.FloatTensor'},
-              'id': 234152,
-              'owner': 0,
-              'torch_type': 'syft.FloatTensor',
-              'type': 'syft.core.frameworks.torch.tensor._LocalTensor'}
+        xs = {
+            '__FloatTensor__': {
+                'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
+                'torch_type': 'syft.FloatTensor',
+                'data': [1.0, 2.0, 3.0, 4.0, 5.0],
+                'child': {
+                    '___LocalTensor__': {
+                        'owner': 0,
+                        'id': 234152,
+                        'torch_type': 'syft.FloatTensor'
+                    }}}}
 
         x = sy.FloatTensor([1, 2, 3, 4, 5])
         x.child.id = 234152
 
         # test that serialization happens correctly
-        assert x.ser() == xs
+        assert x.ser(private=False) == xs
 
         # initialize tensor without registering it
-        x2 = sy.FloatTensor.deser(xs, register=False)
+        x2 = sy.FloatTensor.deser(xs, worker=me, acquire=True)
 
         # check id and owner are correct
         assert x2.id == 234152
@@ -144,10 +124,6 @@ class TestTensorPointerSerde(TestCase):
         assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
 
         assert x2.id not in me._objects
-
-        x3 = sy.FloatTensor.deser(xs)
-
-        assert x2.id in me._objects
 
     def test_tensor2unregsitered_pointer2tensor(self):
         # Tensor: Local -> Pointer (unregistered) -> Local
@@ -232,17 +208,7 @@ class TestTensorPointerSerde(TestCase):
 
         x.send(bob, ptr_id=1234)
 
-        # I just changed this
-        # # the id of x should have changed to that of the pointer
-        # assert x.id == 1234
-
-        # # make sure x is not localy registered
-        # assert xid not in me._objects
-
-        # # make sure x is registered at bob
-        # assert xid in bob._objects
-
-        # getting tensor back... putting result into x2
+        # getting tensor back and putting result into x2
         # to show that it should have updated x independently
         x2 = x.get()
 

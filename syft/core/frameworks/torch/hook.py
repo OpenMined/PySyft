@@ -313,26 +313,28 @@ class TorchHook(object):
         :func:`torch.native_cat` and :func:`torch.cat` will have our hooking code.
         """
 
-        for attr in torch.torch_funcs:
-            # Some functions we want to ignore (not override). Such functions have been hard coded
-            # into the attribute self.torch_exclude
-            if attr in torch.torch_exclude:
-                continue
+        for module_name, module_funcs in torch.torch_modules.items():
+            torch_module = eval(module_name)
+            for attr in module_funcs:
+                # Some functions we want to ignore (not override). Such functions have been hard coded
+                # into the attribute self.torch_exclude
+                if attr in torch.torch_exclude:
+                    continue
 
-            # if we haven't already overloaded this function
-            if 'native_{}'.format(attr) in dir(torch):
-                continue
+                # if we haven't already overloaded this function
+                if 'native_{}'.format(attr) in dir(torch_module):
+                    continue
 
-            # if we haven't already overloaded this function (redundancy allowed)
-            if 'native_' in attr:
-                continue
+                # if we haven't already overloaded this function (redundancy allowed)
+                if 'native_' in attr:
+                    continue
 
-            # Where the overloading happens
-            lit = getattr(torch, attr)
-            if (type(lit) in [types.FunctionType, types.BuiltinFunctionType]):
-                new_attr = self._get_overloaded_function(attr)
-                setattr(torch, 'native_{}'.format(attr), lit)
-                setattr(torch, attr, new_attr)
+                # Where the overloading happens
+                lit = getattr(torch_module, attr)
+                if type(lit) in [types.FunctionType, types.BuiltinFunctionType]:
+                    new_attr = self._get_overloaded_function(module_name + '.' + attr)
+                    setattr(torch_module, 'native_{}'.format(attr), lit)
+                    setattr(torch_module, attr, new_attr)
 
     def _get_overloaded_function(hook_self, attr):
         """
@@ -355,6 +357,7 @@ class TorchHook(object):
         Execute a local or remote call depending on the args/kwargs
 
         """
+        utils.assert_has_only_torch_tensorvars((args, kwargs))
         has_self = self is not None
 
         command, locations, owners = utils.compile_command(attr,
@@ -366,7 +369,6 @@ class TorchHook(object):
         # If there is no pointer, then the call is local
         if len(locations) == 0:
             # This is only intended for a local call (not a remote local call), so owner=local_worker
-            utils.assert_has_only_torch_tensorvars((args, kwargs))
             if has_self:
                 # TODO Guard
                 if hasattr(self, "native_" + attr):
@@ -374,7 +376,10 @@ class TorchHook(object):
                 else:
                     command = getattr(self.child, "native_" + attr)
             else:
-                command = eval('torch.native_{}'.format(attr)) # TODO Guard
+                elems = attr.split('.')
+                elems[-1] = 'native_' + elems[-1]
+                native_func_name = '.'.join(elems)
+                command = eval(native_func_name)  # TODO Guard
             response = command(*args, **kwargs)
             return response
         else:
@@ -382,50 +387,16 @@ class TorchHook(object):
             owner = owners[0]
 
         # Else we send the command
-        response = hook_self.local_worker.send_torch_command(recipient=location,
-                                                             message=command)
+        response = owner.send_torch_command(recipient=location, message=command)
 
-        utils.assert_has_only_syft_tensors(response)
+        utils.assert_has_only_torch_tensorvars(response)
 
-        # Todo there is a pb with decode because it acquire a Variable in any case (it has a child),
-        # while it can also be a enveloppe
-        if response.torch_type == 'syft.Variable':
-            response.owner = location
-            response.child.data.child.owner = location
+        # Register results
+        owner.register(response.child)
+        if isinstance(response, sy.Variable):
+            owner.register(response.data.child)
 
-        # TODO: There are extra registrations to prevent, because this means we don't compeletely control the memory
-
-        if response.torch_type == 'syft.Variable':
-
-            pointer = response.create_pointer(register=True, owner=owner)
-            data_pointer = response.child.data.child.create_pointer(register=True, owner=owner)
-
-            if owner.id == 0:
-
-                owner.de_register(response.child)
-                owner.de_register(response.child.data.child)
-
-                response.child.child = pointer
-                response.child.data.child = data_pointer
-
-                return response.child
-            else:
-                pointer.child = response.child
-                pointer.child.data.child = data_pointer
-
-            return pointer
-        else:
-            pointer = response.create_pointer(register=True, owner=owner)
-
-            if owner.id == 0:
-                x = sy.FloatTensor()
-                pointer.child = x
-                owner.de_register(x.child)
-                x.child = pointer
-                return pointer.child
-
-
-            return pointer
+        return response
 
 
 # TODO: put this in an appropriate place
