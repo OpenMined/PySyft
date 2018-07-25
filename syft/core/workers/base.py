@@ -236,9 +236,7 @@ class BaseWorker(ABC):
             response = message # response is a tensorvar
             utils.fix_chain_ends(response)
             utils.assert_is_chain_well_formed(response)
-            if utils.is_variable(response.child.torch_type):
-                self.register(response.data.child)
-            self.register(response.child)
+            self.register(response)
             return {}, False
 
         #  Receiving a request for an object from another worker
@@ -256,11 +254,9 @@ class BaseWorker(ABC):
         #  A torch command from another worker involving one or more tensors
         #  hosted locally
         elif message_wrapper['type'] == 'torch_cmd':
-            response = self.process_command(message)
-            if utils.is_variable(response.child.torch_type):
-                self.register(response.data.child)
-            self.register(response.child)
-            return response, True  # Result is private
+            result = self.process_command(message)
+            self.register(result)
+            return result, True  # Result is private
 
         # A composite command. Must be unrolled
         elif message_wrapper['type'] == 'composite':
@@ -528,15 +524,22 @@ class BaseWorker(ABC):
 
     def register(self, result):
         """
-        Register an object with SyftTensors
+            Register an object with SyftTensors
         """
-        if issubclass(result.__class__, sy._SyftTensor):
+        if utils.is_syft_tensor(result):
             syft_obj = result
             self.register_object(syft_obj)
+        elif utils.is_tensor(result):
+            tensor = result
+            self.register_object(tensor.child)
+        elif utils.is_variable(result):
+            variable = result
+            self.register(variable.child)
+            self.register(variable.data.child)
         # Case of a iter type non json serializable
         elif isinstance(result, (tuple, set, bytearray, range)):
-            # TODO: Extend to response which is iterable.
-            raise TypeError('This type of output is not supported at the moment')
+            for res in result:
+                self.register(res)
         else:
             raise TypeError('The type', type(result), 'is not supported at the moment')
         return
@@ -650,16 +653,14 @@ class BaseWorker(ABC):
                 result = sy.FloatTensor([result])
 
             # TODO we still have a little issue with new tensor being registered to local worker
-            self.hook.local_worker.de_register(result.child)
-            result.child.owner = self
-            self.register(result.child)
-            if utils.is_variable(result):
-                self.hook.local_worker.de_register(result.data.child)
-                result.data.child.owner = self
-                self.register(result.data.child)
+            results = result if isinstance(result, tuple) else (result, )
+            for res in results:
+                self.hook.local_worker.de_register(res.child)
+                res.child.owner = self
+                if utils.is_variable(res):
+                    self.hook.local_worker.de_register(res.data.child)
+                    res.data.child.owner = self
             # end of to do
-
-            utils.assert_has_only_torch_tensorvars(result)
 
         else:  # The call will be forwarded to a remote
             if has_self:
