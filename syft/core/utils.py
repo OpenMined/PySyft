@@ -293,6 +293,8 @@ def assert_has_only_torch_tensorvars(obj):
         return True
     elif obj is None:
         return True
+    # elif isinstance(obj, syft._SyftTensor):
+    #     return True
     else:
         logging.warning('Obj is not tensorvar', obj)
         assert False

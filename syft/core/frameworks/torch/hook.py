@@ -43,14 +43,15 @@ class TorchHook(object):
 
         self.to_auto_overload = {}
 
-        for typ in torch.tensorvar_types:
-            self._hook_native_tensors_and_variables(typ)
-            self._hook_syft_tensor_types(typ)
-
-        self._hook_torch_module()
-
         if torch.torch_hooked > 0:
-            raise Exception('Torch was already hooked')
+            raise logging.warn("Torch was already hooked... skipping hooking process")
+        else:
+
+            for typ in torch.tensorvar_types:
+                self._hook_native_tensors_and_variables(typ)
+                self._hook_syft_tensor_types(typ)
+
+            self._hook_torch_module()
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloading a given tensor_type"""
