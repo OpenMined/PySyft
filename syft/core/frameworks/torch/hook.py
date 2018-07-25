@@ -389,15 +389,24 @@ class TorchHook(object):
             location = locations[0]
             owner = owners[0]
 
+        # Store the pointers id and wrapper registered by the owner before the call
+        pointer_wrappers_id = {id: syft_tensor.parent for id, syft_tensor in owner._objects.items() if isinstance(syft_tensor, sy._PointerTensor)}
+
         # Else we send the command
         response = owner.send_torch_command(recipient=location, message=command)
 
         utils.assert_has_only_torch_tensorvars(response)
 
-        # Register results
-        owner.register(response)
-
-        return response
+        # Response can always be a tuple
+        responses = response if isinstance(response, tuple) else (response, )
+        returns = list(responses)
+        for i, response in enumerate(responses):
+            # If the response wraps an existing pointer, return instead the old wrapper
+            if response.child.id in pointer_wrappers_id:
+                returns[i] = pointer_wrappers_id[response.child.id]
+            else:  # Register results
+                owner.register(response)
+        return tuple(returns) if len(returns) > 1 else returns[0]
 
 
 # TODO: put this in an appropriate place

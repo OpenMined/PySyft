@@ -3,6 +3,8 @@
 
 import unittest
 from unittest import TestCase
+
+import random
 import syft as sy
 import torch
 import torch.nn.functional as F
@@ -34,7 +36,7 @@ class TestTorchTensor(TestCase):
 
         x = torch.FloatTensor([1, 2, 3, 4, 5])
         x_id = x.id
-        ptr_id = 1000
+        ptr_id = random.randint(0, 10e10)
         x.send(bob, ptr_id=ptr_id)
         assert x_id in me._objects
 
@@ -59,24 +61,59 @@ class TestTorchTensor(TestCase):
         # because .get_() was called, x should no longer be in the remote worker's objects dict
         assert ptr_id not in bob._objects
 
+    def test_multiple_pointers_to_same_target(self):
+        # There are two cases:
+        #   - You're sending a var on a loc:id you're already pointing at -> should abort
+        #   - You're pointing at the result of an in-place remote operation like:
+        #       x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
+        #       y = x.abs_() # in-place operation
+        #       y.get()
+        #       x.send(bob) # if x.child != y.child, x will send it's old pointer to bob->trigger an error
+        #     You want this to work, but don't want to create a new pointer, just
+        #     reuse the old one.
+
+        # 1.
+        ptr_id = random.randint(0, 10e10)
+        y = torch.FloatTensor([1, 2])
+        y.send(bob, ptr_id=ptr_id)
+        x = torch.FloatTensor([1, 2, 3, 4, 5])
+        try:
+            x.send(bob, ptr_id=ptr_id)
+            assert False
+        except MemoryError:
+            assert True
+
+        # 2.
+        x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
+        x_id = x.id
+        y = x.abs_()  # in-place operation
+        assert y.child == x.child
+        assert x.id == x_id
+        assert y.id == x.id
+        y.get()
+        x.send(bob)
+
     def test_chain_send_get_tensor(self):
 
         x = torch.FloatTensor([1, 2, 3, 4, 5])
-        x.send(bob, ptr_id=1000)
-        assert 1000 in bob._objects
-        x.send(alice, ptr_id=2000)
-        assert 2000 in alice._objects
-        x.send(james, ptr_id=3000)
-        assert 3000 in james._objects
+        id1 = random.randint(0,10e10)
+        id2 = random.randint(0,10e10)
+        id3 = random.randint(0,10e10)
+        x.send(bob, ptr_id=id1)
+        assert id1 in bob._objects
+        x.send(alice, ptr_id=id2)
+        assert id2 in alice._objects
+        x.send(james, ptr_id=id3)
+        assert id3 in james._objects
         x.get()
         x.get()
         x.get()
         # test the get is ok
         assert torch.equal(x, torch.FloatTensor([1, 2, 3, 4, 5]))
         # Test that the remotes are empty
-        assert 1000 not in bob._objects
-        assert 2000 not in alice._objects
-        assert 3000 not in james._objects
+        assert id1 not in bob._objects
+        assert id2 not in alice._objects
+        assert id3 not in james._objects
 
     def test_add_remote_tensor(self):
         x = sy.FloatTensor([1,2,3,4])
@@ -298,16 +335,6 @@ class TestTorchTensor(TestCase):
 
 
 class TestTorchVariable(TestCase):
-
-    # TODO: To pass this test, y and x should be connected. What happens right now this that x.abs_()
-    # on worker bob modifies x and also returns it. But we make a new pointer y to the remote x, to
-    # we have two pointers with different ids pointing at the same remote. This shouldnt be possible
-    # since if one does .get() the other one won't know about it and will point to a empty location.
-    # def test_remote_inplace_operations(self):
-    #     x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
-    #     y = x.abs_() # in-place operation
-    #     y.get()
-    #     x.send(bob)
 
 
 #     def test_remote_backprop(self):
@@ -743,7 +770,7 @@ class TestTorchVariable(TestCase):
         x = sy.Variable(torch.FloatTensor([1, 2, 3])).send(bob)
         y = sy.Variable(torch.FloatTensor([1, 2, 3])).send(bob)
         z = torch.dot(x, y)
-        print(torch.equal(z.get(), sy.Variable(torch.FloatTensor([14]))))
+        assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([14]))))
         z = torch.eq(x, y)
         assert (torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1]))))
         z = torch.ge(x, y)
