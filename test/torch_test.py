@@ -5,6 +5,7 @@ import unittest
 from unittest import TestCase
 import syft as sy
 import torch
+import torch.nn.functional as F
 
 
 hook = sy.TorchHook(verbose=True)
@@ -640,34 +641,24 @@ class TestTorchTensor(TestCase):
 #         y.get()
 #         assert torch.equal(y, Var(torch.FloatTensor([2, 4, 6])))
 
-#     def test_torch_F_relu_on_remote_var(self):
-#         hook = TorchHook(verbose=False)
-#         me = hook.local_worker
-#         remote = VirtualWorker(id=2,hook=hook)
-#         me.add_worker(remote)
+    def test_torch_F_relu_on_remote_var(self):
+        x = sy.Variable(torch.FloatTensor([[1, -1], [-1, 1]]))
+        x.send(bob)
+        x = F.relu(x)
+        x.get()
+        assert torch.equal(x, sy.Variable(torch.FloatTensor([[1, 0], [0, 1]])))
 
-#         x = Var(torch.FloatTensor([[1, -1], [-1, 1]]))
-#         x.send(remote)
-#         x = F.relu(x)
-#         x.get()
-#         assert torch.equal(x, Var(torch.FloatTensor([[1, 0], [0, 1]])))
-
-#     def test_torch_F_conv2d_on_remote_var(self):
-#         hook = TorchHook(verbose=False)
-#         me = hook.local_worker
-#         remote = VirtualWorker(id=2,hook=hook)
-#         me.add_worker(remote)
-
-#         x = Var(torch.FloatTensor([[[[1, -1, 2], [-1, 0, 1], [1, 0, -2]]]]))
-#         x.send(remote)
-#         weight = torch.nn.Parameter(torch.FloatTensor([[[[1, -1], [-1, 1]]]]))
-#         bias = torch.nn.Parameter(torch.FloatTensor([0]))
-#         weight.send(remote)
-#         bias.send(remote)
-#         conv = F.conv2d(x, weight, bias, stride=(1,1))
-#         conv.get()
-#         expected_conv = Var(torch.FloatTensor([[[[3, -2], [-2, -3]]]]))
-#         assert torch.equal(conv, expected_conv)
+    def test_torch_F_conv2d_on_remote_var(self):
+        x = sy.Variable(torch.FloatTensor([[[[1, -1, 2], [-1, 0, 1], [1, 0, -2]]]]))
+        x.send(bob)
+        weight = torch.nn.Parameter(torch.FloatTensor([[[[1, -1], [-1, 1]]]]))
+        bias = torch.nn.Parameter(torch.FloatTensor([0]))
+        weight.send(bob)
+        bias.send(bob)
+        conv = F.conv2d(x, weight, bias, stride=(1,1))
+        conv.get()
+        expected_conv = sy.Variable(torch.FloatTensor([[[[3, -2], [-2, -3]]]]))
+        assert torch.equal(conv, expected_conv)
 
     # def test_torch_nn_conv2d_on_remote_var(self):
     #

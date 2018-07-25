@@ -69,7 +69,7 @@ class PythonEncoder:
         if isinstance(obj, (int, float, str)) or obj is None:
             return obj
         # Tensors and Variable encoded with their id
-        elif isinstance(obj, self.tensorvar_types):
+        elif is_tensor(obj) or is_variable(obj):
             tail_object = find_tail_of_chain(obj)
             if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
                 self.found_pointers.append(tail_object)
@@ -206,10 +206,10 @@ class PythonJSONDecoder:
             if pat.search(key) is not None:
                 obj_type = pat.search(key).group(1)
                 # Case of a tensor
-                if obj_type in map(lambda x: x.__name__, self.tensor_types):
+                if is_tensor(obj_type):
                     return eval('sy.'+obj_type).deser({key: obj}, self.worker, self.acquire)
                 # Case of a Variable
-                elif obj_type == 'Variable':
+                elif is_variable(obj_type):
                     return sy.Variable.deser({key: obj}, self.worker, self.acquire)
                 # Case of a Syft tensor
                 elif is_syft_tensor(obj_type):
@@ -277,9 +277,9 @@ def assert_has_only_torch_tensorvars(obj):
     """
     if isinstance(obj, (int, float, str)):
         return True
-    elif torch.is_tensor(obj):
+    elif is_tensor(obj):
         return True
-    elif isinstance(obj, (torch.autograd.Variable, )):
+    elif is_variable(obj):
         return True
     elif isinstance(obj, (list, tuple)):
         rep = [assert_has_only_torch_tensorvars(o) for o in obj]
@@ -314,7 +314,7 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
     if start_id is None:
         start_id = obj.id
         start_type = type(obj)
-        if isinstance(obj, sy.Variable):
+        if is_variable(obj):
             # We don't care about the return, as the main object has to return true anyway
             # All we care is about Exception raising
             assert_is_chain_well_formed(obj.data)
@@ -322,7 +322,7 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
         if start_id == obj.id and start_type == type(obj):
             raise StopIteration('The chain looped downward=', downward,'on id', obj.child.id, 'with obj', obj.child)
     if end_chain is not None \
-      and (isinstance(obj, torch.autograd.Variable) or torch.is_tensor(obj)):
+      and (is_variable(obj) or is_tensor(obj)):
         if isinstance(end_chain, sy._PointerTensor):
             assert obj.parent is None, "Tensorvar linked to Pointer should not have a parent"
             assert end_chain.child is None, "Pointer shouldnt have a child"
@@ -395,7 +395,7 @@ def fix_chain_ends(obj):
     else:
         raise TypeError('Unsupported end of chain:', end_obj)
 
-    if isinstance(obj, sy.Variable):
+    if is_variable(obj):
         fix_chain_ends(obj.data)
 
 
@@ -428,6 +428,20 @@ def is_tensor(obj):
             return True
     else:
         if isinstance(obj, tuple(torch.tensor_types)):
+            return True
+    return False
+
+
+def is_variable(obj):
+    """
+    Determines whether the arg is a Variable
+    or is the (part of the) name of a class Variable
+    """
+    if isinstance(obj, str):
+        if obj in list(map(lambda x: x.__name__, torch.var_types)) + ['syft.Variable', 'syft.Parameter']:
+            return True
+    else:
+        if isinstance(obj, tuple(torch.var_types)):
             return True
     return False
 

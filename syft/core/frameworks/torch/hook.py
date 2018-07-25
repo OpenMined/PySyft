@@ -313,26 +313,28 @@ class TorchHook(object):
         :func:`torch.native_cat` and :func:`torch.cat` will have our hooking code.
         """
 
-        for attr in torch.torch_funcs:
-            # Some functions we want to ignore (not override). Such functions have been hard coded
-            # into the attribute self.torch_exclude
-            if attr in torch.torch_exclude:
-                continue
+        for module_name, module_funcs in torch.torch_modules.items():
+            torch_module = eval(module_name)
+            for attr in module_funcs:
+                # Some functions we want to ignore (not override). Such functions have been hard coded
+                # into the attribute self.torch_exclude
+                if attr in torch.torch_exclude:
+                    continue
 
-            # if we haven't already overloaded this function
-            if 'native_{}'.format(attr) in dir(torch):
-                continue
+                # if we haven't already overloaded this function
+                if 'native_{}'.format(attr) in dir(torch_module):
+                    continue
 
-            # if we haven't already overloaded this function (redundancy allowed)
-            if 'native_' in attr:
-                continue
+                # if we haven't already overloaded this function (redundancy allowed)
+                if 'native_' in attr:
+                    continue
 
-            # Where the overloading happens
-            lit = getattr(torch, attr)
-            if (type(lit) in [types.FunctionType, types.BuiltinFunctionType]):
-                new_attr = self._get_overloaded_function(attr)
-                setattr(torch, 'native_{}'.format(attr), lit)
-                setattr(torch, attr, new_attr)
+                # Where the overloading happens
+                lit = getattr(torch_module, attr)
+                if type(lit) in [types.FunctionType, types.BuiltinFunctionType]:
+                    new_attr = self._get_overloaded_function(module_name + '.' + attr)
+                    setattr(torch_module, 'native_{}'.format(attr), lit)
+                    setattr(torch_module, attr, new_attr)
 
     def _get_overloaded_function(hook_self, attr):
         """
@@ -374,7 +376,10 @@ class TorchHook(object):
                 else:
                     command = getattr(self.child, "native_" + attr)
             else:
-                command = eval('torch.native_{}'.format(attr)) # TODO Guard
+                elems = attr.split('.')
+                elems[-1] = 'native_' + elems[-1]
+                native_func_name = '.'.join(elems)
+                command = eval(native_func_name)  # TODO Guard
             response = command(*args, **kwargs)
             return response
         else:

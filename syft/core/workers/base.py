@@ -236,7 +236,7 @@ class BaseWorker(ABC):
             response = message # response is a tensorvar
             utils.fix_chain_ends(response)
             utils.assert_is_chain_well_formed(response)
-            if response.child.torch_type == 'syft.Variable':
+            if utils.is_variable(response.child.torch_type):
                 self.register(response.data.child)
             self.register(response.child)
             return {}, False
@@ -246,7 +246,7 @@ class BaseWorker(ABC):
             # Because it was pointed at, it's the first syft_object of the chain, so its parent is the tensorvar
             syft_object = self.get_obj(message)
             tensorvar = syft_object.parent
-            if syft_object.torch_type == 'syft.Variable':
+            if utils.is_variable(syft_object.torch_type):
                 syft_data_object = tensorvar.data.child
                 self.de_register(syft_data_object)
             self.de_register(syft_object)
@@ -257,7 +257,7 @@ class BaseWorker(ABC):
         #  hosted locally
         elif message_wrapper['type'] == 'torch_cmd':
             response = self.process_command(message)
-            if response.child.torch_type == 'syft.Variable':
+            if utils.is_variable(response.child.torch_type):
                 self.register(response.data.child)
             self.register(response.child)
             return response, True  # Result is private
@@ -538,7 +538,6 @@ class BaseWorker(ABC):
             # TODO: Extend to response which is iterable.
             raise TypeError('This type of output is not supported at the moment')
         else:
-            # TODO: Extend to responses Variable.
             raise TypeError('The type', type(result), 'is not supported at the moment')
         return
 
@@ -623,7 +622,7 @@ class BaseWorker(ABC):
         if has_self:
             command = self._command_guard(command_msg['command'], torch.tensorvar_methods)
         else:
-            command = self._command_guard(command_msg['command'], torch.torch_funcs)
+            command = self._command_guard(command_msg['command'], torch.torch_modules)
 
         _, locations, owners = utils.compile_command(command,
                                                      args,
@@ -640,7 +639,10 @@ class BaseWorker(ABC):
                 else:
                     command = getattr(_self.child, "native_" + command)
             else:
-                command = eval('torch.native_{}'.format(command))
+                elems = command.split('.')
+                elems[-1] = 'native_' + elems[-1]
+                native_func_name = '.'.join(elems)
+                command = eval(native_func_name)  # TODO Guard
 
             result = command(*args, **kwargs)
 
@@ -651,7 +653,7 @@ class BaseWorker(ABC):
             self.hook.local_worker.de_register(result.child)
             result.child.owner = self
             self.register(result.child)
-            if isinstance(result, sy.Variable):
+            if utils.is_variable(result):
                 self.hook.local_worker.de_register(result.data.child)
                 result.data.child.owner = self
                 self.register(result.data.child)
@@ -685,7 +687,7 @@ class BaseWorker(ABC):
 
         """
         object.child.id = new_id
-        if object.child.torch_type == 'syft.Variable':
+        if utils.is_variable(object.child.torch_type):
             if new_data_id is None:
                 raise AttributeError('Please provide a new_data_id arg, to be able to point to Var.data')
             object.data.child.id = new_data_id
@@ -758,6 +760,12 @@ class BaseWorker(ABC):
 
     @classmethod
     def _command_guard(cls, command, allowed):
+        if isinstance(allowed, dict):
+            allowed_names = []
+            for module_name, func_names in allowed.items():
+                for func_name in func_names:
+                    allowed_names.append(module_name + '.' + func_name)
+            allowed = allowed_names
         if command not in allowed:
             raise RuntimeError(
                 'Command "{}" is not a supported Torch operation.'.format(command))
