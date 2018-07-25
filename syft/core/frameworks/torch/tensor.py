@@ -15,10 +15,10 @@ class _SyftTensor(object):
         self.parent = parent
         self.torch_type = torch_type
 
-        if(self.child is not None):
+        if self.child is not None:
             self.child.parent = self
 
-        if(owner is not None):
+        if owner is not None:
             if not isinstance(owner, sy.core.workers.BaseWorker):
                 owner = self.child.owner.get_worker(owner)
             self.owner = owner

@@ -11,6 +11,8 @@ from ... import workers
 from ... import utils
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor, _TorchTensor
 from .tensor import _TorchVariable
+
+
 class TorchHook(object):
 
     def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
@@ -21,13 +23,11 @@ class TorchHook(object):
         else:
             torch.torch_hooked += 1
 
-        if (self.local_worker is None):
-
+        if self.local_worker is None:
             # Every TorchHook instance should have a local worker which is responsible for
             # interfacing with other workers. The worker interface is what allows the Torch
             # specific code in TorchHook to be agnostic to the means by which workers communicate
             # (such as peer-to-peer, sockets, through local ports, or all within the same process)
-
             self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client, queue_size=queue_size)
         else:
             # if the local_worker already exists, then it MUST not know about the hook which is
@@ -77,23 +77,31 @@ class TorchHook(object):
         self._hook_PointerTensor(tensor_type)
 
     def _add_registration_to___init__(hook_self, tensorvar_type, register_child_instead=False):
-        """Overloads tensor_type.__new__ or Variale.__new__"""
+        """Overloads tensor_type.__new__ or Variable.__new__"""
 
-        if ('native___init__' not in dir(tensorvar_type)):
+        # TODO: This is added because of the following contradiction: instanciate x = FloatTensor(...)
+        # and ask x.__module__, you'll get `sy.core.frameworks.torch.tensor.FloatTensor`
+        # but now ask for dir(sy.core.frameworks.torch.tensor) you'll find no FloatTensor attribute
+        # and x.float() will raise an exception because of this.
+        # Why is x.__module__ == 'sy.core...'? How can we do this with elegance?
+        if tensorvar_type.__module__ != sy._SyftTensor.__module__:
+            setattr(sy.core.frameworks.torch.tensor, tensorvar_type.__name__, tensorvar_type)
+
+
+        if 'native___init__' not in dir(tensorvar_type):
             tensorvar_type.native___init__ = tensorvar_type.__init__
 
         def new___init__(cls, *args, **kwargs):
 
-            if('owner' in kwargs and kwargs['owner'] is not None):
+            if 'owner' in kwargs and kwargs['owner'] is not None:
                 owner = kwargs['owner']
             else:
                 owner = hook_self.local_worker
 
-            if('id' in kwargs):
+            if 'id' in kwargs:
                 id = kwargs['id']
             else:
                 id = None
-
 
             if register_child_instead:
                 cls.native___init__()
@@ -115,7 +123,7 @@ class TorchHook(object):
         @property
         def child(self):
             try:
-                if (hasattr(self, '_child') and self._child is not None):
+                if hasattr(self, '_child') and self._child is not None:
                     return self._child
                 else:
                     self._child = _LocalTensor(child=self,
@@ -132,8 +140,8 @@ class TorchHook(object):
                 # torch.autograd.Variable
 
                 self._child = _LocalTensor(child=self,
-                                            parent=self,
-                                            torch_type='syft.'+type(self).__name__)
+                                           parent=self,
+                                           torch_type='syft.'+type(self).__name__)
                 return self._child
 
 
@@ -192,7 +200,7 @@ class TorchHook(object):
                 is_service_func = False
             is_old = re.match('native*', attr) is not None
 
-            if ((is_desc or (is_func and not is_service_func)) and not is_base and not is_old):
+            if (is_desc or (is_func and not is_service_func)) and not is_base and not is_old:
                 to_overload.append(attr)
 
         return to_overload
@@ -213,8 +221,6 @@ class TorchHook(object):
 
         for attr in self.to_auto_overload[tensor_type]:
 
-            lit = getattr(tensor_type, attr)
-            passer = utils.pass_method_args(lit)
             new_attr = self._get_overloaded_method(attr)
 
             # if we haven't already overloaded this method
@@ -255,7 +261,7 @@ class TorchHook(object):
 
         for attr in dir(parent_syft_obj):
             if attr not in exclude:
-                if(attr in dir(tensor_type) and "native_"+str(attr) not in dir(tensor_type)):
+                if attr in dir(tensor_type) and "native_"+str(attr) not in dir(tensor_type):
                     setattr(tensor_type, "native_"+str(attr), getattr(tensor_type, attr))
                 setattr(tensor_type, attr, getattr(parent_syft_obj, attr))
 
@@ -265,8 +271,6 @@ class TorchHook(object):
         # on self.child
         for attr in self.to_auto_overload[tensor_type]:
 
-            lit = getattr(tensor_type, attr)
-            passer = utils.pass_method_args(lit)
             new_attr = self._get_overloaded_method(attr)
 
             # if we haven't already overloaded this method
@@ -279,8 +283,6 @@ class TorchHook(object):
 
         for attr in self.to_auto_overload[tensor_type]:
 
-            lit = getattr(tensor_type, attr)
-            passer = utils.pass_method_args(lit)
             new_attr = self._get_overloaded_method(attr)
 
             # if we haven't already overloaded this method
@@ -392,9 +394,7 @@ class TorchHook(object):
         utils.assert_has_only_torch_tensorvars(response)
 
         # Register results
-        owner.register(response.child)
-        if isinstance(response, sy.Variable):
-            owner.register(response.data.child)
+        owner.register(response)
 
         return response
 
