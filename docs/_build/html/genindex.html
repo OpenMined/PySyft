@@ -14,6 +14,8 @@
 
   
   
+    <link rel="shortcut icon" href="_static/logo.png"/>
+  
   
   
 
@@ -25,9 +27,9 @@
 
   
 
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/PySyft_docs.css" type="text/css" />
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
 
@@ -51,6 +53,9 @@
             <a href="index.html" class="icon icon-home"> PySyft
           
 
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -243,6 +248,8 @@
         <li><a href="_modules/syft.core.workers.html#syft.core.workers.BaseWorker.compile_result">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
+      <li><a href="_modules/syft.core.html#syft.core.utils.PythonJSONDecoder.custom_obj_hook">custom_obj_hook() (syft.core.utils.PythonJSONDecoder method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -264,7 +271,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.encode">encode() (in module syft.mpc.spdz)</a>
+
+      <ul>
+        <li><a href="_modules/syft.core.html#syft.core.utils.PythonEncoder.encode">(syft.core.utils.PythonEncoder method)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -417,14 +428,14 @@
         <li><a href="_modules/syft.core.workers.html#syft.core.workers.BaseWorker.process_command">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.process_message_type">process_message_type() (syft.core.workers.base.BaseWorker method)</a>
 
       <ul>
         <li><a href="_modules/syft.core.workers.html#syft.core.workers.BaseWorker.process_message_type">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.process_response">process_response() (syft.core.workers.base.BaseWorker method)</a>
 
       <ul>
@@ -432,6 +443,12 @@
 </li>
       </ul></li>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.public_add">public_add() (in module syft.mpc.spdz)</a>
+</li>
+      <li><a href="_modules/syft.core.html#syft.core.utils.PythonEncoder.python_encode">python_encode() (syft.core.utils.PythonEncoder method)</a>
+</li>
+      <li><a href="_modules/syft.core.html#syft.core.utils.PythonEncoder">PythonEncoder (class in syft.core.utils)</a>
+</li>
+      <li><a href="_modules/syft.core.html#syft.core.utils.PythonJSONDecoder">PythonJSONDecoder (class in syft.core.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -504,6 +521,8 @@
       <ul>
         <li><a href="_modules/syft.core.workers.html#syft.core.workers.BaseWorker.send_msg">(syft.core.workers.BaseWorker method)</a>
 </li>
+        <li><a href="_modules/syft.core.workers.html#syft.core.workers.WebSocketWorker.send_msg">(syft.core.workers.WebSocketWorker method)</a>
+</li>
       </ul></li>
       <li><a href="_modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.send_obj">send_obj() (syft.core.workers.base.BaseWorker method)</a>
 
@@ -515,6 +534,14 @@
 
       <ul>
         <li><a href="_modules/syft.core.workers.html#syft.core.workers.BaseWorker.send_torch_command">(syft.core.workers.BaseWorker method)</a>
+</li>
+      </ul></li>
+      <li><a href="_modules/syft.core.hooks.torch.html#syft.core.hooks.torch.hook.TorchHook.set_hooks">set_hooks() (syft.core.hooks.torch.hook.TorchHook method)</a>
+
+      <ul>
+        <li><a href="_modules/syft.core.hooks.html#syft.core.hooks.TorchHook.set_hooks">(syft.core.hooks.TorchHook method)</a>
+</li>
+        <li><a href="_modules/syft.core.hooks.torch.html#syft.core.hooks.torch.TorchHook.set_hooks">(syft.core.hooks.torch.TorchHook method)</a>
 </li>
       </ul></li>
       <li><a href="_modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.set_obj">set_obj() (syft.core.workers.base.BaseWorker method)</a>
@@ -549,12 +576,12 @@
       </ul></li>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.spdz_add">spdz_add() (in module syft.mpc.spdz)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.spdz_matmul">spdz_matmul() (in module syft.mpc.spdz)</a>
 </li>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.spdz_mul">spdz_mul() (in module syft.mpc.spdz)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.spdz_neg">spdz_neg() (in module syft.mpc.spdz)</a>
 </li>
       <li><a href="_modules/syft.mpc.html#syft.mpc.spdz.spdz_sigmoid">spdz_sigmoid() (in module syft.mpc.spdz)</a>
@@ -659,12 +686,16 @@
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_modules/syft.core.workers.html#syft.core.workers.WebSocketWorker">WebSocketWorker (class in syft.core.workers)</a>
+</li>
       <li><a href="_modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.whoami">whoami() (syft.core.workers.base.BaseWorker method)</a>
 
       <ul>
         <li><a href="_modules/syft.core.workers.html#syft.core.workers.BaseWorker.whoami">(syft.core.workers.BaseWorker method)</a>
 </li>
         <li><a href="_modules/syft.core.workers.html#syft.core.workers.SocketWorker.whoami">(syft.core.workers.SocketWorker method)</a>
+</li>
+        <li><a href="_modules/syft.core.workers.html#syft.core.workers.WebSocketWorker.whoami">(syft.core.workers.WebSocketWorker method)</a>
 </li>
         <li><a href="_modules/syft.core.workers.html#syft.core.workers.socket.SocketWorker.whoami">(syft.core.workers.socket.SocketWorker method)</a>
 </li>
@@ -717,14 +748,11 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {

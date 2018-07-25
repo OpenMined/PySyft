@@ -13,6 +13,8 @@
 
   
   
+    <link rel="shortcut icon" href="../_static/logo.png"/>
+  
   
   
 
@@ -24,9 +26,9 @@
 
   
 
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
 
@@ -50,6 +52,9 @@
             <a href="../index.html" class="icon icon-home"> PySyft
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -159,7 +164,7 @@
 <dl class="class">
 <dt id="syft.mpc.interface.base_interface.BaseInterface">
 <em class="property">class </em><code class="descclassname">syft.mpc.interface.base_interface.</code><code class="descname">BaseInterface</code><span class="sig-paren">(</span><em>party</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.base_interface.BaseInterface" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <dl class="method">
 <dt id="syft.mpc.interface.base_interface.BaseInterface.get_party">
 <code class="descname">get_party</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.base_interface.BaseInterface.get_party" title="Permalink to this definition">¶</a></dt>
@@ -183,7 +188,7 @@
 <dl class="class">
 <dt id="syft.mpc.interface.distributed_interface.DistributedInterface">
 <em class="property">class </em><code class="descclassname">syft.mpc.interface.distributed_interface.</code><code class="descname">DistributedInterface</code><span class="sig-paren">(</span><em>party</em>, <em>master_addr='127.0.0.1'</em>, <em>master_port='29500'</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.distributed_interface.DistributedInterface" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="method">
 <dt id="syft.mpc.interface.distributed_interface.DistributedInterface.get_party">
 <code class="descname">get_party</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.distributed_interface.DistributedInterface.get_party" title="Permalink to this definition">¶</a></dt>
@@ -207,7 +212,7 @@
 <dl class="class">
 <dt id="syft.mpc.interface.grid_client_interface.GridClientInterface">
 <em class="property">class </em><code class="descclassname">syft.mpc.interface.grid_client_interface.</code><code class="descname">GridClientInterface</code><span class="sig-paren">(</span><em>party</em>, <em>grid_client</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_client_interface.GridClientInterface" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#syft.mpc.interface.base_interface.BaseInterface" title="syft.mpc.interface.base_interface.BaseInterface"><code class="xref py py-class docutils literal"><span class="pre">syft.mpc.interface.base_interface.BaseInterface</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#syft.mpc.interface.base_interface.BaseInterface" title="syft.mpc.interface.base_interface.BaseInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">syft.mpc.interface.base_interface.BaseInterface</span></code></a></p>
 <dl class="method">
 <dt id="syft.mpc.interface.grid_client_interface.GridClientInterface.recv">
 <code class="descname">recv</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_client_interface.GridClientInterface.recv" title="Permalink to this definition">¶</a></dt>
@@ -226,7 +231,7 @@
 <dl class="class">
 <dt id="syft.mpc.interface.grid_worker_interface.GridWorkerInterface">
 <em class="property">class </em><code class="descclassname">syft.mpc.interface.grid_worker_interface.</code><code class="descname">GridWorkerInterface</code><span class="sig-paren">(</span><em>party</em>, <em>grid_worker</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_worker_interface.GridWorkerInterface" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#syft.mpc.interface.base_interface.BaseInterface" title="syft.mpc.interface.base_interface.BaseInterface"><code class="xref py py-class docutils literal"><span class="pre">syft.mpc.interface.base_interface.BaseInterface</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#syft.mpc.interface.base_interface.BaseInterface" title="syft.mpc.interface.base_interface.BaseInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">syft.mpc.interface.base_interface.BaseInterface</span></code></a></p>
 <dl class="method">
 <dt id="syft.mpc.interface.grid_worker_interface.GridWorkerInterface.recv">
 <code class="descname">recv</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_worker_interface.GridWorkerInterface.recv" title="Permalink to this definition">¶</a></dt>
@@ -289,14 +294,11 @@
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {

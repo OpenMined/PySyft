@@ -1,0 +1,18 @@
+
+.wy-side-nav-search {
+    background-color: black;
+}
+
+a{color:#aba4a4;}
+a:visited{color:#aba4a4;}
+
+
+.reference internal{color:black;font-weight: bold;}
+
+.wy-menu a {
+    color: #b3b3b3;
+}
+
+.wy-menu a:hover {
+    color: #b3b3b3;
+}

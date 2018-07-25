@@ -13,6 +13,8 @@
 
   
   
+    <link rel="shortcut icon" href="../_static/logo.png"/>
+  
   
   
 
@@ -24,9 +26,9 @@
 
   
 
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
 
@@ -50,6 +52,9 @@
             <a href="../index.html" class="icon icon-home"> PySyft
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -159,13 +164,13 @@
 <dl class="class">
 <dt id="syft.core.hooks.torch.guard.TorchGuard">
 <em class="property">class </em><code class="descclassname">syft.core.hooks.torch.guard.</code><code class="descname">TorchGuard</code><a class="headerlink" href="#syft.core.hooks.torch.guard.TorchGuard" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="method">
 <dt id="syft.core.hooks.torch.guard.TorchGuard.tensor_contents_guard">
 <code class="descname">tensor_contents_guard</code><span class="sig-paren">(</span><em>contents</em><span class="sig-paren">)</span> &#x2192; contents<a class="headerlink" href="#syft.core.hooks.torch.guard.TorchGuard.tensor_contents_guard" title="Permalink to this definition">¶</a></dt>
-<dd><p>TODO: check to make sure the incoming list isn&#8217;t dangerous to use for
+<dd><p>TODO: check to make sure the incoming list isn't dangerous to use for
 constructing a tensor (likely non-trivial). Accepts the list of JSON objects
-and returns the list of JSON ojects. Should throw and exception if there&#8217;s a
+and returns the list of JSON ojects. Should throw and exception if there's a
 security concern.</p>
 </dd></dl>
 
@@ -186,7 +191,7 @@ type which would be a security concern.</p>
 <ul class="simple">
 <li><strong>torch_type_str (string)</strong> A string representing the type of object that is
 to be returned.</li>
-<li><strong>out (a torch type)</strong> The type the string refersto (if it&#8217;s present in the
+<li><strong>out (a torch type)</strong> The type the string refersto (if it's present in the
 acceptible list self.map_torch_type)</li>
 </ul>
 <table class="docutils field-list" frame="void" rules="none">
@@ -197,7 +202,7 @@ acceptible list self.map_torch_type)</li>
 </tr>
 </tbody>
 </table>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
 <span class="go">Hooking into Torch...</span>
 <span class="go">Overloading Complete.</span>
@@ -222,7 +227,7 @@ acceptible list self.map_torch_type)</li>
 <dl class="class">
 <dt id="syft.core.hooks.torch.hook.TorchHook">
 <em class="property">class </em><code class="descclassname">syft.core.hooks.torch.hook.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.torch.hook.TorchHook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="syft.core.hooks.html#syft.core.hooks.base.BaseHook" title="syft.core.hooks.base.BaseHook"><code class="xref py py-class docutils literal"><span class="pre">syft.core.hooks.base.BaseHook</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="syft.core.hooks.html#syft.core.hooks.base.BaseHook" title="syft.core.hooks.base.BaseHook"><code class="xref py py-class docutils literal notranslate"><span class="pre">syft.core.hooks.base.BaseHook</span></code></a></p>
 <p>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors -
 <strong>Currently compatible with PyTorch 0.3.1</strong></p>
 <p>The purpose of this class is to:</p>
@@ -236,25 +241,25 @@ that are called on tensors controlled by the local worker.</li>
 </div></blockquote>
 <p>This class is typically the first thing you will initialize when
 using PySyft with PyTorch because it is responsible for augmenting
-PyTorch with PySyft&#8217;s added functionality (such as remote execution).</p>
+PyTorch with PySyft's added functionality (such as remote execution).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>local_worker (</strong><a class="reference internal" href="syft.core.workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
+<li><strong>local_worker (</strong><a class="reference internal" href="syft.core.workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal notranslate"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
 you can optionally provide a local worker as a parameter which
 TorchHook will assume to be the worker owned by the local machine.
 If you leave it empty, TorchClient will automatically initialize
-a <a class="reference internal" href="syft.core.workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you&#8217;re
+a <a class="reference internal" href="syft.core.workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal notranslate"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you're
 looking to do local experimentation/development.</li>
 <li><strong>is_client (bool, optional)</strong> whether or not the TorchHook is
 being initialized as an end-user client. This can impact whether
 or not variables are deleted when they fall out of scope. If you set
 this incorrectly on a end user client, Tensors and Variables will
 never be deleted. If you set this incorrectly on a remote machine
-(not a client), tensors will not get saved. It&#8217;s really only
-important if you&#8217;re not initializing the local worker yourself. (Default: True)</li>
+(not a client), tensors will not get saved. It's really only
+important if you're not initializing the local worker yourself. (Default: True)</li>
 <li><strong>verbose (bool, optional)</strong> whether or not to print operations
 as they occur. (Defalt: True)</li>
 </ul>
@@ -264,7 +269,7 @@ as they occur. (Defalt: True)</li>
 </tr>
 </tbody>
 </table>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">torch</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
 <span class="go">Hooking into Torch...</span>
@@ -279,6 +284,12 @@ as they occur. (Defalt: True)</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
+<dl class="method">
+<dt id="syft.core.hooks.torch.hook.TorchHook.set_hooks">
+<code class="descname">set_hooks</code><span class="sig-paren">(</span><em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.torch.hook.TorchHook.set_hooks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload functions in torch with our own versions to enable routing</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -287,7 +298,7 @@ as they occur. (Defalt: True)</li>
 <dl class="class">
 <dt id="syft.core.hooks.torch.TorchHook">
 <em class="property">class </em><code class="descclassname">syft.core.hooks.torch.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.torch.TorchHook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="syft.core.hooks.html#syft.core.hooks.base.BaseHook" title="syft.core.hooks.base.BaseHook"><code class="xref py py-class docutils literal"><span class="pre">syft.core.hooks.base.BaseHook</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="syft.core.hooks.html#syft.core.hooks.base.BaseHook" title="syft.core.hooks.base.BaseHook"><code class="xref py py-class docutils literal notranslate"><span class="pre">syft.core.hooks.base.BaseHook</span></code></a></p>
 <p>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors -
 <strong>Currently compatible with PyTorch 0.3.1</strong></p>
 <p>The purpose of this class is to:</p>
@@ -301,25 +312,25 @@ that are called on tensors controlled by the local worker.</li>
 </div></blockquote>
 <p>This class is typically the first thing you will initialize when
 using PySyft with PyTorch because it is responsible for augmenting
-PyTorch with PySyft&#8217;s added functionality (such as remote execution).</p>
+PyTorch with PySyft's added functionality (such as remote execution).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>local_worker (</strong><a class="reference internal" href="syft.core.workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
+<li><strong>local_worker (</strong><a class="reference internal" href="syft.core.workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal notranslate"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
 you can optionally provide a local worker as a parameter which
 TorchHook will assume to be the worker owned by the local machine.
 If you leave it empty, TorchClient will automatically initialize
-a <a class="reference internal" href="syft.core.workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you&#8217;re
+a <a class="reference internal" href="syft.core.workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal notranslate"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you're
 looking to do local experimentation/development.</li>
 <li><strong>is_client (bool, optional)</strong> whether or not the TorchHook is
 being initialized as an end-user client. This can impact whether
 or not variables are deleted when they fall out of scope. If you set
 this incorrectly on a end user client, Tensors and Variables will
 never be deleted. If you set this incorrectly on a remote machine
-(not a client), tensors will not get saved. It&#8217;s really only
-important if you&#8217;re not initializing the local worker yourself. (Default: True)</li>
+(not a client), tensors will not get saved. It's really only
+important if you're not initializing the local worker yourself. (Default: True)</li>
 <li><strong>verbose (bool, optional)</strong> whether or not to print operations
 as they occur. (Defalt: True)</li>
 </ul>
@@ -329,7 +340,7 @@ as they occur. (Defalt: True)</li>
 </tr>
 </tbody>
 </table>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">torch</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
 <span class="go">Hooking into Torch...</span>
@@ -344,6 +355,12 @@ as they occur. (Defalt: True)</li>
 <span class="go">[torch.FloatTensor of size 5]</span>
 </pre></div>
 </div>
+<dl class="method">
+<dt id="syft.core.hooks.torch.TorchHook.set_hooks">
+<code class="descname">set_hooks</code><span class="sig-paren">(</span><em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.hooks.torch.TorchHook.set_hooks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload functions in torch with our own versions to enable routing</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -393,14 +410,11 @@ as they occur. (Defalt: True)</li>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {
