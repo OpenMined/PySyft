@@ -106,17 +106,20 @@ class _SyftTensor(object):
             logging.warning('The tensor has not torch_type. Is it well formed?')
             torch_type = "syft." + type(self.find_torch_object_in_family_tree(parent)).__name__
 
-        ptr = _PointerTensor(child=None,
-                             parent=parent,
-                             id = ptr_id,
-                             torch_type=torch_type,
-                             location=location,
-                             id_at_location=id_at_location,
-                             owner=owner,
-                             skip_register=(not register))
-
-        if not register:
-           ptr.owner.rm_obj(ptr.id)
+        previous_pointer = owner.get_pointer_to(location, id_at_location)
+        if previous_pointer is None:
+            ptr = _PointerTensor(child=None,
+                                 parent=parent,
+                                 id=ptr_id,
+                                 torch_type=torch_type,
+                                 location=location,
+                                 id_at_location=id_at_location,
+                                 owner=owner,
+                                 skip_register=(not register))
+            if not register:
+                ptr.owner.rm_obj(ptr.id)
+        else:
+            ptr = previous_pointer
 
         return ptr
 
@@ -188,14 +191,19 @@ class _LocalTensor(_SyftTensor):
                                        skip_register=True
                                        )
         else:  # We point at the info which generally we can't really have
-            syft_obj = sy._PointerTensor(child=None,
-                                         parent=None,
-                                         torch_type=msg_obj['torch_type'],
-                                         location=msg_obj['owner'],
-                                         id_at_location=msg_obj['id'],
-                                         owner=worker,
-                                         id=None,
-                                         skip_register=True)
+            # We make sure we are not creating a duplicate pointer
+            previous_pointer = worker.get_pointer_to(msg_obj['owner'], msg_obj['id'])
+            if previous_pointer is None:
+                syft_obj = sy._PointerTensor(child=None,
+                                             parent=None,
+                                             torch_type=msg_obj['torch_type'],
+                                             location=msg_obj['owner'],
+                                             id_at_location=msg_obj['id'],
+                                             owner=worker,
+                                             id=None,
+                                             skip_register=True)
+            else:
+                syft_obj = previous_pointer
         return syft_obj
 
     def get(self, parent, deregister_ptr=None):
@@ -242,24 +250,32 @@ class _PointerTensor(_SyftTensor):
         else:
             if acquire:  # If there is data transmission, data being here Pointer
                 # We acquire the tensor pointer
-                syft_obj = sy._PointerTensor(child=None,
-                                             parent=None,
-                                             torch_type=msg_obj['torch_type'],
-                                             location=msg_obj['location'],
-                                             id_at_location=msg_obj['id_at_location'],
-                                             owner=worker,
-                                             id=msg_obj['id'],
-                                             skip_register=True)
+                previous_pointer = worker.get_pointer_to(msg_obj['owner'], msg_obj['id'])
+                if previous_pointer is None:
+                    syft_obj = sy._PointerTensor(child=None,
+                                                 parent=None,
+                                                 torch_type=msg_obj['torch_type'],
+                                                 location=msg_obj['location'],
+                                                 id_at_location=msg_obj['id_at_location'],
+                                                 owner=worker,
+                                                 id=msg_obj['id'],
+                                                 skip_register=True)
+                else:
+                    syft_obj = previous_pointer
             else:  # We point at the Pointer
                 owner = worker.get_worker(msg_obj['owner'])
-                syft_obj = sy._PointerTensor(child=None,
-                                             parent=None,
-                                             torch_type=msg_obj['torch_type'],
-                                             location=msg_obj['owner'],
-                                             id_at_location=msg_obj['id'],
-                                             owner=worker,
-                                             id=None,
-                                             skip_register=True)
+                previous_pointer = worker.get_pointer_to(msg_obj['owner'], msg_obj['id'])
+                if previous_pointer is None:
+                    syft_obj = sy._PointerTensor(child=None,
+                                                 parent=None,
+                                                 torch_type=msg_obj['torch_type'],
+                                                 location=msg_obj['owner'],
+                                                 id_at_location=msg_obj['id'],
+                                                 owner=worker,
+                                                 id=None,
+                                                 skip_register=True)
+                else:
+                    syft_obj = previous_pointer
         return syft_obj
 
     def wrap(self): # TODO do it in a smart (and dual?) way
@@ -398,7 +414,7 @@ class _TorchObject(object):
             worker = self.owner.get_worker(worker)
 
         if new_id is None:
-            new_id = random.randint(0,9999999999)
+            new_id = random.randint(0,10e10)
 
         pointer = self.child.find_pointer()
 

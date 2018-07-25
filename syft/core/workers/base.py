@@ -691,10 +691,17 @@ class BaseWorker(ABC):
         * **recipient (** :class:`VirtualWorker` **)** the worker object to send the message to.
 
         """
+
         object.child.id = new_id
+        if self.get_pointer_to(recipient, new_id) is not None:
+            raise MemoryError('You already point at ', recipient, ':', new_id)
         if utils.is_variable(object.child.torch_type):
             if new_data_id is None:
                 raise AttributeError('Please provide a new_data_id arg, to be able to point to Var.data')
+            if self.get_pointer_to(recipient, new_data_id) is not None:
+                raise MemoryError('You already point at ', recipient, ':', new_id)
+            assert new_id != new_data_id, "You can't have the same id vor the variable and its data."
+
             object.data.child.id = new_data_id
         object = utils.encode(object, retrieve_pointers=False, private_local=False)
 
@@ -762,6 +769,18 @@ class BaseWorker(ABC):
         # in self._objects)
 
         return object
+
+    def get_pointer_to(self, location, id_at_location):
+        # TODO: instead of looping on the objects, with could keep a dict with keys = owners and subkeys id@loc
+        # Will be crucial when having lots of variables, but means it has to be updated
+        if not isinstance(location, (int, str)):
+            location = location.id
+
+        for key, syft_tensor in self._objects.items():
+            if isinstance(syft_tensor, sy._PointerTensor):
+                if syft_tensor.location.id == location and syft_tensor.id_at_location == id_at_location:
+                    return syft_tensor
+
 
     @classmethod
     def _command_guard(cls, command, allowed):
