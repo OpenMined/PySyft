@@ -14,6 +14,16 @@ Join the movement on [Slack](http://slack.openmined.org/).
   > Note: Run Server before Client
 - [Federated Learning](https://colab.research.google.com/drive/1F3ALlA3ogfeeVXuwQwVoX4PimzTDJhPy#scrollTo=PTCvX6H9JDCt) - This notebook demonstrates the model training over distributed data (data belonging to multiple owners).
 
+## Docker
+```bash
+git clone https://github.com/OpenMined/PySyft.git
+cd PySyft
+scripts/run_docker.sh
+```
+> Image size: 769.4MB
+
+The container mount the examples folder on a volume so every change on the notebooks is persistent. 
+Furthermore the container is deleted when it is stopped, in a way to facilitate development. You just have to change PySyft code, and run the run_docker.sh script to observe changes you've made on notebooks. 
 ## Installation
 > PySyft supports Python >= 3.6 and PyTorch 0.3.1
 
