@@ -585,7 +585,8 @@ class _TorchVariable(_TorchObject):
             'type': str(self.__class__).split("'")[1],
             'torch_type': 'syft.' + type(self).__name__,
             'data': data,
-            'child': self.child.ser(private)
+            'child': self.child.ser(private),
+            'requires_grad': self.requires_grad
         }
         if as_dict:
             return {key: tensor_msg}
@@ -603,7 +604,7 @@ class _TorchVariable(_TorchObject):
             worker.hook.local_worker.de_register(var_data)
         # TODO: Find a smart way to skip register and not leaking the info to the local worker
         # This would imply overload differently the __init__ to provide an owner for the child attr.
-        variable = sy.Variable(var_data)
+        variable = sy.Variable(var_data, requires_grad=msg_obj['requires_grad'])
         worker.hook.local_worker.de_register(variable)
 
         variable.child = var_syft_obj

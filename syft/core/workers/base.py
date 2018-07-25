@@ -540,6 +540,8 @@ class BaseWorker(ABC):
         elif isinstance(result, (tuple, set, bytearray, range)):
             for res in result:
                 self.register(res)
+        elif result is None:
+            "do nothing"
         else:
             raise TypeError('The type', type(result), 'is not supported at the moment')
         return
@@ -655,11 +657,13 @@ class BaseWorker(ABC):
             # TODO we still have a little issue with new tensor being registered to local worker
             results = result if isinstance(result, tuple) else (result, )
             for res in results:
-                self.hook.local_worker.de_register(res.child)
-                res.child.owner = self
-                if utils.is_variable(res):
-                    self.hook.local_worker.de_register(res.data.child)
-                    res.data.child.owner = self
+                # occasionally results are None, like when calling .backward()
+                if(res is not None):
+                    self.hook.local_worker.de_register(res.child)
+                    res.child.owner = self
+                    if utils.is_variable(res):
+                        self.hook.local_worker.de_register(res.data.child)
+                        res.data.child.owner = self
             # end of to do
 
         else:  # The call will be forwarded to a remote

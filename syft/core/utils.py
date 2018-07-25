@@ -198,6 +198,8 @@ class PythonJSONDecoder:
             return dct
         if isinstance(dct, (list, )):
             return [self.python_decode(o) for o in dct]
+        if dct is None:
+            return None
         if not isinstance(dct, dict):
             raise TypeError('Type not handled', dct)
 
@@ -288,6 +290,8 @@ def assert_has_only_torch_tensorvars(obj):
         rep = [assert_has_only_torch_tensorvars(o) for o in obj.values()]
         return all(rep)
     elif isinstance(obj, slice):
+        return True
+    elif obj is None:
         return True
     else:
         logging.warning('Obj is not tensorvar', obj)
