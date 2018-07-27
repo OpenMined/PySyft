@@ -363,50 +363,22 @@ class TorchHook(object):
         utils.assert_has_only_torch_tensorvars((args, kwargs))
         has_self = self is not None
 
-        command, locations, owners = utils.compile_command(attr,
-                                                           args,
-                                                           kwargs,
-                                                           has_self=has_self,
-                                                           self=self)
+        raw_command = {
+            'command': attr,
+            'has_self': has_self,
+            'args': args,
+            'kwargs': kwargs
+        }
+        if has_self:
+            raw_command['self'] = self
 
-        # If there is no pointer, then the call is local
-        if len(locations) == 0:
-            # This is only intended for a local call (not a remote local call), so owner=local_worker
-            if has_self:
-                # TODO Guard
-                if hasattr(self, "native_" + attr):
-                    command = getattr(self, "native_" + attr)
-                else:
-                    command = getattr(self.child, "native_" + attr)
-            else:
-                elems = attr.split('.')
-                elems[-1] = 'native_' + elems[-1]
-                native_func_name = '.'.join(elems)
-                command = eval(native_func_name)  # TODO Guard
-            response = command(*args, **kwargs)
-            return response
-        else:
-            location = locations[0]
-            owner = owners[0]
+        next_child_type, _ = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=False)
 
-        # Store the pointers id and wrapper registered by the owner before the call
-        pointer_wrappers_id = {id: syft_tensor.parent for id, syft_tensor in owner._objects.items() if isinstance(syft_tensor, sy._PointerTensor)}
+        # Note: because we have pb of registration of tensors with the right worker, and because having
+        # Virtual workers creates even more ambiguity, we specify the worker performing the operation
+        response = next_child_type.handle_call(raw_command, owner=hook_self.local_worker)
 
-        # Else we send the command
-        response = owner.send_torch_command(recipient=location, message=command)
-
-        utils.assert_has_only_torch_tensorvars(response)
-
-        # Response can always be a tuple
-        responses = response if isinstance(response, tuple) else (response, )
-        returns = list(responses)
-        for i, response in enumerate(responses):
-            # If the response wraps an existing pointer, return instead the old wrapper
-            if response.child.id in pointer_wrappers_id:
-                returns[i] = pointer_wrappers_id[response.child.id]
-            else:  # Register results
-                owner.register(response)
-        return tuple(returns) if len(returns) > 1 else returns[0]
+        return response
 
 
 # TODO: put this in an appropriate place

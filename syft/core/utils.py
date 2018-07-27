@@ -10,7 +10,7 @@ import syft
 import syft as sy
 
 
-def encode(message, retrieve_pointers=None, private_local=True):
+def encode(message, retrieve_pointers=False, retrieve_next_child=False, private_local=True):
     """
     Help function to call easy the PythonEncoder
     :param message:
@@ -23,6 +23,7 @@ def encode(message, retrieve_pointers=None, private_local=True):
     encoder = PythonEncoder()
     response = encoder.encode(message,
                               retrieve_pointers=retrieve_pointers,
+                              retrieve_next_child=retrieve_next_child,
                               private_local=private_local)
     return response
 
@@ -33,31 +34,35 @@ class PythonEncoder:
         In particular, (hooked) Torch objects are replaced by their id.
         Note that a python object is returned, not JSON.
     """
-    def __init__(self, retrieve_pointers=False):
-        self.retrieve_pointers = retrieve_pointers
+    def __init__(self):
+        self.retrieve_pointers = False
+        self.retrieve_next_child = False
         self.found_pointers = []
+        self.found_next_child_types = []
         self.tensorvar_types = tuple(torch.tensorvar_types)
 
-    def encode(self, obj, retrieve_pointers=None, private_local=True):
+    def encode(self, obj, retrieve_pointers=False, retrieve_next_child=False, private_local=True):
         """
             Performs encoding, and retrieves if requested all the tensors and
             Variables found
         """
-        if retrieve_pointers is not None:
-            self.retrieve_pointers = retrieve_pointers
+        self.retrieve_pointers = retrieve_pointers
+        self.retrieve_next_child = retrieve_next_child
 
         serialized_obj = self.python_encode(obj, private_local)
 
         serialized_msg = {'obj': serialized_obj}
         # Give instruction to the decoder, should he acquire the tensor or register them
         if private_local:  # It's private, you can't access directly the data, so you suscribe to it with a pointer
-            serialized_msg['mode'] = 'suscribe'
+            serialized_msg['mode'] = 'subscribe'
         else:  # It's public, you can acquire the data directly
             serialized_msg['mode'] = 'acquire'
 
         response = [serialized_msg]
         if self.retrieve_pointers:
             response.append(self.found_pointers)
+        if self.retrieve_next_child:
+            response.append(self.found_next_child_types)
 
         if len(response) == 1:
             return response[0]
@@ -73,19 +78,12 @@ class PythonEncoder:
             tail_object = find_tail_of_chain(obj)
             if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
                 self.found_pointers.append(tail_object)
+            if self.retrieve_next_child:
+                self.found_next_child_types.append(type(obj.child))
             return obj.ser(private=private_local)
         # sy._SyftTensor (Pointer, Local) [Note: shouldn't be called on regular chain with end=tensorvar]
         elif is_syft_tensor(obj):
-            msg_obj = obj.ser(private=private_local)
-            if isinstance(obj, sy._PointerTensor):
-                if self.retrieve_pointers:
-                    self.found_pointers.append(obj)
-            # If is _LocalTensor
-            elif isinstance(obj, sy._LocalTensor):
-                pass
-            else:
-                raise TypeError('This SyftTensor ', type(obj), ' is not yet supported.')
-            return msg_obj
+            raise TypeError('Syft Tensors should always be wrapped with a Torch Tensor')
         # List
         elif isinstance(obj, list):
             return [self.python_encode(i, private_local) for i in obj]
@@ -242,6 +240,26 @@ def extract_type_and_obj(dct):
             raise TypeError('Key', key, 'is not recognized.')
 
 
+def prepare_child_command(command, replace_tensorvar_with_child=False):
+    if replace_tensorvar_with_child:
+        raise NotImplementedError('Dezo')
+    else:
+        next_command = command
+
+    _, next_child_types = encode(command, retrieve_next_child=True)
+
+    # Check that the next child type of all tensorvar is the sam
+    if len(next_child_types) == 0:
+        ref_child_type = sy._LocalTensor
+    else:
+        ref_child_type = next_child_types[0]
+        for next_child_type in next_child_types:
+            if next_child_type != ref_child_type:
+                raise NotImplementedError('All arguments should share the same child type.')
+
+    return ref_child_type, next_command
+
+
 def compile_command(attr, args, kwargs, has_self=False, self=None):
     command = {
         'command': attr,
@@ -298,6 +316,19 @@ def assert_has_only_torch_tensorvars(obj):
     else:
         logging.warning('Obj is not tensorvar', obj)
         assert False
+
+
+def get_syft_chain(obj):
+    """
+    Return the chain of syft object types
+    """
+    next_node = obj.child
+    syft_chain = []
+    while next_node is not None and not (is_tensor(next_node) or is_variable(next_node)):
+        syft_chain.append(type(next_node))
+        next_node = next_node.child
+
+    return syft_chain
 
 
 def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=None, end_chain=None):
