@@ -50,6 +50,14 @@ class _SyftTensor(object):
 
         return response
 
+    def move_wrapper(self, wrapper, result):
+
+        wrapper_child = wrapper.child
+        wrapper.child = result
+        wrapper_child.parent = result
+        result.parent = wrapper
+        result.child = wrapper_child
+
     def copy_params(self, other):
         self.id = other.id
 
@@ -224,7 +232,7 @@ class _LocalTensor(_SyftTensor):
         # custom stuff we can add
 
         # calling the native PyTorch functionality at the end
-        return self.child.add(other)
+        return _LocalTensor(self.child.add(other))
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
@@ -288,9 +296,17 @@ class _PlusIsMinusTensor(_SyftTensor):
 
         return response
 
-    def new_add(self, x, y):
+    def add(self, other):
 
-        return x + 2*y
+        result = self.child.add(other)
+
+        assert type(result) == torch.FloatTensor
+
+        result_syft_tensor = _PlusIsMinusTensor()
+
+        self.move_wrapper(wrapper=result, result=result_syft_tensor)
+
+        return result_syft_tensor
 
 class _PointerTensor(_SyftTensor):
 
