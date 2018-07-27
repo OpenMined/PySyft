@@ -288,6 +288,7 @@ class TorchHook(object):
 
             # if we haven't already overloaded this method
             if attr not in dir(_SyftTensor) or getattr(_SyftTensor, attr) is None:
+                # call child method
                 setattr(_SyftTensor, attr, new_attr)
 
     def _hook_PointerTensor(self, tensor_type):

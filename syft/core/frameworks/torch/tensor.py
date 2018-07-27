@@ -50,6 +50,7 @@ class _SyftTensor(object):
 
         return response
 
+    @staticmethod
     def move_wrapper(self, wrapper, result):
 
         wrapper_child = wrapper.child
@@ -277,8 +278,23 @@ class _PlusIsMinusTensor(_SyftTensor):
         args = command['args']
         kwargs = command['kwargs']
 
-        if attr == 'add':
-            command['command'] = 'minus'
+        if command['has_self']:
+            self = command['self']
+
+            result = getattr(args['self'], attr)(args, kwargs)
+
+            # if function is inline
+            if(attr[-1] == "_"):
+                return result
+
+            result_syft_tensor = _PlusIsMinusTensor()
+            _SyftTensor.move_wrapper(wrapper=result, result=result_syft_tensor)
+            return result
+
+            # do fancy stuff here if you want to override EVERYTHING
+
+
+
 
         #  Get the next node type and update in command tensorvar with tensorvar.child
         next_child_type, next_command = utils.prepare_child_command(command, replace_tensorvar_with_child=True)
@@ -296,17 +312,17 @@ class _PlusIsMinusTensor(_SyftTensor):
 
         return response
 
-    def add(self, other):
-
-        result = self.child.add(other)
-
-        assert type(result) == torch.FloatTensor
-
-        result_syft_tensor = _PlusIsMinusTensor()
-
-        self.move_wrapper(wrapper=result, result=result_syft_tensor)
-
-        return result_syft_tensor
+    # def add(self, other):
+    #
+    #     result = self.child.add(other)
+    #
+    #     assert type(result) == torch.FloatTensor
+    #
+    #
+    #
+    #
+    #
+    #     return result_syft_tensor
 
 class _PointerTensor(_SyftTensor):
 
