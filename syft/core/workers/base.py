@@ -629,32 +629,26 @@ class BaseWorker(ABC):
         else:
             command = self._command_guard(command_msg['command'], torch.torch_modules)
 
-        _, locations, owners = utils.compile_command(command,
-                                                     args,
-                                                     kwargs,
-                                                     False)  # We don't care about has_self, we just want the pointers
-        # If the call is local (there is no pointers anymore)
-        if len(locations) == 0:
-            utils.assert_has_only_torch_tensorvars((args, kwargs))
 
-            if has_self:
-                _self = command_msg['self']
-                if hasattr(_self, "native_" + command):
-                    command = getattr(_self, "native_" + command)
-                else:
-                    command = getattr(_self.child, "native_" + command)
-            else:
-                elems = command.split('.')
-                elems[-1] = 'native_' + elems[-1]
-                native_func_name = '.'.join(elems)
-                command = eval(native_func_name)  # TODO Guard
+        # _-------
+        utils.assert_has_only_torch_tensorvars((args, kwargs))
 
-            result = command(*args, **kwargs)
+        raw_command = command_msg # TODO  self,?
 
+        next_child_type, _ = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=False)
+
+        # Note: because we have pb of registration of tensors with the right worker, and because having
+        # Virtual workers creates even more ambiguity, we specify the worker performing the operation
+        response = next_child_type.handle_call(raw_command, owner=self)
+
+        # --------
+         # If the call is local (there is no pointers anymore)
+
+            # ToDO: For LOCAL
             if isinstance(result, (int, float)):
                 result = sy.FloatTensor([result])
 
-            # TODO we still have a little issue with new tensor being registered to local worker
+            # TODO For LOCAL: we still have a little issue with new tensor being registered to local worker
             results = result if isinstance(result, tuple) else (result, )
             for res in results:
                 # occasionally results are None, like when calling .backward()
@@ -666,19 +660,9 @@ class BaseWorker(ABC):
                         res.data.child.owner = self
             # end of to do
 
-        else:  # The call will be forwarded to a remote
-            if has_self:
-                _self = command_msg['self']
-                if hasattr(_self, command):
-                    result = getattr(_self, command)(*args, **kwargs)
-                else:
-                    result = getattr(_self.child, command)(*args, **kwargs)
-            else:
-                command = eval('torch.{}'.format(command))
-                result = command(*args, **kwargs)
 
-        utils.assert_has_only_torch_tensorvars(result)
-        return result
+        utils.assert_has_only_torch_tensorvars(response) # TODO keep it ?
+        return response
 
     def send_obj(self, object, new_id, recipient, new_data_id=None):
         """send_obj(self, obj, new_id, recipient, new_data_id=None) -> obj

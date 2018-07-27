@@ -23,6 +23,33 @@ class _SyftTensor(object):
                 owner = self.child.owner.get_worker(owner)
             self.owner = owner
 
+    @staticmethod
+    def handle_call(command, sub_self=None):
+
+        # Do amazing stuff with the command
+
+        #  Get the next node type and update in command tensorvar with tensorvar.child
+        next_child_type, next_command = utils.prepare_child_command(command, replace_tensorvar_with_child=True)
+
+        # Forward the call to the next child
+        response = next_child_type.handle_call(next_command)
+
+        # If has self, we keep the same wrapper
+        if command['has_self']: # TODO: and is an inplace mthod
+            syft_node = command['self']
+        else:
+            syft_node = type(sub_self)() # TODO specify owner
+            # TODO: register
+
+        # Insert the new node just before the wrapper
+        syft_node.child = response.child
+        response.child.parent = syft_node
+        response.child = syft_node
+        syft_node.parent = response
+
+
+        return response
+
     def copy_params(self, other):
         self.id = other.id
 
@@ -152,6 +179,30 @@ class _LocalTensor(_SyftTensor):
     def __init__(self, child, parent, torch_type, owner=None, id=None, skip_register=False):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
 
+    @staticmethod
+    def handle_call(command):
+        # TODO: remove duplicate on base.py
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        # TODO find owner
+        if command['has_self']:
+            self = command['self']
+            # TODO Guard
+            if hasattr(self, "native_" + attr):
+                command = getattr(self, "native_" + attr)
+            else:
+                command = getattr(self.child, "native_" + attr)
+        else:
+            elems = attr.split('.')
+            elems[-1] = 'native_' + elems[-1]
+            native_func_name = '.'.join(elems)
+            command = eval(native_func_name)  # TODO Guard
+        response = command(*args, **kwargs)
+
+        # TODO : controled registration process
+        return response
+
     def ser(self, private, as_dict=True):
         data = {
             'owner': self.owner.id,
@@ -210,6 +261,37 @@ class _LocalTensor(_SyftTensor):
         raise TypeError("Cannot call .get() on a tensor you already have.")
 
 
+class _PlusIsMinusTensor(_SyftTensor):
+
+    @staticmethod
+    def handle_call(command):
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+
+        if attr == 'add':
+            command['command'] = 'minus'
+
+        #  Get the next node type and update in command tensorvar with tensorvar.child
+        next_child_type, next_command = utils.prepare_child_command(command, replace_tensorvar_with_child=True)
+
+        # Forward the call to the next child
+        response = next_child_type.handle_call(next_command)
+
+        syft_node = sy._LogTensor()
+
+        # Insert the new node just before the wrapper
+        syft_node.child = response.child
+        response.child.parent = syft_node
+        response.child = syft_node
+        syft_node.parent = response
+
+        return response
+
+    def new_add(self, x, y):
+
+        return x + 2*y
+
 class _PointerTensor(_SyftTensor):
 
     def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None, owner=None, skip_register=False):
@@ -225,6 +307,50 @@ class _PointerTensor(_SyftTensor):
         # sent over the wire
         if self.location == self.owner and not skip_register:
             logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
+
+    @staticmethod
+    def handle_call(command):
+        # TODO find owner
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        has_self = command['has_self']
+        self = command['self'] if has_self else None
+        if has_self: # and todo is in-place
+            wrapper = self
+
+        command, locations, owners = utils.compile_command(attr,
+                                                            args,
+                                                            kwargs,
+                                                            has_self=has_self,
+                                                            self=self)
+
+        location = locations[0]
+        owner = owners[0]
+
+        # TODO: use the wrapper
+
+        # Store the pointers id and wrapper registered by the owner before the call
+        pointer_wrappers_id = {id: syft_tensor.parent for id, syft_tensor in owner._objects.items() if
+                               isinstance(syft_tensor, sy._PointerTensor)}
+
+        # Else we send the command
+        response = owner.send_torch_command(recipient=location, message=command)
+
+        utils.assert_has_only_torch_tensorvars(response)
+
+        # Response can always be a tuple
+        responses = response if isinstance(response, tuple) else (response,)
+        returns = list(responses)
+        for i, response in enumerate(responses):
+            # If the response wraps an existing pointer, return instead the old wrapper
+            if response.child.id in pointer_wrappers_id:
+                returns[i] = pointer_wrappers_id[response.child.id]
+            else:  # Register results
+                owner.register(response)
+
+        return tuple(returns) if len(returns) > 1 else returns[0]
+
 
     def __str__(self):
         return "["+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) +  " loc:" + str(self.location.id) + " id@loc:"+str(self.id_at_location)+"]"
