@@ -358,28 +358,9 @@ class TorchHook(object):
 
     def _execute_call(hook_self, attr, self, *args, **kwargs):
         """
-        Execute a local or remote call depending on the args/kwargs
-
+        Forwar the call to the local_worker
         """
-        utils.assert_has_only_torch_tensorvars((args, kwargs))
-        has_self = self is not None
-
-        raw_command = {
-            'command': attr,
-            'has_self': has_self,
-            'args': args,
-            'kwargs': kwargs
-        }
-        if has_self:
-            raw_command['self'] = self
-
-        next_child_type, _ = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=False)
-
-        # Note: because we have pb of registration of tensors with the right worker, and because having
-        # Virtual workers creates even more ambiguity, we specify the worker performing the operation
-        response = next_child_type.handle_call(raw_command, owner=hook_self.local_worker)
-
-        return response
+        return hook_self.local_worker._execute_call(attr, self, *args, **kwargs)
 
 
 # TODO: put this in an appropriate place

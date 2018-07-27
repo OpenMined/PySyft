@@ -482,6 +482,13 @@ def is_variable(obj):
             return True
     return False
 
+def is_in_place_method(attr):
+    """
+    Determines if the method is in-place (ie modifies the self)
+    TODO: Can you do better?
+    """
+    return attr[-1] == '_'
+
 
 def map_tuple(hook, args, func):
     if hook:
