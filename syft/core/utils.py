@@ -83,7 +83,8 @@ class PythonEncoder:
             return obj.ser(private=private_local)
         # sy._SyftTensor (Pointer, Local) [Note: shouldn't be called on regular chain with end=tensorvar]
         elif is_syft_tensor(obj):
-            raise TypeError('Syft Tensors should always be wrapped with a Torch Tensor')
+            pass
+            #raise TypeError('Syft Tensors should always be wrapped with a Torch Tensor')
         # List
         elif isinstance(obj, list):
             return [self.python_encode(i, private_local) for i in obj]
@@ -240,11 +241,26 @@ def extract_type_and_obj(dct):
             raise TypeError('Key', key, 'is not recognized.')
 
 
+def un_wrap(*args, **kwargs):
+    assert_has_only_torch_tensorvars(args)
+    next_args = []
+    for arg in args:
+        next_args.append(arg.child)
+    next_args = tuple(next_args)
+    return next_args
+
+
+def chain_print(obj):
+    types = [obj.__class__.__name__]
+    while hasattr(obj, 'child'):
+        types.append(obj.child.__class__.__name__)
+        if isinstance(obj.child, (sy._LocalTensor, sy._PointerTensor)):
+            break
+        obj = obj.child
+    print(' > '.join(types))
+
+
 def prepare_child_command(command, replace_tensorvar_with_child=False):
-    if replace_tensorvar_with_child:
-        raise NotImplementedError('Dezo')
-    else:
-        next_command = command
 
     _, next_child_types = encode(command, retrieve_next_child=True)
 
@@ -256,6 +272,23 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
         for next_child_type in next_child_types:
             if next_child_type != ref_child_type:
                 raise NotImplementedError('All arguments should share the same child type.')
+
+    if replace_tensorvar_with_child:
+        args = command['args']
+        next_args = []
+        for arg in args:
+            #arg: Float
+            arg.child = arg.child.child
+            next_args.append(arg)
+        command['args'] = tuple(next_args)
+
+        if 'self' in command:
+            command['self'].child = command['self'].child.child
+        # TODO
+        next_command = command
+        #raise NotImplementedError('Dezo')
+    else:
+        next_command = command
 
     return ref_child_type, next_command
 

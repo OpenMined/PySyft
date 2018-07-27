@@ -650,8 +650,9 @@ class BaseWorker(ABC):
         }
         if has_self:
             raw_command['self'] = self_
-
-        next_child_type, _ = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=False)
+            next_child_type = type(self_.child)
+        else:
+            next_child_type, _ = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=False)
 
         # Note: because we have pb of registration of tensors with the right worker, and because having
         # Virtual workers creates even more ambiguity, we specify the worker performing the operation
