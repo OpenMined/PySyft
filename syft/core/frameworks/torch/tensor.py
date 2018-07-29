@@ -51,13 +51,13 @@ class _SyftTensor(object):
         return response
 
     @staticmethod
-    def move_wrapper(self, wrapper, result):
+    def insert_to_wrapper_chain(self, wrapper):
 
         wrapper_child = wrapper.child
-        wrapper.child = result
-        wrapper_child.parent = result
-        result.parent = wrapper
-        result.child = wrapper_child
+        wrapper.child = self
+        wrapper_child.parent = self
+        self.parent = wrapper
+        self.child = wrapper_child
 
     def copy_params(self, other):
         self.id = other.id
@@ -159,8 +159,17 @@ class _SyftTensor(object):
 
         return ptr
 
+
     def ser(self, private, as_dict=True):
-        raise NotImplementedError('No general ser() function for Syft')
+        data = {
+            'owner': self.owner.id,
+            'id': self.id,
+            'torch_type': self.torch_type
+        }
+        if as_dict:
+            return {'__{}__'.format(self.__class__.__name__): data}
+        else:
+            return json.dumps({'__{}__'.format(self.__class__.__name__): data}) + "\n"
 
     @staticmethod
     def deser(dct, worker, acquire):
@@ -190,8 +199,6 @@ class _LocalTensor(_SyftTensor):
 
     @staticmethod
     def handle_call(command, owner):
-        #print('Local at ', owner.id)
-        #print(command)
         # TODO: remove duplicate on base.py
         attr = command['command']
         args = command['args']
@@ -273,56 +280,60 @@ class _LocalTensor(_SyftTensor):
         raise TypeError("Cannot call .get() on a tensor you already have.")
 
 
+
 class _PlusIsMinusTensor(_SyftTensor):
-    def __init__(self, child, parent=None, torch_type=None, owner=None, id=None, skip_register=False):
-        if utils.is_syft_tensor(child)
+
+
+    def __init__(self, child=None, parent=None, torch_type=None, owner=None, id=None, skip_register=False):
+        if utils.is_syft_tensor(child):
             torch_type = child.torch_type
             owner = child.owner
-        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
+        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id,
+                         skip_register=skip_register)
 
-
-
-    @staticmethod
-    def router(attr):
-        if attr=='add':
-            return 'mpc.'+attr
-        else:
-            return attr
+    def _(self, wrapper):
+        """
+        Just to be compact, use this
+        x = sy.FloatTensor([1, 2, 3])
+        x = sy._PlusIsMinusTensor()._(x)
+        """
+        self.child = wrapper.child
+        self.parent = wrapper
+        wrapper.child.parent = self
+        wrapper.child = self
+        return wrapper
 
     @staticmethod
     def handle_call(command, owner):
+
         attr = command['command']
         args = command['args']
         kwargs = command['kwargs']
 
         if command['has_self']:
             self_ = command['self']
+            _, next_command = utils.prepare_child_command(command, replace_tensorvar_with_child=True)
+            # Unwrap
+            sy_self_ = self_.child
+            child_args = next_command['args']
+            child_kwargs = next_command['kwargs']
+            result = getattr(sy_self_, attr)(*child_args, **child_kwargs)
 
-            result = getattr(self_, attr)(args, kwargs)
+            syft_node = sy._PlusIsMinusTensor(child=result.child)
+            # Insert the new node just before the wrapper
+            _SyftTensor.insert_to_wrapper_chain(syft_node, wrapper=result)
 
-            # if function is inline
-            if attr[-1] == "_":
-                return result
 
-            result_syft_tensor = _PlusIsMinusTensor()
-            _SyftTensor.move_wrapper(wrapper=result, result=result_syft_tensor)
             return result
-
-        else:
-            pass
-            #command = _PlusIsMinusTensor.router(attr)
-
-            #command = eval(command)  # TODO Guard
-            #response = command(*args, **kwargs) # torch.mpc.add
 
 
         #  Get the next node type and update in command tensorvar with tensorvar.child
         next_child_type, next_command = utils.prepare_child_command(command, replace_tensorvar_with_child=True)
 
         # Forward the call to the next child
-        response = next_child_type.handle_call(next_command)
+        response = next_child_type.handle_call(next_command, owner)
 
-        syft_node = sy._LogTensor()
+        syft_node = sy._PlusIsMinusTensor()
 
         # Insert the new node just before the wrapper
         syft_node.child = response.child
@@ -330,11 +341,18 @@ class _PlusIsMinusTensor(_SyftTensor):
         response.child = syft_node
         syft_node.parent = response
 
+        print('ookok')
+
         return response
 
     def add(self, other):
+        _self = self.parent
+        _self.child = self.child
+        _self.child.parent = _self
 
-        return self - other
+        response = _self.sub(other)
+
+        return response
 
         #return torch.mpc.add(self, other)
 
@@ -358,8 +376,6 @@ class _PointerTensor(_SyftTensor):
 
     @staticmethod
     def handle_call(command, owner):
-        #print('Pointer at ', owner.id)
-        #print(command)
         attr = command['command']
         args = command['args']
         kwargs = command['kwargs']
@@ -592,6 +608,7 @@ class _TorchObject(object):
         response = pointer.owner.send_torch_command(recipient=pointer.location,
                                                     message=command)
         return self
+
 
 class _TorchTensor(_TorchObject):
 

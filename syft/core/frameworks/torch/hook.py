@@ -222,6 +222,14 @@ class TorchHook(object):
 
         for attr in self.to_auto_overload[tensor_type]:
 
+            def forward_method_to_child(self, *args, **kwargs):
+
+                child_args = utils.get_child_in_args(*args, **kwargs)
+
+                response = getattr(self.child, attr)(*child_args, **kwargs)
+
+                return response
+
             new_attr = self._get_overloaded_method(attr)
 
             # if we haven't already overloaded this method
@@ -272,19 +280,53 @@ class TorchHook(object):
         # on self.child
         for attr in self.to_auto_overload[tensor_type]:
 
+            def forward_method_to_child(self, *args, **kwargs):
+
+                child_args = utils.get_child_in_args(*args, **kwargs)
+                if attr == 'zero_':
+                    response = getattr(self.child, 'native_' + attr)()
+                else:
+                    response = getattr(self.child, 'native_' + attr)(*child_args, **kwargs)
+
+                syft_node = type(self)(child=response.child, parent=None, torch_type=type(response).__name__)
+
+                # Insert the new node just before the wrapper
+                # syft_node.child = response.child
+                response.child.parent = syft_node
+                response.child = syft_node
+                syft_node.parent = response
+
+                return response
+
             new_attr = self._get_overloaded_method(attr)
 
             # if we haven't already overloaded this method
             if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
                 setattr(_LocalTensor, attr, new_attr)
 
-    def _hook_SyftTensor(self, tensor_type):
 
-        self._add_registration_to___init__(_SyftTensor)
+    def _hook_SyftTensor(hook_self, tensor_type):
 
-        for attr in self.to_auto_overload[tensor_type]:
+        hook_self._add_registration_to___init__(_SyftTensor)
 
-            new_attr = self._get_overloaded_method(attr)
+        for attr in hook_self.to_auto_overload[tensor_type]:
+
+            def forward_method_to_child(self, *args, **kwargs):
+
+                child_args = utils.get_child_in_args(*args, **kwargs)
+                response = getattr(self.child, attr)(*child_args, **kwargs)
+
+                syft_node = type(self)(child=response.child)
+
+                # Insert the new node just before the wrapper
+                # syft_node.child = response.child
+                response.child.parent = syft_node
+                response.child = syft_node
+                syft_node.parent = response
+
+                return response
+
+            new_attr = hook_self._get_overloaded_method(attr)
 
             # if we haven't already overloaded this method
             if attr not in dir(_SyftTensor) or getattr(_SyftTensor, attr) is None:
