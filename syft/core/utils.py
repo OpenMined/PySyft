@@ -4,6 +4,7 @@ import re
 import types
 import functools
 import logging
+from copy import deepcopy
 
 import torch
 import syft
@@ -14,7 +15,7 @@ def encode(message, retrieve_pointers=False, retrieve_next_child=False, private_
     """
     Help function to call easy the PythonEncoder
     :param message:
-    :param retrieve_tensorvar: If true, return a list of all tensorvars in the messgae
+    :param retrieve_next_child: If true, return a list of all the classes of the first child of each tensorvar
     :param retrieve_pointers: If true, return a list of all the _PointerTensor
     :param private_local: If true, ask to hide all the sensitive data (ie keep all the
     metadata like the structure of the chain)
@@ -83,8 +84,8 @@ class PythonEncoder:
             return obj.ser(private=private_local)
         # sy._SyftTensor (Pointer, Local) [Note: shouldn't be called on regular chain with end=tensorvar]
         elif is_syft_tensor(obj):
-            pass
-            #raise TypeError('Syft Tensors should always be wrapped with a Torch Tensor')
+            return obj.ser(private=private_local)
+            # raise TypeError('Syft Tensors should always be wrapped with a Torch Tensor')
         # List
         elif isinstance(obj, list):
             return [self.python_encode(i, private_local) for i in obj]
@@ -208,7 +209,8 @@ class PythonJSONDecoder:
                 obj_type = pat.search(key).group(1)
                 # Case of a tensor
                 if is_tensor(obj_type):
-                    return eval('sy.'+obj_type).deser({key: obj}, self.worker, self.acquire)
+                    o = eval('sy.'+obj_type).deser({key: obj}, self.worker, self.acquire)
+                    return o
                 # Case of a Variable
                 elif is_variable(obj_type):
                     return sy.Variable.deser({key: obj}, self.worker, self.acquire)
@@ -241,56 +243,110 @@ def extract_type_and_obj(dct):
             raise TypeError('Key', key, 'is not recognized.')
 
 
-def un_wrap(*args, **kwargs):
-    assert_has_only_torch_tensorvars(args)
-    next_args = []
-    for arg in args:
-        next_args.append(arg.child)
-    next_args = tuple(next_args)
-    return next_args
-
-
 def chain_print(obj):
     types = [obj.__class__.__name__]
+    i = 0
     while hasattr(obj, 'child'):
         types.append(obj.child.__class__.__name__)
         if isinstance(obj.child, (sy._LocalTensor, sy._PointerTensor)):
             break
         obj = obj.child
+        i += 1
+        if i >= 12:
+            types.append('(...)')
+            break
     print(' > '.join(types))
+
+
+def get_child_command(obj, child_types=[]):
+    """
+    Analyse a Python object (generally dict with a command and arguments,
+    And for all tensors, variables, syft tensors, replace with their first
+    child and retrieve its type
+    :param obj:
+    :param child_types:
+    :return:
+    """
+    # Torch tensor or variable, or sy._SyftTensor
+    if is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj):
+        return obj.child, [type(obj.child)]
+    # List or iterables which could contain tensors
+    elif isinstance(obj, (tuple, set, bytearray, range)):
+        children = []
+        types = []
+        for o in obj:
+            c, t = get_child_command(o, child_types)
+            children.append(c)
+            types += t
+        return type(obj)(children), types
+    # Dict
+    elif isinstance(obj, dict):
+        children = {}
+        types = []
+        for k, o in obj.items():
+            c, t = get_child_command(o, child_types)
+            children[k] = c
+            types += t
+        return children, types
+    else:
+        return obj, []
 
 
 def prepare_child_command(command, replace_tensorvar_with_child=False):
 
-    _, next_child_types = encode(command, retrieve_next_child=True)
+    next_command, next_child_types = get_child_command(command)
 
     # Check that the next child type of all tensorvar is the sam
     if len(next_child_types) == 0:
         ref_child_type = sy._LocalTensor
     else:
-        ref_child_type = next_child_types[0]
-        for next_child_type in next_child_types:
-            if next_child_type != ref_child_type:
-                raise NotImplementedError('All arguments should share the same child type.')
+        if all([child_type in torch.tensor_types for child_type in next_child_types]):
+            ref_child_type = sy.FloatTensor
+        else:
+            ref_child_type = next_child_types[0]
+            for next_child_type in next_child_types:
+                if next_child_type != ref_child_type:
+                    raise NotImplementedError('All arguments should share the same child type.', next_child_types)
 
     if replace_tensorvar_with_child:
-        args = command['args']
-        next_args = []
-        for arg in args:
-            #arg: Float
-            arg.child = arg.child.child
-            next_args.append(arg)
-        command['args'] = tuple(next_args)
-
-        if 'self' in command:
-            command['self'].child = command['self'].child.child
-        # TODO
-        next_command = command
-        #raise NotImplementedError('Dezo')
+        return next_command, ref_child_type
     else:
-        next_command = command
+        return command, ref_child_type
 
-    return ref_child_type, next_command
+def enforce_owner(obj, owner):
+    obj.owner = owner
+    if not is_tensor(obj.child):
+        enforce_owner(obj.child, owner)
+
+
+def wrap_command(obj):
+    """
+        To a Syft command, add a torch wrapper
+    """
+    # Torch tensor or variable, or sy._SyftTensor
+    if is_tensor(obj) or is_variable(obj):
+        raise TypeError('Expecting syft tensors')
+    elif is_syft_tensor(obj):
+        wrapper = eval(obj.torch_type)()
+        wrapper.child = obj
+        obj.parent = wrapper
+        return wrapper
+    # List or iterables which could contain tensors
+    elif isinstance(obj, (tuple, set, bytearray, range)):
+        wrappers = []
+        for o in obj:
+            wrapper = wrap_command(o)
+            wrappers.append(wrapper)
+        return type(obj)(wrappers)
+    # Dict
+    elif isinstance(obj, dict):
+        wrappers = {}
+        for k, o in obj.items():
+            wrapper = wrap_command(o)
+            wrappers[k] = wrapper
+        return wrappers
+    else:
+        return obj
 
 
 def compile_command(attr, args, kwargs, has_self=False, self=None):
@@ -344,11 +400,25 @@ def assert_has_only_torch_tensorvars(obj):
         return True
     elif obj is None:
         return True
-    # elif isinstance(obj, syft._SyftTensor):
-    #     return True
     else:
-        logging.warning('Obj is not tensorvar', obj)
-        assert False
+        assert False, ('Obj is not tensorvar', type(obj))
+
+
+def assert_has_only_syft_tensors(obj):
+    if isinstance(obj, (int, float, str)):
+        return True
+    elif issubclass(obj.__class__, sy._SyftTensor):
+        return True
+    elif isinstance(obj, (list, tuple)):
+        rep = [assert_has_only_syft_tensors(o) for o in obj]
+        return all(rep)
+    elif isinstance(obj, dict):
+        rep = [assert_has_only_syft_tensors(o) for o in obj.values()]
+        return all(rep)
+    elif isinstance(obj, slice):
+        return True
+    else:
+        assert False, ('Obj is not syft tensor', type(obj))
 
 
 def get_syft_chain(obj):
