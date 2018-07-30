@@ -4,11 +4,11 @@ import re
 import types
 import functools
 import logging
-from copy import deepcopy
-
 import torch
-import syft
 import syft as sy
+
+
+# from copy import deepcopy
 
 
 def encode(message, retrieve_pointers=False, private_local=True):
@@ -33,6 +33,7 @@ class PythonEncoder:
         In particular, (hooked) Torch objects are replaced by their id.
         Note that a python object is returned, not JSON.
     """
+
     def __init__(self):
         self.retrieve_pointers = False
         self.found_pointers = []
@@ -50,7 +51,8 @@ class PythonEncoder:
 
         serialized_msg = {'obj': serialized_obj}
         # Give instruction to the decoder, should he acquire the tensor or register them
-        if private_local:  # It's private, you can't access directly the data, so you suscribe to it with a pointer
+        # It's private, you can't access directly the data, so you subscribe to it with a pointer
+        if private_local:
             serialized_msg['mode'] = 'subscribe'
         else:  # It's public, you can acquire the data directly
             serialized_msg['mode'] = 'acquire'
@@ -74,7 +76,8 @@ class PythonEncoder:
             if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
                 self.found_pointers.append(tail_object)
             return obj.ser(private=private_local)
-        # sy._SyftTensor (Pointer, Local) [Note: shouldn't be called on regular chain with end=tensorvar]
+        # sy._SyftTensor (Pointer, Local)
+        # [Note: shouldn't be called on regular chain with end=tensorvar]
         elif is_syft_tensor(obj):
             tail_object = find_tail_of_chain(obj)
             if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
@@ -86,11 +89,11 @@ class PythonEncoder:
             return [self.python_encode(i, private_local) for i in obj]
         # Iterables non json-serializable
         elif isinstance(obj, (tuple, set, bytearray, range)):
-            key = '__'+type(obj).__name__+'__'
+            key = '__' + type(obj).__name__ + '__'
             return {key: [self.python_encode(i, private_local) for i in obj]}
         # Slice
         elif isinstance(obj, slice):
-            key = '__'+type(obj).__name__+'__'
+            key = '__' + type(obj).__name__ + '__'
             return {key: {'args': [obj.start, obj.stop, obj.step]}}
         # Dict
         elif isinstance(obj, dict):
@@ -140,7 +143,6 @@ def decode(message, worker, acquire=None):
     if acquire is not None:
         return decoder.python_decode(message)
 
-
     # TODO It would be good to have a standardized place to put the 'mode' argument
     # Depending of the structure of the message, the mode argument is not at the same place
     if 'message' in dict_message:
@@ -176,6 +178,7 @@ class PythonJSONDecoder:
                 'torch_type': 'syft.FloatTensor'
     }}}}
     """
+
     def __init__(self, worker, acquire=False):
         self.worker = worker
         self.tensor_types = tuple(torch.tensor_types)
@@ -188,10 +191,11 @@ class PythonJSONDecoder:
             (e.g. tuple, or torch Variable).
 
         """
-        # TODO: Stop with this prior that data should be a dict, which require the following lines to fix with real cases
+        # TODO: Stop with this prior that data should be a dict,
+        # which require the following lines to fix with real cases
         if isinstance(dct, (int, str)):
             return dct
-        if isinstance(dct, (list, )):
+        if isinstance(dct, (list,)):
             return [self.python_decode(o) for o in dct]
         if dct is None:
             return None
@@ -204,7 +208,7 @@ class PythonJSONDecoder:
                 obj_type = pat.search(key).group(1)
                 # Case of a tensor
                 if is_tensor(obj_type):
-                    o = eval('sy.'+obj_type).deser({key: obj}, self.worker, self.acquire)
+                    o = eval('sy.' + obj_type).deser({key: obj}, self.worker, self.acquire)
                     return o
                 # Case of a Variable
                 elif is_variable(obj_type):
@@ -313,7 +317,8 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
             ref_child_type = next_child_types[0]
             for next_child_type in next_child_types:
                 if next_child_type != ref_child_type:
-                    raise NotImplementedError('All arguments should share the same child type.', next_child_types)
+                    raise NotImplementedError('All arguments should share the same child type.',
+                                              next_child_types)
 
     if replace_tensorvar_with_child:
         return next_command, ref_child_type
@@ -483,15 +488,17 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
             assert_is_chain_well_formed(obj.data)
     else:
         if start_id == obj.id and start_type == type(obj):
-            raise StopIteration('The chain looped downward=', downward,'on id', obj.child.id, 'with obj', obj.child)
+            raise StopIteration('The chain looped downward=', downward, 'on id', obj.child.id,
+                                'with obj', obj.child)
     if end_chain is not None \
-      and (is_variable(obj) or is_tensor(obj)):
+            and (is_variable(obj) or is_tensor(obj)):
         if isinstance(end_chain, sy._PointerTensor):
             assert obj.parent is None, "Tensorvar linked to Pointer should not have a parent"
             assert end_chain.child is None, "Pointer shouldnt have a child"
             return True
         elif isinstance(end_chain, sy._LocalTensor):
-            assert obj.parent.id == end_chain.id, "TensorVar parent should be the tail LocalTensor" + str(obj.parent.id) + ',' + str(end_chain.id)
+            assert obj.parent.id == end_chain.id, "TensorVar parent should be the tail LocalTensor"\
+                                                  + str(obj.parent.id) + ',' + str(end_chain.id)
             assert end_chain.child.id == obj.id, "Tail LocalTensor child should be the Tensor Var"
             return True
         else:
@@ -517,7 +524,8 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
         if obj.parent is None:
             raise AttributeError('Chain broken upward, at', obj)
         else:
-            return assert_is_chain_well_formed(obj.parent, downward, start_id, start_type, end_chain)
+            return assert_is_chain_well_formed(obj.parent, downward, start_id, start_type,
+                                               end_chain)
 
 
 def find_tail_of_chain(obj, start_id=None, start_type=None):
@@ -530,7 +538,8 @@ def find_tail_of_chain(obj, start_id=None, start_type=None):
         start_type = type(obj)
     else:
         if start_id == obj.id and start_type == type(obj):
-            raise StopIteration('The chain looped downward on id', obj.child.id, 'with obj', obj.child)
+            raise StopIteration('The chain looped downward on id', obj.child.id, 'with obj',
+                                obj.child)
 
     if isinstance(obj, (sy._LocalTensor, sy._PointerTensor)):
         return obj
@@ -601,12 +610,14 @@ def is_variable(obj):
     or is the (part of the) name of a class Variable
     """
     if isinstance(obj, str):
-        if obj in list(map(lambda x: x.__name__, torch.var_types)) + ['syft.Variable', 'syft.Parameter']:
+        if obj in list(map(lambda x: x.__name__, torch.var_types)) + ['syft.Variable',
+                                                                      'syft.Parameter']:
             return True
     else:
         if isinstance(obj, tuple(torch.var_types)):
             return True
     return False
+
 
 def is_in_place_method(attr):
     """
@@ -633,9 +644,11 @@ def map_dict(hook, kwargs, func):
 
 def pass_method_args(method):
     """Wrapper gathering partialmethod object from method call."""
+
     @functools.wraps(method)
     def pass_args(*args, **kwargs):
         return functools.partialmethod(method, *args, **kwargs)
+
     return pass_args
 
 
@@ -652,4 +665,5 @@ def pass_func_args(func):
         # portion of a function's arguments and/or keywords resulting in a new object
         # with a simplified signature.
         return functools.partial(func, *args, **kwargs)
+
     return pass_args

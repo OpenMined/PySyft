@@ -1,22 +1,24 @@
 from unittest import TestCase
 import syft as sy
 import torch
-import random
+
+# import random
 
 hook = sy.TorchHook()
 
 me = hook.local_worker
 me.is_client_worker = False
 
-bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
-alice = sy.VirtualWorker(id="alice",hook=hook, is_client_worker=False)
+bob = sy.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
+alice = sy.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
 
 bob.add_workers([me, alice])
 alice.add_workers([me, bob])
 me.add_workers([bob, alice])
 
-#torch.manual_seed(1)
-#random.seed(1)
+
+# torch.manual_seed(1)
+# random.seed(1)
 
 class TestTensorPointerSerde(TestCase):
 
@@ -27,16 +29,16 @@ class TestTensorPointerSerde(TestCase):
         x = sy.FloatTensor([1, 2, 3, 4, 5])
 
         xs = {
-                '__FloatTensor__': {
-                    'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
-                    'torch_type': 'syft.FloatTensor',
-                    'data': [1.0, 2.0, 3.0, 4.0, 5.0],
-                    'child': {
-                        '___LocalTensor__': {
-                            'owner': 0,
-                            'id': x.id,
-                            'torch_type': 'syft.FloatTensor'
-            }}}}
+            '__FloatTensor__': {
+                'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
+                'torch_type': 'syft.FloatTensor',
+                'data': [1.0, 2.0, 3.0, 4.0, 5.0],
+                'child': {
+                    '___LocalTensor__': {
+                        'owner': 0,
+                        'id': x.id,
+                        'torch_type': 'syft.FloatTensor'
+                    }}}}
 
         assert x.ser(private=False) == xs
 
@@ -207,9 +209,7 @@ class TestTensorPointerSerde(TestCase):
         # as x
         assert (x2 == torch.FloatTensor([5, 6, 7, 8])).all()
 
-
     def test_send_and_get_tensor(self):
-
         x = sy.FloatTensor([1, 2, 3, 4, 5])
 
         xid = x.id
@@ -219,7 +219,7 @@ class TestTensorPointerSerde(TestCase):
         # getting tensor back and putting result into x2
         # to show that it should have updated x independently
         x2 = x.get()
-
+        assert torch.equal(x2, sy.FloatTensor([1, 2, 3, 4, 5]))
         # make sure x changes id back to what it should
         assert x.id == xid
 

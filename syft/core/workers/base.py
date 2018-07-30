@@ -1,14 +1,17 @@
 import torch
 import json
-import numbers
 import logging
-import re
-import random
-import traceback
 import syft as sy
 from abc import ABC, abstractmethod
 
 from .. import utils
+
+
+# import numbers
+# import re
+# import random
+# import traceback
+
 
 class BaseWorker(ABC):
     r"""
@@ -62,7 +65,7 @@ class BaseWorker(ABC):
 
     """
 
-    def __init__(self,  hook=None, id=0, is_client_worker=False, objects={},
+    def __init__(self, hook=None, id=0, is_client_worker=False, objects={},
                  tmp_objects={}, known_workers={}, verbose=True, queue_size=0):
 
         # This is a reference to the hook object which overloaded
@@ -209,7 +212,6 @@ class BaseWorker(ABC):
 
         response = json.dumps(response).encode()
 
-
         return response
 
     def process_message_type(self, message_wrapper):
@@ -233,7 +235,7 @@ class BaseWorker(ABC):
 
         # Receiving an object from another worker
         if message_wrapper['type'] == 'obj':
-            response = message # response is a tensorvar
+            response = message  # response is a tensorvar
             utils.fix_chain_ends(response)
             utils.assert_is_chain_well_formed(response)
             self.register(response)
@@ -241,7 +243,8 @@ class BaseWorker(ABC):
 
         #  Receiving a request for an object from another worker
         elif message_wrapper['type'] == 'req_obj':
-            # Because it was pointed at, it's the first syft_object of the chain, so its parent is the tensorvar
+            # Because it was pointed at, it's the first syft_object of the chain,
+            # so its parent is the tensorvar
             syft_object = self.get_obj(message)
             tensorvar = syft_object.parent
             if utils.is_variable(syft_object.torch_type):
@@ -318,8 +321,9 @@ class BaseWorker(ABC):
          5
         [torch.FloatTensor of size 5]
         """
-        if(worker.id in self._known_workers and self.verbose):
-            logging.warning("Worker ID " + str(worker.id) + " taken. Have I seen this worker before?")
+        if (worker.id in self._known_workers and self.verbose):
+            logging.warning(
+                "Worker ID " + str(worker.id) + " taken. Have I seen this worker before?")
             logging.warning("Replacing it anyways... this could cause unexpected behavior...")
 
         self._known_workers[worker.id] = worker
@@ -526,7 +530,7 @@ class BaseWorker(ABC):
                 else:
                     self.de_register_object(obj.child,
                                             _recurse_torch_objs=_recurse_torch_objs)
-            if not is_torch_tensor :
+            if not is_torch_tensor:
                 delattr(obj, 'child')
 
     def register(self, result):
@@ -670,15 +674,19 @@ class BaseWorker(ABC):
             raw_command['self'] = self_
         if is_torch_command:
             # Unwrap the torch wrapper
-            syft_command, child_type = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=True)
+            syft_command, child_type = utils.prepare_child_command(
+                raw_command, replace_tensorvar_with_child=True)
         else:
-            # Get the next syft class (the actual syft class is the one which redirected (see the  _PlusIsMinus ex.)
-            syft_command, child_type = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=True)
+            # Get the next syft class
+            # The actual syft class is the one which redirected (see the  _PlusIsMinus ex.)
+            syft_command, child_type = utils.prepare_child_command(
+                raw_command, replace_tensorvar_with_child=True)
 
         utils.assert_has_only_syft_tensors(syft_command)
 
-        # Note: because we have pb of registration of tensors with the right worker, and because having
-        # Virtual workers creates even more ambiguity, we specify the worker performing the operation
+        # Note: because we have pb of registration of tensors with the right worker,
+        # and because having Virtual workers creates even more ambiguity, we specify the worker
+        # performing the operation
         result = child_type.handle_call(syft_command, owner=self)
 
         if isinstance(result, (int, float, bool)) and self.id != self.hook.local_worker.id:
@@ -697,8 +705,6 @@ class BaseWorker(ABC):
                 if utils.is_variable(res.child):
                     self.hook.local_worker.de_register(res.data)
                     res.data.owner = self
-
-
 
         if is_torch_command:
             # Wrap the result
@@ -734,7 +740,6 @@ class BaseWorker(ABC):
             # We don't need to wrap
             return result
 
-
     def send_obj(self, object, new_id, recipient, new_data_id=None):
         """send_obj(self, obj, new_id, recipient, new_data_id=None) -> obj
         Sends an object to another :class:`VirtualWorker` and removes it
@@ -752,10 +757,12 @@ class BaseWorker(ABC):
             raise MemoryError('You already point at ', recipient, ':', new_id)
         if utils.is_variable(object.child.torch_type):
             if new_data_id is None:
-                raise AttributeError('Please provide a new_data_id arg, to be able to point to Var.data')
+                raise AttributeError(
+                    'Please provide a new_data_id arg, to be able to point to Var.data')
             if self.get_pointer_to(recipient, new_data_id) is not None:
                 raise MemoryError('You already point at ', recipient, ':', new_id)
-            assert new_id != new_data_id, "You can't have the same id vor the variable and its data."
+            assert new_id != new_data_id, \
+                "You can't have the same id vor the variable and its data."
 
             object.data.child.id = new_data_id
         object = utils.encode(object, retrieve_pointers=False, private_local=False)
@@ -811,7 +818,6 @@ class BaseWorker(ABC):
 
         object = utils.decode(object, worker=self)
 
-
         # for some reason, when returning obj from request_obj method, the gradient
         # (obj.grad) gets re-initialized without being re-registered and as a
         # consequence does not have an id, causing the x.grad.id to fail because
@@ -826,16 +832,17 @@ class BaseWorker(ABC):
         return object
 
     def get_pointer_to(self, location, id_at_location):
-        # TODO: instead of looping on the objects, with could keep a dict with keys = owners and subkeys id@loc
+        # TODO: instead of looping on the objects,
+        # with could keep a dict with keys = owners and subkeys id@loc
         # Will be crucial when having lots of variables, but means it has to be updated
         if not isinstance(location, (int, str)):
             location = location.id
 
         for key, syft_tensor in self._objects.items():
             if isinstance(syft_tensor, sy._PointerTensor):
-                if syft_tensor.location.id == location and syft_tensor.id_at_location == id_at_location:
+                if syft_tensor.location.id == location \
+                        and syft_tensor.id_at_location == id_at_location:
                     return syft_tensor
-
 
     @classmethod
     def _command_guard(cls, command, allowed):
@@ -857,5 +864,3 @@ class BaseWorker(ABC):
         except RuntimeError:
             return False
         return True
-
-

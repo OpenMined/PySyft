@@ -3,14 +3,16 @@ import random
 import inspect
 import re
 import logging
-import json
 import types
-import functools
 import syft as sy
 from ... import workers
 from ... import utils
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor, _TorchTensor
 from .tensor import _TorchVariable
+
+
+# import json
+# import functools
 
 
 class TorchHook(object):
@@ -28,7 +30,8 @@ class TorchHook(object):
             # interfacing with other workers. The worker interface is what allows the Torch
             # specific code in TorchHook to be agnostic to the means by which workers communicate
             # (such as peer-to-peer, sockets, through local ports, or all within the same process)
-            self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client, queue_size=queue_size)
+            self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client,
+                                                      queue_size=queue_size)
         else:
             # if the local_worker already exists, then it MUST not know about the hook which is
             # just being created. Thus, we must inform it.
@@ -61,7 +64,8 @@ class TorchHook(object):
 
         self._hook_properties(tensor_type)
 
-        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(tensor_type)
+        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
+            tensor_type)
 
         self._rename_native_functions(tensor_type)
 
@@ -80,14 +84,13 @@ class TorchHook(object):
     def _add_registration_to___init__(hook_self, tensorvar_type, register_child_instead=False):
         """Overloads tensor_type.__new__ or Variable.__new__"""
 
-        # TODO: This is added because of the following contradiction: instanciate x = FloatTensor(...)
+        # TODO: This is added because of the following contradiction: instanciate x = FloatTensor()
         # and ask x.__module__, you'll get `sy.core.frameworks.torch.tensor.FloatTensor`
         # but now ask for dir(sy.core.frameworks.torch.tensor) you'll find no FloatTensor attribute
         # and x.float() will raise an exception because of this.
         # Why is x.__module__ == 'sy.core...'? How can we do this with elegance?
         if tensorvar_type.__module__ != sy._SyftTensor.__module__:
             setattr(sy.core.frameworks.torch.tensor, tensorvar_type.__name__, tensorvar_type)
-
 
         if 'native___init__' not in dir(tensorvar_type):
             tensorvar_type.native___init__ = tensorvar_type.__init__
@@ -106,7 +109,7 @@ class TorchHook(object):
 
             if register_child_instead:
                 cls.native___init__()
-                _ = cls.child
+                # _ = cls.child
             else:
                 cls.native___init__(*args, **kwargs)
                 if id is None:
@@ -129,7 +132,7 @@ class TorchHook(object):
                 else:
                     self._child = _LocalTensor(child=self,
                                                parent=self,
-                                               torch_type='syft.'+type(self).__name__)
+                                               torch_type='syft.' + type(self).__name__)
                     return self._child
             except TypeError:
                 # for some reason, hasattr(self, '_child') returns a TypeError saying
@@ -142,9 +145,8 @@ class TorchHook(object):
 
                 self._child = _LocalTensor(child=self,
                                            parent=self,
-                                           torch_type='syft.'+type(self).__name__)
+                                           torch_type='syft.' + type(self).__name__)
                 return self._child
-
 
         @child.setter
         def child(self, value):
@@ -156,8 +158,8 @@ class TorchHook(object):
         def id(self):
             return self.child.id
 
-        # TODO: this should not be possible, but it should also be possible to define a FloatTensor with
-        # a specific id. This is in theory possible, but it doesnt seem to work in practice
+        # TODO: this should not be possible, but it should also be possible to define a FloatTensor
+        # with a specific id. This is in theory possible, but it doesnt seem to work in practice
         @id.setter
         def id(self, new_id):
             self.child.id = new_id
@@ -234,7 +236,6 @@ class TorchHook(object):
 
             # if we haven't already overloaded this method
             if attr not in dir(tensor_type) or getattr(tensor_type, attr) is None:
-
                 setattr(tensor_type, attr, new_attr)
 
     def _add_methods_from__TorchObject(self, tensor_type):
@@ -271,8 +272,8 @@ class TorchHook(object):
 
         for attr in dir(parent_syft_obj):
             if attr not in exclude:
-                if attr in dir(tensor_type) and "native_"+str(attr) not in dir(tensor_type):
-                    setattr(tensor_type, "native_"+str(attr), getattr(tensor_type, attr))
+                if attr in dir(tensor_type) and "native_" + str(attr) not in dir(tensor_type):
+                    setattr(tensor_type, "native_" + str(attr), getattr(tensor_type, attr))
                 setattr(tensor_type, attr, getattr(parent_syft_obj, attr))
 
     def _hook_LocalTensor(self, tensor_type):
@@ -289,7 +290,8 @@ class TorchHook(object):
                 else:
                     response = getattr(self.child, 'native_' + attr)(*child_args, **kwargs)
 
-                syft_node = type(self)(child=response.child, parent=None, torch_type=type(response).__name__)
+                syft_node = type(self)(child=response.child, parent=None,
+                                       torch_type=type(response).__name__)
 
                 # Insert the new node just before the wrapper
                 # syft_node.child = response.child
@@ -304,7 +306,6 @@ class TorchHook(object):
             # if we haven't already overloaded this method
             if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
                 setattr(_LocalTensor, attr, new_attr)
-
 
     def _hook_SyftTensor(hook_self, tensor_type):
 
@@ -337,7 +338,6 @@ class TorchHook(object):
     def _hook_PointerTensor(self, tensor_type):
 
         for attr in self.to_auto_overload[tensor_type]:
-
             # # if we haven't already overloaded this method
             # if attr not in dir(_PointerTensor) or getattr(_PointerTensor, attr) is None:
 
@@ -346,7 +346,6 @@ class TorchHook(object):
     def _get_overloaded_method(hook_self, attr):
 
         def _execute_method_call(self, *args, **kwargs):
-
             return hook_self._execute_call(attr, self, *args, **kwargs)
 
         return _execute_method_call
@@ -363,8 +362,8 @@ class TorchHook(object):
         for module_name, module_funcs in torch.torch_modules.items():
             torch_module = eval(module_name)
             for attr in module_funcs:
-                # Some functions we want to ignore (not override). Such functions have been hard coded
-                # into the attribute self.torch_exclude
+                # Some functions we want to ignore (not override). Such functions have been hard
+                # coded into the attribute self.torch_exclude
                 if attr in torch.torch_exclude:
                     continue
 
@@ -392,9 +391,7 @@ class TorchHook(object):
         accordingly.
         """
 
-
         def _execute_function_call(*args, **kwargs):
-
             return hook_self._execute_call(attr, None, *args, **kwargs)
 
         return _execute_function_call

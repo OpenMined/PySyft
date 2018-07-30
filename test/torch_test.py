@@ -85,12 +85,16 @@ class TestChainTensor(TestCase):
         y = sy._PlusIsMinusTensor().on(y)
 
         assert utils.chain_print(x,
-                                 display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+                                 display=False) == 'Variable > _PlusIsMinusTensor > ' \
+                                                   '_LocalTensor\n - FloatTensor > ' \
+                                                   '_PlusIsMinusTensor > _LocalTensor'
 
         z = x.add(y)
 
         assert utils.chain_print(z,
-                                 display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+                                 display=False) == 'Variable > _PlusIsMinusTensor > ' \
+                                                   '_LocalTensor\n - FloatTensor >' \
+                                                   ' _PlusIsMinusTensor > _LocalTensor'
 
         # cut chain for the equality check
         z.data.child = z.data.child.child
@@ -117,7 +121,8 @@ class TestChainTensor(TestCase):
 
         z = x.add(y)
         assert utils.chain_print(z,
-                                 display=False) == 'Variable > _PointerTensor\n - FloatTensor > _PointerTensor'
+                                 display=False) == 'Variable > _PointerTensor\n - FloatTensor >' \
+                                                   ' _PointerTensor'
 
         assert bob._objects[z.id_at_location].owner.id == 'bob'
         assert bob._objects[z.data.id_at_location].owner.id == 'bob'
@@ -125,11 +130,15 @@ class TestChainTensor(TestCase):
         # Check chain on remote
         ptr_id = z.child.id_at_location
         assert utils.chain_print(bob._objects[ptr_id].parent,
-                                 display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+                                 display=False) == 'Variable > _PlusIsMinusTensor > ' \
+                                                   '_LocalTensor\n - FloatTensor >' \
+                                                   ' _PlusIsMinusTensor > _LocalTensor'
 
         z.get()
         assert utils.chain_print(z,
-                                 display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+                                 display=False) == 'Variable > _PlusIsMinusTensor >' \
+                                                   ' _LocalTensor\n - FloatTensor >' \
+                                                   ' _PlusIsMinusTensor > _LocalTensor'
 
         # cut chain for the equality check
         z.data.child = z.data.child.child
@@ -141,7 +150,8 @@ class TestTorchTensor(TestCase):
     def test___repr__(self):
         x = torch.FloatTensor([1, 2, 3, 4, 5])
         # assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[torch.FloatTensor of size 5]\n'
-        assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[syft.core.frameworks.torch.tensor.FloatTensor of size 5]\n'
+        assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[' \
+                               'syft.core.frameworks.torch.tensor.FloatTensor of size 5]\n'
 
     def test_send_get_tensor(self):
 
@@ -179,7 +189,8 @@ class TestTorchTensor(TestCase):
         #       x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
         #       y = x.abs_() # in-place operation
         #       y.get()
-        #       x.send(bob) # if x.child != y.child, x will send it's old pointer to bob->trigger an error
+        #       x.send(bob) # if x.child != y.child, x will send its old pointer
+        #        to bob->trigger an error
         #     You want this to work, but don't want to create a new pointer, just
         #     reuse the old one.
 
@@ -313,7 +324,8 @@ class TestTorchTensor(TestCase):
         # There is an issue with some Macs getting 0.0 instead
         # Solved here: https://github.com/pytorch/pytorch/issues/5609
         assert torch.equal(torch.FloatTensor([z]), torch.FloatTensor([
-            14])), "There is an issue with some Macs getting 0.0 instead, see https://github.com/pytorch/pytorch/issues/5609"
+            14])), "There is an issue with some Macs getting 0.0 instead, " \
+                   "see https://github.com/pytorch/pytorch/issues/5609"
 
         z = torch.eq(x, y)
         assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
@@ -809,6 +821,9 @@ class TestTorchVariable(TestCase):
         assert (torch.equal(z, torch.FloatTensor([30])))
         z = torch.add(x, y)
         assert (torch.equal(z, torch.FloatTensor([[2, 4, 6, 8]])))
+        x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
+        y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
+        assert torch.equal(x.add_(y), sy.Variable(torch.FloatTensor([2, 4, 6, 8, 10])))
         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         z = torch.cross(x, y, dim=1)
@@ -846,16 +861,6 @@ class TestTorchVariable(TestCase):
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
         assert torch.equal(x.cpu().get(), sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])))
 
-    def test_local_var_binary_methods(self):
-        x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
-        y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
-        assert torch.equal(x.add_(y), sy.Variable(torch.FloatTensor([2, 4, 6, 8, 10])))
-
-    def test_remote_var_binary_methods(self):
-        x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
-        y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
-        assert torch.equal(x.add_(y).get(), sy.Variable(torch.FloatTensor([2, 4, 6, 8, 10])))
-
     def test_remote_var_binary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
             https://github.com/OpenMined/PySyft/issues/1385'''
@@ -866,6 +871,9 @@ class TestTorchVariable(TestCase):
         assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([30]))))
         z = torch.add(x, y)
         assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([[2, 4, 6, 8]]))))
+        x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
+        y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
+        assert torch.equal(x.add_(y).get(), sy.Variable(torch.FloatTensor([2, 4, 6, 8, 10])))
         x = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         y = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         z = torch.cross(x, y, dim=1)
