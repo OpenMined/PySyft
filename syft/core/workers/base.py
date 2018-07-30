@@ -485,15 +485,22 @@ class BaseWorker(ABC):
         """
         Unregisters an object and its attribute
         """
-        is_torch_tensor = torch.is_tensor(obj)
-
-        if not is_torch_tensor:
-            if hasattr(obj, 'id'):
-                self.rm_obj(obj.id)
-
-        if hasattr(obj, 'child'):
-            if obj.child is not None:
-                self.rm_obj(obj.child.id)
+        if utils.is_syft_tensor(obj):
+            self.rm_obj(obj.id)
+        elif utils.is_tensor(obj):
+            self.de_register(obj.child)
+        elif utils.is_variable(obj):
+            self.de_register(obj.child)
+            self.de_register(obj.data.child)
+        # Case of a iter type non json serializable
+        elif isinstance(obj, (list, tuple, set, bytearray, range)):
+            for o in obj:
+                self.de_register(o)
+        elif obj is None:
+            "do nothing"
+        else:
+            raise TypeError('The type', type(obj), 'is not supported at the moment')
+        return
 
     def de_register_object(self, obj, _recurse_torch_objs=True):
         """
@@ -537,7 +544,7 @@ class BaseWorker(ABC):
             self.register(variable.child)
             self.register(variable.data.child)
         # Case of a iter type non json serializable
-        elif isinstance(result, (tuple, set, bytearray, range)):
+        elif isinstance(result, (list, tuple, set, bytearray, range)):
             for res in result:
                 self.register(res)
         elif result is None:
@@ -635,6 +642,7 @@ class BaseWorker(ABC):
         """
         Transmit the call to the appropriate TensorType for handling
         """
+        print(attr)
 
         # Distinguish between a command with torch tensors (like when called by the client,
         # or received from another worker), and a command with syft tensor, which can occur
@@ -663,7 +671,12 @@ class BaseWorker(ABC):
             raw_command['self'] = self_
         if is_torch_command:
             # Unwrap the torch wrapper
+            if attr=='copy_':
+                print('> prepare_child_command')
+                print(len(raw_command['args']), len(list(raw_command['kwargs'].keys())))
             syft_command, child_type = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=True)
+            if attr == 'copy_':
+                print('< end prepare_child_command')
         else:
             # Get the next syft class (the actual syft class is the one which redirected (see the  _PlusIsMinus ex.)
             syft_command, child_type = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=True)
@@ -687,9 +700,9 @@ class BaseWorker(ABC):
                 # Re assign the worker (just in case, especially useful with Virtualworkers)
                 self.hook.local_worker.de_register(res)
                 res.owner = self
-                if utils.is_variable(res):
-                    self.hook.local_worker.de_register(res.parent.data.child)
-                    res.parent.data.child.owner = self
+                if utils.is_variable(res.child):
+                    self.hook.local_worker.de_register(res.data)
+                    res.data.owner = self
 
         if is_torch_command:
             # Wrap the result
@@ -698,14 +711,20 @@ class BaseWorker(ABC):
                 result.parent = raw_command['self']
                 return raw_command['self']
             else:
-                _tail = utils.find_tail_of_chain(result)
-                if isinstance(_tail, sy._LocalTensor):
-                    wrapper = _tail.child
-                    wrapper.child = result
-                    result.parent = wrapper
-                else:
-                    wrapper = utils.wrap_command(result)
-                return wrapper
+                results = result if isinstance(result, tuple) else (result,)
+                wrappers = []
+                for res in results:
+                    _tail = utils.find_tail_of_chain(res)
+                    if isinstance(_tail, sy._LocalTensor):
+                        wrapper = _tail.child
+                        if isinstance(wrapper, tuple):
+                            print(wrapper)
+                        wrapper.child = res
+                        res.parent = wrapper
+                    else:
+                        wrapper = utils.wrap_command(res)
+                    wrappers.append(wrapper)
+                return tuple(wrappers) if len(wrappers) > 1 else wrappers[0]
         else:
             # We don't need to wrap
             return result

@@ -239,6 +239,11 @@ def extract_type_and_obj(dct):
 
 
 def chain_print(obj, display=True):
+    if is_variable(obj):
+        is_var = True
+        data_display = chain_print(obj.data, display=False)
+    else:
+        is_var = False
     types = [obj.__class__.__name__]
     i = 0
     while hasattr(obj, 'child'):
@@ -252,8 +257,13 @@ def chain_print(obj, display=True):
             break
     if display:
         print(' > '.join(types))
+        if is_var:
+            print(' - ' + data_display)
     else:
-        return ' > '.join(types)
+        if is_var:
+            return ' > '.join(types) + '\n - ' + data_display
+        else:
+            return ' > '.join(types)
 
 
 def get_child_command(obj, child_types=[]):
@@ -266,7 +276,10 @@ def get_child_command(obj, child_types=[]):
     :return:
     """
     # Torch tensor or variable, or sy._SyftTensor
-    if is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj):
+    if (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)) and not isinstance(obj, str):
+        print('--   ')
+        print(type(obj))
+        print(type(obj.child))
         return obj.child, [type(obj.child)]
     # List or iterables which could contain tensors
     elif isinstance(obj, (list, tuple, set, bytearray, range)):
@@ -330,6 +343,8 @@ def wrap_command(obj):
         raise TypeError('Expecting syft tensors')
     elif is_syft_tensor(obj):
         wrapper = eval(obj.torch_type)()
+        if is_variable(obj.torch_type):
+            wrapper.data = wrap_command(obj.data)
         wrapper.child = obj
         obj.parent = wrapper
         return wrapper
@@ -434,6 +449,13 @@ def get_syft_chain(obj):
         next_node = next_node.child
 
     return syft_chain
+
+
+def link_var_chain_to_data_chain(var_node, data_node):
+    var_node.data = data_node
+    next_node = var_node.child
+    if var_node.child is not None and not (is_tensor(next_node) or is_variable(next_node)):
+        link_var_chain_to_data_chain(var_node.child, data_node.child)
 
 
 def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=None, end_chain=None):

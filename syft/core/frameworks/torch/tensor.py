@@ -50,7 +50,6 @@ class _SyftTensor(object):
         response.child = syft_node
         syft_node.parent = response
 
-
         return response
 
     @staticmethod
@@ -243,9 +242,19 @@ class _LocalTensor(_SyftTensor):
         if has_self and utils.is_in_place_method(attr):
             syft_command['self'].child = response
             response.parent = syft_command['self']
+            if utils.is_variable(response):
+                syft_command['self'].child.data = response.data
+                response.data.parent = syft_command['self'].child.data.parent
+
+                utils.link_var_chain_to_data_chain(syft_command['self'], response.data.child)
+
             return syft_command['self']
         else:
             syft_response = sy._LocalTensor(child=response, parent=response, owner=owner, torch_type='syft.'+type(response).__name__)
+
+            if utils.is_variable(response):
+                utils.link_var_chain_to_data_chain(syft_response, response.data.child)
+
             return syft_response
 
 
@@ -562,6 +571,7 @@ class _PointerTensor(_SyftTensor):
             self.owner.register(tensorvar.data.child)
 
         utils.fix_chain_ends(tensorvar)
+
         return tensorvar
 
     @staticmethod
@@ -832,6 +842,8 @@ class _TorchVariable(_TorchObject):
         var_data_ptr.parent = self.data
         self.data.parent = None
 
+        utils.link_var_chain_to_data_chain(self, self.data)
+
         return self
 
     def get(self, deregister_ptr=True, update_ptr_wrapper=True):
@@ -857,7 +869,9 @@ class _TorchVariable(_TorchObject):
             if not isinstance(variable.child, sy._PointerTensor) \
               and variable.data is not None \
               and variable.data.dim() > 0:
-                self.set_(variable)
+                self.native_set_(variable)
+
+            utils.link_var_chain_to_data_chain(self, self.data)
             utils.fix_chain_ends(self)
             utils.assert_is_chain_well_formed(self)
 
@@ -887,13 +901,19 @@ class _TorchVariable(_TorchObject):
         if utils.is_tensor(var_data_type):
             var_data =  eval('sy.' + var_data_type).deser(msg_obj['data'], worker, acquire)
             worker.hook.local_worker.de_register(var_data)
+        else:
+            raise TypeError('Data is not a tensor:', var_data_type)
         # TODO: Find a smart way to skip register and not leaking the info to the local worker
         # This would imply overload differently the __init__ to provide an owner for the child attr.
         variable = sy.Variable(var_data, requires_grad=msg_obj['requires_grad'])
         worker.hook.local_worker.de_register(variable)
+        worker.hook.local_worker.de_register(variable.data)
 
         variable.child = var_syft_obj
         var_syft_obj.parent = variable
+
+        # Re-assign the data, and propagate deeply
+        utils.link_var_chain_to_data_chain(variable, var_data)
 
         return variable
 
