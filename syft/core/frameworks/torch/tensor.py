@@ -6,10 +6,13 @@ import syft as sy
 from ... import utils
 import logging
 
-import traceback
+
+# import traceback
+
 
 class _SyftTensor(object):
     ""
+
     def __init__(self, child, parent, torch_type, id=None, owner=None, skip_register=False):
         self.child = child
         self.parent = parent
@@ -18,7 +21,7 @@ class _SyftTensor(object):
         if self.child is not None:
             try:
                 self.child.parent = self
-            except AttributeError: # for non-torch tensor child (can occur in __repr__)
+            except AttributeError:  # for non-torch tensor child (can occur in __repr__)
                 pass
 
         if owner is not None:
@@ -32,16 +35,17 @@ class _SyftTensor(object):
         # Do amazing stuff with the command
 
         #  Get the next node type and update in command tensorvar with tensorvar.child
-        next_command, child_type = utils.prepare_child_command(command, replace_tensorvar_with_child=True)
+        next_command, child_type = utils.prepare_child_command(command,
+                                                               replace_tensorvar_with_child=True)
 
         # Forward the call to the next child
         response = child_type.handle_call(next_command)
 
         # If has self, we keep the same wrapper
-        if command['has_self']: # TODO: and is an inplace mthod
+        if command['has_self']:  # TODO: and is an inplace mthod
             syft_node = command['self']
         else:
-            syft_node = type(sub_self)() # TODO specify owner
+            syft_node = type(sub_self)()  # TODO specify owner
             # TODO: register
 
         # Insert the new node just before the wrapper
@@ -100,7 +104,7 @@ class _SyftTensor(object):
 
     @property
     def parent(self):
-        if(hasattr(self, '_parent') and self._parent is not None):
+        if (hasattr(self, '_parent') and self._parent is not None):
             return self._parent
         else:
             self._parent = self.find_torch_object_in_family_tree()
@@ -110,8 +114,8 @@ class _SyftTensor(object):
     def parent(self, value):
         self._parent = value
 
-
-    def create_pointer(self, parent=None, ptr_id=None, owner=None, location=None, id_at_location=None, register=False):
+    def create_pointer(self, parent=None, ptr_id=None, owner=None, location=None,
+                       id_at_location=None, register=False):
 
         if owner is None:
             owner = self.owner
@@ -127,8 +131,9 @@ class _SyftTensor(object):
             id_at_location = self.id
 
         if ptr_id is not None:
-            if(ptr_id == id_at_location):
-                raise AttributeError("The PointerTensor and the tensor being pointed to cannot have the same id.")
+            if (ptr_id == id_at_location):
+                raise AttributeError(
+                    "The PointerTensor and the tensor being pointed to cannot have the same id.")
 
         else:
             # Normally if there is no id specified, we keep the same as the original pointer
@@ -161,7 +166,6 @@ class _SyftTensor(object):
 
         return ptr
 
-
     def ser(self, private, as_dict=True):
         data = {
             'owner': self.owner.id,
@@ -179,7 +183,7 @@ class _SyftTensor(object):
     @staticmethod
     def deser(dct, worker, acquire):
         pat = re.compile('__(.+)__')
-        for key, obj in dct.items(): # A trick, we don't really loop
+        for key, obj in dct.items():  # A trick, we don't really loop
             obj_type = pat.search(key).group(1)
             if utils.is_syft_tensor(obj_type):
                 if obj_type == '_LocalTensor':
@@ -191,9 +195,9 @@ class _SyftTensor(object):
                 else:
                     raise TypeError('Deser: SyftTensor ' + obj_type + ' is not supported so far')
 
-
     def __str__(self):
-        return "["+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) + "]"
+        return "[" + type(self).__name__ + " - id:" + str(self.id) + " owner:" + str(
+            self.owner.id) + "]"
 
     def __repr__(self):
         return self.__str__()
@@ -202,11 +206,13 @@ class _SyftTensor(object):
 class _LocalTensor(_SyftTensor):
 
     def __init__(self, child, parent, torch_type, owner=None, id=None, skip_register=False):
-        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
+        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id,
+                         skip_register=skip_register)
 
     @staticmethod
     def handle_call(syft_command, owner):
-        tensor_command, torch_type = utils.prepare_child_command(syft_command, replace_tensorvar_with_child=True)
+        tensor_command, torch_type = utils.prepare_child_command(syft_command,
+                                                                 replace_tensorvar_with_child=True)
         utils.assert_has_only_torch_tensorvars(tensor_command)
 
         attr = tensor_command['command']
@@ -226,13 +232,12 @@ class _LocalTensor(_SyftTensor):
 
         response = command(*args, **kwargs)
 
-
         # TODO : control registration process
-
         if response is None:
             return response
         
         if isinstance(response, (int, float, bool)):
+
             if owner.id != owner.hook.local_worker.id:
                 response = sy.zeros(1) + response
             else:
@@ -262,7 +267,8 @@ class _LocalTensor(_SyftTensor):
                         syft_responses.append(resp)
                         continue
 
-                syft_response = sy._LocalTensor(child=resp, parent=resp, owner=owner, torch_type='syft.'+type(resp).__name__)
+                syft_response = sy._LocalTensor(child=resp, parent=resp, owner=owner,
+                                                torch_type='syft.' + type(resp).__name__)
 
                 if utils.is_variable(resp):
                     utils.link_var_chain_to_data_chain(syft_response, resp.data.child)
@@ -270,7 +276,6 @@ class _LocalTensor(_SyftTensor):
                 syft_responses.append(syft_response)
 
             return tuple(syft_responses) if len(syft_responses) > 1 else syft_responses[0]
-
 
     def ser(self, private, as_dict=True):
         data = {
@@ -297,7 +302,7 @@ class _LocalTensor(_SyftTensor):
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
-        if not 'owner' in msg_obj:
+        if 'owner' not in msg_obj:
             raise TypeError("sy._LocalTensor can't deserialize a non-valid sy._LocalTensor. "
                             "Do you wan to call sy.FloatTensor.deser() instead?")
         if msg_obj['owner'] == worker.id:
@@ -330,11 +335,10 @@ class _LocalTensor(_SyftTensor):
         raise TypeError("Cannot call .get() on a tensor you already have.")
 
 
-
 class _PlusIsMinusTensor(_SyftTensor):
 
-
-    def __init__(self, child=None, parent=None, torch_type=None, owner=None, id=None, skip_register=False):
+    def __init__(self, child=None, parent=None, torch_type=None, owner=None, id=None,
+                 skip_register=False):
         if utils.is_syft_tensor(child):
             if torch_type is None:
                 torch_type = child.torch_type
@@ -375,8 +379,6 @@ class _PlusIsMinusTensor(_SyftTensor):
             assert isinstance(self_, sy._PlusIsMinusTensor)
 
             result = getattr(self_, attr)(*args, **kwargs)
-
-
         else:
             # Overload functions
             if attr == 'torch.add':
@@ -391,11 +393,11 @@ class _PlusIsMinusTensor(_SyftTensor):
                 command['args'] = tuple(new_args)
 
             # Get the next node type and update in command tensorvar with tensorvar.child
-            next_command, child_type = utils.prepare_child_command(command, replace_tensorvar_with_child=True)
+            next_command, child_type = utils.prepare_child_command(
+                command, replace_tensorvar_with_child=True)
 
             # Forward the call to the next child
             result = child_type.handle_call(next_command, owner)
-
 
         # Insert the new node just before the wrapper
         syft_response = sy._PlusIsMinusTensor(child=result, owner=owner)
@@ -413,15 +415,15 @@ class _PlusIsMinusTensor(_SyftTensor):
         return syft_response
 
     def add(self, other):
-        #_self = self.child
-        #_other = other.child
+        # _self = self.child
+        # _other = other.child
 
-        #_response = _self.sub(_other)
+        # _response = _self.sub(_other)
         _response = self.sub(other)
 
         return _response
 
-        #return torch.mpc.add(self, other)
+        # return torch.mpc.add(self, other)
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
@@ -456,11 +458,12 @@ class _PlusIsMinusTensor(_SyftTensor):
         return syft_obj
 
 
-
 class _PointerTensor(_SyftTensor):
 
-    def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None, owner=None, skip_register=False):
-        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id, skip_register=skip_register)
+    def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None,
+                 owner=None, skip_register=False):
+        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id,
+                         skip_register=skip_register)
         if location is None:
             raise AttributeError("Pointer must have a location specified")
         self.location = self.owner.get_worker(location)
@@ -471,7 +474,8 @@ class _PointerTensor(_SyftTensor):
         # if it's not getting registered the pointer is probably about to be
         # sent over the wire
         if self.location == self.owner and not skip_register:
-            logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
+            logging.warning(
+                "Do you really want a pointer pointing to itself? (self.location == self.owner)")
 
     @staticmethod
     def handle_call(syft_command, owner):
@@ -483,12 +487,11 @@ class _PointerTensor(_SyftTensor):
         has_self = tensor_command['has_self']
         self_ = tensor_command['self'] if has_self else None
 
-
         command, locations, owners = utils.compile_command(attr,
-                                                            args,
-                                                            kwargs,
-                                                            has_self=has_self,
-                                                            self=self_)
+                                                           args,
+                                                           kwargs,
+                                                           has_self=has_self,
+                                                           self=self_)
 
         location = locations[0]
         owner = owners[0]
@@ -498,8 +501,8 @@ class _PointerTensor(_SyftTensor):
 
         utils.assert_has_only_torch_tensorvars(response)
 
-        # If the command is an in-place method, we only need to return the same wrapper to the same pointer,
-        # Instead of returning the new wrapper created in response
+        # If the command is an in-place method, we only need to return the same wrapper to the same
+        # pointer, instead of returning the new wrapper created in response
         if has_self and utils.is_in_place_method(attr):
             return syft_command['self']
 
@@ -509,7 +512,9 @@ class _PointerTensor(_SyftTensor):
         return response
 
     def __str__(self):
-        return "["+type(self).__name__+" - id:" + str(self.id) + " owner:" + str(self.owner.id) +  " loc:" + str(self.location.id) + " id@loc:"+str(self.id_at_location)+"]"
+        return "[" + type(self).__name__ + " - id:" + str(self.id) + " owner:" + str(
+            self.owner.id) + " loc:" + str(self.location.id) + " id@loc:" + str(
+            self.id_at_location) + "]"
 
     def ser(self, private, as_dict=True):
         data = {
@@ -545,7 +550,7 @@ class _PointerTensor(_SyftTensor):
                 else:
                     syft_obj = previous_pointer
             else:  # We point at the Pointer
-                owner = worker.get_worker(msg_obj['owner'])
+                # owner = worker.get_worker(msg_obj['owner'])
                 previous_pointer = worker.get_pointer_to(msg_obj['owner'], msg_obj['id'])
                 if previous_pointer is None:
                     syft_obj = sy._PointerTensor(child=None,
@@ -560,7 +565,7 @@ class _PointerTensor(_SyftTensor):
                     syft_obj = previous_pointer
         return syft_obj
 
-    def wrap(self): # TODO do it in a smart (and dual?) way
+    def wrap(self):  # TODO do it in a smart (and dual?) way
         wrapper = guard[self.torch_type]()
         self.owner.rm_obj(wrapper.child.id)
         wrapper.child = self
@@ -606,7 +611,8 @@ class _PointerTensor(_SyftTensor):
         This method also works for an iterable of tensors (e.g. `torch.cat([x1, x2, x3])`)
         """
         if issubclass(tensor.__class__, sy._SyftTensor):
-            raise TypeError('Calling _tensors_to_str_ids on non-tensor/var/param but sy._SyftTensor')
+            raise TypeError(
+                'Calling _tensors_to_str_ids on non-tensor/var/param but sy._SyftTensor')
 
         if isinstance(tensor, (int, str)):
             return tensor
@@ -630,6 +636,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __init__(self, child, parent, torch_type, owner=None):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner)
 
+
 class _TorchObject(object):
     """
     This tensor is simply a more convenient way to add custom
@@ -643,13 +650,14 @@ class _TorchObject(object):
 
     def __repr__(self):
 
-
-        if utils.is_tensor(self) and hasattr(self, 'child') and not isinstance(self.child, (sy._LocalTensor, sy._PointerTensor)):
+        if utils.is_tensor(self) and hasattr(self, 'child') and not isinstance(self.child, (
+                sy._LocalTensor, sy._PointerTensor)):
             x_ = type(self)()
             x_.native_set_(self)
             return "[Head of chain]\n" + x_.native___repr__()
 
-        if utils.is_variable(self) and hasattr(self, 'child') and not isinstance(self.child, (sy._LocalTensor, sy._PointerTensor)):
+        if utils.is_variable(self) and hasattr(self, 'child') and not isinstance(self.child, (
+                sy._LocalTensor, sy._PointerTensor)):
             x_ = type(self)(self.data)
             x_.native_set_(self)
             return "[Head of chain]\n" + x_.native___repr__()
@@ -658,16 +666,16 @@ class _TorchObject(object):
 
     def create_pointer(self, register=False, location=None, ptr_id=None):
 
-        return self.child.create_pointer(parent=self, register=register, location=location, ptr_id=ptr_id).wrap()
+        return self.child.create_pointer(parent=self, register=register, location=location,
+                                         ptr_id=ptr_id).wrap()
 
     def create_local_tensor(self, worker, id=None):
         tensor = sy._LocalTensor(child=self,
-                                parent=self,
-                                torch_type='syft.' + type(self).__name__,
-                                owner=worker,
-                                id=None)
-        return tensor      
-
+                                 parent=self,
+                                 torch_type='syft.' + type(self).__name__,
+                                 owner=worker,
+                                 id=None)
+        return tensor
 
     def get(self, deregister_ptr=True, update_ptr_wrapper=True):
 
@@ -689,8 +697,8 @@ class _TorchObject(object):
             # Whereas we expect x2: [Float()]
             # So we use the .set_() method, to change the storage of [no dim]
             if not isinstance(syft_tensor, sy._PointerTensor) \
-              and tensor is not None \
-              and tensor.dim() > 0:
+                    and tensor is not None \
+                    and tensor.dim() > 0:
                 self.native_set_(tensor)
             utils.fix_chain_ends(self)
             utils.assert_is_chain_well_formed(self)
@@ -709,7 +717,7 @@ class _TorchObject(object):
             worker = self.owner.get_worker(worker)
 
         if new_id is None:
-            new_id = random.randint(0,10e10)
+            new_id = random.randint(0, 10e10)
 
         pointer = self.child.find_pointer()
 
@@ -717,12 +725,12 @@ class _TorchObject(object):
             return self.send(worker, new_id)
 
         command, _ = pointer.compile_command('move',
-                                          (worker.id, new_id),
-                                          {},
-                                          True)
+                                             (worker.id, new_id),
+                                             {},
+                                             True)
 
-        response = pointer.owner.send_torch_command(recipient=pointer.location,
-                                                    message=command)
+        # response = pointer.owner.send_torch_command(recipient=pointer.location,
+        #                                             message=command)
         return self
 
 
@@ -741,7 +749,6 @@ class _TorchTensor(_TorchObject):
             return {key: tensor_msg}
         else:
             return json.dumps({key: tensor_msg}) + "\n"
-
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
@@ -810,18 +817,19 @@ class _TorchTensor(_TorchObject):
 
     def __str__(self):
         if isinstance(self.child, _PointerTensor):
-            return type(self).__name__+self.child.__str__()+""
+            return type(self).__name__ + self.child.__str__() + ""
         elif isinstance(self.child, _LocalTensor) and utils.is_tensor_empty(self):
-            if(hasattr(self.child, 'child')):
+            if (hasattr(self.child, 'child')):
                 return self.child.child.native___str__()
             else:
                 return "Empty Wrapper:\n" + self.native___str__()
         else:
             if not isinstance(self.child, (sy._LocalTensor, sy._PointerTensor)):
-                x_ = eval('sy.'+ type(self).__name__)()
+                x_ = eval('sy.' + type(self).__name__)()
                 x_.native_set_(self)
                 return "[Head of chain]\n" + x_.native___repr__()
             return self.native___str__()
+
 
 class _TorchVariable(_TorchObject):
 
@@ -835,10 +843,10 @@ class _TorchVariable(_TorchObject):
             worker = self.owner.get_worker(worker)
 
         if new_id is None:
-            new_id = random.randint(0,9999999999)
+            new_id = random.randint(0, 9999999999)
 
         if new_data_id is None:
-            new_data_id = random.randint(0,9999999999)
+            new_data_id = random.randint(0, 9999999999)
 
         # if new_grad_id is None:
         #     new_grad_id = random.randint(0,9999999999)
@@ -850,7 +858,6 @@ class _TorchVariable(_TorchObject):
                             new_id,
                             worker,
                             new_data_id=new_data_id)
-
 
         # clears data which could be cached in the wrapper (which is self)
         # which would be confusing for folks
@@ -866,7 +873,8 @@ class _TorchVariable(_TorchObject):
 
         # same for data
         self.data.child.id = obj_data_id
-        var_data_ptr = self.data.child.create_pointer(location=worker, id_at_location=new_data_id, register=True)
+        var_data_ptr = self.data.child.create_pointer(location=worker, id_at_location=new_data_id,
+                                                      register=True)
         self.data.child = var_data_ptr
         var_data_ptr.parent = self.data
         self.data.parent = None
@@ -896,8 +904,8 @@ class _TorchVariable(_TorchObject):
             # Whereas we expect x2: [Float()]
             # So we use the .set_() method, to change the storage of [no dim]
             if not isinstance(variable.child, sy._PointerTensor) \
-              and variable.data is not None \
-              and variable.data.dim() > 0:
+                    and variable.data is not None \
+                    and variable.data.dim() > 0:
                 self.native_set_(variable)
 
             utils.link_var_chain_to_data_chain(self, self.data)
@@ -928,7 +936,7 @@ class _TorchVariable(_TorchObject):
         # Deser the var.data
         var_data_type, var_data_tensor = utils.extract_type_and_obj(msg_obj['data'])
         if utils.is_tensor(var_data_type):
-            var_data =  eval('sy.' + var_data_type).deser(msg_obj['data'], worker, acquire)
+            var_data = eval('sy.' + var_data_type).deser(msg_obj['data'], worker, acquire)
             worker.hook.local_worker.de_register(var_data)
         else:
             raise TypeError('Data is not a tensor:', var_data_type)

@@ -10,7 +10,6 @@ from syft.core import utils
 import torch
 import torch.nn.functional as F
 
-
 hook = sy.TorchHook(verbose=True)
 
 me = hook.local_worker
@@ -34,11 +33,13 @@ class TestChainTensor(TestCase):
         x = sy._PlusIsMinusTensor().on(x)
         y = sy._PlusIsMinusTensor().on(y)
 
-        assert utils.chain_print(x, display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert utils.chain_print(x,
+                                 display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
 
         z = x.add(y)
 
-        assert utils.chain_print(z, display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert utils.chain_print(z,
+                                 display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
 
         # cut chain for the equality check
         z.child = z.child.child
@@ -70,12 +71,12 @@ class TestChainTensor(TestCase):
                                  display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
 
         z.get()
-        assert utils.chain_print(z, display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert utils.chain_print(z,
+                                 display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
 
         # cut chain for the equality check
         z.child = z.child.child
         assert torch.equal(z, torch.FloatTensor([2, 2]))
-
 
     def test_plus_is_minus_variable_local(self):
         x = sy.Variable(torch.FloatTensor([5, 6]))
@@ -83,11 +84,17 @@ class TestChainTensor(TestCase):
         x = sy._PlusIsMinusTensor().on(x)
         y = sy._PlusIsMinusTensor().on(y)
 
-        assert utils.chain_print(x, display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert utils.chain_print(x,
+                                 display=False) == 'Variable > _PlusIsMinusTensor > ' \
+                                                   '_LocalTensor\n - FloatTensor > ' \
+                                                   '_PlusIsMinusTensor > _LocalTensor'
 
         z = x.add(y)
 
-        assert utils.chain_print(z, display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert utils.chain_print(z,
+                                 display=False) == 'Variable > _PlusIsMinusTensor > ' \
+                                                   '_LocalTensor\n - FloatTensor >' \
+                                                   ' _PlusIsMinusTensor > _LocalTensor'
 
         # cut chain for the equality check
         z.data.child = z.data.child.child
@@ -113,7 +120,9 @@ class TestChainTensor(TestCase):
         y.send(bob, new_id=id2, new_data_id=id21)
 
         z = x.add(y)
-        assert utils.chain_print(z, display=False) == 'Variable > _PointerTensor\n - FloatTensor > _PointerTensor'
+        assert utils.chain_print(z,
+                                 display=False) == 'Variable > _PointerTensor\n - FloatTensor >' \
+                                                   ' _PointerTensor'
 
         assert bob._objects[z.id_at_location].owner.id == 'bob'
         assert bob._objects[z.data.id_at_location].owner.id == 'bob'
@@ -121,10 +130,15 @@ class TestChainTensor(TestCase):
         # Check chain on remote
         ptr_id = z.child.id_at_location
         assert utils.chain_print(bob._objects[ptr_id].parent,
-                                 display=False) ==  'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+                                 display=False) == 'Variable > _PlusIsMinusTensor > ' \
+                                                   '_LocalTensor\n - FloatTensor >' \
+                                                   ' _PlusIsMinusTensor > _LocalTensor'
 
         z.get()
-        assert utils.chain_print(z, display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert utils.chain_print(z,
+                                 display=False) == 'Variable > _PlusIsMinusTensor >' \
+                                                   ' _LocalTensor\n - FloatTensor >' \
+                                                   ' _PlusIsMinusTensor > _LocalTensor'
 
         # cut chain for the equality check
         z.data.child = z.data.child.child
@@ -136,7 +150,8 @@ class TestTorchTensor(TestCase):
     def test___repr__(self):
         x = torch.FloatTensor([1, 2, 3, 4, 5])
         # assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[torch.FloatTensor of size 5]\n'
-        assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[syft.core.frameworks.torch.tensor.FloatTensor of size 5]\n'
+        assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[' \
+                               'syft.core.frameworks.torch.tensor.FloatTensor of size 5]\n'
 
     def test_send_get_tensor(self):
 
@@ -174,7 +189,8 @@ class TestTorchTensor(TestCase):
         #       x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
         #       y = x.abs_() # in-place operation
         #       y.get()
-        #       x.send(bob) # if x.child != y.child, x will send it's old pointer to bob->trigger an error
+        #       x.send(bob) # if x.child != y.child, x will send its old pointer
+        #        to bob->trigger an error
         #     You want this to work, but don't want to create a new pointer, just
         #     reuse the old one.
 
@@ -202,9 +218,9 @@ class TestTorchTensor(TestCase):
     def test_chain_send_get_tensor(self):
 
         x = torch.FloatTensor([1, 2, 3, 4, 5])
-        id1 = random.randint(0,10e10)
-        id2 = random.randint(0,10e10)
-        id3 = random.randint(0,10e10)
+        id1 = random.randint(0, 10e10)
+        id2 = random.randint(0, 10e10)
+        id3 = random.randint(0, 10e10)
         x.send(bob, ptr_id=id1)
         assert id1 in bob._objects
         x.send(alice, ptr_id=id2)
@@ -222,42 +238,42 @@ class TestTorchTensor(TestCase):
         assert id3 not in james._objects
 
     def test_add_remote_tensor(self):
-        x = sy.FloatTensor([1,2,3,4])
+        x = sy.FloatTensor([1, 2, 3, 4])
         x.send(bob, ptr_id=1000)
         x.send(alice, ptr_id=2000)
-        y = sy.FloatTensor([2,3,4,5])
+        y = sy.FloatTensor([2, 3, 4, 5])
         y.send(bob, ptr_id=1001)
         y.send(alice, ptr_id=2001)
         z = torch.add(x, y)
         z.get().get()
         assert torch.equal(z, torch.FloatTensor([3, 5, 7, 9]))
 
-#     def test_fixed_prec_ops(self):
-#         hook = TorchHook(verbose=False)
+    #     def test_fixed_prec_ops(self):
+    #         hook = TorchHook(verbose=False)
 
-#         x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
-#         y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+    #         x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
+    #         y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
 
-#         assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
-#         assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).all()
-#         assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).all()
-#         assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
+    #         assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
+    #         assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).all()
+    #         assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).all()
+    #         assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
 
-#         x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
-#         y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
+    #         x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+    #         y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(7)
 
-#         assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
-#         assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).all()
-#         assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).all()
-#         assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
+    #         assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
+    #         assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).all()
+    #         assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).all()
+    #         assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
 
-#         x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
-#         y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+    #         x = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
+    #         y = torch.FloatTensor([1, 2, 3, 4, 5]).set_precision(3)
 
-#         assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
-#         assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).all()
-#         assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).all()
-#         assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
+    #         assert ((x + y).free_precision() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
+    #         assert ((x / y).free_precision() == torch.FloatTensor([1, 1, 1, 1, 1])).all()
+    #         assert ((x * y).free_precision() == torch.FloatTensor([1, 4, 9, 16, 25])).all()
+    #         assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
 
     def test_local_tensor_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
@@ -307,7 +323,9 @@ class TestTorchTensor(TestCase):
         z = torch.dot(x, y)
         # There is an issue with some Macs getting 0.0 instead
         # Solved here: https://github.com/pytorch/pytorch/issues/5609
-        assert torch.equal(torch.FloatTensor([z]), torch.FloatTensor([14])), "There is an issue with some Macs getting 0.0 instead, see https://github.com/pytorch/pytorch/issues/5609"
+        assert torch.equal(torch.FloatTensor([z]), torch.FloatTensor([
+            14])), "There is an issue with some Macs getting 0.0 instead, " \
+                   "see https://github.com/pytorch/pytorch/issues/5609"
 
         z = torch.eq(x, y)
         assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
@@ -337,12 +355,11 @@ class TestTorchTensor(TestCase):
 
         assert (x.cpu().get() == torch.FloatTensor([1, 2, -3, 4, 5])).all()
 
-
     def test_remote_tensor_binary_methods(self):
 
         x = torch.FloatTensor([1, 2, 3, 4, 5]).send(bob)
         y = torch.FloatTensor([1, 2, 3, 4, 5]).send(bob)
-        assert (torch.add(x, y).get() == torch.FloatTensor([2,4,6,8,10])).all()
+        assert (torch.add(x, y).get() == torch.FloatTensor([2, 4, 6, 8, 10])).all()
 
         x = torch.FloatTensor([1, 2, 3, 4]).send(bob)
         y = torch.FloatTensor([[1], [2], [3], [4]]).send(bob)
@@ -377,7 +394,7 @@ class TestTorchTensor(TestCase):
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([1, 2, 3])
         z = torch.FloatTensor([1, 2, 3])
-        assert (torch.equal(torch.addcmul(z, 2, x, y), torch.FloatTensor([3.,  10.,  21.])))
+        assert (torch.equal(torch.addcmul(z, 2, x, y), torch.FloatTensor([3., 10., 21.])))
 
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([1, 2, 3])
@@ -388,14 +405,14 @@ class TestTorchTensor(TestCase):
         x = torch.FloatTensor([[1, 2]])
         y = torch.FloatTensor([[1, 2, 3], [4, 5, 6]])
         z = torch.FloatTensor([1, 2, 3])
-        assert(torch.equal(torch.addmm(z, x, y), torch.FloatTensor([[10., 14., 18.]])))
+        assert (torch.equal(torch.addmm(z, x, y), torch.FloatTensor([[10., 14., 18.]])))
 
     def test_remote_tensor_tertiary_methods(self):
 
         x = torch.FloatTensor([1, 2, 3]).send(bob)
         y = torch.FloatTensor([1, 2, 3]).send(bob)
         z = torch.FloatTensor([1, 2, 3]).send(bob)
-        assert (torch.equal(torch.addcmul(z,  2, x, y).get(), torch.FloatTensor([3., 10., 21.])))
+        assert (torch.equal(torch.addcmul(z, 2, x, y).get(), torch.FloatTensor([3., 10., 21.])))
 
         # Uses a method
         x = torch.FloatTensor([1, 2, 3]).send(bob)
@@ -414,7 +431,8 @@ class TestTorchTensor(TestCase):
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([2, 3, 4])
         z = torch.FloatTensor([5, 6, 7])
-        assert(torch.equal(torch.stack([x, y, z]), torch.FloatTensor([[1, 2, 3], [2, 3, 4], [5, 6, 7]])))
+        assert (torch.equal(torch.stack([x, y, z]),
+                            torch.FloatTensor([[1, 2, 3], [2, 3, 4], [5, 6, 7]])))
 
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([2, 3, 4])
@@ -429,7 +447,8 @@ class TestTorchTensor(TestCase):
         x.get()
         y.get()
         z.get()
-        assert(torch.equal(torch.stack([x, y, z]), torch.FloatTensor([[1, 2, 3], [2, 3, 4], [5, 6, 7]])))
+        assert (torch.equal(torch.stack([x, y, z]),
+                            torch.FloatTensor([[1, 2, 3], [2, 3, 4], [5, 6, 7]])))
 
         x = torch.FloatTensor([1, 2, 3]).send(bob)
         y = torch.FloatTensor([2, 3, 4]).send(bob)
@@ -442,6 +461,53 @@ class TestTorchTensor(TestCase):
 
 class TestTorchVariable(TestCase):
 
+    #     def test_remote_backprop(self):
+
+    #         hook = TorchHook(verbose=False)
+    #         local = hook.local_worker
+    #         local.verbose = False
+    #         remote = VirtualWorker(id=1, hook=hook, verbose=False)
+    #         local.add_worker(remote)
+
+    #         x = Var(torch.ones(2, 2), requires_grad=True).send_(remote)
+    #         x2 = Var(torch.ones(2, 2)*2, requires_grad=True).send_(remote)
+
+    #         y = x * x2
+
+    #         y.sum().backward()
+
+    #         # remote grads should be correct
+    #         assert (remote._objects[x2.id].grad.data == torch.ones(2, 2)).all()
+    #         assert (remote._objects[x.id].grad.data == torch.ones(2, 2)*2).all()
+
+    #         assert (y.get().data == torch.ones(2, 2)*2).all()
+
+    #         assert (x.get().data == torch.ones(2, 2)).all()
+    #         assert (x2.get().data == torch.ones(2, 2)*2).all()
+
+    #         assert (x.grad.data == torch.ones(2, 2)*2).all()
+    #         assert (x2.grad.data == torch.ones(2, 2)).all()
+
+    #     def test_variable_data_attribute_bug(self):
+
+    #         # previously, newly created Variable objects would lose their OpenMined given
+    #         # attributes on the .data python objects they contain whenever the Variable
+    #         # object is returned from a function. This bug was fixed by storing a bbackup
+    #         # pointer to the .data object (.data_backup) so that the python object doesn't
+    #         # get garbage collected. This test used to error out at the last line (as
+    #         # indcated below)
+
+    #         hook = TorchHook(verbose=False)
+    #         local = hook.local_worker
+    #         local.verbose = False
+
+    #         def relu(x):
+    #             """Rectified linear activation"""
+    #             return torch.clamp(x, min=0.)
+
+    #         def linear(x, w):
+    #             """Linear transformation of x by w"""
+    #             return x.mm(w)
 
     def test_remote_backprop(self):
 
@@ -465,257 +531,235 @@ class TestTorchVariable(TestCase):
         assert (x.grad.data == torch.ones(2, 2)*2).all()
         assert (x2.grad.data == torch.ones(2, 2)).all()
 
-#     def test_variable_data_attribute_bug(self):
+    #         x = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
+    #         y = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
 
-#         # previously, newly created Variable objects would lose their OpenMined given
-#         # attributes on the .data python objects they contain whenever the Variable
-#         # object is returned from a function. This bug was fixed by storing a bbackup
-#         # pointer to the .data object (.data_backup) so that the python object doesn't
-#         # get garbage collected. This test used to error out at the last line (as
-#         # indcated below)
+    #         z = linear(x, y)
 
-#         hook = TorchHook(verbose=False)
-#         local = hook.local_worker
-#         local.verbose = False
+    #         # previously we had to do the following to prevent this bug
+    #         # leaving it here for reference in case the bug returns later.
+    #         # print(z.data.is_pointer)
 
-#         def relu(x):
-#             """Rectified linear activation"""
-#             return torch.clamp(x, min=0.)
+    #         # before the bugfix, the following line would error out.
+    #         z = relu(z)
 
-#         def linear(x, w):
-#             """Linear transformation of x by w"""
-#             return x.mm(w)
+    #         assert True
 
-#         x = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
-#         y = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
+    #     def test_encode_decode_json_python(self):
+    #         """
+    #             Test that the python objects are correctly encoded and decoded in
+    #             json with our encoder/JSONDecoder.
+    #             The main focus is on non-serializable objects, such as torch Variable
+    #             or tuple, or even slice().
+    #         """
+    #         hook = TorchHook(verbose=False)
+    #         local = hook.local_worker
+    #         remote = VirtualWorker(id=1, hook=hook)
+    #         local.add_worker(remote)
 
-#         z = linear(x, y)
+    #         encoder = utils.PythonEncoder(retrieve_tensorvar=True)
+    #         decoder = utils.PythonJSONDecoder(remote)
+    #         x = Var(torch.FloatTensor([[1, -1],[0,1]]))
+    #         x.send(remote)
+    #         # Note that there is two steps of encoding/decoding because the first
+    #         # transforms `Variable containing:[torch.FloatTensor - Locations:[
+    #         # <syft.core.workers.virtual.VirtualWorker id:2>]]` into
+    #         # Variable containing:[torch.FloatTensor - Locations:[2]]`
+    #         obj = [None, ({'marcel': (1, [1.3], x), 'proust': slice(0, 2, None)}, 3)]
+    #         enc, t = encoder.encode(obj)
+    #         enc = json.dumps(enc)
+    #         dec1 = decoder.decode(enc)
+    #         enc, t = encoder.encode(dec1)
+    #         enc = json.dumps(enc)
+    #         dec2 = decoder.decode(enc)
+    #         assert dec1 == dec2
 
-#         # previously we had to do the following to prevent this bug
-#         # leaving it here for reference in case the bug returns later.
-#         # print(z.data.is_pointer)
+    #     def test_var_gradient_keeps_id_during_send_(self):
+    #         # PyTorch has a tendency to delete var.grad python objects
+    #         # and re-initialize them (resulting in new/random ids)
+    #         # we have fixed this bug and recorded how it was fixed
+    #         # as well as the creation of this unit test in the following
+    #         # video (1:50:00 - 2:00:00) ish
+    #         # https://www.twitch.tv/videos/275838386
 
-#         # before the bugfix, the following line would error out.
-#         z = relu(z)
+    #         # this is our hook
+    #         hook = TorchHook(verbose=False)
+    #         local = hook.local_worker
+    #         local.verbose = False
 
-#         assert True
+    #         remote = VirtualWorker(id=1, hook=hook, verbose=False)
+    #         local.add_worker(remote)
 
-#     def test_encode_decode_json_python(self):
-#         """
-#             Test that the python objects are correctly encoded and decoded in
-#             json with our encoder/JSONDecoder.
-#             The main focus is on non-serializable objects, such as torch Variable
-#             or tuple, or even slice().
-#         """
-#         hook = TorchHook(verbose=False)
-#         local = hook.local_worker
-#         remote = VirtualWorker(id=1, hook=hook)
-#         local.add_worker(remote)
+    #         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
+    #         target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
 
-#         encoder = utils.PythonEncoder(retrieve_tensorvar=True)
-#         decoder = utils.PythonJSONDecoder(remote)
-#         x = Var(torch.FloatTensor([[1, -1],[0,1]]))
-#         x.send(remote)
-#         # Note that there is two steps of encoding/decoding because the first
-#         # transforms `Variable containing:[torch.FloatTensor - Locations:[
-#         # <syft.core.workers.virtual.VirtualWorker id:2>]]` into
-#         # Variable containing:[torch.FloatTensor - Locations:[2]]`
-#         obj = [None, ({'marcel': (1, [1.3], x), 'proust': slice(0, 2, None)}, 3)]
-#         enc, t = encoder.encode(obj)
-#         enc = json.dumps(enc)
-#         dec1 = decoder.decode(enc)
-#         enc, t = encoder.encode(dec1)
-#         enc = json.dumps(enc)
-#         dec2 = decoder.decode(enc)
-#         assert dec1 == dec2
+    #         model = Var(torch.zeros(2, 1), requires_grad=True)
 
-#     def test_var_gradient_keeps_id_during_send_(self):
-#         # PyTorch has a tendency to delete var.grad python objects
-#         # and re-initialize them (resulting in new/random ids)
-#         # we have fixed this bug and recorded how it was fixed
-#         # as well as the creation of this unit test in the following
-#         # video (1:50:00 - 2:00:00) ish
-#         # https://www.twitch.tv/videos/275838386
+    #         # generates grad objects on model
+    #         pred = data.mm(model)
+    #         loss = ((pred - target)**2).sum()
+    #         loss.backward()
 
-#         # this is our hook
-#         hook = TorchHook(verbose=False)
-#         local = hook.local_worker
-#         local.verbose = False
+    #         # the grad's true id
+    #         original_data_id = model.data.id + 0
+    #         original_grad_id = model.grad.data.id + 0
 
-#         remote = VirtualWorker(id=1, hook=hook, verbose=False)
-#         local.add_worker(remote)
+    #         model.send_(remote)
 
-#         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
-#         target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
+    #         assert model.data.id == original_data_id
+    #         assert model.grad.data.id == original_grad_id
 
-#         model = Var(torch.zeros(2, 1), requires_grad=True)
+    #     def test_send_var_with_gradient(self):
 
-#         # generates grad objects on model
-#         pred = data.mm(model)
-#         loss = ((pred - target)**2).sum()
-#         loss.backward()
+    #         # previously, there was a bug involving sending variables with graidents
+    #         # to remote tensors. This bug was documented in Issue 1350
+    #         # https://github.com/OpenMined/PySyft/issues/1350
 
-#         # the grad's true id
-#         original_data_id = model.data.id + 0
-#         original_grad_id = model.grad.data.id + 0
+    #         # this is our hook
+    #         hook = TorchHook(verbose=False)
+    #         local = hook.local_worker
+    #         local.verbose = False
 
-#         model.send_(remote)
+    #         remote = VirtualWorker(id=1, hook=hook, verbose=False)
+    #         local.add_worker(remote)
 
-#         assert model.data.id == original_data_id
-#         assert model.grad.data.id == original_grad_id
+    #         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
+    #         target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
 
-#     def test_send_var_with_gradient(self):
+    #         model = Var(torch.zeros(2, 1), requires_grad=True)
 
-#         # previously, there was a bug involving sending variables with graidents
-#         # to remote tensors. This bug was documented in Issue 1350
-#         # https://github.com/OpenMined/PySyft/issues/1350
+    #         # generates grad objects on model
+    #         pred = data.mm(model)
+    #         loss = ((pred - target)**2).sum()
+    #         loss.backward()
 
-#         # this is our hook
-#         hook = TorchHook(verbose=False)
-#         local = hook.local_worker
-#         local.verbose = False
+    #         # ensure that model and all (grand)children are owned by the local worker
+    #         assert model.owners[0].id == local.id
+    #         assert model.data.owners[0].id == local.id
 
-#         remote = VirtualWorker(id=1, hook=hook, verbose=False)
-#         local.add_worker(remote)
+    #         # if you get a failure here saying that model.grad.owners does not exist
+    #         # check in hooks.py - _hook_new_grad(). self.grad_backup has probably either
+    #         # been deleted or is being run at the wrong time (see comments there)
+    #         assert model.grad.owners[0].id == local.id
+    #         assert model.grad.data.owners[0].id == local.id
 
-#         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
-#         target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
+    #         # ensure that objects are not yet pointers (haven't sent it yet)
+    #         assert not model.is_pointer
+    #         assert not model.data.is_pointer
+    #         assert not model.grad.is_pointer
+    #         assert not model.grad.data.is_pointer
 
-#         model = Var(torch.zeros(2, 1), requires_grad=True)
+    #         model.send_(remote)
 
-#         # generates grad objects on model
-#         pred = data.mm(model)
-#         loss = ((pred - target)**2).sum()
-#         loss.backward()
+    #         # ensures that object ids do not change during the sending process
+    #         assert model.owners[0].id == remote.id
+    #         assert model.data.owners[0].id == remote.id
+    #         assert model.grad.owners[0].id == remote.id
+    #         assert model.grad.data.owners[0].id == remote.id
 
-#         # ensure that model and all (grand)children are owned by the local worker
-#         assert model.owners[0].id == local.id
-#         assert model.data.owners[0].id == local.id
+    #         # ensures that all local objects are now pointers
+    #         assert model.is_pointer
+    #         assert model.data.is_pointer
+    #         assert model.grad.is_pointer
+    #         assert model.grad.data.is_pointer
 
-#         # if you get a failure here saying that model.grad.owners does not exist
-#         # check in hooks.py - _hook_new_grad(). self.grad_backup has probably either
-#         # been deleted or is being run at the wrong time (see comments there)
-#         assert model.grad.owners[0].id == local.id
-#         assert model.grad.data.owners[0].id == local.id
+    #         # makes sure that tensors actually get sent to remote worker
+    #         assert model.id in remote._objects
+    #         assert model.data.id in remote._objects
+    #         assert model.grad.id in remote._objects
+    #         assert model.grad.data.id in remote._objects
 
-#         # ensure that objects are not yet pointers (haven't sent it yet)
-#         assert not model.is_pointer
-#         assert not model.data.is_pointer
-#         assert not model.grad.is_pointer
-#         assert not model.grad.data.is_pointer
+    #     def test_remote_optim_step(self):
 
-#         model.send_(remote)
+    #         torch.manual_seed(42)
+    #         hook = TorchHook(verbose=False)
+    #         local = hook.local_worker
+    #         local.verbose = False
+    #         remote = VirtualWorker(id=1, hook=hook, verbose=False)
+    #         local.add_worker(remote)
+    #         param = []
 
-#         # ensures that object ids do not change during the sending process
-#         assert model.owners[0].id == remote.id
-#         assert model.data.owners[0].id == remote.id
-#         assert model.grad.owners[0].id == remote.id
-#         assert model.grad.data.owners[0].id == remote.id
+    #         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]])).send(remote)
+    #         target = Var(torch.FloatTensor([[0], [0], [1], [1]])).send(remote)
 
-#         # ensures that all local objects are now pointers
-#         assert model.is_pointer
-#         assert model.data.is_pointer
-#         assert model.grad.is_pointer
-#         assert model.grad.data.is_pointer
+    #         model = nn.Linear(2, 1)
+    #         opt = optim.SGD(params=model.parameters(), lr=0.1)
 
-#         # makes sure that tensors actually get sent to remote worker
-#         assert model.id in remote._objects
-#         assert model.data.id in remote._objects
-#         assert model.grad.id in remote._objects
-#         assert model.grad.data.id in remote._objects
+    #         for i in model.parameters():
+    #             param.append(i[:])
 
-#     def test_remote_optim_step(self):
+    #         model.send_(remote)
+    #         model.zero_grad()
+    #         pred = model(data)
+    #         loss = ((pred - target) ** 2).sum()
+    #         loss.backward()
+    #         opt.step()
 
-#         torch.manual_seed(42)
-#         hook = TorchHook(verbose=False)
-#         local = hook.local_worker
-#         local.verbose = False
-#         remote = VirtualWorker(id=1, hook=hook, verbose=False)
-#         local.add_worker(remote)
-#         param = []
+    #         model.get_()
+    #         for i in model.parameters():
+    #             param.append(i[:])
 
-#         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]])).send(remote)
-#         target = Var(torch.FloatTensor([[0], [0], [1], [1]])).send(remote)
+    #         x = []
+    #         for i in param:
+    #             if type(i.data[0]) != float:
+    #                 x.append(i.data[0][0])
+    #                 x.append(i.data[0][1])
+    #             else:
+    #                 x.append(i.data[0])
 
-#         model = nn.Linear(2, 1)
-#         opt = optim.SGD(params=model.parameters(), lr=0.1)
+    #         y = [0.5406, 0.5869, -0.16565567255020142, 0.6732, 0.5103, -0.0841369703412056]
 
-#         for i in model.parameters():
-#             param.append(i[:])
+    #         assert (self.assertAlmostEqual(X,Y) for X,Y in zip(x,y))
 
-#         model.send_(remote)
-#         model.zero_grad()
-#         pred = model(data)
-#         loss = ((pred - target) ** 2).sum()
-#         loss.backward()
-#         opt.step()
+    #     def test_federated_learning(self):
 
-#         model.get_()
-#         for i in model.parameters():
-#             param.append(i[:])
+    #         torch.manual_seed(42)
+    #         hook = TorchHook(verbose=False)
+    #         me = hook.local_worker
+    #         me.verbose = False
 
-#         x = []
-#         for i in param:
-#             if type(i.data[0]) != float:
-#                 x.append(i.data[0][0])
-#                 x.append(i.data[0][1])
-#             else:
-#                 x.append(i.data[0])
+    #         bob = VirtualWorker(id=1, hook=hook, verbose=False)
+    #         alice = VirtualWorker(id=2, hook=hook, verbose=False)
 
-#         y = [0.5406, 0.5869, -0.16565567255020142, 0.6732, 0.5103, -0.0841369703412056]
+    #         me.add_worker(bob)
+    #         me.add_worker(alice)
 
-#         assert (self.assertAlmostEqual(X,Y) for X,Y in zip(x,y))
+    #         # create our dataset
+    #         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
+    #         target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
 
-#     def test_federated_learning(self):
+    #         data_bob = data[0:2].send(bob)
+    #         target_bob = target[0:2].send(bob)
 
-#         torch.manual_seed(42)
-#         hook = TorchHook(verbose=False)
-#         me = hook.local_worker
-#         me.verbose = False
+    #         data_alice = data[2:].send(alice)
+    #         target_alice = target[2:].send(alice)
 
-#         bob = VirtualWorker(id=1, hook=hook, verbose=False)
-#         alice = VirtualWorker(id=2, hook=hook, verbose=False)
+    #         # create our model
+    #         model = nn.Linear(2, 1)
 
-#         me.add_worker(bob)
-#         me.add_worker(alice)
+    #         opt = optim.SGD(params=model.parameters(), lr=0.1)
 
-#         # create our dataset
-#         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
-#         target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
+    #         datasets = [(data_bob, target_bob), (data_alice, target_alice)]
 
-#         data_bob = data[0:2].send(bob)
-#         target_bob = target[0:2].send(bob)
+    #         for iter in range(2):
 
-#         data_alice = data[2:].send(alice)
-#         target_alice = target[2:].send(alice)
+    #             for data, target in datasets:
+    #                 model.send(data.owners[0])
 
-#         # create our model
-#         model = nn.Linear(2, 1)
+    #                 # update the model
+    #                 model.zero_grad()
+    #                 pred = model(data)
+    #                 loss = ((pred - target)**2).sum()
+    #                 loss.backward()
+    #                 opt.step()
 
-#         opt = optim.SGD(params=model.parameters(), lr=0.1)
+    #                 model.get_()
+    #                 if(iter == 1):
+    #                     final_loss = loss.get().data[0]
 
-#         datasets = [(data_bob, target_bob), (data_alice, target_alice)]
-
-#         for iter in range(2):
-
-#             for data, target in datasets:
-#                 model.send(data.owners[0])
-
-#                 # update the model
-#                 model.zero_grad()
-#                 pred = model(data)
-#                 loss = ((pred - target)**2).sum()
-#                 loss.backward()
-#                 opt.step()
-
-#                 model.get_()
-#                 if(iter == 1):
-#                     final_loss = loss.get().data[0]
-
-#         assert final_loss == 0.18085284531116486
+    #         assert final_loss == 0.18085284531116486
 
     def test_torch_function_on_remote_var(self):
-
         x = sy.Variable(torch.FloatTensor([[1, 2], [3, 4]]))
         y = sy.Variable(torch.FloatTensor([[1, 2], [1, 2]]))
         x.send(bob)
@@ -725,18 +769,16 @@ class TestTorchVariable(TestCase):
         assert torch.equal(z, sy.Variable(torch.FloatTensor([[3, 6], [7, 14]])))
 
     def test_torch_function_with_multiple_input_on_remote_var(self):
-
-       x = sy.Variable(torch.FloatTensor([1,2]))
-       y = sy.Variable(torch.FloatTensor([3,4]))
-       x.send(bob)
-       y.send(bob)
-       z = torch.stack([x, y])
-       z.get()
-       assert torch.equal(z, sy.Variable(torch.FloatTensor([[1, 2], [3, 4]])))
+        x = sy.Variable(torch.FloatTensor([1, 2]))
+        y = sy.Variable(torch.FloatTensor([3, 4]))
+        x.send(bob)
+        y.send(bob)
+        z = torch.stack([x, y])
+        z.get()
+        assert torch.equal(z, sy.Variable(torch.FloatTensor([[1, 2], [3, 4]])))
 
     def test_torch_function_with_multiple_output_on_remote_var(self):
-
-        x = sy.Variable(torch.FloatTensor([[1,2],[4,3],[5,6]]))
+        x = sy.Variable(torch.FloatTensor([[1, 2], [4, 3], [5, 6]]))
         x.send(bob)
         y, z = torch.max(x, 1)
         y.get()
@@ -756,7 +798,7 @@ class TestTorchVariable(TestCase):
         bias = torch.nn.Parameter(torch.FloatTensor([0]))
         weight.send(bob)
         bias.send(bob)
-        conv = F.conv2d(x, weight, bias, stride=(1,1))
+        conv = F.conv2d(x, weight, bias, stride=(1, 1))
         conv.get()
         expected_conv = sy.Variable(torch.FloatTensor([[[[3, -2], [-2, -3]]]]))
         assert torch.equal(conv, expected_conv)
@@ -792,7 +834,6 @@ class TestTorchVariable(TestCase):
         assert torch.equal(x.ceil_(), x)
         assert torch.equal(x.cpu(), x)
 
-
     def test_local_var_binary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
             https://github.com/OpenMined/PySyft/issues/1385'''
@@ -802,6 +843,9 @@ class TestTorchVariable(TestCase):
         assert (torch.equal(z, torch.FloatTensor([30])))
         z = torch.add(x, y)
         assert (torch.equal(z, torch.FloatTensor([[2, 4, 6, 8]])))
+        x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
+        y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
+        assert torch.equal(x.add_(y), sy.Variable(torch.FloatTensor([2, 4, 6, 8, 10])))
         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         z = torch.cross(x, y, dim=1)
@@ -839,17 +883,6 @@ class TestTorchVariable(TestCase):
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
         assert torch.equal(x.cpu().get(), sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])))
 
-    def test_local_var_binary_methods(self):
-        
-        x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
-        y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
-        assert  torch.equal(x.add_(y), sy.Variable(torch.FloatTensor([2,4,6,8,10])))
-
-    def test_remote_var_binary_methods(self):
-        x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
-        y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
-        assert torch.equal(x.add_(y).get(),  sy.Variable(torch.FloatTensor([2,4,6,8,10])))
-
     def test_remote_var_binary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
             https://github.com/OpenMined/PySyft/issues/1385'''
@@ -860,10 +893,14 @@ class TestTorchVariable(TestCase):
         assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([30]))))
         z = torch.add(x, y)
         assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([[2, 4, 6, 8]]))))
+        x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
+        y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
+        assert torch.equal(x.add_(y).get(), sy.Variable(torch.FloatTensor([2, 4, 6, 8, 10])))
         x = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         y = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         z = torch.cross(x, y, dim=1)
-        assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))))
+        assert (
+            torch.equal(z.get(), sy.Variable(torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))))
         x = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         y = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         z = torch.dist(x, y)
