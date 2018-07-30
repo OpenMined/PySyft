@@ -44,7 +44,7 @@ class TorchHook(object):
         self.to_auto_overload = {}
 
         if torch.torch_hooked > 0:
-            raise logging.warn("Torch was already hooked... skipping hooking process")
+            logging.warn("Torch was already hooked... skipping hooking process")
         else:
 
             for typ in torch.tensorvar_types:
