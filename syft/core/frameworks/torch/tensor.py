@@ -231,12 +231,10 @@ class _LocalTensor(_SyftTensor):
 
 
         if isinstance(response, (int, float, bool)) or response is None:
-            # print('numeric', response)
             if owner.id != owner.hook.local_worker.id:
-                response = sy.FloatTensor([response])
+                response = sy.zeros(1) + response
             else:
                 return response
-
 
         if has_self and utils.is_in_place_method(attr):
             syft_command['self'].child = response
@@ -249,12 +247,24 @@ class _LocalTensor(_SyftTensor):
 
             return syft_command['self']
         else:
-            syft_response = sy._LocalTensor(child=response, parent=response, owner=owner, torch_type='syft.'+type(response).__name__)
+            responses = response if isinstance(response, tuple) else (response,)
+            syft_responses = []
+            for resp in responses:
+                if isinstance(resp, (int, float, bool)) or resp is None:
+                    if owner.id != owner.hook.local_worker.id:
+                        resp = sy.zeros(1) + resp
+                    else:
+                        syft_responses.append(resp)
+                        continue
 
-            if utils.is_variable(response):
-                utils.link_var_chain_to_data_chain(syft_response, response.data.child)
+                syft_response = sy._LocalTensor(child=resp, parent=resp, owner=owner, torch_type='syft.'+type(resp).__name__)
 
-            return syft_response
+                if utils.is_variable(resp):
+                    utils.link_var_chain_to_data_chain(syft_response, resp.data.child)
+
+                syft_responses.append(syft_response)
+
+            return tuple(syft_responses) if len(syft_responses) > 1 else syft_responses[0]
 
 
     def ser(self, private, as_dict=True):

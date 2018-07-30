@@ -708,15 +708,16 @@ class BaseWorker(ABC):
                 results = result if isinstance(result, tuple) else (result,)
                 wrappers = []
                 for res in results:
-                    _tail = utils.find_tail_of_chain(res)
-                    if isinstance(_tail, sy._LocalTensor):
-                        wrapper = _tail.child
-                        if isinstance(wrapper, tuple):
-                            print(wrapper)
-                        wrapper.child = res
-                        res.parent = wrapper
+                    if isinstance(res, (int, float, bool)) or res is None:
+                        wrapper = res
                     else:
-                        wrapper = utils.wrap_command(res)
+                        _tail = utils.find_tail_of_chain(res)
+                        if isinstance(_tail, sy._LocalTensor):
+                            wrapper = _tail.child
+                            wrapper.child = res
+                            res.parent = wrapper
+                        else:
+                            wrapper = utils.wrap_command(res)
                     wrappers.append(wrapper)
                 return tuple(wrappers) if len(wrappers) > 1 else wrappers[0]
         else:
