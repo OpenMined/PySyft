@@ -109,7 +109,8 @@ class TorchHook(object):
 
             if register_child_instead:
                 cls.native___init__()
-                # _ = cls.child
+                _ = cls.child
+                _ = "ignore pep8"
             else:
                 cls.native___init__(*args, **kwargs)
                 if id is None:

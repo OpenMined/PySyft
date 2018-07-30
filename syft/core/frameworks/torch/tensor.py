@@ -729,8 +729,8 @@ class _TorchObject(object):
                                              {},
                                              True)
 
-        # response = pointer.owner.send_torch_command(recipient=pointer.location,
-        #                                             message=command)
+        response = pointer.owner.send_torch_command(recipient=pointer.location,
+                                                    message=command)
         return self
 
 
