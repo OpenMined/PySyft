@@ -39,7 +39,7 @@ class TorchHook(object):
         #       some point
         self.exclude = (['ndimension', 'nelement', 'size', 'numel',
                          'type', 'tolist', 'dim', '__iter__', 'select',
-                         '__getattr__'])
+                         '__getattr__', '_get_type'])
 
         self.to_auto_overload = {}
 
@@ -261,7 +261,8 @@ class TorchHook(object):
                    '__reduce_ex__',
                    '__setattr__',
                    '__sizeof__',
-                   '__subclasshook__']
+                   '__subclasshook__',
+                   '_get_type']
 
         if issubclass(tensor_type, torch._TensorBase):
             parent_syft_obj = _TorchTensor

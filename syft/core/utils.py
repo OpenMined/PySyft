@@ -277,9 +277,6 @@ def get_child_command(obj, child_types=[]):
     """
     # Torch tensor or variable, or sy._SyftTensor
     if (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)) and not isinstance(obj, str):
-        print('--   ')
-        print(type(obj))
-        print(type(obj.child))
         return obj.child, [type(obj.child)]
     # List or iterables which could contain tensors
     elif isinstance(obj, (list, tuple, set, bytearray, range)):
@@ -304,7 +301,6 @@ def get_child_command(obj, child_types=[]):
 
 
 def prepare_child_command(command, replace_tensorvar_with_child=False):
-
     next_command, next_child_types = get_child_command(command)
 
     # Check that the next child type of all tensorvar is the same
