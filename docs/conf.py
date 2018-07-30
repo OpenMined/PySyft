@@ -118,6 +118,9 @@ html_context = {
     ],
 }
 
+favicon = '_static/img/logo.png'
+
+
 
 
 # -- Options for LaTeX output ---------------------------------------------

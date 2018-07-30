@@ -3,8 +3,27 @@
     background-color: black;
 }
 
-a{color:#aba4a4;}
-a:visited{color:#aba4a4;}
+.wy-nav-top{background-color: black;}
+
+div.wy-nav-top a:link {
+  color: white;
+  font-size: 25px;
+  font-weight: bold;
+}
+
+div.wy-nav-top a:visited {
+  color: white;
+  font-size: 25px;
+  font-weight: bold;
+}
+
+
+div.wy-nav-top a:hover {
+  color: white;
+  font-size: 25px;
+  font-weight: bold;
+}
+
 
 
 .reference internal{color:black;font-weight: bold;}
@@ -15,4 +34,38 @@ a:visited{color:#aba4a4;}
 
 .wy-menu a:hover {
     color: #b3b3b3;
+}
+
+.version{color: white;}
+
+div.wy-side-nav-search a:link {
+  color: white;
+  font-size: 25px;
+  font-weight: bold;
+}
+
+div.wy-side-nav-search a:hover {
+  color: white;
+  font-size: 25px;
+  font-weight: bold;
+}
+
+div.wy-side-nav-search a:visited {
+  color: white;
+    font-size: 25px;
+  font-weight: bold;
+}
+
+
+
+div.wy-nav-content a:link {
+  color:#b6b4b7;
+}
+
+div.wy-nav-content a:hover {
+  color: black;
+}
+
+div.wy-nav-content a:visited {
+  color:black;
 }
