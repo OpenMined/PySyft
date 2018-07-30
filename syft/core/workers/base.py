@@ -642,7 +642,6 @@ class BaseWorker(ABC):
         """
         Transmit the call to the appropriate TensorType for handling
         """
-        print(attr)
 
         # Distinguish between a command with torch tensors (like when called by the client,
         # or received from another worker), and a command with syft tensor, which can occur
@@ -671,12 +670,7 @@ class BaseWorker(ABC):
             raw_command['self'] = self_
         if is_torch_command:
             # Unwrap the torch wrapper
-            if attr=='copy_':
-                print('> prepare_child_command')
-                print(len(raw_command['args']), len(list(raw_command['kwargs'].keys())))
             syft_command, child_type = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=True)
-            if attr == 'copy_':
-                print('< end prepare_child_command')
         else:
             # Get the next syft class (the actual syft class is the one which redirected (see the  _PlusIsMinus ex.)
             syft_command, child_type = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=True)

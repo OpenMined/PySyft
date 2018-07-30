@@ -227,7 +227,6 @@ class _LocalTensor(_SyftTensor):
         response = command(*args, **kwargs)
 
 
-
         # TODO : control registration process
 
 
