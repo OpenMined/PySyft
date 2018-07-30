@@ -229,8 +229,10 @@ class _LocalTensor(_SyftTensor):
 
         # TODO : control registration process
 
-
-        if isinstance(response, (int, float, bool)) or response is None:
+        if response is None:
+            return response
+        
+        if isinstance(response, (int, float, bool)):
             if owner.id != owner.hook.local_worker.id:
                 response = sy.zeros(1) + response
             else:
@@ -250,7 +252,10 @@ class _LocalTensor(_SyftTensor):
             responses = response if isinstance(response, tuple) else (response,)
             syft_responses = []
             for resp in responses:
-                if isinstance(resp, (int, float, bool)) or resp is None:
+                if resp is None:
+                    syft_responses.append(resp)
+                    continue
+                if isinstance(resp, (int, float, bool)):
                     if owner.id != owner.hook.local_worker.id:
                         resp = sy.zeros(1) + resp
                     else:
