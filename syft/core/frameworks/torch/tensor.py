@@ -351,6 +351,10 @@ class _PlusIsMinusTensor(_SyftTensor):
         self.parent = wrapper
         wrapper.child.parent = self
         wrapper.child = self
+
+        if utils.is_variable(wrapper):
+            wrapper.data = sy._PlusIsMinusTensor().on(wrapper.data)
+
         return wrapper
 
     @staticmethod
@@ -367,10 +371,6 @@ class _PlusIsMinusTensor(_SyftTensor):
 
             result = getattr(self_, attr)(*args, **kwargs)
 
-            # Specific to virtual workers
-            # Should correct all the child owner: because an overloaded method such as add
-            # will be transferred to the hook and his reference worker, namely the local worker
-            utils.enforce_owner(result, owner)
 
         else:
             # Overload functions
@@ -396,6 +396,15 @@ class _PlusIsMinusTensor(_SyftTensor):
         syft_response = sy._PlusIsMinusTensor(child=result, owner=owner)
         result.parent = syft_response
 
+        if utils.is_variable(result.torch_type):
+            syft_response_data = sy._PlusIsMinusTensor(child=result.data, owner=owner)
+            result.data.parent = syft_response_data
+            syft_response.data = syft_response_data
+
+        # Specific to virtual workers
+        # Should correct all the child owner: because an overloaded method such as add
+        # will be transferred to the hook and his reference worker, namely the local worker
+        utils.enforce_owner(syft_response, owner)
         return syft_response
 
     def add(self, other):
@@ -629,8 +638,14 @@ class _TorchObject(object):
 
     def __repr__(self):
 
-        if hasattr(self, 'child') and not isinstance(self.child, (sy._LocalTensor, sy._PointerTensor)):
-            x_ = sy.FloatTensor()
+
+        if utils.is_tensor(self) and hasattr(self, 'child') and not isinstance(self.child, (sy._LocalTensor, sy._PointerTensor)):
+            x_ = type(self)()
+            x_.native_set_(self)
+            return "[Head of chain]\n" + x_.native___repr__()
+
+        if utils.is_variable(self) and hasattr(self, 'child') and not isinstance(self.child, (sy._LocalTensor, sy._PointerTensor)):
+            x_ = type(self)(self.data)
             x_.native_set_(self)
             return "[Head of chain]\n" + x_.native___repr__()
 

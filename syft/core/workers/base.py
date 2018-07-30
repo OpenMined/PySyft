@@ -698,6 +698,8 @@ class BaseWorker(ABC):
                     self.hook.local_worker.de_register(res.data)
                     res.data.owner = self
 
+
+
         if is_torch_command:
             # Wrap the result
             if has_self and utils.is_in_place_method(attr):
@@ -716,6 +718,14 @@ class BaseWorker(ABC):
                             wrapper = _tail.child
                             wrapper.child = res
                             res.parent = wrapper
+                            if utils.is_variable(wrapper):
+                                data_res = res.data
+                                _data_tail = utils.find_tail_of_chain(data_res)
+                                data_wrapper = _data_tail.child
+                                data_wrapper.child = data_res
+                                data_res.parent = data_wrapper
+
+                                wrapper.data = data_wrapper
                         else:
                             wrapper = utils.wrap_command(res)
                     wrappers.append(wrapper)
