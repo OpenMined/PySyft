@@ -201,12 +201,12 @@ class BaseWorker(ABC):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
-
         message_wrapper = utils.decode(message_wrapper_json, worker=self)
 
         response, private = self.process_message_type(message_wrapper)
 
         response = utils.encode(response, retrieve_pointers=False, private_local=private)
+
         response = json.dumps(response).encode()
 
 
@@ -621,6 +621,8 @@ class BaseWorker(ABC):
           the owners of the tensors involved.
         """
 
+        utils.assert_has_only_torch_tensorvars(command_msg)
+
         attr = command_msg['command']
         has_self = command_msg['has_self']
         args = command_msg['args']
@@ -634,7 +636,16 @@ class BaseWorker(ABC):
         Transmit the call to the appropriate TensorType for handling
         """
 
-        utils.assert_has_only_torch_tensorvars((args, kwargs))
+        # Distinguish between a command with torch tensors (like when called by the client,
+        # or received from another worker), and a command with syft tensor, which can occur
+        # when a function is overloaded by a SyftTensor (for instance _PlusIsMinusTensor
+        # overloads add and replace it by sub)
+        try:
+            utils.assert_has_only_torch_tensorvars((args, kwargs))
+            is_torch_command = True
+        except AssertionError:
+            is_torch_command = False
+
         has_self = self_ is not None
 
         if has_self:
@@ -650,29 +661,55 @@ class BaseWorker(ABC):
         }
         if has_self:
             raw_command['self'] = self_
-            next_child_type = type(self_.child)
+        if is_torch_command:
+            # Unwrap the torch wrapper
+            syft_command, child_type = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=True)
         else:
-            next_child_type, _ = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=False)
+            # Get the next syft class (the actual syft class is the one which redirected (see the  _PlusIsMinus ex.)
+            syft_command, child_type = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=True)
+
+        utils.assert_has_only_syft_tensors(syft_command)
 
         # Note: because we have pb of registration of tensors with the right worker, and because having
         # Virtual workers creates even more ambiguity, we specify the worker performing the operation
-        result = next_child_type.handle_call(raw_command, owner=self)
+        result = child_type.handle_call(syft_command, owner=self)
 
         if isinstance(result, (int, float, bool)) and self.id != self.hook.local_worker.id:
-            result = sy.FloatTensor([result])
+            # result = sy.FloatTensor([result])
+            pass
+        if isinstance(result, (int, float, bool)) or result is None:
+            return result
 
         results = result if isinstance(result, tuple) else (result,)
         for res in results:
             # occasionally results are None, like when calling .backward()
             if res is not None and hasattr(res, 'child') and self.id != self.hook.local_worker.id:
                 # Re assign the worker (just in case, especially useful with Virtualworkers)
-                self.hook.local_worker.de_register(res.child)
-                res.child.owner = self
+                self.hook.local_worker.de_register(res)
+                res.owner = self
                 if utils.is_variable(res):
-                    self.hook.local_worker.de_register(res.data.child)
-                    res.data.child.owner = self
+                    self.hook.local_worker.de_register(res.parent.data.child)
+                    res.parent.data.child.owner = self
 
-        return result
+        if is_torch_command:
+            # Wrap the result
+            if has_self and utils.is_in_place_method(attr):
+                raw_command['self'].child = result
+                result.parent = raw_command['self']
+                return raw_command['self']
+            else:
+                _tail = utils.find_tail_of_chain(result)
+                if isinstance(_tail, sy._LocalTensor):
+                    wrapper = _tail.child
+                    wrapper.child = result
+                    result.parent = wrapper
+                else:
+                    wrapper = utils.wrap_command(result)
+                return wrapper
+        else:
+            # We don't need to wrap
+            return result
+
 
     def send_obj(self, object, new_id, recipient, new_data_id=None):
         """send_obj(self, obj, new_id, recipient, new_data_id=None) -> obj
