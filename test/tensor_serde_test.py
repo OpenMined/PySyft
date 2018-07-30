@@ -1,3 +1,4 @@
+import unittest
 from unittest import TestCase
 import syft as sy
 import torch
