@@ -509,6 +509,28 @@ class TestTorchVariable(TestCase):
     #             """Linear transformation of x by w"""
     #             return x.mm(w)
 
+    def test_remote_backprop(self):
+
+
+        x = sy.Variable(torch.ones(2, 2), requires_grad=True).send(bob)
+        x2 = sy.Variable(torch.ones(2, 2)*2, requires_grad=True).send(bob)
+
+        y = x * x2
+
+        y.sum().backward()
+
+        # remote grads should be correct
+        assert (bob._objects[x2.id].grad.data == torch.ones(2, 2)).all()
+        assert (bob._objects[x.id].grad.data == torch.ones(2, 2)*2).all()
+
+        assert (y.get().data == torch.ones(2, 2)*2).all()
+
+        assert (x.get().data == torch.ones(2, 2)).all()
+        assert (x2.get().data == torch.ones(2, 2)*2).all()
+
+        assert (x.grad.data == torch.ones(2, 2)*2).all()
+        assert (x2.grad.data == torch.ones(2, 2)).all()
+
     #         x = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
     #         y = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
 

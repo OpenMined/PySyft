@@ -438,6 +438,8 @@ def assert_has_only_syft_tensors(obj):
         return all(rep)
     elif isinstance(obj, slice):
         return True
+    elif obj is None:
+        return True
     else:
         assert False, ('Obj is not syft tensor', type(obj))
 
