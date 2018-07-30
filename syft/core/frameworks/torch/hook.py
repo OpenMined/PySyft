@@ -400,7 +400,7 @@ class TorchHook(object):
 
     def _execute_call(hook_self, attr, self, *args, **kwargs):
         """
-        Forwar the call to the local_worker
+        Forward the call to the local_worker
         """
         return hook_self.local_worker._execute_call(attr, self, *args, **kwargs)
 

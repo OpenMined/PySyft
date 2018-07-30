@@ -661,8 +661,6 @@ class BaseWorker(ABC):
         }
         if has_self:
             raw_command['self'] = self_
-
-
         if is_torch_command:
             # Unwrap the torch wrapper
             syft_command, child_type = utils.prepare_child_command(raw_command, replace_tensorvar_with_child=True)

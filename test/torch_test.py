@@ -6,6 +6,7 @@ from unittest import TestCase
 
 import random
 import syft as sy
+from syft.core import utils
 import torch
 import torch.nn.functional as F
 
@@ -25,11 +26,62 @@ alice.add_workers([me, bob, james])
 james.add_workers([me, bob, alice])
 
 
+class TestChainTensor(TestCase):
+
+    def test_plus_is_minus_tensor_local(self):
+        x = torch.FloatTensor([5, 6])
+        y = torch.FloatTensor([3, 4])
+        x = sy._PlusIsMinusTensor().on(x)
+        y = sy._PlusIsMinusTensor().on(y)
+
+        assert utils.chain_print(x, display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+
+        z = x.add(y)
+
+        assert utils.chain_print(z, display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+
+        # cut chain for the equality check
+        z.child = z.child.child
+        assert torch.equal(z, torch.FloatTensor([2, 2]))
+
+        z = torch.add(x, y)
+
+        # cut chain for the equality check
+        z.child = z.child.child
+        assert torch.equal(z, torch.FloatTensor([2, 2]))
+
+    def test_plus_is_minus_tensor_remote(self):
+        x = torch.FloatTensor([5, 6])
+        y = torch.FloatTensor([3, 4])
+        x = sy._PlusIsMinusTensor().on(x)
+        y = sy._PlusIsMinusTensor().on(y)
+
+        id1 = random.randint(0, 10e10)
+        id2 = random.randint(0, 10e10)
+        x.send(bob, ptr_id=id1)
+        y.send(bob, ptr_id=id2)
+
+        z = x.add(y)
+        assert utils.chain_print(z, display=False) == 'FloatTensor > _PointerTensor'
+
+        # Check chain on remote
+        ptr_id = z.child.id_at_location
+        assert utils.chain_print(bob._objects[ptr_id].parent,
+                                 display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+
+        z.get()
+        assert utils.chain_print(z, display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+
+        # cut chain for the equality check
+        z.child = z.child.child
+        assert torch.equal(z, torch.FloatTensor([2, 2]))
+
+
 class TestTorchTensor(TestCase):
 
     def test___repr__(self):
         x = torch.FloatTensor([1, 2, 3, 4, 5])
-        #assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[torch.FloatTensor of size 5]\n'
+        # assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[torch.FloatTensor of size 5]\n'
         assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[syft.core.frameworks.torch.tensor.FloatTensor of size 5]\n'
 
     def test_send_get_tensor(self):
@@ -84,7 +136,7 @@ class TestTorchTensor(TestCase):
             assert True
 
         # 2.
-        x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
+        x = torch.FloatTensor([1, 2, -3, 4, 5]).send(bob)
         x_id = x.id
         y = x.abs_()  # in-place operation
         assert y.child == x.child

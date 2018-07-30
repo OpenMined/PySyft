@@ -15,8 +15,8 @@ bob.add_workers([me, alice])
 alice.add_workers([me, bob])
 me.add_workers([bob, alice])
 
-torch.manual_seed(1)
-random.seed(1)
+#torch.manual_seed(1)
+#random.seed(1)
 
 class TestTensorPointerSerde(TestCase):
 
@@ -91,7 +91,6 @@ class TestTensorPointerSerde(TestCase):
         assert x.id not in me._objects
 
     def test_floattensor2json2floattensor(self):
-
         xs = {
             '__FloatTensor__': {
                 'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
@@ -118,8 +117,17 @@ class TestTensorPointerSerde(TestCase):
         assert x2.owner.id == 0
 
         # make sure it works (can do operations)
-        y = x2 + x2
+        y = x2.add(x2)
 
+        assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
+        assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
+
+        y = torch.add(x2, x2)
+
+        assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
+        assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
+
+        y = x2 + x2
         assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
         assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
 

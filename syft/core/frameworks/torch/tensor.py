@@ -233,9 +233,12 @@ class _LocalTensor(_SyftTensor):
 
 
         if isinstance(response, (int, float, bool)) or response is None:
-            print('numeric', response)
-            return response
-            # response = sy.FloatTensor([response])
+            # print('numeric', response)
+            if owner.id != owner.hook.local_worker.id:
+                response = sy.FloatTensor([response])
+            else:
+                return response
+
 
         if has_self and utils.is_in_place_method(attr):
             syft_command['self'].child = response
@@ -317,7 +320,7 @@ class _PlusIsMinusTensor(_SyftTensor):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id,
                          skip_register=skip_register)
 
-    def _(self, wrapper):
+    def on(self, wrapper):
         """
         Just to be compact, use this
         x = sy.FloatTensor([1, 2, 3])
@@ -339,29 +342,37 @@ class _PlusIsMinusTensor(_SyftTensor):
         kwargs = command['kwargs']
         has_self = command['has_self']
 
-        if has_self:
-            if attr in ['add']:
-                self_ = command['self']
-                assert isinstance(self_, sy._PlusIsMinusTensor)
+        # Overload methods
+        if has_self and attr in ['add']:
+            self_ = command['self']
+            assert isinstance(self_, sy._PlusIsMinusTensor)
 
-                result = getattr(self_, attr)(*args, **kwargs)
+            result = getattr(self_, attr)(*args, **kwargs)
 
-                # Specific to virtual workers
-                # Should correct all the child owner: because an overloaded method such as add
-                # will be transferred to the hook and his reference worker, namely the local worker
-                utils.enforce_owner(result, owner)
+            # Specific to virtual workers
+            # Should correct all the child owner: because an overloaded method such as add
+            # will be transferred to the hook and his reference worker, namely the local worker
+            utils.enforce_owner(result, owner)
 
-                syft_response = sy._PlusIsMinusTensor(child=result, owner=owner)
-                result.parent = syft_response
+        else:
+            # Overload functions
+            if attr == 'torch.add':
+                # Be careful not to overwrite the args!
+                _args = list(command['args'])
+                new_args = []
+                for i, _arg in enumerate(_args):
+                    if i == 1:
+                        new_args.append(-1 * _arg)
+                    else:
+                        new_args.append(_arg)
+                command['args'] = tuple(new_args)
 
-                return syft_response
+            # Get the next node type and update in command tensorvar with tensorvar.child
+            next_command, child_type = utils.prepare_child_command(command, replace_tensorvar_with_child=True)
 
+            # Forward the call to the next child
+            result = child_type.handle_call(next_command, owner)
 
-        # Get the next node type and update in command tensorvar with tensorvar.child
-        next_command, child_type = utils.prepare_child_command(command, replace_tensorvar_with_child=True)
-
-        # Forward the call to the next child
-        result = child_type.handle_call(next_command, owner)
 
         # Insert the new node just before the wrapper
         syft_response = sy._PlusIsMinusTensor(child=result, owner=owner)
@@ -431,8 +442,8 @@ class _PointerTensor(_SyftTensor):
             logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
 
     @staticmethod
-    def handle_call(command, owner):
-        tensor_command = utils.wrap_command(command)
+    def handle_call(syft_command, owner):
+        tensor_command = utils.wrap_command(syft_command)
 
         attr = tensor_command['command']
         args = tensor_command['args']
@@ -458,7 +469,7 @@ class _PointerTensor(_SyftTensor):
         # If the command is an in-place method, we only need to return the same wrapper to the same pointer,
         # Instead of returning the new wrapper created in response
         if has_self and utils.is_in_place_method(attr):
-            return command['self']
+            return syft_command['self']
 
         # Perform the un-wrap
         response, _ = utils.get_child_command(response)
@@ -712,6 +723,10 @@ class _TorchTensor(_TorchObject):
 
         tensorvar.child = syft_obj
         syft_obj.parent = tensorvar
+
+        # Ensure that the loop is made, if needed
+        if isinstance(utils.find_tail_of_chain(tensorvar), sy._LocalTensor):
+            utils.fix_chain_ends(tensorvar)
         return tensorvar
 
     def send(self, worker, ptr_id=None):

@@ -11,11 +11,10 @@ import syft
 import syft as sy
 
 
-def encode(message, retrieve_pointers=False, retrieve_next_child=False, private_local=True):
+def encode(message, retrieve_pointers=False, private_local=True):
     """
     Help function to call easy the PythonEncoder
     :param message:
-    :param retrieve_next_child: If true, return a list of all the classes of the first child of each tensorvar
     :param retrieve_pointers: If true, return a list of all the _PointerTensor
     :param private_local: If true, ask to hide all the sensitive data (ie keep all the
     metadata like the structure of the chain)
@@ -24,7 +23,6 @@ def encode(message, retrieve_pointers=False, retrieve_next_child=False, private_
     encoder = PythonEncoder()
     response = encoder.encode(message,
                               retrieve_pointers=retrieve_pointers,
-                              retrieve_next_child=retrieve_next_child,
                               private_local=private_local)
     return response
 
@@ -37,18 +35,16 @@ class PythonEncoder:
     """
     def __init__(self):
         self.retrieve_pointers = False
-        self.retrieve_next_child = False
         self.found_pointers = []
         self.found_next_child_types = []
         self.tensorvar_types = tuple(torch.tensorvar_types)
 
-    def encode(self, obj, retrieve_pointers=False, retrieve_next_child=False, private_local=True):
+    def encode(self, obj, retrieve_pointers=False, private_local=True):
         """
             Performs encoding, and retrieves if requested all the tensors and
             Variables found
         """
         self.retrieve_pointers = retrieve_pointers
-        self.retrieve_next_child = retrieve_next_child
 
         serialized_obj = self.python_encode(obj, private_local)
 
@@ -62,8 +58,6 @@ class PythonEncoder:
         response = [serialized_msg]
         if self.retrieve_pointers:
             response.append(self.found_pointers)
-        if self.retrieve_next_child:
-            response.append(self.found_next_child_types)
 
         if len(response) == 1:
             return response[0]
@@ -79,11 +73,12 @@ class PythonEncoder:
             tail_object = find_tail_of_chain(obj)
             if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
                 self.found_pointers.append(tail_object)
-            if self.retrieve_next_child:
-                self.found_next_child_types.append(type(obj.child))
             return obj.ser(private=private_local)
         # sy._SyftTensor (Pointer, Local) [Note: shouldn't be called on regular chain with end=tensorvar]
         elif is_syft_tensor(obj):
+            tail_object = find_tail_of_chain(obj)
+            if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
+                self.found_pointers.append(tail_object)
             return obj.ser(private=private_local)
             # raise TypeError('Syft Tensors should always be wrapped with a Torch Tensor')
         # List
@@ -243,7 +238,7 @@ def extract_type_and_obj(dct):
             raise TypeError('Key', key, 'is not recognized.')
 
 
-def chain_print(obj):
+def chain_print(obj, display=True):
     types = [obj.__class__.__name__]
     i = 0
     while hasattr(obj, 'child'):
@@ -255,7 +250,10 @@ def chain_print(obj):
         if i >= 12:
             types.append('(...)')
             break
-    print(' > '.join(types))
+    if display:
+        print(' > '.join(types))
+    else:
+        return ' > '.join(types)
 
 
 def get_child_command(obj, child_types=[]):
@@ -271,7 +269,7 @@ def get_child_command(obj, child_types=[]):
     if is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj):
         return obj.child, [type(obj.child)]
     # List or iterables which could contain tensors
-    elif isinstance(obj, (tuple, set, bytearray, range)):
+    elif isinstance(obj, (list, tuple, set, bytearray, range)):
         children = []
         types = []
         for o in obj:
@@ -296,7 +294,7 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
 
     next_command, next_child_types = get_child_command(command)
 
-    # Check that the next child type of all tensorvar is the sam
+    # Check that the next child type of all tensorvar is the same
     if len(next_child_types) == 0:
         ref_child_type = sy._LocalTensor
     else:
@@ -313,7 +311,11 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
     else:
         return command, ref_child_type
 
+
 def enforce_owner(obj, owner):
+    """
+        Reassign every elements of the chain to an owner (in a Virtual worker context)
+    """
     obj.owner = owner
     if not is_tensor(obj.child):
         enforce_owner(obj.child, owner)
@@ -332,7 +334,7 @@ def wrap_command(obj):
         obj.parent = wrapper
         return wrapper
     # List or iterables which could contain tensors
-    elif isinstance(obj, (tuple, set, bytearray, range)):
+    elif isinstance(obj, (list, tuple, set, bytearray, range)):
         wrappers = []
         for o in obj:
             wrapper = wrap_command(o)
@@ -590,7 +592,8 @@ def is_in_place_method(attr):
     Determines if the method is in-place (ie modifies the self)
     TODO: Can you do better?
     """
-    return attr[-1] == '_'
+    pat = re.compile('__(.+)__')
+    return pat.search(attr) is None and attr[-1] == '_'
 
 
 def map_tuple(hook, args, func):
