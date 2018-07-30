@@ -325,8 +325,11 @@ def enforce_owner(obj, owner):
     """
         Reassign every elements of the chain to an owner (in a Virtual worker context)
     """
-    obj.owner = owner
-    if not is_tensor(obj.child):
+    if is_syft_tensor(obj) and hasattr(obj, 'data'):
+        enforce_owner(obj.data, owner)
+
+    if not is_tensor(obj) and not is_variable(obj):
+        obj.owner = owner
         enforce_owner(obj.child, owner)
 
 

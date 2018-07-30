@@ -77,6 +77,60 @@ class TestChainTensor(TestCase):
         assert torch.equal(z, torch.FloatTensor([2, 2]))
 
 
+    def test_plus_is_minus_variable_local(self):
+        x = sy.Variable(torch.FloatTensor([5, 6]))
+        y = sy.Variable(torch.FloatTensor([3, 4]))
+        x = sy._PlusIsMinusTensor().on(x)
+        y = sy._PlusIsMinusTensor().on(y)
+
+        assert utils.chain_print(x, display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+
+        z = x.add(y)
+
+        assert utils.chain_print(z, display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+
+        # cut chain for the equality check
+        z.data.child = z.data.child.child
+        assert torch.equal(z.data, torch.FloatTensor([2, 2]))
+
+        z = torch.add(x, y)
+
+        # cut chain for the equality check
+        z.data.child = z.data.child.child
+        assert torch.equal(z.data, torch.FloatTensor([2, 2]))
+
+    def test_plus_is_minus_variable_remote(self):
+        x = sy.Variable(torch.FloatTensor([5, 6]))
+        y = sy.Variable(torch.FloatTensor([3, 4]))
+        x = sy._PlusIsMinusTensor().on(x)
+        y = sy._PlusIsMinusTensor().on(y)
+
+        id1 = random.randint(0, 10e10)
+        id2 = random.randint(0, 10e10)
+        id11 = random.randint(0, 10e10)
+        id21 = random.randint(0, 10e10)
+        x.send(bob, new_id=id1, new_data_id=id11)
+        y.send(bob, new_id=id2, new_data_id=id21)
+
+        z = x.add(y)
+        assert utils.chain_print(z, display=False) == 'Variable > _PointerTensor\n - FloatTensor > _PointerTensor'
+
+        assert bob._objects[z.id_at_location].owner.id == 'bob'
+        assert bob._objects[z.data.id_at_location].owner.id == 'bob'
+
+        # Check chain on remote
+        ptr_id = z.child.id_at_location
+        assert utils.chain_print(bob._objects[ptr_id].parent,
+                                 display=False) ==  'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+
+        z.get()
+        assert utils.chain_print(z, display=False) == 'Variable > _PlusIsMinusTensor > _LocalTensor\n - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+
+        # cut chain for the equality check
+        z.data.child = z.data.child.child
+        assert torch.equal(z.data, torch.FloatTensor([2, 2]))
+
+
 class TestTorchTensor(TestCase):
 
     def test___repr__(self):
