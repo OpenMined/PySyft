@@ -427,5 +427,6 @@ guard = {
     'syft.CharTensor': torch.CharTensor,
     'syft.ShortTensor': torch.ShortTensor,
     'syft.IntTensor': torch.IntTensor,
-    'syft.LongTensor': torch.LongTensor
+    'syft.LongTensor': torch.LongTensor,
+    'syft.Parameter': torch.nn.Parameter
 }

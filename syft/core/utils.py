@@ -5,6 +5,7 @@ import types
 import functools
 import logging
 import torch
+import syft
 import syft as sy
 
 
@@ -242,16 +243,72 @@ def extract_type_and_obj(dct):
             raise TypeError('Key', key, 'is not recognized.')
 
 
-def chain_print(obj, display=True):
+def chain_print(obj, display=True, verbose=False):
+    """
+        Print the chain of a tensor or variable. Useful for debugging
+        If not verbose:
+            1st line = main chain
+            (for variables only)
+            2nd line = data chain
+            2rd line = grad chain if any
+        If verbose
+            1st line = main chain
+            (for variables only)
+                2nd line = .data attr of all nodes of the main chain
+            3rd line = data chain
+                4th line = .grad attr of all nodes of the main chain
+            5th line = grad chain if any
+    """
+    has_grad = False
     if is_variable(obj):
         is_var = True
-        data_display = chain_print(obj.data, display=False)
+        data_display = chain_print(obj.data, display=False, verbose=verbose)
+        if obj.grad is not None:
+            has_grad = True
+            grad_display = chain_print(obj.grad, display=False, verbose=verbose)
     else:
         is_var = False
-    types = [obj.__class__.__name__]
+    if not verbose:
+        types = [obj.__class__.__name__]
+    else:
+        types = [obj.__class__.__name__
+                 + '(' + str(obj.owner.id)
+                 + ':' + str(obj.id)
+                 + ')']
+        if is_var:
+            data_types = [obj.data.__class__.__name__
+                          + '(' + str(obj.data.owner.id)
+                          + ':' + str(obj.data.id)
+                          + ')']
+            grad_types = [obj.grad.__class__.__name__
+                          + ('(' + str(obj.grad.owner.id)
+                          + ':' + str(obj.grad.id)
+                          + ')') if obj.grad is not None else '']
     i = 0
     while hasattr(obj, 'child'):
-        types.append(obj.child.__class__.__name__)
+        if not verbose:
+            types.append(obj.child.__class__.__name__)
+        else:
+            types.append(obj.child.__class__.__name__
+                         + '(' + str(obj.child.owner.id)
+                         + ':' + str(obj.child.id)
+                         + ')')
+            if is_var:
+                if hasattr(obj.child, 'data'):
+                    data_types.append(obj.child.data.__class__.__name__
+                                      + '(' + str(obj.child.data.owner.id)
+                                      + ':' + str(obj.child.data.id)
+                                      + ')')
+                else:
+                    data_types.append('<empty>')
+
+                if hasattr(obj.child, 'grad'):
+                    grad_types.append(obj.child.grad.__class__.__name__
+                                      + ('(' + str(obj.child.grad.owner.id)
+                                      + ':' + str(obj.child.grad.id)
+                                      + ')') if obj.child.grad is not None else '')
+                else:
+                    grad_types.append('<empty>')
         if isinstance(obj.child, (sy._LocalTensor, sy._PointerTensor)):
             break
         obj = obj.child
@@ -261,13 +318,21 @@ def chain_print(obj, display=True):
             break
     if display:
         print(' > '.join(types))
+        if verbose and is_var:
+            print('[d]| ' + ' | '.join(data_types))
         if is_var:
             print(' - ' + data_display)
+        if verbose and is_var:
+            print('[g]| ' + ' | '.join(grad_types))
+        if has_grad:
+            print(' - - ' + '\n   - '.join(grad_display.split('\n - ')))
     else:
+        display = ' > '.join(types)
         if is_var:
-            return ' > '.join(types) + '\n - ' + data_display
-        else:
-            return ' > '.join(types)
+            display += '\n - ' + data_display
+        if has_grad:
+            display += '\n - - ' + '\n   - '.join(grad_display.split('\n - '))
+        return display
 
 
 def get_child_command(obj, child_types=[]):
@@ -330,27 +395,64 @@ def enforce_owner(obj, owner):
     """
         Reassign every elements of the chain to an owner (in a Virtual worker context)
     """
-    if is_syft_tensor(obj) and hasattr(obj, 'data'):
-        enforce_owner(obj.data, owner)
+    if isinstance(obj, (list, tuple, set, bytearray)):
+        for o in obj:
+            enforce_owner(o, owner)
+    elif isinstance(obj, dict):
+        for k, o in obj.items():
+            enforce_owner(o, owner)
+    else:
+        if is_syft_tensor(obj) and hasattr(obj, 'data'):
+            enforce_owner(obj.data, owner)
+        if is_syft_tensor(obj) and hasattr(obj, 'grad'):
+            enforce_owner(obj.grad, owner)
 
-    if not is_tensor(obj) and not is_variable(obj):
-        obj.owner = owner
-        enforce_owner(obj.child, owner)
+        if is_variable(obj):
+            enforce_owner(obj.data.child, owner)
+            if obj.grad is not None:
+                enforce_owner(obj.grad.child, owner)
+
+        if is_syft_tensor(obj):
+            if owner != owner.hook.local_worker:
+                owner.hook.local_worker.de_register(obj)
+            obj.owner = owner
+            enforce_owner(obj.child, owner)
+
+
+def wrap_command_with(obj, wrapper):
+    """
+        Wrap a syft object with a given wrapper
+    """
+    wrapper.child = obj
+    obj.parent = wrapper
+    return wrapper
 
 
 def wrap_command(obj):
     """
         To a Syft command, add a torch wrapper
+        Returns the wrapper
     """
-    # Torch tensor or variable, or sy._SyftTensor
-    if is_tensor(obj) or is_variable(obj):
+    # for numeric values for instance, don't add a wrapper
+    if isinstance(obj, (int, float, bool, str)) or obj is None:
+        return obj
+    # Torch tensor or variable
+    elif is_tensor(obj) or is_variable(obj):
         raise TypeError('Expecting syft tensors')
+    #  sy._SyftTensor
     elif is_syft_tensor(obj):
-        wrapper = eval(obj.torch_type)()
-        if is_variable(obj.torch_type):
-            wrapper.data = wrap_command(obj.data)
-        wrapper.child = obj
-        obj.parent = wrapper
+        _tail = find_tail_of_chain(obj)
+        if isinstance(_tail, sy._LocalTensor):
+            wrapper = _tail.child
+        else:
+            wrapper = eval(obj.torch_type)()
+        wrap_command_with(obj, wrapper)
+        if is_variable(wrapper):
+            if hasattr(obj, 'data'):
+                wrapper.data = wrap_command(obj.data)
+            if hasattr(obj, 'grad'):
+                wrapper.grad = wrap_command(obj.grad)
+
         return wrapper
     # List or iterables which could contain tensors
     elif isinstance(obj, (list, tuple, set, bytearray, range)):
@@ -367,6 +469,7 @@ def wrap_command(obj):
             wrappers[k] = wrapper
         return wrappers
     else:
+        logging.warning('The following type wasnt wrapped:', type(obj))
         return obj
 
 
@@ -460,8 +563,17 @@ def get_syft_chain(obj):
 def link_var_chain_to_data_chain(var_node, data_node):
     var_node.data = data_node
     next_node = var_node.child
-    if var_node.child is not None and not (is_tensor(next_node) or is_variable(next_node)):
+    if next_node is not None and not (is_tensor(next_node) or is_variable(next_node)):
         link_var_chain_to_data_chain(var_node.child, data_node.child)
+
+
+def link_var_chain_to_data_and_grad_chains(var_node, data_node, grad_node):
+    var_node.data = data_node
+    if not is_variable(grad_node) or len(grad_node.size()) > 0:
+        var_node.grad = grad_node
+    next_node = var_node.child
+    if next_node is not None and not (is_tensor(next_node) or is_variable(next_node)):
+        link_var_chain_to_data_and_grad_chains(var_node.child, data_node.child, grad_node.child)
 
 
 def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=None, end_chain=None):
@@ -571,6 +683,8 @@ def fix_chain_ends(obj):
 
     if is_variable(obj):
         fix_chain_ends(obj.data)
+        if obj.grad is not None:
+            fix_chain_ends(obj.grad)
 
 
 def is_tensor_empty(obj):
