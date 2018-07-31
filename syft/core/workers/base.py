@@ -250,8 +250,10 @@ class BaseWorker(ABC):
             if utils.is_variable(syft_object.torch_type):
                 syft_data_object = tensorvar.data.child
                 self.de_register(syft_data_object)
+                if tensorvar.grad is not None:
+                    syft_grad_object = tensorvar.grad.child
+                    self.de_register(syft_grad_object)
             self.de_register(syft_object)
-
             return tensorvar, False
 
         #  A torch command from another worker involving one or more tensors
@@ -689,58 +691,20 @@ class BaseWorker(ABC):
         # performing the operation
         result = child_type.handle_call(syft_command, owner=self)
 
-        if isinstance(result, (int, float, bool)) and self.id != self.hook.local_worker.id:
-            # result = sy.FloatTensor([result])
-            pass
-        if isinstance(result, (int, float, bool)) or result is None:
-            return result
-
-        results = result if isinstance(result, tuple) else (result,)
-        for res in results:
-            # occasionally results are None, like when calling .backward()
-            if res is not None and hasattr(res, 'child') and self.id != self.hook.local_worker.id:
-                # Re assign the worker (just in case, especially useful with Virtualworkers)
-                self.hook.local_worker.de_register(res)
-                res.owner = self
-                if utils.is_variable(res.child):
-                    self.hook.local_worker.de_register(res.data)
-                    res.data.owner = self
+        utils.enforce_owner((raw_command, result), self)
 
         if is_torch_command:
             # Wrap the result
             if has_self and utils.is_in_place_method(attr):
-                raw_command['self'].child = result
-                result.parent = raw_command['self']
-                return raw_command['self']
+                wrapper = utils.wrap_command_with(result, raw_command['self'])
             else:
-                results = result if isinstance(result, tuple) else (result,)
-                wrappers = []
-                for res in results:
-                    if isinstance(res, (int, float, bool)) or res is None:
-                        wrapper = res
-                    else:
-                        _tail = utils.find_tail_of_chain(res)
-                        if isinstance(_tail, sy._LocalTensor):
-                            wrapper = _tail.child
-                            wrapper.child = res
-                            res.parent = wrapper
-                            if utils.is_variable(wrapper):
-                                data_res = res.data
-                                _data_tail = utils.find_tail_of_chain(data_res)
-                                data_wrapper = _data_tail.child
-                                data_wrapper.child = data_res
-                                data_res.parent = data_wrapper
-
-                                wrapper.data = data_wrapper
-                        else:
-                            wrapper = utils.wrap_command(res)
-                    wrappers.append(wrapper)
-                return tuple(wrappers) if len(wrappers) > 1 else wrappers[0]
+                wrapper = utils.wrap_command(result)
+            return wrapper
         else:
             # We don't need to wrap
             return result
 
-    def send_obj(self, object, new_id, recipient, new_data_id=None):
+    def send_obj(self, object, new_id, recipient, new_data_id=None, new_grad_id=None):
         """send_obj(self, obj, new_id, recipient, new_data_id=None) -> obj
         Sends an object to another :class:`VirtualWorker` and removes it
         from the local worker.
@@ -756,15 +720,22 @@ class BaseWorker(ABC):
         if self.get_pointer_to(recipient, new_id) is not None:
             raise MemoryError('You already point at ', recipient, ':', new_id)
         if utils.is_variable(object.child.torch_type):
-            if new_data_id is None:
+            if new_data_id is None or new_grad_id is None:
                 raise AttributeError(
-                    'Please provide a new_data_id arg, to be able to point to Var.data')
+                    'Please provide the new_data_id and new_grad_id args, to be able to point to Var.data, .grad')
+
             if self.get_pointer_to(recipient, new_data_id) is not None:
                 raise MemoryError('You already point at ', recipient, ':', new_id)
             assert new_id != new_data_id, \
                 "You can't have the same id vor the variable and its data."
+            assert new_id != new_grad_id, \
+                "You can't have the same id vor the variable and its grad."
+            assert new_data_id != new_grad_id
 
             object.data.child.id = new_data_id
+            if object.grad is None:
+                object.grad = sy.Variable(sy.zeros(object.size()))
+            object.grad.child.id = new_grad_id
         object = utils.encode(object, retrieve_pointers=False, private_local=False)
 
         # We don't need any response to proceed to registration

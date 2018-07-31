@@ -461,32 +461,37 @@ class TestTorchTensor(TestCase):
 
 class TestTorchVariable(TestCase):
 
-    #     def test_remote_backprop(self):
+    def test_remote_backprop(self):
 
-    #         hook = TorchHook(verbose=False)
-    #         local = hook.local_worker
-    #         local.verbose = False
-    #         remote = VirtualWorker(id=1, hook=hook, verbose=False)
-    #         local.add_worker(remote)
+        x = sy.Variable(torch.ones(2, 2), requires_grad=True).send(bob)
+        x2 = sy.Variable(torch.ones(2, 2) * 2, requires_grad=True).send(bob)
 
-    #         x = Var(torch.ones(2, 2), requires_grad=True).send_(remote)
-    #         x2 = Var(torch.ones(2, 2)*2, requires_grad=True).send_(remote)
+        y = x * x2
 
-    #         y = x * x2
+        y.sum().backward()
 
-    #         y.sum().backward()
+        # This step is required so far to fix the damage made by .backward()
+        x_ = bob._objects[x.child.id_at_location]
+        utils.enforce_owner(x_, bob)
+        utils.link_var_chain_to_data_and_grad_chains(x_.child, x_.child.data, x_.child.grad)
 
-    #         # remote grads should be correct
-    #         assert (remote._objects[x2.id].grad.data == torch.ones(2, 2)).all()
-    #         assert (remote._objects[x.id].grad.data == torch.ones(2, 2)*2).all()
+        x2_ = bob._objects[x2.child.id_at_location]
+        utils.enforce_owner(x2_, bob)
+        utils.link_var_chain_to_data_and_grad_chains(x2_.child, x2_.child.data, x2_.child.grad)
 
-    #         assert (y.get().data == torch.ones(2, 2)*2).all()
+        # remote grads should be correct
+        assert (bob._objects[x2.child.id_at_location].child.grad.data == torch.ones(2, 2)).all()
+        # In particular, you can call .grad on a syft tensor, which make .child and .grad commutative
+        assert (bob._objects[x2.child.id_at_location].grad.child.data == torch.ones(2, 2)).all()
+        assert (bob._objects[x.child.id_at_location].child.grad.data == torch.ones(2, 2) * 2).all()
 
-    #         assert (x.get().data == torch.ones(2, 2)).all()
-    #         assert (x2.get().data == torch.ones(2, 2)*2).all()
+        assert (y.get().data == torch.ones(2, 2) * 2).all()
 
-    #         assert (x.grad.data == torch.ones(2, 2)*2).all()
-    #         assert (x2.grad.data == torch.ones(2, 2)).all()
+        assert (x.get().data == torch.ones(2, 2)).all()
+        assert (x2.get().data == torch.ones(2, 2) * 2).all()
+
+        assert (x.grad.data == torch.ones(2, 2) * 2).all()
+        assert (x2.grad.data == torch.ones(2, 2)).all()
 
     #     def test_variable_data_attribute_bug(self):
 
@@ -508,28 +513,6 @@ class TestTorchVariable(TestCase):
     #         def linear(x, w):
     #             """Linear transformation of x by w"""
     #             return x.mm(w)
-
-    def test_remote_backprop(self):
-
-
-        x = sy.Variable(torch.ones(2, 2), requires_grad=True).send(bob)
-        x2 = sy.Variable(torch.ones(2, 2)*2, requires_grad=True).send(bob)
-
-        y = x * x2
-
-        y.sum().backward()
-
-        # remote grads should be correct
-        assert (bob._objects[x2.id].grad.data == torch.ones(2, 2)).all()
-        assert (bob._objects[x.id].grad.data == torch.ones(2, 2)*2).all()
-
-        assert (y.get().data == torch.ones(2, 2)*2).all()
-
-        assert (x.get().data == torch.ones(2, 2)).all()
-        assert (x2.get().data == torch.ones(2, 2)*2).all()
-
-        assert (x.grad.data == torch.ones(2, 2)*2).all()
-        assert (x2.grad.data == torch.ones(2, 2)).all()
 
     #         x = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
     #         y = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
