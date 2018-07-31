@@ -5,6 +5,7 @@ import types
 import functools
 import logging
 import torch
+import syft
 import syft as sy
 
 
