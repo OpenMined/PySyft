@@ -250,7 +250,10 @@ class _LocalTensor(_SyftTensor):
                 syft_command['self'].child.data = response.data
                 response.data.parent = syft_command['self'].child.data.parent
                 if response.grad is not None:
-                    syft_command['self'].child.grad = response.grad
+                    if response.grad.data.dim() > 0:
+                        syft_command['self'].child.grad = response.grad
+                    else:
+                        syft_command['self'].child.grad.native_set_()
                     response.grad.parent = syft_command['self'].child.grad.parent
 
                 if response.grad is None:
@@ -362,7 +365,7 @@ class _PlusIsMinusTensor(_SyftTensor):
         """
         Just to be compact, use this
         x = sy.FloatTensor([1, 2, 3])
-        x = sy._PlusIsMinusTensor()._(x)
+        x = sy._PlusIsMinusTensor().on(x)
         """
         self.torch_type = wrapper.child.torch_type
         self.owner = wrapper.child.owner
@@ -374,6 +377,16 @@ class _PlusIsMinusTensor(_SyftTensor):
 
         if utils.is_variable(wrapper):
             wrapper.data = sy._PlusIsMinusTensor().on(wrapper.data)
+            if utils.is_variable(wrapper.grad):
+                wrapper.grad = sy._PlusIsMinusTensor().on(wrapper.grad)
+            if wrapper.grad is None and wrapper.data.dim() > 0:
+                # create an empty envelope in wrapper.grad
+                wrapper.grad = sy.Variable(sy.zeros(wrapper.data.size()).type(type(wrapper.data)))
+                wrapper.grad.native_set_()
+                # Build the chain with _PlusIsMinusTensor
+                wrapper_grad = sy._PlusIsMinusTensor().on(wrapper.grad)
+                # Insert the gradient with its chain
+                wrapper.grad.native_set_(wrapper_grad)
 
         return wrapper
 
@@ -409,6 +422,9 @@ class _PlusIsMinusTensor(_SyftTensor):
 
             # Forward the call to the next child
             result = child_type.handle_call(next_command, owner)
+
+        if result is None:
+            return result
 
         # Insert the new node just before the wrapper
         syft_response = sy._PlusIsMinusTensor(child=result, owner=owner)
@@ -768,10 +784,11 @@ class _TorchTensor(_TorchObject):
         data = msg_obj['data']
 
         # This is a special case where we want to get rid of the empty wrapper
-        if syft_obj.child is not None and len(data) == 0:
-            tail_tensorvar = utils.find_tail_of_chain(syft_obj).child
-            utils.assert_has_only_torch_tensorvars(tail_tensorvar)
-            return tail_tensorvar
+        # TODO: For now we remove this case for the unittest don't break and this case is not well specified
+        # if syft_obj.child is not None and len(data) == 0:
+        #     tail_tensorvar = utils.find_tail_of_chain(syft_obj).child
+        #     utils.assert_has_only_torch_tensorvars(tail_tensorvar)
+        #     return tail_tensorvar
 
         # TODO: Find a smart way to skip register and not leaking the info to the local worker
         # This would imply overload differently the __init__ to provide an owner for the child attr.
@@ -896,10 +913,6 @@ class _TorchVariable(_TorchObject):
         # same for grad
         if obj_grad_id is not None:
             self.grad.child.id = obj_grad_id
-        else:
-            self.grad = sy.Variable(sy.zeros(self.size()))
-            self.grad.child.owner = self.owner
-            self.grad.data.child.owner = self.owner
 
         var_grad_ptr = self.grad.child.create_pointer(location=worker, id_at_location=new_grad_id,
                                                       register=True)
@@ -923,7 +936,7 @@ class _TorchVariable(_TorchObject):
         if update_ptr_wrapper:
             self.child = variable.child
             self.data.child = variable.data.child
-            if variable.grad is not None:
+            if self.grad is not None and variable.grad is not None:
                 self.grad.child = variable.grad.child
 
             # In case we have a final get() (ie returning a FloatTensor), we have e.g.
@@ -937,7 +950,7 @@ class _TorchVariable(_TorchObject):
                     and variable.data is not None \
                     and variable.data.dim() > 0:
                 self.native_set_(variable)
-                if variable.grad is not None:
+                if self.grad is not None and variable.grad is not None:
                     self.grad.data = variable.grad.data
 
             if self.grad is not None:
@@ -951,17 +964,23 @@ class _TorchVariable(_TorchObject):
 
     def ser(self, private, as_dict=True):
         key = '__' + type(self).__name__ + '__'
-        data = self.data.ser(private)
+
         tensor_msg = {
             'type': str(self.__class__).split("'")[1],
             'torch_type': 'syft.' + type(self).__name__,
-            'data': data,
+            'data': self.data.ser(private),
             'child': self.child.ser(private),
             'requires_grad': self.requires_grad
         }
         if self.grad is not None:
-            grad = self.grad.ser(private)
-            tensor_msg['grad'] = grad
+            tensor_msg['grad'] = self.grad.ser(private)
+        elif self.data.dim() > 0:
+            # Create a .grad just if there is some data in the tensor
+            self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
+            self.grad.native_set_()
+            self.grad.child.owner = self.owner
+            self.grad.data.child.owner = self.owner
+            tensor_msg['grad'] = self.grad.ser(private)
 
         if as_dict:
             return {key: tensor_msg}
@@ -972,6 +991,7 @@ class _TorchVariable(_TorchObject):
     def deser(msg_obj, worker, acquire):
         obj_type, msg_obj = utils.extract_type_and_obj(msg_obj)
         var_syft_obj = sy._SyftTensor.deser(msg_obj['child'], worker, acquire)
+
         if var_syft_obj.parent is not None and var_syft_obj.child is not None:
             return var_syft_obj.parent
 
@@ -983,6 +1003,7 @@ class _TorchVariable(_TorchObject):
         else:
             raise TypeError('Data is not a tensor:', var_data_type)
 
+
         variable = sy.Variable(var_data, requires_grad=msg_obj['requires_grad'])
 
         # Deser the var.grad
@@ -990,7 +1011,16 @@ class _TorchVariable(_TorchObject):
             var_grad_type, var_grad_tensor = utils.extract_type_and_obj(msg_obj['grad'])
             var_grad = eval('sy.' + var_grad_type).deser(msg_obj['grad'], worker, acquire)
             worker.hook.local_worker.de_register(var_grad)
-            variable.grad = var_grad
+            # Trick if we send back an empty grad
+            if var_grad.data.dim() == 0 and variable.data.dim() > 0:
+                # save the var_grad.data
+                var_grad_data = var_grad.data
+                # Transform var_grad into an envelope compatiable with .grad assignement
+                var_grad.data = sy.zeros(variable.size()).type(type(var_grad.data))
+                variable.grad = var_grad
+                # put back var_grad.data
+                variable.grad.data = var_grad_data
+
         else:
             var_grad = None
 

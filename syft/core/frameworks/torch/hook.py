@@ -52,6 +52,7 @@ class TorchHook(object):
                 self._hook_syft_tensor_types(typ)
 
             self._hook_torch_module()
+            self._hook_backward()
 
             torch.local_worker = self.local_worker
 
@@ -401,6 +402,53 @@ class TorchHook(object):
         Forward the call to the local_worker
         """
         return hook_self.local_worker._execute_call(attr, self, *args, **kwargs)
+
+    def _hook_backward(hook_self):
+
+        sy.Variable.native_native_backward = sy.Variable.native_backward
+
+        def new_backward(self, *args, **kwargs):
+            worker = self.owner
+            # Retrieve all the variable ids involved in the computation graph
+            variable_ids = utils.get_connected_variables(self)
+            variable_ids = [var_id for var_id in variable_ids if var_id in worker._objects]
+            # Save all the gradients (to keep the id) and reset the grads
+            saved_grads = {}
+            for variable_id in variable_ids:
+                syft_tensor = worker.get_obj(variable_id)
+                var = syft_tensor.parent
+                assert var.id == variable_id
+                saved_grads[variable_id] = var.grad
+                var.grad = None
+
+            # Performs the backward
+            self.native_native_backward(*args, **kwargs)
+
+            # Put back the original grad envelop and insert the new grad value in it
+            for variable_id in variable_ids:
+                syft_tensor = worker.get_obj(variable_id)
+                # retrieve the var to fix
+                var = syft_tensor.parent
+                # retrieve the old grad, and insert it (to keep the chain) [first the envelope, then the data]
+                saved_grad = saved_grads[variable_id]
+                if saved_grad is not None:
+                    # store the computed gradient
+                    computed_grad = var.grad
+                    saved_grad_data = saved_grad.data
+                    saved_grad.data = sy.zeros(var.size()).type(type(var.data))
+                    var.grad = saved_grad
+                    var.grad.data = saved_grad_data
+                    # Insert the value of the computed_grad
+                    if computed_grad is not None:
+                        var.grad.data.native_set_(computed_grad.data)
+                # Make sure everyone has the right owner
+                utils.enforce_owner(var, worker)
+                # Fix the .data and .grad attributes on the chain
+                utils.link_var_chain_to_data_and_grad_chains(var, var.data, var.grad)
+
+        sy.Variable.native_backward = new_backward
+
+
 
 
 # TODO: put this in an appropriate place
