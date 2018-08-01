@@ -53,6 +53,7 @@ class TorchHook(object):
 
             self._hook_torch_module()
             self._hook_backward()
+            self._hook_module()
 
             torch.local_worker = self.local_worker
 
@@ -447,6 +448,37 @@ class TorchHook(object):
                 utils.link_var_chain_to_data_and_grad_chains(var, var.data, var.grad)
 
         sy.Variable.native_backward = new_backward
+
+    def _hook_module(self):
+
+        def module_is_missing_grad(model):
+            missing_grad = False
+            for p in model.parameters():
+                if p.grad is None:
+                    missing_grad = True
+            return missing_grad
+
+        def create_grad_objects(model):
+
+            for p in model.parameters():
+                o = p.sum()
+                o.backward()
+                p.grad -= p.grad
+
+        def module_send_(self, dest):
+            if (module_is_missing_grad(self)):
+                create_grad_objects(self)
+
+            for p in self.parameters():
+                p.send(dest)
+
+        torch.nn.Module.send = module_send_
+
+        def module_get_(self):
+            for p in self.parameters():
+                p.get()
+
+        torch.nn.Module.get = module_get_
 
 
 

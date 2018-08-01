@@ -650,8 +650,6 @@ class TestTorchVariable(TestCase):
 
         model.send(bob)
 
-        sy.core.utils.chain_print(model)
-
         assert model.location.id == bob.id
         assert model.data.location.id == bob.id
         assert model.grad.location.id == bob.id
@@ -670,47 +668,47 @@ class TestTorchVariable(TestCase):
         assert model.grad.id_at_location in bob._objects
         # assert model.grad.data.id in bob._objects
 
-    #     def test_remote_optim_step(self):
+    def test_remote_optim_step(self):
 
-    #         torch.manual_seed(42)
-    #         hook = TorchHook(verbose=False)
-    #         local = hook.local_worker
-    #         local.verbose = False
-    #         remote = VirtualWorker(id=1, hook=hook, verbose=False)
-    #         local.add_worker(remote)
-    #         param = []
+        torch.manual_seed(42)
+        # hook = TorchHook(verbose=False)
+        # local = hook.local_worker
+        # local.verbose = False
+        # remote = VirtualWorker(id=1, hook=hook, verbose=False)
+        # local.add_worker(remote)
+        param = []
 
-    #         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]])).send(remote)
-    #         target = Var(torch.FloatTensor([[0], [0], [1], [1]])).send(remote)
+        data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]])).send(bob)
+        target = Var(torch.FloatTensor([[0], [0], [1], [1]])).send(bob)
 
-    #         model = nn.Linear(2, 1)
-    #         opt = optim.SGD(params=model.parameters(), lr=0.1)
+        model = torch.nn.Linear(2, 1)
+        opt = torch.optim.SGD(params=model.parameters(), lr=0.1)
 
-    #         for i in model.parameters():
-    #             param.append(i[:])
+        for i in model.parameters():
+            param.append(i[:])
 
-    #         model.send_(remote)
-    #         model.zero_grad()
-    #         pred = model(data)
-    #         loss = ((pred - target) ** 2).sum()
-    #         loss.backward()
-    #         opt.step()
+        model.send_(bob)
+        model.zero_grad()
+        pred = model(data)
+        loss = ((pred - target) ** 2).sum()
+        loss.backward()
+        opt.step()
 
-    #         model.get_()
-    #         for i in model.parameters():
-    #             param.append(i[:])
+        model.get_()
+        for i in model.parameters():
+            param.append(i[:])
 
-    #         x = []
-    #         for i in param:
-    #             if type(i.data[0]) != float:
-    #                 x.append(i.data[0][0])
-    #                 x.append(i.data[0][1])
-    #             else:
-    #                 x.append(i.data[0])
+        x = []
+        for i in param:
+            if type(i.data[0]) != float:
+                x.append(i.data[0][0])
+                x.append(i.data[0][1])
+            else:
+                x.append(i.data[0])
 
-    #         y = [0.5406, 0.5869, -0.16565567255020142, 0.6732, 0.5103, -0.0841369703412056]
+        y = [0.5406, 0.5869, -0.16565567255020142, 0.6732, 0.5103, -0.0841369703412056]
 
-    #         assert (self.assertAlmostEqual(X,Y) for X,Y in zip(x,y))
+        assert (self.assertAlmostEqual(X,Y) for X,Y in zip(x,y))
 
     #     def test_federated_learning(self):
 
