@@ -641,11 +641,8 @@ class TestTorchVariable(TestCase):
 
         # ensure that objects are not yet pointers (haven't sent it yet)
         assert not isinstance(model.child, sy._PointerTensor)
-        # assert not model.data.is_pointer
         assert not isinstance(model.data.child, sy._PointerTensor)
-        # assert not model.grad.is_pointer
         assert not isinstance(model.grad.child, sy._PointerTensor)
-        # assert not model.grad.data.is_pointer
         assert not isinstance(model.grad.data.child, sy._PointerTensor)
 
         model.send(bob)
@@ -657,11 +654,8 @@ class TestTorchVariable(TestCase):
 
         # ensure that objects are not yet pointers (haven't sent it yet)
         assert isinstance(model.child, sy._PointerTensor)
-        # assert not model.data.is_pointer
         assert isinstance(model.data.child, sy._PointerTensor)
-        # assert not model.grad.is_pointer
         assert isinstance(model.grad.child, sy._PointerTensor)
-        # assert not model.grad.data.is_pointer
         assert isinstance(model.grad.data.child, sy._PointerTensor)
 
         assert model.id_at_location in bob._objects
@@ -672,11 +666,7 @@ class TestTorchVariable(TestCase):
     def test_remote_optim_step(self):
 
         torch.manual_seed(42)
-        # hook = TorchHook(verbose=False)
-        # local = hook.local_worker
-        # local.verbose = False
-        # remote = VirtualWorker(id=1, hook=hook, verbose=False)
-        # local.add_worker(remote)
+
         param = []
 
         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]])).send(bob)
