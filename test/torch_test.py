@@ -573,7 +573,7 @@ class TestTorchVariable(TestCase):
         original_data_id = model.data.id + 0
         original_grad_id = model.grad.data.id + 0
 
-        model.send_(bob)
+        model.send(bob)
 
         assert model.data.id == original_data_id
         assert model.grad.data.id == original_grad_id
