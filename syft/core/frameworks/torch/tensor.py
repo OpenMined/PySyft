@@ -292,13 +292,13 @@ class _LocalTensor(_SyftTensor):
         return return_response
 
     def ser(self, private, as_dict=True):
-        print("serializing a local tensor")
+
         data = {
             'owner': self.owner.id,
             'id': self.id,
             'torch_type': self.torch_type
         }
-        print(data)
+
         if as_dict:
             return {'___LocalTensor__': data}
         else:
@@ -318,8 +318,7 @@ class _LocalTensor(_SyftTensor):
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
-        print("deserializing a local tensor - acquire:",acquire, "worker:", worker)
-        print(msg_obj)
+
         if 'owner' not in msg_obj:
             raise TypeError("sy._LocalTensor can't deserialize a non-valid sy._LocalTensor. "
                             "Do you wan to call sy.FloatTensor.deser() instead?")
