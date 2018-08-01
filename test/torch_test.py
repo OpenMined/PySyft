@@ -9,6 +9,7 @@ import syft as sy
 from syft.core import utils
 import torch
 import torch.nn.functional as F
+from torch.autograd import Variable as Var
 
 hook = sy.TorchHook(verbose=True)
 
@@ -493,40 +494,36 @@ class TestTorchVariable(TestCase):
         assert (x.grad.data == torch.ones(2, 2) * 2).all()
         assert (x2.grad.data == torch.ones(2, 2)).all()
 
-    #     def test_variable_data_attribute_bug(self):
+    def test_variable_data_attribute_bug(self):
 
-    #         # previously, newly created Variable objects would lose their OpenMined given
-    #         # attributes on the .data python objects they contain whenever the Variable
-    #         # object is returned from a function. This bug was fixed by storing a bbackup
-    #         # pointer to the .data object (.data_backup) so that the python object doesn't
-    #         # get garbage collected. This test used to error out at the last line (as
-    #         # indcated below)
+        # previously, newly created Variable objects would lose their OpenMined given
+        # attributes on the .data python objects they contain whenever the Variable
+        # object is returned from a function. This bug was fixed by storing a bbackup
+        # pointer to the .data object (.data_backup) so that the python object doesn't
+        # get garbage collected. This test used to error out at the last line (as
+        # indcated below)
 
-    #         hook = TorchHook(verbose=False)
-    #         local = hook.local_worker
-    #         local.verbose = False
+        def relu(x):
+            """Rectified linear activation"""
+            return torch.clamp(x, min=0.)
 
-    #         def relu(x):
-    #             """Rectified linear activation"""
-    #             return torch.clamp(x, min=0.)
+        def linear(x, w):
+            """Linear transformation of x by w"""
+            return x.mm(w)
 
-    #         def linear(x, w):
-    #             """Linear transformation of x by w"""
-    #             return x.mm(w)
+        x = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
+        y = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
 
-    #         x = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
-    #         y = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
+        z = linear(x, y)
 
-    #         z = linear(x, y)
+        # previously we had to do the following to prevent this bug
+        # leaving it here for reference in case the bug returns later.
+        # print(z.data.is_pointer)
 
-    #         # previously we had to do the following to prevent this bug
-    #         # leaving it here for reference in case the bug returns later.
-    #         # print(z.data.is_pointer)
+        # before the bugfix, the following line would error out.
+        z = relu(z)
 
-    #         # before the bugfix, the following line would error out.
-    #         z = relu(z)
-
-    #         assert True
+        assert True
 
     #     def test_encode_decode_json_python(self):
     #         """
