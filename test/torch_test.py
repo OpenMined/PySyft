@@ -793,18 +793,18 @@ class TestTorchVariable(TestCase):
         expected_conv = sy.Variable(torch.FloatTensor([[[[3, -2], [-2, -3]]]]))
         assert torch.equal(conv, expected_conv)
 
-    # def test_torch_nn_conv2d_on_remote_var(self):
-    #
-    #     x = sy.Variable(torch.FloatTensor([[[[1, -1, 2], [-1, 0, 1], [1, 0, -2]]]]))
-    #     x.send(bob)
-    #     convolute = torch.nn.Conv2d(1, 1, 2, stride=1, padding=0)
-    #     convolute.weight = torch.nn.Parameter(torch.FloatTensor([[[[1, -1], [-1, 1]]]]))
-    #     convolute.bias = torch.nn.Parameter(torch.FloatTensor([0]))
-    #     convolute.send(bob)
-    #     conv = convolute(x)
-    #     conv.get()
-    #     expected_conv = sy.Variable(torch.FloatTensor([[[[3, -2], [-2, -3]]]]))
-    #     assert torch.equal(conv, expected_conv)
+    def test_torch_nn_conv2d_on_remote_var(self):
+
+        x = sy.Variable(torch.FloatTensor([[[[1, -1, 2], [-1, 0, 1], [1, 0, -2]]]]))
+        x.send(bob)
+        convolute = torch.nn.Conv2d(1, 1, 2, stride=1, padding=0)
+        convolute.weight = torch.nn.Parameter(torch.FloatTensor([[[[1, -1], [-1, 1]]]]))
+        convolute.bias = torch.nn.Parameter(torch.FloatTensor([0]))
+        convolute.send(bob)
+        conv = convolute(x)
+        conv.get()
+        expected_conv = sy.Variable(torch.FloatTensor([[[[3, -2], [-2, -3]]]]))
+        assert torch.equal(conv, expected_conv)
 
     def test_local_var_unary_methods(self):
         ''' Unit tests for methods mentioned on issue 1385
