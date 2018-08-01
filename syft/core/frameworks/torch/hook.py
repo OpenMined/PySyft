@@ -435,10 +435,7 @@ class TorchHook(object):
                 if saved_grad is not None:
                     # store the computed gradient
                     computed_grad = var.grad
-                    saved_grad_data = saved_grad.data
-                    saved_grad.data = sy.zeros(var.size()).type(type(var.data))
-                    var.grad = saved_grad
-                    var.grad.data = saved_grad_data
+                    var.assign_grad_(saved_grad)
                     # Insert the value of the computed_grad
                     if computed_grad is not None:
                         var.grad.data.native_set_(computed_grad.data)
