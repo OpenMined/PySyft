@@ -327,7 +327,9 @@ class BaseWorker(ABC):
             logging.warning(
                 "Worker ID " + str(worker.id) + " taken. Have I seen this worker before?")
             logging.warning("Replacing it anyways... this could cause unexpected behavior...")
-
+        if(worker.id in self._known_workers):
+            logging.warn("Worker " + str(worker.id) + " already exists. Replacing old worker which could cause"+
+                         "unexpected behavior")
         self._known_workers[worker.id] = worker
 
     def add_workers(self, workers):

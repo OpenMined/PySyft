@@ -10,8 +10,8 @@ hook = sy.TorchHook()
 me = hook.local_worker
 me.is_client_worker = False
 
-bob = sy.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
-alice = sy.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
+bob = sy.VirtualWorker(id="bob2", hook=hook, is_client_worker=False)
+alice = sy.VirtualWorker(id="alice2", hook=hook, is_client_worker=False)
 
 bob.add_workers([me, alice])
 alice.add_workers([me, bob])

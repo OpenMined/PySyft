@@ -11,10 +11,6 @@ from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTe
 from .tensor import _TorchVariable
 
 
-# import json
-# import functools
-
-
 class TorchHook(object):
 
     def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
@@ -24,18 +20,6 @@ class TorchHook(object):
             torch.torch_hooked = 0
         else:
             torch.torch_hooked += 1
-
-        if self.local_worker is None:
-            # Every TorchHook instance should have a local worker which is responsible for
-            # interfacing with other workers. The worker interface is what allows the Torch
-            # specific code in TorchHook to be agnostic to the means by which workers communicate
-            # (such as peer-to-peer, sockets, through local ports, or all within the same process)
-            self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client,
-                                                      queue_size=queue_size)
-        else:
-            # if the local_worker already exists, then it MUST not know about the hook which is
-            # just being created. Thus, we must inform it.
-            self.local_worker.hook = self
 
         # Methods that caused infinite recursion during testing
         # TODO: May want to handle the ones in "exclude" manually at
@@ -48,13 +32,28 @@ class TorchHook(object):
 
         if torch.torch_hooked > 0:
             logging.warn("Torch was already hooked... skipping hooking process")
+            self.local_worker = torch.local_worker
         else:
+
+            if self.local_worker is None:
+                # Every TorchHook instance should have a local worker which is responsible for
+                # interfacing with other workers. The worker interface is what allows the Torch
+                # specific code in TorchHook to be agnostic to the means by which workers communicate
+                # (such as peer-to-peer, sockets, through local ports, or all within the same process)
+                self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client,
+                                                          queue_size=queue_size)
+            else:
+                # if the local_worker already exists, then it MUST not know about the hook which is
+                # just being created. Thus, we must inform it.
+                self.local_worker.hook = self
 
             for typ in torch.tensorvar_types:
                 self._hook_native_tensors_and_variables(typ)
                 self._hook_syft_tensor_types(typ)
 
             self._hook_torch_module()
+
+            torch.local_worker = self.local_worker
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloading a given tensor_type"""
