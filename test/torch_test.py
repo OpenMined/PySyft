@@ -526,30 +526,30 @@ class TestTorchVariable(TestCase):
 
         assert True
 
-        def test_encode_decode_json_python(self):
-            """
-                Test that the python objects are correctly encoded and decoded in
-                json with our encoder/JSONDecoder.
-                The main focus is on non-serializable objects, such as torch Variable
-                or tuple, or even slice().
-            """
-
-            encoder = utils.PythonEncoder(retrieve_tensorvar=True)
-            decoder = utils.PythonJSONDecoder(bob)
-            x = Var(torch.FloatTensor([[1, -1],[0,1]]))
-            x.send(bob)
-            # Note that there is two steps of encoding/decoding because the first
-            # transforms `Variable containing:[torch.FloatTensor - Locations:[
-            # <syft.core.workers.virtual.VirtualWorker id:2>]]` into
-            # Variable containing:[torch.FloatTensor - Locations:[2]]`
-            obj = [None, ({'marcel': (1, [1.3], x), 'proust': slice(0, 2, None)}, 3)]
-            enc, t = encoder.encode(obj)
-            enc = json.dumps(enc)
-            dec1 = decoder.decode(enc)
-            enc, t = encoder.encode(dec1)
-            enc = json.dumps(enc)
-            dec2 = decoder.decode(enc)
-            assert dec1 == dec2
+    # def test_encode_decode_json_python(self):
+    #     """
+    #         Test that the python objects are correctly encoded and decoded in
+    #         json with our encoder/JSONDecoder.
+    #         The main focus is on non-serializable objects, such as torch Variable
+    #         or tuple, or even slice().
+    #     """
+    #
+    #     encoder = utils.PythonEncoder(retrieve_tensorvar=True)
+    #     decoder = utils.PythonJSONDecoder(bob)
+    #     x = Var(torch.FloatTensor([[1, -1],[0,1]]))
+    #     x.send(bob)
+    #     # Note that there is two steps of encoding/decoding because the first
+    #     # transforms `Variable containing:[torch.FloatTensor - Locations:[
+    #     # <syft.core.workers.virtual.VirtualWorker id:2>]]` into
+    #     # Variable containing:[torch.FloatTensor - Locations:[2]]`
+    #     obj = [None, ({'marcel': (1, [1.3], x), 'proust': slice(0, 2, None)}, 3)]
+    #     enc, t = encoder.encode(obj)
+    #     enc = json.dumps(enc)
+    #     dec1 = decoder.decode(enc)
+    #     enc, t = encoder.encode(dec1)
+    #     enc = json.dumps(enc)
+    #     dec2 = decoder.decode(enc)
+    #     assert dec1 == dec2
 
     #     def test_var_gradient_keeps_id_during_send_(self):
     #         # PyTorch has a tendency to delete var.grad python objects
