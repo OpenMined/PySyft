@@ -204,6 +204,7 @@ class BaseWorker(ABC):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
+
         message_wrapper = utils.decode(message_wrapper_json, worker=self)
 
         response, private = self.process_message_type(message_wrapper)
@@ -551,6 +552,8 @@ class BaseWorker(ABC):
             variable = result
             self.register(variable.child)
             self.register(variable.data.child)
+            if hasattr(variable, 'grad') and variable.grad is not None:
+                self.register(variable.grad.child)
         # Case of a iter type non json serializable
         elif isinstance(result, (list, tuple, set, bytearray, range)):
             for res in result:
@@ -737,6 +740,7 @@ class BaseWorker(ABC):
             object.data.child.id = new_data_id
             if object.grad is None:
                 object.grad = sy.Variable(sy.zeros(object.size()))
+                object.grad.native_set_()
             object.grad.child.id = new_grad_id
         object = utils.encode(object, retrieve_pointers=False, private_local=False)
 
