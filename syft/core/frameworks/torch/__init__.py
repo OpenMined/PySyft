@@ -46,4 +46,4 @@ torch.tensorvar_methods = list(
 )
 
 # Torch functions we don't want to override
-torch.torch_exclude = ['save', 'load', 'typename', 'is_tensor']
+torch.torch_exclude = ['save', 'load', 'typename', 'is_tensor', 'manual_seed']

@@ -653,6 +653,7 @@ class TestTorchVariable(TestCase):
         assert model.location.id == bob.id
         assert model.data.location.id == bob.id
         assert model.grad.location.id == bob.id
+        assert model.grad.data.location.id == bob.id
 
         # ensure that objects are not yet pointers (haven't sent it yet)
         assert isinstance(model.child, sy._PointerTensor)
@@ -661,12 +662,12 @@ class TestTorchVariable(TestCase):
         # assert not model.grad.is_pointer
         assert isinstance(model.grad.child, sy._PointerTensor)
         # assert not model.grad.data.is_pointer
-        assert not isinstance(model.grad.data.child, sy._PointerTensor)
+        assert isinstance(model.grad.data.child, sy._PointerTensor)
 
         assert model.id_at_location in bob._objects
         assert model.data.id_at_location in bob._objects
         assert model.grad.id_at_location in bob._objects
-        # assert model.grad.data.id in bob._objects
+        assert model.grad.data.id_at_location in bob._objects
 
     def test_remote_optim_step(self):
 
@@ -687,14 +688,14 @@ class TestTorchVariable(TestCase):
         for i in model.parameters():
             param.append(i[:])
 
-        model.send_(bob)
+        model.send(bob)
         model.zero_grad()
         pred = model(data)
         loss = ((pred - target) ** 2).sum()
         loss.backward()
         opt.step()
 
-        model.get_()
+        model.get()
         for i in model.parameters():
             param.append(i[:])
 

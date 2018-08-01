@@ -710,7 +710,7 @@ class BaseWorker(ABC):
             # We don't need to wrap
             return result
 
-    def send_obj(self, object, new_id, recipient, new_data_id=None, new_grad_id=None):
+    def send_obj(self, object, new_id, recipient, new_data_id=None, new_grad_id=None, new_grad_data_id=None):
         """send_obj(self, obj, new_id, recipient, new_data_id=None) -> obj
         Sends an object to another :class:`VirtualWorker` and removes it
         from the local worker.
@@ -726,9 +726,10 @@ class BaseWorker(ABC):
         if self.get_pointer_to(recipient, new_id) is not None:
             raise MemoryError('You already point at ', recipient, ':', new_id)
         if utils.is_variable(object.child.torch_type):
-            if new_data_id is None or new_grad_id is None:
+            if new_data_id is None or new_grad_id is None or new_grad_data_id is None:
                 raise AttributeError(
-                    'Please provide the new_data_id and new_grad_id args, to be able to point to Var.data, .grad')
+                    'Please provide the new_data_id, new_grad_id, and new_grad_data_id args, to be able to point to'+
+                    'Var.data, .grad')
 
             if self.get_pointer_to(recipient, new_data_id) is not None:
                 raise MemoryError('You already point at ', recipient, ':', new_id)
@@ -736,13 +737,24 @@ class BaseWorker(ABC):
                 "You can't have the same id vor the variable and its data."
             assert new_id != new_grad_id, \
                 "You can't have the same id vor the variable and its grad."
+            assert new_id != new_grad_data_id
+
             assert new_data_id != new_grad_id
 
+            assert new_data_id != new_grad_data_id
+
+            assert new_grad_id != new_grad_data_id
+
             object.data.child.id = new_data_id
+
             if object.grad is None:
                 object.grad = sy.Variable(sy.zeros(object.size()))
                 object.grad.native_set_()
+
             object.grad.child.id = new_grad_id
+
+            object.grad.data.child.id = new_grad_data_id
+
         object = utils.encode(object, retrieve_pointers=False, private_local=False)
 
         # We don't need any response to proceed to registration

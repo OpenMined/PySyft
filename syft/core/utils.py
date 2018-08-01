@@ -194,13 +194,14 @@ class PythonJSONDecoder:
         """
         # TODO: Stop with this prior that data should be a dict,
         # which require the following lines to fix with real cases
-        if isinstance(dct, (int, str)):
+        if isinstance(dct, (int, str, float)):
             return dct
         if isinstance(dct, (list,)):
             return [self.python_decode(o) for o in dct]
         if dct is None:
             return None
         if not isinstance(dct, dict):
+            print(type(dct))
             raise TypeError('Type not handled', dct)
 
         pat = re.compile('__(.+)__')

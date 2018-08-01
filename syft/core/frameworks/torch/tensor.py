@@ -864,7 +864,7 @@ class _TorchTensor(_TorchObject):
 
 class _TorchVariable(_TorchObject):
 
-    def send(self, worker, new_id=None, new_data_id=None, new_grad_id=None):
+    def send(self, worker, new_id=None, new_data_id=None, new_grad_id=None, new_grad_data_id=None):
         """
         Give the root of the chain held by self to worker
         self->alice->obj [worker] => self->worker->alice->obj
@@ -882,15 +882,23 @@ class _TorchVariable(_TorchObject):
         if new_grad_id is None:
             new_grad_id = random.randint(0, 10e10)
 
+        if new_grad_data_id is None:
+            new_grad_data_id = random.randint(0, 10e10)
+
         obj_id = self.child.id
         obj_data_id = self.data.child.id
         obj_grad_id = self.grad.child.id if self.grad is not None else None
+        if(self.grad is None):
+            obj_grad_data_id = None
+        else:
+            obj_grad_data_id = self.grad.data.child.id
 
         self.owner.send_obj(self,
                             new_id,
                             worker,
                             new_data_id=new_data_id,
-                            new_grad_id=new_grad_id)
+                            new_grad_id=new_grad_id,
+                            new_grad_data_id=new_grad_data_id)
 
         # clears data which could be cached in the wrapper (which is self)
         # which would be confusing for folks
@@ -916,12 +924,20 @@ class _TorchVariable(_TorchObject):
         # same for grad
         if obj_grad_id is not None:
             self.grad.child.id = obj_grad_id
+            self.grad.data.child.id = obj_grad_data_id
 
         var_grad_ptr = self.grad.child.create_pointer(location=worker, id_at_location=new_grad_id,
                                                       register=True)
+
+        var_grad_data_ptr = self.grad.data.child.create_pointer(location=worker, id_at_location=new_grad_data_id,
+                                                                register=True)
         self.grad.child = var_grad_ptr
         var_grad_ptr.parent = self.grad
         self.grad.parent = None
+
+        self.grad.data.child = var_grad_data_ptr
+        var_grad_data_ptr.parent = self.grad.data
+        self.grad.data.parent = None
 
         utils.link_var_chain_to_data_and_grad_chains(self, self.data, self.grad)
 
