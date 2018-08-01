@@ -384,8 +384,7 @@ class _PlusIsMinusTensor(_SyftTensor):
                 wrapper.grad = sy._PlusIsMinusTensor().on(wrapper.grad)
             if wrapper.grad is None and wrapper.data.dim() > 0:
                 # create an empty envelope in wrapper.grad
-                wrapper.grad = sy.Variable(sy.zeros(wrapper.data.size()).type(type(wrapper.data)))
-                wrapper.grad.native_set_()
+                wrapper.init_grad_()
                 # Build the chain with _PlusIsMinusTensor
                 wrapper_grad = sy._PlusIsMinusTensor().on(wrapper.grad)
                 # Insert the gradient with its chain
@@ -995,10 +994,7 @@ class _TorchVariable(_TorchObject):
             tensor_msg['grad'] = self.grad.ser(private)
         elif self.data.dim() > 0:
             # Create a .grad just if there is some data in the tensor
-            self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
-            self.grad.native_set_()
-            self.grad.child.owner = self.owner
-            self.grad.data.child.owner = self.owner
+            self.init_grad_()
             tensor_msg['grad'] = self.grad.ser(private)
 
         if as_dict:
@@ -1030,16 +1026,7 @@ class _TorchVariable(_TorchObject):
             var_grad_type, var_grad_tensor = utils.extract_type_and_obj(msg_obj['grad'])
             var_grad = eval('sy.' + var_grad_type).deser(msg_obj['grad'], worker, acquire)
             worker.hook.local_worker.de_register(var_grad)
-            # Trick if we send back an empty grad
-            if var_grad.data.dim() == 0 and variable.data.dim() > 0:
-                # save the var_grad.data
-                var_grad_data = var_grad.data
-                # Transform var_grad into an envelope compatiable with .grad assignement
-                var_grad.data = sy.zeros(variable.size()).type(type(var_grad.data))
-                variable.grad = var_grad
-                # put back var_grad.data
-                variable.grad.data = var_grad_data
-
+            variable.assign_grad_(var_grad)
         else:
             var_grad = None
 
@@ -1059,6 +1046,32 @@ class _TorchVariable(_TorchObject):
             utils.link_var_chain_to_data_and_grad_chains(variable, var_data, var_grad)
 
         return variable
+
+    def init_grad_(self):
+        """
+            Initialise grad as an empty tensor
+        """
+        self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
+        self.grad.native_set_()
+        self.grad.child.owner = self.owner
+        self.grad.data.child.owner = self.owner
+
+    def assign_grad_(self, var_grad):
+        """
+            Assign to self.grad any type of variable
+        """
+        # save the var_grad.data
+        var_grad_data = var_grad.data
+
+        # Transform var_grad into an envelope compatible with .grad assignment
+        if self.size() != var_grad.size():
+            var_grad.data = sy.zeros(self.size())
+        var_grad.data = var_grad.data.type(type(self.data))
+
+        self.grad = var_grad
+
+        # put back original var_grad.data
+        self.grad.data = var_grad_data
 
 
 guard = {
