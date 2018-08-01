@@ -587,38 +587,13 @@ class TestTorchVariable(TestCase):
     #     dec2 = decoder.decode(enc)
     #     assert dec1 == dec2
 
-    # def test_var_gradient_keeps_id_during_send_(self):
-    #     # PyTorch has a tendency to delete var.grad python objects
-    #     # and re-initialize them (resulting in new/random ids)
-    #     # we have fixed this bug and recorded how it was fixed
-    #     # as well as the creation of this unit test in the following
-    #     # video (1:50:00 - 2:00:00) ish
-    #     # https://www.twitch.tv/videos/275838386
-    #
-    #     data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
-    #     target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
-    #
-    #     model = Var(torch.zeros(2, 1), requires_grad=True)
-    #
-    #     # generates grad objects on model
-    #     pred = data.mm(model)
-    #     loss = ((pred - target)**2).sum()
-    #     loss.backward()
-    #
-    #     # the grad's true id
-    #     original_data_id = model.data.id + 0
-    #     original_grad_id = model.grad.data.id + 0
-    #
-    #     model.send(bob)
-    #
-    #     assert model.data.id == original_data_id
-    #     assert model.grad.data.id == original_grad_id
-
-    def test_send_var_with_gradient(self):
-
-        # previously, there was a bug involving sending variables with graidents
-        # to remote tensors. This bug was documented in Issue 1350
-        # https://github.com/OpenMined/PySyft/issues/1350
+    def test_var_gradient_keeps_id_during_send_(self):
+        # PyTorch has a tendency to delete var.grad python objects
+        # and re-initialize them (resulting in new/random ids)
+        # we have fixed this bug and recorded how it was fixed
+        # as well as the creation of this unit test in the following
+        # video (1:50:00 - 2:00:00) ish
+        # https://www.twitch.tv/videos/275838386
 
         data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
         target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
@@ -628,6 +603,30 @@ class TestTorchVariable(TestCase):
         # generates grad objects on model
         pred = data.mm(model)
         loss = ((pred - target)**2).sum()
+        loss.backward()
+
+        # the grad's true id
+        original_data_id = model.data.id + 0
+        original_grad_id = model.grad.data.id + 0
+
+        model.send(bob)
+
+        assert model.data.id == original_data_id
+        assert model.grad.data.id == original_grad_id
+
+    def test_send_var_with_gradient(self):
+
+        # For now, we assume that var.grad.data does not get allocated
+        # a pointer because it would not get used.
+
+        data = Var(torch.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]]))
+        target = Var(torch.FloatTensor([[0], [0], [1], [1]]))
+
+        model = Var(torch.zeros(2, 1), requires_grad=True)
+
+        # generates grad objects on model
+        pred = data.mm(model)
+        loss = ((pred - target) ** 2).sum()
         loss.backward()
 
         # ensure that model and all (grand)children are owned by the local worker
@@ -641,30 +640,35 @@ class TestTorchVariable(TestCase):
         assert model.grad.data.owner.id == me.id
 
         # ensure that objects are not yet pointers (haven't sent it yet)
-        # assert not model.is_pointer
+        assert not isinstance(model.child, sy._PointerTensor)
         # assert not model.data.is_pointer
+        assert not isinstance(model.data.child, sy._PointerTensor)
         # assert not model.grad.is_pointer
+        assert not isinstance(model.grad.child, sy._PointerTensor)
         # assert not model.grad.data.is_pointer
+        assert not isinstance(model.grad.data.child, sy._PointerTensor)
 
         model.send(bob)
 
-        # ensures that object ids do not change during the sending process
+        sy.core.utils.chain_print(model)
+
         assert model.location.id == bob.id
         assert model.data.location.id == bob.id
         assert model.grad.location.id == bob.id
-        assert model.grad.data.location.id == bob.id
 
-        # ensures that all local objects are now pointers
-        # assert model.is_pointer
-        # assert model.data.is_pointer
-        # assert model.grad.is_pointer
-        # assert model.grad.data.is_pointer
+        # ensure that objects are not yet pointers (haven't sent it yet)
+        assert isinstance(model.child, sy._PointerTensor)
+        # assert not model.data.is_pointer
+        assert isinstance(model.data.child, sy._PointerTensor)
+        # assert not model.grad.is_pointer
+        assert isinstance(model.grad.child, sy._PointerTensor)
+        # assert not model.grad.data.is_pointer
+        assert not isinstance(model.grad.data.child, sy._PointerTensor)
 
-        # makes sure that tensors actually get sent to remote worker
-        assert model.id in bob._objects
-        assert model.data.id in bob._objects
-        assert model.grad.id in bob._objects
-        assert model.grad.data.id in bob._objects
+        assert model.id_at_location in bob._objects
+        assert model.data.id_at_location in bob._objects
+        assert model.grad.id_at_location in bob._objects
+        # assert model.grad.data.id in bob._objects
 
     #     def test_remote_optim_step(self):
 
