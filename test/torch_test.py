@@ -84,10 +84,12 @@ class TestChainTensor(TestCase):
         x = sy._PlusIsMinusTensor().on(x)
         y = sy._PlusIsMinusTensor().on(y)
 
-        assert utils.chain_print(x,
-                                 display=False) == 'Variable > _PlusIsMinusTensor > ' \
-                                                   '_LocalTensor\n - FloatTensor > ' \
-                                                   '_PlusIsMinusTensor > _LocalTensor'
+        display = 'Variable > _PlusIsMinusTensor > _LocalTensor\n' \
+                  ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
+                  ' - - Variable > _PlusIsMinusTensor > _LocalTensor\n' \
+                  '   - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+
+        assert utils.chain_print(x, display=False) == display
 
         z = x.add(y)
 
@@ -120,29 +122,72 @@ class TestChainTensor(TestCase):
         y.send(bob, new_id=id2, new_data_id=id21)
 
         z = x.add(y)
-        assert utils.chain_print(z,
-                                 display=False) == 'Variable > _PointerTensor\n - FloatTensor >' \
-                                                   ' _PointerTensor'
+        assert utils.chain_print(z, display=False) == 'Variable > _PointerTensor\n' \
+                                                      ' - FloatTensor > _PointerTensor\n' \
+                                                      ' - - Variable > _PointerTensor\n' \
+                                                      '   - FloatTensor > _LocalTensor'
 
         assert bob._objects[z.id_at_location].owner.id == 'bob'
         assert bob._objects[z.data.id_at_location].owner.id == 'bob'
 
         # Check chain on remote
+        ptr_id = x.child.id_at_location
+        display = 'Variable > _PlusIsMinusTensor > _LocalTensor\n' \
+                  ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
+                  ' - - Variable > _PlusIsMinusTensor > _LocalTensor\n' \
+                  '   - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert utils.chain_print(bob._objects[ptr_id].parent, display=False) == display
+
+        # Check chain on remote
+        # TODO For now we don't reconstruct the grad chain one non-leaf variable (in our case a leaf
+        # variable is a variable that we sent), because we don't care about their gradient. But if we do,
+        # then this is a TODO!
         ptr_id = z.child.id_at_location
-        assert utils.chain_print(bob._objects[ptr_id].parent,
-                                 display=False) == 'Variable > _PlusIsMinusTensor > ' \
-                                                   '_LocalTensor\n - FloatTensor >' \
-                                                   ' _PlusIsMinusTensor > _LocalTensor'
+        display = 'Variable > _PlusIsMinusTensor > _LocalTensor\n' \
+                  ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
+                  ' - - Variable > _LocalTensor\n' \
+                  '   - FloatTensor > _LocalTensor'
+        assert utils.chain_print(bob._objects[ptr_id].parent, display=False) == display
 
         z.get()
-        assert utils.chain_print(z,
-                                 display=False) == 'Variable > _PlusIsMinusTensor >' \
-                                                   ' _LocalTensor\n - FloatTensor >' \
-                                                   ' _PlusIsMinusTensor > _LocalTensor'
+        display = 'Variable > _PlusIsMinusTensor > _LocalTensor\n' \
+                  ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
+                  ' - - Variable > _LocalTensor\n' \
+                  '   - FloatTensor > _LocalTensor'
+        assert utils.chain_print(z, display=False) == display
 
         # cut chain for the equality check
         z.data.child = z.data.child.child
         assert torch.equal(z.data, torch.FloatTensor([2, 2]))
+
+    def test_plus_is_minus_backward_local(self):
+        x = sy.Variable(torch.FloatTensor([5, 6]), requires_grad=True)
+        y = sy.Variable(torch.FloatTensor([3, 4]), requires_grad=True)
+        x = sy._PlusIsMinusTensor().on(x)
+        y = sy._PlusIsMinusTensor().on(y)
+        z = x.add(y).sum()
+        z.backward()
+
+        # cut chain for the equality check
+        x.grad.data.child = x.grad.data.child.child
+        assert torch.equal(x.grad.data, torch.FloatTensor([1, 1]))
+
+    def test_plus_is_minus_backward_remote(self):
+        x = sy.Variable(torch.FloatTensor([5, 6]), requires_grad=True)
+        y = sy.Variable(torch.FloatTensor([3, 4]), requires_grad=True)
+        x = sy._PlusIsMinusTensor().on(x)
+        y = sy._PlusIsMinusTensor().on(y)
+        x.send(bob)
+        y.send(bob)
+
+        z = x.add(y).sum()
+        z.backward()
+
+        # cut chain for the equality check
+        x.grad.get()
+        x.grad.data.child = x.grad.data.child.child
+        assert torch.equal(x.grad.data, torch.FloatTensor([1, 1]))
+
 
 
 class TestTorchTensor(TestCase):
@@ -469,15 +514,6 @@ class TestTorchVariable(TestCase):
         y = x * x2
 
         y.sum().backward()
-
-        # This step is required so far to fix the damage made by .backward()
-        x_ = bob._objects[x.child.id_at_location]
-        utils.enforce_owner(x_, bob)
-        utils.link_var_chain_to_data_and_grad_chains(x_.child, x_.child.data, x_.child.grad)
-
-        x2_ = bob._objects[x2.child.id_at_location]
-        utils.enforce_owner(x2_, bob)
-        utils.link_var_chain_to_data_and_grad_chains(x2_.child, x2_.child.data, x2_.child.grad)
 
         # remote grads should be correct
         assert (bob._objects[x2.child.id_at_location].child.grad.data == torch.ones(2, 2)).all()

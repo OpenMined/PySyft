@@ -250,7 +250,7 @@ def chain_print(obj, display=True, verbose=False):
             1st line = main chain
             (for variables only)
             2nd line = data chain
-            2rd line = grad chain if any
+            3rd line = grad chain if any
         If verbose
             1st line = main chain
             (for variables only)
@@ -446,12 +446,19 @@ def wrap_command(obj):
             wrapper = _tail.child
         else:
             wrapper = eval(obj.torch_type)()
+
         wrap_command_with(obj, wrapper)
         if is_variable(wrapper):
             if hasattr(obj, 'data'):
                 wrapper.data = wrap_command(obj.data)
             if hasattr(obj, 'grad'):
-                wrapper.grad = wrap_command(obj.grad)
+                wrapper_grad = wrap_command(obj.grad)
+                if wrapper_grad.data.dim() > 0:
+                    wrapper.grad = wrapper_grad
+                else:
+                    wrapper_grad.data = sy.zeros(wrapper.data.size()).type(type(wrapper.data))
+                    wrapper.grad = wrapper_grad
+                    wrapper.grad.native_set_()
 
         return wrapper
     # List or iterables which could contain tensors
@@ -471,6 +478,32 @@ def wrap_command(obj):
     else:
         logging.warning('The following type wasnt wrapped:', type(obj))
         return obj
+
+
+def get_connected_variables(variable):
+    variables, _ = get_variables_in_backward_graph(variable.grad_fn)
+    return variables
+
+
+def get_variables_in_backward_graph(var, nodes=[], seen=set()):
+    if var not in seen:
+        if torch.is_tensor(var):
+            logging.warning('Shouldnt access tensors')
+            nodes.append(('tensor', id(var), 'syft.id:', var.id))  # id(var)
+        elif hasattr(var, 'variable'):
+            u = var.variable
+            nodes.append(u.id)  # id(var), id(u)
+        else:
+            pass
+        seen.add(var)
+        if hasattr(var, 'next_functions'):
+            for u in var.next_functions:
+                if u[0] is not None:
+                    nodes, seen = get_variables_in_backward_graph(u[0], nodes, seen)
+        if hasattr(var, 'saved_tensors'):
+            for t in var.saved_tensors:
+                nodes, seen = get_variables_in_backward_graph(t, nodes, seen)
+    return nodes, seen
 
 
 def compile_command(attr, args, kwargs, has_self=False, self=None):
