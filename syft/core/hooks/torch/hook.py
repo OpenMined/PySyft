@@ -251,8 +251,12 @@ class TorchHook(BaseHook):
         return function_router
 
     def _hook_fixed_precision_methods(self, tensor_type):
-
+        """Sets/Removes fixed precision of a tensor."""
+        
         def set_precision(self, precision=5, encoding_type=torch.LongTensor):
+            """Sets precision value to 10^5. Storage type 
+            is set to long().
+            """
 
             if (issubclass(encoding_type, torch.LongTensor)):
                 fixed_tensor = self.old_mul(10 ** precision).long()
@@ -264,6 +268,10 @@ class TorchHook(BaseHook):
                 print("Fixed precision storage type", encoding_type, "not supported")
 
         def free_precision(self, decoding_type=torch.FloatTensor):
+            """removes fixed precision. Storage type is set to float().
+            Returns unmodified tensor if precision has not been fixed.
+            """
+
             if (not self.fixed_precision):
                 print("Tensor is not fixed precision but you called .free_precision()")
                 return self
