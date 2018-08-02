@@ -251,11 +251,12 @@ class TorchHook(BaseHook):
         return function_router
 
     def _hook_fixed_precision_methods(self, tensor_type):
-        """Sets/Removes fixed precision of a tensor."""
+        """Overload fixed precision methods"""
         
         def set_precision(self, precision=5, encoding_type=torch.LongTensor):
-            """Sets precision value to 10^5. Storage type 
-            is set to long().
+            """Sets fixed precision value. Encoding type must be
+            LongTensor or subclass of LongTensor. Fixed precision storage
+            type is set to LongTensor.
             """
 
             if (issubclass(encoding_type, torch.LongTensor)):
@@ -268,8 +269,9 @@ class TorchHook(BaseHook):
                 print("Fixed precision storage type", encoding_type, "not supported")
 
         def free_precision(self, decoding_type=torch.FloatTensor):
-            """removes fixed precision. Storage type is set to float().
-            Returns unmodified tensor if precision has not been fixed.
+            """Remove fixed precision. Storage type is set to FloatTensor.
+            Decoding type must be FloatTensor or subclass of FloatTensor.
+            Returns self if precision has no precision fixed.
             """
 
             if (not self.fixed_precision):
@@ -297,6 +299,13 @@ class TorchHook(BaseHook):
 
         # Customized math operations
         def fixed_prec_mul(self, other, norm_left_prec=True):
+            """Multiplication of input tensor with self. Both must have fixed precision.
+            Raises OverflowError if combined precision of tensors
+            exceed 17.  If norm_left_prec is set to false, output tensor
+            takes precision of second argument, otherwise it takes precision
+            of first argument.
+            """
+
             if hasattr(self, 'fixed_precision') and hasattr(other, 'fixed_precision'):
 
                 if self.precision + other.precision > 17:
@@ -324,6 +333,11 @@ class TorchHook(BaseHook):
         tensor_type.fixed_prec_mul = fixed_prec_mul
 
         def fixed_prec_add(self, other):
+            """Addition of input tensor to self. Both must have
+            fixed precision. Precision of the output tensor will 
+            be the highest precision value between both tensors.
+            """
+
             if hasattr(self, 'fixed_precision') and hasattr(self, 'fixed_precision'):
 
                 if self.precision > other.precision:
@@ -353,6 +367,11 @@ class TorchHook(BaseHook):
 
 
         def fixed_prec_sub(self, other):
+            """Substraction of input tensor from self. Both must have
+            fixed precision. Precision of the output tensor will 
+            be the highest precision value between both tensors.
+            """
+
             if hasattr(self, 'fixed_precision') and hasattr(self, 'fixed_precision'):
 
                 if self.precision > other.precision:
@@ -381,6 +400,11 @@ class TorchHook(BaseHook):
         tensor_type.fixed_prec_sub = fixed_prec_sub
 
         def fixed_prec_div(self, other):
+            """Division of self by input tensor. Both must have
+            fixed precision. Precision of the output tensor will 
+            be the highest precision value between both tensors.
+            """
+
             if hasattr(self, 'fixed_precision') and hasattr(self, 'fixed_precision'):
 
 
@@ -688,6 +712,7 @@ class TorchHook(BaseHook):
         self._hook_tensor__serde(tensor_type)
 
     def _hook_tensor___del__(hook_self, tensor_type):
+        """Overloads tensor_type.__del__"""
         def new____del__(self, *args):
             print("deleting tensor")
 
@@ -728,6 +753,7 @@ class TorchHook(BaseHook):
             tensor_type.__repr__ = new___repr__
 
     def _hook_send_(hook_self, tensorvar_type):
+        """Overloads the send methods"""
         def send_(self, workers, send_pointer=False):
             """Sends a Tensor or Variable object to a (sequence of) Grid workers.
 
@@ -765,6 +791,7 @@ class TorchHook(BaseHook):
         setattr(tensorvar_type, 'send', send_)
 
     def _hook_get_(hook_self, torch_type):
+        """Overloads the get methods"""
         def get_(self, reduce=lambda x: x[0]):
             """Gets a Torch object from its current owners.
 
@@ -877,7 +904,7 @@ class TorchHook(BaseHook):
         hook_self._hook_new_grad()
 
     def _hook_new_data(hook_self):
-
+        """Overloads new data attributes"""
         @property
         def new_data(self):
             if not hasattr(self, 'data_registered'):
@@ -905,7 +932,7 @@ class TorchHook(BaseHook):
         torch.autograd.variable.Variable.data = new_data
 
     def _hook_new_grad(hook_self):
-
+        """Overloads new grad attributes"""
         @property
         def new_grad(self):
             if not hasattr(self, 'grad_registered'):
@@ -1045,7 +1072,9 @@ class TorchHook(BaseHook):
         torch.autograd.variable.Variable.deser = deser
 
     def _var_to_pointer(self, var):
-
+        """Overloads var to pointer function to enable 
+        pointing to remote data
+        """
         # recursively calls var_to_pointer in a depth first fashion
         # only recursive through variables (ignores .data)
         if var.grad is not None:
@@ -1060,7 +1089,7 @@ class TorchHook(BaseHook):
         return var
 
     def _build_var(self, obj_msg, torch_type):
-
+        """Overloads variable building function"""
         if 'data' in obj_msg.keys():
             data_msg = json.loads(obj_msg['data'])
             tensor_type = self.guard.types_guard(data_msg['torch_type'])
@@ -1087,8 +1116,9 @@ class TorchHook(BaseHook):
     # ######## BEGIN torch.nn.Module hooking #########
 
     def _hook_module(self):
-
+        """Overloading for torch.nn.Module"""
         def module_is_missing_grad(model):
+            """Overloads missing grad parameter in model"""
             missing_grad = False
             for p in model.parameters():
                 if p.grad is None:
@@ -1096,13 +1126,14 @@ class TorchHook(BaseHook):
             return missing_grad
 
         def create_grad_objects(model):
-
+            """Overloads create grad parameter for model"""
             for p in model.parameters():
                 o = p.sum()
                 o.backward()
                 p.grad -= p.grad
 
         def module_send_(self, dest):
+            """Overloads send to remote for torch.nn.Module"""
             if (module_is_missing_grad(self)):
                 create_grad_objects(self)
 
@@ -1113,6 +1144,7 @@ class TorchHook(BaseHook):
         torch.nn.Module.send = module_send_
 
         def module_get_(self):
+            """Overload get from remote for torch.nn.Module"""
             for p in self.parameters():
                 p.get_()
 
