@@ -5,12 +5,8 @@ import syft as sy
 from abc import ABC, abstractmethod
 
 from .. import utils
-
-
-# import numbers
-# import re
-# import random
-# import traceback
+from ..frameworks.torch import utils as torch_utils
+from ..frameworks.torch import encode
 
 
 class BaseWorker(ABC):
@@ -205,11 +201,11 @@ class BaseWorker(ABC):
           local development with :class:`VirtualWorker` workers.
         """
 
-        message_wrapper = utils.decode(message_wrapper_json, worker=self)
+        message_wrapper = encode.decode(message_wrapper_json, worker=self)
 
         response, private = self.process_message_type(message_wrapper)
 
-        response = utils.encode(response, retrieve_pointers=False, private_local=private)
+        response = encode.encode(response, retrieve_pointers=False, private_local=private)
 
         response = json.dumps(response).encode()
 
@@ -237,8 +233,8 @@ class BaseWorker(ABC):
         # Receiving an object from another worker
         if message_wrapper['type'] == 'obj':
             response = message  # response is a tensorvar
-            utils.fix_chain_ends(response)
-            utils.assert_is_chain_well_formed(response)
+            torch_utils.fix_chain_ends(response)
+            torch_utils.assert_is_chain_well_formed(response)
             self.register(response)
             return {}, False
 
@@ -248,7 +244,7 @@ class BaseWorker(ABC):
             # so its parent is the tensorvar
             syft_object = self.get_obj(message)
             tensorvar = syft_object.parent
-            if utils.is_variable(syft_object.torch_type):
+            if torch_utils.is_variable(syft_object.torch_type):
                 syft_data_object = tensorvar.data.child
                 self.de_register(syft_data_object)
                 if tensorvar.grad is not None:
@@ -494,11 +490,11 @@ class BaseWorker(ABC):
         """
         Unregisters an object and its attribute
         """
-        if utils.is_syft_tensor(obj):
+        if torch_utils.is_syft_tensor(obj):
             self.rm_obj(obj.id)
-        elif utils.is_tensor(obj):
+        elif torch_utils.is_tensor(obj):
             self.de_register(obj.child)
-        elif utils.is_variable(obj):
+        elif torch_utils.is_variable(obj):
             self.de_register(obj.child)
             self.de_register(obj.data.child)
         # Case of a iter type non json serializable
@@ -542,13 +538,13 @@ class BaseWorker(ABC):
         """
             Register an object with SyftTensors
         """
-        if utils.is_syft_tensor(result):
+        if torch_utils.is_syft_tensor(result):
             syft_obj = result
             self.register_object(syft_obj)
-        elif utils.is_tensor(result):
+        elif torch_utils.is_tensor(result):
             tensor = result
             self.register_object(tensor.child)
-        elif utils.is_variable(result):
+        elif torch_utils.is_variable(result):
             variable = result
             self.register(variable.child)
             self.register(variable.data.child)
@@ -596,7 +592,7 @@ class BaseWorker(ABC):
           registered contains the data locally or is instead a pointer to
           a tensor that lives on a different worker.
         """
-        if not utils.is_syft_tensor(obj):
+        if not torch_utils.is_syft_tensor(obj):
             raise TypeError("Can't register a non-SyftTensor")
 
         if id is None:
@@ -640,7 +636,7 @@ class BaseWorker(ABC):
           the owners of the tensors involved.
         """
 
-        utils.assert_has_only_torch_tensorvars(command_msg)
+        torch_utils.assert_has_only_torch_tensorvars(command_msg)
 
         attr = command_msg['command']
         has_self = command_msg['has_self']
@@ -660,7 +656,7 @@ class BaseWorker(ABC):
         # when a function is overloaded by a SyftTensor (for instance _PlusIsMinusTensor
         # overloads add and replace it by sub)
         try:
-            utils.assert_has_only_torch_tensorvars((args, kwargs))
+            torch_utils.assert_has_only_torch_tensorvars((args, kwargs))
             is_torch_command = True
         except AssertionError:
             is_torch_command = False
@@ -682,29 +678,29 @@ class BaseWorker(ABC):
             raw_command['self'] = self_
         if is_torch_command:
             # Unwrap the torch wrapper
-            syft_command, child_type = utils.prepare_child_command(
+            syft_command, child_type = torch_utils.prepare_child_command(
                 raw_command, replace_tensorvar_with_child=True)
         else:
             # Get the next syft class
             # The actual syft class is the one which redirected (see the  _PlusIsMinus ex.)
-            syft_command, child_type = utils.prepare_child_command(
+            syft_command, child_type = torch_utils.prepare_child_command(
                 raw_command, replace_tensorvar_with_child=True)
 
-        utils.assert_has_only_syft_tensors(syft_command)
+            torch_utils.assert_has_only_syft_tensors(syft_command)
 
         # Note: because we have pb of registration of tensors with the right worker,
         # and because having Virtual workers creates even more ambiguity, we specify the worker
         # performing the operation
         result = child_type.handle_call(syft_command, owner=self)
 
-        utils.enforce_owner((raw_command, result), self)
+        torch_utils.enforce_owner((raw_command, result), self)
 
         if is_torch_command:
             # Wrap the result
             if has_self and utils.is_in_place_method(attr):
-                wrapper = utils.wrap_command_with(result, raw_command['self'])
+                wrapper = torch_utils.wrap_command_with(result, raw_command['self'])
             else:
-                wrapper = utils.wrap_command(result)
+                wrapper = torch_utils.wrap_command(result)
             return wrapper
         else:
             # We don't need to wrap
@@ -725,7 +721,7 @@ class BaseWorker(ABC):
         object.child.id = new_id
         if self.get_pointer_to(recipient, new_id) is not None:
             raise MemoryError('You already point at ', recipient, ':', new_id)
-        if utils.is_variable(object.child.torch_type):
+        if torch_utils.is_variable(object.child.torch_type):
             if new_data_id is None or new_grad_id is None or new_grad_data_id is None:
                 raise AttributeError(
                     'Please provide the new_data_id, new_grad_id, and new_grad_data_id args, to be able to point to'+
@@ -755,7 +751,7 @@ class BaseWorker(ABC):
 
             object.grad.data.child.id = new_grad_data_id
 
-        object = utils.encode(object, retrieve_pointers=False, private_local=False)
+        object = encode.encode(object, retrieve_pointers=False, private_local=False)
 
         # We don't need any response to proceed to registration
         self.send_msg(message=object,
@@ -783,7 +779,7 @@ class BaseWorker(ABC):
             recipient=recipient
         )
 
-        response = utils.decode(response, worker=self)
+        response = encode.decode(response, worker=self)
 
         return response
 
@@ -806,7 +802,7 @@ class BaseWorker(ABC):
                                message_type='req_obj',
                                recipient=recipient)
 
-        object = utils.decode(object, worker=self)
+        object = encode.decode(object, worker=self)
 
         # for some reason, when returning obj from request_obj method, the gradient
         # (obj.grad) gets re-initialized without being re-registered and as a
