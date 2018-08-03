@@ -7,6 +7,7 @@ import types
 import syft as sy
 from ... import workers
 from ... import utils
+from . import utils as torch_utils
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor, _TorchTensor
 from .tensor import _TorchVariable
 
@@ -228,7 +229,7 @@ class TorchHook(object):
 
             def forward_method_to_child(self, *args, **kwargs):
 
-                child_args = utils.get_child_in_args(*args, **kwargs)
+                child_args = torch_utils.get_child_in_args(*args, **kwargs)
 
                 response = getattr(self.child, attr)(*child_args, **kwargs)
 
@@ -286,7 +287,7 @@ class TorchHook(object):
 
             def forward_method_to_child(self, *args, **kwargs):
 
-                child_args = utils.get_child_in_args(*args, **kwargs)
+                child_args = torch_utils.get_child_in_args(*args, **kwargs)
                 if attr == 'zero_':
                     response = getattr(self.child, 'native_' + attr)()
                 else:
@@ -317,7 +318,7 @@ class TorchHook(object):
 
             def forward_method_to_child(self, *args, **kwargs):
 
-                child_args = utils.get_child_in_args(*args, **kwargs)
+                child_args = torch_utils.get_child_in_args(*args, **kwargs)
                 response = getattr(self.child, attr)(*child_args, **kwargs)
 
                 syft_node = type(self)(child=response.child)
@@ -411,7 +412,7 @@ class TorchHook(object):
         def new_backward(self, *args, **kwargs):
             worker = self.owner
             # Retrieve all the variable ids involved in the computation graph
-            variable_ids = utils.get_connected_variables(self)
+            variable_ids = torch_utils.get_connected_variables(self)
             variable_ids = [var_id for var_id in variable_ids if var_id in worker._objects]
             # Save all the gradients (to keep the id) and reset the grads
             saved_grads = {}
@@ -440,9 +441,9 @@ class TorchHook(object):
                     if computed_grad is not None:
                         var.grad.data.native_set_(computed_grad.data)
                 # Make sure everyone has the right owner
-                utils.enforce_owner(var, worker)
+                torch_utils.enforce_owner(var, worker)
                 # Fix the .data and .grad attributes on the chain
-                utils.link_var_chain_to_data_and_grad_chains(var, var.data, var.grad)
+                torch_utils.link_var_chain_to_data_and_grad_chains(var, var.data, var.grad)
 
         sy.Variable.native_backward = new_backward
 

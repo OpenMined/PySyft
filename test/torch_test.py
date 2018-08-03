@@ -7,6 +7,8 @@ from unittest import TestCase
 import random
 import syft as sy
 from syft.core import utils
+from syft.core.frameworks.torch import utils as torch_utils
+from syft.core.frameworks.torch import encode
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable as Var
@@ -35,12 +37,12 @@ class TestChainTensor(TestCase):
         x = sy._PlusIsMinusTensor().on(x)
         y = sy._PlusIsMinusTensor().on(y)
 
-        assert utils.chain_print(x,
+        assert torch_utils.chain_print(x,
                                  display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
 
         z = x.add(y)
 
-        assert utils.chain_print(z,
+        assert torch_utils.chain_print(z,
                                  display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
 
         # cut chain for the equality check
@@ -65,15 +67,15 @@ class TestChainTensor(TestCase):
         y.send(bob, ptr_id=id2)
 
         z = x.add(y)
-        assert utils.chain_print(z, display=False) == 'FloatTensor > _PointerTensor'
+        assert torch_utils.chain_print(z, display=False) == 'FloatTensor > _PointerTensor'
 
         # Check chain on remote
         ptr_id = z.child.id_at_location
-        assert utils.chain_print(bob._objects[ptr_id].parent,
+        assert torch_utils.chain_print(bob._objects[ptr_id].parent,
                                  display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
 
         z.get()
-        assert utils.chain_print(z,
+        assert torch_utils.chain_print(z,
                                  display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
 
         # cut chain for the equality check
@@ -91,11 +93,11 @@ class TestChainTensor(TestCase):
                   ' - - Variable > _PlusIsMinusTensor > _LocalTensor\n' \
                   '   - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
 
-        assert utils.chain_print(x, display=False) == display
+        assert torch_utils.chain_print(x, display=False) == display
 
         z = x.add(y)
 
-        assert utils.chain_print(z,
+        assert torch_utils.chain_print(z,
                                  display=False) == 'Variable > _PlusIsMinusTensor > ' \
                                                    '_LocalTensor\n - FloatTensor >' \
                                                    ' _PlusIsMinusTensor > _LocalTensor'
@@ -124,7 +126,7 @@ class TestChainTensor(TestCase):
         y.send(bob, new_id=id2, new_data_id=id21)
 
         z = x.add(y)
-        assert utils.chain_print(z, display=False) == 'Variable > _PointerTensor\n' \
+        assert torch_utils.chain_print(z, display=False) == 'Variable > _PointerTensor\n' \
                                                       ' - FloatTensor > _PointerTensor\n' \
                                                       ' - - Variable > _PointerTensor\n' \
                                                       '   - FloatTensor > _PointerTensor'
@@ -138,7 +140,7 @@ class TestChainTensor(TestCase):
                   ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
                   ' - - Variable > _PlusIsMinusTensor > _LocalTensor\n' \
                   '   - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
-        assert utils.chain_print(bob._objects[ptr_id].parent, display=False) == display
+        assert torch_utils.chain_print(bob._objects[ptr_id].parent, display=False) == display
 
         # Check chain on remote
         # TODO For now we don't reconstruct the grad chain one non-leaf variable (in our case a leaf
@@ -149,14 +151,14 @@ class TestChainTensor(TestCase):
                   ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
                   ' - - Variable > _LocalTensor\n' \
                   '   - FloatTensor > _LocalTensor'
-        assert utils.chain_print(bob._objects[ptr_id].parent, display=False) == display
+        assert torch_utils.chain_print(bob._objects[ptr_id].parent, display=False) == display
 
         z.get()
         display = 'Variable > _PlusIsMinusTensor > _LocalTensor\n' \
                   ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
                   ' - - Variable > _LocalTensor\n' \
                   '   - FloatTensor > _LocalTensor'
-        assert utils.chain_print(z, display=False) == display
+        assert torch_utils.chain_print(z, display=False) == display
 
         # cut chain for the equality check
         z.data.child = z.data.child.child
@@ -573,12 +575,12 @@ class TestTorchVariable(TestCase):
         x = Var(torch.FloatTensor([[1, -1], [0, 1]]))
         x.send(bob)
         obj = [None, ({'marcel': (1, [1.3], x), 'proust': slice(0, 2, None)}, 3)]
-        enc, t = utils.encode(obj)
+        enc, t = encode.encode(obj)
         enc = json.dumps(enc)
-        dec1 = utils.decode(enc, me)
-        enc, t = utils.encode(dec1)
+        dec1 = encode.decode(enc, me)
+        enc, t = encode.encode(dec1)
         enc = json.dumps(enc)
-        dec2 = utils.decode(enc, me)
+        dec2 = encode.decode(enc, me)
         assert dec1 == dec2
 
     def test_var_gradient_keeps_id_during_send_(self):
