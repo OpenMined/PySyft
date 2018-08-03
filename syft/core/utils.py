@@ -217,7 +217,7 @@ class PythonJSONDecoder:
                     return sy.Variable.deser({key: obj}, self.worker, self.acquire)
                 # Case of a Syft tensor
                 elif is_syft_tensor(obj_type):
-                    return sy._SyftTensor({key: obj}, self.worker, self.acquire)
+                    return sy._SyftTensor.deser_routing({key: obj}, self.worker, self.acquire)
                 # Case of a iter type non json serializable
                 elif obj_type in ('tuple', 'set', 'bytearray', 'range'):
                     return eval(obj_type)([self.python_decode(o) for o in obj])
@@ -440,7 +440,7 @@ def wrap_command(obj):
     # Torch tensor or variable
     elif is_tensor(obj) or is_variable(obj):
         raise TypeError('Expecting syft tensors')
-    #  sy._SyftTensor
+    # sy._SyftTensor
     elif is_syft_tensor(obj):
         _tail = find_tail_of_chain(obj)
         if isinstance(_tail, sy._LocalTensor):
@@ -454,28 +454,15 @@ def wrap_command(obj):
                 wrapper.data = wrap_command(obj.data)
             if hasattr(obj, 'grad'):
                 wrapper_grad = wrap_command(obj.grad)
-                if wrapper_grad.data.dim() > 0:
-                    wrapper.grad = wrapper_grad
-                else:
-                    wrapper_grad.data = sy.zeros(wrapper.data.size()).type(type(wrapper.data))
-                    wrapper.grad = wrapper_grad
-                    wrapper.grad.native_set_()
+                wrapper.assign_grad_(wrapper_grad)
 
         return wrapper
     # List or iterables which could contain tensors
     elif isinstance(obj, (list, tuple, set, bytearray, range)):
-        wrappers = []
-        for o in obj:
-            wrapper = wrap_command(o)
-            wrappers.append(wrapper)
-        return type(obj)(wrappers)
+        return type(obj)([wrap_command(o) for o in obj])
     # Dict
     elif isinstance(obj, dict):
-        wrappers = {}
-        for k, o in obj.items():
-            wrapper = wrap_command(o)
-            wrappers[k] = wrapper
-        return wrappers
+        return {k: wrap_command(o) for k, o in obj.items()}
     else:
         logging.warning('The following type wasnt wrapped:', type(obj))
         return obj

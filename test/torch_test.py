@@ -127,7 +127,7 @@ class TestChainTensor(TestCase):
         assert utils.chain_print(z, display=False) == 'Variable > _PointerTensor\n' \
                                                       ' - FloatTensor > _PointerTensor\n' \
                                                       ' - - Variable > _PointerTensor\n' \
-                                                      '   - FloatTensor > _LocalTensor'
+                                                      '   - FloatTensor > _PointerTensor'
 
         assert bob._objects[z.id_at_location].owner.id == 'bob'
         assert bob._objects[z.data.id_at_location].owner.id == 'bob'

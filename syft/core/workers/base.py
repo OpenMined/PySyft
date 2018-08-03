@@ -668,9 +668,9 @@ class BaseWorker(ABC):
         has_self = self_ is not None
 
         if has_self:
-            command = self._command_guard(attr, torch.tensorvar_methods)
+            command = torch._command_guard(attr, torch.tensorvar_methods)
         else:
-            command = self._command_guard(attr, torch.torch_modules)
+            command = torch._command_guard(attr, torch.torch_modules)
 
         raw_command = {
             'command': command,
@@ -834,23 +834,3 @@ class BaseWorker(ABC):
                         and syft_tensor.id_at_location == id_at_location:
                     return syft_tensor
 
-    @classmethod
-    def _command_guard(cls, command, allowed):
-        if isinstance(allowed, dict):
-            allowed_names = []
-            for module_name, func_names in allowed.items():
-                for func_name in func_names:
-                    allowed_names.append(module_name + '.' + func_name)
-            allowed = allowed_names
-        if command not in allowed:
-            raise RuntimeError(
-                'Command "{}" is not a supported Torch operation.'.format(command))
-        return command
-
-    @classmethod
-    def _is_command_valid_guard(cls, command, allowed):
-        try:
-            cls._command_guard(command, allowed)
-        except RuntimeError:
-            return False
-        return True
