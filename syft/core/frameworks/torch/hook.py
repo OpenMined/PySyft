@@ -478,31 +478,3 @@ class TorchHook(object):
         torch.nn.Module.get = module_get_
 
 
-
-
-# TODO: put this in an appropriate place
-guard = {
-    'syft.core.frameworks.torch.tensor.Variable': torch.autograd.Variable,
-    'syft.core.frameworks.torch.tensor._PointerTensor': _PointerTensor,
-    'syft.core.frameworks.torch.tensor._SyftTensor': _SyftTensor,
-    'syft.core.frameworks.torch.tensor._LocalTensor': _LocalTensor,
-    'syft.core.frameworks.torch.tensor._FixedPrecisionTensor': _FixedPrecisionTensor,
-    'syft.core.frameworks.torch.tensor.FloatTensor': torch.FloatTensor,
-    'syft.core.frameworks.torch.tensor.DoubleTensor': torch.DoubleTensor,
-    'syft.core.frameworks.torch.tensor.HalfTensor': torch.HalfTensor,
-    'syft.core.frameworks.torch.tensor.ByteTensor': torch.ByteTensor,
-    'syft.core.frameworks.torch.tensor.CharTensor': torch.CharTensor,
-    'syft.core.frameworks.torch.tensor.ShortTensor': torch.ShortTensor,
-    'syft.core.frameworks.torch.tensor.IntTensor': torch.IntTensor,
-    'syft.core.frameworks.torch.tensor.LongTensor': torch.LongTensor,
-    'syft.Variable': torch.autograd.Variable,
-    'syft.FloatTensor': torch.FloatTensor,
-    'syft.DoubleTensor': torch.DoubleTensor,
-    'syft.HalfTensor': torch.HalfTensor,
-    'syft.ByteTensor': torch.ByteTensor,
-    'syft.CharTensor': torch.CharTensor,
-    'syft.ShortTensor': torch.ShortTensor,
-    'syft.IntTensor': torch.IntTensor,
-    'syft.LongTensor': torch.LongTensor,
-    'syft.Parameter': torch.nn.Parameter
-}
