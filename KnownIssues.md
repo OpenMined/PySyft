@@ -1,6 +1,7 @@
 1. Non-leaf variables do not register gradiets.
 
-```x = torch.autograd.Variable(torch.FloatTensor([1,2,3,4,5]))
+```
+x = torch.autograd.Variable(torch.FloatTensor([1,2,3,4,5]))
 y = x + x
 z = y + y
 z.backward()'''
