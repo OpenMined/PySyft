@@ -20,6 +20,7 @@ class _SyftTensor(object):
             if owner is None:
                 owner = child.owner
 
+        self.id = id
         self.child = child
         self.parent = parent
         self.torch_type = torch_type
@@ -78,7 +79,7 @@ class _SyftTensor(object):
         else:
             # replace a function attr with an existing other
             if attr in cls.replaced_functions():
-                attr = cls.replaced_functions(attr)
+                command['command'] = cls.replaced_functions(attr)
 
             # Or do whatever you want, but be careful not to overwrite the args!
             # (...)
@@ -98,7 +99,6 @@ class _SyftTensor(object):
 
         return syft_response
 
-
     def create_pointer(self, parent=None, ptr_id=None, owner=None, location=None,
                        id_at_location=None, register=False):
 
@@ -116,21 +116,22 @@ class _SyftTensor(object):
             id_at_location = self.id
 
         if ptr_id is not None:
-            if (ptr_id == id_at_location):
+            if ptr_id == id_at_location:
                 raise AttributeError(
                     "The PointerTensor and the tensor being pointed to cannot have the same id.")
 
         else:
             # Normally if there is no id specified, we keep the same as the original pointer
-            # Except if the pointer is local (we don't want to overwrite!)
+            # Except if the pointer is local (we don't want to overwrite it!)
             if not local_pointer:
                 ptr_id = self.id
             else:
-                ptr_id = random.randint(0, 9999999999)
+                ptr_id = random.randint(0, 10e10)
 
         if hasattr(self, 'torch_type') and self.torch_type is not None:
             torch_type = self.torch_type
         else:
+            torch_type = None
             logging.warning("The torch tensor's child has no torch_type. Is it well formed?")
 
         previous_pointer = owner.get_pointer_to(location, id_at_location)
@@ -285,17 +286,26 @@ class _SyftTensor(object):
 
     @classmethod
     def is_overloaded_method(cls, attr):
+        """
+        State if a function name corresponds to a Syft Tensor method which
+        overloads a torch method
+        """
         exclude = ['on', '__init__', 'native___init__', '__repr__', '__str__', 'create_pointer',
                    'ser', 'deser', 'handle_call']
         if attr in exclude:
             return False
         if hasattr(getattr(cls, attr), '__module__') \
-            and getattr(cls, attr).__module__ == 'syft.core.frameworks.torch.tensor':
+                and getattr(cls, attr).__module__ == 'syft.core.frameworks.torch.tensor':
             return True
         return False
 
     @classmethod
     def is_overloaded_function(cls, attr):
+        """
+        State if a function name corresponds to an overloaded function by the Syft
+        tensor, which declared the corresponding overloading function in
+        cls.overload_functions
+        """
         attr = attr.split('.')[-1]
         overloaded_functions = [
             func for func in dir(cls.overload_functions)
@@ -306,10 +316,20 @@ class _SyftTensor(object):
 
     @classmethod
     def replaced_functions(cls, attr=None):
+        """
+        If attr is none, return all the function substitution a Syft Tensor class
+        wants to perform.
+        Else, return the substitution corresponding to attr
+        """
         if attr is None:
             return cls.substitution_table
         else:
             return cls.substitution_table[attr]
+
+    substitution_table = {}
+
+    class overload_functions:
+        pass
 
 
 class _LocalTensor(_SyftTensor):
@@ -318,8 +338,8 @@ class _LocalTensor(_SyftTensor):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id,
                          skip_register=skip_register)
 
-    @staticmethod
-    def handle_call(syft_command, owner):
+    @classmethod
+    def handle_call(cls, syft_command, owner):
         """
         Execute a forwarded command on the native tensor with native operations.
         Receive a syft command and an owner, and converts it into command with
@@ -327,7 +347,7 @@ class _LocalTensor(_SyftTensor):
         syft response using _LocalTensors.
         """
         tensor_command, torch_type = torch_utils.prepare_child_command(syft_command,
-                                                                 replace_tensorvar_with_child=True)
+                                                                       replace_tensorvar_with_child=True)
         torch_utils.assert_has_only_torch_tensorvars(tensor_command)
 
         attr = tensor_command['command']
@@ -486,7 +506,6 @@ class _PlusIsMinusTensor(_SyftTensor):
         """
         @staticmethod
         def add(x, y):
-            print('overload torch func add')
             return x.add(y)
 
         @staticmethod
@@ -499,7 +518,6 @@ class _PlusIsMinusTensor(_SyftTensor):
         """
         Overload the add method and execute another function or method with the provided args
         """
-        print('overload torch method add')
         _response = self.sub(arg)
 
         return _response
@@ -527,8 +545,7 @@ class _PointerTensor(_SyftTensor):
         # if it's not getting registered the pointer is probably about to be
         # sent over the wire
         if self.location == self.owner and not skip_register:
-            logging.warning(
-                "Do you really want a pointer pointing to itself? (self.location == self.owner)")
+            logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
 
     @classmethod
     def handle_call(cls, syft_command, owner):
@@ -634,7 +651,7 @@ class _PointerTensor(_SyftTensor):
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
         if self.location == self.owner:
-            return self.owner._objects[self.id_at_location].child
+            return self.owner.get_obj(self.id_at_location).child
 
         # get SyftTensor (Local or Pointer) from remote machine
         tensorvar = self.owner.request_obj(self.id_at_location, self.location)
@@ -665,7 +682,7 @@ class _TorchObject(object):
     """
     This tensor is simply a more convenient way to add custom
     functions to all Torch tensor types, including Torch Variable.
-    Note that it is the parent class of the two followoing classes:
+    Note that it is the parent class of the two following classes:
     _TorchTensor and a_TorchVariable
     """
 
@@ -694,42 +711,6 @@ class _TorchObject(object):
 
         return self.child.create_pointer(parent=self, register=register, location=location,
                                          ptr_id=ptr_id).wrap()
-
-    def create_local_tensor(self, worker, id=None):
-        tensor = sy._LocalTensor(child=self,
-                                 parent=self,
-                                 torch_type='syft.' + type(self).__name__,
-                                 owner=worker,
-                                 id=None)
-        return tensor
-
-    def get(self, deregister_ptr=True, update_ptr_wrapper=True):
-
-        # returns a Tensor object wrapping a SyftTensor
-        tensor = self.child.get(deregister_ptr=deregister_ptr)
-        torch_utils.assert_has_only_torch_tensorvars(tensor)
-        # this will change the pointer variable (wrapper) to instead wrap the
-        # SyftTensor object that was returned so that any variable that may
-        # still exist referencing this pointer will simply call local data instead
-        # of sending messages elsewhere, or a closer pointer
-        if update_ptr_wrapper:
-            syft_tensor = tensor.child
-            self.child = syft_tensor
-            # In case we have a final get() (ie returning a FloatTensor), we have e.g.
-            # x = Float(...)
-            # x.send(...)
-            # x2 = x.get()
-            # We  have x2: [no dim]->[_Local]->[Float()]
-            # Whereas we expect x2: [Float()]
-            # So we use the .set_() method, to change the storage of [no dim]
-            if not isinstance(syft_tensor, sy._PointerTensor) \
-                    and tensor is not None \
-                    and tensor.dim() > 0:
-                self.native_set_(tensor)
-            torch_utils.fix_chain_ends(self)
-            torch_utils.assert_is_chain_well_formed(self)
-
-        return self
 
     def move(self, worker, new_id=None):
         """
@@ -854,6 +835,43 @@ class _TorchTensor(_TorchObject):
 
         return self
 
+    def get(self, deregister_ptr=True, update_ptr_wrapper=True):
+        """
+        Get a remote tensor back to the local worker.
+        :param deregister_ptr: should we de-register from the remote. Default to True
+        :param update_ptr_wrapper: If true, by default, change the pointer variable (wrapper)
+        to instead wrap the SyftTensor object that was returned so that any variable that may
+        still exist referencing this pointer will simply call local data instead of sending
+        messages elsewhere, or a closer pointer
+        :return: self
+        """
+
+        # returns a Tensor object wrapping a SyftTensor
+        tensor = self.child.get(deregister_ptr=deregister_ptr)
+        torch_utils.assert_has_only_torch_tensorvars(tensor)
+        # this will change the pointer variable (wrapper) to instead wrap the
+        # SyftTensor object that was returned so that any variable that may
+        # still exist referencing this pointer will simply call local data instead
+        # of sending messages elsewhere, or a closer pointer
+        if update_ptr_wrapper:
+            syft_tensor = tensor.child
+            self.child = syft_tensor
+            # In case we have a final get() (ie returning a FloatTensor), we have e.g.
+            # x = Float(...)
+            # x.send(...)
+            # x2 = x.get()
+            # We  have x2: [no dim]->[_Local]->[Float()]
+            # Whereas we expect x2: [Float()]
+            # So we use the .set_() method, to change the storage of [no dim]
+            if not isinstance(syft_tensor, sy._PointerTensor) \
+                    and tensor is not None \
+                    and tensor.dim() > 0:
+                self.native_set_(tensor)
+            torch_utils.fix_chain_ends(self)
+            torch_utils.assert_is_chain_well_formed(self)
+
+        return self
+
 
 class _TorchVariable(_TorchObject):
 
@@ -861,6 +879,8 @@ class _TorchVariable(_TorchObject):
         """
         Give the root of the chain held by self to worker
         self->alice->obj [worker] => self->worker->alice->obj
+        Because there are Variable involved, there are actually 4 chains involved,
+        the variable chain, variable.data, variable.grad, variable.grad.data
         """
 
         if isinstance(worker, (int, str)):
@@ -902,6 +922,15 @@ class _TorchVariable(_TorchObject):
         return self
 
     def get(self, deregister_ptr=True, update_ptr_wrapper=True):
+        """
+        Get a remote variable back to the local worker.
+        :param deregister_ptr: should we de-register from the remote. Default to True
+        :param update_ptr_wrapper: If true, by default, change the pointer variable (wrapper)
+        to instead wrap the SyftTensor object that was returned so that any variable that may
+        still exist referencing this pointer will simply call local data instead of sending
+        messages elsewhere, or a closer pointer
+        :return: self
+        """
 
         # returns a Variable object wrapping a SyftTensor
         variable = self.child.get(deregister_ptr=deregister_ptr)
@@ -1010,7 +1039,7 @@ class _TorchVariable(_TorchObject):
 
     def init_grad_(self):
         """
-            Initialise grad as an empty tensor
+        Initialise grad as an empty tensor
         """
         self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
         self.grad.native_set_()
@@ -1019,7 +1048,7 @@ class _TorchVariable(_TorchObject):
 
     def assign_grad_(self, var_grad):
         """
-            Assign to self.grad any type of variable
+        Assign to self.grad any type of variable
         """
         # save the var_grad.data
         var_grad_data = var_grad.data

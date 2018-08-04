@@ -291,34 +291,28 @@ class BaseWorker(ABC):
 
         :Example:
 
-        >>> from syft.core.hooks import TorchHook
-        >>> from syft.core.hooks import torch
-        >>> from syft.core.workers import VirtualWorker
-        >>> hook = TorchHook()
-        Hooking into Torch...
-        Overloading complete.
-        >>> local = hook.local_worker
-        >>> remote = VirtualWorker(id=1, hook=hook)
-        >>> local.add_worker(remote)
-        >>> x = torch.FloatTensor([1,2,3,4,5])
+        >>> import syft as sy
+        >>> hook = sy.TorchHook(verbose=False)
+        >>> me = hook.local_worker
+        >>> bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
+        >>> me.add_workers([bob])
+        >>> x = sy.FloatTensor([1,2,3,4,5])
         >>> x
          1
          2
          3
          4
          5
-        [torch.FloatTensor of size 5]
-        >>> x.send(remote)
-        >>> x
-        [torch.FloatTensor - Locations:[<VirtualWorker at 0x11848bda0>]]
+        [syft.core.frameworks.torch.tensor.FloatTensor of size 5]
+        >>> x.send(bob)
+        FloatTensor[_PointerTensor - id:9121428371 owner:0 loc:bob id@loc:47416674672]
         >>> x.get()
-        >>> x
          1
          2
          3
          4
          5
-        [torch.FloatTensor of size 5]
+        [syft.core.frameworks.torch.tensor.FloatTensor of size 5]
         """
         if (worker.id in self._known_workers and self.verbose):
             logging.warning(
@@ -355,25 +349,19 @@ class BaseWorker(ABC):
 
         :Example:
 
-        >>> from syft.core.hooks import TorchHook
-        >>> from syft.core.hooks import torch
-        >>> from syft.core.workers import VirtualWorker
-        >>> # hook torch and create a local worker
-        >>> hook = TorchHook()
-        >>> local = hook.local_worker
-        Hooking into Torch...
-        Overloading complete.
-        >>> # lets create a remote worker
-        >>> remote = VirtualWorker(hook=hook,id=1)
-        >>> local.add_worker(remote)
-        >>> remote
-        <syft.core.workers.VirtualWorker at 0x10e3a2a90>
+        >>> import syft as sy
+        >>> hook = sy.TorchHook(verbose=False)
+        >>> me = hook.local_worker
+        >>> bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
+        >>> me.add_workers([bob])
+        >>> bob
+        <syft.core.workers.virtual.VirtualWorker id:bob>
         >>> # we can get the worker using it's id (1)
-        >>> local.get_worker(1)
-        <syft.core.workers.VirtualWorker at 0x10e3a2a90>
+        >>> me.get_worker('bob')
+        <syft.core.workers.virtual.VirtualWorker id:bob>
         >>> # or we can get the worker by passing in the worker
-        >>> local.get_worker(remote)
-        <syft.core.workers.VirtualWorker at 0x10e3a2a90>
+        >>> me.get_worker(bob)
+        <syft.core.workers.virtual.VirtualWorker id:bob>
         """
 
         if issubclass(type(id_or_worker), BaseWorker):
@@ -397,7 +385,7 @@ class BaseWorker(ABC):
         This method fetches a tensor from the worker's internal
         registry of tensors using its id. Note that this
         will not work on client worker because they do not
-        store objects interanlly. However, it can be used on
+        store objects internally. However, it can be used on
         remote workers, including remote :class:`VirtualWorker`
         objects, as pictured below in the example.
 
@@ -488,7 +476,7 @@ class BaseWorker(ABC):
     def de_register(self, obj):
 
         """
-        Unregisters an object and its attribute
+        Un-register an object and its attribute
         """
         if torch_utils.is_syft_tensor(obj):
             self.rm_obj(obj.id)
@@ -513,7 +501,8 @@ class BaseWorker(ABC):
         of registration. Note that the way in which attributes are deleted
         has been informed by this StackOverflow post: https://goo.gl/CBEKLK
         """
-        is_torch_tensor = isinstance(obj, torch.Tensor)
+
+        is_torch_tensor = torch_utils.is_tensor(obj)
 
         if not is_torch_tensor:
             if hasattr(obj, 'id'):
@@ -536,7 +525,7 @@ class BaseWorker(ABC):
 
     def register(self, result):
         """
-            Register an object with SyftTensors
+        Register an object with SyftTensors
         """
         if torch_utils.is_syft_tensor(result):
             syft_obj = result
@@ -567,7 +556,7 @@ class BaseWorker(ABC):
         id for the object, assigns a list of owners,
         and establishes whether it's a pointer or not. This method
         is generally not used by the client and is
-        instead used by interal processes (hooks and workers).
+        instead used by internal processes (hooks and workers).
 
         :Parameters:
 
@@ -821,6 +810,7 @@ class BaseWorker(ABC):
         # TODO: instead of looping on the objects,
         # with could keep a dict with keys = owners and subkeys id@loc
         # Will be crucial when having lots of variables, but means it has to be updated
+        # every time you add or de register a pointer
         if not isinstance(location, (int, str)):
             location = location.id
 
