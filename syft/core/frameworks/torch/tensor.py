@@ -8,6 +8,8 @@ from . import utils as torch_utils
 import logging
 import numpy as np
 
+from ....mpc import spdz
+
 
 class _SyftTensor(object):
     """
@@ -555,6 +557,73 @@ class _PlusIsMinusTensor(_SyftTensor):
         Overload the abs() method and execute another function
         """
         return torch.abs(self)
+
+
+class _MPCTensor(_SyftTensor):
+    """
+    Example of a custom overloaded _SyftTensor
+
+    Role:
+    Converts all add operations into sub/minus ones.
+    """
+
+    def __init__(self, var, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.var = var
+
+    def share(self, var, n):
+        assert n == 2
+        data_shares = spdz.share(var.data)
+        shares = [
+            sy.Variable(data)
+            for data in data_shares
+        ]
+        return shares
+
+
+
+    # The table of command you want to replace
+    substitution_table = {
+        'torch.add': 'torch.add'
+    }
+
+    class overload_functions:
+        """
+        Put here the functions you want to overload
+        Beware of recursion errors.
+        """
+
+        @staticmethod
+        def get(attr):
+            attr = attr.split('.')[-1]
+            return getattr(sy._PlusIsMinusTensor.overload_functions, attr)
+
+    # Put here all the methods you want to overload
+
+    def add(self, other):
+        shares = []
+        for share1, share2 in zip(self.shares, other.shares):
+            shares.append(spdz.spdz_add(share1, share2))
+        response = _MPCTensor(None)
+        response.n_workers = self.n_workers
+        response.workers = self.workers
+        response.shares = shares
+        return response
+
+    def send(self, workers):
+        self.n_workers = len(workers)
+        self.shares = self.share(self.var, self.n_workers)
+        self.workers = workers
+        for share, worker in zip(self.shares, self.workers):
+            share.send(worker)
+
+    def get(self):
+        shares = []
+        for share in self.shares:
+            shares.append(share.get())
+        var = spdz.reconstruct(shares)
+        self.var = var
+        return var
 
 
 class _PointerTensor(_SyftTensor):

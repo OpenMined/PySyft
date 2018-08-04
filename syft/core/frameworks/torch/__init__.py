@@ -1,10 +1,10 @@
 from .hook import TorchHook
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
-from .tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor
+from .tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor, _MPCTensor
 
 __all__ = ['TorchHook', '_SyftTensor', '_LocalTensor',
-           '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor', '_PlusIsMinusTensor',
-           'encode']
+           '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor',
+           '_PlusIsMinusTensor', '_MPCTensor', 'encode']
 
 import torch
 
@@ -74,6 +74,7 @@ torch.guard = {
     'syft.LongTensor': torch.LongTensor,
     'syft.Parameter': torch.nn.Parameter,
     'syft._PlusIsMinusTensor': _PlusIsMinusTensor,
+    'syft._MPCTensor': _MPCTensor
 }
 
 
