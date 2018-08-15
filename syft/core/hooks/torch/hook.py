@@ -768,7 +768,7 @@ class TorchHook(BaseHook):
                 is_func = isinstance(lit, types.FunctionType)
                 try:
                     is_service_func = 'HookService' in lit.__qualname__
-                except Exception:
+                except AttributeError:
                     is_service_func = False
                 is_old = re.match('old*', attr) is not None
 
@@ -951,7 +951,7 @@ class TorchHook(BaseHook):
             is_func = isinstance(lit, types.FunctionType)
             try:
                 is_service_func = 'HookService' in lit.__qualname__
-            except Exception:
+            except AttributeError:
                 is_service_func = False
             is_old = re.match('old*', attr) is not None
 

@@ -595,7 +595,7 @@ class BaseWorker(ABC):
         # were previously experiencing.
         try:
             obj.data_backup = obj.data
-        except Exception:
+        except RuntimeError:
             ""
 
         obj.id = (kwargs['id']
