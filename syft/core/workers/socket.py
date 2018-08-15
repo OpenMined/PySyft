@@ -83,13 +83,17 @@ class SocketWorker(BaseWorker):
     [torch.FloatTensor of size 5]
     """
 
-    def __init__(self,  hook=None, hostname='localhost', port=8110, max_connections=5,
-                 id=0, is_client_worker=True, objects={}, tmp_objects={},
-                 known_workers={}, verbose=True, is_pointer=False, queue_size=0):
+    def __init__(
+        self,  hook=None, hostname='localhost', port=8110, max_connections=5,
+        id=0, is_client_worker=True, objects={}, tmp_objects={},
+        known_workers={}, verbose=True, is_pointer=False, queue_size=0,
+    ):
 
-        super().__init__(hook=hook, id=id, is_client_worker=is_client_worker,
-                         objects=objects, tmp_objects=tmp_objects,
-                         known_workers=known_workers, verbose=verbose, queue_size=queue_size)
+        super().__init__(
+            hook=hook, id=id, is_client_worker=is_client_worker,
+            objects=objects, tmp_objects=tmp_objects,
+            known_workers=known_workers, verbose=verbose, queue_size=queue_size,
+        )
 
         self.hostname = hostname
         self.port = port
@@ -111,7 +115,8 @@ class SocketWorker(BaseWorker):
             if(self.verbose):
                 print("Starting Socket Worker...")
             self.serversocket = socket.socket(
-                socket.AF_INET, socket.SOCK_STREAM)
+                socket.AF_INET, socket.SOCK_STREAM,
+            )
             self.serversocket.bind((self.hostname, self.port))
 
             # become a server socket, maximum 5 connections

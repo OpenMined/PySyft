@@ -72,12 +72,16 @@ class VirtualWorker(BaseWorker):
     [torch.FloatTensor of size 5]
     """
 
-    def __init__(self,  hook, id=0, is_client_worker=False, objects={},
-                 tmp_objects={}, known_workers={}, verbose=False, queue_size=0):
+    def __init__(
+        self,  hook, id=0, is_client_worker=False, objects={},
+        tmp_objects={}, known_workers={}, verbose=False, queue_size=0,
+    ):
 
-        super().__init__(hook=hook, id=id, is_client_worker=is_client_worker,
-                         objects=objects, tmp_objects=tmp_objects,
-                         known_workers=known_workers, verbose=verbose, queue_size=queue_size)
+        super().__init__(
+            hook=hook, id=id, is_client_worker=is_client_worker,
+            objects=objects, tmp_objects=tmp_objects,
+            known_workers=known_workers, verbose=verbose, queue_size=queue_size,
+        )
 
     def _send_msg(self, message_wrapper_json_binary, recipient):
         """Sends a string message to another worker with message_type information

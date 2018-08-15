@@ -7,25 +7,29 @@ import logging
 
 import torch
 
+
 class PythonEncoder():
     """
         Encode python and torch objects to be JSON-able
         In particular, (hooked) Torch objects are replaced by their id.
         Note that a python object is returned, not JSON.
     """
+
     def __init__(self, retrieve_tensorvar=False):
         self.retrieve_tensorvar = retrieve_tensorvar
         self.found_tensorvar = []
-        self.tensorvar_types = tuple([torch.autograd.Variable,
-                                     torch.nn.Parameter,
-                                     torch.FloatTensor,
-                                     torch.DoubleTensor,
-                                     torch.HalfTensor,
-                                     torch.ByteTensor,
-                                     torch.CharTensor,
-                                     torch.ShortTensor,
-                                     torch.IntTensor,
-                                     torch.LongTensor])
+        self.tensorvar_types = tuple([
+            torch.autograd.Variable,
+            torch.nn.Parameter,
+            torch.FloatTensor,
+            torch.DoubleTensor,
+            torch.HalfTensor,
+            torch.ByteTensor,
+            torch.CharTensor,
+            torch.ShortTensor,
+            torch.IntTensor,
+            torch.LongTensor,
+        ])
 
     def encode(self, obj, retrieve_tensorvar=None):
         """
@@ -48,18 +52,18 @@ class PythonEncoder():
             if self.retrieve_tensorvar:
                 self.found_tensorvar.append(obj)
             key = '__'+type(obj).__name__+'__'
-            return { key: '_fl.{}'.format(obj.id) }
+            return {key: '_fl.{}'.format(obj.id)}
         # Lists
         elif isinstance(obj, list):
             return [self.python_encode(i) for i in obj]
         # Iterables non json-serializable
         elif isinstance(obj, (tuple, set, bytearray, range)):
             key = '__'+type(obj).__name__+'__'
-            return {key:[self.python_encode(i) for i in obj]}
+            return {key: [self.python_encode(i) for i in obj]}
         # Slice
         elif isinstance(obj, slice):
             key = '__'+type(obj).__name__+'__'
-            return { key: { 'args': [obj.start, obj.stop, obj.step]}}
+            return {key: {'args': [obj.start, obj.stop, obj.step]}}
         # Dict
         elif isinstance(obj, dict):
             return {
@@ -74,25 +78,31 @@ class PythonEncoder():
         else:
             raise ValueError('Unhandled type', type(obj))
 
+
 class PythonJSONDecoder(json.JSONDecoder):
     """
         Decode JSON and reinsert python types when needed
         Retrieve Torch objects replaced by their id
     """
+
     def __init__(self, worker, *args, **kwargs):
-        super(PythonJSONDecoder, self).__init__(*args,
-            object_hook=self.custom_obj_hook, **kwargs)
+        super(PythonJSONDecoder, self).__init__(
+            *args,
+            object_hook=self.custom_obj_hook, **kwargs
+        )
         self.worker = worker
-        self.tensorvar_types = tuple([torch.autograd.Variable,
-                                     torch.nn.Parameter,
-                                     torch.FloatTensor,
-                                     torch.DoubleTensor,
-                                     torch.HalfTensor,
-                                     torch.ByteTensor,
-                                     torch.CharTensor,
-                                     torch.ShortTensor,
-                                     torch.IntTensor,
-                                     torch.LongTensor])
+        self.tensorvar_types = tuple([
+            torch.autograd.Variable,
+            torch.nn.Parameter,
+            torch.FloatTensor,
+            torch.DoubleTensor,
+            torch.HalfTensor,
+            torch.ByteTensor,
+            torch.CharTensor,
+            torch.ShortTensor,
+            torch.IntTensor,
+            torch.LongTensor,
+        ])
 
     def custom_obj_hook(self, dct):
         """
@@ -123,6 +133,7 @@ class PythonJSONDecoder(json.JSONDecoder):
             except AttributeError:
                 pass
         return dct
+
 
 def map_tuple(hook, args, func):
     if hook:

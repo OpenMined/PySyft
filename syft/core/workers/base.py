@@ -1,9 +1,8 @@
-import torch
+import torch  # noqa: F401
 import json
 import numbers
 import re
 import random
-import asyncio
 from abc import ABC, abstractmethod
 
 from .. import utils
@@ -61,8 +60,10 @@ class BaseWorker(ABC):
 
     """
 
-    def __init__(self,  hook=None, id=0, is_client_worker=False, objects={},
-                 tmp_objects={}, known_workers={}, verbose=True, queue_size=0):
+    def __init__(
+        self,  hook=None, id=0, is_client_worker=False, objects={},
+        tmp_objects={}, known_workers={}, verbose=True, queue_size=0,
+    ):
 
         # This is a reference to the hook object which overloaded
         # the underlying deep learning framework
@@ -168,7 +169,8 @@ class BaseWorker(ABC):
         message_wrapper = {}
 
         message_wrapper['message'] = {
-            message_number: message for message_number, message in enumerate(self.message_queue)}
+            message_number: message for message_number, message in enumerate(self.message_queue)
+        }
         message_wrapper['type'] = 'composite'
 
         return message_wrapper
@@ -238,8 +240,10 @@ class BaseWorker(ABC):
             return json.dumps(self.handle_command(message)) + "\n"
         # A composite command. Must be unrolled
         elif(message_wrapper['type'] == 'composite'):
-            return [self.process_message_type(message[message_number])
-                    for message_number in message]
+            return [
+                self.process_message_type(message[message_number])
+                for message_number in message
+            ]
 
         return "Unrecognized message type:" + message_wrapper['type']
 
@@ -298,10 +302,13 @@ class BaseWorker(ABC):
         [torch.FloatTensor of size 5]
         """
         if(worker.id in self._known_workers and self.verbose):
-            print("WARNING: Worker ID " + str(worker.id) +
-                  " taken. Have I seen this worker before?")
             print(
-                "WARNING: Replacing it anyways... this could cause unexpected behavior...")
+                "WARNING: Worker ID " + str(worker.id) +
+                " taken. Have I seen this worker before?",
+            )
+            print(
+                "WARNING: Replacing it anyways... this could cause unexpected behavior...",
+            )
 
         self._known_workers[worker.id] = worker
 
@@ -530,13 +537,17 @@ class BaseWorker(ABC):
             response = json.loads(response)
 
         if('registration' in response and 'torch_type' in response):
-            return (response['registration'], response['torch_type'],
-                    response['var_data'], response['var_grad'])
+            return (
+                response['registration'], response['torch_type'],
+                response['var_data'], response['var_grad'],
+            )
         else:
             return response
 
-    def register_object(self, obj, force_attach_to_worker=False,
-                        temporary=False, **kwargs):
+    def register_object(
+        self, obj, force_attach_to_worker=False,
+        temporary=False, **kwargs
+    ):
         """
         Registers an object with the current worker node. Selects an
         id for the object, assigns a list of owners,
@@ -584,7 +595,7 @@ class BaseWorker(ABC):
         # were previously experiencing.
         try:
             obj.data_backup = obj.data
-        except:
+        except RuntimeError:
             ""
 
         obj.id = (kwargs['id']
@@ -604,9 +615,11 @@ class BaseWorker(ABC):
                 owner_pointers.append(owner)
         obj.owners = owner_pointers
 
-        obj.is_pointer = (kwargs['is_pointer']
-                          if 'is_pointer' in keys
-                          else False)
+        obj.is_pointer = (
+            kwargs['is_pointer']
+            if 'is_pointer' in keys
+            else False
+        )
 
         mal_points_away = obj.is_pointer and self.id in obj.owners
         # print("Mal Points Away:" + str(mal_points_away))
@@ -621,7 +634,9 @@ class BaseWorker(ABC):
         if mal_points_away or mal_points_here:
             raise RuntimeError(
                 'Invalid registry: is_pointer is {} but owners is {} on tensor {}'.format(
-                    obj.is_pointer, obj.owners, obj.id))
+                    obj.is_pointer, obj.owners, obj.id,
+                ),
+            )
         # print("setting object:" + str(obj.id))
         self.set_obj(obj.id, obj, force=force_attach_to_worker, tmp=temporary)
 
@@ -630,22 +645,26 @@ class BaseWorker(ABC):
         if(hasattr(obj, 'grad')):
             if(obj.grad is not None):
                 # import pdb; pdb.set_trace()
-                self.register_object(obj=obj.grad,
-                                     force_attach_to_worker=force_attach_to_worker,
-                                     temporary=temporary,
-                                     id=obj.grad.id,
-                                     owners=obj.owners,
-                                     is_pointer=obj.is_pointer)
+                self.register_object(
+                    obj=obj.grad,
+                    force_attach_to_worker=force_attach_to_worker,
+                    temporary=temporary,
+                    id=obj.grad.id,
+                    owners=obj.owners,
+                    is_pointer=obj.is_pointer,
+                )
         try:
             _ = obj.data
             _ = type(_)
             if(obj.data is not None):
-                self.register_object(obj=obj.data,
-                                     force_attach_to_worker=force_attach_to_worker,
-                                     temporary=temporary,
-                                     id=obj.data.id,
-                                     owners=obj.owners,
-                                     is_pointer=obj.is_pointer)
+                self.register_object(
+                    obj=obj.data,
+                    force_attach_to_worker=force_attach_to_worker,
+                    temporary=temporary,
+                    id=obj.data.id,
+                    owners=obj.owners,
+                    is_pointer=obj.is_pointer,
+                )
 
         except RuntimeError:
             ""
@@ -671,7 +690,9 @@ class BaseWorker(ABC):
         # Need to retrieve the tensors from self.worker.objects
         arg_tensors = self._retrieve_tensor(command_msg['args'])
         args = command_msg['args']
-        kwarg_tensors = self._retrieve_tensor(list(command_msg['kwargs'].values()))
+        kwarg_tensors = self._retrieve_tensor(
+            list(command_msg['kwargs'].values()),
+        )
         kwargs = command_msg['kwargs']
         has_self = command_msg['has_self']
         # TODO: Implement get_owners and refactor to make it prettier
@@ -679,19 +700,22 @@ class BaseWorker(ABC):
 
         if has_self:
             command = self._command_guard(
-                command_msg['command'], self.hook.tensorvar_methods)
+                command_msg['command'], self.hook.tensorvar_methods,
+            )
             obj_self = self._retrieve_tensor(command_msg['self'])[0]
             tensorvars = tensorvars + [obj_self]
             command = eval('obj_self.{}'.format(command))
         else:
             try:
                 command = self._command_guard(
-                    command_msg['command'], self.hook.torch_funcs)
+                    command_msg['command'], self.hook.torch_funcs,
+                )
                 command = eval('torch.{}'.format(command))
             except RuntimeError:
                 try:
                     command = self._command_guard(
-                        command_msg['command'], self.hook.torch_functional_funcs)
+                        command_msg['command'], self.hook.torch_functional_funcs,
+                    )
                     command = eval('torch.nn.functional.{}'.format(command))
                 except ValueError:
                     pass
@@ -699,7 +723,8 @@ class BaseWorker(ABC):
         # we need the original tensorvar owners so that we can register
         # the result properly later on
         owners = list(
-            set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
+            {owner for tensorvar in tensorvars for owner in tensorvar.owners},
+        )
 
         owner_ids = list()
         for owner in owners:
@@ -715,8 +740,10 @@ class BaseWorker(ABC):
         over PubSub.
         """
         if result is None:
-            return dict(registration=None, torch_type=None,
-                        var_data=None, var_grad=None)
+            return dict(
+                registration=None, torch_type=None,
+                var_data=None, var_grad=None,
+            )
         try:
 
             # result is infrequently a numeric
@@ -724,8 +751,10 @@ class BaseWorker(ABC):
                 return {'numeric': result}
 
             # result is usually a tensor/variable
-            torch_type = re.search("<class '(torch.(.*))'>",
-                                   str(result.__class__)).group(1)
+            torch_type = re.search(
+                "<class '(torch.(.*))'>",
+                str(result.__class__),
+            ).group(1)
 
             try:
                 var_data = self.compile_result(result.data, owners)
@@ -738,15 +767,20 @@ class BaseWorker(ABC):
                 var_grad = None
             try:
                 result = self.register_object(
-                    result, id=result.id, owners=owners)
+                    result, id=result.id, owners=owners,
+                )
             except AttributeError:
                 result = self.register_object(result, owners=owners)
 
-            registration = dict(id=result.id,
-                                owners=owners, is_pointer=True)
+            registration = dict(
+                id=result.id,
+                owners=owners, is_pointer=True,
+            )
 
-            return dict(registration=registration, torch_type=torch_type,
-                        var_data=var_data, var_grad=var_grad)
+            return dict(
+                registration=registration, torch_type=torch_type,
+                var_data=var_data, var_grad=var_grad,
+            )
 
         except AttributeError as e:
             # result is occasionally a sequence of tensors or variables
@@ -767,8 +801,10 @@ class BaseWorker(ABC):
         if compiled is not None:
             return compiled
         else:
-            return dict(registration=None, torch_type=None,
-                        var_data=None, var_grad=None)
+            return dict(
+                registration=None, torch_type=None,
+                var_data=None, var_grad=None,
+            )
 
     def handle_register(self, torch_object, obj_msg, force_attach_to_worker=False, temporary=False):
         """
@@ -803,18 +839,22 @@ class BaseWorker(ABC):
             # Worker case: v was never formally registered
             pass
         if('is_pointer' in obj_msg and obj_msg['is_pointer']):
-            torch_object = self.register_object(torch_object,
-                                                id=obj_msg['id'],
-                                                owners=obj_msg['owners'],
-                                                force_attach_to_worker=force_attach_to_worker,
-                                                temporary=temporary,
-                                                is_pointer=True)
+            torch_object = self.register_object(
+                torch_object,
+                id=obj_msg['id'],
+                owners=obj_msg['owners'],
+                force_attach_to_worker=force_attach_to_worker,
+                temporary=temporary,
+                is_pointer=True,
+            )
         else:
-            torch_object = self.register_object(torch_object,
-                                                id=obj_msg['id'],
-                                                owners=[self.id],
-                                                force_attach_to_worker=force_attach_to_worker,
-                                                temporary=temporary)
+            torch_object = self.register_object(
+                torch_object,
+                id=obj_msg['id'],
+                owners=[self.id],
+                force_attach_to_worker=force_attach_to_worker,
+                temporary=temporary,
+            )
 
         return torch_object
 
@@ -849,11 +889,15 @@ class BaseWorker(ABC):
         """
 
         # obj = recipient.receive_obj(obj.ser())
-        _obj = self.send_msg(message=self.prepare_send_object(obj,
-                                                              delete_local,
-                                                              send_pointer=send_pointer),
-                             message_type='obj',
-                             recipient=recipient)
+        _obj = self.send_msg(
+            message=self.prepare_send_object(
+                obj,
+                delete_local,
+                send_pointer=send_pointer,
+            ),
+            message_type='obj',
+            recipient=recipient,
+        )
 
         if(delete_local):
             self.rm_obj(obj.id)
@@ -893,7 +937,8 @@ class BaseWorker(ABC):
         * **message (string)** the message being sent
         """
         response = self.send_msg(
-            message=message, message_type='torch_cmd', recipient=recipient)
+            message=message, message_type='torch_cmd', recipient=recipient,
+        )
         response = self.process_response(response)
         return response
 
@@ -916,7 +961,8 @@ class BaseWorker(ABC):
         recipient = self.get_worker(recipient)
 
         obj_json = self.send_msg(
-            message=obj_id, message_type='req_obj', recipient=recipient)
+            message=obj_id, message_type='req_obj', recipient=recipient,
+        )
         obj = self.receive_obj(obj_json)
 
         # for some reason, when returning obj from request_obj method, the gradient
@@ -942,7 +988,9 @@ class BaseWorker(ABC):
         elif not hasattr(workers, '__iter__'):
             raise TypeError(
                 """Can only send {} to a string worker ID or an iterable of
-                string worker IDs, not {} of type {}""".format(str(type(torch_obj)), workers, str(type(workers)))
+                string worker IDs, not {} of type {}""".format(
+                    str(type(torch_obj)), workers, str(type(workers))
+                )
             )
         return workers
 
@@ -960,7 +1008,10 @@ class BaseWorker(ABC):
     def _command_guard(cls, command, allowed):
         if command not in allowed:
             raise RuntimeError(
-                'Command "{}" is not a supported Torch operation.'.format(command))
+                'Command "{}" is not a supported Torch operation.'.format(
+                    command,
+                ),
+            )
         return command
 
     @classmethod

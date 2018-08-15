@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+
 class BaseHook(object):
     __metaclass__ = ABCMeta
     """An abstract interface for deep learning framework hooks."""

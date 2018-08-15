@@ -165,10 +165,13 @@ def spdz_matmul(x, y, interface):
     else:
         y_width = 1
 
-    assert x_width == y_height, 'dimension mismatch: %r != %r' % (x_width, y_height)
+    assert x_width == y_height, 'dimension mismatch: %r != %r' % (
+        x_width, y_height,
+    )
 
     r, s, t = generate_matmul_triple_communication(
-        x_height, y_width, x_width, interface)
+        x_height, y_width, x_width, interface,
+    )
 
     rho_local = (x - r) % field
     sigma_local = (y - s) % field
@@ -213,14 +216,26 @@ def generate_sigmoid_shares_communication(x, interface):
         quad_alice = [W0_alice, W1_alice, W3_alice, W5_alice]
         return quad_alice
     elif (interface.get_party() == 1):
-        W0_bob = swap_shares(torch.LongTensor(
-            x.shape).zero_(), interface)
-        W1_bob = swap_shares(torch.LongTensor(
-            x.shape).zero_(), interface)
-        W3_bob = swap_shares(torch.LongTensor(
-            x.shape).zero_(), interface)
-        W5_bob = swap_shares(torch.LongTensor(
-            x.shape).zero_(), interface)
+        W0_bob = swap_shares(
+            torch.LongTensor(
+                x.shape,
+            ).zero_(), interface,
+        )
+        W1_bob = swap_shares(
+            torch.LongTensor(
+                x.shape,
+            ).zero_(), interface,
+        )
+        W3_bob = swap_shares(
+            torch.LongTensor(
+                x.shape,
+            ).zero_(), interface,
+        )
+        W5_bob = swap_shares(
+            torch.LongTensor(
+                x.shape,
+            ).zero_(), interface,
+        )
         quad_bob = [W0_bob, W1_bob, W3_bob, W5_bob]
         return quad_bob
 

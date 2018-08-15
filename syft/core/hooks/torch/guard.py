@@ -15,11 +15,11 @@ class TorchGuard():
             'torch.CharTensor': torch.CharTensor,
             'torch.ShortTensor': torch.ShortTensor,
             'torch.IntTensor': torch.IntTensor,
-            'torch.LongTensor': torch.LongTensor
+            'torch.LongTensor': torch.LongTensor,
         }
         self.map_var_type = {
             'torch.autograd.variable.Variable': torch.autograd.variable.Variable,
-            'torch.nn.parameter.Parameter': torch.nn.parameter.Parameter
+            'torch.nn.parameter.Parameter': torch.nn.parameter.Parameter,
         }
         self.map_torch_type = dict(self.map_tensor_type, **self.map_var_type)
 
@@ -59,7 +59,9 @@ class TorchGuard():
         except KeyError:
             raise TypeError(
                 "Tried to receive a non-Torch object of type {}.".format(
-                    torch_type_str))
+                    torch_type_str,
+                ),
+            )
 
     def tensor_contents_guard(self, contents):
         """tensor_contents_guard(contents) -> contents
