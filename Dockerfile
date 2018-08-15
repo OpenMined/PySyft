@@ -20,7 +20,7 @@ COPY examples/ /PySyft/examples/
 COPY requirements.txt /PySyft/requirements.txt
 COPY setup.py /PySyft/setup.py
 COPY README.md /PySyft/README.md
-WORKDIR /PySyft 
+WORKDIR /PySyft
 RUN python3 setup.py install
 
 RUN jupyter notebook --generate-config

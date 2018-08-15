@@ -17,11 +17,6 @@ repos:
     rev: v1.7.0
     hooks:
     -   id: validate_manifest
--   repo: https://github.com/asottile/reorder_python_imports
-    rev: v1.0.1
-    hooks:
-    -   id: reorder-python-imports
-        language_version: python2.7
 -   repo: https://github.com/asottile/pyupgrade
     rev: v1.2.0
     hooks:

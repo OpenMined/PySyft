@@ -1,6 +1,8 @@
 import os
 import unittest
-from setuptools import setup, find_packages
+
+from setuptools import find_packages
+from setuptools import setup
 
 
 # Utility function to read the README file.
@@ -36,5 +38,5 @@ setup(
     ],
     install_requires=requirements,
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-flake8']
+    tests_require=['pytest', 'pytest-flake8'],
 )

@@ -1,12 +1,14 @@
-import torch
-import inspect
-import re
-import json
-import types
 import functools
 import importlib
-from ... import workers
+import inspect
+import json
+import re
+import types
+
+import torch
+
 from ... import utils
+from ... import workers
 from ..base import BaseHook
 from .guard import TorchGuard
 
@@ -81,7 +83,8 @@ class TorchHook(BaseHook):
                           using that one instead...")
             else:
                 self.local_worker = workers.VirtualWorker(
-                    hook=self, is_client_worker=is_client, queue_size=queue_size)
+                    hook=self, is_client_worker=is_client, queue_size=queue_size,
+                )
         else:
             # if the local_worker already exists, then it MUST not know about the hook which is
             # just being created. Thus, we must inform it.
@@ -96,14 +99,16 @@ class TorchHook(BaseHook):
         self.torch_functional_funcs = dir(torch.nn.functional)
 
         # this is the list of torch tensor types that we will override for remote execution
-        self.tensor_types = [torch.FloatTensor,
-                             torch.DoubleTensor,
-                             torch.HalfTensor,
-                             torch.ByteTensor,
-                             torch.CharTensor,
-                             torch.ShortTensor,
-                             torch.IntTensor,
-                             torch.LongTensor]
+        self.tensor_types = [
+            torch.FloatTensor,
+            torch.DoubleTensor,
+            torch.HalfTensor,
+            torch.ByteTensor,
+            torch.CharTensor,
+            torch.ShortTensor,
+            torch.IntTensor,
+            torch.LongTensor,
+        ]
 
         # this is the list of torch VARIABLE types that we will override for remote execution
         # Variables are simply tensors that are differentiable (support gradients)
@@ -113,21 +118,23 @@ class TorchHook(BaseHook):
 
         # a list of all classes in which we will override their methods for remote execution
         self.tensorvar_types = self.tensor_types + \
-                               [torch.autograd.variable.Variable]
+            [torch.autograd.variable.Variable]
         self.tensorvar_types_strs = [x.__name__ for x in self.tensorvar_types]
 
         # a list of all methods in fixed precision type which will be overridden
         # for remote execution
-        self.fixed_prec_var_methods = ['fixed_prec_add', 'fixed_prec_mul', 'fixed_prec_sub', 'fixed_prec_div',
-                                   'set_precision', 'fixed_prec_trudiv', 'free_precision',
-                                   '_execute_fixed_precision_call', '_conversion']
+        self.fixed_prec_var_methods = [
+            'fixed_prec_add', 'fixed_prec_mul', 'fixed_prec_sub', 'fixed_prec_div',
+            'set_precision', 'fixed_prec_trudiv', 'free_precision',
+            '_execute_fixed_precision_call', '_conversion',
+        ]
 
         self.tensorvar_methods = list(
-            set(
-                [method
-                 for tensorvar in self.tensorvar_types
-                 for method in dir(tensorvar)]
-            )
+            {
+                method
+                for tensorvar in self.tensorvar_types
+                for method in dir(tensorvar)
+            },
         )
 
         # adding fixed precision methods to the list of overriding methods for remote execution
@@ -136,8 +143,10 @@ class TorchHook(BaseHook):
         # Methods that caused infinite recursion during testing
         # TODO: May want to handle the ones in "exclude" manually at
         #       some point
-        self.exclude = (['ndimension', 'nelement', 'size', 'numel',
-                         'type', 'tolist', 'dim', '__iter__', 'select'])
+        self.exclude = ([
+            'ndimension', 'nelement', 'size', 'numel',
+            'type', 'tolist', 'dim', '__iter__', 'select',
+        ])
 
         # This one wasn't in dir(Variable) -- probably a C++ thing
         self.var_exclude = ['__getattr__']
@@ -205,8 +214,10 @@ class TorchHook(BaseHook):
             _method = method(self, *args, **kwargs)
 
             if hasattr(self, 'is_pointer') and self.is_pointer:
-                return hook_self._execute_remote_call(_method,
-                                                      has_self=True)[0]
+                return hook_self._execute_remote_call(
+                    _method,
+                    has_self=True,
+                )[0]
             elif (hasattr(self, 'fixed_precision') and self.fixed_precision):
 
                 return hook_self._execute_fixed_precision_call(self, _method, args, kwargs)
@@ -234,25 +245,28 @@ class TorchHook(BaseHook):
             part = func(*args, **kwargs)
 
             _res = hook_self._execute_remote_call(
-                part, has_self=False)
+                part, has_self=False,
+            )
             pointer, has_remote, multiple_owners = _res
 
             if (has_remote and not multiple_owners):
                 return pointer
 
             if not (has_remote and not multiple_owners):
-                result = hook_self._execute_local_call(None,
-                                                       part,
-                                                       args,
-                                                       kwargs,
-                                                       function_not_method=True)
+                result = hook_self._execute_local_call(
+                    None,
+                    part,
+                    args,
+                    kwargs,
+                    function_not_method=True,
+                )
                 return result
 
         return function_router
 
     def _hook_fixed_precision_methods(self, tensor_type):
         """Overload fixed precision methods"""
-        
+
         def set_precision(self, precision=5, encoding_type=torch.LongTensor):
             """Sets fixed precision value. Encoding type must be
             LongTensor or subclass of LongTensor. Fixed precision storage
@@ -266,7 +280,10 @@ class TorchHook(BaseHook):
                 fixed_tensor.precision = precision
                 return fixed_tensor
             else:
-                print("Fixed precision storage type", encoding_type, "not supported")
+                print(
+                    "Fixed precision storage type",
+                    encoding_type, "not supported",
+                )
 
         def free_precision(self, decoding_type=torch.FloatTensor):
             """Remove fixed precision. Storage type is set to FloatTensor.
@@ -290,7 +307,10 @@ class TorchHook(BaseHook):
                 else:
                     return free_tensor
             else:
-                TypeError("Decoding type", decoding_type, "not supported for free_precision")
+                TypeError(
+                    "Decoding type", decoding_type,
+                    "not supported for free_precision",
+                )
 
             return self
 
@@ -313,40 +333,56 @@ class TorchHook(BaseHook):
 
                 # modify tensor to be the precision of self
                 if (norm_left_prec):
-                    out = torch.LongTensor.old_mul(self, other).old_div(10 ** other.precision)
+                    out = torch.LongTensor.old_mul(
+                        self, other,
+                    ).old_div(10 ** other.precision)
                     out.precision = self.precision
                     out.fixed_precision = True
                 # modify tensor to be the precision of the other tensor
                 else:
-                    out = torch.LongTensor.old_mul(self, other).old_div(10 ** self.precision)
+                    out = torch.LongTensor.old_mul(
+                        self, other,
+                    ).old_div(10 ** self.precision)
                     out.precision = other.precision
                     out.fixed_precision = True
 
                 return out
             elif (hasattr(self, 'fixed_precision') and not hasattr(other, 'fixed_precision')) or \
-                    (not hasattr(self,'fixed_precision') and hasattr(other, 'fixed_precision')):
-                raise AttributeError("Tried to call fixed precision operation on non-fixed precision tensor and "
-                                     "a regular tensor.")
+                    (not hasattr(self, 'fixed_precision') and hasattr(other, 'fixed_precision')):
+                raise AttributeError(
+                    "Tried to call fixed precision operation on non-fixed precision tensor and "
+                    "a regular tensor.",
+                )
             else:
-                raise AttributeError("Tried to call fixed precision operation on non-fixed precision tensors")
+                raise AttributeError(
+                    "Tried to call fixed precision operation on non-fixed precision tensors",
+                )
 
         tensor_type.fixed_prec_mul = fixed_prec_mul
 
         def fixed_prec_add(self, other):
             """Addition of input tensor to self. Both must have
-            fixed precision. Precision of the output tensor will 
+            fixed precision. Precision of the output tensor will
             be the highest precision value between both tensors.
             """
 
             if hasattr(self, 'fixed_precision') and hasattr(self, 'fixed_precision'):
 
                 if self.precision > other.precision:
-                    out = torch.LongTensor.old_add(self, other.old_mul(10 ** (self.precision - other.precision)))
+                    out = torch.LongTensor.old_add(
+                        self, other.old_mul(
+                            10 ** (self.precision - other.precision),
+                        ),
+                    )
                     out.precision = self.precision
                     out.fixed_precision = True
 
                 elif self.precision < other.precision:
-                    out = torch.LongTensor.old_add(self.old_mul(10 ** (other.precision - self.precision)), other)
+                    out = torch.LongTensor.old_add(
+                        self.old_mul(
+                            10 ** (other.precision - self.precision),
+                        ), other,
+                    )
                     out.precision = other.precision
                     out.fixed_precision = True
 
@@ -358,29 +394,40 @@ class TorchHook(BaseHook):
                 return out
             elif (hasattr(self, 'fixed_precision') and not hasattr(other, 'fixed_precision')) or \
                  (not hasattr(self, 'fixed_precision') and hasattr(other, 'fixed_precision')):
-                raise AttributeError("Tried to call fixed precision operation on non-fixed precision tensor and "
-                                     "a regular tensor.")
+                raise AttributeError(
+                    "Tried to call fixed precision operation on non-fixed precision tensor and "
+                    "a regular tensor.",
+                )
             else:
-                raise AttributeError("Tried to call fixed precision operation on non-fixed precision tensors")
+                raise AttributeError(
+                    "Tried to call fixed precision operation on non-fixed precision tensors",
+                )
 
         tensor_type.fixed_prec_add = fixed_prec_add
 
-
         def fixed_prec_sub(self, other):
             """Substraction of input tensor from self. Both must have
-            fixed precision. Precision of the output tensor will 
+            fixed precision. Precision of the output tensor will
             be the highest precision value between both tensors.
             """
 
             if hasattr(self, 'fixed_precision') and hasattr(self, 'fixed_precision'):
 
                 if self.precision > other.precision:
-                    out = torch.LongTensor.old_sub(self, other.old_mul(10 ** (self.precision - other.precision)))
+                    out = torch.LongTensor.old_sub(
+                        self, other.old_mul(
+                            10 ** (self.precision - other.precision),
+                        ),
+                    )
                     out.precision = self.precision
                     out.fixed_precision = True
 
                 elif self.precision < other.precision:
-                    out = torch.LongTensor.old_sub(self.old_mul(10 ** (other.precision - self.precision)), other)
+                    out = torch.LongTensor.old_sub(
+                        self.old_mul(
+                            10 ** (other.precision - self.precision),
+                        ), other,
+                    )
                     out.precision = other.precision
                     out.fixed_precision = True
 
@@ -392,24 +439,31 @@ class TorchHook(BaseHook):
                 return out
             elif (hasattr(self, 'fixed_precision') and not hasattr(other, 'fixed_precision')) or \
                  (not hasattr(self, 'fixed_precision') and hasattr(other, 'fixed_precision')):
-                raise AttributeError("Tried to call fixed precision operation on non-fixed precision tensor and "
-                                     "a regular tensor.")
+                raise AttributeError(
+                    "Tried to call fixed precision operation on non-fixed precision tensor and "
+                    "a regular tensor.",
+                )
             else:
-                raise AttributeError("Tried to call fixed precision operation on non-fixed precision tensors")
+                raise AttributeError(
+                    "Tried to call fixed precision operation on non-fixed precision tensors",
+                )
 
         tensor_type.fixed_prec_sub = fixed_prec_sub
 
         def fixed_prec_div(self, other):
             """Division of self by input tensor. Both must have
-            fixed precision. Precision of the output tensor will 
+            fixed precision. Precision of the output tensor will
             be the highest precision value between both tensors.
             """
 
             if hasattr(self, 'fixed_precision') and hasattr(self, 'fixed_precision'):
 
-
                 if self.precision < other.precision:
-                    out = torch.LongTensor.old_div(self.old_mul(10 ** (other.precision - self.precision)), other)
+                    out = torch.LongTensor.old_div(
+                        self.old_mul(
+                            10 ** (other.precision - self.precision),
+                        ), other,
+                    )
                     out.precision = 0
                     out.fixed_precision = True
 
@@ -419,18 +473,26 @@ class TorchHook(BaseHook):
                     out.fixed_precision = True
 
                 else:
-                    out = torch.LongTensor.old_div(self, other.old_mul(10 ** (self.precision - other.precision)))
+                    out = torch.LongTensor.old_div(
+                        self, other.old_mul(
+                            10 ** (self.precision - other.precision),
+                        ),
+                    )
                     out.precision = 0
                     out.fixed_precision = True
 
                 return out
 
             elif (hasattr(self, 'fixed_precision') and not hasattr(other, 'fixed_precision')) or \
-                (not hasattr(self, 'fixed_precision') and hasattr(other, 'fixed_precision')):
-                    raise AttributeError("Tried to call fixed precision operation on non-fixed precision tensor and "
-                            "a regular tensor.")
+                    (not hasattr(self, 'fixed_precision') and hasattr(other, 'fixed_precision')):
+                raise AttributeError(
+                    "Tried to call fixed precision operation on non-fixed precision tensor and "
+                    "a regular tensor.",
+                )
             else:
-                raise AttributeError("Tried to call fixed precision operation on non-fixed precision tensors")
+                raise AttributeError(
+                    "Tried to call fixed precision operation on non-fixed precision tensors",
+                )
 
         tensor_type.fixed_prec_div = fixed_prec_div
         tensor_type.fixed_prec_trudiv = fixed_prec_div
@@ -469,8 +531,10 @@ class TorchHook(BaseHook):
 
         # if the result hasn't been registered, register it
         if (type(result) in hook_self.tensorvar_types and (not hasattr(result, 'owner'))):
-            result = hook_self.local_worker.register_object(result,
-                                                            is_pointer=False)
+            result = hook_self.local_worker.register_object(
+                result,
+                is_pointer=False,
+            )
         return result
 
     def _execute_remote_call(hook_self, _method, has_self=True):
@@ -481,7 +545,9 @@ class TorchHook(BaseHook):
         """
 
         # Step 1/2: Compiles Command in JSON and retrieve Tensors and Variables
-        command, tensorvars = hook_self._compile_command(_method, has_self=has_self)
+        command, tensorvars = hook_self._compile_command(
+            _method, has_self=has_self,
+        )
 
         # Step 3: Checks to see if the tensor is local (on this machine) or is a pointer
         # to a remote one (on a different machine)
@@ -489,7 +555,8 @@ class TorchHook(BaseHook):
 
         # Checks to see if the tensor has multiple owners (not yet fully supported func)
         owners = list(
-            set([owner for tensorvar in tensorvars for owner in tensorvar.owners]))
+            {owner for tensorvar in tensorvars for owner in tensorvar.owners},
+        )
         multiple_owners = len(owners) > 1
 
         # If one of the tensor arguments is remote
@@ -497,8 +564,10 @@ class TorchHook(BaseHook):
         if has_remote and not multiple_owners:
 
             for worker in owners:
-                responses = hook_self.local_worker.send_torch_command(recipient=worker,
-                                                                     message=command)
+                responses = hook_self.local_worker.send_torch_command(
+                    recipient=worker,
+                    message=command,
+                )
 
                 if not isinstance(responses, list):
                     responses = [responses]
@@ -521,13 +590,17 @@ class TorchHook(BaseHook):
                         if registration is None:
                             pointers.append(var_data)
                         else:
-                            pointer = hook_self._assemble_result_pointer(registration,
-                                                                         torch_type,
-                                                                         var_data,
-                                                                         var_grad)
+                            pointer = hook_self._assemble_result_pointer(
+                                registration,
+                                torch_type,
+                                var_data,
+                                var_grad,
+                            )
                             pointers.append(pointer)
 
-                pointers = tuple(pointers) if len(pointers) > 1 else pointers[0]
+                pointers = tuple(pointers) if len(
+                    pointers,
+                ) > 1 else pointers[0]
 
                 return pointers, has_remote, multiple_owners
 
@@ -582,7 +655,9 @@ class TorchHook(BaseHook):
         except KeyError:
             raise TypeError(
                 "Tried to receive a non-Torch object of type {}.".format(
-                    torch_type))
+                    torch_type,
+                ),
+            )
 
         if var_data is not None:
             data = self._assemble_result_pointer(**var_data)
@@ -639,13 +714,13 @@ class TorchHook(BaseHook):
         """Overloads functions in the torch.nn.functional
 
         The way this is accomplished is by first moving all existing module functions in the torch
-        module to old_<function_name_here>. Thus, the real :func:`torch.nn.functional.relu` will become
-        :func:`torch.nn.functional.old_cat` and :func:`torch.cat` will have our hooking code. Generically,
-        this hooking code checks to see if the tensor is on the current worker (aka, we can read it)
-        or on a remote one (and we only have a pointer). If the data is local, then the method
-        will simply execute :func:`torch.old_cat`, but if the data for a tensor is remote, then
-        it will instead send a message to the remote machine instructing it to perform an arbitrary
-        command (:func:`torch.old_cat` on the remote machine).
+        module to old_<function_name_here>. Thus, the real :func:`torch.nn.functional.relu` will
+        become :func:`torch.nn.functional.old_cat` and :func:`torch.cat` will have our hooking code.
+        Generically, this hooking code checks to see if the tensor is on the current worker
+        (aka, we can read it) or on a remote one (and we only have a pointer). If the data is local,
+        then the method will simply execute :func:`torch.old_cat`, but if the data for a tensor is
+        remote, then it will instead send a message to the remote machine instructing it to perform
+        an arbitrary command (:func:`torch.old_cat` on the remote machine).
         """
 
         for attr in self.torch_functional_funcs:
@@ -671,8 +746,6 @@ class TorchHook(BaseHook):
                 setattr(torch.nn.functional, 'old_{}'.format(attr), lit)
                 setattr(torch.nn.functional, attr, new_attr)
 
-
-
     # ######## END GENERIC method/function hooking logic #########
     # ######## BEGIN torch TENSOR hooking #########
 
@@ -695,14 +768,16 @@ class TorchHook(BaseHook):
                 is_func = isinstance(lit, types.FunctionType)
                 try:
                     is_service_func = 'HookService' in lit.__qualname__
-                except:
+                except Exception:
                     is_service_func = False
                 is_old = re.match('old*', attr) is not None
 
                 # Where the overloading happens
                 if ((is_desc or (is_func and not is_service_func)) and not is_base and not is_old):
                     passer = utils.pass_method_args(lit)
-                    new_attr = self._get_overload_method_in_tensor_or_var(passer)
+                    new_attr = self._get_overload_method_in_tensor_or_var(
+                        passer,
+                    )
                     setattr(tensor_type, 'old_{}'.format(attr), lit)
                     setattr(tensor_type, attr, new_attr)
 
@@ -713,6 +788,7 @@ class TorchHook(BaseHook):
 
     def _hook_tensor___del__(hook_self, tensor_type):
         """Overloads tensor_type.__del__"""
+
         def new____del__(self, *args):
             print("deleting tensor")
 
@@ -727,7 +803,8 @@ class TorchHook(BaseHook):
             def new___new__(cls, *args, **kwargs):
                 result = cls.old___new__(cls, *args, **kwargs)
                 result = hook_self.local_worker.register_object(
-                    result, is_pointer=False)
+                    result, is_pointer=False,
+                )
                 cls.fixed_precision = False
                 return result
 
@@ -748,12 +825,14 @@ class TorchHook(BaseHook):
                     return "[{}.{} - Locations:{}]".format(
                         tensor_type.__module__,
                         tensor_type.__name__,
-                        self.owners)
+                        self.owners,
+                    )
 
             tensor_type.__repr__ = new___repr__
 
     def _hook_send_(hook_self, tensorvar_type):
         """Overloads the send methods"""
+
         def send_(self, workers, send_pointer=False):
             """Sends a Tensor or Variable object to a (sequence of) Grid workers.
 
@@ -766,20 +845,24 @@ class TorchHook(BaseHook):
             workers = hook_self.local_worker._check_workers(self, workers)
 
             for worker in workers:
-                hook_self.local_worker.send_obj(self,
-                                                worker,
-                                                send_pointer=send_pointer,
-                                                delete_local=not send_pointer)
+                hook_self.local_worker.send_obj(
+                    self,
+                    worker,
+                    send_pointer=send_pointer,
+                    delete_local=not send_pointer,
+                )
             if(not send_pointer):
                 if(tensorvar_type == torch.autograd.variable.Variable):
                     zeroed = self
                 else:
                     zeroed = self.old_set_(tensorvar_type(0))
 
-                self = hook_self.local_worker.register_object(obj=zeroed,
-                                                              id=self.id,
-                                                              owners=workers,
-                                                              is_pointer=True)
+                self = hook_self.local_worker.register_object(
+                    obj=zeroed,
+                    id=self.id,
+                    owners=workers,
+                    is_pointer=True,
+                )
                 if(tensorvar_type == torch.autograd.variable.Variable):
                     return hook_self._var_to_pointer(self)
                 else:
@@ -792,6 +875,7 @@ class TorchHook(BaseHook):
 
     def _hook_get_(hook_self, torch_type):
         """Overloads the get methods"""
+
         def get_(self, reduce=lambda x: x[0]):
             """Gets a Torch object from its current owners.
 
@@ -811,18 +895,21 @@ class TorchHook(BaseHook):
                                             to a single worker right now.')
             if hook_self.local_worker.id in self.owners:
 
-
                 return self
 
-            _out = hook_self.local_worker.request_obj(obj_id=self.id,
-                                                      recipient=self.owners[0])
+            _out = hook_self.local_worker.request_obj(
+                obj_id=self.id,
+                recipient=self.owners[0],
+            )
             x, request_obj_cleanup_method = _out
 
             hook_self.local_worker.register_object(x, id=x.id)
 
             _id = hook_self.local_worker.id  # for brevity
-            if (type(self) != torch.autograd.variable.Variable and
-                    type(self) != torch.nn.parameter.Parameter):
+            if (
+                type(self) != torch.autograd.variable.Variable and
+                type(self) != torch.nn.parameter.Parameter
+            ):
                 _os = self.old_set_(x.type(self.type()))
             else:
                 _os = self.old_set_(x.type(self.data.type()))  # for brevity
@@ -830,10 +917,11 @@ class TorchHook(BaseHook):
                 if (x.grad is not None):
                     self.grad = x.grad
 
-            self = hook_self.local_worker.register_object(_os,
-                                                          id=self.id,
-                                                          owners=[_id])
-
+            self = hook_self.local_worker.register_object(
+                _os,
+                id=self.id,
+                owners=[_id],
+            )
 
             return self
 
@@ -863,7 +951,7 @@ class TorchHook(BaseHook):
             is_func = isinstance(lit, types.FunctionType)
             try:
                 is_service_func = 'HookService' in lit.__qualname__
-            except:
+            except Exception:
                 is_service_func = False
             is_old = re.match('old*', attr) is not None
 
@@ -871,8 +959,10 @@ class TorchHook(BaseHook):
             if ((is_desc or (is_func and not is_service_func)) and not is_base and not is_old):
                 passer = utils.pass_method_args(lit)
                 new_attr = self._get_overload_method_in_tensor_or_var(passer)
-                setattr(torch.autograd.variable.Variable,
-                        'old_{}'.format(attr), lit)
+                setattr(
+                    torch.autograd.variable.Variable,
+                    'old_{}'.format(attr), lit,
+                )
                 setattr(torch.autograd.variable.Variable, attr, new_attr)
 
         self._hook_send_(torch.autograd.variable.Variable)
@@ -917,10 +1007,12 @@ class TorchHook(BaseHook):
                 if (not hasattr(self, 'owners')):
                     self.owners = [hook_self.local_worker.id]
 
-                self.old_data = hook_self.local_worker.register_object(obj=self.old_data,
-                                                                       owners=self.owners,
-                                                                       id=obj_id,
-                                                                       is_pointer=self.is_pointer)
+                self.old_data = hook_self.local_worker.register_object(
+                    obj=self.old_data,
+                    owners=self.owners,
+                    id=obj_id,
+                    is_pointer=self.is_pointer,
+                )
                 self.data_registered = True
 
             return self.old_data
@@ -1008,7 +1100,8 @@ class TorchHook(BaseHook):
 
             var_msg = {}
             var_msg['torch_type'] = re.search(
-                "<class '(.*)'>", str(self.__class__)).group(1)
+                "<class '(.*)'>", str(self.__class__),
+            ).group(1)
             var_msg['requires_grad'] = self.requires_grad
             var_msg['volatile'] = self.volatile
             var_msg['data'] = self.data.ser(include_data)
@@ -1029,23 +1122,30 @@ class TorchHook(BaseHook):
 
             if 'data' in obj_msg.keys():
                 data_msg = json.loads(obj_msg['data'])
-                tensor_type = hook_self.guard.types_guard(data_msg['torch_type'])
+                tensor_type = hook_self.guard.types_guard(
+                    data_msg['torch_type'],
+                )
                 data_obj = tensor_type.deser(tensor_type, data_msg)
                 # data_obj = hook_self.build_tensor(data_msg, tensor_type)
                 data = hook_self.local_worker.handle_register(
-                    data_obj, data_msg)
+                    data_obj, data_msg,
+                )
 
             if 'grad' in obj_msg.keys():
                 if obj_msg['grad'] is not None:
 
                     grad_msg = json.loads(obj_msg['grad'])
 
-                    var_type = hook_self.guard.types_guard(grad_msg['torch_type'])
+                    var_type = hook_self.guard.types_guard(
+                        grad_msg['torch_type'],
+                    )
                     grad_obj = hook_self._build_var(grad_msg, var_type)
 
-                    grad = hook_self.local_worker.handle_register(grad_obj, grad_msg,
-                                                                  force_attach_to_worker=False,
-                                                                  temporary=True)
+                    grad = hook_self.local_worker.handle_register(
+                        grad_obj, grad_msg,
+                        force_attach_to_worker=False,
+                        temporary=True,
+                    )
                 else:
                     grad = None
 
@@ -1054,8 +1154,10 @@ class TorchHook(BaseHook):
             if (self == torch.nn.parameter.Parameter):
                 var = self(data, requires_grad=obj_msg['requires_grad'])
             else:
-                var = self(data, volatile=obj_msg['volatile'],
-                           requires_grad=obj_msg['requires_grad'])
+                var = self(
+                    data, volatile=obj_msg['volatile'],
+                    requires_grad=obj_msg['requires_grad'],
+                )
 
             # var.grad = grad
             if (grad is not None):
@@ -1072,7 +1174,7 @@ class TorchHook(BaseHook):
         torch.autograd.variable.Variable.deser = deser
 
     def _var_to_pointer(self, var):
-        """Overloads var to pointer function to enable 
+        """Overloads var to pointer function to enable
         pointing to remote data
         """
         # recursively calls var_to_pointer in a depth first fashion
@@ -1096,7 +1198,8 @@ class TorchHook(BaseHook):
             data_obj = tensor_type.deser(tensor_type, data_msg)
             # data_obj = self.build_tensor(data_msg, tensor_type)
             data = self.local_worker.handle_register(
-                data_obj, data_msg, temporary=True)
+                data_obj, data_msg, temporary=True,
+            )
 
         if 'grad' in obj_msg.keys():
             if obj_msg['grad'] is not None:
@@ -1104,11 +1207,14 @@ class TorchHook(BaseHook):
                 var_type = self.guard.types_guard(grad_msg['torch_type'])
                 grad_obj = self._build_var(grad_msg, var_type)
                 grad = self.local_worker.handle_register(
-                    grad_obj, grad_msg, temporary=True)
+                    grad_obj, grad_msg, temporary=True,
+                )
             else:
                 grad = None
-        var = torch_type(data, volatile=obj_msg['volatile'],
-                         requires_grad=obj_msg['requires_grad'])
+        var = torch_type(
+            data, volatile=obj_msg['volatile'],
+            requires_grad=obj_msg['requires_grad'],
+        )
         var.grad = grad
         return var
 

@@ -30,7 +30,7 @@ class TestTorchHook(TestCase):
             'torch.CharTensor': torch.CharTensor,
             'torch.ShortTensor': torch.ShortTensor,
             'torch.IntTensor': torch.IntTensor,
-            'torch.LongTensor': torch.LongTensor
+            'torch.LongTensor': torch.LongTensor,
         }
 
         for k, v in tensor_types.items():
