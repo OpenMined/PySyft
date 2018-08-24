@@ -1,3 +1,4 @@
+import torch  # noqa: F401
 import json
 import numbers
 import random
