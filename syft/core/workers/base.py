@@ -1,8 +1,8 @@
 import torch  # noqa: F401
 import json
 import numbers
-import re
 import random
+import re
 from abc import ABC, abstractmethod
 
 from .. import utils
@@ -396,7 +396,10 @@ class BaseWorker(ABC):
         [torch.FloatTensor - Locations:[1]]
         """
 
-        return self._objects[int(remote_key)]
+        if isinstance(remote_key, int) or isinstance(remote_key, str):
+            return self._objects[remote_key]
+        else:
+            raise TypeError('Objects id must be int or str')
 
     def set_obj(self, remote_key, value, force=False, tmp=False):
         """
