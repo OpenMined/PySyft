@@ -73,24 +73,28 @@ class BaseWorker(ABC):
         self.id = id
 
         # a boolean which determines whether this worker is
-        # associeted with an end user client. If so, it assumes
-        # that the client will maintain control over when varialbes
+        # associated with an end user client. If so, it assumes
+        # that the client will maintain control over when variables
         # are instantiated or deleted as opposed to
         # handling tensor/variable/model lifecycle internally.
         self.is_client_worker = is_client_worker
 
-        # The workers permanenet registry. When the worker is NOT
+        # The workers permanent registry. When the worker is NOT
         # a client worker, it stores all tensors it receives
         #  or creates in this dictionary. The key to each object
         # is it's id.
         self._objects = {}
+        self._pointers = {known_worker.id: {} for known_worker in known_workers}
         for k, v in objects.items():
             self._objects[k] = v
+            # Register the pointer by location/id@location
+            if isinstance(v, sy._PointerTensor):
+                v.register_pointer()
 
         # The temporary registry. When the worker IS a client
         # worker, it stores some tensors temporarily in this
         # _tmp_objects simply to ensure that they do not get
-        # deallocated by the Python garbage collector while
+        # de-allocated by the Python garbage collector while
         # in the process of being registered. This dictionary
         # can be emptied using the clear_tmp_objects method.
         self._tmp_objects = {}
@@ -440,7 +444,7 @@ class BaseWorker(ABC):
           object to be stored in permenent memory, even if
           the current worker is a client worker (Default: False).
 
-        * **tmp (bobol, optional)** if set to True, this will allow an object
+        * **tmp (bool, optional)** if set to True, this will allow an object
           to be stored in temporary memory if and only if
           the worker is also a client worker. If set to false, the object
           will not be stored in temporary memory, even if the
@@ -455,6 +459,7 @@ class BaseWorker(ABC):
         if not self.is_client_worker or force:
             self._objects[remote_key] = value
 
+
     def rm_obj(self, remote_key):
         """
         This method removes an object from the permament object registory
@@ -464,8 +469,19 @@ class BaseWorker(ABC):
 
         * **remote_key(int or string)** the id of the object to be removed
         """
+
         if remote_key in self._objects:
+            obj = self._objects[remote_key]
+            if isinstance(obj, sy._PointerTensor):
+                pointer = obj
+                location = pointer.location if isinstance(pointer.location, (int, str)) else pointer.location.id
+                id_at_location = pointer.id_at_location
+                if location in self._pointers.keys():
+                    if id_at_location in self._pointers[location].keys():
+                        del self._pointers[location][id_at_location]
             del self._objects[remote_key]
+
+
 
     def _clear_tmp_objects(self):
         """
@@ -807,16 +823,22 @@ class BaseWorker(ABC):
         return object
 
     def get_pointer_to(self, location, id_at_location):
-        # TODO: instead of looping on the objects,
-        # with could keep a dict with keys = owners and subkeys id@loc
-        # Will be crucial when having lots of variables, but means it has to be updated
-        # every time you add or de register a pointer
+        # We keep a dict with keys = owners and subkeys id@loc : self._pointers[location][id@loc] = obj_id
+        # But it has to be updated every time you add, SEND or de_register a pointer
         if not isinstance(location, (int, str)):
             location = location.id
 
-        for key, syft_tensor in self._objects.items():
-            if isinstance(syft_tensor, sy._PointerTensor):
-                if syft_tensor.location.id == location \
-                        and syft_tensor.id_at_location == id_at_location:
-                    return syft_tensor
+        if location in self._pointers.keys():
+            if id_at_location in self._pointers[location].keys():
+                object_id = self._pointers[location][id_at_location]
+                # Note that the following condition can be false if you send multiple times a pointer,
+                # Because then we don't de-register the old pointer in self._pointers
+                if object_id in self._objects:
+                    return self._objects[object_id]
+
+        # for key, syft_tensor in self._objects.items():
+        #     if isinstance(syft_tensor, sy._PointerTensor):
+        #         if syft_tensor.location.id == location \
+        #                 and syft_tensor.id_at_location == id_at_location:
+        #             return syft_tensor
 
