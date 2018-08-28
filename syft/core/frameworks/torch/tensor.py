@@ -541,11 +541,23 @@ class _PointerTensor(_SyftTensor):
         self.id_at_location = id_at_location
         self.torch_type = torch_type
 
+        self.register_pointer()
+
         # pointers to themselves that get registered should trigger the flat
         # if it's not getting registered the pointer is probably about to be
         # sent over the wire
         if self.location == self.owner and not skip_register:
             logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
+
+    def register_pointer(self):
+        worker = self.owner
+        location = self.location.id
+        id_at_location = self.id_at_location
+        # Add the remote location worker key if needed
+        if location not in worker._pointers.keys():
+            worker._pointers[location] = {}
+        # Add the remote address
+        worker._pointers[location][id_at_location] = self.id
 
     @classmethod
     def handle_call(cls, syft_command, owner):

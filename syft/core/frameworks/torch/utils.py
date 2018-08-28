@@ -166,7 +166,7 @@ def get_connected_variables(variable):
     Return all variables involved in the backward process,
     using the auxiliary get_variables_in_backward_graph function
     """
-    variables, _ = get_variables_in_backward_graph(variable.grad_fn)
+    variables, _ = get_variables_in_backward_graph(variable.grad_fn, [], set())
     return variables
 
 
@@ -174,7 +174,6 @@ def get_variables_in_backward_graph(var, nodes=[], seen=set()):
     if var not in seen:
         if torch.is_tensor(var):
             logging.warning('Shouldnt access tensors')
-            nodes.append(('tensor', id(var), 'syft.id:', var.id))  # id(var)
         elif hasattr(var, 'variable'):
             u = var.variable
             nodes.append(u.id)  # id(var), id(u)
@@ -232,7 +231,7 @@ def assert_has_only_torch_tensorvars(obj):
     at his 'roots', ie head of chain
     Is useful for development.
     """
-    if isinstance(obj, (int, float, str)):
+    if isinstance(obj, (int, float, str, slice)):
         return True
     elif is_tensor(obj):
         return True
@@ -244,7 +243,7 @@ def assert_has_only_torch_tensorvars(obj):
     elif isinstance(obj, dict):
         rep = [assert_has_only_torch_tensorvars(o) for o in obj.values()]
         return all(rep)
-    elif isinstance(obj, slice):
+    elif callable(obj):
         return True
     elif obj is None:
         return True
@@ -258,7 +257,7 @@ def assert_has_only_syft_tensors(obj):
     at his 'roots', ie head of chain
     Is useful for development.
     """
-    if isinstance(obj, (int, float, str)):
+    if isinstance(obj, (int, float, str, slice)):
         return True
     elif issubclass(obj.__class__, sy._SyftTensor):
         return True
@@ -268,7 +267,7 @@ def assert_has_only_syft_tensors(obj):
     elif isinstance(obj, dict):
         rep = [assert_has_only_syft_tensors(o) for o in obj.values()]
         return all(rep)
-    elif isinstance(obj, slice):
+    elif callable(obj):
         return True
     elif obj is None:
         return True
