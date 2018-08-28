@@ -188,8 +188,8 @@ class TestChainTensor(TestCase):
         z.backward()
 
         # cut chain for the equality check
-        x.grad.get()
-        x.grad.data.child = x.grad.data.child.child
+        x.get()
+        x.child = x.child.child
         assert torch.equal(x.grad.data, torch.FloatTensor([1, 1]))
 
 

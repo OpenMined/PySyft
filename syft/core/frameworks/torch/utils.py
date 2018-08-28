@@ -166,7 +166,7 @@ def get_connected_variables(variable):
     Return all variables involved in the backward process,
     using the auxiliary get_variables_in_backward_graph function
     """
-    variables, _ = get_variables_in_backward_graph(variable.grad_fn)
+    variables, _ = get_variables_in_backward_graph(variable.grad_fn, [], set())
     return variables
 
 
@@ -174,7 +174,6 @@ def get_variables_in_backward_graph(var, nodes=[], seen=set()):
     if var not in seen:
         if torch.is_tensor(var):
             logging.warning('Shouldnt access tensors')
-            nodes.append(('tensor', id(var), 'syft.id:', var.id))  # id(var)
         elif hasattr(var, 'variable'):
             u = var.variable
             nodes.append(u.id)  # id(var), id(u)
