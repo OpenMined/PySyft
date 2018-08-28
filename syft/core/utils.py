@@ -120,7 +120,11 @@ class PythonJSONDecoder(json.JSONDecoder):
                 # Case of a tensor or a Variable
                 if obj_type in map(lambda x: x.__name__, self.tensorvar_types):
                     pattern_var = re.compile('_fl.(.*)')
-                    id = int(pattern_var.search(obj).group(1))
+                    id_pattern=pattern_var.search(obj).group(1)
+                    try:
+                        id = int(id_pattern)
+                    except ValueError:
+                        id = str(id_pattern)
                     return self.worker.get_obj(id)
                 # Case of a iter type non json serializable
                 elif obj_type in ('tuple', 'set', 'bytearray', 'range'):
