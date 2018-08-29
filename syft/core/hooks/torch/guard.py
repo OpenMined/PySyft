@@ -1,5 +1,5 @@
 import torch
-
+import json
 
 class TorchGuard():
 
@@ -37,22 +37,20 @@ class TorchGuard():
 
         * **out (a torch type)** The type the string refersto (if it's present in the
           acceptible list self.map_torch_type)
-
-        :Example:
-
-        >>> from syft.core.hooks import TorchHook
-        >>> hook = TorchHook()
-        Hooking into Torch...
-        Overloading Complete.
-        >>> torch_type = hook.types_guard('torch.FloatTensor')
-        >>> x = torch_type([1,2,3,4,5])
-        >>> x
-         1
-         2
-         3
-         4
-         5
-        [torch.FloatTensor of size 5]
+          :Example:
+           >>> from syft.core.hooks import TorchHook
+           >>> hook = TorchHook()
+           Hooking into Torch...
+           Overloading Complete.
+           >>> torch_type = hook.types_guard('torch.FloatTensor')
+           >>> x = torch_type([1,2,3,4,5])
+           >>> x
+           1
+           2
+           3
+           4
+           5
+           [torch.FloatTensor of size 5]
         """
         try:
             return self.map_torch_type[torch_type_str]
@@ -63,11 +61,28 @@ class TorchGuard():
                 ),
             )
 
-    def tensor_contents_guard(self, contents):
+
+    def tensor_contents_guard(self,contents):
         """tensor_contents_guard(contents) -> contents
-        TODO: check to make sure the incoming list isn't dangerous to use for
+        check to make sure the incoming list isn't dangerous to use for
                constructing a tensor (likely non-trivial). Accepts the list of JSON objects
-               and returns the list of JSON ojects. Should throw and exception if there's a
+               and returns the list of JSON ojects. Throws an exception if there's a
                security concern.
         """
+        
+        is_instance = lambda tensor : all(isinstance(digit, (int, float, bool)) for digit in tensor)
+        assert type(contents) in (list,tuple) , "A list of JSON objects is expected"
+        for json_object in contents : 
+            try :
+                json_object = json.loads(json_object)
+            except Exception as e:
+                print(e)
+            assert (len(json_object) == 1) , "Expects JSON as { 'Tensor' : ( [Values] ,[Values] , ... ) }"
+            Tensor_Values = list(json_object.values())
+            for tensor in Tensor_Values[0]:
+                if is_instance(tensor) == False:
+                    raise Exception("Values are expected to be in dtype int , bool , float")
+            tensor_length = map(len,Tensor_Values[0])
+            assert len(set(tensor_length)) == 1 , "Tensor dimensions are not same, can't be stacked" 
         return contents
+
