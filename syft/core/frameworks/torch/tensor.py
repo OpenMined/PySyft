@@ -95,8 +95,11 @@ class _SyftTensor(object):
         if result is None:
             return result
 
-        # Insert the new node just before the wrapper
-        syft_response = cls.syft_wrap(result, owner)
+        if not isinstance(result, (int, float, str, bool)):
+            # Insert the new node just before the wrapper
+            syft_response = cls.syft_wrap(result, owner)
+        else:
+            syft_response = result
 
         return syft_response
 
