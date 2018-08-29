@@ -40,7 +40,7 @@ def get_child_command(obj, child_types=[]):
     if (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)) and not isinstance(obj, str):
         obj_type = type(obj.child)
         # We identify Parameter type with Variable type since they are quite close
-        # (See test_operation_with_variable_and_parameter)
+        # TODO: What are the risks due to this assimilation? (see usage @ torch/utils.py l.74)
         if obj_type is sy.Parameter:
             obj_type = sy.Variable
         return obj.child, [obj_type]
@@ -74,6 +74,7 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
     next_command, next_child_types = get_child_command(command)
 
     # Check that the next child type of all tensorvar is the same
+    # TODO: should allow to mix Variable and Parameter in next_child_types
     if len(next_child_types) == 0:
         ref_child_type = sy._LocalTensor
     else:

@@ -143,7 +143,7 @@ class SocketWorker(BaseWorker):
                     message = self._process_buffer(connection)
 
                     # process message and generate response
-                    response = self.receive_msg(message, False)
+                    response = self.receive_msg(message).decode()
 
                     if(response[-1] != "\n"):
                         response += "\n"
