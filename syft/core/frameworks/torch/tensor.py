@@ -6,6 +6,7 @@ import syft as sy
 from ... import utils
 from . import utils as torch_utils
 import logging
+import numpy as np
 
 
 class _SyftTensor(object):
@@ -371,12 +372,14 @@ class _LocalTensor(_SyftTensor):
         # TODO : control registration process
         if response is None:
             return response
-        
-        if isinstance(response, (int, float, bool)):
 
-            if owner.id != owner.hook.local_worker.id:
+        if owner.id != owner.hook.local_worker.id:
+            if isinstance(response, (int, float, bool)):
                 response = sy.zeros(1) + response
-            else:
+            elif isinstance(response, (np.ndarray, )):
+                response = sy.FloatTensor(response)
+        else:
+            if isinstance(response, (int, float, bool, np.ndarray)):
                 return response
 
         # If the command is an in-place method, wrap self and return

@@ -3,6 +3,7 @@ import json
 import re
 import types
 import functools
+import numpy as np
 import logging
 import torch
 import syft
@@ -25,6 +26,7 @@ def extract_type_and_obj(dct):
         else:
             raise TypeError('Key', key, 'is not recognized.')
 
+
 def get_child_command(obj, child_types=[]):
     """
     Analyse a Python object (generally dict with a command and arguments,
@@ -36,7 +38,12 @@ def get_child_command(obj, child_types=[]):
     """
     # Torch tensor or variable, or sy._SyftTensor
     if (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)) and not isinstance(obj, str):
-        return obj.child, [type(obj.child)]
+        obj_type = type(obj.child)
+        # We identify Parameter type with Variable type since they are quite close
+        # (See test_operation_with_variable_and_parameter)
+        if obj_type is sy.Parameter:
+            obj_type = sy.Variable
+        return obj.child, [obj_type]
     # List or iterables which could contain tensors
     elif isinstance(obj, (list, tuple, set, bytearray, range)):
         children = []
@@ -128,7 +135,7 @@ def wrap_command(obj):
     Returns the wrapper
     """
     # for numeric values for instance, don't add a wrapper
-    if isinstance(obj, (int, float, bool, str)) or obj is None:
+    if isinstance(obj, (int, float, bool, str, np.ndarray)) or obj is None:
         return obj
     # Torch tensor or variable
     elif is_tensor(obj) or is_variable(obj):

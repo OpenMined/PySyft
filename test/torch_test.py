@@ -610,6 +610,12 @@ class TestTorchVariable(TestCase):
         assert model.data.id == original_data_id
         assert model.grad.data.id == original_grad_id
 
+    def test_operation_with_variable_and_parameter(self):
+        x = sy.Parameter(sy.FloatTensor([1]))
+        y = sy.Variable(sy.FloatTensor([1]))
+        z = x * y
+        assert torch.equal(z, sy.Variable(sy.FloatTensor([1])))
+
     def test_send_var_with_gradient(self):
 
         # For now, we assume that var.grad.data does not get allocated
