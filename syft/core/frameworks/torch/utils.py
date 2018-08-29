@@ -3,6 +3,7 @@ import json
 import re
 import types
 import functools
+import numpy as np
 import logging
 import torch
 import syft
@@ -134,7 +135,7 @@ def wrap_command(obj):
     Returns the wrapper
     """
     # for numeric values for instance, don't add a wrapper
-    if isinstance(obj, (int, float, bool, str)) or obj is None:
+    if isinstance(obj, (int, float, bool, str, np.ndarray)) or obj is None:
         return obj
     # Torch tensor or variable
     elif is_tensor(obj) or is_variable(obj):
