@@ -1,4 +1,4 @@
-import torch
+dmport torch
 import random
 import inspect
 import re
@@ -8,7 +8,7 @@ import syft as sy
 from ... import workers
 from ... import utils
 from . import utils as torch_utils
-from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor, _TorchTensor
+from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _GeneralizedPointerTensor,_FixedPrecisionTensor, _TorchTensor
 from .tensor import _TorchVariable
 
 
@@ -134,6 +134,8 @@ class TorchHook(object):
         self._hook_SyftTensor(tensor_type)
 
         self._hook_PointerTensor(tensor_type)
+        self._hook_GeneralizedPointerTensor(tensor_type)
+
 
     def _add_registration_to___init__(hook_self, tensorvar_type, register_child_instead=False):
         """Overloads tensor_type.__new__ or Variable.__new__"""
@@ -399,6 +401,14 @@ class TorchHook(object):
             # if attr not in dir(_PointerTensor) or getattr(_PointerTensor, attr) is None:
 
             setattr(_PointerTensor, attr, self._get_overloaded_method(attr))
+    def _hook_GeneralizedPointerTensor(self, tensor_type):
+
+        for attr in self.to_auto_overload[tensor_type]:
+            # # if we haven't already overloaded this method
+            # if attr not in dir(_GeneralizedPointerTensor) or getattr(_GeneralizedPointerTensor, attr) is None:
+
+            setattr(_GeneralizedPointerTensor, attr, self._get_overloaded_method(attr))
+
 
     def _get_overloaded_method(hook_self, attr):
         """

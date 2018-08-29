@@ -1,5 +1,5 @@
 import torch
-
+from ../core/frameworks/torch/tensor import _GeneralizedPointerTensor
 BASE = 10
 KAPPA = 3  # ~29 bits
 
@@ -41,16 +41,11 @@ def reconstruct(shares):
     return sum(shares) % field
 
 
-def swap_shares(share, interface):
-    share_other = torch.LongTensor(share.shape).zero_()
-    if (interface.get_party() == 0):
-        interface.send(share)
-        share_other = interface.recv(share_other)
-    elif (interface.get_party() == 1):
-        share_other = interface.recv(share_other)
-        interface.send(share)
-    return share_other
-
+def swap_shares(shares):
+    new_shares = {}
+    for i, share in enumerate(shares);
+        new_shares[share] = shares.items[i-1]
+    return new_shares
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL):
     if (interface.get_party() == 0):
@@ -80,39 +75,40 @@ def generate_mul_triple(m, n):
     return r, s, t
 
 
-def generate_mul_triple_communication(m, n, interface):
-    if (interface.get_party() == 0):
+def generate_mul_triple_communication(m, n, alice, bob):
         r, s, t = generate_mul_triple(m, n)
 
         r_alice, r_bob = share(r)
         s_alice, s_bob = share(s)
         t_alice, t_bob = share(t)
 
-        swap_shares(r_bob, interface)
-        swap_shares(s_bob, interface)
-        swap_shares(t_bob, interface)
+        r_alice.send(alice)
+        r_bob.send(bob)
 
-        triple_alice = [r_alice, s_alice, t_alice]
-        return triple_alice
-    elif (interface.get_party() == 1):
-        r_bob = swap_shares(torch.LongTensor(m, n).zero_(), interface)
-        s_bob = swap_shares(torch.LongTensor(m, n).zero_(), interface)
-        t_bob = swap_shares(torch.LongTensor(m, n).zero_(), interface)
-        triple_bob = [r_bob, s_bob, t_bob]
-        return triple_bob
+        s_alice.send(alice)
+        s_bob.send(bob)
+
+        t_alice.send(alice)
+        t_bob.send(bob)
+
+        gp_r = _GeneralizePointerTensor({alice: r_alice, bob: r_bob})
+        gp_s = _GeneralizePointerTensor({alice: s_alice, bob: s_bob})
+        gp_t = _GeneralizePointerTensor({alice: t_alice, bob: t_bob})
+        triple_alice = [gp_r, gp_s, gp_t]
+        return triple
 
 
-def spdz_mul(x, y, interface):
+def spdz_mul(x, y, alice, bob):
     if x.shape != y.shape:
         raise ValueError()
     m, n = x.shape
-    triple = generate_mul_triple_communication(m, n, interface)
+    triple = generate_mul_triple_communication(m, n, alice, bob)
     a, b, c = triple
     d = (x - a) % field
     e = (y - b) % field
 
-    d_other = swap_shares(d, interface)
-    e_other = swap_shares(e, interface)
+    d_other = swap_shares(d)
+    e_other = swap_shares(e)
     delta = (d + d_other) % field
     epsilon = (e + e_other) % field
     r = delta * epsilon

@@ -583,3 +583,52 @@ def is_variable(obj):
         if isinstance(obj, tuple(torch.var_types)):
             return True
     return False
+
+def split_to_pointer_commands(syft_command):
+    # this method breaks for any command which the first argument is not a tensor
+    # such as cat. This will be fixed later
+
+    # This functionality sets up the dictionary of commands based on worker id
+    if syft_command['has_self']:
+        commands = {
+            worker_id : {
+                'has_self': syft_command['has_self'],
+                'self': syft_command['self'].pointer_tensor_dict[worker_id],
+                'kwargs' :{},
+                'command' : syft_command['command'],
+            } for worker_id in syft_command['self'].pointer_tensor_dict
+        }
+        if isinstance(syft_command['args'][0], _GeneralizedPointerTensor):
+            for worker_id in commands:
+                commands['args'] = [syft_command['args'][0].pointer_tensor_dict[worker_id]]
+        else:
+            for worker_id in commands:
+                commands['args'] = [syft_command['args'][0]]
+    else:
+        commands = {
+            worker_id : {
+                'args': [syft_command['args'][0][worker_id]],
+                'has_self': False,
+                'self' : None,
+                'kwargs' : {},
+                'command' : syft_command['command'],
+            } for worker_id in syft_command
+
+    # After the dict is set up, we itterate over the args and kwargs to split up all that are
+    # generalized pointer tensors into single pointers
+
+    for arg in syft_command['args'][1:]:
+        if isinstance(arg, _GeneralizedPointerTensor):
+            for worker_id in commands:
+                commands['args'][worker_id].append(arg.pointer_tensor_dict[worker_id])
+        else:
+            for worker_id in commands:
+                commands['args'][worker_id].append(arg)
+    for kwarg in syft_command['kwargs']:
+        if isinstance(arg, _GeneralizedPointerTensor):
+            for worker_id in commands:
+                commands['kwargs'][worker_id].update({kwarg: syft_command[kwarg].pointer_tensor_dict[worker_id]})
+        else:
+            for worker_id in commands:
+                commands['kwargs'][worker_id].update({kwarg: syft_command[kwarg]})
+    return commands

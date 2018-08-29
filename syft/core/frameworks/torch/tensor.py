@@ -567,24 +567,15 @@ class _MPCTensor(_SyftTensor):
     Converts all add operations into sub/minus ones.
     """
 
-    def __init__(self, var, *args, **kwargs):
+    def __init__(self, shares, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.var = var
-
-    def share(self, var, n):
-        assert n == 2
-        data_shares = spdz.share(var.data)
-        shares = [
-            sy.Variable(data)
-            for data in data_shares
-        ]
-        return shares
-
+        self.shares = shares # shares is a _GeneralizedPointerTensor
 
 
     # The table of command you want to replace
     substitution_table = {
-        'torch.add': 'torch.add'
+        'torch.add': 'torch.add',
+        'torch.mul': 'torch.mul',
     }
 
     class overload_functions:
@@ -596,20 +587,22 @@ class _MPCTensor(_SyftTensor):
         @staticmethod
         def get(attr):
             attr = attr.split('.')[-1]
-            return getattr(sy._PlusIsMinusTensor.overload_functions, attr)
+            return getattr(sy._MPCTensor.overload_functions, attr)
 
     # Put here all the methods you want to overload
 
-    def add(self, other):
-        shares = []
-        for share1, share2 in zip(self.shares, other.shares):
-            shares.append(spdz.spdz_add(share1, share2))
-        response = _MPCTensor(None)
-        response.n_workers = self.n_workers
-        response.workers = self.workers
-        response.shares = shares
+      def add(self, other):
+        # gp_ stands for GeneralizedPointer
+        gp_response = spdz.spdz_add(self.shares, other.shares)
+        response = _MPCTensor(gp_response
+        # response.shares = shares
         return response
 
+    def mul(self, other):
+        gp_response = spdz.spdz_mul(self.shares, other.shares)
+        response = _MPCTensor(gp_response)
+        return response
+       
     def send(self, workers):
         self.n_workers = len(workers)
         self.shares = self.share(self.var, self.n_workers)
@@ -625,6 +618,19 @@ class _MPCTensor(_SyftTensor):
         self.var = var
         return var
 
+class _GeneralizedPointerTensor(_SyftTensor):
+
+    def __init__(self, pointer_tensor_dict, parent, torch_type, id = None, owner=None, skip_register=False):
+         super().__init__(child=None, parent=parent, torch_type=torch_type, owner=owner, id=id,
+                         skip_register=skip_register)
+         self.pointer_tensor_dict = pointer_tensor_dict
+    
+    @classmethod
+    def handle_call(cls, syft_command, owner):
+        commands = torch_utils.split_to_pointer_commands(syft_command)
+        result_dict = {worker_id:_PointerTensor.handle_call(commands[worker_id], owner) for worker_id in commands}
+        #TODO: @trask @theo could you take a look at this if you have better ideas on how to get these parameters
+        return _GeneralizedPointerTensor(result_dict, None, None, id=None, owner=owner, skip_register=False)
 
 class _PointerTensor(_SyftTensor):
 
