@@ -4,7 +4,6 @@ import re
 import types
 import functools
 import logging
-<<<<<<< HEAD
 import torch
 import syft
 import syft as sy
@@ -18,10 +17,6 @@ def is_in_place_method(attr):
     """
     pat = re.compile('__(.+)__')
     return pat.search(attr) is None and attr[-1] == '_'
-=======
->>>>>>> master
-
-import torch
 
 class PythonEncoder():
     """
