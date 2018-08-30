@@ -1,6 +1,6 @@
 # PySyft - old master
 
-This is a reference branch before a large refactor. 
+This is a reference branch before a large refactor
 
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master)
 [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=master)](https://travis-ci.org/OpenMined/PySyft)
