@@ -1,0 +1,271 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>syft.core.utils &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="syft.core.workers" href="syft.core.workers.html" />
+    <link rel="prev" title="syft.core.frameworks.torch" href="syft.core.frameworks.torch.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PySyft
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="syft.core.frameworks.torch.html">syft.core.frameworks.torch</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">syft.core.utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.workers.html">syft.core.workers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>syft.core.utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_autosummary/syft.core.utils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-syft.core.utils">
+<span id="syft-core-utils"></span><h1>syft.core.utils<a class="headerlink" href="#module-syft.core.utils" title="Permalink to this headline">¶</a></h1>
+<p>Framework agnostic static utility functions.</p>
+<p class="rubric">Functions</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.utils.is_in_place_method" title="syft.core.utils.is_in_place_method"><code class="xref py py-obj docutils literal"><span class="pre">is_in_place_method</span></code></a>(attr)</td>
+<td>Determines if the method is in-place (ie modifies the self)</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.utils.map_dict" title="syft.core.utils.map_dict"><code class="xref py py-obj docutils literal"><span class="pre">map_dict</span></code></a>(hook,&nbsp;kwargs,&nbsp;func)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.utils.map_tuple" title="syft.core.utils.map_tuple"><code class="xref py py-obj docutils literal"><span class="pre">map_tuple</span></code></a>(hook,&nbsp;args,&nbsp;func)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.utils.pass_func_args" title="syft.core.utils.pass_func_args"><code class="xref py py-obj docutils literal"><span class="pre">pass_func_args</span></code></a>(func)</td>
+<td>Wrapper gathering partial object from function call.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.utils.pass_method_args" title="syft.core.utils.pass_method_args"><code class="xref py py-obj docutils literal"><span class="pre">pass_method_args</span></code></a>(method)</td>
+<td>Wrapper gathering partialmethod object from method call.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.utils.PythonEncoder" title="syft.core.utils.PythonEncoder"><code class="xref py py-obj docutils literal"><span class="pre">PythonEncoder</span></code></a>([retrieve_tensorvar])</td>
+<td>Encode python and torch objects to be JSON-able In particular, (hooked) Torch objects are replaced by their id.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../_modules/syft.core.html#syft.core.utils.PythonJSONDecoder" title="syft.core.utils.PythonJSONDecoder"><code class="xref py py-obj docutils literal"><span class="pre">PythonJSONDecoder</span></code></a>(worker,&nbsp;*args,&nbsp;**kwargs)</td>
+<td>Decode JSON and reinsert python types when needed</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="syft.core.workers.html" class="btn btn-neutral float-right" title="syft.core.workers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="syft.core.frameworks.torch.html" class="btn btn-neutral" title="syft.core.frameworks.torch" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1',
+            LANGUAGE:'python',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,312 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>syft.mpc.interface package &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PySyft
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.frameworks.torch.html">syft.core.frameworks.torch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.utils.html">syft.core.utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.workers.html">syft.core.workers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>syft.mpc.interface package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/syft.mpc.interface.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="syft-mpc-interface-package">
+<h1>syft.mpc.interface package<a class="headerlink" href="#syft-mpc-interface-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-syft.mpc.interface.base_interface">
+<span id="syft-mpc-interface-base-interface-module"></span><h2>syft.mpc.interface.base_interface module<a class="headerlink" href="#module-syft.mpc.interface.base_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.mpc.interface.base_interface.BaseInterface">
+<em class="property">class </em><code class="descclassname">syft.mpc.interface.base_interface.</code><code class="descname">BaseInterface</code><span class="sig-paren">(</span><em>party</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.base_interface.BaseInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">abc.ABC</span></code></p>
+<dl class="method">
+<dt id="syft.mpc.interface.base_interface.BaseInterface.get_party">
+<code class="descname">get_party</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.base_interface.BaseInterface.get_party" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.mpc.interface.base_interface.BaseInterface.recv">
+<code class="descname">recv</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.base_interface.BaseInterface.recv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.mpc.interface.base_interface.BaseInterface.send">
+<code class="descname">send</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.base_interface.BaseInterface.send" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.mpc.interface.distributed_interface">
+<span id="syft-mpc-interface-distributed-interface-module"></span><h2>syft.mpc.interface.distributed_interface module<a class="headerlink" href="#module-syft.mpc.interface.distributed_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.mpc.interface.distributed_interface.DistributedInterface">
+<em class="property">class </em><code class="descclassname">syft.mpc.interface.distributed_interface.</code><code class="descname">DistributedInterface</code><span class="sig-paren">(</span><em>party</em>, <em>master_addr='127.0.0.1'</em>, <em>master_port='29500'</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.distributed_interface.DistributedInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="syft.mpc.interface.distributed_interface.DistributedInterface.get_party">
+<code class="descname">get_party</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.distributed_interface.DistributedInterface.get_party" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.mpc.interface.distributed_interface.DistributedInterface.recv">
+<code class="descname">recv</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.distributed_interface.DistributedInterface.recv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.mpc.interface.distributed_interface.DistributedInterface.send">
+<code class="descname">send</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.distributed_interface.DistributedInterface.send" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.mpc.interface.grid_client_interface">
+<span id="syft-mpc-interface-grid-client-interface-module"></span><h2>syft.mpc.interface.grid_client_interface module<a class="headerlink" href="#module-syft.mpc.interface.grid_client_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.mpc.interface.grid_client_interface.GridClientInterface">
+<em class="property">class </em><code class="descclassname">syft.mpc.interface.grid_client_interface.</code><code class="descname">GridClientInterface</code><span class="sig-paren">(</span><em>party</em>, <em>grid_client</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_client_interface.GridClientInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.mpc.interface.base_interface.BaseInterface" title="syft.mpc.interface.base_interface.BaseInterface"><code class="xref py py-class docutils literal"><span class="pre">syft.mpc.interface.base_interface.BaseInterface</span></code></a></p>
+<dl class="method">
+<dt id="syft.mpc.interface.grid_client_interface.GridClientInterface.recv">
+<code class="descname">recv</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_client_interface.GridClientInterface.recv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.mpc.interface.grid_client_interface.GridClientInterface.send">
+<code class="descname">send</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_client_interface.GridClientInterface.send" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.mpc.interface.grid_worker_interface">
+<span id="syft-mpc-interface-grid-worker-interface-module"></span><h2>syft.mpc.interface.grid_worker_interface module<a class="headerlink" href="#module-syft.mpc.interface.grid_worker_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.mpc.interface.grid_worker_interface.GridWorkerInterface">
+<em class="property">class </em><code class="descclassname">syft.mpc.interface.grid_worker_interface.</code><code class="descname">GridWorkerInterface</code><span class="sig-paren">(</span><em>party</em>, <em>grid_worker</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_worker_interface.GridWorkerInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.mpc.interface.base_interface.BaseInterface" title="syft.mpc.interface.base_interface.BaseInterface"><code class="xref py py-class docutils literal"><span class="pre">syft.mpc.interface.base_interface.BaseInterface</span></code></a></p>
+<dl class="method">
+<dt id="syft.mpc.interface.grid_worker_interface.GridWorkerInterface.recv">
+<code class="descname">recv</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_worker_interface.GridWorkerInterface.recv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.mpc.interface.grid_worker_interface.GridWorkerInterface.send">
+<code class="descname">send</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.mpc.interface.grid_worker_interface.GridWorkerInterface.send" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.mpc.interface">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-syft.mpc.interface" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1',
+            LANGUAGE:'python',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
