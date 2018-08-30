@@ -25,7 +25,7 @@ install:
 
     - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytorch=0.3.1 scipy jupyter -c pytorch
     - source activate test-environment
-    - pip install https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.8.0-py3-none-any.whl
+    - conda install -c conda-forge tensorflow
     - pip install -r requirements.txt
     - pip install flake8
     - pip install flake8-docstrings
