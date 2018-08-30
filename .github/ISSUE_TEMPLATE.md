@@ -46,5 +46,5 @@ Please include any relevant log snippets or files here.
 
 ### Relevant Literature or Examples (for features)
 * [How to Add a function to FloatTensor - Implementing a Function](https://docs.google.com/document/d/1WRd7gGLFN0Awtf86AICYIHtg3gfFWLBa5wYTthsB3i0/)
-* Please provide here an example of where a similar feature has already been implemented. 
+* Please provide here an example of where a similar feature has already been implemented.
 * Provide links to libraries which might be helpful for beginners who are trying to tackle this issue.

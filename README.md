@@ -1,5 +1,3 @@
-# PySyft - old master
-
 This is a reference branch before a large refactor
 
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master)
@@ -24,8 +22,8 @@ scripts/run_docker.sh
 ```
 > Image size: 769.4MB
 
-The container mount the examples folder on a volume so every change on the notebooks is persistent. 
-Furthermore the container is deleted when it is stopped, in a way to facilitate development. You just have to change PySyft code, and run the run_docker.sh script to observe changes you've made on notebooks. 
+The container mount the examples folder on a volume so every change on the notebooks is persistent.
+Furthermore the container is deleted when it is stopped, in a way to facilitate development. You just have to change PySyft code, and run the run_docker.sh script to observe changes you've made on notebooks.
 ## Installation
 > PySyft supports Python >= 3.6 and PyTorch 0.3.1
 

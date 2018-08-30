@@ -4,8 +4,20 @@ import re
 import types
 import functools
 import logging
-
 import torch
+import syft
+import syft as sy
+
+from .frameworks.torch import encode
+
+def is_in_place_method(attr):
+    """
+    Determines if the method is in-place (ie modifies the self)
+    TODO: Can you do better?
+    """
+    pat = re.compile('__(.+)__')
+    return pat.search(attr) is None and attr[-1] == '_'
+
 
 class PythonEncoder():
     """
@@ -13,19 +25,22 @@ class PythonEncoder():
         In particular, (hooked) Torch objects are replaced by their id.
         Note that a python object is returned, not JSON.
     """
+
     def __init__(self, retrieve_tensorvar=False):
         self.retrieve_tensorvar = retrieve_tensorvar
         self.found_tensorvar = []
-        self.tensorvar_types = tuple([torch.autograd.Variable,
-                                     torch.nn.Parameter,
-                                     torch.FloatTensor,
-                                     torch.DoubleTensor,
-                                     torch.HalfTensor,
-                                     torch.ByteTensor,
-                                     torch.CharTensor,
-                                     torch.ShortTensor,
-                                     torch.IntTensor,
-                                     torch.LongTensor])
+        self.tensorvar_types = tuple([
+            torch.autograd.Variable,
+            torch.nn.Parameter,
+            torch.FloatTensor,
+            torch.DoubleTensor,
+            torch.HalfTensor,
+            torch.ByteTensor,
+            torch.CharTensor,
+            torch.ShortTensor,
+            torch.IntTensor,
+            torch.LongTensor,
+        ])
 
     def encode(self, obj, retrieve_tensorvar=None):
         """
@@ -48,18 +63,18 @@ class PythonEncoder():
             if self.retrieve_tensorvar:
                 self.found_tensorvar.append(obj)
             key = '__'+type(obj).__name__+'__'
-            return { key: '_fl.{}'.format(obj.id) }
+            return {key: '_fl.{}'.format(obj.id)}
         # Lists
         elif isinstance(obj, list):
             return [self.python_encode(i) for i in obj]
         # Iterables non json-serializable
         elif isinstance(obj, (tuple, set, bytearray, range)):
             key = '__'+type(obj).__name__+'__'
-            return {key:[self.python_encode(i) for i in obj]}
+            return {key: [self.python_encode(i) for i in obj]}
         # Slice
         elif isinstance(obj, slice):
             key = '__'+type(obj).__name__+'__'
-            return { key: { 'args': [obj.start, obj.stop, obj.step]}}
+            return {key: {'args': [obj.start, obj.stop, obj.step]}}
         # Dict
         elif isinstance(obj, dict):
             return {
@@ -74,25 +89,31 @@ class PythonEncoder():
         else:
             raise ValueError('Unhandled type', type(obj))
 
+
 class PythonJSONDecoder(json.JSONDecoder):
     """
         Decode JSON and reinsert python types when needed
         Retrieve Torch objects replaced by their id
     """
+
     def __init__(self, worker, *args, **kwargs):
-        super(PythonJSONDecoder, self).__init__(*args,
-            object_hook=self.custom_obj_hook, **kwargs)
+        super(PythonJSONDecoder, self).__init__(
+            *args,
+            object_hook=self.custom_obj_hook, **kwargs
+        )
         self.worker = worker
-        self.tensorvar_types = tuple([torch.autograd.Variable,
-                                     torch.nn.Parameter,
-                                     torch.FloatTensor,
-                                     torch.DoubleTensor,
-                                     torch.HalfTensor,
-                                     torch.ByteTensor,
-                                     torch.CharTensor,
-                                     torch.ShortTensor,
-                                     torch.IntTensor,
-                                     torch.LongTensor])
+        self.tensorvar_types = tuple([
+            torch.autograd.Variable,
+            torch.nn.Parameter,
+            torch.FloatTensor,
+            torch.DoubleTensor,
+            torch.HalfTensor,
+            torch.ByteTensor,
+            torch.CharTensor,
+            torch.ShortTensor,
+            torch.IntTensor,
+            torch.LongTensor,
+        ])
 
     def custom_obj_hook(self, dct):
         """
@@ -110,7 +131,11 @@ class PythonJSONDecoder(json.JSONDecoder):
                 # Case of a tensor or a Variable
                 if obj_type in map(lambda x: x.__name__, self.tensorvar_types):
                     pattern_var = re.compile('_fl.(.*)')
-                    id = int(pattern_var.search(obj).group(1))
+                    id_pattern=pattern_var.search(obj).group(1)
+                    try:
+                        id = int(id_pattern)
+                    except ValueError:
+                        id = str(id_pattern)
                     return self.worker.get_obj(id)
                 # Case of a iter type non json serializable
                 elif obj_type in ('tuple', 'set', 'bytearray', 'range'):
@@ -123,6 +148,7 @@ class PythonJSONDecoder(json.JSONDecoder):
             except AttributeError:
                 pass
         return dct
+
 
 def map_tuple(hook, args, func):
     if hook:
@@ -140,9 +166,11 @@ def map_dict(hook, kwargs, func):
 
 def pass_method_args(method):
     """Wrapper gathering partialmethod object from method call."""
+
     @functools.wraps(method)
     def pass_args(*args, **kwargs):
         return functools.partialmethod(method, *args, **kwargs)
+
     return pass_args
 
 
@@ -155,9 +183,9 @@ def pass_func_args(func):
         # positional arguments args and keyword arguments keywords. If more arguments are
         # supplied to the call, they are appended to args. If additional keyword arguments
         # are supplied, they extend and override keywords.
-
-        # The partial() is used for partial function application which “freezes” some
-        # portion of a function’s arguments and/or keywords resulting in a new object
+        # The partial() is used for partial function application which "freezes" some
+        # portion of a function's arguments and/or keywords resulting in a new object
         # with a simplified signature.
         return functools.partial(func, *args, **kwargs)
+
     return pass_args

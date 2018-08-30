@@ -50,9 +50,11 @@ class SharedMult(Function):
         a, b = ctx.saved_tensors
         interface = ctx.interface
         grad_out = grad_out
-        return (Variable(spdz.spdz_mul(grad_out.data, b, interface)),
-                Variable(spdz.spdz_mul(grad_out.data, a, interface)),
-                None)
+        return (
+            Variable(spdz.spdz_mul(grad_out.data, b, interface)),
+            Variable(spdz.spdz_mul(grad_out.data, a, interface)),
+            None,
+        )
 
 
 class SharedMatmul(Function):
@@ -120,8 +122,10 @@ class SharedVariable(object):
         return SharedVariable(SharedNeg.apply(self.var), self.interface)
 
     def add(self, other):
-        return SharedVariable(SharedAdd.apply(self.var, other.var),
-                              self.interface, self.requires_grad)
+        return SharedVariable(
+            SharedAdd.apply(self.var, other.var),
+            self.interface, self.requires_grad,
+        )
 
     def sub(self, other):
         return SharedVariable(SharedSub.apply(self.var, other.var), self.interface)
@@ -130,9 +134,13 @@ class SharedVariable(object):
         return SharedVariable(SharedMult.apply(self.var, other.var, self.interface), self.interface)
 
     def matmul(self, other):
-        return SharedVariable(SharedMatmul.apply(self.var, other.var,
-                                                 self.interface),
-                              self.interface)
+        return SharedVariable(
+            SharedMatmul.apply(
+                self.var, other.var,
+                self.interface,
+            ),
+            self.interface,
+        )
 
     @property
     def grad(self):
