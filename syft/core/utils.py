@@ -4,8 +4,19 @@ import re
 import types
 import functools
 import logging
-
 import torch
+import syft
+import syft as sy
+
+from .frameworks.torch import encode
+
+def is_in_place_method(attr):
+    """
+    Determines if the method is in-place (ie modifies the self)
+    TODO: Can you do better?
+    """
+    pat = re.compile('__(.+)__')
+    return pat.search(attr) is None and attr[-1] == '_'
 
 
 class PythonEncoder():
@@ -155,9 +166,11 @@ def map_dict(hook, kwargs, func):
 
 def pass_method_args(method):
     """Wrapper gathering partialmethod object from method call."""
+
     @functools.wraps(method)
     def pass_args(*args, **kwargs):
         return functools.partialmethod(method, *args, **kwargs)
+
     return pass_args
 
 
@@ -170,9 +183,9 @@ def pass_func_args(func):
         # positional arguments args and keyword arguments keywords. If more arguments are
         # supplied to the call, they are appended to args. If additional keyword arguments
         # are supplied, they extend and override keywords.
-
-        # The partial() is used for partial function application which “freezes” some
-        # portion of a function’s arguments and/or keywords resulting in a new object
+        # The partial() is used for partial function application which "freezes" some
+        # portion of a function's arguments and/or keywords resulting in a new object
         # with a simplified signature.
         return functools.partial(func, *args, **kwargs)
+
     return pass_args

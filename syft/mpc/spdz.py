@@ -7,16 +7,16 @@ KAPPA = 3  # ~29 bits
 PRECISION_INTEGRAL = 2
 PRECISION_FRACTIONAL = 0
 PRECISION = PRECISION_INTEGRAL + PRECISION_FRACTIONAL
-BOUND = BASE**PRECISION
+BOUND = BASE ** PRECISION
 
 # Q field
-field = 2**31 - 1  # < 64 bits
+field = 2 ** 31 - 1  # < 64 bits
 # Q = 2147483648
 Q_MAXDEGREE = 1
 
 
 def encode(rational, precision_fractional=PRECISION_FRACTIONAL):
-    upscaled = (rational * BASE**precision_fractional).long()
+    upscaled = (rational * BASE ** precision_fractional).long()
     field_element = upscaled % field
     return field_element
 
@@ -26,8 +26,8 @@ def decode(field_element, precision_fractional=PRECISION_FRACTIONAL):
     neg_values = field_element.gt(field)
     # pos_values = field_element.le(field)
     # upscaled = field_element*(neg_valuese+pos_values)
-    field_element[neg_values] = field-field_element[neg_values]
-    rational = field_element.float() / BASE**precision_fractional
+    field_element[neg_values] = field - field_element[neg_values]
+    rational = field_element.float() / BASE ** precision_fractional
     return rational
 
 
@@ -61,7 +61,7 @@ def truncate(x, interface, amount=PRECISION_FRACTIONAL):
 def public_add(x, y, interface):
     if (interface.get_party() == 0):
         return (x + y)
-    elif(interface.get_party() == 1):
+    elif (interface.get_party() == 1):
         return x
 
 
@@ -127,12 +127,12 @@ def spdz_mul(x, y, interface):
 def generate_matmul_triple(m, n, k):
     r = torch.LongTensor(m, k).random_(field)
     s = torch.LongTensor(k, n).random_(field)
-    t = r @ s
+    t = r * s
     return r, s, t
 
 
 def generate_matmul_triple_communication(m, n, k, interface):
-    if(interface.get_party() == 0):
+    if (interface.get_party() == 0):
         r, s, t = generate_matmul_triple(m, n, k)
         r_alice, r_bob = share(r)
         s_alice, s_bob = share(s)
@@ -184,12 +184,12 @@ def spdz_matmul(x, y, interface):
     rho = reconstruct([rho_local, rho_other])
     sigma = reconstruct([sigma_local, sigma_other])
 
-    r_sigma = r @ sigma
-    rho_s = rho @ s
+    r_sigma = r * sigma
+    rho_s = rho * s
 
     share = r_sigma + rho_s + t
 
-    rs = rho @ sigma
+    rs = rho * sigma
 
     share = public_add(share, rs, interface)
     share = truncate(share, interface)
@@ -198,10 +198,10 @@ def spdz_matmul(x, y, interface):
 
 def generate_sigmoid_shares_communication(x, interface):
     if (interface.get_party() == 0):
-        W0 = encode(torch.FloatTensor(x.shape).one_()*1/2)
-        W1 = encode(torch.FloatTensor(x.shape).one_()*1/4)
-        W3 = encode(torch.FloatTensor(x.shape).one_()*-1/48)
-        W5 = encode(torch.FloatTensor(x.shape).one_()*1/480)
+        W0 = encode(torch.FloatTensor(x.shape).one_() * 1 / 2)
+        W1 = encode(torch.FloatTensor(x.shape).one_() * 1 / 4)
+        W3 = encode(torch.FloatTensor(x.shape).one_() * -1 / 48)
+        W5 = encode(torch.FloatTensor(x.shape).one_() * 1 / 480)
 
         W0_alice, W0_bob = share(W0)
         W1_alice, W1_bob = share(W1)

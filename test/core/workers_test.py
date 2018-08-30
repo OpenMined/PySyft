@@ -1,7 +1,8 @@
-from unittest import TestCase
+# from unittest import TestCase
 
 import torch
 
+<<<<<<< HEAD
 from syft.core.hooks import TorchHook
 
 
@@ -15,3 +16,8 @@ class TestBaseWorker(TestCase):
         self.assertIs(local.get_obj('two'), objects[1])
         with self.assertRaises(TypeError):
             local.get_obj(float(3.0))
+=======
+# class TestSample(TestCase):
+#     def test_true(self):
+#         assert True
+>>>>>>> pointers_are_tensors
