@@ -751,7 +751,7 @@ class TestTorchVariable(TestCase):
                 if(iter == 1):
                     final_loss = loss.get().data[0]
 
-        assert final_loss == 0.18085284531116486
+        assert (final_loss - 0.18085284531116486) < 0.001
 
     def test_torch_function_on_remote_var(self):
         x = sy.Variable(torch.FloatTensor([[1, 2], [3, 4]]))
