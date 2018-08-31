@@ -199,13 +199,25 @@ class TestChainTensor(TestCase):
 class TestTorchTensor(TestCase):
 
     def test_set_id(self):
+
+        init_state = hook.local_worker.is_client_worker
+        hook.local_worker.is_client_worker = False
+
         x = torch.FloatTensor([-2, -1, 0, 1, 2, 3]).set_id('bobs tensor')
         assert x.id == 'bobs tensor'
         assert x.child.id == 'bobs tensor'
 
+        assert x.id in hook.local_worker._objects
+        assert list(x.child.old_ids)[0] in hook.local_worker._objects
+        assert list(x.child.old_ids)[0] != x.id
+
         x = sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id('bobs variable')
         assert x.id == 'bobs variable'
         assert x.child.id == 'bobs variable'
+
+        assert x.id in hook.local_worker._objects
+        assert list(x.child.old_ids)[0] in hook.local_worker._objects
+        assert list(x.child.old_ids)[0] != x.id
 
     def test___repr__(self):
         x = torch.FloatTensor([1, 2, 3, 4, 5])
