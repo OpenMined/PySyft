@@ -191,12 +191,21 @@ class TestChainTensor(TestCase):
         x.get()
         x.child = x.child.child
 
-        target = sy._PlusIsMinusTensor().on(torch.FloatTensor([1, 1]))
-        assert torch.equal(x.grad.data, target)
+        # target = sy._PlusIsMinusTensor().on()
+        assert torch.equal(x.grad.data, torch.FloatTensor([1, 1]))
 
 
 
 class TestTorchTensor(TestCase):
+
+    def test_set_id(self):
+        x = torch.FloatTensor([-2, -1, 0, 1, 2, 3]).set_id('bobs tensor')
+        assert x.id == 'bobs tensor'
+        assert x.child.id == 'bobs tensor'
+
+        x = sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id('bobs variable')
+        assert x.id == 'bobs variable'
+        assert x.child.id == 'bobs variable'
 
     def test___repr__(self):
         x = torch.FloatTensor([1, 2, 3, 4, 5])

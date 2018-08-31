@@ -22,6 +22,9 @@ class _SyftTensor(object):
                 owner = child.owner
 
         self.id = id
+        # self.old_ids = None - this will only get initialized if self.set_id() is called, but i'm referencing it
+        # in this comment so that people know it can exist. It's a set()
+
         self.child = child
         self.parent = parent
         self.torch_type = torch_type
@@ -43,6 +46,16 @@ class _SyftTensor(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def set_id(self, new_id):
+
+        if not hasattr(self, 'old_ids'):
+            self.old_ids = set()
+
+        self.old_ids.add(self.id)
+
+        self.owner.register_object(self, new_id)
+        return self
 
     @property
     def parent(self):
@@ -705,6 +718,10 @@ class _TorchObject(object):
     """
 
     __module__ = 'syft'
+
+    def set_id(self, new_id):
+        self.child.set_id(new_id)
+        return self
 
     def __str__(self):
         return self.native___str__()
