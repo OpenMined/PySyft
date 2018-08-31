@@ -605,6 +605,8 @@ class BaseWorker(ABC):
 
         if id is None:
             id = obj.id
+        else:
+            obj.id = id
 
         if obj.owner.id == self.id:
             self.set_obj(id, obj)

@@ -6,6 +6,7 @@ Subpackages
 
 .. toctree::
 
+    syft.core.frameworks.tensorflow
     syft.core.frameworks.torch
 
 Module contents
