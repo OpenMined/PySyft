@@ -191,8 +191,8 @@ class TestChainTensor(TestCase):
         x.get()
         x.child = x.child.child
 
-        # target = sy._PlusIsMinusTensor().on()
-        assert torch.equal(x.grad.data, torch.FloatTensor([1, 1]))
+        target = sy._PlusIsMinusTensor().on(torch.FloatTensor([1, 1]))
+        assert torch.equal(x.grad.data, target)
 
 
 
