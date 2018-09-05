@@ -162,6 +162,13 @@ class SocketWorker(BaseWorker):
             finally:
                 connection.close()
 
+    def search(self, query='#boston'):
+        if(self.is_pointer):
+            response = json.loads(self.send_msg(message=query, message_type="query", recipient=self))
+            return set(json.loads(response['obj']))
+        else:
+            return self._search(query)
+
     def _send_msg(self, message_wrapper_json_binary, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.

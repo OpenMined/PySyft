@@ -126,6 +126,17 @@ class BaseWorker(ABC):
 
         return json.dumps({"id": self.id, "type": type(self)})
 
+    def _search(self, query):
+        results = set()
+        for id in self._objects.keys():
+            if (type(query) == type(id)):
+                if query in id:
+                    results.add(id)
+        return results
+
+    def search(self, query="#boston"):
+        return self._search(query)
+
     def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.
@@ -267,6 +278,13 @@ class BaseWorker(ABC):
         # A composite command. Must be unrolled
         elif message_wrapper['type'] == 'composite':
             raise NotImplementedError('Composite command not handled at the moment')
+
+        elif message_wrapper['type'] == 'query':
+            ids = self.search(message)
+            pointers = list()
+            for id in ids:
+                pointers.append(self.get_pointer_to())
+            return json.dumps(list()), False
 
         return "Unrecognized message type:" + message_wrapper['type']
 
