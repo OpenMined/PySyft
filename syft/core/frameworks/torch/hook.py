@@ -52,19 +52,19 @@ class TorchHook(object):
  
      :Example:
  
-     >>> from syft.core.hooks import TorchHook
-     >>> from syft.core.hooks import torch
-     >>> hook = TorchHook()
+     >>> import syft as sy
+     >>> hook = sy.TorchHook()
      Hooking into Torch...
      Overloading Complete.
-     >>> x = torch.FloatTensor([1,2,3,4,5])
+     >>> x = sy.FloatTensor([-2,-1,0,1,2,3])
      >>> x
+      -2
+      -1
+      0
       1
       2
       3
-      4
-      5
-     [torch.FloatTensor of size 5]
+     [syft.core.frameworks.torch.tensor.FloatTensor of size 6]
      """
     def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
         self.local_worker = local_worker
