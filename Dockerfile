@@ -1,16 +1,14 @@
-FROM ubuntu:18.04
+FROM python:3.6-alpine
 
-RUN apt-get update \
- && apt-get install -y python3.6 \
-                       python3-pip \
-                       build-essential \
- && rm -rf /var/lib/apt/lists/* \
- && pip3 install jupyter \
- && pip3 install http://download.pytorch.org/whl/cpu/torch-0.3.1-cp36-cp36m-linux_x86_64.whl \
- && pip3 install torchvision \
- && rm -r /root/.cache/pip \
- &&  mkdir PySyft \
- &&  mkdir PySyft/examples
+# installing alpine packages which is needed for building python packages "especially pillow" :)
+RUN apk add g++ python-dev tiff-dev zlib-dev freetype-dev
+
+RUN pip install jupyter \
+    && pip install http://download.pytorch.org/whl/cpu/torch-0.3.1-cp36-cp36m-linux_x86_64.whl \
+    && pip install torchvision \
+    && rm -r /root/.cache/pip \
+    && mkdir PySyft \
+    && mkdir PySyft/examples
 
 COPY syft/ /PySyft/syft/
 COPY requirements.txt /PySyft/requirements.txt
@@ -19,14 +17,12 @@ COPY README.md /PySyft/README.md
 
 WORKDIR /PySyft
 
-RUN python3 setup.py install \
- && jupyter notebook --generate-config \
- && jupyter nbextension enable --py --sys-prefix widgetsnbextension \
- && python3 -m ipykernel.kernelspec \
- && mkdir /notebooks \
- && apt-get -y purge python3-pip \
-                     build-essential \
- && apt-get -y clean
+RUN python setup.py install \
+    && jupyter notebook --generate-config \
+    && jupyter nbextension enable --py --sys-prefix widgetsnbextension \
+    && python -m ipykernel.kernelspec \
+    && mkdir /notebooks \
+    && rm -rf /var/cache/apk/*
 
 WORKDIR /notebooks
 
