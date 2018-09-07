@@ -48,14 +48,23 @@ class _SyftTensor(object):
         return self.__str__()
 
     def set_id(self, new_id):
+        """
+        This changes the id of a tensor.
+        :param new_id: a string or integer id
+        :return: returns self, for convenience.
+        """
 
-        if not hasattr(self, 'old_ids'):
-            self.old_ids = set()
 
-        self.old_ids.add(self.id)
+        if(new_id not in self.owner._objects):
+            if not hasattr(self, 'old_ids'):
+                self.old_ids = set()
 
-        self.owner.register_object(self, new_id)
-        return self
+            self.old_ids.add(self.id)
+
+            self.owner.register_object(self, new_id)
+            return self
+        else:
+            raise KeyError("There is already a tensor with that ID - please choose another.")
 
     @property
     def parent(self):

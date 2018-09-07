@@ -2,6 +2,7 @@ import socket
 import json
 
 from .base import BaseWorker
+from ..frameworks.torch import encode
 
 
 class SocketWorker(BaseWorker):
@@ -161,6 +162,31 @@ class SocketWorker(BaseWorker):
                     num_messages -= 1
             finally:
                 connection.close()
+
+    def search(self, query):
+        """
+        This function is designed to find relevant tensors present within the worker's objects (self._objects) dict.
+        It does so by looking for string overlap between one or more strings in the "query" and the id of each tensor.
+        If the current worker object (self) is merely a pointer to a remote worker (connected via socket), then it sends
+        a command to the remote worker which calls this function on the remote machine. If the current worker object
+        (self) is NOT a pointer, then it queries the local tensors.
+        :param query: a string or list of strings
+        :return: if self.is_pointer==True, this returns a set of pointer tensors. Otherwise, it returns the tensors.
+        """
+
+
+        if(self.is_pointer):
+            response = json.loads(self.send_msg(message=query, message_type="query", recipient=self))
+            ps = list()
+            for p in response['obj']:
+                ps.append(encode.decode(p['__tuple__'][0], worker=self.hook.local_worker, message_is_dict=True))
+            return ps
+        else:
+            ids = self._search(query)
+            tensors = list()
+            for id in ids:
+                tensors.append(self.get_obj(id))
+            return tensors
 
     def _send_msg(self, message_wrapper_json_binary, recipient):
         """Sends a string message to another worker with message_type information

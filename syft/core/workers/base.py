@@ -126,6 +126,40 @@ class BaseWorker(ABC):
 
         return json.dumps({"id": self.id, "type": type(self)})
 
+    def _search(self, query):
+        """
+        Queries all local tensors which have string ids, returning the tensors which match the query. The query is
+        composed of one or more substrings which all be contained within a tensor's ID in order for it to be a match.
+        :param query: either a string or a list of strings
+        :return: a list of tensors
+        """
+
+        if(isinstance(query, str)):
+            query = set([query])
+        else:
+            query = set(query)
+
+        results = set()
+        for id in self._objects.keys():
+            if (isinstance(id, str)):
+                failed = False
+                for constraint in query:
+                    if constraint not in id:
+                        failed = True
+                if(not failed):
+                    results.add(id)
+        return results
+
+    def search(self, query="#boston"):
+        """
+        Queries all local tensors which have string ids, returning the tensors which match the query. The query is
+        composed of one or more substrings which all be contained within a tensor's ID in order for it to be a match.
+        :param query: either a string or a list of strings
+        :return: a list of tensors
+        """
+
+        return self._search(query)
+
     def send_msg(self, message, message_type, recipient):
         """Sends a string message to another worker with message_type information
         indicating how the message should be processed.
@@ -268,6 +302,19 @@ class BaseWorker(ABC):
         elif message_wrapper['type'] == 'composite':
             raise NotImplementedError('Composite command not handled at the moment')
 
+        elif message_wrapper['type'] == 'query':
+
+            tensors = self.search(message)
+
+            pointers = list()
+
+            for tensor in tensors:
+                ptr = tensor.parent.create_pointer()
+                encoding = encode.encode(ptr, private_local=False, retrieve_pointers=True)
+                pointers.append(encoding)
+
+            return pointers, True
+
         return "Unrecognized message type:" + message_wrapper['type']
 
     def __str__(self):
@@ -400,7 +447,7 @@ class BaseWorker(ABC):
 
         """
 
-        obj = self._objects[int(remote_key)]
+        obj = self._objects[remote_key]
         # Fix ownership if the obj has been modified out of control (like with backward())
         torch_utils.enforce_owner(obj, self)
         return obj
