@@ -48,6 +48,12 @@ class _SyftTensor(object):
         return self.__str__()
 
     def set_id(self, new_id):
+        """
+        This changes the id of a tensor.
+        :param new_id: a string or integer id
+        :return: returns self, for convenience.
+        """
+
 
         if(new_id not in self.owner._objects):
             if not hasattr(self, 'old_ids'):
