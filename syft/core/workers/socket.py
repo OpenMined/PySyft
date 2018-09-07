@@ -163,7 +163,7 @@ class SocketWorker(BaseWorker):
             finally:
                 connection.close()
 
-    def search(self, query='#boston'):
+    def search(self, query):
         """
         This function is designed to find relevant tensors present within the worker's objects (self._objects) dict.
         It does so by looking for string overlap between one or more strings in the "query" and the id of each tensor.
