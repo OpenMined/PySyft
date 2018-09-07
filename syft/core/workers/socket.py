@@ -164,6 +164,17 @@ class SocketWorker(BaseWorker):
                 connection.close()
 
     def search(self, query='#boston'):
+        """
+        This function is designed to find relevant tensors present within the worker's objects (self._objects) dict.
+        It does so by looking for string overlap between one or more strings in the "query" and the id of each tensor.
+        If the current worker object (self) is merely a pointer to a remote worker (connected via socket), then it sends
+        a command to the remote worker which calls this function on the remote machine. If the current worker object
+        (self) is NOT a pointer, then it queries the local tensors.
+        :param query: a string or list of strings
+        :return: if self.is_pointer==True, this returns a set of pointer tensors. Otherwise, it returns the tensors.
+        """
+
+
         if(self.is_pointer):
             response = json.loads(self.send_msg(message=query, message_type="query", recipient=self))
             ps = list()

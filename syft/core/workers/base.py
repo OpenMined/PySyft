@@ -127,6 +127,13 @@ class BaseWorker(ABC):
         return json.dumps({"id": self.id, "type": type(self)})
 
     def _search(self, query):
+        """
+        Queries all local tensors which have string ids, returning the tensors which match the query. The query is
+        composed of one or more substrings which all be contained within a tensor's ID in order for it to be a match.
+        :param query: either a string or a list of strings
+        :return: a list of tensors
+        """
+
         if(isinstance(query, str)):
             query = set([query])
         else:
@@ -144,6 +151,13 @@ class BaseWorker(ABC):
         return results
 
     def search(self, query="#boston"):
+        """
+        Queries all local tensors which have string ids, returning the tensors which match the query. The query is
+        composed of one or more substrings which all be contained within a tensor's ID in order for it to be a match.
+        :param query: either a string or a list of strings
+        :return: a list of tensors
+        """
+
         return self._search(query)
 
     def send_msg(self, message, message_type, recipient):
