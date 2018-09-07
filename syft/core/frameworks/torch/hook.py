@@ -467,9 +467,14 @@ class TorchHook(object):
 
     def _hook_backward(hook_self):
         """
-        Overloads bakcward function to compute the sum of gradients
-        of a given tensor. Does this by saving all grads from given tensor
-        and performing native_backward method on given tensor.
+        Overloads backward method used to compute gradients 
+        of all the variables that are part of the computational 
+        graph which produced self. Because native backward breaks 
+        things (especially the .id attribute of the gradient), 
+        we store the id of all variables we can access 
+        (only the leaf variables of the graph) and we reconstruct our 
+        variables correctly after backward was performed by basically 
+        restoring the grad "envelope" (including its id)
         """
         sy.Variable.native_native_backward = sy.Variable.native_backward
 
