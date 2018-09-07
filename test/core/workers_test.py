@@ -1,16 +1,18 @@
-# # from unittest import TestCase
-#
-# import torch
-# from syft.core.hooks import TorchHook
-#
-#
-# class TestBaseWorker(TestCase):
-#     def test_get_obj(self):
-#         hook = TorchHook()
-#         local = hook.local_worker
-#         objects = [torch.FloatTensor(), torch.FloatTensor(), torch.FloatTensor()]
-#         local._objects = {int(1): objects[0], 'two': objects[1], float(3.0): objects[2]}
-#         self.assertIs(local.get_obj(int(1)), objects[0])
-#         self.assertIs(local.get_obj('two'), objects[1])
-#         with self.assertRaises(TypeError):
-#             local.get_obj(float(3.0))
+from unittest import TestCase
+import syft as sy
+
+class TestBaseWorker(TestCase):
+
+    def test_search_obj(self):
+
+        hook = sy.TorchHook()
+
+        hook.local_worker.is_client_worker = False
+
+        x = sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id('#boston_housing #target #dataset')
+        y = sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id('#boston_housing #input #dataset')
+
+        hook.local_worker.is_client_worker = True
+
+        assert len(hook.local_worker.search("#boston_housing")) == 2
+        assert len(hook.local_worker.search(["#boston_housing", "#target"])) == 1
