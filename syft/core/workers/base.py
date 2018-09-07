@@ -127,10 +127,19 @@ class BaseWorker(ABC):
         return json.dumps({"id": self.id, "type": type(self)})
 
     def _search(self, query):
+        if(isinstance(query, str)):
+            query = set([query])
+        else:
+            query = set(query)
+
         results = set()
         for id in self._objects.keys():
-            if (type(query) == type(id)):
-                if query in id:
+            if (isinstance(id, str)):
+                failed = False
+                for constraint in query:
+                    if constraint not in id:
+                        failed = True
+                if(not failed):
                     results.add(id)
         return results
 
@@ -282,11 +291,14 @@ class BaseWorker(ABC):
         elif message_wrapper['type'] == 'query':
 
             tensors = self.search(message)
+
             pointers = list()
+
             for tensor in tensors:
                 ptr = tensor.parent.create_pointer()
                 encoding = encode.encode(ptr, private_local=False, retrieve_pointers=True)
                 pointers.append(encoding)
+
             return pointers, True
 
         return "Unrecognized message type:" + message_wrapper['type']
