@@ -13,7 +13,59 @@ from .tensor import _TorchVariable
 
 
 class TorchHook(object):
+    r""" A Hook which Overrides Methods on PyTorch Variables & Tensors -
+     **Currently compatible with PyTorch 0.3.1**
+ 
+     The purpose of this class is to:
+ 
+         * extend torch methods to allow for the moving of tensors
+           and variables from one worker to another
+         * override torch methods to execute commands on one worker
+           that are called on tensors controlled by the local worker.
+ 
+     This class is typically the first thing you will initialize when
+     using PySyft with PyTorch because it is responsible for augmenting
+     PyTorch with PySyft's added functionality (such as remote execution).
+     
+     :Parameters:
+ 
+         * **local_worker (**:class:`.workers.BaseWorker` **, optional)**
+           you can optionally provide a local worker as a parameter which
+           TorchHook will assume to be the worker owned by the local machine.
+           If you leave it empty, TorchClient will automatically initialize
+           a :class:`.workers.VirtualWorker` under the assumption you're
+           looking to do local experimentation/development.
+ 
+         * **is_client (bool, optional)** whether or not the TorchHook is
+           being initialized as an end-user client. This can impact whether
+           or not variables are deleted when they fall out of scope. If you set
+           this incorrectly on a end user client, Tensors and Variables will
+           never be deleted. If you set this incorrectly on a remote machine
+           (not a client), tensors will not get saved. It's really only
+           important if you're not initializing the local worker yourself. (Default: True)
+ 
+         * **verbose (bool, optional)** whether or not to print operations
+           as they occur. (Defalt: True)
 
+         * **queue_size (int, optional)** max length of the list storing messages
+           to be sent. (Default: 0)
+ 
+     :Example:
+ 
+     >>> import syft as sy
+     >>> hook = sy.TorchHook()
+     Hooking into Torch...
+     Overloading Complete.
+     >>> x = sy.FloatTensor([-2,-1,0,1,2,3])
+     >>> x
+      -2
+      -1
+      0
+      1
+      2
+      3
+     [syft.core.frameworks.torch.tensor.FloatTensor of size 6]
+     """
     def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
         self.local_worker = local_worker
 
@@ -59,7 +111,7 @@ class TorchHook(object):
             torch.local_worker = self.local_worker
 
     def _hook_native_tensors_and_variables(self, tensor_type):
-        """Overloading a given tensor_type"""
+        """Overloads given tensor_type (native)"""
         # Overload 'special' methods here
 
         self._add_registration_to___init__(tensor_type, register_child_instead=True)
@@ -76,7 +128,7 @@ class TorchHook(object):
         self._add_methods_from__TorchObject(tensor_type)
 
     def _hook_syft_tensor_types(self, tensor_type):
-
+        """Overloads syft tensor_types"""
         self._hook_LocalTensor(tensor_type)
 
         self._hook_SyftTensor(tensor_type)
@@ -127,6 +179,7 @@ class TorchHook(object):
         tensorvar_type.__init__ = new___init__
 
     def _hook_properties(hook_self, tensor_type):
+        """Overloads tensor_type properties"""
         @property
         def child(self):
             try:
@@ -189,6 +242,7 @@ class TorchHook(object):
         tensor_type.owner = owner
 
     def _which_methods_should_we_auto_overload(self, tensor_type=torch.FloatTensor):
+        """Creates list of methods to auto overload"""
         to_overload = list()
 
         for attr in dir(tensor_type):
@@ -212,7 +266,7 @@ class TorchHook(object):
         return to_overload
 
     def _rename_native_functions(self, tensor_type):
-
+        """Renames functions that are auto overloaded"""
         for attr in self.to_auto_overload[tensor_type]:
 
             lit = getattr(tensor_type, attr)
@@ -224,7 +278,7 @@ class TorchHook(object):
             setattr(tensor_type, attr, None)
 
     def _assign_methods_to_use_child(self, tensor_type):
-
+        """Assigns methods to use as child for auto overloaded functions"""
         for attr in self.to_auto_overload[tensor_type]:
 
             def forward_method_to_child(self, *args, **kwargs):
@@ -242,7 +296,7 @@ class TorchHook(object):
                 setattr(tensor_type, attr, new_attr)
 
     def _add_methods_from__TorchObject(self, tensor_type):
-
+        """Add methods to auto overloaded functions"""
         exclude = ['__class__',
                    '__delattr__',
                    '__dir__',
@@ -280,7 +334,7 @@ class TorchHook(object):
                 setattr(tensor_type, attr, getattr(parent_syft_obj, attr))
 
     def _hook_LocalTensor(self, tensor_type):
-
+        """Overloads LocalTensor"""
         # iterate through all methods and tell them to call the native function
         # on self.child
         for attr in self.to_auto_overload[tensor_type]:
@@ -311,7 +365,7 @@ class TorchHook(object):
                 setattr(_LocalTensor, attr, new_attr)
 
     def _hook_SyftTensor(hook_self, tensor_type):
-
+        """Overloads SyftTensor"""
         hook_self._add_registration_to___init__(_SyftTensor)
 
         for attr in hook_self.to_auto_overload[tensor_type]:
@@ -339,7 +393,7 @@ class TorchHook(object):
                 setattr(_SyftTensor, attr, new_attr)
 
     def _hook_PointerTensor(self, tensor_type):
-
+        """Overloads PointerTensor"""
         for attr in self.to_auto_overload[tensor_type]:
             # # if we haven't already overloaded this method
             # if attr not in dir(_PointerTensor) or getattr(_PointerTensor, attr) is None:
@@ -347,7 +401,13 @@ class TorchHook(object):
             setattr(_PointerTensor, attr, self._get_overloaded_method(attr))
 
     def _get_overloaded_method(hook_self, attr):
-
+        """
+        Wrapper overloading partial objects of methods in the torch
+        module.  Compiles command, checks for Tensors and Variables in
+        the args/kwargs, determines locations of all Tensors and
+        Variables involved in computation, and handles the computation
+        accordingly.
+        """
         def _execute_method_call(self, *args, **kwargs):
             return hook_self._execute_call(attr, self, *args, **kwargs)
 
@@ -406,7 +466,16 @@ class TorchHook(object):
         return hook_self.local_worker._execute_call(attr, self, *args, **kwargs)
 
     def _hook_backward(hook_self):
-
+        """
+        Overloads backward method used to compute gradients 
+        of all the variables that are part of the computational 
+        graph which produced self. Because native backward breaks 
+        things (especially the .id attribute of the gradient), 
+        we store the id of all variables we can access 
+        (only the leaf variables of the graph) and we reconstruct our 
+        variables correctly after backward was performed by basically 
+        restoring the grad "envelope" (including its id)
+        """
         sy.Variable.native_native_backward = sy.Variable.native_backward
 
         def new_backward(self, *args, **kwargs):
@@ -448,8 +517,9 @@ class TorchHook(object):
         sy.Variable.native_backward = new_backward
 
     def _hook_module(self):
-
+        """Overloading for torch.nn.Module"""        
         def module_is_missing_grad(model):
+            """Overloads missing grad parameter in model"""
             missing_grad = False
             for p in model.parameters():
                 if p.grad is None:
@@ -457,13 +527,14 @@ class TorchHook(object):
             return missing_grad
 
         def create_grad_objects(model):
-
+            """Overloads create grad parameter for model"""
             for p in model.parameters():
                 o = p.sum()
                 o.backward()
                 p.grad -= p.grad
 
         def module_send_(self, dest):
+            """Overloads send to remote for torch.nn.Module"""
             if (module_is_missing_grad(self)):
                 create_grad_objects(self)
 
@@ -473,6 +544,7 @@ class TorchHook(object):
         torch.nn.Module.send = module_send_
 
         def module_get_(self):
+            """Overload get from remote for torch.nn.Module"""
             for p in self.parameters():
                 p.get()
 
