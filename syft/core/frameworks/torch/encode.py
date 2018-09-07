@@ -125,7 +125,7 @@ class PythonEncoder:
             raise ValueError('Unhandled type', type(obj))
 
 
-def decode(message, worker, acquire=None):
+def decode(message, worker, acquire=None, message_is_dict=False):
     """
     Determine whether the mode should be 'acquire' or 'suscribe', and
     Decode the message with this policy
@@ -141,6 +141,7 @@ def decode(message, worker, acquire=None):
     :param message: The message to decode
     :param worker: The worker performing the decode operation
     :param acquire: Should we copy the data of point at it
+    :param message_is_dict: Is the message a dictionary already or a JSON string needing decoding?
     :return: The message decoded
     """
     decoder = PythonJSONDecoder(worker=worker)
@@ -149,7 +150,10 @@ def decode(message, worker, acquire=None):
     if isinstance(message, bytes):
         message = message.decode('utf-8')
 
-    dict_message = json.loads(message)
+    if(message_is_dict):
+        dict_message = message
+    else:
+        dict_message = json.loads(message)
 
     # If acquire is specified, then know how we want to decode, and implicitly
     # we want to decode everything of the message

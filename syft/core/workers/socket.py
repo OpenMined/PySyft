@@ -2,6 +2,7 @@ import socket
 import json
 
 from .base import BaseWorker
+from ..frameworks.torch import encode
 
 
 class SocketWorker(BaseWorker):
@@ -165,9 +166,16 @@ class SocketWorker(BaseWorker):
     def search(self, query='#boston'):
         if(self.is_pointer):
             response = json.loads(self.send_msg(message=query, message_type="query", recipient=self))
-            return set(json.loads(response['obj']))
+            ps = list()
+            for p in response['obj']:
+                ps.append(encode.decode(p['__tuple__'][0], worker=self.hook.local_worker, message_is_dict=True))
+            return ps
         else:
-            return self._search(query)
+            ids = self._search(query)
+            tensors = list()
+            for id in ids:
+                tensors.append(self.get_obj(id))
+            return tensors
 
     def _send_msg(self, message_wrapper_json_binary, recipient):
         """Sends a string message to another worker with message_type information

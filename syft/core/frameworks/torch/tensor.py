@@ -49,13 +49,16 @@ class _SyftTensor(object):
 
     def set_id(self, new_id):
 
-        if not hasattr(self, 'old_ids'):
-            self.old_ids = set()
+        if(new_id not in self.owner._objects):
+            if not hasattr(self, 'old_ids'):
+                self.old_ids = set()
 
-        self.old_ids.add(self.id)
+            self.old_ids.add(self.id)
 
-        self.owner.register_object(self, new_id)
-        return self
+            self.owner.register_object(self, new_id)
+            return self
+        else:
+            raise KeyError("There is already a tensor with that ID - please choose another.")
 
     @property
     def parent(self):

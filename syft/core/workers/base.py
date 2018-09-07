@@ -280,11 +280,14 @@ class BaseWorker(ABC):
             raise NotImplementedError('Composite command not handled at the moment')
 
         elif message_wrapper['type'] == 'query':
-            ids = self.search(message)
+
+            tensors = self.search(message)
             pointers = list()
-            for id in ids:
-                pointers.append(self.get_pointer_to())
-            return json.dumps(list()), False
+            for tensor in tensors:
+                ptr = tensor.parent.create_pointer()
+                encoding = encode.encode(ptr, private_local=False, retrieve_pointers=True)
+                pointers.append(encoding)
+            return pointers, True
 
         return "Unrecognized message type:" + message_wrapper['type']
 
@@ -418,7 +421,7 @@ class BaseWorker(ABC):
 
         """
 
-        obj = self._objects[int(remote_key)]
+        obj = self._objects[remote_key]
         # Fix ownership if the obj has been modified out of control (like with backward())
         torch_utils.enforce_owner(obj, self)
         return obj
