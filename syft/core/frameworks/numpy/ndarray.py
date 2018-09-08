@@ -36,6 +36,8 @@ class abstractarray(np.ndarray):
 
         self.owner = owner
 
+        self.owner.register(self)
+
         self.initialized = True
         # Finally, we must return the newly created object:
         return self
