@@ -4,6 +4,7 @@ import numpy as np
 import syft as sy
 
 from .encode import NumpyEncoder
+from ..torch import utils
 import torch
 
 class abstractarray(np.ndarray):
@@ -185,6 +186,16 @@ class array_ptr(abstractarray):
             out['id_at_location'] = self.id_at_location
             return out
 
+    def torch(self):
+        cmd, locations, owners = utils.compile_command(attr="torch",
+                                                       args={},
+                                                       kwargs={},
+                                                       has_self=True,
+                                                       self=self)
+
+        return self.owner.send_command(recipient=self.location,
+                                       message=cmd,
+                                       framework="numpy")
 
 
 
