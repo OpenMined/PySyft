@@ -102,14 +102,20 @@ class abstractarray(np.ndarray):
 
 class array(abstractarray):
 
-    def ser(self, to_json=False):
+    def ser(self, private=True, to_json=False):
         if (to_json):
             return json.dumps(self, cls=NumpyEncoder)
         else:
             out = {}
             out['type'] = "numpy.array"
             out['id'] = self.id
-            out['data'] = self.tolist()
+
+            if(private):
+                out['data'] = []
+            else:
+                out['data'] = self.tolist()
+                
+            out['owner'] = self.owner.id
             return out
 
     def send(self, worker, ptr_id=None):
@@ -179,14 +185,20 @@ class array_ptr(abstractarray):
         self.owner.register(obj)
         return obj
 
-    def ser(self, to_json=False):
+    def ser(self, private=True, to_json=False):
         if (to_json):
             return json.dumps(self.ser(True))
         else:
             out = {}
             out['type'] = "numpy.array_ptr"
             out['id'] = self.id
-            out['data'] = self.tolist()
+
+            if(private):
+                out['data'] = []
+            else:
+                out['data'] = self.tolist()
+
+            out['owner'] = self.owner.id
             out['location'] = self.location.id
             out['id_at_location'] = self.id_at_location
             return out

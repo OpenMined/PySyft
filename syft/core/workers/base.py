@@ -325,7 +325,7 @@ class BaseWorker(ABC):
         elif message_wrapper['type'] == 'numpy_cmd':
             result = self.process_numpy_command(message)
             self.register(result)
-            return result, True # Result is private
+            return result, True  # Result is private
 
         # A composite command. Must be unrolled
         elif message_wrapper['type'] == 'composite':
@@ -969,7 +969,7 @@ class BaseWorker(ABC):
             message_type=framework+'_cmd',
             recipient=recipient
         )
-
+        print("begin decoding command result")
         response = encode.decode(response, worker=self)
 
         return response

@@ -87,7 +87,7 @@ class PythonEncoder:
         if isinstance(obj, (int, float, str)) or obj is None:
             return obj
         elif isinstance(obj, np.ndarray):
-            return obj.ser(to_json=False)
+            return obj.ser(private=private_local, to_json=False)
         # Tensors and Variable encoded with their id
         elif torch_utils.is_tensor(obj) or torch_utils.is_variable(obj):
             tail_object = torch_utils.find_tail_of_chain(obj)
@@ -231,6 +231,7 @@ class PythonJSONDecoder:
         # PLAN B: If the dct object IS a dictionary, check to see if it has a "type" key
 
         if('type' in dct):
+            print(dct)
             if dct['type'] == "numpy.array":
                 return array(dct['data'], id=dct['id'], owner=self.worker)
             elif dct['type'] == 'numpy.array_ptr':
