@@ -50,6 +50,12 @@ python3 setup.py test
 
 Join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.org) and help us in our mission. We are really friendly people!
 
+## Organizational Contributions
+
+We are very grateful for contributions to PySyft from the following organizations!
+
+![comind](https://github.com/OpenMined/PySyft/raw/master/docs/_static/img/coMind.png)
+
 ## License
 
 [Apache License 2.0](https://github.com/OpenMined/PySyft/blob/master/LICENSE)
