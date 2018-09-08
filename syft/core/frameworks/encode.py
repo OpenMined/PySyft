@@ -7,9 +7,11 @@ import logging
 import torch
 import syft
 import syft as sy
+import numpy as np
 
-from ... import utils
-from . import utils as torch_utils
+from syft.core import utils
+from syft.core.frameworks.torch import utils as torch_utils
+from .numpy import array
 
 
 def encode(message, retrieve_pointers=False, private_local=True):
@@ -21,6 +23,7 @@ def encode(message, retrieve_pointers=False, private_local=True):
     metadata like the structure of the chain)
     :return: The message encoded in a json-able dict
     """
+
     encoder = PythonEncoder()
     response = encoder.encode(message,
                               retrieve_pointers=retrieve_pointers,
@@ -83,6 +86,8 @@ class PythonEncoder:
         # Case of basic types
         if isinstance(obj, (int, float, str)) or obj is None:
             return obj
+        elif isinstance(obj, np.ndarray):
+            return obj.ser(to_json=False)
         # Tensors and Variable encoded with their id
         elif torch_utils.is_tensor(obj) or torch_utils.is_variable(obj):
             tail_object = torch_utils.find_tail_of_chain(obj)
@@ -209,8 +214,10 @@ class PythonJSONDecoder:
             (e.g. tuple, or torch Variable).
 
         """
-        # TODO: Stop with this prior that data should be a dict,
-        # which require the following lines to fix with real cases
+
+        # PLAN A: See if the dct object is not actually a dictionary and address
+        # each case.
+
         if isinstance(dct, (int, str, float)):
             return dct
         if isinstance(dct, (list,)):
@@ -220,6 +227,15 @@ class PythonJSONDecoder:
         if not isinstance(dct, dict):
             print(type(dct))
             raise TypeError('Type not handled', dct)
+
+        # PLAN B: If the dct object IS a dictionary, check to see if it has a "type" key
+
+        if('type' in dct):
+            if dct['type'] == "numpy.array":
+                return array(dct['data'], id=dct['id'])
+
+        # Plan C: As a last resort, use a Regex to try to find a type somewhere.
+        # TODO: Plan C should never be called - but is used extensively in PySyft's PyTorch integratio
 
         pat = re.compile('__(.+)__')
         for key, obj in dct.items():

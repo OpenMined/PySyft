@@ -682,7 +682,7 @@ class _PointerTensor(_SyftTensor):
         """
             Get back from a remote worker the chain this pointer is pointing at
         """
-        # Remove this pointer
+        # Remove this pointer - TODO: call deregister function instead of doing it by hand
         if deregister_ptr:
             if self.torch_type == 'syft.Variable':
                 self.owner.rm_obj(self.parent.data.child.id)

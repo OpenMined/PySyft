@@ -2,11 +2,13 @@ import torch
 import json
 import logging
 import syft as sy
+import numpy as np
 from abc import ABC, abstractmethod
 
 from .. import utils
 from ..frameworks.torch import utils as torch_utils
-from ..frameworks.torch import encode
+from ..frameworks import encode
+from ..frameworks import encode as syft_encoder_router
 
 
 class BaseWorker(ABC):
@@ -191,6 +193,7 @@ class BaseWorker(ABC):
                 return None
 
         message_wrapper_json = (json.dumps(message_wrapper) + "\n").encode()
+
         self.message_queue = []
         return self._send_msg(message_wrapper_json, recipient)
 
@@ -270,26 +273,46 @@ class BaseWorker(ABC):
 
         # Receiving an object from another worker
         if message_wrapper['type'] == 'obj':
-            response = message  # response is a tensorvar
-            torch_utils.fix_chain_ends(response)
-            torch_utils.assert_is_chain_well_formed(response)
-            self.register(response)
+
+            object = message
+
+            # if object is a numpy array
+            if isinstance(message, np.ndarray):
+                "do nothing"
+
+            # if object is a Torch object - pre-process it for registration
+            else:
+                torch_utils.fix_chain_ends(object)
+                torch_utils.assert_is_chain_well_formed(object)
+
+            self.register(object)
+
             return {}, False
+
 
         #  Receiving a request for an object from another worker
         elif message_wrapper['type'] == 'req_obj':
             # Because it was pointed at, it's the first syft_object of the chain,
             # so its parent is the tensorvar
-            syft_object = self.get_obj(message)
-            tensorvar = syft_object.parent
-            if torch_utils.is_variable(syft_object.torch_type):
-                syft_data_object = tensorvar.data.child
-                self.de_register(syft_data_object)
-                if tensorvar.grad is not None:
-                    syft_grad_object = tensorvar.grad.child
-                    self.de_register(syft_grad_object)
-            self.de_register(syft_object)
-            return tensorvar, False
+            object = self.get_obj(message)
+
+            # if object being returned is a numpy array
+            if isinstance(object, np.ndarray):
+                ""
+                self.de_register(object)
+                return object, False
+
+            # object is a pytorch array
+            else:
+                tensorvar = object.parent
+                if torch_utils.is_variable(object.torch_type):
+                    syft_data_object = tensorvar.data.child
+                    self.de_register(syft_data_object)
+                    if tensorvar.grad is not None:
+                        syft_grad_object = tensorvar.grad.child
+                        self.de_register(syft_grad_object)
+                self.de_register(object)
+                return tensorvar, False
 
         #  A torch command from another worker involving one or more tensors
         #  hosted locally
@@ -557,6 +580,8 @@ class BaseWorker(ABC):
                 self.de_register(o)
         elif obj is None:
             "do nothing"
+        elif isinstance(obj, np.ndarray):
+            self.rm_obj(obj.id)
         else:
             raise TypeError('The type', type(obj), 'is not supported at the moment')
         return
@@ -612,6 +637,8 @@ class BaseWorker(ABC):
                 self.register(res)
         elif result is None:
             "do nothing"
+        elif isinstance(result, np.ndarray):
+            self.register_object(result)
         else:
             raise TypeError('The type', type(result), 'is not supported at the moment')
         return
@@ -647,8 +674,8 @@ class BaseWorker(ABC):
           registered contains the data locally or is instead a pointer to
           a tensor that lives on a different worker.
         """
-        if not torch_utils.is_syft_tensor(obj):
-            raise TypeError("Can't register a non-SyftTensor")
+        # if not torch_utils.is_syft_tensor(obj):
+            # raise TypeError("Can't register a non-SyftTensor")
 
         if id is None:
             id = obj.id
@@ -662,6 +689,7 @@ class BaseWorker(ABC):
             pointer = obj.create_pointer()
             pointer.owner = self
             self.set_obj(pointer.id, pointer)
+
         # DO NOT DELETE THIS TRY/CATCH UNLESS YOU KNOW WHAT YOU'RE DOING
         # PyTorch tensors wrapped invariables (if my_var.data) are python
         # objects that get deleted and re-created randomly according to
@@ -775,37 +803,44 @@ class BaseWorker(ABC):
 
         """
 
-        object.child.id = new_id
+        # if the object is a torch object, run some special checks, otherwise just set the ID
+        if(hasattr(object, 'child')):
+            object.child.id = new_id
+
+            if torch_utils.is_variable(object.child.torch_type):
+                if new_data_id is None or new_grad_id is None or new_grad_data_id is None:
+                    raise AttributeError(
+                        'Please provide the new_data_id, new_grad_id, and new_grad_data_id args, to be able to point to' +
+                        'Var.data, .grad')
+
+                if self.get_pointer_to(recipient, new_data_id) is not None:
+                    raise MemoryError('You already point at ', recipient, ':', new_id)
+                assert new_id != new_data_id, \
+                    "You can't have the same id vor the variable and its data."
+                assert new_id != new_grad_id, \
+                    "You can't have the same id vor the variable and its grad."
+                assert new_id != new_grad_data_id
+
+                assert new_data_id != new_grad_id
+
+                assert new_data_id != new_grad_data_id
+
+                assert new_grad_id != new_grad_data_id
+
+                object.data.child.id = new_data_id
+
+                if object.grad is None:
+                    object.init_grad_()
+
+                object.grad.child.id = new_grad_id
+
+                object.grad.data.child.id = new_grad_data_id
+        else:
+            object.id = new_id
+
         if self.get_pointer_to(recipient, new_id) is not None:
             raise MemoryError('You already point at ', recipient, ':', new_id)
-        if torch_utils.is_variable(object.child.torch_type):
-            if new_data_id is None or new_grad_id is None or new_grad_data_id is None:
-                raise AttributeError(
-                    'Please provide the new_data_id, new_grad_id, and new_grad_data_id args, to be able to point to'+
-                    'Var.data, .grad')
 
-            if self.get_pointer_to(recipient, new_data_id) is not None:
-                raise MemoryError('You already point at ', recipient, ':', new_id)
-            assert new_id != new_data_id, \
-                "You can't have the same id vor the variable and its data."
-            assert new_id != new_grad_id, \
-                "You can't have the same id vor the variable and its grad."
-            assert new_id != new_grad_data_id
-
-            assert new_data_id != new_grad_id
-
-            assert new_data_id != new_grad_data_id
-
-            assert new_grad_id != new_grad_data_id
-
-            object.data.child.id = new_data_id
-
-            if object.grad is None:
-                object.init_grad_()
-
-            object.grad.child.id = new_grad_id
-
-            object.grad.data.child.id = new_grad_data_id
 
         object = encode.encode(object, retrieve_pointers=False, private_local=False)
 

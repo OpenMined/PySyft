@@ -8,7 +8,7 @@ import torch
 import syft
 import syft as sy
 
-from .frameworks.torch import encode
+from .frameworks import encode
 
 def is_in_place_method(attr):
     """

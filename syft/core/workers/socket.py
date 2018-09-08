@@ -2,7 +2,7 @@ import socket
 import json
 
 from .base import BaseWorker
-from ..frameworks.torch import encode
+from ..frameworks import encode
 
 
 class SocketWorker(BaseWorker):

@@ -9,7 +9,7 @@ import torch
 import syft
 import syft as sy
 
-from . import encode
+from .. import encode
 from ... import utils
 
 def extract_type_and_obj(dct):

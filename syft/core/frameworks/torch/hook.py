@@ -85,7 +85,7 @@ class TorchHook(object):
 
         if torch.torch_hooked > 0:
             logging.warn("Torch was already hooked... skipping hooking process")
-            self.local_worker = torch.local_worker
+            self.local_worker = sy.local_worker
         else:
 
             if self.local_worker is None:
@@ -108,7 +108,7 @@ class TorchHook(object):
             self._hook_backward()
             self._hook_module()
 
-            torch.local_worker = self.local_worker
+            sy.local_worker = self.local_worker
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloads given tensor_type (native)"""
