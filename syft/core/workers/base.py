@@ -317,7 +317,7 @@ class BaseWorker(ABC):
         #  A torch command from another worker involving one or more tensors
         #  hosted locally
         elif message_wrapper['type'] == 'torch_cmd':
-            result = self.process_command(message)
+            result = self.process_torch_command(message)
             self.register(result)
             return result, True  # Result is private
 
@@ -705,7 +705,7 @@ class BaseWorker(ABC):
         # except:
         #    ""
 
-    def process_command(self, command_msg):
+    def process_torch_command(self, command_msg):
         """process_command(self, command_msg) -> (command output, list of owners)
         Process a command message from a client worker. Returns the
         result of the computation and a list of the result's owners.

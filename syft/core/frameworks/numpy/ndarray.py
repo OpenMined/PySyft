@@ -4,7 +4,7 @@ import numpy as np
 import syft as sy
 
 from .encode import NumpyEncoder
-
+import torch
 
 class abstractarray(np.ndarray):
 
@@ -80,6 +80,9 @@ class array(abstractarray):
                          location=location,
                          id_at_location=id_at_location)
 
+    def torch(self):
+        return torch.FloatTensor(self)
+
 
 class array_ptr(abstractarray):
 
@@ -118,4 +121,21 @@ class array_ptr(abstractarray):
         obj.id = self.id
         self.owner.register(obj)
         return obj
+
+    def ser(self, to_json=False):
+        if (to_json):
+            return json.dumps(self.ser(True))
+        else:
+            out = {}
+            out['type'] = "numpy.array_ptr"
+            out['id'] = self.id
+            out['data'] = self.tolist()
+            out['location'] = self.location.id
+            out['id_at_location'] = self.id_at_location
+            return out
+
+
+
+
+
 

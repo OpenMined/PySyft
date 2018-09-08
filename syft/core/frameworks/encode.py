@@ -232,7 +232,7 @@ class PythonJSONDecoder:
 
         if('type' in dct):
             if dct['type'] == "numpy.array":
-                return array(dct['data'], id=dct['id'])
+                return array(dct['data'], id=dct['id'], owner=self.worker)
 
         # Plan C: As a last resort, use a Regex to try to find a type somewhere.
         # TODO: Plan C should never be called - but is used extensively in PySyft's PyTorch integratio
