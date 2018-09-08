@@ -191,12 +191,11 @@ class BaseWorker(ABC):
                 message_wrapper = self.compile_composite_message()
             else:
                 return None
-        print(message_wrapper)
+
         message_wrapper_json = (json.dumps(message_wrapper) + "\n").encode()
 
         self.message_queue = []
-        print("message wrapper json")
-        print(message_wrapper_json)
+
         return self._send_msg(message_wrapper_json, recipient)
 
     def compile_composite_message(self):
@@ -245,7 +244,7 @@ class BaseWorker(ABC):
         """
 
         message_wrapper = encode.decode(message_wrapper_json, worker=self)
-        print(message_wrapper)
+
         response, private = self.process_message_type(message_wrapper)
 
         response = encode.encode(response, retrieve_pointers=False, private_local=private)
@@ -724,7 +723,7 @@ class BaseWorker(ABC):
         """
         print(command_msg)
         torch_utils.assert_has_only_torch_tensorvars(command_msg)
-
+        
         attr = command_msg['command']
         has_self = command_msg['has_self']
         args = command_msg['args']
