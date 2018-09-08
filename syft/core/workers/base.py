@@ -322,6 +322,11 @@ class BaseWorker(ABC):
             self.register(result)
             return result, True  # Result is private
 
+        elif message_wrapper['type'] == 'numpy_cmd':
+            result = self.process_numpy_command(message)
+            self.register(result)
+            return result, True # Result is private
+
         # A composite command. Must be unrolled
         elif message_wrapper['type'] == 'composite':
             raise NotImplementedError('Composite command not handled at the moment')
@@ -706,6 +711,32 @@ class BaseWorker(ABC):
         # except:
         #    ""
 
+    def process_numpy_command(self, command_msg):
+        """process_command(self, command_msg) -> (command output, list of owners)
+        Process a command message from a client worker. Returns the
+        result of the computation and a list of the result's owners.
+
+        :Parameters:
+
+        * **command_msg (dict)** The dictionary containing a
+          command from another worker.
+
+        * **out (command output, list of** :class:`BaseWorker`
+          ids/objects **)** This executes the command
+          and returns its output along with a list of
+          the owners of the tensors involved.
+        """
+
+        # torch_utils.assert_has_only_torch_tensorvars(command_msg)
+
+        attr = command_msg['command']
+        has_self = command_msg['has_self']
+        args = command_msg['args']
+        kwargs = command_msg['kwargs']
+        self_ = command_msg['self'] if has_self else None
+
+        return self._execute_numpy_call(attr, self_, *args, **kwargs)
+
     def process_torch_command(self, command_msg):
         """process_command(self, command_msg) -> (command output, list of owners)
         Process a command message from a client worker. Returns the
@@ -721,9 +752,9 @@ class BaseWorker(ABC):
           and returns its output along with a list of
           the owners of the tensors involved.
         """
-        print(command_msg)
+
         torch_utils.assert_has_only_torch_tensorvars(command_msg)
-        
+
         attr = command_msg['command']
         has_self = command_msg['has_self']
         args = command_msg['args']
@@ -862,12 +893,18 @@ class BaseWorker(ABC):
 
         * **message (string)** the message being sent
         """
+        return self.send_command(recipient, message, framework="torch")
+
+
+
+    def send_command(self, recipient, message, framework="torch"):
+
         if isinstance(recipient, (str, int)):
             raise TypeError('Recipient should be a worker object not his id.')
 
         response = self.send_msg(
             message=message,
-            message_type='torch_cmd',
+            message_type=framework+'_cmd',
             recipient=recipient
         )
 
