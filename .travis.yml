@@ -25,6 +25,12 @@ install:
 
     - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION tornado=4.4 pytorch=0.3.1 scipy jupyter -c pytorch
     - source activate test-environment
+    # install TensorFlow from https://storage.googleapis.com/tensorflow/
+    - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp27-none-linux_x86_64.whl;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp34-cp34m-linux_x86_64.whl;
+    fi
     - pip install -r requirements.txt
     - pip install flake8
     - pip install flake8-docstrings
