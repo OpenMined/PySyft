@@ -42,6 +42,57 @@ class abstractarray(np.ndarray):
         if obj is None: return
         self.info = getattr(obj, 'info', None)
 
+    @classmethod
+    def handle_call(cls, command, owner):
+
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        has_self = command['has_self']
+
+        if has_self and cls.is_overloaded_method(attr):
+            self_ = command['self']
+            result = getattr(self_, attr)(*args, **kwargs)
+            return result
+        elif not has_self and cls.is_overloaded_function(attr):
+            overload_function = cls.overloaded_functions.get(attr)
+            result = overload_function(*args, **kwargs)
+            return result
+        else:
+            print("do something else")
+
+    @classmethod
+    def is_overloaded_method(cls, attr):
+        """
+        State if a function name corresponds to a Syft Tensor method which
+        overloads a torch method
+        """
+        # exclude = ['on', '__init__', 'native___init__', '__repr__', '__str__', 'create_pointer',
+        #            'ser', 'deser', 'handle_call']
+        # if attr in exclude:
+        #     return False
+        # if hasattr(getattr(cls, attr), '__module__') \
+        #         and getattr(cls, attr).__module__ == 'syft.core.frameworks.numpy.array':
+        #     return True
+        # return False
+        return True # TODO: finish this
+
+    @classmethod
+    def is_overloaded_function(cls, attr):
+        """
+        State if a function name corresponds to an overloaded function by the Syft
+        tensor, which declared the corresponding overloading function in
+        cls.overload_functions
+        """
+        return True #TODO: finish this
+        # attr = attr.split('.')[-1]
+        # overloaded_functions = [
+        #     func for func in dir(cls.overload_functions)
+        #     if re.match(r'__(.*)__', func) is None
+        #        and func != 'get'
+        # ]
+        # return attr in overloaded_functions
+
 
 class array(abstractarray):
 

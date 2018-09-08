@@ -579,7 +579,10 @@ class _PointerTensor(_SyftTensor):
 
     def register_pointer(self):
         worker = self.owner
-        location = self.location.id
+        if(isinstance(self.location, int)):
+            location = self.location
+        else:
+            location = self.location.id
         id_at_location = self.id_at_location
         # Add the remote location worker key if needed
         if location not in worker._pointers.keys():

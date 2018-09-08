@@ -79,7 +79,8 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
         ref_child_type = sy._LocalTensor
     else:
         if all([child_type in torch.tensor_types for child_type in next_child_types]):
-            ref_child_type = sy.FloatTensor
+            ref_child_type = sy.FloatTensor  # TODO: this seems hard coded - likely breaks when using
+                                             # another type
         else:
             ref_child_type = next_child_types[0]
             for next_child_type in next_child_types:
@@ -97,12 +98,14 @@ def enforce_owner(obj, owner):
     """
     Reassign every elements of the chain to a specified owner (in a Virtual worker context)
     """
+
     if isinstance(obj, (list, tuple, set, bytearray)):
         for o in obj:
             enforce_owner(o, owner)
     elif isinstance(obj, dict):
         for k, o in obj.items():
             enforce_owner(o, owner)
+
     else:
         if is_syft_tensor(obj) and hasattr(obj, 'data'):
             enforce_owner(obj.data, owner)
@@ -119,6 +122,14 @@ def enforce_owner(obj, owner):
                 owner.hook.local_worker.de_register(obj)
             obj.owner = owner
             enforce_owner(obj.child, owner)
+
+        if is_tensor(obj):
+            if owner != owner.hook.local_worker:
+                owner.hook.local_worker.de_register(obj)
+            obj.child.owner = owner
+
+            # would normally call enforce_owner(obj.child, owner) here except since
+            # Torch is circular this creates an infinite recursion. TODO: fix after Torch 1.0
 
 
 def wrap_command_with(obj, wrapper):
@@ -140,7 +151,8 @@ def wrap_command(obj):
         return obj
     # Torch tensor or variable
     elif is_tensor(obj) or is_variable(obj):
-        raise TypeError('Expecting syft tensors')
+        return obj # the tensor is already wrapped
+        # raise TypeError('Expecting syft tensors but got ' + str(type(obj)))
     # sy._SyftTensor
     elif is_syft_tensor(obj):
         _tail = find_tail_of_chain(obj)

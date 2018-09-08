@@ -737,6 +737,70 @@ class BaseWorker(ABC):
 
         return self._execute_numpy_call(attr, self_, *args, **kwargs)
 
+    def _execute_numpy_call(self, attr, self_, *args, **kwargs):
+        """
+        Transmit the call to the appropriate TensorType for handling
+        """
+
+        # Distinguish between a command with torch tensors (like when called by the client,
+        # or received from another worker), and a command with syft tensor, which can occur
+        # when a function is overloaded by a SyftTensor (for instance _PlusIsMinusTensor
+        # overloads add and replace it by sub)
+        try:
+            torch_utils.assert_has_only_torch_tensorvars((args, kwargs))
+            is_torch_command = True
+        except AssertionError:
+            is_torch_command = False
+
+        has_self = self_ is not None
+
+        # if has_self:
+        #     command = torch._command_guard(attr, torch.tensorvar_methods)
+        # else:
+        #     command = torch._command_guard(attr, torch.torch_modules)
+        command = attr
+
+        raw_command = {
+            'command': command,
+            'has_self': has_self,
+            'args': args,
+            'kwargs': kwargs
+        }
+        if has_self:
+            raw_command['self'] = self_
+
+        # if is_torch_command:
+        #     # Unwrap the torch wrapper
+        #     syft_command, child_type = torch_utils.prepare_child_command(
+        #         raw_command, replace_tensorvar_with_child=True)
+        # else:
+        #     # Get the next syft class
+        #     # The actual syft class is the one which redirected (see the  _PlusIsMinus ex.)
+        #     syft_command, child_type = torch_utils.prepare_child_command(
+        #         raw_command, replace_tensorvar_with_child=True)
+        #
+        #     torch_utils.assert_has_only_syft_tensors(syft_command)
+
+        # Note: because we have pb of registration of tensors with the right worker,
+        # and because having Virtual workers creates even more ambiguity, we specify the worker
+        # performing the operation
+        # torch_utils.enforce_owner(raw_command, self)
+
+        result = sy.array.handle_call(raw_command, owner=self)
+
+        torch_utils.enforce_owner(result, self)
+
+        if is_torch_command:
+            # Wrap the result
+            if has_self and utils.is_in_place_method(attr):
+                wrapper = torch_utils.wrap_command_with(result, raw_command['self'])
+            else:
+                wrapper = torch_utils.wrap_command(result)
+            return wrapper
+        else:
+            # We don't need to wrap
+            return result
+
     def process_torch_command(self, command_msg):
         """process_command(self, command_msg) -> (command output, list of owners)
         Process a command message from a client worker. Returns the
@@ -894,8 +958,6 @@ class BaseWorker(ABC):
         * **message (string)** the message being sent
         """
         return self.send_command(recipient, message, framework="torch")
-
-
 
     def send_command(self, recipient, message, framework="torch"):
 
