@@ -24,6 +24,7 @@ class abstractarray(np.ndarray):
         # add the new attribute to the created instance
         if (id is None):
             id = random.randint(0, 1e10)
+
         self.id = id
 
         if (owner is None):
@@ -35,13 +36,15 @@ class abstractarray(np.ndarray):
 
         self.owner = owner
 
+        self.initialized = True
         # Finally, we must return the newly created object:
         return self
 
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
-        if obj is None: return
-        self.info = getattr(obj, 'info', None)
+        # if obj is None: return
+        if(not hasattr(self, 'initialized')):
+            self.init(None, None, None)
 
     @classmethod
     def handle_call(cls, command, owner):
@@ -146,9 +149,9 @@ class array_ptr(abstractarray):
 
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
-        obj = np.asarray(["data is remote"]).view(cls)
+        obj = np.asarray(None).view(cls)
 
-        obj = obj.init(["data is remote"], id, owner)
+        obj = obj.init(None, id, owner)
 
         obj.location = location
         obj.id_at_location = id_at_location
@@ -185,6 +188,16 @@ class array_ptr(abstractarray):
             out['location'] = self.location.id
             out['id_at_location'] = self.id_at_location
             return out
+
+    def cumsum(self, *args, **kwargs):
+        cmd, locations, owners = utils.compile_command(attr="cumsum",
+                                                       args={},
+                                                       kwargs={},
+                                                       has_self=True,
+                                                       self=self)
+        return self.owner.send_command(recipient=self.location,
+                                       message=cmd,
+                                       framework="numpy")
 
     def torch(self):
         cmd, locations, owners = utils.compile_command(attr="torch",
