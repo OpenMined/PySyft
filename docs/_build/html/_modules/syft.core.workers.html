@@ -519,6 +519,15 @@ if it exists.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>query='#boston'</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queries all local tensors which have string ids, returning the tensors which match the query. The query is
+composed of one or more substrings which all be contained within a tensor&#8217;s ID in order for it to be a match.
+:param query: either a string or a list of strings
+:return: a list of tensors</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.base.BaseWorker.send_msg">
 <code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.base.BaseWorker.send_msg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sends a string message to another worker with message_type information
@@ -744,6 +753,18 @@ can include all known workers.</li>
 <code class="descname">listen</code><span class="sig-paren">(</span><em>num_messages=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.socket.SocketWorker.listen" title="Permalink to this definition">¶</a></dt>
 <dd><p>Starts SocketWorker server on the correct port and handles message as they
 are received.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.socket.SocketWorker.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>query</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.socket.SocketWorker.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is designed to find relevant tensors present within the worker&#8217;s objects (self._objects) dict.
+It does so by looking for string overlap between one or more strings in the &#8220;query&#8221; and the id of each tensor.
+If the current worker object (self) is merely a pointer to a remote worker (connected via socket), then it sends
+a command to the remote worker which calls this function on the remote machine. If the current worker object
+(self) is NOT a pointer, then it queries the local tensors.
+:param query: a string or list of strings
+:return: if self.is_pointer==True, this returns a set of pointer tensors. Otherwise, it returns the tensors.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1330,6 +1351,15 @@ if it exists.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="syft.core.workers.BaseWorker.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>query='#boston'</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queries all local tensors which have string ids, returning the tensors which match the query. The query is
+composed of one or more substrings which all be contained within a tensor&#8217;s ID in order for it to be a match.
+:param query: either a string or a list of strings
+:return: a list of tensors</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="syft.core.workers.BaseWorker.send_msg">
 <code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.BaseWorker.send_msg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sends a string message to another worker with message_type information
@@ -1552,6 +1582,18 @@ can include all known workers.</li>
 <code class="descname">listen</code><span class="sig-paren">(</span><em>num_messages=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.listen" title="Permalink to this definition">¶</a></dt>
 <dd><p>Starts SocketWorker server on the correct port and handles message as they
 are received.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.SocketWorker.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>query</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.workers.SocketWorker.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is designed to find relevant tensors present within the worker&#8217;s objects (self._objects) dict.
+It does so by looking for string overlap between one or more strings in the &#8220;query&#8221; and the id of each tensor.
+If the current worker object (self) is merely a pointer to a remote worker (connected via socket), then it sends
+a command to the remote worker which calls this function on the remote machine. If the current worker object
+(self) is NOT a pointer, then it queries the local tensors.
+:param query: a string or list of strings
+:return: if self.is_pointer==True, this returns a set of pointer tensors. Otherwise, it returns the tensors.</p>
 </dd></dl>
 
 <dl class="method">

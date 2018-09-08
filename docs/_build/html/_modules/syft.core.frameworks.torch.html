@@ -237,7 +237,7 @@ to special keywords referring to a type we need to re-cast
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.encode.decode">
-<code class="descclassname">syft.core.frameworks.torch.encode.</code><code class="descname">decode</code><span class="sig-paren">(</span><em>message</em>, <em>worker</em>, <em>acquire=None</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.encode.decode" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.encode.</code><code class="descname">decode</code><span class="sig-paren">(</span><em>message</em>, <em>worker</em>, <em>acquire=None</em>, <em>message_is_dict=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.encode.decode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine whether the mode should be &#8216;acquire&#8217; or &#8216;suscribe&#8217;, and
 Decode the message with this policy
 1. mode=&#8217;acquire&#8217; means that every SyftTensor seen will be copied to the worker</p>
@@ -260,6 +260,7 @@ to be decoded</li>
 <li><strong>message</strong> &#8211; The message to decode</li>
 <li><strong>worker</strong> &#8211; The worker performing the decode operation</li>
 <li><strong>acquire</strong> &#8211; Should we copy the data of point at it</li>
+<li><strong>message_is_dict</strong> &#8211; Is the message a dictionary already or a JSON string needing decoding?</li>
 </ul>
 </td>
 </tr>
@@ -332,6 +333,64 @@ metadata like the structure of the chain)
 <dt id="syft.core.frameworks.torch.hook.TorchHook">
 <em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.hook.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.hook.TorchHook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors -
+<strong>Currently compatible with PyTorch 0.3.1</strong></p>
+<p>The purpose of this class is to:</p>
+<blockquote>
+<div><ul class="simple">
+<li>extend torch methods to allow for the moving of tensors
+and variables from one worker to another</li>
+<li>override torch methods to execute commands on one worker
+that are called on tensors controlled by the local worker.</li>
+</ul>
+</div></blockquote>
+<p>This class is typically the first thing you will initialize when
+using PySyft with PyTorch because it is responsible for augmenting
+PyTorch with PySyft&#8217;s added functionality (such as remote execution).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>local_worker (</strong><a class="reference internal" href="syft.core.workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
+you can optionally provide a local worker as a parameter which
+TorchHook will assume to be the worker owned by the local machine.
+If you leave it empty, TorchClient will automatically initialize
+a <a class="reference internal" href="syft.core.workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you&#8217;re
+looking to do local experimentation/development.</li>
+<li><strong>is_client (bool, optional)</strong> whether or not the TorchHook is
+being initialized as an end-user client. This can impact whether
+or not variables are deleted when they fall out of scope. If you set
+this incorrectly on a end user client, Tensors and Variables will
+never be deleted. If you set this incorrectly on a remote machine
+(not a client), tensors will not get saved. It&#8217;s really only
+important if you&#8217;re not initializing the local worker yourself. (Default: True)</li>
+<li><strong>verbose (bool, optional)</strong> whether or not to print operations
+as they occur. (Defalt: True)</li>
+<li><strong>queue_size (int, optional)</strong> max length of the list storing messages
+to be sent. (Default: 0)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">TorchHook</span><span class="p">()</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading Complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go"> -2</span>
+<span class="go"> -1</span>
+<span class="go"> 0</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go">[syft.core.frameworks.torch.tensor.FloatTensor of size 6]</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </div>
@@ -541,6 +600,64 @@ Returns the wrapper</p>
 <dt id="syft.core.frameworks.torch.TorchHook">
 <em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.TorchHook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors -
+<strong>Currently compatible with PyTorch 0.3.1</strong></p>
+<p>The purpose of this class is to:</p>
+<blockquote>
+<div><ul class="simple">
+<li>extend torch methods to allow for the moving of tensors
+and variables from one worker to another</li>
+<li>override torch methods to execute commands on one worker
+that are called on tensors controlled by the local worker.</li>
+</ul>
+</div></blockquote>
+<p>This class is typically the first thing you will initialize when
+using PySyft with PyTorch because it is responsible for augmenting
+PyTorch with PySyft&#8217;s added functionality (such as remote execution).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>local_worker (</strong><a class="reference internal" href="syft.core.workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
+you can optionally provide a local worker as a parameter which
+TorchHook will assume to be the worker owned by the local machine.
+If you leave it empty, TorchClient will automatically initialize
+a <a class="reference internal" href="syft.core.workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you&#8217;re
+looking to do local experimentation/development.</li>
+<li><strong>is_client (bool, optional)</strong> whether or not the TorchHook is
+being initialized as an end-user client. This can impact whether
+or not variables are deleted when they fall out of scope. If you set
+this incorrectly on a end user client, Tensors and Variables will
+never be deleted. If you set this incorrectly on a remote machine
+(not a client), tensors will not get saved. It&#8217;s really only
+important if you&#8217;re not initializing the local worker yourself. (Default: True)</li>
+<li><strong>verbose (bool, optional)</strong> whether or not to print operations
+as they occur. (Defalt: True)</li>
+<li><strong>queue_size (int, optional)</strong> max length of the list storing messages
+to be sent. (Default: 0)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">TorchHook</span><span class="p">()</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading Complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go"> -2</span>
+<span class="go"> -1</span>
+<span class="go"> 0</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go">[syft.core.frameworks.torch.tensor.FloatTensor of size 6]</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </div>
