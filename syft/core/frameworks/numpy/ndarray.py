@@ -65,13 +65,12 @@ class array(abstractarray):
 
         obj_id = self.id
 
-        self.owner.send_obj(self, ptr_id, worker)
+        self.owner.send_obj(self, obj_id, worker)
 
         ptr = self.create_pointer(id=ptr_id,
                                   location=worker,
                                   id_at_location=obj_id)
-        self = ptr
-        return self
+        return ptr
 
     def create_pointer(self, id, location, id_at_location):
 
@@ -89,6 +88,7 @@ class array_ptr(abstractarray):
                 owner=None,
                 location=None,
                 id_at_location=None):
+
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
         obj = np.asarray(["data is remote"]).view(cls)
@@ -100,5 +100,22 @@ class array_ptr(abstractarray):
 
         return obj
 
-    def get(self):
-        print("getting tensor")
+    def get(self, deregister_ptr=True):
+        """
+            Get a chain back from a remote worker that his pointer is pointing at
+        """
+
+        # Remove this pointer - TODO: call deregister function instead of doing it by hand
+        if (deregister_ptr):
+            self.owner.rm_obj(self.id)
+
+        # if the pointer happens to be pointing to a local object,
+        # just return that object (this is an edge case)
+        if self.location == self.owner:
+            return self.owner.get_obj(self.id_at_location)
+
+        obj = self.owner.request_obj(self.id_at_location, self.location)
+        obj.id = self.id
+        self.owner.register(obj)
+        return obj
+
