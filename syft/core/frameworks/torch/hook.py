@@ -409,7 +409,8 @@ class TorchHook(object):
         accordingly.
         """
         def _execute_method_call(self, *args, **kwargs):
-            return hook_self._execute_call(attr, self, *args, **kwargs)
+            worker = hook_self.local_worker
+            return worker._execute_call(attr, self, *args, **kwargs)
 
         return _execute_method_call
 
@@ -455,15 +456,10 @@ class TorchHook(object):
         """
 
         def _execute_function_call(*args, **kwargs):
-            return hook_self._execute_call(attr, None, *args, **kwargs)
+            worker = hook_self.local_worker
+            return worker._execute_call(attr, None, *args, **kwargs)
 
         return _execute_function_call
-
-    def _execute_call(hook_self, attr, self, *args, **kwargs):
-        """
-        Forward the call to the local_worker
-        """
-        return hook_self.local_worker._execute_call(attr, self, *args, **kwargs)
 
     def _hook_backward(hook_self):
         """
