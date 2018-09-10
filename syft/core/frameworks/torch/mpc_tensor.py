@@ -11,7 +11,8 @@ class _MPCTensor(_SyftTensor):
 
     def __init__(self, shares, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.shares = shares # shares is a _GeneralizedPointerTensor
+        self.shares = shares  # shares is a _GeneralizedPointerTensor
+        self.child = self.shares
 
 
     # The table of command you want to replace
@@ -48,6 +49,7 @@ class _MPCTensor(_SyftTensor):
     def send(self, workers):
         self.n_workers = len(workers)
         self.shares = self.share(self.var, self.n_workers)
+        self.child = self.shares
         self.workers = workers
         for share, worker in zip(self.shares, self.workers):
             share.send(worker)

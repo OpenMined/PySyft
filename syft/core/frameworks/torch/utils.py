@@ -591,14 +591,14 @@ def split_to_pointer_commands(syft_command):
     # This functionality sets up the dictionary of commands based on worker id
     if syft_command['has_self']:
         commands = {
-            worker_id : {
+            worker_id: {
                 'has_self': syft_command['has_self'],
                 'self': syft_command['self'].pointer_tensor_dict[worker_id],
-                'kwargs' :{},
-                'command' : syft_command['command'],
+                'kwargs': {},
+                'command': syft_command['command'],
             } for worker_id in syft_command['self'].pointer_tensor_dict
         }
-        if isinstance(syft_command['args'][0], _GeneralizedPointerTensor):
+        if isinstance(syft_command['args'][0], sy._GeneralizedPointerTensor):
             for worker_id in commands:
                 commands['args'] = [syft_command['args'][0].pointer_tensor_dict[worker_id]]
         else:
@@ -620,14 +620,14 @@ def split_to_pointer_commands(syft_command):
 
     args = syft_command['args'][1:]
     for arg in args:
-        if isinstance(arg, _GeneralizedPointerTensor):
+        if isinstance(arg, sy._GeneralizedPointerTensor):
             for worker_id in commands:
                 commands['args'][worker_id].append(arg.pointer_tensor_dict[worker_id])
         else:
             for worker_id in commands:
                 commands['args'][worker_id].append(arg)
     for kwarg in syft_command['kwargs']:
-        if isinstance(arg, _GeneralizedPointerTensor):
+        if isinstance(arg, sy._GeneralizedPointerTensor):
             for worker_id in commands:
                 commands['kwargs'][worker_id].update({kwarg: syft_command[kwarg].pointer_tensor_dict[worker_id]})
         else:
