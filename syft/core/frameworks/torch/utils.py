@@ -79,7 +79,6 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
         ref_child_type = sy._LocalTensor
     else:
         if all([child_type in torch.tensor_types for child_type in next_child_types]):
-            # ref_child_type = sy.FloatTensor
             ref_child_type = next_child_types[0]
         else:
             ref_child_type = next_child_types[0]

@@ -400,12 +400,7 @@ class _LocalTensor(_SyftTensor):
 
         if owner.id != owner.hook.local_worker.id:
             if isinstance(response, (int, float, bool)):
-
-                # if(attr == "__getitem__"):
                 response = torch_type([response])
-                # else:
-                #     response = (sy.zeros(1) + response)
-
             elif isinstance(response, (np.ndarray, )):
                 response = sy.FloatTensor(response)
         else:
