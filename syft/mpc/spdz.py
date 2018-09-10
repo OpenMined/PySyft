@@ -1,5 +1,5 @@
 import torch
-from ../core/frameworks/torch/tensor import _GeneralizedPointerTensor
+from ..core.frameworks.torch.tensor import _GeneralizedPointerTensor
 BASE = 10
 KAPPA = 3  # ~29 bits
 
@@ -43,7 +43,7 @@ def reconstruct(shares):
 
 def swap_shares(shares):
     new_shares = {}
-    for i, share in enumerate(shares);
+    for i, share in enumerate(shares):
         new_shares[share] = shares.items[i-1]
     return new_shares
 

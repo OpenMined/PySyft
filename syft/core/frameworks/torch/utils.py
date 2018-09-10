@@ -613,11 +613,13 @@ def split_to_pointer_commands(syft_command):
                 'kwargs' : {},
                 'command' : syft_command['command'],
             } for worker_id in syft_command
+        }
 
     # After the dict is set up, we itterate over the args and kwargs to split up all that are
     # generalized pointer tensors into single pointers
 
-    for arg in syft_command['args'][1:]:
+    args = syft_command['args'][1:]
+    for arg in args:
         if isinstance(arg, _GeneralizedPointerTensor):
             for worker_id in commands:
                 commands['args'][worker_id].append(arg.pointer_tensor_dict[worker_id])
