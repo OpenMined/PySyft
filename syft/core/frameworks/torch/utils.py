@@ -200,7 +200,8 @@ def get_connected_variables(variable):
 def get_variables_in_backward_graph(var, nodes=[], seen=set()):
     if var not in seen:
         if torch.is_tensor(var):
-            logging.warning('Shouldnt access tensors')
+            # logging.warning('Shouldnt access tensors')
+            pass
         elif hasattr(var, 'variable'):
             u = var.variable
             nodes.append(u.id)  # id(var), id(u)

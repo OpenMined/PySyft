@@ -646,6 +646,13 @@ class _PointerTensor(_SyftTensor):
         if self.location == self.owner and not skip_register:
             logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
 
+    def del_object(self):
+        print('send del')
+        worker = self.location
+        tensorvar_id = self.id_at_location
+        self.owner.send_rm_obj(tensorvar_id, worker)
+        print('remote del done')
+
     def register_pointer(self):
         worker = self.owner
         if(isinstance(self.location, int)):
