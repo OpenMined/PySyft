@@ -79,7 +79,7 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
         ref_child_type = sy._LocalTensor
     else:
         if all([child_type in torch.tensor_types for child_type in next_child_types]):
-            ref_child_type = sy.FloatTensor
+            ref_child_type = next_child_types[0]
         else:
             ref_child_type = next_child_types[0]
             for next_child_type in next_child_types:
@@ -136,7 +136,7 @@ def wrap_command(obj):
     Returns the wrapper
     """
     # for numeric values for instance, don't add a wrapper
-    if isinstance(obj, (int, float, bool, str, np.ndarray)) or obj is None:
+    if isinstance(obj, (int, float, bool, str, np.ndarray, slice)) or obj is None:
         return obj
     # Torch tensor or variable
     elif is_tensor(obj) or is_variable(obj):
@@ -165,7 +165,9 @@ def wrap_command(obj):
     elif isinstance(obj, dict):
         return {k: wrap_command(o) for k, o in obj.items()}
     else:
-        logging.warning('The following type wasnt wrapped:', type(obj))
+        print(obj)
+        print('The following type wasnt wrapped:', str(type(obj)))
+        print(sadf)
         return obj
 
 
