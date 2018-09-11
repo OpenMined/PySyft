@@ -56,8 +56,8 @@ We are very grateful for contributions to PySyft from the following organization
 
 <div>
 <img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="drawing" width="250"/><br /><br />
-  <a href="https://comind.org/">CoMind Website</a> & 
-  <a href="https://github.com/coMindOrg/federated-averaging-tutorials">CoMind Github</a>
+  <a href="https://comind.org/">coMind Website</a> & 
+  <a href="https://github.com/coMindOrg/federated-averaging-tutorials">coMind Github</a>
 </div>
 
 
