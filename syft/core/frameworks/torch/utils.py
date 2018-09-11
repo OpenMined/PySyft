@@ -136,7 +136,7 @@ def wrap_command(obj):
     Returns the wrapper
     """
     # for numeric values for instance, don't add a wrapper
-    if isinstance(obj, (int, float, bool, str, np.ndarray)) or obj is None:
+    if isinstance(obj, (int, float, bool, str, np.ndarray, slice)) or obj is None:
         return obj
     # Torch tensor or variable
     elif is_tensor(obj) or is_variable(obj):
@@ -165,7 +165,9 @@ def wrap_command(obj):
     elif isinstance(obj, dict):
         return {k: wrap_command(o) for k, o in obj.items()}
     else:
-        logging.warning('The following type wasnt wrapped:', type(obj))
+        print(obj)
+        print('The following type wasnt wrapped:', str(type(obj)))
+        print(sadf)
         return obj
 
 
