@@ -561,7 +561,7 @@ class _PlusIsMinusTensor(_SyftTensor):
 
 class _GeneralizedPointerTensor(_SyftTensor):
 
-    def __init__(self, pointer_tensor_dict, parent, torch_type, id = None, owner=None, skip_register=False):
+    def __init__(self, pointer_tensor_dict, parent=None, torch_type=None, id=None, owner=None, skip_register=False):
          super().__init__(child=None, parent=parent, torch_type=torch_type, owner=owner, id=id,
                          skip_register=skip_register)
          self.pointer_tensor_dict = pointer_tensor_dict
@@ -569,9 +569,15 @@ class _GeneralizedPointerTensor(_SyftTensor):
     @classmethod
     def handle_call(cls, syft_command, owner):
         commands = torch_utils.split_to_pointer_commands(syft_command)
-        result_dict = {worker_id:_PointerTensor.handle_call(commands[worker_id], owner) for worker_id in commands}
+        result_dict = {}
+        for worker_id in commands:
+            command = commands[worker_id]
+            result_dict[worker_id] = sy._PointerTensor.handle_call(commands[worker_id], owner)
         #TODO: @trask @theo could you take a look at this if you have better ideas on how to get these parameters
-        return _GeneralizedPointerTensor(result_dict, None, None, id=None, owner=owner, skip_register=False)
+        gpt =  _GeneralizedPointerTensor(result_dict, None, None, id=None, owner=owner, skip_register=False)
+        # Todo: Add a generic child dependign on a torch_type
+        gpt.child = sy.FloatTensor([])
+        return gpt
 
 class _PointerTensor(_SyftTensor):
 

@@ -350,6 +350,8 @@ def chain_print(obj, display=True, verbose=False):
                     grad_types.append('<empty>')
         if isinstance(obj.child, (sy._LocalTensor, sy._PointerTensor)):
             break
+        if isinstance(obj.child, (sy._GeneralizedPointerTensor, )):
+            break
         obj = obj.child
         i += 1
         if i >= 12:
@@ -593,17 +595,17 @@ def split_to_pointer_commands(syft_command):
         commands = {
             worker_id: {
                 'has_self': syft_command['has_self'],
-                'self': syft_command['self'].pointer_tensor_dict[worker_id],
+                'self': syft_command['self'].pointer_tensor_dict[worker_id].child,
                 'kwargs': {},
                 'command': syft_command['command'],
             } for worker_id in syft_command['self'].pointer_tensor_dict
         }
         if isinstance(syft_command['args'][0], sy._GeneralizedPointerTensor):
             for worker_id in commands:
-                commands[worker_id]['args'] = [syft_command['args'][0].pointer_tensor_dict[worker_id]]
+                commands[worker_id]['args'] = [syft_command['args'][0].pointer_tensor_dict[worker_id].child]
         else:
             for worker_id in commands:
-                commands[worker_id]['args'] = [syft_command['args'][0]]
+                commands[worker_id]['args'] = [syft_command['args'][0].child]
     else:
         commands = {
             worker_id : {
