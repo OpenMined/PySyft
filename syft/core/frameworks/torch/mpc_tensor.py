@@ -34,7 +34,7 @@ class _MPCTensor(_SyftTensor):
 
     # Put here all the methods you want to overload
 
-    def add(self, other):
+    def __add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = spdz.spdz_add(self.shares, other.shares)
         response = _MPCTensor(gp_response)

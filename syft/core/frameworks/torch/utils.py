@@ -600,10 +600,10 @@ def split_to_pointer_commands(syft_command):
         }
         if isinstance(syft_command['args'][0], sy._GeneralizedPointerTensor):
             for worker_id in commands:
-                commands['args'] = [syft_command['args'][0].pointer_tensor_dict[worker_id]]
+                commands[worker_id]['args'] = [syft_command['args'][0].pointer_tensor_dict[worker_id]]
         else:
             for worker_id in commands:
-                commands['args'] = [syft_command['args'][0]]
+                commands[worker_id]['args'] = [syft_command['args'][0]]
     else:
         commands = {
             worker_id : {
