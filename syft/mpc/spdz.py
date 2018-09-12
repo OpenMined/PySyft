@@ -1,5 +1,7 @@
 import torch
+import syft as sy
 from ..core.frameworks.torch.tensor import _GeneralizedPointerTensor
+from syft.core.frameworks.torch.utils import chain_print as pp
 BASE = 10
 KAPPA = 3  # ~29 bits
 
@@ -42,10 +44,14 @@ def reconstruct(shares):
 
 
 def swap_shares(shares):
-    new_shares = {}
-    for i, share in enumerate(shares):
-        new_shares[share] = shares.items[i-1]
-    return new_shares
+    ptd = shares.child.pointer_tensor_dict
+    alice, bob = list(ptd.keys())
+    new_alice = (ptd[alice]+0)
+    new_bob = (ptd[bob]+0)
+    new_alice.send(bob)
+    new_bob.send(alice)
+    
+    return _GeneralizedPointerTensor({alice:new_bob,bob:new_alice}).on(sy.LongTensor([]))
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL):
     if (interface.get_party() == 0):
@@ -61,7 +67,8 @@ def public_add(x, y, interface):
 
 
 def spdz_add(a, b):
-    return ((a + b) % field)
+    c = a + b
+    return c % field
 
 
 def spdz_neg(a):
@@ -91,10 +98,10 @@ def generate_mul_triple_communication(m, n, alice, bob):
         t_alice.send(alice)
         t_bob.send(bob)
 
-        gp_r = _GeneralizePointerTensor({alice: r_alice, bob: r_bob})
-        gp_s = _GeneralizePointerTensor({alice: s_alice, bob: s_bob})
-        gp_t = _GeneralizePointerTensor({alice: t_alice, bob: t_bob})
-        triple_alice = [gp_r, gp_s, gp_t]
+        gp_r = _GeneralizedPointerTensor({alice: r_alice, bob: r_bob}).on(r)
+        gp_s = _GeneralizedPointerTensor({alice: s_alice, bob: s_bob}).on(s)
+        gp_t = _GeneralizedPointerTensor({alice: t_alice, bob: t_bob}).on(t)
+        triple = [gp_r, gp_s, gp_t]
         return triple
 
 
@@ -104,6 +111,8 @@ def spdz_mul(x, y, alice, bob):
     m, n = x.shape
     triple = generate_mul_triple_communication(m, n, alice, bob)
     a, b, c = triple
+    pp(a)
+    pp(x)
     d = (x - a) % field
     e = (y - b) % field
 
@@ -121,8 +130,8 @@ def spdz_mul(x, y, alice, bob):
 
 
 def generate_matmul_triple(m, n, k):
-    r = torch.LongTensor(m, k).random_(field)
-    s = torch.LongTensor(k, n).random_(field)
+    r = sy.LongTensor(m, k).random_(field)
+    s = sy.LongTensor(k, n).random_(field)
     t = r * s
     return r, s, t
 

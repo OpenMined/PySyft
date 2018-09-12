@@ -573,6 +573,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
         for worker_id in commands:
             command = commands[worker_id]
             result_dict[worker_id] = sy._PointerTensor.handle_call(commands[worker_id], owner)
+            print(f'result:{result_dict}')
         #TODO: @trask @theo could you take a look at this if you have better ideas on how to get these parameters
         gpt =  _GeneralizedPointerTensor(result_dict, None, None, id=None, owner=owner, skip_register=False)
         # Todo: Add a generic child dependign on a torch_type
@@ -615,6 +616,7 @@ class _PointerTensor(_SyftTensor):
         _PointerTensor has an overloaded handle_call function because it converts
         the command to torch tensors and send it over the network
         """
+        print(f'handle call: {syft_command}')
         tensor_command = torch_utils.wrap_command(syft_command)
 
         attr = tensor_command['command']
@@ -628,7 +630,6 @@ class _PointerTensor(_SyftTensor):
                                                                  kwargs,
                                                                  has_self=has_self,
                                                                  self=self_)
-
         location = locations[0]
         owner = owners[0]
 

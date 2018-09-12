@@ -591,21 +591,28 @@ def split_to_pointer_commands(syft_command):
     # such as cat. This will be fixed later
 
     # This functionality sets up the dictionary of commands based on worker id
+    print(syft_command)
+    print(f'ptd:{syft_command["self"].pointer_tensor_dict}')
     if syft_command['has_self']:
         commands = {
             worker_id: {
                 'has_self': syft_command['has_self'],
-                'self': syft_command['self'].pointer_tensor_dict[worker_id].child,
+                'self': syft_command['self'].pointer_tensor_dict[worker_id] if isinstance(
+                    syft_command['self'].pointer_tensor_dict[worker_id], sy._PointerTensor) else syft_command['self'].pointer_tensor_dict[worker_id].child,
                 'kwargs': {},
                 'command': syft_command['command'],
             } for worker_id in syft_command['self'].pointer_tensor_dict
         }
+        print([commands[worker_id]['self'] for worker_id in commands])
         if isinstance(syft_command['args'][0], sy._GeneralizedPointerTensor):
             for worker_id in commands:
                 commands[worker_id]['args'] = [syft_command['args'][0].pointer_tensor_dict[worker_id].child]
-        else:
+        elif isinstance(syft_command['args'][0], sy._SyftTensor):
             for worker_id in commands:
                 commands[worker_id]['args'] = [syft_command['args'][0].child]
+        else:
+            for worker_id in commands:
+                commands[worker_id]['args'] = [syft_command['args'][0]]
     else:
         commands = {
             worker_id : {

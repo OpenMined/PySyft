@@ -41,8 +41,9 @@ class _MPCTensor(_SyftTensor):
         # response.shares = shares
         return response
 
-    def mul(self, other):
-        gp_response = spdz.spdz_mul(self.shares, other.shares)
+    def __mul__(self, other):
+        alice, bob = list(self.shares.child.pointer_tensor_dict.keys())
+        gp_response = spdz.spdz_mul(self.shares, other.shares, alice, bob)
         response = _MPCTensor(gp_response)
         return response
        
