@@ -184,10 +184,10 @@ def generate_mul_triple_communication(m, n, alice, bob):
         t_alice.send(alice)
         t_bob.send(bob)
 
-        gp_r = _GeneralizePointerTensor({alice: r_alice, bob: r_bob})
-        gp_s = _GeneralizePointerTensor({alice: s_alice, bob: s_bob})
-        gp_t = _GeneralizePointerTensor({alice: t_alice, bob: t_bob})
-        triple_alice = [gp_r, gp_s, gp_t]
+        gp_r = _GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
+        gp_s = _GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
+        gp_t = _GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
+        triple = [gp_r, gp_s, gp_t]
         return triple
 
 
@@ -196,7 +196,7 @@ def generate_zero_shares_communication(alice, bob, *sizes):
     u_alice, u_bob = share(zeros)
     u_alice.send(alice)
     u_bob.send(bob)
-    u_gp = _GeneralizePointerTensor({alice: u_alice, bob: u_bob})
+    u_gp = _GeneralizedPointerTensor({alice: u_alice.child, bob: u_bob.child})
     return u_gp
 
 
