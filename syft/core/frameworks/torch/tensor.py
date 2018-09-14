@@ -863,6 +863,16 @@ class _TorchTensor(_TorchObject):
 
         return tensorvar
 
+    def broadcast(self, workers):
+        """
+        Send to multiple workers and get back a _GeneralizedPointerTensor
+        :return:
+        """
+        pointers_dict = {}
+        for worker in workers:
+            pointers_dict[worker] = self.clone().send(worker).child
+        return _GeneralizedPointerTensor(pointers_dict).on(self)
+
     def send(self, worker, ptr_id=None):
         """
         Give the root of the chain held by self to worker
