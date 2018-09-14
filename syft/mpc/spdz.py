@@ -16,29 +16,29 @@ field = 2 ** Q_BITS  # < 63 bits
 Q_MAXDEGREE = 1
 
 
-def encode(rational, precision_fractional=PRECISION_FRACTIONAL):
+def encode(rational, precision_fractional=PRECISION_FRACTIONAL, mod=field):
     upscaled = (rational * BASE ** precision_fractional).long()
-    field_element = upscaled % field
+    field_element = upscaled % mod
     return field_element
 
 
-def decode(field_element, precision_fractional=PRECISION_FRACTIONAL):
-    neg_values = field_element.gt(field)
+def decode(field_element, precision_fractional=PRECISION_FRACTIONAL, mod=field):
+    neg_values = field_element.gt(mod)
     # pos_values = field_element.le(field)
     # upscaled = field_element*(neg_valuese+pos_values)
-    field_element[neg_values] = field - field_element[neg_values]
+    field_element[neg_values] = mod - field_element[neg_values]
     rational = field_element.float() / BASE ** precision_fractional
     return rational
 
 
-def share(secret):
-    first = torch.LongTensor(secret.shape).random_(field)
-    second = (secret - first) % field
+def share(secret, mod=field):
+    first = torch.LongTensor(secret.shape).random_(mod)
+    second = (secret - first) % mod
     return first, second
 
 
-def reconstruct(shares):
-    return sum(shares) % field
+def reconstruct(shares, mod=field):
+    return sum(shares) % mod
 
 
 def swap_shares(shares):
@@ -52,10 +52,10 @@ def swap_shares(shares):
     return _GeneralizedPointerTensor({alice:new_bob,bob:new_alice}).on(sy.LongTensor([]))
 
 
-def truncate(x, interface, amount=PRECISION_FRACTIONAL):
+def truncate(x, interface, amount=PRECISION_FRACTIONAL, mod=field):
     if (interface.get_party() == 0):
-        return (x / BASE ** amount) % field
-    return (field - ((field - x) / BASE ** amount)) % field
+        return (x / BASE ** amount) % mod
+    return (mod - ((mod - x) / BASE ** amount)) % mod
 
 
 def public_add(x, y, interface):
@@ -65,16 +65,16 @@ def public_add(x, y, interface):
         return x
 
 
-def spdz_add(a, b):
+def spdz_add(a, b, mod=field):
     c = a + b
-    return c % field
+    return c % mod
 
 
-def spdz_neg(a):
-    return (field - a) % field
+def spdz_neg(a, mod=field):
+    return (mod - a) % mod
 
 
-def spdz_mul(x, y, workers):
+def spdz_mul(x, y, workers, mod=field):
     if x.shape != y.shape:
         raise ValueError()
     shape = x.shape
@@ -82,25 +82,25 @@ def spdz_mul(x, y, workers):
     triple = generate_mul_triple_communication(shape, alice, bob)
     a, b, c = triple
 
-    d = (x - a) % field
-    e = (y - b) % field
+    d = (x - a) % mod
+    e = (y - b) % mod
 
-    delta = d.child.sum_get() % field
-    epsilon = e.child.sum_get() % field
+    delta = d.child.sum_get() % mod
+    epsilon = e.child.sum_get() % mod
 
     delta = delta.broadcast(workers)
     epsilon = epsilon.broadcast(workers)
 
     n = len(workers)
     z = (c
-         + (delta * b) % field
-         + (epsilon * a) % field
-         + ((epsilon * delta) % field) / n
-         ) % field
+         + (delta * b) % mod
+         + (epsilon * a) % mod
+         + ((epsilon * delta) % mod) / n
+         ) % mod
     return z
 
 
-def spdz_matmul(x, y, interface):
+def spdz_matmul(x, y, interface, mod=field):
     x_height = x.shape[0]
     if len(x.shape) != 1:
         x_width = x.shape[1]
@@ -121,8 +121,8 @@ def spdz_matmul(x, y, interface):
         x_height, y_width, x_width, interface,
     )
 
-    rho_local = (x - r) % field
-    sigma_local = (y - s) % field
+    rho_local = (x - r) % mod
+    sigma_local = (y - s) % mod
 
     # Communication
     rho_other = swap_shares(rho_local, interface)
@@ -160,9 +160,9 @@ def spdz_sigmoid(x, interface):
     return spdz_add(W0, temp531)
 
 
-def generate_mul_triple(shape):
-    r = torch.LongTensor(shape).random_(field)
-    s = torch.LongTensor(shape).random_(field)
+def generate_mul_triple(shape, mod=field):
+    r = torch.LongTensor(shape).random_(mod)
+    s = torch.LongTensor(shape).random_(mod)
     t = r * s
     return r, s, t
 
@@ -199,9 +199,9 @@ def generate_zero_shares_communication(alice, bob, *sizes):
     return u_gp
 
 
-def generate_matmul_triple(m, n, k):
-    r = torch.LongTensor(m, k).random_(field)
-    s = torch.LongTensor(k, n).random_(field)
+def generate_matmul_triple(m, n, k, mod=field):
+    r = torch.LongTensor(m, k).random_(mod)
+    s = torch.LongTensor(k, n).random_(mod)
     t = r * s
     return r, s, t
 
