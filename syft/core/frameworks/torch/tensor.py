@@ -564,7 +564,13 @@ class _GeneralizedPointerTensor(_SyftTensor):
     def __init__(self, pointer_tensor_dict, parent=None, torch_type=None, id=None, owner=None, skip_register=False):
          super().__init__(child=None, parent=parent, torch_type=torch_type, owner=owner, id=id,
                          skip_register=skip_register)
-         self.pointer_tensor_dict = pointer_tensor_dict
+         pointer_dict = {}
+         for worker, pointer in pointer_tensor_dict.items():
+             if not isinstance(pointer, sy._PointerTensor):
+                 raise TypeError('Should use sy._Pointer without Torch wrapper.')
+             key = worker if isinstance(worker, (int, str)) else worker.id
+             pointer_dict[key] = pointer
+         self.pointer_tensor_dict = pointer_dict
     
     @classmethod
     def handle_call(cls, syft_command, owner):
