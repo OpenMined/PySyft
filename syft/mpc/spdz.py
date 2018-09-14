@@ -74,11 +74,12 @@ def spdz_neg(a):
     return (field - a) % field
 
 
-def spdz_mul(x, y, alice, bob):
+def spdz_mul(x, y, workers):
     if x.shape != y.shape:
         raise ValueError()
-    m, n = x.shape
-    triple = generate_mul_triple_communication(m, n, alice, bob)
+    shape = x.shape
+    alice, bob = workers
+    triple = generate_mul_triple_communication(shape, alice, bob)
     a, b, c = triple
     pp(a)
     pp(x)
@@ -161,15 +162,15 @@ def spdz_sigmoid(x, interface):
     return spdz_add(W0, temp531)
 
 
-def generate_mul_triple(m, n):
-    r = torch.LongTensor(m, n).random_(field)
-    s = torch.LongTensor(m, n).random_(field)
+def generate_mul_triple(shape):
+    r = torch.LongTensor(shape).random_(field)
+    s = torch.LongTensor(shape).random_(field)
     t = r * s
     return r, s, t
 
 
-def generate_mul_triple_communication(m, n, alice, bob):
-        r, s, t = generate_mul_triple(m, n)
+def generate_mul_triple_communication(shape, alice, bob):
+        r, s, t = generate_mul_triple(shape)
 
         r_alice, r_bob = share(r)
         s_alice, s_bob = share(s)
