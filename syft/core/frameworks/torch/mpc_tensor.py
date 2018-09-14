@@ -1,5 +1,6 @@
 from .tensor import _SyftTensor
 from ....mpc import spdz
+import syft as sy
 
 class _MPCTensor(_SyftTensor):
     """
@@ -56,11 +57,4 @@ class _MPCTensor(_SyftTensor):
             share.send(worker)
 
     def get(self):
-        shares = []
-        for share in self.shares:
-            shares.append(share.get())
-        var = spdz.reconstruct(shares)
-        self.var = var
-        return var
-
-
+        return self.shares.child.sum_get() % spdz.field
