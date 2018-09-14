@@ -6,6 +6,7 @@ import functools
 import numpy as np
 import logging
 import torch
+import copy
 import syft
 import syft as sy
 
@@ -231,6 +232,56 @@ def compile_command(attr, args, kwargs, has_self=False, self=None):
         raise NotImplementedError('All pointers should share the same owner.')
 
     return command, locations, owners
+
+
+def split_to_pointer_commands(syft_command):
+    """
+    Split a syft command containing _GeneralizedPointerTensor with n pointers in
+    n syft commands, each for one pointer/worker
+    :param syft_command
+    :return: n syft_commands
+    """
+    # TODO: See Issue #1480
+    base_command = {
+        'has_self': syft_command['has_self'],
+        'command': syft_command['command'],
+        'kwargs': syft_command['kwargs'],
+        'args': []
+    }
+    worker_ids = []
+    syft_commands = {}
+
+    if syft_command['has_self']:
+        if isinstance(syft_command['self'], sy._GeneralizedPointerTensor):
+            for worker_id, pointer in syft_command['self'].pointer_tensor_dict.items():
+                # Init phase >
+                syft_commands[worker_id] = copy.deepcopy(base_command)
+                worker_ids.append(worker_id)
+                # < end
+                syft_commands[worker_id]['self'] = pointer
+        else:
+            base_command['self'] = syft_command['self']
+
+    for arg in syft_command['args']:
+        if isinstance(arg, sy._GeneralizedPointerTensor):
+            if len(syft_commands) == 0:
+                for worker_id, pointer in arg.pointer_tensor_dict.items():
+                    # Init phase >
+                    syft_commands[worker_id] = copy.deepcopy(base_command)
+                    worker_ids.append(worker_id)
+                    # < end
+            for worker_id, pointer in arg.pointer_tensor_dict.items():
+                syft_commands[worker_id]['args'].append(pointer)
+        elif isinstance(arg, (list, set, tuple)):
+            raise NotImplementedError('Cant deal with nested args on Generalizd Pointers')
+        else:
+            if len(syft_commands) == 0:
+                base_command['args'].append(arg)
+            else:
+                for worker_id in worker_ids:
+                    syft_commands[worker_id]['args'].append(arg)
+
+    return syft_commands
 
 
 def assert_has_only_torch_tensorvars(obj):
@@ -586,60 +637,4 @@ def is_variable(obj):
             return True
     return False
 
-def split_to_pointer_commands(syft_command):
-    # this method breaks for any command which the first argument is not a tensor
-    # such as cat. This will be fixed later
 
-    # This functionality sets up the dictionary of commands based on worker id
-    print(syft_command)
-    print(f'ptd:{syft_command["self"].pointer_tensor_dict}')
-    if syft_command['has_self']:
-        commands = {
-            worker_id: {
-                'has_self': syft_command['has_self'],
-                'self': syft_command['self'].pointer_tensor_dict[worker_id] if isinstance(
-                    syft_command['self'].pointer_tensor_dict[worker_id], sy._PointerTensor) else syft_command['self'].pointer_tensor_dict[worker_id].child,
-                'kwargs': {},
-                'command': syft_command['command'],
-            } for worker_id in syft_command['self'].pointer_tensor_dict
-        }
-        print([commands[worker_id]['self'] for worker_id in commands])
-        if isinstance(syft_command['args'][0], sy._GeneralizedPointerTensor):
-            for worker_id in commands:
-                commands[worker_id]['args'] = [syft_command['args'][0].pointer_tensor_dict[worker_id].child]
-        elif isinstance(syft_command['args'][0], sy._SyftTensor):
-            for worker_id in commands:
-                commands[worker_id]['args'] = [syft_command['args'][0].child]
-        else:
-            for worker_id in commands:
-                commands[worker_id]['args'] = [syft_command['args'][0]]
-    else:
-        commands = {
-            worker_id : {
-                'args': [syft_command['args'][0][worker_id]],
-                'has_self': False,
-                'self' : None,
-                'kwargs' : {},
-                'command' : syft_command['command'],
-            } for worker_id in syft_command
-        }
-
-    # After the dict is set up, we itterate over the args and kwargs to split up all that are
-    # generalized pointer tensors into single pointers
-
-    args = syft_command['args'][1:]
-    for arg in args:
-        if isinstance(arg, sy._GeneralizedPointerTensor):
-            for worker_id in commands:
-                commands['args'][worker_id].append(arg.pointer_tensor_dict[worker_id])
-        else:
-            for worker_id in commands:
-                commands['args'][worker_id].append(arg)
-    for kwarg in syft_command['kwargs']:
-        if isinstance(arg, sy._GeneralizedPointerTensor):
-            for worker_id in commands:
-                commands['kwargs'][worker_id].update({kwarg: syft_command[kwarg].pointer_tensor_dict[worker_id]})
-        else:
-            for worker_id in commands:
-                commands['kwargs'][worker_id].update({kwarg: syft_command[kwarg]})
-    return commands
