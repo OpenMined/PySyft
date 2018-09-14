@@ -580,6 +580,23 @@ class _GeneralizedPointerTensor(_SyftTensor):
         gpt.child = sy.FloatTensor([])
         return gpt
 
+    def get(self):
+        res = []
+        for worker, pointer in self.pointer_tensor_dict.items():
+            res.append(pointer.get())
+        return res
+
+    def sum_get(self):
+        shares = self.get()
+        res = None
+        for share in shares:
+            if res is None:
+                res = share
+            else:
+                res += share
+        return res
+
+
 class _PointerTensor(_SyftTensor):
 
     def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None,
