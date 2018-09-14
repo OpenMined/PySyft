@@ -81,25 +81,23 @@ def spdz_mul(x, y, workers):
     alice, bob = workers
     triple = generate_mul_triple_communication(shape, alice, bob)
     a, b, c = triple
-    pp(a)
-    pp(x)
+
     d = (x - a) % field
     e = (y - b) % field
 
-    d_other = swap_shares(d)
-    e_other = swap_shares(e)
-    delta = (d + d_other) % field
-    epsilon = (e + e_other) % field
-    r = delta * epsilon
-    s = a * epsilon
-    t = b * delta
-    share = s + t + c
-    share = public_add(share, r, interface)
-    share = truncate(share, interface)
+    delta = d.child.sum_get() % field
+    epsilon = e.child.sum_get() % field
 
-    # we assume we need to mask the result for a third party crypto provider
-    u = generate_zero_shares_communication(alice, bob, *share.shape)
-    return spdz_add(share, u)
+    delta = delta.broadcast(workers)
+    epsilon = epsilon.broadcast(workers)
+
+    n = len(workers)
+    z = (c
+         + (delta * b) % field
+         + (epsilon * a) % field
+         + ((epsilon * delta) % field) / n
+         ) % field
+    return z
 
 
 def spdz_matmul(x, y, interface):

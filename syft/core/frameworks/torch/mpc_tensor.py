@@ -12,6 +12,9 @@ class _MPCTensor(_SyftTensor):
 
     def __init__(self, shares, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Fixme: remove the share on init, declaring a MPCTensor should autmatically create a _GeneralizedPointerTensor
+        if isinstance(shares, sy._GeneralizedPointerTensor):
+            raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
         self.shares = shares  # shares is a _GeneralizedPointerTensor
         self.child = self.shares
 
@@ -43,8 +46,8 @@ class _MPCTensor(_SyftTensor):
         return response
 
     def __mul__(self, other):
-        alice, bob = list(self.shares.child.pointer_tensor_dict.keys())
-        gp_response = spdz.spdz_mul(self.shares, other.shares, alice, bob)
+        workers = list(self.shares.child.pointer_tensor_dict.keys())
+        gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
         response = _MPCTensor(gp_response)
         return response
        
