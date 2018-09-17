@@ -963,7 +963,7 @@ class TestMPCTensor(TestCase):
         self.mpc_sum(3, 5)
         self.mpc_sum(4, 0)
         self.mpc_sum(5, -5)
-        # self.mpc_sum(3, -5) TODO: Future work: how to handle gracefully minus numbers
+        self.mpc_sum(3, -5)
         self.mpc_sum(2 ** 24, 2 ** 12)
 
     def mpc_mul(self, n1, n2):
@@ -975,7 +975,7 @@ class TestMPCTensor(TestCase):
     def test_mpc_mul(self):
         self.mpc_mul(3, 5)
         self.mpc_mul(4, 0)
-        #self.mpc_mul(5, -5) TODO: Future work: how to handle gracefully minus numbers
+        self.mpc_mul(5, -5)
         self.mpc_mul(3, 5)
         self.mpc_mul(2 ** 12, 2 ** 12)
 

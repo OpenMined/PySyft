@@ -60,4 +60,8 @@ class _MPCTensor(_SyftTensor):
             share.send(worker)
 
     def get(self):
-        return self.shares.child.sum_get() % spdz.field
+        value = self.shares.child.sum_get() % spdz.field
+        if (value > spdz.torch_max_value).all():
+            return value - spdz.torch_field
+        else:
+            return value
