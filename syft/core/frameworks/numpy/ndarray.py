@@ -58,6 +58,7 @@ class abstractarray(np.ndarray):
 
         if has_self and cls.is_overloaded_method(attr):
             self_ = command['self']
+
             result = getattr(self_, attr)(*args, **kwargs)
         elif not has_self and cls.is_overloaded_function(attr):
             overload_function = cls.overloaded_functions.get(attr)
@@ -203,26 +204,6 @@ class array_ptr(abstractarray):
             out['id_at_location'] = self.id_at_location
             return out
 
-    def cumsum(self, *args, **kwargs):
-        cmd, locations, owners = utils.compile_command(attr="cumsum",
-                                                       args=args,
-                                                       kwargs=kwargs,
-                                                       has_self=True,
-                                                       self=self)
-        return self.owner.send_command(recipient=self.location,
-                                       message=cmd,
-                                       framework="numpy")
-
-    def __add__(self, *args, **kwargs):
-        cmd, locations, owners = utils.compile_command(attr="__add__",
-                                                       args=args,
-                                                       kwargs=kwargs,
-                                                       has_self=True,
-                                                       self=self)
-        return self.owner.send_command(recipient=self.location,
-                                       message=cmd,
-                                       framework="numpy")
-
     def torch(self):
         cmd, locations, owners = utils.compile_command(attr="torch",
                                                        args={},
@@ -234,7 +215,82 @@ class array_ptr(abstractarray):
                                        message=cmd,
                                        framework="numpy")
 
+# add additional methods to array_ptr automatically
+
+def get_array_ptr_override_method(attr):
+    def method(self, *args, **kwargs):
+
+        cmd, locations, owners = utils.compile_command(attr=str(attr),
+                                                       args=args,
+                                                       kwargs=kwargs,
+                                                       has_self=True,
+                                                       self=self)
+        return self.owner.send_command(recipient=self.location,
+                                       message=cmd,
+                                       framework="numpy")
+    return method
 
 
+exclude = ['__array__',
+           '__array_finalize__',
+           '__array_interface__',
+           '__array_prepare__',
+           '__array_priority__',
+           '__array_struct__',
+           '__array_ufunc__',
+           '__array_wrap__',
+           '__class__',
+           '__complex__',
+           '__contains__',
+           '__deepcopy__',
+           '__delattr__',
+           '__delitem__',
+           '__dir__',
+           '__divmod__',
+           '__doc__',
+           '__format__',
+           '__getattribute__',
+           '__getitem__',
+           '__hash__',
+           '__index__',
+           '__init__',
+           '__init_subclass__',
+           '__iter__',
+           '__new__',
+           '__pos__',
+           '__reduce__',
+           '__reduce_ex__',
+           '__repr__',
+           '__rfloordiv__',
+           '__rlshift__',
+           '__setattr__',
+           '__setitem__',
+           '__setstate__',
+           '__sizeof__',
+           '__str__',
+           '__subclasshook__',
+           'astype',
+           'base',
+           'choose',
+           'ctypes',
+           'dump',
+           'dumps',
+           'flags',
+           'getfield',
+           'item',
+           'itemset',
+           'itemsize',
+           'newbyteorder',
+           'ptp',
+           'searchsorted',
+           'setfield',
+           'setflags',
+           'tofile',
+           'tolist',
+           'tostring',
+           'trace']
 
-
+for attr in dir(np.ndarray):
+    if(attr not in exclude):
+        method = get_array_ptr_override_method(attr)
+        setattr(array_ptr, str(attr), method)
