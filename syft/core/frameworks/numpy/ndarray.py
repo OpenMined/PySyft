@@ -205,8 +205,8 @@ class array_ptr(abstractarray):
 
     def cumsum(self, *args, **kwargs):
         cmd, locations, owners = utils.compile_command(attr="cumsum",
-                                                       args={},
-                                                       kwargs={},
+                                                       args=args,
+                                                       kwargs=kwargs,
                                                        has_self=True,
                                                        self=self)
         return self.owner.send_command(recipient=self.location,
