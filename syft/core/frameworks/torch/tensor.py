@@ -619,7 +619,7 @@ class _PointerTensor(_SyftTensor):
         torch_utils.assert_has_only_torch_tensorvars(response)
 
         # If the command is an in-place method, we only need to return the same wrapper to the same
-        # pointer, instead of returning the new wrapper created in response
+        # pointer, instead jof returning the new wrapper created in response
         if has_self and utils.is_in_place_method(attr):
             return syft_command['self']
 

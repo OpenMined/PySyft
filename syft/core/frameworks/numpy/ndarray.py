@@ -61,8 +61,7 @@ class abstractarray(np.ndarray):
 
             result = getattr(self_, attr)(*args, **kwargs)
         elif not has_self and cls.is_overloaded_function(attr):
-            overload_function = cls.overloaded_functions.get(attr)
-            result = overload_function(*args, **kwargs)
+            result = getattr(np, attr)(*args, *kwargs)
         else:
             print("do something else")
 
@@ -167,6 +166,12 @@ class array_ptr(abstractarray):
 
         return obj
 
+    def __str__(self):
+        return str(self.ser(False))
+
+    def __repr__(self):
+        return str(self.ser(False))
+
     def get(self, deregister_ptr=True):
         """
             Get a chain back from a remote worker that its pointer is pointing at
@@ -210,6 +215,19 @@ class array_ptr(abstractarray):
                                                        kwargs={},
                                                        has_self=True,
                                                        self=self)
+
+        return self.owner.send_command(recipient=self.location,
+                                       message=cmd,
+                                       framework="numpy")
+
+    def __array_ufunc__(self, ufunc, method, *args, **kwargs):
+        attr = ufunc.__name__
+
+        cmd, locations, owners = utils.compile_command(attr=str(attr),
+                                                       args=args,
+                                                       kwargs=kwargs,
+                                                       has_self=False,
+                                                       self=None)
 
         return self.owner.send_command(recipient=self.location,
                                        message=cmd,
