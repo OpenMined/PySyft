@@ -66,6 +66,9 @@ class BaseWorker(ABC):
     def __init__(self, hook=None, id=0, is_client_worker=False, objects={},
                  tmp_objects={}, known_workers={}, verbose=True, queue_size=0):
 
+        if(hook is None):
+            hook = sy.local_worker.hook
+
         # This is a reference to the hook object which overloaded
         # the underlying deep learning framework
         # (at the time of writing this is exclusively TorchHook)
@@ -119,6 +122,10 @@ class BaseWorker(ABC):
         # A list for storing messages to be sent as well as the max size of the list
         self.message_queue = []
         self.queue_size = queue_size
+
+        if hasattr(sy, 'local_worker'):
+            sy.local_worker.add_worker(self)
+            self.add_worker(sy.local_worker)
 
     def whoami(self):
         """Returns metadata information about the worker. This function returns the default
