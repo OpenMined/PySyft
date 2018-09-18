@@ -579,7 +579,10 @@ class _PointerTensor(_SyftTensor):
 
     def register_pointer(self):
         worker = self.owner
-        location = self.location.id
+        if(isinstance(self.location, int)):
+            location = self.location
+        else:
+            location = self.location.id
         id_at_location = self.id_at_location
         # Add the remote location worker key if needed
         if location not in worker._pointers.keys():
@@ -616,7 +619,7 @@ class _PointerTensor(_SyftTensor):
         torch_utils.assert_has_only_torch_tensorvars(response)
 
         # If the command is an in-place method, we only need to return the same wrapper to the same
-        # pointer, instead of returning the new wrapper created in response
+        # pointer, instead jof returning the new wrapper created in response
         if has_self and utils.is_in_place_method(attr):
             return syft_command['self']
 
@@ -682,7 +685,7 @@ class _PointerTensor(_SyftTensor):
         """
             Get back from a remote worker the chain this pointer is pointing at
         """
-        # Remove this pointer
+        # Remove this pointer - TODO: call deregister function instead of doing it by hand
         if deregister_ptr:
             if self.torch_type == 'syft.Variable':
                 self.owner.rm_obj(self.parent.data.child.id)
@@ -821,6 +824,7 @@ class _TorchTensor(_TorchObject):
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
+
         obj_type, msg_obj = torch_utils.extract_type_and_obj(msg_obj)
         syft_obj = sy._SyftTensor.deser_routing(msg_obj['child'], worker, acquire)
 

@@ -10,6 +10,7 @@ from .core.frameworks.torch import TorchHook
 from .core.frameworks.torch import _LocalTensor, _PointerTensor, _FixedPrecisionTensor, \
     _PlusIsMinusTensor
 from syft.core.workers import VirtualWorker, SocketWorker
+from .core.frameworks.numpy import array
 
 __all__ = ['core', 'mpc']
 

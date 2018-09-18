@@ -85,7 +85,7 @@ class TorchHook(object):
 
         if torch.torch_hooked > 0:
             logging.warn("Torch was already hooked... skipping hooking process")
-            self.local_worker = torch.local_worker
+            self.local_worker = sy.local_worker
         else:
 
             if self.local_worker is None:
@@ -108,7 +108,7 @@ class TorchHook(object):
             self._hook_backward()
             self._hook_module()
 
-            torch.local_worker = self.local_worker
+            sy.local_worker = self.local_worker
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloads given tensor_type (native)"""
@@ -409,7 +409,8 @@ class TorchHook(object):
         accordingly.
         """
         def _execute_method_call(self, *args, **kwargs):
-            return hook_self._execute_call(attr, self, *args, **kwargs)
+            worker = hook_self.local_worker
+            return worker._execute_call(attr, self, *args, **kwargs)
 
         return _execute_method_call
 
@@ -455,15 +456,10 @@ class TorchHook(object):
         """
 
         def _execute_function_call(*args, **kwargs):
-            return hook_self._execute_call(attr, None, *args, **kwargs)
+            worker = hook_self.local_worker
+            return worker._execute_call(attr, None, *args, **kwargs)
 
         return _execute_function_call
-
-    def _execute_call(hook_self, attr, self, *args, **kwargs):
-        """
-        Forward the call to the local_worker
-        """
-        return hook_self.local_worker._execute_call(attr, self, *args, **kwargs)
 
     def _hook_backward(hook_self):
         """

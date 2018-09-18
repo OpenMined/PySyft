@@ -8,7 +8,7 @@ import random
 import syft as sy
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
-from syft.core.frameworks.torch import encode
+from syft.core.frameworks import encode
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable as Var
