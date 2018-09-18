@@ -9,7 +9,7 @@ import syft as sy
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks import encode
-from syft.core.frameworks.torch.mpc_tensor import _MPCTensor
+from syft.core.frameworks.torch.tensor import _MPCTensor
 from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor
 from syft.mpc import spdz
 import torch
