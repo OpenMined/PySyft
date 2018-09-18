@@ -1,32 +1,33 @@
-
 .wy-side-nav-search {
     background-color: black;
 }
 
-.wy-nav-top{background-color: black;}
+.wy-nav-top {
+    background-color: black;
+}
 
 div.wy-nav-top a:link {
-  color: white;
-  font-size: 25px;
-  font-weight: bold;
+    color: white;
+    font-size: 25px;
+    font-weight: bold;
 }
 
 div.wy-nav-top a:visited {
-  color: white;
-  font-size: 25px;
-  font-weight: bold;
+    color: white;
+    font-size: 25px;
+    font-weight: bold;
 }
-
 
 div.wy-nav-top a:hover {
-  color: white;
-  font-size: 25px;
-  font-weight: bold;
+    color: white;
+    font-size: 25px;
+    font-weight: bold;
 }
 
-
-
-.reference internal{color:black;font-weight: bold;}
+.reference internal {
+    color: black;
+    font-weight: bold;
+}
 
 .wy-menu a {
     color: #b3b3b3;
@@ -36,36 +37,36 @@ div.wy-nav-top a:hover {
     color: #b3b3b3;
 }
 
-.version{color: white;}
+.version {
+    color: white;
+}
 
 div.wy-side-nav-search a:link {
-  color: white;
-  font-size: 25px;
-  font-weight: bold;
+    color: white;
+    font-size: 25px;
+    font-weight: bold;
 }
 
 div.wy-side-nav-search a:hover {
-  color: white;
-  font-size: 25px;
-  font-weight: bold;
+    color: white;
+    font-size: 25px;
+    font-weight: bold;
 }
 
 div.wy-side-nav-search a:visited {
-  color: white;
+    color: white;
     font-size: 25px;
-  font-weight: bold;
+    font-weight: bold;
 }
 
-
-
 div.wy-nav-content a:link {
-  color:#b6b4b7;
+    color: #b6b4b7;
 }
 
 div.wy-nav-content a:hover {
-  color: black;
+    color: black;
 }
 
 div.wy-nav-content a:visited {
-  color:black;
+    color: black;
 }
