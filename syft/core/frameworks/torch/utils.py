@@ -6,6 +6,7 @@ import functools
 import numpy as np
 import logging
 import torch
+import copy
 import syft
 import syft as sy
 
@@ -251,6 +252,56 @@ def compile_command(attr, args, kwargs, has_self=False, self=None):
     return command, locations, owners
 
 
+def split_to_pointer_commands(syft_command):
+    """
+    Split a syft command containing _GeneralizedPointerTensor with n pointers in
+    n syft commands, each for one pointer/worker
+    :param syft_command
+    :return: n syft_commands
+    """
+    # TODO: See Issue #1480
+    base_command = {
+        'has_self': syft_command['has_self'],
+        'command': syft_command['command'],
+        'kwargs': syft_command['kwargs'],
+        'args': []
+    }
+    worker_ids = []
+    syft_commands = {}
+
+    if syft_command['has_self']:
+        if isinstance(syft_command['self'], sy._GeneralizedPointerTensor):
+            for worker_id, pointer in syft_command['self'].pointer_tensor_dict.items():
+                # Init phase >
+                syft_commands[worker_id] = copy.deepcopy(base_command)
+                worker_ids.append(worker_id)
+                # < end
+                syft_commands[worker_id]['self'] = pointer
+        else:
+            base_command['self'] = syft_command['self']
+
+    for arg in syft_command['args']:
+        if isinstance(arg, sy._GeneralizedPointerTensor):
+            if len(syft_commands) == 0:
+                for worker_id, pointer in arg.pointer_tensor_dict.items():
+                    # Init phase >
+                    syft_commands[worker_id] = copy.deepcopy(base_command)
+                    worker_ids.append(worker_id)
+                    # < end
+            for worker_id, pointer in arg.pointer_tensor_dict.items():
+                syft_commands[worker_id]['args'].append(pointer)
+        elif isinstance(arg, (list, set, tuple)):
+            raise NotImplementedError('Cant deal with nested args on Generalizd Pointers')
+        else:
+            if len(syft_commands) == 0:
+                base_command['args'].append(arg)
+            else:
+                for worker_id in worker_ids:
+                    syft_commands[worker_id]['args'].append(arg)
+
+    return syft_commands
+
+
 def assert_has_only_torch_tensorvars(obj):
     """
     A check function that an object has only torch Tensors or Variable
@@ -367,6 +418,8 @@ def chain_print(obj, display=True, verbose=False):
                 else:
                     grad_types.append('<empty>')
         if isinstance(obj.child, (sy._LocalTensor, sy._PointerTensor)):
+            break
+        if isinstance(obj.child, (sy._GeneralizedPointerTensor, )):
             break
         obj = obj.child
         i += 1
@@ -601,3 +654,5 @@ def is_variable(obj):
         if isinstance(obj, tuple(torch.var_types)):
             return True
     return False
+
+

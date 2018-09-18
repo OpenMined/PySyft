@@ -1,10 +1,11 @@
 from .hook import TorchHook
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
-from .tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor
+from .tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor, _GeneralizedPointerTensor
+from .mpc_tensor import _MPCTensor
 
 __all__ = ['TorchHook', '_SyftTensor', '_LocalTensor',
-           '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor', '_PlusIsMinusTensor',
-           'encode']
+           '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor',
+           '_PlusIsMinusTensor', '_GeneralizedPointerTensor', '_MPCTensor', 'encode']
 
 import torch
 
@@ -55,6 +56,9 @@ torch.guard = {
     'syft.core.frameworks.torch.tensor._SyftTensor': _SyftTensor,
     'syft.core.frameworks.torch.tensor._LocalTensor': _LocalTensor,
     'syft.core.frameworks.torch.tensor._FixedPrecisionTensor': _FixedPrecisionTensor,
+    'syft.core.frameworks.torch.tensor._GeneralizedPointerTensor': _GeneralizedPointerTensor,
+    'syft._PlusIsMinusTensor': _PlusIsMinusTensor,
+    'syft._MPCTensor': _MPCTensor,
     'syft.core.frameworks.torch.tensor.FloatTensor': torch.FloatTensor,
     'syft.core.frameworks.torch.tensor.DoubleTensor': torch.DoubleTensor,
     'syft.core.frameworks.torch.tensor.HalfTensor': torch.HalfTensor,
@@ -72,8 +76,7 @@ torch.guard = {
     'syft.ShortTensor': torch.ShortTensor,
     'syft.IntTensor': torch.IntTensor,
     'syft.LongTensor': torch.LongTensor,
-    'syft.Parameter': torch.nn.Parameter,
-    'syft._PlusIsMinusTensor': _PlusIsMinusTensor,
+    'syft.Parameter': torch.nn.Parameter
 }
 
 

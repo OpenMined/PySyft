@@ -11,3 +11,4 @@ syft.egg-info/
 *.swo
 *.ipynb_checkpoints*
 venv/
+**.pytest_cache/
