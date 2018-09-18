@@ -64,7 +64,7 @@ class abstractarray(np.ndarray):
             result = overload_function(*args, **kwargs)
         else:
             print("do something else")
-        
+
         return result
 
     @classmethod
@@ -168,7 +168,7 @@ class array_ptr(abstractarray):
 
     def get(self, deregister_ptr=True):
         """
-            Get a chain back from a remote worker that his pointer is pointing at
+            Get a chain back from a remote worker that its pointer is pointing at
         """
 
         # Remove this pointer - TODO: call deregister function instead of doing it by hand
