@@ -213,6 +213,16 @@ class array_ptr(abstractarray):
                                        message=cmd,
                                        framework="numpy")
 
+    def __add__(self, *args, **kwargs):
+        cmd, locations, owners = utils.compile_command(attr="__add__",
+                                                       args=args,
+                                                       kwargs=kwargs,
+                                                       has_self=True,
+                                                       self=self)
+        return self.owner.send_command(recipient=self.location,
+                                       message=cmd,
+                                       framework="numpy")
+
     def torch(self):
         cmd, locations, owners = utils.compile_command(attr="torch",
                                                        args={},
