@@ -59,13 +59,13 @@ class abstractarray(np.ndarray):
         if has_self and cls.is_overloaded_method(attr):
             self_ = command['self']
             result = getattr(self_, attr)(*args, **kwargs)
-            return result
         elif not has_self and cls.is_overloaded_function(attr):
             overload_function = cls.overloaded_functions.get(attr)
             result = overload_function(*args, **kwargs)
-            return result
         else:
             print("do something else")
+        
+        return result
 
     @classmethod
     def is_overloaded_method(cls, attr):

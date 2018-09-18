@@ -746,11 +746,11 @@ class BaseWorker(ABC):
         # or received from another worker), and a command with syft tensor, which can occur
         # when a function is overloaded by a SyftTensor (for instance _PlusIsMinusTensor
         # overloads add and replace it by sub)
-        try:
-            torch_utils.assert_has_only_torch_tensorvars((args, kwargs))
-            is_torch_command = True
-        except AssertionError:
-            is_torch_command = False
+        # try:
+        #     torch_utils.assert_has_only_torch_tensorvars((args, kwargs))
+        #     is_torch_command = True
+        # except AssertionError:
+        is_torch_command = False
 
         has_self = self_ is not None
 
@@ -793,13 +793,11 @@ class BaseWorker(ABC):
         if is_torch_command:
             # Wrap the result
             if has_self and utils.is_in_place_method(attr):
-                wrapper = torch_utils.wrap_command_with(result, raw_command['self'])
+                result = torch_utils.wrap_command_with(result, raw_command['self'])
             else:
-                wrapper = torch_utils.wrap_command(result)
-            return wrapper
-        else:
-            # We don't need to wrap
-            return result
+                result = torch_utils.wrap_command(result)
+
+        return result
 
     def process_torch_command(self, command_msg):
         """process_command(self, command_msg) -> (command output, list of owners)
@@ -969,7 +967,7 @@ class BaseWorker(ABC):
             message_type=framework+'_cmd',
             recipient=recipient
         )
-        print("begin decoding command result")
+
         response = encode.decode(response, worker=self)
 
         return response

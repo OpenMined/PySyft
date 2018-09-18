@@ -824,6 +824,7 @@ class _TorchTensor(_TorchObject):
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
+
         obj_type, msg_obj = torch_utils.extract_type_and_obj(msg_obj)
         syft_obj = sy._SyftTensor.deser_routing(msg_obj['child'], worker, acquire)
 

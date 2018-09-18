@@ -11,7 +11,7 @@ import numpy as np
 
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
-from .numpy import array
+from .numpy import array, array_ptr
 
 
 def encode(message, retrieve_pointers=False, private_local=True):
@@ -231,9 +231,26 @@ class PythonJSONDecoder:
         # PLAN B: If the dct object IS a dictionary, check to see if it has a "type" key
 
         if('type' in dct):
-            print(dct)
             if dct['type'] == "numpy.array":
-                return array(dct['data'], id=dct['id'], owner=self.worker)
+
+                # at first glance, the following if statement might seem a bit confusing
+                # since the dct object is identical for both. Basically, the pointer object
+                # is created here (on the receiving end of a message) as opposed to on the sending
+                # side. We decide whether to use the dictionary to construct a pointer or the
+                # actual tensor based on wehther self.acquire is true. Note that this changes
+                # how dct['id'] is used. If creating an actual tensor, the tensor id is set to dct['id]
+                # otherwise, id_at_location is set to be dct['id']. Similarly with dct['owner'].
+
+                # if we intend to receive the tensor itself, construct an array
+                if(self.acquire):
+                    return array(dct['data'], id=dct['id'], owner=self.worker)
+
+                # if we intend to create a pointer, construct a pointer. Note that
+                else:
+                    return array_ptr(dct['data'],
+                                     owner=self.worker,
+                                     location=self.worker.get_worker(dct['owner']),
+                                     id_at_location=dct['id'])
             elif dct['type'] == 'numpy.array_ptr':
                 return self.worker.get_obj(dct['id_at_location'])
 
