@@ -3,7 +3,6 @@ import random
 import numpy as np
 import syft as sy
 
-from .encode import NumpyEncoder
 from ..torch import utils
 import torch
 
@@ -104,7 +103,7 @@ class array(abstractarray):
 
     def ser(self, private=True, to_json=False):
         if (to_json):
-            return json.dumps(self, cls=NumpyEncoder)
+            return json.dumps(self.ser(private=private, to_json=False))
         else:
             out = {}
             out['type'] = "numpy.array"
