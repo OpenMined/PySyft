@@ -1,12 +1,11 @@
 from .hook import TorchHook
-from syft.core.frameworks.torch.tensor import _SyftTensor, _LocalTensor, _PointerTensor
-from syft.core.frameworks.torch.tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor, _GeneralizedPointerTensor
-from syft.core.frameworks.torch.tensor import _MPCTensor
-import syft.core.frameworks.torch.torch_utils
+from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
+from .tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor, _GeneralizedPointerTensor
+from .tensor import _MPCTensor
 
 __all__ = ['TorchHook', '_SyftTensor', '_LocalTensor',
            '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor',
-           '_PlusIsMinusTensor', '_GeneralizedPointerTensor', '_MPCTensor','torch_utils']
+           '_PlusIsMinusTensor', '_GeneralizedPointerTensor', '_MPCTensor']
 
 import torch
 

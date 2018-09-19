@@ -10,7 +10,7 @@ import syft as sy
 import numpy as np
 
 from syft.core import utils
-from syft.core.frameworks.torch import torch_utils
+from syft.core.frameworks.torch import utils as torch_utils
 from .numpy import array, array_ptr
 
 
