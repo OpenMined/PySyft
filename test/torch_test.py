@@ -994,6 +994,17 @@ class TestMPCTensor(TestCase):
 
         assert (x.mm(y).get() - torch.LongTensor([[18, 22], [43, 49]])).abs().sum() < 5
 
+        x = torch.LongTensor([[1, -2], [3, -4]])
+        y = torch.LongTensor([[5, 6], [7, 8]])
+
+        target = x.mm(y)
+
+        x = x.share(bob, alice)
+        y = y.share(bob, alice)
+
+        result = x.mm(y)
+        assert (result.get() - target).abs().sum() < 5
+
     def test_mpc_negation_and_subtraction(self):
 
         x = torch.LongTensor([[1, 2], [3, 4]])
