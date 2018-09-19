@@ -3,6 +3,8 @@ from syft.mpc import spdz
 from syft.core.frameworks.torch import torch_utils
 from syft.core.frameworks.torch import _GeneralizedPointerTensor
 from syft.core.frameworks.torch import _MPCTensor
+
+
 class _TorchObject(object):
     """
     This tensor is simply a more convenient way to add custom

@@ -4,6 +4,8 @@ from .... import utils
 import syft as sy
 from syft.core.frameworks.torch import torch_utils
 from syft.core.frameworks.torch.tensor import _SyftTensor
+
+
 class _PointerTensor(_SyftTensor):
 
     def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None,

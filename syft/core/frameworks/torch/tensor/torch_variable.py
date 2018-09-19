@@ -6,6 +6,7 @@ from syft.core.frameworks.torch.tensor import _TorchObject
 from .... import utils
 from syft.core.frameworks.torch import torch_utils
 
+
 class _TorchVariable(_TorchObject):
 
     def send(self, worker, new_id=None, new_data_id=None, new_grad_id=None, new_grad_data_id=None):

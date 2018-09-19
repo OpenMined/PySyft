@@ -6,6 +6,8 @@ import torch
 import syft as sy
 from syft.core.frameworks.torch import torch_utils
 from syft.core.frameworks.torch.tensor import _PointerTensor
+
+
 class _SyftTensor(object):
     """
     Super class for all Syft tensors, that contains all the specific syft functions
