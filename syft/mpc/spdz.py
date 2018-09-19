@@ -51,7 +51,7 @@ def swap_shares(shares):
     new_alice.send(bob)
     new_bob.send(alice)
 
-    return sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: new_bob,bob: new_alice}).on(sy.LongTensor([]))
+    return sy._GeneralizedPointerTensor({alice: new_bob,bob: new_alice}).on(sy.LongTensor([]))
 
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL, mod=field):
@@ -90,31 +90,29 @@ def spdz_mul(x, y, workers, mod=field):
     delta = d.child.sum_get() % mod
     epsilon = e.child.sum_get() % mod
 
+    epsilon_delta = epsilon * delta
+
     delta = delta.broadcast(workers)
     epsilon = epsilon.broadcast(workers)
 
-    n = len(workers)
     z = (c
          + (delta * b) % mod
          + (epsilon * a) % mod
-         + ((epsilon * delta) % mod) / n
          ) % mod
+
+    z.child.public_add_(epsilon_delta)
+
     return z
 
 
 def spdz_matmul(x, y, workers, mod=field):
     shapes = [x.shape, y.shape]
-    x_height = x.shape[0]
     if len(x.shape) != 1:
         x_width = x.shape[1]
     else:
         x_width = 1
 
     y_height = y.shape[0]
-    if len(y.shape) != 1:
-        y_width = y.shape[1]
-    else:
-        y_width = 1
 
     assert x_width == y_height, 'dimension mismatch: %r != %r' % (
         x_width, y_height,
@@ -131,15 +129,16 @@ def spdz_matmul(x, y, workers, mod=field):
     # Communication
     rho = r.child.sum_get() % mod
     sigma = s.child.sum_get() % mod
+    rho_sigma = torch.mm(rho, sigma) % mod
+
     rho = rho.broadcast(workers)
     sigma = sigma.broadcast(workers)
 
     a_sigma = torch.mm(a, sigma) % mod
     rho_b = torch.mm(rho, b) % mod
-    rho_sigma = torch.mm(rho, sigma) % mod
 
-    n = len(workers)
-    z = (a_sigma + rho_b + c + rho_sigma / n) % mod
+    z = (a_sigma + rho_b + c) % mod
+    z.child.public_add_(rho_sigma)
 
     return z
 
@@ -184,9 +183,9 @@ def generate_mul_triple_communication(shape, alice, bob):
     t_alice.send(alice)
     t_bob.send(bob)
 
-    gp_r = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
-    gp_s = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
-    gp_t = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
+    gp_r = sy._GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
+    gp_s = sy._GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
+    gp_t = sy._GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
     triple = [gp_r, gp_s, gp_t]
     return triple
 
@@ -196,7 +195,7 @@ def generate_zero_shares_communication(alice, bob, *sizes):
     u_alice, u_bob = share(zeros)
     u_alice.send(alice)
     u_bob.send(bob)
-    u_gp = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: u_alice.child, bob: u_bob.child})
+    u_gp = sy._GeneralizedPointerTensor({alice: u_alice.child, bob: u_bob.child})
     return u_gp
 
 
@@ -223,9 +222,9 @@ def generate_matmul_triple_communication(shapes, alice, bob):
     t_alice.send(alice)
     t_bob.send(bob)
 
-    gp_r = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
-    gp_s = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
-    gp_t = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
+    gp_r = sy._GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
+    gp_s = sy._GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
+    gp_t = sy._GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
     triple = [gp_r, gp_s, gp_t]
     return triple
 

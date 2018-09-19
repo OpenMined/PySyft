@@ -606,6 +606,15 @@ class _GeneralizedPointerTensor(_SyftTensor):
         gpt.child = torch.guard[gpt.torch_type]([])
         return gpt
 
+    def public_add_(self, value):
+        for worker, pointer in self.pointer_tensor_dict.items():
+            location = pointer.location
+            value.send(location)
+            torch_sum = pointer.parent + value
+            self.pointer_tensor_dict[worker] = torch_sum.child
+            break
+        return self
+
     def get(self, deregister_ptr=False):
 
         # TODO: deregister_ptr doesn't work
