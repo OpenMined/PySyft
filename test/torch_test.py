@@ -532,6 +532,12 @@ class TestTorchTensor(TestCase):
         z.get()
         assert (torch.equal(torch.cat([x, y, z]), torch.FloatTensor([1, 2, 3, 2, 3, 4, 5, 6, 7])))
 
+    def test_remote_tensor_unwrapped_addition(self):
+
+        x = torch.LongTensor([1, 2, 3, 4, 5]).send(bob)
+        y = x.child + x.child
+        assert (y.get() == x.get() * 2).all()
+
 
 class TestTorchVariable(TestCase):
 
@@ -992,6 +998,22 @@ class TestGPCTensor(TestCase):
         x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict, torch_type='syft.LongTensor').wrap(True)
 
         y = x_gp + x_gp
+
+        results = y.get()
+
+        assert (results[0] == (x.get() * 2)).all()
+
+    def test_gpc_unwrapped_add(self):
+        x = torch.LongTensor([1, 2, 3, 4, 5])
+        y = torch.LongTensor([1, 2, 3, 4, 5])
+
+        x.send(bob)
+        y.send(alice)
+
+        x_pointer_tensor_dict = {alice: y.child, bob: x.child}
+        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict, torch_type='syft.LongTensor').wrap(True)
+
+        y = x_gp.child + x_gp.child
 
         results = y.get()
 

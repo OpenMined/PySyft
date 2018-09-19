@@ -261,6 +261,7 @@ class _SyftTensor(object):
         x = sy.FloatTensor([1, 2, 3])       # the chain is FloatTensor > _LocalTensor
         x = sy._PlusIsMinusTensor().on(x)   # the chain is FloatTensor > _PlusIsMinusTensor > _LocalTensor
         """
+
         cls = type(self)
         # Assign the newly created tensor to the good owner and torch_type
         self.torch_type = wrapper.child.torch_type
@@ -292,6 +293,7 @@ class _SyftTensor(object):
         wrapper = torch.guard[self.torch_type]()
         self.owner.rm_obj(wrapper.child.id)
         wrapper.child = self
+        self.parent = wrapper
         if not skip_fix_chain_end:
             torch_utils.fix_chain_ends(wrapper)
         return wrapper
@@ -301,6 +303,10 @@ class _SyftTensor(object):
         """
         Wrap a torch node with a syft wrapper
         """
+
+        if(torch_utils.is_tensor(result)):
+            return result
+
         # Insert the new syft node just before the wrapper
         syft_wrapper = cls(child=result, owner=owner)
         result.parent = syft_wrapper
@@ -405,6 +411,7 @@ class _LocalTensor(_SyftTensor):
             if isinstance(response, (int, float, bool)):
                 response = torch_type([response])
             elif isinstance(response, (np.ndarray, )):
+                print("hardcoding FloatTensor")
                 response = sy.FloatTensor(response)
         else:
             if isinstance(response, (int, float, bool, np.ndarray)):
@@ -572,9 +579,16 @@ class _GeneralizedPointerTensor(_SyftTensor):
              key = worker if isinstance(worker, (int, str)) else worker.id
              pointer_dict[key] = pointer
          self.pointer_tensor_dict = pointer_dict
+         self.torch_type = torch_type
 
     @classmethod
     def handle_call(cls, syft_command, owner):
+        try:
+
+            attr_type = "syft."+type(syft_command['attr'][0]).__name__
+        except:
+            attr_type = "syft.LongTensor"
+
         syft_commands = torch_utils.split_to_pointer_commands(syft_command)
         result_dict = {}
         for worker_id in syft_commands.keys():
@@ -582,9 +596,14 @@ class _GeneralizedPointerTensor(_SyftTensor):
             result_dict[worker_id] = sy._PointerTensor.handle_call(syft_command, owner)
 
         #TODO: @trask @theo could you take a look at this if you have better ideas on how to get these parameters
-        gpt =  _GeneralizedPointerTensor(result_dict, None, None, id=None, owner=owner, skip_register=False)
+        gpt =  _GeneralizedPointerTensor(result_dict,
+                                         parent=None,
+                                         torch_type=attr_type,
+                                         id=None,
+                                         owner=owner,
+                                         skip_register=False)
         # Fixme: Add a generic child depending on a torch_type
-        gpt.child = sy.FloatTensor([])
+        gpt.child = torch.guard[gpt.torch_type]([])
         return gpt
 
     def get(self, deregister_ptr=False):
@@ -778,13 +797,21 @@ class _MPCTensor(_SyftTensor):
     Converts all add operations into sub/minus ones.
     """
 
-    def __init__(self, shares, *args, **kwargs):
+    def __init__(self, shares=None, child=None, torch_type='syft.LongTensor', *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Fixme: remove the share on init, declaring a MPCTensor should autmatically create a _GeneralizedPointerTensor
-        if isinstance(shares, sy._GeneralizedPointerTensor):
-            raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
-        self.shares = shares  # shares is a _GeneralizedPointerTensor
-        self.child = self.shares
+        # if isinstance(shares, sy._GeneralizedPointerTensor):
+        #     raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
+        if(shares is not None):
+            self.shares = shares  # shares is a _GeneralizedPointerTensor
+            self.child = self.shares
+        elif(child is not None):
+            self.child = child
+            self.shares = self.child
+        else:
+            print("cannot initialize MPCTensor with shares and child both == None")
+            print(asdf)
+        self.torch_type = torch_type
 
     # The table of command you want to replace
     substitution_table = {
@@ -808,14 +835,13 @@ class _MPCTensor(_SyftTensor):
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = spdz.spdz_add(self.shares, other.shares)
-        response = _MPCTensor(gp_response)
-        # response.shares = shares
+        response = _MPCTensor(gp_response).wrap(True)
         return response
 
     def __mul__(self, other):
         workers = list(self.shares.child.pointer_tensor_dict.keys())
         gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
-        response = _MPCTensor(gp_response)
+        response = _MPCTensor(gp_response).wrap(True)
         return response
 
     def send(self, workers):
@@ -826,7 +852,8 @@ class _MPCTensor(_SyftTensor):
         for share, worker in zip(self.shares, self.workers):
             share.send(worker)
 
-    def get(self):
+    def get(self, deregister_ptr=False):
+        # TODO: have deregister_ptr do something
         value = self.shares.child.sum_get() % spdz.field
         if (value > spdz.torch_max_value).all():
             return value - spdz.torch_field
@@ -929,6 +956,16 @@ class _TorchTensor(_TorchObject):
                 x_.native_set_(self)
                 return "[Head of chain]\n" + x_.native___repr__()
             return self.native___str__()
+
+    def share(self, bob, alice):
+        x_enc = spdz.encode(self)
+        x_alice, x_bob = spdz.share(x_enc)
+        x_alice.send(alice)
+        x_bob.send(bob)
+        x_pointer_tensor_dict = {alice: x_alice.child, bob: x_bob.child}
+        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict, torch_type='syft.LongTensor').on(self)
+        x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
+        return x_mpc
 
     def ser(self, private, as_dict=True):
         key = '__' + type(self).__name__ + '__'
