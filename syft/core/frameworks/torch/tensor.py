@@ -791,7 +791,15 @@ class _FixedPrecisionTensor(_SyftTensor):
 
 class _MPCTensor(_SyftTensor):
     """
-    Example of a custom overloaded _SyftTensor
+    This tensor wraps a GeneralizedPointerTensor containing shares and knows how to
+    manipulate those shares properly so that the resulting methods are themselves
+    also MPCTensors.
+
+    This tensor is a special case tensor in multiple ways. First and foremost,
+    it is the first tensor we have implemented whose .child object is a Torch
+    object (a torch wrapper which is the head of another chain). This was necessary
+    to allow for multiple operations to occur within each single operation within
+    __add__ and __mul__.
 
     Role:
     Converts all add operations into sub/minus ones.
@@ -800,12 +808,18 @@ class _MPCTensor(_SyftTensor):
     def __init__(self, shares=None, child=None, torch_type='syft.LongTensor', *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Fixme: remove the share on init, declaring a MPCTensor should autmatically create a _GeneralizedPointerTensor
-        # if isinstance(shares, sy._GeneralizedPointerTensor):
-        #     raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
+
         if(shares is not None):
+            if isinstance(shares, sy._GeneralizedPointerTensor):
+                raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
+
             self.shares = shares  # shares is a _GeneralizedPointerTensor
             self.child = self.shares
+
         elif(child is not None):
+            if isinstance(child, sy._GeneralizedPointerTensor):
+                raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
+
             self.child = child
             self.shares = self.child
         else:
@@ -832,6 +846,9 @@ class _MPCTensor(_SyftTensor):
 
     # Put here all the methods you want to overload
 
+    def on(self, shares):
+        return self.wrap(True)
+
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = spdz.spdz_add(self.shares, other.shares)
@@ -846,6 +863,16 @@ class _MPCTensor(_SyftTensor):
 
     @classmethod
     def handle_call(cls, command, owner):
+        """
+        This is a special handle_call method which is compatible with
+        .child objects that are themselves torch objects (wrappers) of
+        other methods.
+        :param command:
+        :param owner:
+        :return:
+        """
+
+
         attr = command['command']
         args = command['args']
         kwargs = command['kwargs']
@@ -893,7 +920,7 @@ class _TorchObject(object):
         x_bob.send(bob)
         x_pointer_tensor_dict = {alice: x_alice.child, bob: x_bob.child}
         x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict).on(self)
-        x_mpc = _MPCTensor(x_gp)
+        x_mpc = _MPCTensor(x_gp).on(x_gp)
         return x_mpc
 
     def set_id(self, new_id):
