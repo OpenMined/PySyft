@@ -844,8 +844,8 @@ class BaseWorker(ABC):
                 new_args = list()
                 for arg in args:
                     if(hasattr(arg, 'parent')):
-                        new_args.append(arg.parent)
-                return self._execute_call(attr, self_.parent, *new_args, **kwargs)
+                        new_args.append(arg.wrap(True))
+                return self._execute_call(attr, self_.wrap(True), *new_args, **kwargs)
 
         # Distinguish between a command with torch tensors (like when called by the client,
         # or received from another worker), and a command with syft tensor, which can occur

@@ -997,5 +997,21 @@ class TestGPCTensor(TestCase):
 
         assert (results[0] == (x.get() * 2)).all()
 
+    def test_gpc_unwrapped_add(self):
+        x = torch.LongTensor([1, 2, 3, 4, 5])
+        y = torch.LongTensor([1, 2, 3, 4, 5])
+
+        x.send(bob)
+        y.send(alice)
+
+        x_pointer_tensor_dict = {alice: y.child, bob: x.child}
+        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict, torch_type='syft.LongTensor').wrap(True)
+
+        y = x_gp.child + x_gp.child
+
+        results = y.get()
+
+        assert (results[0] == (x.get() * 2)).all()
+
 if __name__ == '__main__':
     unittest.main()
