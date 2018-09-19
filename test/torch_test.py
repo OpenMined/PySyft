@@ -1007,14 +1007,19 @@ class TestMPCTensor(TestCase):
 
     def test_mpc_negation_and_subtraction(self):
 
+        x = torch.LongTensor([[1, 2], [-3, -4]])
+
+        x = x.share(bob, alice)
+
+        z = -x
+
+        assert (z.get() == torch.LongTensor([[-1, -2], [3, 4]])).all()
+
         x = torch.LongTensor([[1, 2], [3, 4]])
         y = torch.LongTensor([[5, 6], [7, 8]])
 
         x = x.share(bob, alice)
         y = y.share(bob, alice)
-
-        z = -x
-        assert (z.get() == torch.LongTensor([[-1, -2], [-3, -4]])).all()
 
         z = x - y
         assert (z.get() == torch.LongTensor([[-4, -4], [-4, -4]])).all()
