@@ -50,6 +50,12 @@ class _MPCTensor(_SyftTensor):
         gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
         response = _MPCTensor(gp_response)
         return response
+
+    def mm(self, other):
+        workers = list(self.shares.child.pointer_tensor_dict.keys())
+        gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
+        response = _MPCTensor(gp_response)
+        return response
        
     def send(self, workers):
         self.n_workers = len(workers)
@@ -61,7 +67,7 @@ class _MPCTensor(_SyftTensor):
 
     def get(self):
         value = self.shares.child.sum_get() % spdz.field
-        if (value > spdz.torch_max_value).all():
+        if (value > spdz.torch_max_value).all(): # TODO: value per value
             return value - spdz.torch_field
         else:
             return value
