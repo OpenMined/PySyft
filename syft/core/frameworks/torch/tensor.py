@@ -937,7 +937,7 @@ class _TorchObject(object):
         x_alice.send(alice)
         x_bob.send(bob)
         x_pointer_tensor_dict = {alice: x_alice.child, bob: x_bob.child}
-        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict).on(self+0)
+        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict).on(self)
         x_mpc = _MPCTensor(x_gp).on(x_gp)
         return x_mpc
 
