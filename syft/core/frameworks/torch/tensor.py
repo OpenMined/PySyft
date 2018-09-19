@@ -851,6 +851,16 @@ class _MPCTensor(_SyftTensor):
         response = _MPCTensor(gp_response).wrap(True)
         return response
 
+    def __sub__(self, other):
+        gp_response = spdz.spdz_add(self.shares, spdz.spdz_neg(other.shares))
+        response = _MPCTensor(gp_response).wrap(True)
+        return response
+
+    def __neg__(self):
+        gp_response = spdz.spdz_neg(self.shares)
+        response = _MPCTensor(gp_response).wrap(True)
+        return response
+
     def sum(self, *args, **kwargs):
         result_child = self.child.sum(*args, **kwargs) % spdz.field
         response = _MPCTensor(result_child).wrap(True)
@@ -894,8 +904,10 @@ class _MPCTensor(_SyftTensor):
 
         if(attr == '__mul__'):
             return cls.__mul__(self, *args, **kwargs)
-        elif(attr == '__add__'):
+        elif (attr == '__add__'):
             return cls.__add__(self, *args, **kwargs)
+        elif (attr == '__sub__'):
+            return cls.__sub__(self, *args, **kwargs)
         elif(attr == 'sum'):
             return cls.sum(self, *args, **kwargs)
         elif(attr == 'mm'):
