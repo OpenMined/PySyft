@@ -800,9 +800,6 @@ class _MPCTensor(_SyftTensor):
     object (a torch wrapper which is the head of another chain). This was necessary
     to allow for multiple operations to occur within each single operation within
     __add__ and __mul__.
-
-    Role:
-    Converts all add operations into sub/minus ones.
     """
 
     def __init__(self, shares=None, child=None, torch_type='syft.LongTensor', *args, **kwargs):
