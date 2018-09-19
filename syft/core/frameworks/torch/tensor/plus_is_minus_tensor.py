@@ -3,7 +3,6 @@ import torch
 import syft as sy
 from syft.core.frameworks.torch.tensor import _SyftTensor
 
-
 class _PlusIsMinusTensor(_SyftTensor):
     """
     Example of a custom overloaded _SyftTensor
