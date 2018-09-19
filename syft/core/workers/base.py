@@ -843,7 +843,7 @@ class BaseWorker(ABC):
             if(self_.child is None):
                 new_args = list()
                 for arg in args:
-                    if(hasattr(arg, 'parent')):
+                    if(torch_utils.is_syft_tensor(arg)):
                         new_args.append(arg.wrap(True))
                 return self._execute_call(attr, self_.wrap(True), *new_args, **kwargs)
 
