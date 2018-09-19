@@ -869,9 +869,10 @@ class _MPCTensor(_SyftTensor):
         return response
 
     def mm(self, other):
+
         workers = list(self.shares.child.pointer_tensor_dict.keys())
         gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
-        response = _MPCTensor(gp_response)
+        response = _MPCTensor(gp_response).wrap(True)
         return response
 
     @classmethod
@@ -897,6 +898,8 @@ class _MPCTensor(_SyftTensor):
             return cls.__add__(self, *args, **kwargs)
         elif(attr == 'sum'):
             return cls.sum(self, *args, **kwargs)
+        elif(attr == 'mm'):
+            return cls.mm(self, *args, **kwargs)
         else:
             result_child = getattr(self.child, attr)(*args, **kwargs)
             return _MPCTensor(result_child).wrap(True)

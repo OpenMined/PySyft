@@ -1,8 +1,6 @@
 import torch
 import syft as sy
 
-from ..core.frameworks.torch.tensor import _GeneralizedPointerTensor
-
 BASE = 2
 KAPPA = 3  # ~29 bits
 
@@ -53,7 +51,7 @@ def swap_shares(shares):
     new_alice.send(bob)
     new_bob.send(alice)
 
-    return _GeneralizedPointerTensor({alice: new_bob,bob: new_alice}).on(sy.LongTensor([]))
+    return sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: new_bob,bob: new_alice}).on(sy.LongTensor([]))
 
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL, mod=field):
@@ -225,9 +223,9 @@ def generate_matmul_triple_communication(shapes, alice, bob):
     t_alice.send(alice)
     t_bob.send(bob)
 
-    gp_r = _GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
-    gp_s = _GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
-    gp_t = _GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
+    gp_r = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
+    gp_s = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
+    gp_t = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
     triple = [gp_r, gp_s, gp_t]
     return triple
 
