@@ -844,6 +844,20 @@ class _MPCTensor(_SyftTensor):
         response = _MPCTensor(gp_response).wrap(True)
         return response
 
+    @classmethod
+    def handle_call(cls, command, owner):
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        self = command['self']
+
+        result_child = getattr(self.child, attr)(*args, **kwargs)
+        return _MPCTensor(result_child).wrap(True)
+
+    # def __getitem__(self, item):
+    #
+    #     return _MPCTensor(self.child.__getitem__(item)).wrap(True)
+
     def send(self, workers):
         self.n_workers = len(workers)
         self.shares = self.share(self.var, self.n_workers)
@@ -956,6 +970,15 @@ class _TorchTensor(_TorchObject):
                 x_.native_set_(self)
                 return "[Head of chain]\n" + x_.native___repr__()
             return self.native___str__()
+
+    @classmethod
+    def handle_call(cls, command, owner):
+        print(command)
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        self = command['self']
+        return getattr(self, attr)(*args, **kwargs)
 
     def share(self, bob, alice):
         x_enc = spdz.encode(self)
