@@ -1,8 +1,6 @@
 import syft as sy
 from syft.core.frameworks.torch.tensor import _SyftTensor
 from syft.core.frameworks.torch import torch_utils
-
-
 class _GeneralizedPointerTensor(_SyftTensor):
 
     def __init__(self, pointer_tensor_dict, parent=None, torch_type=None, id=None, owner=None, skip_register=False):

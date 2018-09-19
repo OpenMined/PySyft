@@ -1,8 +1,6 @@
 import syft as sy
 from syft.core.frameworks.torch.tensor import _SyftTensor
 from syft.mpc import spdz
-
-
 class _MPCTensor(_SyftTensor):
     """
     Example of a custom overloaded _SyftTensor
