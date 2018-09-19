@@ -3,7 +3,7 @@ import random
 import numpy as np
 import syft as sy
 
-from ..torch import utils
+from syft.core.frameworks.torch import torch_utils as utils
 import torch
 
 class abstractarray(np.ndarray):
