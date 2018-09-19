@@ -852,6 +852,17 @@ class _MPCTensor(_SyftTensor):
         response = _MPCTensor(gp_response).wrap(True)
         return response
 
+    def sum(self, *args, **kwargs):
+        result_child = self.child.sum(*args, **kwargs) % spdz.field
+        response = _MPCTensor(result_child).wrap(True)
+        return response
+
+    def cumsum(self, *args, **kwargs):
+
+        result_child = self.child.cumsum(*args, **kwargs) % spdz.field
+        response = _MPCTensor(result_child).wrap(True)
+        return response
+
     def __mul__(self, other):
         workers = list(self.shares.child.pointer_tensor_dict.keys())
         gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
@@ -879,6 +890,8 @@ class _MPCTensor(_SyftTensor):
             return cls.__mul__(self, *args, **kwargs)
         elif(attr == '__add__'):
             return cls.__add__(self, *args, **kwargs)
+        elif(attr == 'sum'):
+            return cls.sum(self, *args, **kwargs)
         else:
             result_child = getattr(self.child, attr)(*args, **kwargs)
             return _MPCTensor(result_child).wrap(True)
