@@ -839,12 +839,13 @@ class BaseWorker(ABC):
 
         # if this is none - then it means that self_ is not a torch wrapper
         # and we need to execute one level higher
-        if(self_.child is None):
-            new_args = list()
-            for arg in args:
-                if(hasattr(arg, 'parent')):
-                    new_args.append(arg.parent)
-            return self._execute_call(attr, self_.parent, *new_args, **kwargs)
+        if(self_ is not None):
+            if(self_.child is None):
+                new_args = list()
+                for arg in args:
+                    if(hasattr(arg, 'parent')):
+                        new_args.append(arg.parent)
+                return self._execute_call(attr, self_.parent, *new_args, **kwargs)
 
         # Distinguish between a command with torch tensors (like when called by the client,
         # or received from another worker), and a command with syft tensor, which can occur
