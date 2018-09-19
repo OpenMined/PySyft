@@ -33,10 +33,19 @@ def decode(field_element, precision_fractional=PRECISION_FRACTIONAL, mod=field):
     return rational
 
 
-def share(secret, mod=field):
-    first = torch.LongTensor(secret.shape).random_(mod)
-    second = (secret - first) % mod
-    return first, second
+def share(secret, n_workers, mod=field):
+    random_shares = [torch.LongTensor(secret.shape).random_(mod) for i in range(n_workers - 1)]
+    shares = []
+    for i in range(n_workers):
+        if i == 0:
+            share = random_shares[i]
+        elif i < n_workers - 1:
+            share = random_shares[i] - random_shares[i-1]
+        else:
+            share = secret - random_shares[i-1]
+        shares.append(share)
+
+    return shares
 
 
 def reconstruct(shares, mod=field):
@@ -80,8 +89,7 @@ def spdz_mul(x, y, workers, mod=field):
     if x.shape != y.shape:
         raise ValueError()
     shape = x.shape
-    alice, bob = workers
-    triple = generate_mul_triple_communication(shape, alice, bob)
+    triple = generate_mul_triple_communication(shape, workers)
     a, b, c = triple
 
     d = (x - a) % mod
@@ -167,12 +175,13 @@ def generate_mul_triple(shape, mod=field):
     return r, s, t
 
 
-def generate_mul_triple_communication(shape, alice, bob):
+def generate_mul_triple_communication(shape, workers):
     r, s, t = generate_mul_triple(shape)
 
-    r_alice, r_bob = share(r)
-    s_alice, s_bob = share(s)
-    t_alice, t_bob = share(t)
+    n_workers = len(workers)
+    r_alice, r_bob = share(r, n_workers)
+    s_alice, s_bob = share(s, n_workers)
+    t_alice, t_bob = share(t, n_workers)
 
     r_alice.send(alice)
     r_bob.send(bob)

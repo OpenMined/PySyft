@@ -984,6 +984,17 @@ class TestMPCTensor(TestCase):
         self.mpc_mul(3, 5)
         self.mpc_mul(2 ** 12, 2 ** 12)
 
+    def test_share(self):
+        x = torch.LongTensor([-3])
+
+        mpc_x = x.share(alice, bob, james)
+        assert len(mpc_x.child.shares.child.pointer_tensor_dict.keys()) == 3
+
+        mpc_x.get()
+
+        assert sy.eq(mpc_x, sy.LongTensor([-3])).all()
+
+
 class TestGPCTensor(TestCase):
 
     def test_gpc_add(self):

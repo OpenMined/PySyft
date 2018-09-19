@@ -940,9 +940,10 @@ class _TorchObject(object):
 
     __module__ = 'syft'
 
-    def share(self, workers):
+    def share(self, *workers):
+        n_workers = len(workers)
         x_enc = spdz.encode(self)
-        shares = spdz.share(x_enc)
+        shares = spdz.share(x_enc, n_workers)
         pointer_shares_dict = {}
         for share, worker in zip(shares, workers):
             share.send(worker)
