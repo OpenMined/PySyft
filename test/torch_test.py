@@ -532,6 +532,12 @@ class TestTorchTensor(TestCase):
         z.get()
         assert (torch.equal(torch.cat([x, y, z]), torch.FloatTensor([1, 2, 3, 2, 3, 4, 5, 6, 7])))
 
+    def test_remote_tensor_unwrapped_addition(self):
+
+        x = torch.LongTensor([1, 2, 3, 4, 5]).send(bob)
+        y = x.child + x.child
+        assert (y.get() == x.get() * 2).all()
+
 
 class TestTorchVariable(TestCase):
 
