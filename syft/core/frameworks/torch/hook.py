@@ -7,7 +7,7 @@ import types
 import syft as sy
 from ... import workers
 from ... import utils
-from . import utils as torch_utils
+from syft.core.frameworks.torch import torch_utils
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _GeneralizedPointerTensor,_FixedPrecisionTensor, _TorchTensor
 from .tensor import _TorchVariable
 
