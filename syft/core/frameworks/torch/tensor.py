@@ -851,8 +851,14 @@ class _MPCTensor(_SyftTensor):
         kwargs = command['kwargs']
         self = command['self']
 
-        result_child = getattr(self.child, attr)(*args, **kwargs)
-        return _MPCTensor(result_child).wrap(True)
+        if(attr == '__mul__'):
+            return cls.__mul__(self, *args, **kwargs)
+        elif(attr == '__add__'):
+            return cls.__add__(self, *args, **kwargs)
+        else:
+            result_child = getattr(self.child, attr)(*args, **kwargs)
+            return _MPCTensor(result_child).wrap(True)
+
 
     def send(self, workers):
         self.n_workers = len(workers)
