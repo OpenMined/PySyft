@@ -285,14 +285,15 @@ class _SyftTensor(object):
 
         return wrapper
 
-    def wrap(self):
+    def wrap(self, skip_fix_chain_end=False):
         """
         Wrap a syft node with a torch wrapper
         """
         wrapper = torch.guard[self.torch_type]()
         self.owner.rm_obj(wrapper.child.id)
         wrapper.child = self
-        torch_utils.fix_chain_ends(wrapper)
+        if not skip_fix_chain_end:
+            torch_utils.fix_chain_ends(wrapper)
         return wrapper
 
     @classmethod
@@ -586,7 +587,10 @@ class _GeneralizedPointerTensor(_SyftTensor):
         gpt.child = sy.FloatTensor([])
         return gpt
 
-    def get(self):
+    def get(self, deregister_ptr=False):
+
+        # TODO: deregister_ptr doesn't work
+
         res = []
         for worker, pointer in self.pointer_tensor_dict.items():
             res.append(pointer.get())
@@ -1024,6 +1028,11 @@ class _TorchTensor(_TorchObject):
 
         # returns a Tensor object wrapping a SyftTensor
         tensor = self.child.get(deregister_ptr=deregister_ptr)
+
+        # GeneralizedPointerTensor returns a list
+        if(isinstance(tensor, list)):
+            return tensor
+
         torch_utils.assert_has_only_torch_tensorvars(tensor)
         # this will change the pointer variable (wrapper) to instead wrap the
         # SyftTensor object that was returned so that any variable that may
