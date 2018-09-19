@@ -854,10 +854,6 @@ class _MPCTensor(_SyftTensor):
         result_child = getattr(self.child, attr)(*args, **kwargs)
         return _MPCTensor(result_child).wrap(True)
 
-    # def __getitem__(self, item):
-    #
-    #     return _MPCTensor(self.child.__getitem__(item)).wrap(True)
-
     def send(self, workers):
         self.n_workers = len(workers)
         self.shares = self.share(self.var, self.n_workers)
