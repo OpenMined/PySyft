@@ -985,6 +985,30 @@ class TestMPCTensor(TestCase):
         self.mpc_mul(3, 5)
         self.mpc_mul(2 ** 12, 2 ** 12)
 
+    def test_mpc_matmul(self):
+        x = torch.LongTensor([[1, 2], [3, 4]])
+        y = torch.LongTensor([[5, 6], [7, 8]])
+
+        x = x.share(bob, alice)
+        y = y.share(bob, alice)
+
+        assert (x.mm(y).get() - torch.LongTensor([[18, 22], [43, 49]])).abs().sum() < 5
+
+    def test_mpc_negation_and_subtraction(self):
+
+        x = torch.LongTensor([[1, 2], [3, 4]])
+        y = torch.LongTensor([[5, 6], [7, 8]])
+
+        x = x.share(bob, alice)
+        y = y.share(bob, alice)
+
+        z = -x
+        assert (z.get() == torch.LongTensor([[-1, -2], [-3, -4]])).all()
+
+        z = x - y
+        assert (z.get() == torch.LongTensor([[-4, -4], [-4, -4]])).all()
+
+
 class TestGPCTensor(TestCase):
 
     def test_gpc_add(self):
@@ -1018,6 +1042,7 @@ class TestGPCTensor(TestCase):
         results = y.get()
 
         assert (results[0] == (x.get() * 2)).all()
+
 
 if __name__ == '__main__':
     unittest.main()
