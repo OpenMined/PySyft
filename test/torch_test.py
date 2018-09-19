@@ -26,10 +26,9 @@ bob = sy.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
 alice = sy.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
 james = sy.VirtualWorker(id="james", hook=hook, is_client_worker=False)
 
-me.add_workers([bob, alice, james])
-bob.add_workers([me, alice, james])
-alice.add_workers([me, bob, james])
-james.add_workers([me, bob, alice])
+bob.add_workers([alice, james])
+alice.add_workers([bob, james])
+james.add_workers([bob, alice])
 
 
 class TestChainTensor(TestCase):
