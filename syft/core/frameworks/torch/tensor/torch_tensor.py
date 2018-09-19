@@ -7,6 +7,8 @@ from syft.core.frameworks.torch.tensor import _PointerTensor
 from syft.core.frameworks.torch.tensor import _LocalTensor
 from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor
 from syft.core.frameworks.torch import torch_utils
+
+
 class _TorchTensor(_TorchObject):
 
     def __str__(self):
