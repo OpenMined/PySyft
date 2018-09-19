@@ -1,6 +1,8 @@
 import torch
 import syft as sy
 
+from ..core.frameworks.torch.tensor import _GeneralizedPointerTensor
+
 BASE = 2
 KAPPA = 3  # ~29 bits
 
@@ -51,7 +53,7 @@ def swap_shares(shares):
     new_alice.send(bob)
     new_bob.send(alice)
 
-    return sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice:new_bob,bob:new_alice}).on(sy.LongTensor([]))
+    return _GeneralizedPointerTensor({alice: new_bob,bob: new_alice}).on(sy.LongTensor([]))
 
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL, mod=field):
@@ -102,7 +104,8 @@ def spdz_mul(x, y, workers, mod=field):
     return z
 
 
-def spdz_matmul(x, y, interface, mod=field):
+def spdz_matmul(x, y, workers, mod=field):
+    shapes = [x.shape, y.shape]
     x_height = x.shape[0]
     if len(x.shape) != 1:
         x_width = x.shape[1]
@@ -118,35 +121,33 @@ def spdz_matmul(x, y, interface, mod=field):
     assert x_width == y_height, 'dimension mismatch: %r != %r' % (
         x_width, y_height,
     )
-
-    r, s, t = generate_matmul_triple_communication(
-        x_height, y_width, x_width, interface,
+    alice, bob = workers
+    a, b, c = generate_matmul_triple_communication(
+        shapes,
+        alice, bob
     )
 
-    rho_local = (x - r) % mod
-    sigma_local = (y - s) % mod
+    r = (x - a) % mod
+    s = (y - b) % mod
 
     # Communication
-    rho_other = swap_shares(rho_local, interface)
-    sigma_other = swap_shares(sigma_local, interface)
+    rho = r.child.sum_get() % mod
+    sigma = s.child.sum_get() % mod
+    rho = rho.broadcast(workers)
+    sigma = sigma.broadcast(workers)
 
-    # They both add up the shares locally
-    rho = reconstruct([rho_local, rho_other])
-    sigma = reconstruct([sigma_local, sigma_other])
+    a_sigma = torch.mm(a, sigma) % mod
+    rho_b = torch.mm(rho, b) % mod
+    rho_sigma = torch.mm(rho, sigma) % mod
 
-    r_sigma = r * sigma
-    rho_s = rho * s
+    n = len(workers)
+    z = (a_sigma + rho_b + c + rho_sigma / n) % mod
 
-    share = r_sigma + rho_s + t
+    return z
 
-    rs = rho * sigma
-
-    share = public_add(share, rs, interface)
-    share = truncate(share, interface)
-
-    # we assume we need to mask the result for a third party crypto provider
-    u = generate_zero_shares_communication(alice, bob, *share.shape)
-    return spdz_add(share, u)
+    # # we assume we need to mask the result for a third party crypto provider
+    # u = generate_zero_shares_communication(alice, bob, *share.shape)
+    # return spdz_add(share, u)
 
 
 def spdz_sigmoid(x, interface):
@@ -170,26 +171,26 @@ def generate_mul_triple(shape, mod=field):
 
 
 def generate_mul_triple_communication(shape, alice, bob):
-        r, s, t = generate_mul_triple(shape)
+    r, s, t = generate_mul_triple(shape)
 
-        r_alice, r_bob = share(r)
-        s_alice, s_bob = share(s)
-        t_alice, t_bob = share(t)
+    r_alice, r_bob = share(r)
+    s_alice, s_bob = share(s)
+    t_alice, t_bob = share(t)
 
-        r_alice.send(alice)
-        r_bob.send(bob)
+    r_alice.send(alice)
+    r_bob.send(bob)
 
-        s_alice.send(alice)
-        s_bob.send(bob)
+    s_alice.send(alice)
+    s_bob.send(bob)
 
-        t_alice.send(alice)
-        t_bob.send(bob)
+    t_alice.send(alice)
+    t_bob.send(bob)
 
-        gp_r = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
-        gp_s = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
-        gp_t = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
-        triple = [gp_r, gp_s, gp_t]
-        return triple
+    gp_r = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
+    gp_s = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
+    gp_t = sy.core.frameworks.torch.tensor._GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
+    triple = [gp_r, gp_s, gp_t]
+    return triple
 
 
 def generate_zero_shares_communication(alice, bob, *sizes):
@@ -201,32 +202,36 @@ def generate_zero_shares_communication(alice, bob, *sizes):
     return u_gp
 
 
-def generate_matmul_triple(m, n, k, mod=field):
-    r = torch.LongTensor(m, k).random_(mod)
-    s = torch.LongTensor(k, n).random_(mod)
-    t = r * s
+def generate_matmul_triple(shapes, mod=field):
+    r = torch.LongTensor(shapes[0]).random_(mod)
+    s = torch.LongTensor(shapes[1]).random_(mod)
+    t = torch.mm(r, s)
+    assert t.shape == (shapes[0][0], shapes[1][1]), (t.shape, (shapes[0][0], shapes[1][1]), 'mismatch')
     return r, s, t
 
 
-def generate_matmul_triple_communication(m, n, k, interface):
-    if (interface.get_party() == 0):
-        r, s, t = generate_matmul_triple(m, n, k)
-        r_alice, r_bob = share(r)
-        s_alice, s_bob = share(s)
-        t_alice, t_bob = share(t)
+def generate_matmul_triple_communication(shapes, alice, bob):
+    r, s, t = generate_matmul_triple(shapes)
+    r_alice, r_bob = share(r)
+    s_alice, s_bob = share(s)
+    t_alice, t_bob = share(t)
 
-        swap_shares(r_bob, interface)
-        swap_shares(s_bob, interface)
-        swap_shares(t_bob, interface)
+    r_alice.send(alice)
+    r_bob.send(bob)
 
-        triple_alice = [r_alice, s_alice, t_alice]
-        return triple_alice
-    elif (interface.get_party() == 1):
-        r_bob = swap_shares(torch.LongTensor(m, k).zero_(), interface)
-        s_bob = swap_shares(torch.LongTensor(k, n).zero_(), interface)
-        t_bob = swap_shares(torch.LongTensor(m, n).zero_(), interface)
-        triple_bob = [r_bob, s_bob, t_bob]
-        return triple_bob
+    s_alice.send(alice)
+    s_bob.send(bob)
+
+    t_alice.send(alice)
+    t_bob.send(bob)
+
+    gp_r = _GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
+    gp_s = _GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
+    gp_t = _GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
+    triple = [gp_r, gp_s, gp_t]
+    return triple
+
+
 
 
 def generate_sigmoid_shares_communication(x, interface):

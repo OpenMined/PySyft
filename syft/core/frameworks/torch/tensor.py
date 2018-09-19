@@ -821,7 +821,6 @@ class _MPCTensor(_SyftTensor):
             self.shares = self.child
         else:
             print("cannot initialize MPCTensor with shares and child both == None")
-            print(asdf)
         self.torch_type = torch_type
 
     # The table of command you want to replace
@@ -869,6 +868,12 @@ class _MPCTensor(_SyftTensor):
         response = _MPCTensor(gp_response).wrap(True)
         return response
 
+    def mm(self, other):
+        workers = list(self.shares.child.pointer_tensor_dict.keys())
+        gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
+        response = _MPCTensor(gp_response)
+        return response
+
     @classmethod
     def handle_call(cls, command, owner):
         """
@@ -908,7 +913,7 @@ class _MPCTensor(_SyftTensor):
     def get(self, deregister_ptr=False):
         # TODO: have deregister_ptr do something
         value = self.shares.child.sum_get() % spdz.field
-        if (value > spdz.torch_max_value).all():
+        if (value > spdz.torch_max_value).all(): # TODO: value per value
             return value - spdz.torch_field
         else:
             return value
