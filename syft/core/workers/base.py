@@ -322,6 +322,19 @@ class BaseWorker(ABC):
                 self.de_register(object)
                 return tensorvar, False
 
+        #  Receiving a request to delete an object
+        elif message_wrapper['type'] == 'del_obj':
+            print(message)
+            print('Receive del_obj msg')
+            if self.has_obj(message):
+                syft_object = self.get_obj(message)
+                self.de_register(syft_object)
+                syft_object.del_object()
+                del syft_object
+                return 0, False
+            else:
+                return -1, False
+
         #  A torch command from another worker involving one or more tensors
         #  hosted locally
         elif message_wrapper['type'] == 'torch_cmd':
@@ -467,6 +480,9 @@ class BaseWorker(ABC):
         else:
             return id_or_worker
 
+    def has_obj(self, key):
+        return key in self._objects
+
     def get_obj(self, remote_key):
         """get_obj(remote_key) -> a torch object
         This method fetches a tensor from the worker's internal
@@ -591,7 +607,7 @@ class BaseWorker(ABC):
         elif isinstance(obj, (list, tuple, set, bytearray, range)):
             for o in obj:
                 self.de_register(o)
-        elif obj is None:
+        elif isinstance(obj, (int, float, str)) or obj is None:
             "do nothing"
         elif isinstance(obj, np.ndarray):
             self.rm_obj(obj.id)
@@ -959,6 +975,14 @@ class BaseWorker(ABC):
         # We don't need any response to proceed to registration
         self.send_msg(message=object,
                       message_type='obj',
+                      recipient=recipient)
+
+    def send_rm_obj(self, obj_id, recipient):
+        """
+        Send a request to delete a remote object
+        """
+        self.send_msg(message=obj_id,
+                      message_type='del_obj',
                       recipient=recipient)
 
     def send_torch_command(self, recipient, message):
