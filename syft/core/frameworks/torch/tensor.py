@@ -808,6 +808,8 @@ class _MPCTensor(_SyftTensor):
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = spdz.spdz_add(self.shares, other.shares)
+        # c = (self.shares + other.shares).child.wrap(True)
+        # gp_response = c % spdz.field
         response = _MPCTensor(gp_response)
         # response.shares = shares
         return response
