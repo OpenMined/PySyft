@@ -236,7 +236,7 @@ def generate_matmul_triple_communication(shapes, workers):
         share.location: share.child for share in s_shares
     }).on(s)
     gp_t = sy._GeneralizedPointerTensor({
-        share.location: share.child for share in r_shares
+        share.location: share.child for share in t_shares
     }).on(t)
     triple = [gp_r, gp_s, gp_t]
     return triple
