@@ -985,6 +985,16 @@ class TestMPCTensor(TestCase):
         self.mpc_mul(3, 5)
         self.mpc_mul(2 ** 12, 2 ** 12)
 
+    def test_mpc_mul_3_workers(self):
+        n1, n2 = (3, -5)
+        x = torch.LongTensor([n1])
+        y = torch.LongTensor([n2])
+        x = x.share(alice, bob, james)
+        y = y.share(alice, bob, james)
+        z = x * y
+        z = z.get()
+        assert (z == torch.LongTensor([n1 * n2])).all(), (z, 'should be', torch.LongTensor([n1 * n2]))
+
     def test_share(self):
         x = torch.LongTensor([-3])
 
