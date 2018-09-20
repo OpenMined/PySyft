@@ -1007,6 +1007,21 @@ class TestMPCTensor(TestCase):
         self.mpc_mul(3, 5)
         self.mpc_mul(2 ** 12, 2 ** 12)
 
+    def test_mpc_scalar_mult(self):
+        x = torch.LongTensor([[-1, 2], [3, 4]])
+        x = x.share(bob, alice)
+
+        y = torch.LongTensor([[2, 2], [2, 2]]).send(bob, alice)
+
+        z = x * y
+        assert (z.get() == torch.LongTensor([[-2, 4],[6, 8]])).all()
+
+        x = torch.LongTensor([[-1, 2], [3, 4]])
+        x = x.share(bob, alice)
+
+        z = x * 2
+        assert (z.get() == torch.LongTensor([[-2, 4], [6, 8]])).all()
+
 
     def test_mpc_matmul(self):
         x = torch.LongTensor([[1, 2], [3, 4]])
