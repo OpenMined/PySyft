@@ -1024,7 +1024,7 @@ class TestMPCTensor(TestCase):
 
         z = x - y
         assert (z.get() == torch.LongTensor([[-4, -4], [-4, -4]])).all()
-=======
+
     def test_mpc_mul_3_workers(self):
         n1, n2 = (3, -5)
         x = torch.LongTensor([n1])

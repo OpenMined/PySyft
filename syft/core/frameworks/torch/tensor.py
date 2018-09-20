@@ -893,8 +893,10 @@ class _MPCTensor(_SyftTensor):
         gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
         response = _MPCTensor(gp_response).wrap(True)
         return response
+
     def __matmul__(self, other):
         return self.mm(other)
+    
     def sigmoid(self):
         workers = list(self.shares.child.pointer_tensor_dict.keys())
         W0, W1, W3, W5 = spdz.generate_sigmoid_shares_communication(self.shape, workers)
@@ -948,10 +950,20 @@ class _MPCTensor(_SyftTensor):
         for share, worker in zip(self.shares, self.workers):
             share.send(worker)
 
+
     def get(self, deregister_ptr=False):
         # TODO: have deregister_ptr do something
         value = self.shares.child.sum_get() % spdz.field
-        return spdz.decode(value) 
+
+        gate = (value > spdz.torch_max_value).long()
+
+        neg_nums = (value - spdz.torch_field) * gate
+        pos_nums = value * (1 - gate)
+        result = neg_nums + pos_nums
+
+        return result
+
+
 class _TorchObject(object):
     """
     This tensor is simply a more convenient way to add custom
