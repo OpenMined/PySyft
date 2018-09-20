@@ -520,10 +520,78 @@ class _LocalTensor(_SyftTensor):
     def get(self, parent, deregister_ptr=None):
         raise TypeError("Cannot call .get() on a tensor you already have.")
 
+class _WrapTorchObjectTensorPlusIsMinus(_SyftTensor):
+    """
+    Example of a custom overloaded SyftTensor wherein the .child
+    object is also a TorchObject (such as FloatTensor or LongTensor).
+    Once implemented, you can wrap an existing tensor like.
+
+    x = torch.LongTensor([[1,2],[3,4]])
+    torch_type='syft.LongTensor'
+    fpt = _WrapTorchObjectTensorPlusIsMinus(x, torch_type=tt).wrap(True)
+
+    and then commands will automatically get executed on the child
+
+    y = fpt + fpt
+
+    after which y equals
+     2  4
+     6  8
+    [syft.core.frameworks.torch.tensor.LongTensor of size 2x2]
+
+    A production example of this tensor is _MPCTensor
+
+    """
+
+
+    def __init__(self, child=None, owner=None, torch_type=None):
+        super().__init__(child=child, owner=owner)
+
+        self.child = child
+        self.torch_type = torch_type
+
+        # The table of command you want to replace
+
+    def on(self, shares):
+        return self.wrap(True)
+
+
+
+    @classmethod
+    def handle_call(cls, command, owner):
+        """
+        This is a special handle_call method which is compatible with
+        .child objects that are themselves torch objects (wrappers) of
+        other methods.
+        :param command:
+        :param owner:
+        :return:
+        """
+
+
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        self = command['self']
+
+        if (attr == '__add__'):
+            return cls.__add__(self, *args, **kwargs)
+        else:
+            result_child = getattr(self.child, attr)(*args, **kwargs)
+            return _WrapTorchObjectTensorPlusIsMinus(result_child).wrap(True)
+
+    def __add__(self, other):
+        # gp_ stands for GeneralizedPointer
+        gp_response = self.child - other.child
+        response = _WrapTorchObjectTensorPlusIsMinus(gp_response).wrap(True)
+        return response
+
 
 class _PlusIsMinusTensor(_SyftTensor):
     """
-    Example of a custom overloaded _SyftTensor
+    Example of a custom overloaded _SyftTensor where the .child
+    object is NOT a torch tensor (instead the wrapper of the child
+    is re-purposed to the wrapper of this tensor)
 
     Role:
     Converts all add operations into sub/minus ones.
@@ -794,9 +862,11 @@ class _PointerTensor(_SyftTensor):
 
 class _FixedPrecisionTensor(_SyftTensor):
 
-    def __init__(self, child, parent, torch_type, owner=None):
-        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner)
+    def __init__(self, child=None, owner=None, torch_type=None):
+        super().__init__(child=child, owner=owner)
 
+        self.child = child
+        self.torch_type = torch_type
 
 class _MPCTensor(_SyftTensor):
     """
@@ -1065,7 +1135,7 @@ class _TorchTensor(_TorchObject):
 
     @classmethod
     def handle_call(cls, command, owner):
-        print(command)
+
         attr = command['command']
         args = command['args']
         kwargs = command['kwargs']
