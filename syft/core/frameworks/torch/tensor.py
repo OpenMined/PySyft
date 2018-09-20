@@ -935,8 +935,16 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = (self.child + other.child) % self.field
-        response = _FixedPrecisionTensor(gp_response, already_encoded=True).wrap(True)
+        response = _FixedPrecisionTensor(gp_response,
+                                         torch_type=self.torch_type,
+                                         already_encoded=True).wrap(True)
         return response
+
+    def __repr__(self):
+        return "[Fixed precision]\n"+self.decode().__repr__()
+
+    def __str__(self):
+        return "[Fixed precision]\n"+self.decode.__str__()
 
 
 class _MPCTensor(_SyftTensor):
@@ -1131,6 +1139,19 @@ class _TorchObject(object):
         x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
         return x_mpc
 
+    def fix_precision(self,
+                      qbits=31,
+                      base=10,
+                      precision_fractional=6,
+                      already_encoded=False):
+
+        fpt = _FixedPrecisionTensor(self,
+                                    qbits=qbits,
+                                    base=base,
+                                    precision_fractional=precision_fractional,
+                                    already_encoded=already_encoded).wrap(True)
+        return fpt
+
     def set_id(self, new_id):
         self.child.set_id(new_id)
         return self
@@ -1142,6 +1163,10 @@ class _TorchObject(object):
 
         if torch_utils.is_tensor(self) and hasattr(self, 'child') and not isinstance(self.child, (
                 sy._LocalTensor, sy._PointerTensor)):
+
+            if(isinstance(self.child, sy._FixedPrecisionTensor)):
+                return self.child.__repr__()
+
             x_ = type(self)()
             x_.native_set_(self)
             return "[Head of chain]\n" + x_.native___repr__()
