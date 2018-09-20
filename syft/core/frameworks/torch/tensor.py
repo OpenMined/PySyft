@@ -520,7 +520,7 @@ class _LocalTensor(_SyftTensor):
     def get(self, parent, deregister_ptr=None):
         raise TypeError("Cannot call .get() on a tensor you already have.")
 
-class _WrapTorchObjectTensorPlusIsMinus(_SyftTensor):
+class _WrapTorchObjectPlusIsMinusTensor(_SyftTensor):
     """
     Example of a custom overloaded SyftTensor wherein the .child
     object is also a TorchObject (such as FloatTensor or LongTensor).
@@ -578,12 +578,12 @@ class _WrapTorchObjectTensorPlusIsMinus(_SyftTensor):
             return cls.__add__(self, *args, **kwargs)
         else:
             result_child = getattr(self.child, attr)(*args, **kwargs)
-            return _WrapTorchObjectTensorPlusIsMinus(result_child).wrap(True)
+            return _WrapTorchObjectPlusIsMinusTensor(result_child).wrap(True)
 
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = self.child - other.child
-        response = _WrapTorchObjectTensorPlusIsMinus(gp_response).wrap(True)
+        response = _WrapTorchObjectPlusIsMinusTensor(gp_response).wrap(True)
         return response
 
 
