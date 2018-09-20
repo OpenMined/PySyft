@@ -860,13 +860,92 @@ class _PointerTensor(_SyftTensor):
         return tensorvar
 
 
-class _FixedPrecisionTensor(_SyftTensor):
 
-    def __init__(self, child=None, owner=None, torch_type=None):
+class _FixedPrecisionTensor(_SyftTensor):
+    """
+    TODO: write this
+
+    """
+
+    def __init__(self,
+                 child=None,
+                 owner=None,
+                 torch_type=None,
+                 qbits=31,
+                 base=10,
+                 precision_fractional=6,
+                 already_encoded=False):
         super().__init__(child=child, owner=owner)
 
-        self.child = child
+        if(torch_type is None):
+            torch_type = "syft."+type(child).__name__
+
         self.torch_type = torch_type
+
+        self.qbits = qbits
+        self.field = 2**qbits
+        self.base = base
+        self.precision_fractional = precision_fractional
+        self.torch_max_value = torch.LongTensor([round(self.field / 2)])
+
+        if(already_encoded):
+            self.child = child
+        else:
+            self.encode(child)
+
+    def on(self, shares):
+        return self.wrap(True)
+
+    def encode(self, rational):
+        upscaled = (rational * self.base ** self.precision_fractional).long()
+        field_element = upscaled % self.field
+        self.child = field_element
+        return self
+
+    def decode(self):
+        value = self.child % self.field
+        gate = (value > self.torch_max_value).long()
+        neg_nums = (value - spdz.torch_field) * gate
+        pos_nums = value * (1 - gate)
+        result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
+        return result
+
+    @classmethod
+    def handle_call(cls, command, owner):
+        """
+        This is a special handle_call method which is compatible with
+        .child objects that are themselves torch objects (wrappers) of
+        other methods.
+        :param command:
+        :param owner:
+        :return:
+        """
+
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        self = command['self']
+
+        if (attr == '__add__'):
+            return cls.__add__(self, *args, **kwargs)
+        else:
+            result_child = getattr(self.child, attr)(*args, **kwargs)
+            return _FixedPrecisionTensor(result_child).wrap(True)
+
+    def __add__(self, other):
+        # gp_ stands for GeneralizedPointer
+        gp_response = (self.child + other.child) % self.field
+        response = _FixedPrecisionTensor(gp_response,
+                                         torch_type=self.torch_type,
+                                         already_encoded=True).wrap(True)
+        return response
+
+    def __repr__(self):
+        return "[Fixed precision]\n"+self.decode().__repr__()
+
+    def __str__(self):
+        return "[Fixed precision]\n"+self.decode.__str__()
+
 
 class _MPCTensor(_SyftTensor):
     """
@@ -881,7 +960,11 @@ class _MPCTensor(_SyftTensor):
     __add__ and __mul__.
     """
 
-    def __init__(self, shares=None, child=None, torch_type='syft.LongTensor', *args, **kwargs):
+    def __init__(self,
+                 shares=None,
+                 child=None,
+                 torch_type='syft.LongTensor',
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Fixme: remove the share on init, declaring a MPCTensor should autmatically create a _GeneralizedPointerTensor
 
@@ -966,7 +1049,7 @@ class _MPCTensor(_SyftTensor):
 
     def __matmul__(self, other):
         return self.mm(other)
-    
+
     def sigmoid(self):
         workers = list(self.shares.child.pointer_tensor_dict.keys())
         W0, W1, W3, W5 = spdz.generate_sigmoid_shares_communication(self.shape, workers)
@@ -1056,6 +1139,19 @@ class _TorchObject(object):
         x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
         return x_mpc
 
+    def fix_precision(self,
+                      qbits=31,
+                      base=10,
+                      precision_fractional=6,
+                      already_encoded=False):
+
+        fpt = _FixedPrecisionTensor(self,
+                                    qbits=qbits,
+                                    base=base,
+                                    precision_fractional=precision_fractional,
+                                    already_encoded=already_encoded).wrap(True)
+        return fpt
+
     def set_id(self, new_id):
         self.child.set_id(new_id)
         return self
@@ -1067,6 +1163,10 @@ class _TorchObject(object):
 
         if torch_utils.is_tensor(self) and hasattr(self, 'child') and not isinstance(self.child, (
                 sy._LocalTensor, sy._PointerTensor)):
+
+            if(isinstance(self.child, sy._FixedPrecisionTensor)):
+                return self.child.__repr__()
+
             x_ = type(self)()
             x_.native_set_(self)
             return "[Head of chain]\n" + x_.native___repr__()
@@ -1117,6 +1217,10 @@ class _TorchObject(object):
 
 
 class _TorchTensor(_TorchObject):
+
+    # in the case of fixed precision tensors, torch tensors need this function
+    def decode(self):
+        return self.child.decode()
 
     def __str__(self):
         if isinstance(self.child, _PointerTensor):
