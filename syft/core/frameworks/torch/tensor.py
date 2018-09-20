@@ -1039,8 +1039,12 @@ class _MPCTensor(_SyftTensor):
         return response
 
     def __mul__(self, other):
-        workers = list(self.shares.child.pointer_tensor_dict.keys())
-        gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
+        if(isinstance(other, _MPCTensor)):
+            workers = list(self.shares.child.pointer_tensor_dict.keys())
+            gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
+        else:
+            gp_response = self.shares * other
+
         response = _MPCTensor(gp_response).wrap(True)
         return response
 
@@ -1155,6 +1159,9 @@ class _TorchObject(object):
                                     precision_fractional=precision_fractional,
                                     already_encoded=already_encoded).wrap(True)
         return fpt
+
+    def sum_get(self, *args, **kwargs):
+        return self.child.sum_get(*args, **kwargs)
 
     def set_id(self, new_id):
         self.child.set_id(new_id)
@@ -1297,7 +1304,7 @@ class _TorchTensor(_TorchObject):
             pointers_dict[worker] = self.clone().send(worker).child
         return _GeneralizedPointerTensor(pointers_dict).on(self)
 
-    def send(self, worker, ptr_id=None):
+    def send(self, *workers, ptr_id=None):
         """
         Give the root of the chain held by self to worker
         self->alice->obj [worker] => self->worker->alice->obj
@@ -1308,6 +1315,16 @@ class _TorchTensor(_TorchObject):
                 x.send(bob, 1000)
                 will result in bob having the tensor x with id 1000
         """
+
+        if len(workers) == 1:
+            worker = workers[0]
+        else:
+            gpt_dict = {}
+            for worker in workers:
+                gpt_dict[worker] = (self*1).send(worker).child
+            sy._GeneralizedPointerTensor(gpt_dict).on(self)
+            return self
+
 
         if isinstance(worker, (int, str)):
             worker = self.owner.get_worker(worker)
