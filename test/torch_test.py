@@ -194,6 +194,7 @@ class TestChainTensor(TestCase):
         x.child = x.child.child
 
         target = sy._PlusIsMinusTensor().on(torch.FloatTensor([1, 1]))
+        target.child = target.child.child
         assert torch.equal(x.grad.data, target)
 
 
@@ -944,8 +945,8 @@ class TestMPCTensor(TestCase):
         y = torch.LongTensor([n2])
         x_enc = spdz.encode(x)
         y_enc = spdz.encode(y)
-        x_alice, x_bob = spdz.share(x_enc)
-        y_alice, y_bob = spdz.share(y_enc)
+        x_alice, x_bob = spdz.share(x_enc, 2)
+        y_alice, y_bob = spdz.share(y_enc, 2)
         x_alice.send(alice)
         x_bob.send(bob)
         y_alice.send(alice)
@@ -983,6 +984,7 @@ class TestMPCTensor(TestCase):
         self.mpc_mul(5, -5)
         self.mpc_mul(3, 5)
         self.mpc_mul(2 ** 12, 2 ** 12)
+
 
     def test_mpc_matmul(self):
         x = torch.LongTensor([[1, 2], [3, 4]])
@@ -1022,6 +1024,27 @@ class TestMPCTensor(TestCase):
 
         z = x - y
         assert (z.get() == torch.LongTensor([[-4, -4], [-4, -4]])).all()
+=======
+    def test_mpc_mul_3_workers(self):
+        n1, n2 = (3, -5)
+        x = torch.LongTensor([n1])
+        y = torch.LongTensor([n2])
+        x = x.share(alice, bob, james)
+        y = y.share(alice, bob, james)
+        z = x * y
+        z = z.get()
+        assert (z == torch.LongTensor([n1 * n2])).all(), (z, 'should be', torch.LongTensor([n1 * n2]))
+
+    def test_share(self):
+        x = torch.LongTensor([-3])
+
+        mpc_x = x.share(alice, bob, james)
+        assert len(mpc_x.child.shares.child.pointer_tensor_dict.keys()) == 3
+
+        mpc_x.get()
+
+        assert sy.eq(mpc_x, sy.LongTensor([-3])).all()
+
 
 
 class TestGPCTensor(TestCase):

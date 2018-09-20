@@ -33,10 +33,19 @@ def decode(field_element, precision_fractional=PRECISION_FRACTIONAL, mod=field):
     return rational
 
 
-def share(secret, mod=field):
-    first = torch.LongTensor(secret.shape).random_(mod)
-    second = (secret - first) % mod
-    return first, second
+def share(secret, n_workers, mod=field):
+    random_shares = [torch.LongTensor(secret.shape).random_(mod) for i in range(n_workers - 1)]
+    shares = []
+    for i in range(n_workers):
+        if i == 0:
+            share = random_shares[i]
+        elif i < n_workers - 1:
+            share = random_shares[i] - random_shares[i-1]
+        else:
+            share = secret - random_shares[i-1]
+        shares.append(share)
+
+    return shares
 
 
 def reconstruct(shares, mod=field):
@@ -80,8 +89,7 @@ def spdz_mul(x, y, workers, mod=field):
     if x.shape != y.shape:
         raise ValueError()
     shape = x.shape
-    alice, bob = workers
-    triple = generate_mul_triple_communication(shape, alice, bob)
+    triple = generate_mul_triple_communication(shape, workers)
     a, b, c = triple
 
     d = (x - a) % mod
@@ -117,11 +125,7 @@ def spdz_matmul(x, y, workers, mod=field):
     assert x_width == y_height, 'dimension mismatch: %r != %r' % (
         x_width, y_height,
     )
-    alice, bob = workers
-    a, b, c = generate_matmul_triple_communication(
-        shapes,
-        alice, bob
-    )
+    a, b, c = generate_matmul_triple_communication(shapes, workers)
 
     r = (x - a) % mod
     s = (y - b) % mod
@@ -167,25 +171,29 @@ def generate_mul_triple(shape, mod=field):
     return r, s, t
 
 
-def generate_mul_triple_communication(shape, alice, bob):
+def generate_mul_triple_communication(shape, workers):
     r, s, t = generate_mul_triple(shape)
 
-    r_alice, r_bob = share(r)
-    s_alice, s_bob = share(s)
-    t_alice, t_bob = share(t)
+    n_workers = len(workers)
+    r_shares = share(r, n_workers)
+    s_shares = share(s, n_workers)
+    t_shares = share(t, n_workers)
 
-    r_alice.send(alice)
-    r_bob.send(bob)
+    # For r, s, t as a shared var, send each share to its worker
+    for var_shares in [r_shares, s_shares, t_shares]:
+        for var_share, worker in zip(var_shares, workers):
+            var_share.send(worker)
 
-    s_alice.send(alice)
-    s_bob.send(bob)
-
-    t_alice.send(alice)
-    t_bob.send(bob)
-
-    gp_r = sy._GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
-    gp_s = sy._GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
-    gp_t = sy._GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
+    # Build the pointer dict for r, s, t. Note that we remove the head of the pointer (via .child)
+    gp_r = sy._GeneralizedPointerTensor({
+        share.location: share.child for share in r_shares
+    }).on(r)
+    gp_s = sy._GeneralizedPointerTensor({
+        share.location: share.child for share in s_shares
+    }).on(s)
+    gp_t = sy._GeneralizedPointerTensor({
+        share.location: share.child for share in t_shares
+    }).on(t)
     triple = [gp_r, gp_s, gp_t]
     return triple
 
@@ -207,28 +215,31 @@ def generate_matmul_triple(shapes, mod=field):
     return r, s, t
 
 
-def generate_matmul_triple_communication(shapes, alice, bob):
+def generate_matmul_triple_communication(shapes, workers):
     r, s, t = generate_matmul_triple(shapes)
-    r_alice, r_bob = share(r)
-    s_alice, s_bob = share(s)
-    t_alice, t_bob = share(t)
 
-    r_alice.send(alice)
-    r_bob.send(bob)
+    n_workers = len(workers)
+    r_shares = share(r, n_workers)
+    s_shares = share(s, n_workers)
+    t_shares = share(t, n_workers)
 
-    s_alice.send(alice)
-    s_bob.send(bob)
+    # For r, s, t as a shared var, send each share to its worker
+    for var_shares in [r_shares, s_shares, t_shares]:
+        for var_share, worker in zip(var_shares, workers):
+            var_share.send(worker)
 
-    t_alice.send(alice)
-    t_bob.send(bob)
-
-    gp_r = sy._GeneralizedPointerTensor({alice: r_alice.child, bob: r_bob.child}).on(r)
-    gp_s = sy._GeneralizedPointerTensor({alice: s_alice.child, bob: s_bob.child}).on(s)
-    gp_t = sy._GeneralizedPointerTensor({alice: t_alice.child, bob: t_bob.child}).on(t)
+    # Build the pointer dict for r, s, t. Note that we remove the head of the pointer (via .child)
+    gp_r = sy._GeneralizedPointerTensor({
+        share.location: share.child for share in r_shares
+    }).on(r)
+    gp_s = sy._GeneralizedPointerTensor({
+        share.location: share.child for share in s_shares
+    }).on(s)
+    gp_t = sy._GeneralizedPointerTensor({
+        share.location: share.child for share in r_shares
+    }).on(t)
     triple = [gp_r, gp_s, gp_t]
     return triple
-
-
 
 
 def generate_sigmoid_shares_communication(x, interface):

@@ -893,6 +893,20 @@ class _MPCTensor(_SyftTensor):
         gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
         response = _MPCTensor(gp_response).wrap(True)
         return response
+    def __matmul__(self, other):
+        return self.mm(other)
+    def sigmoid(self):
+        workers = list(self.shares.child.pointer_tensor_dict.keys())
+        W0, W1, W3, W5 = spdz.generate_sigmoid_shares_communication(self.shape, workers)
+        x2 = x * x
+        x3 = x * x2
+        x5 = x3 * x2
+        temp5 = x5 * W5
+        temp3 = x3 * W3
+        temp1 = x * W1
+        temp53 = temp5 + temp3
+        temp531 = temp53+ temp1
+        return W0 + temp531
 
     @classmethod
     def handle_call(cls, command, owner):
@@ -952,14 +966,16 @@ class _TorchObject(object):
 
     __module__ = 'syft'
 
-    def share(self, bob, alice):
+    def share(self, *workers):
+        n_workers = len(workers)
         x_enc = spdz.encode(self)
-        x_alice, x_bob = spdz.share(x_enc)
-        x_alice.send(alice)
-        x_bob.send(bob)
-        x_pointer_tensor_dict = {alice: x_alice.child, bob: x_bob.child}
-        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict).on(self)
-        x_mpc = _MPCTensor(x_gp).on(x_gp)
+        shares = spdz.share(x_enc, n_workers)
+        pointer_shares_dict = {}
+        for share, worker in zip(shares, workers):
+            share.send(worker)
+            pointer_shares_dict[worker] = share.child
+        x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self)
+        x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
         return x_mpc
 
     def set_id(self, new_id):
@@ -1047,16 +1063,6 @@ class _TorchTensor(_TorchObject):
         kwargs = command['kwargs']
         self = command['self']
         return getattr(self, attr)(*args, **kwargs)
-
-    def share(self, bob, alice):
-        x_enc = spdz.encode(self)
-        x_alice, x_bob = spdz.share(x_enc)
-        x_alice.send(alice)
-        x_bob.send(bob)
-        x_pointer_tensor_dict = {alice: x_alice.child, bob: x_bob.child}
-        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict, torch_type='syft.LongTensor').on(self)
-        x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
-        return x_mpc
 
     def ser(self, private, as_dict=True):
         key = '__' + type(self).__name__ + '__'
