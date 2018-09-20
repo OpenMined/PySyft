@@ -883,6 +883,20 @@ class _MPCTensor(_SyftTensor):
         gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
         response = _MPCTensor(gp_response).wrap(True)
         return response
+    def __matmul__(self, other):
+        return self.mm(other)
+    def sigmoid(self):
+        workers = list(self.shares.child.pointer_tensor_dict.keys())
+        W0, W1, W3, W5 = spdz.generate_sigmoid_shares_communication(self.shape, workers)
+        x2 = x * x
+        x3 = x * x2
+        x5 = x3 * x2
+        temp5 = x5 * W5
+        temp3 = x3 * W3
+        temp1 = x * W1
+        temp53 = temp5 + temp3
+        temp531 = temp53+ temp1
+        return W0 + temp531
 
     @classmethod
     def handle_call(cls, command, owner):
