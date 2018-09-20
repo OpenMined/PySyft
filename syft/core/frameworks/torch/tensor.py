@@ -932,6 +932,10 @@ class _FixedPrecisionTensor(_SyftTensor):
             result_child = getattr(self.child, attr)(*args, **kwargs)
             return _FixedPrecisionTensor(result_child).wrap(True)
 
+    def get(self, *args, **kwargs):
+        self.child = self.child.get(*args, **kwargs)
+        return self
+
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = (self.child + other.child) % self.field
@@ -1348,6 +1352,9 @@ class _TorchTensor(_TorchObject):
         # GeneralizedPointerTensor returns a list
         if(isinstance(tensor, list)):
             return tensor
+
+        if(torch_utils.is_syft_tensor(tensor)):
+            return tensor.wrap(True)
 
         torch_utils.assert_has_only_torch_tensorvars(tensor)
         # this will change the pointer variable (wrapper) to instead wrap the
