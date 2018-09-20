@@ -194,6 +194,7 @@ class TestChainTensor(TestCase):
         x.child = x.child.child
 
         target = sy._PlusIsMinusTensor().on(torch.FloatTensor([1, 1]))
+        target.child = target.child.child
         assert torch.equal(x.grad.data, target)
 
 
@@ -944,8 +945,8 @@ class TestMPCTensor(TestCase):
         y = torch.LongTensor([n2])
         x_enc = spdz.encode(x)
         y_enc = spdz.encode(y)
-        x_alice, x_bob = spdz.share(x_enc)
-        y_alice, y_bob = spdz.share(y_enc)
+        x_alice, x_bob = spdz.share(x_enc, 2)
+        y_alice, y_bob = spdz.share(y_enc, 2)
         x_alice.send(alice)
         x_bob.send(bob)
         y_alice.send(alice)
