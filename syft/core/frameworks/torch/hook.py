@@ -420,7 +420,17 @@ class TorchHook(object):
         """
         def _execute_method_call(self, *args, **kwargs):
             worker = hook_self.local_worker
-            return worker._execute_call(attr, self, *args, **kwargs)
+            try:
+                return worker._execute_call(attr, self, *args, **kwargs)
+            except:
+                result = _execute_method_call(self.child, *args, **kwargs)
+                if(not torch_utils.is_tensor(self)):
+                    result = type(self)(result)
+                    if(hasattr(result, 'second_constructor')):
+                        result = result.second_constructor()
+                    return result
+                else:
+                    return result
 
         return _execute_method_call
 

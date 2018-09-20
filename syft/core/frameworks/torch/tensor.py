@@ -989,6 +989,9 @@ class _MPCTensor(_SyftTensor):
             print("cannot initialize MPCTensor with shares and child both == None")
         self.torch_type = torch_type
 
+        # self.allow_arbitrary_arg_types_for_methods = set()
+        # self.allow_arbitrary_arg_types_for_methods.add("__mul__")
+
     # The table of command you want to replace
     substitution_table = {
         'torch.add': 'torch.add',
@@ -1005,6 +1008,9 @@ class _MPCTensor(_SyftTensor):
         def get(attr):
             attr = attr.split('.')[-1]
             return getattr(sy._MPCTensor.overload_functions, attr)
+
+    def second_constructor(self):
+        return self.wrap(True)
 
     # Put here all the methods you want to overload
 
@@ -1039,6 +1045,7 @@ class _MPCTensor(_SyftTensor):
         return response
 
     def __mul__(self, other):
+
         if(isinstance(other, _MPCTensor)):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
             gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
