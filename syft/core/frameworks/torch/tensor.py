@@ -951,11 +951,7 @@ class _MPCTensor(_SyftTensor):
     def get(self, deregister_ptr=False):
         # TODO: have deregister_ptr do something
         value = self.shares.child.sum_get() % spdz.field
-        if (value > spdz.torch_max_value).all(): # TODO: value per value
-            return value - spdz.torch_field
-        else:
-            return value
-
+        return spdz.decode(value) 
 class _TorchObject(object):
     """
     This tensor is simply a more convenient way to add custom
