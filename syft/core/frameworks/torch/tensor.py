@@ -860,13 +860,52 @@ class _PointerTensor(_SyftTensor):
         return tensorvar
 
 
+
 class _FixedPrecisionTensor(_SyftTensor):
+    """
+    TODO: write this
+
+    """
 
     def __init__(self, child=None, owner=None, torch_type=None):
         super().__init__(child=child, owner=owner)
 
         self.child = child
         self.torch_type = torch_type
+
+        # The table of command you want to replace
+
+    def on(self, shares):
+        return self.wrap(True)
+
+    @classmethod
+    def handle_call(cls, command, owner):
+        """
+        This is a special handle_call method which is compatible with
+        .child objects that are themselves torch objects (wrappers) of
+        other methods.
+        :param command:
+        :param owner:
+        :return:
+        """
+
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        self = command['self']
+
+        if (attr == '__add__'):
+            return cls.__add__(self, *args, **kwargs)
+        else:
+            result_child = getattr(self.child, attr)(*args, **kwargs)
+            return _FixedPrecisionTensor(result_child).wrap(True)
+
+    def __add__(self, other):
+        # gp_ stands for GeneralizedPointer
+        gp_response = self.child - other.child
+        response = _FixedPrecisionTensor(gp_response).wrap(True)
+        return response
+
 
 class _MPCTensor(_SyftTensor):
     """
