@@ -58,8 +58,7 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
     all variables are updated.
 
   The following local variable is created:
-  * `local_step`, one per replica. Compared against the global_step in
-    each accumulator to check for staleness of the variables.
+  * `global_step`, one per replica. Updated after every average operation.
 
   The optimizer adds nodes to the graph to collect local variables and pause
   the trainers until variables are updated.
@@ -71,18 +70,17 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
      have been accumulated.
   3. Apply the averaged variables to global variables.
   4. Only after all variables have been updated, increment the global step.
-  5. Only after step 4, pushes `global_step` in the `token_queue`, once for
-     each worker replica. The workers can now fetch the global step, use it to
-     update its local_step variable and start the next round.
+  5. Only after step 4, pushes a token in the `token_queue`, once for
+     each worker replica. The workers can now fetch the token and start
+     the next round.
 
   For the replicas:
   <empty line>
   1. Start a training block: fetch variables and train for "interval_steps" steps.
   2. Once the training block has been computed, push local variables into variable
      accumulators. Each accumulator will check the staleness and drop the stale.
-  3. After pushing all the variables, dequeue an updated value of global_step
-     from the token queue and record that step to its local_step variable. Note
-     that this is effectively a barrier.
+  3. After pushing all the variables, dequeue a token from the token queue and
+     continue training. Note that this is effectively a barrier.
   4. Fetch new variables and start the next block.
 
   ### Usage
@@ -153,6 +151,7 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
         multiple blocks per update to variables.
       device_setter: A replica_device_setter that will be used to place copies
         of the trainable variables in the parameter server.
+      use_locking: If True use locks for update operations.
       name: string. Name of the global variables and related operation on ps.
     """
     if total_num_replicas is None:
@@ -182,6 +181,7 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
        This creates a new copy of each user-defined trainable variable and places
        them on ps_device. These variables store the averaged parameters.
     """
+    # Only the chief should initialize the variables
     if self._is_chief:
       collections = [ops.GraphKeys.GLOBAL_VARIABLES, "global_model"]
     else:
@@ -195,6 +195,7 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
             initial_value=v.initialized_value(), trainable=False,
             collections=collections)
 
+      # Place the global step in the ps so that all the workers can see it
       self._global_step = variables.Variable(0, name="%s_global_step" %
           self._name, trainable=False)
 
@@ -204,9 +205,9 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
 
     Args:
       grads_and_vars: List of (local_vars, gradients) pairs.
-      global_step: Optional Variable to increment by one after the
-        variables have been updated.
-      name: Optional name for the returned operation.  Default to the
+      global_step: Variable to increment by one after the variables have been
+      updated. We need it to check staleness.
+      name: Optional name for the returned operation. Default to the
         name passed to the Optimizer constructor.
 
     Returns:
@@ -223,14 +224,18 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
     if global_step is None:
       raise ValueError("Global step is required")
 
+    # Generate copy of all trainable variables
     self._generate_shared_variables()
 
+    # Wraps the apply_gradients op of the parent optimizer
     apply_updates = self._opt.apply_gradients(grads_and_vars, global_step)
 
+    # This function will be called whenever the global_step divides interval steps
     def _apply_averages():  # pylint: disable=missing-docstring
+      # Collect local and global vars
       local_vars = [v for g, v in grads_and_vars if g is not None]
       global_vars = ops.get_collection_ref("global_model")
-      # sync queue
+      # sync queue, place it in the ps
       with ops.colocate_with(self._global_step):
         sync_queue = data_flow_ops.FIFOQueue(
             -1, [dtypes.bool], shapes=[[]], shared_name="sync_queue")
@@ -239,41 +244,52 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
       with ops.name_scope(None, self._name + "/global"):
         for var, gvar in zip(local_vars, global_vars):
           # pylint: disable=protected-access
+          # Get reference to the tensor, this works with Variable and ResourceVariable
+          var = ops.convert_to_tensor(var)
+          # Place the accumulator in the same ps as the corresponding global_var
           with ops.device(gvar.device):
-            if isinstance(var._ref(), ops.Tensor):
-              var_accum = data_flow_ops.ConditionalAccumulator(
-                  var.dtype,
-                  shape=var.get_shape(),
-                  shared_name=gvar.name + "/var_accum")
-              train_ops.append(
-                  var_accum.apply_grad(var._ref(), local_step=global_step))
-              aggregated_vars.append(var_accum.take_grad(self._replicas_to_aggregate))
-            else:
-              raise ValueError("Unknown local variable type!")
+            var_accum = data_flow_ops.ConditionalAccumulator(
+                var.dtype,
+                shape=var.get_shape(),
+                shared_name=gvar.name + "/var_accum")
+            # Add op to push local_var to accumulator
+            train_ops.append(
+                var_accum.apply_grad(var, local_step=global_step))
+            # Op to average the vars in the accumulator
+            aggregated_vars.append(var_accum.take_grad(self._replicas_to_aggregate))
+            # Remember accumulator and corresponding device
             self._accumulator_list.append((var_accum, gvar.device))
       # chief worker updates global vars and enqueues tokens to the sync queue
       if self._is_chief:
         update_ops = []
+        # Make sure train_ops are run
         with ops.control_dependencies(train_ops):
+          # Update global_vars with average values
           for avg_var, gvar in zip(aggregated_vars, global_vars):
             with ops.device(gvar.device):
               update_ops.append(state_ops.assign(gvar, avg_var))
+          # Update shared global_step
           with ops.device(global_step.device):
             update_ops.append(state_ops.assign_add(self._global_step, 1))
+        # After averaging, push tokens to the queue
         with ops.control_dependencies(update_ops), ops.device(
             global_step.device):
           tokens = array_ops.fill([self._tokens_per_step],
                                   constant_op.constant(False))
           sync_op = sync_queue.enqueue_many(tokens)
+      # non chief workers deque a token, they will block here until chief is done
       else:
+        # Make sure train_ops are run
         with ops.control_dependencies(train_ops), ops.device(
             global_step.device):
           sync_op = sync_queue.dequeue()
 
+      # All workers pull averaged values
       with ops.control_dependencies([sync_op]):
         local_update_op = self._assign_vars(local_vars, global_vars)
       return local_update_op
 
+    # Check if we should push and average or not
     with ops.control_dependencies([apply_updates]):
       condition = math_ops.equal(
           math_ops.mod(global_step, self._interval_steps), 0)
@@ -281,6 +297,7 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
           condition, _apply_averages, control_flow_ops.no_op)
 
     chief_init_ops = []
+    # Initialize accumulators, ops placed in ps
     for accum, dev in self._accumulator_list:
       with ops.device(dev):
         chief_init_ops.append(
@@ -306,22 +323,20 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
     return refresh_ops
 
   def make_session_run_hook(self):
-    """Creates a hook to handle federated average and init operations."""
-    return _FederatedAverageHook(self, self._is_chief)
+    """Creates a hook to handle federated average init operations."""
+    return _FederatedAverageHook(self)
 
 class _FederatedAverageHook(session_run_hook.SessionRunHook):
   """A SessionRunHook that handles ops related to FederatedAveragingOptimizer."""
 
-  def __init__(self, fed_avg_optimizer, is_chief):
+  def __init__(self, fed_avg_optimizer):
     """Creates hook to handle FederatedAveragingOptimizer
 
     Args:
       fed_avg_optimizer: 'FederatedAveragingOptimizer' which this hook will
         initialize.
-      is_chief: 'Bool', whether this is a chief replica or not.
     """
     self._fed_avg_optimizer = fed_avg_optimizer
-    self._is_chief = is_chief
 
   def begin(self):
     local_vars = variables.trainable_variables()
@@ -331,4 +346,5 @@ class _FederatedAverageHook(session_run_hook.SessionRunHook):
         global_vars)
 
   def after_create_session(self, session, coord):
+    # Make sure all models start at the same point
     session.run(self._variable_init_op)
