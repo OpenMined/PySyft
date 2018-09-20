@@ -32,6 +32,17 @@ def decode(field_element, precision_fractional=PRECISION_FRACTIONAL, mod=field):
     rational = field_element.float() / BASE ** precision_fractional
     return rational
 
+# I think decode() above may be wrong... and the correct one is below
+# TODO: explore this
+
+# def decode(field_element, precision_fractional=PRECISION_FRACTIONAL, mod=field):
+#     value = field_element % field
+#     gate = (value > torch_max_value).long()
+#     neg_nums = (value - spdz.torch_field) * gate
+#     pos_nums = value * (1 - gate)
+#     result = (neg_nums + pos_nums).float() / (BASE ** precision_fractional)
+#     return result
+
 
 def share(secret, n_workers, mod=field):
     random_shares = [torch.LongTensor(secret.shape).random_(mod) for i in range(n_workers - 1)]
