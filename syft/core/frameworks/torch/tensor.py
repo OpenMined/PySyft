@@ -794,8 +794,9 @@ class _PointerTensor(_SyftTensor):
 
 class _FixedPrecisionTensor(_SyftTensor):
 
-    def __init__(self, child, parent, torch_type, owner=None):
-        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner)
+    def __init__(self, child=None, owner=None):
+        super().__init__(child=child, owner=owner)
+
 
 
 class _MPCTensor(_SyftTensor):
