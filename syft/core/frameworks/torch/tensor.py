@@ -1353,6 +1353,9 @@ class _TorchTensor(_TorchObject):
         if(isinstance(tensor, list)):
             return tensor
 
+        # if this is the case, then child is probably
+        # a wrapper which contains other torch objects
+        # such as FixedPrecisionTensor or MPCTensor
         if(torch_utils.is_syft_tensor(tensor)):
             return tensor.wrap(True)
 
