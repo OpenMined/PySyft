@@ -1,16 +1,17 @@
 """Framework agnostic static utility functions."""
+import functools
 import json
+import logging
 import re
 import types
-import functools
-import logging
+from typing import Optional, Callable, Tuple
+
 import torch
-import syft
-import syft as sy
 
-from .frameworks import encode
+from ._types import PYTHON_ENCODE_RETURN_TYPE, CUSTOM_OBJECT_HOOK_RETURN_TYPE, Dict, Any
 
-def is_in_place_method(attr):
+
+def is_in_place_method(attr: str) -> bool:
     """
     Determines if the method is in-place (ie modifies the self)
     TODO: Can you do better?
@@ -26,7 +27,7 @@ class PythonEncoder():
         Note that a python object is returned, not JSON.
     """
 
-    def __init__(self, retrieve_tensorvar=False):
+    def __init__(self, retrieve_tensorvar: bool = False) -> None:
         self.retrieve_tensorvar = retrieve_tensorvar
         self.found_tensorvar = []
         self.tensorvar_types = tuple([
@@ -42,7 +43,7 @@ class PythonEncoder():
             torch.LongTensor,
         ])
 
-    def encode(self, obj, retrieve_tensorvar=None):
+    def encode(self, obj, retrieve_tensorvar: Optional[bool] = None) -> PYTHON_ENCODE_RETURN_TYPE:
         """
             Performs encoding, and retrieves if requested all the tensors and
             Variables found
@@ -50,11 +51,11 @@ class PythonEncoder():
         if retrieve_tensorvar is not None:
             self.retrieve_tensorvar = retrieve_tensorvar
         if self.retrieve_tensorvar:
-            return (self.python_encode(obj), self.found_tensorvar)
+            return self.python_encode(obj), self.found_tensorvar
         else:
             return self.python_encode(obj)
 
-    def python_encode(self, obj):
+    def python_encode(self, obj) -> PYTHON_ENCODE_RETURN_TYPE:
         # Case of basic types
         if isinstance(obj, (int, float, str)) or obj is None:
             return obj
@@ -62,18 +63,18 @@ class PythonEncoder():
         elif isinstance(obj, self.tensorvar_types):
             if self.retrieve_tensorvar:
                 self.found_tensorvar.append(obj)
-            key = '__'+type(obj).__name__+'__'
+            key = '__' + type(obj).__name__ + '__'
             return {key: '_fl.{}'.format(obj.id)}
         # Lists
         elif isinstance(obj, list):
             return [self.python_encode(i) for i in obj]
         # Iterables non json-serializable
         elif isinstance(obj, (tuple, set, bytearray, range)):
-            key = '__'+type(obj).__name__+'__'
+            key = '__' + type(obj).__name__ + '__'
             return {key: [self.python_encode(i) for i in obj]}
         # Slice
         elif isinstance(obj, slice):
-            key = '__'+type(obj).__name__+'__'
+            key = '__' + type(obj).__name__ + '__'
             return {key: {'args': [obj.start, obj.stop, obj.step]}}
         # Dict
         elif isinstance(obj, dict):
@@ -96,7 +97,7 @@ class PythonJSONDecoder(json.JSONDecoder):
         Retrieve Torch objects replaced by their id
     """
 
-    def __init__(self, worker, *args, **kwargs):
+    def __init__(self, worker, *args, **kwargs) -> None:
         super(PythonJSONDecoder, self).__init__(
             *args,
             object_hook=self.custom_obj_hook, **kwargs
@@ -115,7 +116,7 @@ class PythonJSONDecoder(json.JSONDecoder):
             torch.LongTensor,
         ])
 
-    def custom_obj_hook(self, dct):
+    def custom_obj_hook(self, dct: CUSTOM_OBJECT_HOOK_RETURN_TYPE) -> CUSTOM_OBJECT_HOOK_RETURN_TYPE:
         """
             Is called on every dict found. We check if some keys correspond
             to special keywords referring to a type we need to re-cast
@@ -131,7 +132,7 @@ class PythonJSONDecoder(json.JSONDecoder):
                 # Case of a tensor or a Variable
                 if obj_type in map(lambda x: x.__name__, self.tensorvar_types):
                     pattern_var = re.compile('_fl.(.*)')
-                    id_pattern=pattern_var.search(obj).group(1)
+                    id_pattern = pattern_var.search(obj).group(1)
                     try:
                         id = int(id_pattern)
                     except ValueError:
@@ -150,35 +151,35 @@ class PythonJSONDecoder(json.JSONDecoder):
         return dct
 
 
-def map_tuple(hook, args, func):
+def map_tuple(hook, args: Tuple[Any, ...], func: Callable) -> Tuple[Any, ...]:
     if hook:
         return tuple(func(hook, x) for x in args)
     else:
         return tuple(func(x) for x in args)
 
 
-def map_dict(hook, kwargs, func):
+def map_dict(hook, kwargs: Dict[str, Any], func: Callable) -> Dict[str, Any]:
     if hook:
         return {key: func(hook, val) for key, val in kwargs.items()}
     else:
         return {key: func(val) for key, val in kwargs.items()}
 
 
-def pass_method_args(method):
+def pass_method_args(method: Callable) -> Callable:
     """Wrapper gathering partialmethod object from method call."""
 
     @functools.wraps(method)
-    def pass_args(*args, **kwargs):
+    def pass_args(*args: Tuple[Any, ...], **kwargs: Dict[str, Any]):
         return functools.partialmethod(method, *args, **kwargs)
 
     return pass_args
 
 
-def pass_func_args(func):
+def pass_func_args(func: Callable) -> Callable:
     """Wrapper gathering partial object from function call."""
 
     @functools.wraps(func)
-    def pass_args(*args, **kwargs):
+    def pass_args(*args: Tuple[Any, ...], **kwargs: Dict[str, Any]):
         # Return a new partial object which when called will behave like func called with the
         # positional arguments args and keyword arguments keywords. If more arguments are
         # supplied to the call, they are appended to args. If additional keyword arguments
