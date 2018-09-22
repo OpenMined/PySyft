@@ -982,6 +982,19 @@ class _FixedPrecisionTensor(_SyftTensor):
         else:
             return json.dumps({'___FixedPrecisionTensor__': data}) + "\n"
 
+    @classmethod
+    def deser(cls, msg_obj, worker, acquire):
+        """
+        General method for de-serializing an MPCTensor
+        """
+
+        if(acquire):
+            print("trying to deserialize _FixedPrecisionTEnsor")
+
+            return None
+        else:
+            return _SyftTensor.deser(msg_obj, worker, acquire)
+
     def on(self, shares):
         return self.wrap(True)
 
