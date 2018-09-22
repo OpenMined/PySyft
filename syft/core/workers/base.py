@@ -67,7 +67,8 @@ class BaseWorker(ABC):
                  tmp_objects={}, known_workers={}, verbose=True, queue_size=0):
 
         if(hook is None):
-            hook = sy.local_worker.hook
+            if(hasattr(sy, 'local_worker')):
+                hook = sy.local_worker.hook
 
         # This is a reference to the hook object which overloaded
         # the underlying deep learning framework
