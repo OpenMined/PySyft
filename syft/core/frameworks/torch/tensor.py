@@ -49,6 +49,12 @@ class _SyftTensor(object):
     def __repr__(self):
         return self.__str__()
 
+    def get_shape(self):
+        if(torch_utils.is_tensor(self.child)):
+            return self.child.shape
+        else:
+            return self.child.get_shape()
+
     def set_id(self, new_id):
         """
         This changes the id of a tensor.
@@ -859,6 +865,16 @@ class _PointerTensor(_SyftTensor):
 
         return tensorvar
 
+    def get_shape(self):
+        cmd = {}
+        cmd['command'] = "get_shape"
+        cmd['args'] = []
+        cmd['kwargs'] = {}
+        cmd['has_self'] = True
+        cmd['self'] = self
+
+        return sy.Size(self.handle_call(cmd, self.owner).get().int().tolist())
+
 
 
 class _FixedPrecisionTensor(_SyftTensor):
@@ -1142,10 +1158,16 @@ class _TorchObject(object):
 
     __module__ = 'syft'
 
+    def get_shape(self):
+        return self.child.get_shape()
+
+    def native_get_shape(self):
+        return self.get_shape()
+
     def share(self, *workers):
         n_workers = len(workers)
-        x_enc = spdz.encode(self)
-        shares = spdz.share(x_enc, n_workers)
+        x_enc = self._encode()
+        shares = self._share(n_workers)
         pointer_shares_dict = {}
         for share, worker in zip(shares, workers):
             share.send(worker)
@@ -1153,6 +1175,15 @@ class _TorchObject(object):
         x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self)
         x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
         return x_mpc
+
+    def _share(self, n_workers):
+        if(isinstance(self, _PointerTensor)):
+            return spdz.share(self, n_workers, self.location)
+        else:
+            return spdz.share(self, n_workers)
+
+    def _encode(self):
+        return spdz.encode(self)
 
     def fix_precision(self,
                       qbits=31,

@@ -46,6 +46,7 @@ torch.tensorvar_methods = list(
          for method in dir(tensorvar)]
     )
 )
+torch.tensorvar_methods.append('get_shape')
 
 # Torch functions we don't want to override
 torch.torch_exclude = ['save', 'load', 'typename', 'is_tensor', 'manual_seed']
