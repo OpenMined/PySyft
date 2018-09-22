@@ -928,6 +928,8 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         if (attr == '__add__'):
             return cls.__add__(self, *args, **kwargs)
+        elif (attr == '__sub__'):
+            return cls.__sub__(self, *args, **kwargs)
         else:
             result_child = getattr(self.child, attr)(*args, **kwargs)
             return _FixedPrecisionTensor(result_child).wrap(True)
@@ -942,6 +944,13 @@ class _FixedPrecisionTensor(_SyftTensor):
         response = _FixedPrecisionTensor(gp_response,
                                          torch_type=self.torch_type,
                                          already_encoded=True).wrap(True)
+        return response
+
+    def __sub__(self, other):
+        gp_response = (self.child - other.child) % self.field
+        response = _FixedPrecisionTensor(gp_response, 
+                                        torch_type=self.torch_type,
+                                        already_encoded=True).wrap(True)
         return response
 
     def __repr__(self):
