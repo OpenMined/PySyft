@@ -66,8 +66,56 @@ class TorchHook(object):
       3
      [syft.core.frameworks.torch.tensor.FloatTensor of size 6]
      """
-    def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
-        self.local_worker = local_worker
+    def __init__(hook_self, local_worker=None, is_client=True, verbose=True, queue_size=0):
+        hook_self.local_worker = local_worker
+
+        class Session(object):
+            def __init__(self, *workers, secure=False):
+                self.previous_session = sy._session.copy()
+                workers = [worker if isinstance(workers, str) else worker.id for worker in workers]
+                sy._session = {
+                    'workers': workers,
+                    'secure': secure,
+                    'session_pointers': []
+                }
+
+            def __enter__(self):
+                workers = sy._session['workers']
+                secure = sy._session['secure']
+                print('INFO:Session started with {}, (secure: {})'.format(', '.join(workers), secure))
+                return self
+
+            def __exit__(self, type, value, traceback):
+                pointer_ids = sy._session['session_pointers']
+                for obj in pointer_ids:
+                    obj.get()
+                sy._session = self.previous_session
+                print("INFO:Closing session")
+
+            @classmethod
+            def is_default(cls, worker_id=None):
+                worker_id = sy.local_worker.id if worker_id is None else worker_id
+                return sy._session['workers'] == [worker_id] and not sy._session['secure']
+
+            @classmethod
+            def default(cls):
+                sy._session = {
+                    'workers': [sy.local_worker.id],
+                    'secure': False,
+                    'session_pointers': []
+                }
+
+            @classmethod
+            def workers(cls):
+                return sy._session['workers']
+
+            @classmethod
+            def add_pointers(cls, pointer_ids):
+                sy._session['session_pointers'] += pointer_ids
+
+        sy.session = Session
+
+
 
         if not hasattr(torch, 'torch_hooked'):
             torch.torch_hooked = 0
@@ -77,38 +125,41 @@ class TorchHook(object):
         # Methods that caused infinite recursion during testing
         # TODO: May want to handle the ones in "exclude" manually at
         #       some point
-        self.exclude = (['ndimension', 'nelement', 'size', 'numel',
+        hook_self.exclude = (['ndimension', 'nelement', 'size', 'numel',
                          'type', 'tolist', 'dim', '__iter__', 'select',
                          '__getattr__', '_get_type'])
 
-        self.to_auto_overload = {}
+        hook_self.to_auto_overload = {}
 
         if torch.torch_hooked > 0:
             logging.warn("Torch was already hooked... skipping hooking process")
-            self.local_worker = sy.local_worker
+            hook_self.local_worker = sy.local_worker
         else:
 
-            if self.local_worker is None:
+            if hook_self.local_worker is None:
                 # Every TorchHook instance should have a local worker which is responsible for
                 # interfacing with other workers. The worker interface is what allows the Torch
                 # specific code in TorchHook to be agnostic to the means by which workers communicate
                 # (such as peer-to-peer, sockets, through local ports, or all within the same process)
-                self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client,
+                hook_self.local_worker = workers.VirtualWorker(hook=hook_self, is_client_worker=is_client,
                                                           queue_size=queue_size)
             else:
                 # if the local_worker already exists, then it MUST not know about the hook which is
                 # just being created. Thus, we must inform it.
-                self.local_worker.hook = self
+                hook_self.local_worker.hook = hook_self
 
             for typ in torch.tensorvar_types:
-                self._hook_native_tensors_and_variables(typ)
-                self._hook_syft_tensor_types(typ)
+                hook_self._hook_native_tensors_and_variables(typ)
+                hook_self._hook_syft_tensor_types(typ)
 
-            self._hook_torch_module()
-            self._hook_backward()
-            self._hook_module()
+            hook_self._hook_torch_module()
+            #hook_self._hook_backward()
+            #hook_self._hook_module()
 
-            sy.local_worker = self.local_worker
+            sy.local_worker = hook_self.local_worker
+
+            # Load the default session
+            sy.session.default()
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloads given tensor_type (native)"""
@@ -121,7 +172,7 @@ class TorchHook(object):
         self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
             tensor_type)
 
-        self._rename_native_functions(tensor_type)
+        self._rename_native_methods(tensor_type)
 
         self._assign_methods_to_use_child(tensor_type)
 
@@ -135,7 +186,6 @@ class TorchHook(object):
 
         self._hook_PointerTensor(tensor_type)
         self._hook_GeneralizedPointerTensor(tensor_type)
-
 
     def _add_registration_to___init__(hook_self, tensorvar_type, register_child_instead=False):
         """Overloads tensor_type.__new__ or Variable.__new__"""
@@ -267,7 +317,7 @@ class TorchHook(object):
 
         return to_overload
 
-    def _rename_native_functions(self, tensor_type):
+    def _rename_native_methods(self, tensor_type):
         """Renames functions that are auto overloaded"""
         for attr in self.to_auto_overload[tensor_type]:
 
@@ -477,7 +527,8 @@ class TorchHook(object):
 
         def _execute_function_call(*args, **kwargs):
             worker = hook_self.local_worker
-            return worker._execute_call(attr, None, *args, **kwargs)
+            return worker.execute_command_in_session(attr, None, *args, **kwargs)
+            #return worker._execute_call(attr, None, *args, **kwargs)
 
         return _execute_function_call
 

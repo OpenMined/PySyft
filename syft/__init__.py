@@ -17,6 +17,8 @@ __all__ = ['core', 'mpc']
 import syft
 import torch
 
+session = {}
+
 for f in dir(torch):
     if ("_" not in f):
         setattr(syft, f, getattr(torch, f))

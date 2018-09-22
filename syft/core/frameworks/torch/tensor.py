@@ -5,6 +5,7 @@ import random
 import syft as sy
 from ... import utils
 from . import utils as torch_utils
+from .. import encode
 import logging
 import numpy as np
 from syft.mpc import spdz
@@ -319,6 +320,10 @@ class _SyftTensor(object):
 
         return syft_wrapper
 
+    def eval(self):
+        if self.child is not None:
+            return self.child.eval()
+
     @classmethod
     def is_overloaded_method(cls, attr):
         """
@@ -372,6 +377,9 @@ class _LocalTensor(_SyftTensor):
     def __init__(self, child=None, parent=None, torch_type=None, owner=None, id=None, skip_register=False):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id,
                          skip_register=skip_register)
+
+    def eval(self):
+        return self.child
 
     @classmethod
     def handle_call(cls, syft_command, owner):
@@ -735,6 +743,29 @@ class _PointerTensor(_SyftTensor):
             worker._pointers[location] = {}
         # Add the remote address
         worker._pointers[location][id_at_location] = self.id
+
+    def eval(self):
+        return self
+
+    @classmethod
+    def send_call(cls, syft_command, owner, location):
+        self_, attr, args, kwargs = syft_command
+        has_self = self_ is not None
+        command, _, _ = torch_utils.compile_command(attr,
+                                                     args,
+                                                     kwargs,
+                                                     has_self=has_self,
+                                                     self=self_)
+
+        response = owner.send_msg(
+            message=command,
+            message_type='torch_cmd2',
+            recipient=location
+        )
+
+        response = encode.decode(response, worker=owner)
+
+        return response
 
     @classmethod
     def handle_call(cls, syft_command, owner):
@@ -1196,6 +1227,10 @@ class _TorchObject(object):
             return "[Head of chain]\n" + x_.native___repr__()
 
         return self.native___repr__()
+
+    def eval(self):
+        if self.child is not None:
+            return self.child.eval()
 
     def create_pointer(self, register=False, location=None, ptr_id=None):
 

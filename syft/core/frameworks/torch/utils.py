@@ -67,6 +67,41 @@ def get_child_command(obj, child_types=[]):
         return obj, []
 
 
+def scan_and_execute_arguments_chains(command_args):
+    chains = []
+
+    def eval_tensors_in(obj):
+        """
+        Analyse a Python object (generally dict with a command and arguments,
+        """
+        # Torch tensor or variable, or sy._SyftTensor
+        if (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)) and not isinstance(obj, str):
+            evaluated_obj = obj.eval()
+            # TODO Add the chain of this obj to chains
+            return evaluated_obj
+        # List or iterables which could contain tensors
+        elif isinstance(obj, (list, tuple, set, bytearray, range)):
+            children = []
+            for o in obj:
+                c = eval_tensors_in(o)
+                children.append(c)
+            return type(obj)(children)
+        # Dict
+        elif isinstance(obj, dict):
+            children = {}
+            for k, o in obj.items():
+                c = eval_tensors_in(o)
+                children[k] = c
+            return children
+        else:
+            return obj
+
+    evaluated_args = eval_tensors_in(command_args)
+    # TODO process chains
+    return_chain = None
+    return evaluated_args, return_chain
+
+
 def prepare_child_command(command, replace_tensorvar_with_child=False):
     """
     Returns a command where all tensors are replaced with their child, and returns also the type

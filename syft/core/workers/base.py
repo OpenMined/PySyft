@@ -329,6 +329,16 @@ class BaseWorker(ABC):
             self.register(result)
             return result, True  # Result is private
 
+        elif message_wrapper['type'] == 'torch_cmd2':
+            attr = message['command']
+            has_self = message['has_self']
+            args = message['args']
+            kwargs = message['kwargs']
+            self_ = message['self'] if has_self else None
+            result = self.execute_command_in_session(attr, self_, *args, **kwargs)
+            self.register(result)
+            return result, True  # Result is private
+
         elif message_wrapper['type'] == 'numpy_cmd':
             result = self.process_numpy_command(message)
             self.register(result)
@@ -831,6 +841,96 @@ class BaseWorker(ABC):
         self_ = command_msg['self'] if has_self else None
 
         return self._execute_call(attr, self_, *args, **kwargs)
+
+    def execute_command_in_session(self, attr, self_, *args, **kwargs):
+        """
+        Execute commands using session environments
+
+        Local session:
+            The command will be executed locally, but before, we run
+            through the chain of tensors of the arguments and run each
+            node (ex: FLoatTensor > LogTensor > FixPrecisionT > LocalT)
+
+        Remote worker session:
+            The command will be executed remotely, but before, xe run
+            through the chain of tensors of the arguments and run each
+            node. In addition, each tensor that doesn't ends with a
+            pointer to the worker is sent automatically.
+        """
+        has_self = self_ is not None
+        assert not has_self  # TODO: handle methods
+
+        # Run the local chain of all arguments
+        (args, kwargs), return_chain = torch_utils.scan_and_execute_arguments_chains((args, kwargs))
+
+        if sy.session.is_default(self.id):
+            # Execute the call locally
+            print('INFO:{}:Executing cmd {}'.format(self.id, attr))
+            # Find the native corresponding command
+            if has_self:
+                attr = torch._command_guard(attr, torch.tensorvar_methods)
+                command = getattr(self_, "native_" + attr)
+            else:
+                attr = torch._command_guard(attr, torch.torch_modules)
+                elems = attr.split('.')
+                elems[-1] = 'native_' + elems[-1]
+                native_func_name = '.'.join(elems)
+                command = eval(native_func_name)
+
+            response = command(*args, **kwargs)
+            torch_utils.enforce_owner(response, self)
+
+            # TODO: Build the right chain on top of the result
+            return response
+        else:
+            # Execute the command remotely
+            workers = sy.session.workers()
+            session_ptr_ids = [] # will be filled with self.send_command_arguments
+            (args, kwargs) = self.send_command_arguments((args, kwargs), workers, session_ptr_ids)
+            # Register all pointers created, to get() them after the session has ended
+            sy.session.add_pointers(session_ptr_ids)
+            assert len(workers) == 1  # TODO: handle n>1 workers
+            worker = self.get_worker(workers[0])
+            syft_command = (self_, attr, args, kwargs)
+            # Send the call to worker
+            response = sy._PointerTensor.send_call(syft_command, self, worker)
+            # Register all response pointers created, to get() them after the session has ended
+            sy.session.add_pointers([response])  # TODO: multi tensor resp
+            return response
+
+    def send_command_arguments(self, obj, worker_ids, session_ptr_ids):
+        """
+        Send to workers all tensors in the arguments that are not pointing to them
+        """
+        # Torch tensor or variable, or sy._SyftTensor
+        if (torch_utils.is_tensor(obj) or torch_utils.is_variable(obj)
+          or torch_utils.is_syft_tensor(obj)) and not isinstance(obj, str):
+            if len(worker_ids) == 1: # TODO: Handle multiple workers
+                worker_id = worker_ids[0]
+                if not isinstance(obj.child, sy._PointerTensor) or obj.child.location.id != worker_id:
+                    worker = self.get_worker(worker_id)
+                    session_ptr_ids += [obj]
+                    obj = obj.send(worker).child
+            else:
+                raise TypeError('Too much workers in session')
+            return obj
+        # List or iterables which could contain tensors
+        elif isinstance(obj, (list, tuple, set, bytearray, range)):
+            children = []
+            for o in obj:
+                c = self.send_command_arguments(o, worker_ids, session_ptr_ids)
+                children.append(c)
+            return type(obj)(children)
+        # Dict
+        elif isinstance(obj, dict):
+            children = {}
+            for k, o in obj.items():
+                c = self.send_command_arguments(o, worker_ids, session_ptr_ids)
+                children[k] = c
+            return children
+        else:
+            return obj
+
 
     def _execute_call(self, attr, self_, *args, **kwargs):
         """
