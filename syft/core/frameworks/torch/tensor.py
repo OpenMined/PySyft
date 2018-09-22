@@ -56,7 +56,7 @@ class _SyftTensor(object):
             return self.child.get_shape()
 
     def share(self, *workers):
-        self.wrap().share(*workers)
+        return self.wrap(True).share(*workers)
 
     def set_id(self, new_id):
         """
@@ -451,7 +451,6 @@ class _LocalTensor(_SyftTensor):
             return_response = syft_command['self']
 
         elif hasattr(response, 'child') and (isinstance(response.child, (_MPCTensor, _FixedPrecisionTensor))):
-            print("returning mpc")
             return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
         else:
@@ -989,9 +988,17 @@ class _FixedPrecisionTensor(_SyftTensor):
         """
 
         if(acquire):
-            print("trying to deserialize _FixedPrecisionTEnsor")
+            subset = msg_obj['child']['__LongTensor__']['child']
+            child = _SyftTensor.deser_routing(subset, worker, acquire)
 
-            return None
+            obj = _FixedPrecisionTensor(child=child,
+                                        owner=worker,
+                                        torch_type=msg_obj['torch_type'],
+                                        qbits=msg_obj['qbits'],
+                                        base=msg_obj['base'],
+                                        precision_fractional=msg_obj['precision_fractional'],
+                                        already_encoded=True)
+            return obj
         else:
             return _SyftTensor.deser(msg_obj, worker, acquire)
 
@@ -1030,6 +1037,8 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         if (attr == '__add__'):
             return cls.__add__(self, *args, **kwargs)
+        if (attr == 'share'):
+            return self.share(*args, **kwargs)
         else:
             result_child = getattr(self.child, attr)(*args, **kwargs)
             return _FixedPrecisionTensor(result_child).wrap(True)
@@ -1047,10 +1056,16 @@ class _FixedPrecisionTensor(_SyftTensor):
         return response
 
     def __repr__(self):
-        return "[Fixed precision]\n"+self.decode().__repr__()
+        if(not isinstance(self.child, _MPCTensor)):
+            return "[Fixed precision]\n"+self.decode().__repr__()
+        else:
+            return "[Fixed precision]\n" + self.child.__repr__()
 
     def __str__(self):
-        return "[Fixed precision]\n"+self.decode.__str__()
+        if (not isinstance(self.child, _MPCTensor)):
+            return "[Fixed precision]\n" + self.decode().__repr__()
+        else:
+            return "[Fixed precision]\n" + self.child.__repr__()
 
 
 class _MPCTensor(_SyftTensor):
@@ -1290,11 +1305,16 @@ class _TorchObject(object):
     def share(self, *workers):
 
         if(isinstance(self.child, _PointerTensor)):
+
             return self.child.share(*workers).wrap(True)
         elif(isinstance(self.child, _FixedPrecisionTensor)):
+
             self.child.child = self.child.child.share(*workers)
             return self
         else:
+            # print("not sharing fpt or pointer")
+            # print(type(self.child))
+            # print(abc)
             n_workers = len(workers)
             x_enc = self._encode()
             shares = self._share(n_workers)
@@ -1337,17 +1357,13 @@ class _TorchObject(object):
 
             return self.handle_call(cmd, self.owner).wrap(True)
         else:
-            print("fixing actual precision")
+
             fpt = _FixedPrecisionTensor(self,
                                         qbits=qbits,
                                         base=base,
                                         precision_fractional=precision_fractional,
                                         already_encoded=already_encoded).wrap(True)
 
-            print(fpt)
-            print(type(fpt.child))
-            print(type(fpt.child.child))
-            # print(abc)
             return fpt
 
     def native_fix_precision(self, *args, **kwargs):
