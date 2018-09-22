@@ -258,45 +258,12 @@ def generate_matmul_triple_communication(shapes, workers):
     return triple
 
 
-def generate_sigmoid_shares_communication(x, interface):
-    if (interface.get_party() == 0):
-        W0 = encode(torch.FloatTensor(x.shape).one_() * 1 / 2)
-        W1 = encode(torch.FloatTensor(x.shape).one_() * 1 / 4)
-        W3 = encode(torch.FloatTensor(x.shape).one_() * -1 / 48)
-        W5 = encode(torch.FloatTensor(x.shape).one_() * 1 / 480)
+def generate_sigmoid_shares_communication(tensor_shape, workers):
+        W0 = (torch.FloatTensor(tensor_shape).one_() * 1 / 2).fix_precision().send(workers)
+        W1 = (torch.FloatTensor(tensor_shape).one_() * 1 / 4).fix_precision().send(workers)
+        W3 = (torch.FloatTensor(tensor_shape).one_() * -1 / 48).fix_precision().send(workers)
+        W5 = (torch.FloatTensor(tensor_shape).one_() * 1 / 480).fix_precision().send(workers)
 
-        W0_alice, W0_bob = share(W0)
-        W1_alice, W1_bob = share(W1)
-        W3_alice, W3_bob = share(W3)
-        W5_alice, W5_bob = share(W5)
-
-        swap_shares(W0_bob, interface)
-        swap_shares(W1_bob, interface)
-        swap_shares(W3_bob, interface)
-        swap_shares(W5_bob, interface)
-
-        quad_alice = [W0_alice, W1_alice, W3_alice, W5_alice]
-        return quad_alice
-    elif (interface.get_party() == 1):
-        W0_bob = swap_shares(
-            torch.LongTensor(
-                x.shape,
-            ).zero_(), interface,
-        )
-        W1_bob = swap_shares(
-            torch.LongTensor(
-                x.shape,
-            ).zero_(), interface,
-        )
-        W3_bob = swap_shares(
-            torch.LongTensor(
-                x.shape,
-            ).zero_(), interface,
-        )
-        W5_bob = swap_shares(
-            torch.LongTensor(
-                x.shape,
-            ).zero_(), interface,
-        )
-        quad_bob = [W0_bob, W1_bob, W3_bob, W5_bob]
-        return quad_bob
+        quad = [W0, W1, W3, W5]
+        return quad
+>>>>>>> generated sigmoid triple
