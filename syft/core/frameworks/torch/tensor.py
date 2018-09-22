@@ -379,10 +379,9 @@ class _LocalTensor(_SyftTensor):
                          skip_register=skip_register)
 
     def eval(self, tensor):
-        head_tensor = torch.FloatTensor()
-        head_tensor.native_set_(tensor)
-        head_tensor.child = self
-        return head_tensor
+        self.child = tensor
+        tensor.child = self
+        return tensor
 
     @classmethod
     def handle_call(cls, syft_command, owner):
@@ -748,10 +747,8 @@ class _PointerTensor(_SyftTensor):
         worker._pointers[location][id_at_location] = self.id
 
     def eval(self, tensor):
-        head_tensor = torch.FloatTensor()
-        head_tensor.native_set_(tensor)
-        head_tensor.child = self
-        return head_tensor
+        tensor.child = self
+        return tensor
 
     @classmethod
     def send_call(cls, syft_command, owner, location):
@@ -901,43 +898,31 @@ class _PointerTensor(_SyftTensor):
 class _FixedPrecisionTensor(_SyftTensor):
     """
     TODO: write this
-
     """
 
     def __init__(self,
-                 child=None,
-                 owner=None,
-                 torch_type=None,
+                 *args,
                  qbits=31,
                  base=10,
                  precision_fractional=6,
-                 already_encoded=False):
-        super().__init__(child=child, owner=owner)
-
-        if(torch_type is None):
-            torch_type = "syft."+type(child).__name__
-
-        self.torch_type = torch_type
-
+                 already_encoded=False,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+        #TODO: what to do with already_encoded ?
         self.qbits = qbits
         self.field = 2**qbits
         self.base = base
         self.precision_fractional = precision_fractional
         self.torch_max_value = torch.LongTensor([round(self.field / 2)])
 
-        if(already_encoded):
-            self.child = child
-        else:
-            self.encode(child)
-
-    def on(self, shares):
-        return self.wrap(True)
+    def eval(self, tensor):
+        fixed_precision_tensor = self.encode(tensor)
+        return self.child.eval(fixed_precision_tensor)
 
     def encode(self, rational):
         upscaled = (rational * self.base ** self.precision_fractional).long()
         field_element = upscaled % self.field
-        self.child = field_element
-        return self
+        return field_element
 
     def decode(self):
         value = self.child % self.field
@@ -970,10 +955,11 @@ class _FixedPrecisionTensor(_SyftTensor):
             return _FixedPrecisionTensor(result_child).wrap(True)
 
     def get(self, *args, **kwargs):
-        self.child = self.child.get(*args, **kwargs)
-        return self
+        tensor = self.child.get(*args, **kwargs)
+        tensor = self.on(tensor)
+        return tensor
 
-    def __add__(self, other):
+    def NO__add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = (self.child + other.child) % self.field
         response = _FixedPrecisionTensor(gp_response,
@@ -981,10 +967,10 @@ class _FixedPrecisionTensor(_SyftTensor):
                                          already_encoded=True).wrap(True)
         return response
 
-    def __repr__(self):
+    def NO__repr__(self):
         return "[Fixed precision]\n"+self.decode().__repr__()
 
-    def __str__(self):
+    def NO__str__(self):
         return "[Fixed precision]\n"+self.decode.__str__()
 
 
@@ -1201,8 +1187,8 @@ class _TorchObject(object):
                                     qbits=qbits,
                                     base=base,
                                     precision_fractional=precision_fractional,
-                                    already_encoded=already_encoded).wrap(True)
-        return fpt
+                                    already_encoded=already_encoded)
+        return fpt.on(self)
 
     def sum_get(self, *args, **kwargs):
         return self.child.sum_get(*args, **kwargs)
@@ -1235,7 +1221,14 @@ class _TorchObject(object):
         return self.native___repr__()
 
     def eval(self):
-        return self.child.eval(self)
+        head_tensor = self.copy()
+        return self.child.eval(head_tensor)
+
+    def copy(self):
+        copy = sy.zeros(self.size())
+        copy = copy.type(type(self))
+        copy.native_set_(self)
+        return copy
 
     def create_pointer(self, register=False, location=None, ptr_id=None):
 

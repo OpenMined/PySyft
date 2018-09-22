@@ -76,8 +76,8 @@ def scan_and_execute_arguments_chains(command_args):
         """
         # Torch tensor or variable, or sy._SyftTensor
         if (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)) and not isinstance(obj, str):
+            chains.append(get_syft_chain(obj))
             evaluated_obj = obj.eval()
-            # TODO Add the chain of this obj to chains
             return evaluated_obj
         # List or iterables which could contain tensors
         elif isinstance(obj, (list, tuple, set, bytearray, range)):
@@ -97,8 +97,8 @@ def scan_and_execute_arguments_chains(command_args):
             return obj
 
     evaluated_args = eval_tensors_in(command_args)
-    # TODO process chains
-    return_chain = None
+    # TODO check that chains are equal
+    return_chain = chains[0]
     return evaluated_args, return_chain
 
 

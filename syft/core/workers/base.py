@@ -879,9 +879,6 @@ class BaseWorker(ABC):
 
             response = command(*args, **kwargs)
             torch_utils.enforce_owner(response, self)
-
-            # TODO: Build the right chain on top of the result
-            return response
         else:
             # Execute the command remotely
             workers = sy.session.workers()
@@ -896,7 +893,12 @@ class BaseWorker(ABC):
             response = sy._PointerTensor.send_call(syft_command, self, worker)
             # Register all response pointers created, to get() them after the session has ended
             sy.session.add_pointers([response])  # TODO: multi tensor resp
-            return response
+
+        # TODO: Build the right chain on top of the result: meta data to store (ex of FixedPointer)
+        for syft_type in return_chain:
+            if syft_type not in (sy._LocalTensor,):
+                response = syft_type().on(response)
+        return response
 
     def send_command_arguments(self, obj, worker_ids, session_ptr_ids):
         """
