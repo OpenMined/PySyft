@@ -1144,8 +1144,8 @@ class _TorchObject(object):
 
     def share(self, *workers):
         n_workers = len(workers)
-        x_enc = spdz.encode(self)
-        shares = spdz.share(x_enc, n_workers)
+        x_enc = self._encode()
+        shares = x_enc._share(x_enc, n_workers)
         pointer_shares_dict = {}
         for share, worker in zip(shares, workers):
             share.send(worker)
@@ -1153,6 +1153,12 @@ class _TorchObject(object):
         x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self)
         x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
         return x_mpc
+
+    def _encode(self):
+        return spdz.encode(self)
+
+    def _share(self, n_workers):
+        return spdz.share(self, n_workers)
 
     def fix_precision(self,
                       qbits=31,
