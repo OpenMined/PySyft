@@ -48,6 +48,8 @@ torch.tensorvar_methods = list(
 )
 torch.tensorvar_methods.append('get_shape')
 torch.tensorvar_methods.append("share")
+torch.tensorvar_methods.append("fix_precision")
+torch.tensorvar_methods.append("decode")
 
 # Torch functions we don't want to override
 torch.torch_exclude = ['save', 'load', 'typename', 'is_tensor', 'manual_seed']
@@ -61,6 +63,7 @@ torch.guard = {
     'syft.core.frameworks.torch.tensor._GeneralizedPointerTensor': _GeneralizedPointerTensor,
     'syft._PlusIsMinusTensor': _PlusIsMinusTensor,
     'syft._MPCTensor': _MPCTensor,
+    'syft._FixedPrecisionTensor': _FixedPrecisionTensor,
     'syft.core.frameworks.torch.tensor.FloatTensor': torch.FloatTensor,
     'syft.core.frameworks.torch.tensor.DoubleTensor': torch.DoubleTensor,
     'syft.core.frameworks.torch.tensor.HalfTensor': torch.HalfTensor,

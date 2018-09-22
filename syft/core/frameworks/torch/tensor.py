@@ -450,7 +450,7 @@ class _LocalTensor(_SyftTensor):
 
             return_response = syft_command['self']
 
-        elif hasattr(response, 'child') and (isinstance(response.child, _MPCTensor)):
+        elif hasattr(response, 'child') and (isinstance(response.child, (_MPCTensor, _FixedPrecisionTensor))):
             print("returning mpc")
             return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
@@ -966,6 +966,22 @@ class _FixedPrecisionTensor(_SyftTensor):
         else:
             self.encode(child)
 
+    def ser(self, private, as_dict=True):
+
+        data = {
+            'owner': self.owner.id,
+            'id': self.id,
+            'child': self.child.ser(private=private, as_dict=True),
+            'torch_type': self.torch_type,
+            'qbits': self.qbits,
+            'base': self.base,
+            'precision_fractional': self.precision_fractional,
+        }
+        if as_dict:
+            return {'___FixedPrecisionTensor__': data}
+        else:
+            return json.dumps({'___FixedPrecisionTensor__': data}) + "\n"
+
     def on(self, shares):
         return self.wrap(True)
 
@@ -1262,6 +1278,9 @@ class _TorchObject(object):
 
         if(isinstance(self.child, _PointerTensor)):
             return self.child.share(*workers).wrap(True)
+        elif(isinstance(self.child, _FixedPrecisionTensor)):
+            self.child.child = self.child.child.share(*workers)
+            return self
         else:
             n_workers = len(workers)
             x_enc = self._encode()
@@ -1292,12 +1311,34 @@ class _TorchObject(object):
                       precision_fractional=6,
                       already_encoded=False):
 
-        fpt = _FixedPrecisionTensor(self,
-                                    qbits=qbits,
-                                    base=base,
-                                    precision_fractional=precision_fractional,
-                                    already_encoded=already_encoded).wrap(True)
-        return fpt
+        if(isinstance(self.child, _PointerTensor)):
+
+            self = self.child
+
+            cmd = {}
+            cmd['command'] = "fix_precision"
+            cmd['args'] = []
+            cmd['kwargs'] = {}
+            cmd['has_self'] = True
+            cmd['self'] = self
+
+            return self.handle_call(cmd, self.owner).wrap(True)
+        else:
+            print("fixing actual precision")
+            fpt = _FixedPrecisionTensor(self,
+                                        qbits=qbits,
+                                        base=base,
+                                        precision_fractional=precision_fractional,
+                                        already_encoded=already_encoded).wrap(True)
+
+            print(fpt)
+            print(type(fpt.child))
+            print(type(fpt.child.child))
+            # print(abc)
+            return fpt
+
+    def native_fix_precision(self, *args, **kwargs):
+        return self.fix_precision(*args, **kwargs)
 
     def sum_get(self, *args, **kwargs):
         return self.child.sum_get(*args, **kwargs)
