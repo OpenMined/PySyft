@@ -45,7 +45,12 @@ def decode(field_element, precision_fractional=PRECISION_FRACTIONAL, mod=field):
 
 
 def share(secret, n_workers, mod=field):
-    random_shares = [torch.LongTensor(secret.shape).random_(mod) for i in range(n_workers - 1)]
+
+    random_shares = [torch.LongTensor(secret.get_shape()) for i in range(n_workers - 1)]
+
+    for share in random_shares:
+        share.random_(mod)
+
     shares = []
     for i in range(n_workers):
         if i == 0:

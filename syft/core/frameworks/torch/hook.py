@@ -422,7 +422,9 @@ class TorchHook(object):
             worker = hook_self.local_worker
             try:
                 return worker._execute_call(attr, self, *args, **kwargs)
-            except:
+
+            except NotImplementedError:
+
                 result = _execute_method_call(self.child, *args, **kwargs)
                 if(not torch_utils.is_tensor(self)):
                     result = type(self)(result)
@@ -431,6 +433,7 @@ class TorchHook(object):
                     return result
                 else:
                     return result
+
 
         return _execute_method_call
 
