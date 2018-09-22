@@ -55,6 +55,9 @@ class _SyftTensor(object):
         else:
             return self.child.get_shape()
 
+    def share(self, *workers):
+        self.wrap().share(*workers)
+
     def set_id(self, new_id):
         """
         This changes the id of a tensor.
@@ -446,8 +449,13 @@ class _LocalTensor(_SyftTensor):
                     torch_utils.link_var_chain_to_data_and_grad_chains(syft_command['self'], response.data.child, response.grad.child)
 
             return_response = syft_command['self']
+
+        elif hasattr(response, 'child') and (isinstance(response.child, _MPCTensor)):
+            print("returning mpc")
+            return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
         else:
+
             responses = response if isinstance(response, tuple) else (response,)
             syft_responses = []
             for resp in responses:
@@ -655,6 +663,37 @@ class _GeneralizedPointerTensor(_SyftTensor):
          self.pointer_tensor_dict = pointer_dict
          self.torch_type = torch_type
 
+    def ser(self, private, as_dict=True):
+        pointer_dict = {}
+
+        for owner,pointer in self.pointer_tensor_dict.items():
+            pointer_dict[owner] = pointer.ser(private=private, as_dict=True)
+
+        data = {
+            'owner': self.owner.id,
+            'id': self.id,
+            'pointer_tensor_dict': pointer_dict,
+            'torch_type': self.torch_type
+        }
+        if as_dict:
+            return {'___GeneralizedPointerTensor__': data}
+        else:
+            return json.dumps({'___GeneralizedPointerTensor__': data}) + "\n"
+
+    @classmethod
+    def deser(cls, msg_obj, worker, acquire):
+
+        pointer_tensor_dict = {}
+        for owner_id, pointer in msg_obj['pointer_tensor_dict'].items():
+            obj = _PointerTensor.deser(pointer['___PointerTensor__'], worker, acquire)
+            pointer_tensor_dict[owner_id] = obj
+
+        result = _GeneralizedPointerTensor(pointer_tensor_dict,
+                                           owner=worker,
+                                           id=msg_obj['id'],
+                                           torch_type=msg_obj['torch_type'])
+        return result
+
     @classmethod
     def handle_call(cls, syft_command, owner):
         try:
@@ -728,6 +767,24 @@ class _PointerTensor(_SyftTensor):
         # sent over the wire
         if self.location == self.owner and not skip_register:
             logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
+
+    def share(self, *workers):
+
+        worker_ids = list()
+        for worker in workers:
+            if(hasattr(worker, 'id')):
+                worker_ids.append(worker.id)
+            else:
+                worker_ids.append(worker)
+
+        cmd = {}
+        cmd['command'] = "share"
+        cmd['args'] = worker_ids
+        cmd['kwargs'] = {}
+        cmd['has_self'] = True
+        cmd['self'] = self
+
+        return self.handle_call(cmd, self.owner)
 
     def register_pointer(self):
         worker = self.owner
@@ -1008,6 +1065,43 @@ class _MPCTensor(_SyftTensor):
         # self.allow_arbitrary_arg_types_for_methods = set()
         # self.allow_arbitrary_arg_types_for_methods.add("__mul__")
 
+    def ser(self, private, as_dict=True):
+
+        data = {
+            'owner': self.owner.id,
+            'id': self.id,
+            'shares': self.child.ser(private=private, as_dict=True),
+            'torch_type': self.torch_type
+        }
+        if as_dict:
+            return {'___MPCTensor__': data}
+        else:
+            return json.dumps({'___MPCTensor__': data}) + "\n"
+
+    @classmethod
+    def deser(cls, msg_obj, worker, acquire):
+        """
+        General method for de-serializing an MPCTensor
+        """
+
+        if(acquire):
+            gpt_dct = list(msg_obj['shares'].items())[0][1]['child']['___GeneralizedPointerTensor__']
+            shares = _GeneralizedPointerTensor.deser(gpt_dct, worker, acquire).wrap(True)
+
+
+            shares.child.child = shares
+
+
+            result = _MPCTensor(shares=shares,
+                                id=msg_obj['id'],
+                                owner=worker,
+                                torch_type=msg_obj['torch_type'])
+
+            return result
+        else:
+            return _SyftTensor.deser(msg_obj, worker, acquire)
+
+
     # The table of command you want to replace
     substitution_table = {
         'torch.add': 'torch.add',
@@ -1165,22 +1259,29 @@ class _TorchObject(object):
         return self.get_shape()
 
     def share(self, *workers):
-        n_workers = len(workers)
-        x_enc = self._encode()
-        shares = self._share(n_workers)
-        pointer_shares_dict = {}
-        for share, worker in zip(shares, workers):
-            share.send(worker)
-            pointer_shares_dict[worker] = share.child
-        x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self)
-        x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
-        return x_mpc
+
+        if(isinstance(self.child, _PointerTensor)):
+            return self.child.share(*workers).wrap(True)
+        else:
+            n_workers = len(workers)
+            x_enc = self._encode()
+            shares = self._share(n_workers)
+
+            pointer_shares_dict = {}
+            for share, worker in zip(shares, workers):
+                share.send(worker)
+                pointer_shares_dict[worker] = share.child
+            x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self)
+            x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
+
+            return x_mpc
+
+    def native_share(self, *workers):
+        out = self.share(*workers)
+        return out
 
     def _share(self, n_workers):
-        if(isinstance(self, _PointerTensor)):
-            return spdz.share(self, n_workers, self.location)
-        else:
-            return spdz.share(self, n_workers)
+        return spdz.share(self, n_workers)
 
     def _encode(self):
         return spdz.encode(self)
@@ -1325,6 +1426,7 @@ class _TorchTensor(_TorchObject):
         # TODO: Find a smart way to skip register and not leaking the info to the local worker
         # This would imply overload differently the __init__ to provide an owner for the child attr.
         worker.hook.local_worker.de_register(tensorvar)
+
 
         # Ensure that the loop is made, if needed
         if isinstance(torch_utils.find_tail_of_chain(tensorvar), sy._LocalTensor):
