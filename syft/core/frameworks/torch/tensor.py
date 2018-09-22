@@ -320,9 +320,9 @@ class _SyftTensor(object):
 
         return syft_wrapper
 
-    def eval(self):
+    def eval(self, tensor):
         if self.child is not None:
-            return self.child.eval()
+            return self.child.eval(tensor)
 
     @classmethod
     def is_overloaded_method(cls, attr):
@@ -378,8 +378,11 @@ class _LocalTensor(_SyftTensor):
         super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner, id=id,
                          skip_register=skip_register)
 
-    def eval(self):
-        return self.child
+    def eval(self, tensor):
+        head_tensor = torch.FloatTensor()
+        head_tensor.native_set_(tensor)
+        head_tensor.child = self
+        return head_tensor
 
     @classmethod
     def handle_call(cls, syft_command, owner):
@@ -744,8 +747,11 @@ class _PointerTensor(_SyftTensor):
         # Add the remote address
         worker._pointers[location][id_at_location] = self.id
 
-    def eval(self):
-        return self
+    def eval(self, tensor):
+        head_tensor = torch.FloatTensor()
+        head_tensor.native_set_(tensor)
+        head_tensor.child = self
+        return head_tensor
 
     @classmethod
     def send_call(cls, syft_command, owner, location):
@@ -1229,8 +1235,7 @@ class _TorchObject(object):
         return self.native___repr__()
 
     def eval(self):
-        if self.child is not None:
-            return self.child.eval()
+        return self.child.eval(self)
 
     def create_pointer(self, register=False, location=None, ptr_id=None):
 

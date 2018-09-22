@@ -905,12 +905,12 @@ class BaseWorker(ABC):
         # Torch tensor or variable, or sy._SyftTensor
         if (torch_utils.is_tensor(obj) or torch_utils.is_variable(obj)
           or torch_utils.is_syft_tensor(obj)) and not isinstance(obj, str):
-            if len(worker_ids) == 1: # TODO: Handle multiple workers
+            if len(worker_ids) == 1:  # TODO: Handle multiple workers
                 worker_id = worker_ids[0]
                 if not isinstance(obj.child, sy._PointerTensor) or obj.child.location.id != worker_id:
                     worker = self.get_worker(worker_id)
                     session_ptr_ids += [obj]
-                    obj = obj.send(worker).child
+                    obj = obj.send(worker)
             else:
                 raise TypeError('Too much workers in session')
             return obj
