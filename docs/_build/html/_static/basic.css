@@ -8,12 +8,15 @@
  * :license: BSD, see LICENSE for details.
  *
  */
+
 /* -- main layout ----------------------------------------------------------- */
+
 div.clearer {
     clear: both;
 }
 
 /* -- relbar ---------------------------------------------------------------- */
+
 div.related {
     width: 100%;
     font-size: 90%;
@@ -39,6 +42,7 @@ div.related li.right {
 }
 
 /* -- sidebar --------------------------------------------------------------- */
+
 div.sphinxsidebarwrapper {
     padding: 10px 5px 0 10px;
 }
@@ -49,7 +53,7 @@ div.sphinxsidebar {
     margin-left: -100%;
     font-size: 90%;
     word-wrap: break-word;
-    overflow-wrap: break-word;
+    overflow-wrap : break-word;
 }
 
 div.sphinxsidebar ul {
@@ -87,6 +91,7 @@ img {
 }
 
 /* -- search page ----------------------------------------------------------- */
+
 ul.search {
     margin: 10px 0 0 20px;
     padding: 0;
@@ -114,6 +119,7 @@ ul.keywordmatches li.goodmatch a {
 }
 
 /* -- index page ------------------------------------------------------------ */
+
 table.contentstable {
     width: 90%;
     margin-left: auto;
@@ -135,6 +141,7 @@ span.linkdescr {
 }
 
 /* -- general index --------------------------------------------------------- */
+
 table.indextable {
     width: 100%;
 }
@@ -150,7 +157,7 @@ table.indextable ul {
     list-style-type: none;
 }
 
-table.indextable>tbody>tr>td>ul {
+table.indextable > tbody > tr > td > ul {
     padding-left: 0em;
 }
 
@@ -184,16 +191,15 @@ div.genindex-jumpbox {
 }
 
 /* -- domain module index --------------------------------------------------- */
+
 table.modindextable td {
     padding: 2px;
     border-collapse: collapse;
 }
 
 /* -- general body styles --------------------------------------------------- */
-div.body p,
-div.body dd,
-div.body li,
-div.body blockquote {
+
+div.body p, div.body dd, div.body li, div.body blockquote {
     -moz-hyphens: auto;
     -ms-hyphens: auto;
     -webkit-hyphens: auto;
@@ -204,16 +210,16 @@ a.headerlink {
     visibility: hidden;
 }
 
-h1:hover>a.headerlink,
-h2:hover>a.headerlink,
-h3:hover>a.headerlink,
-h4:hover>a.headerlink,
-h5:hover>a.headerlink,
-h6:hover>a.headerlink,
-dt:hover>a.headerlink,
-caption:hover>a.headerlink,
-p.caption:hover>a.headerlink,
-div.code-block-caption:hover>a.headerlink {
+h1:hover > a.headerlink,
+h2:hover > a.headerlink,
+h3:hover > a.headerlink,
+h4:hover > a.headerlink,
+h5:hover > a.headerlink,
+h6:hover > a.headerlink,
+dt:hover > a.headerlink,
+caption:hover > a.headerlink,
+p.caption:hover > a.headerlink,
+div.code-block-caption:hover > a.headerlink {
     visibility: visible;
 }
 
@@ -234,28 +240,22 @@ p.rubric {
     font-weight: bold;
 }
 
-img.align-left,
-.figure.align-left,
-object.align-left {
+img.align-left, .figure.align-left, object.align-left {
     clear: left;
     float: left;
     margin-right: 1em;
 }
 
-img.align-right,
-.figure.align-right,
-object.align-right {
+img.align-right, .figure.align-right, object.align-right {
     clear: right;
     float: right;
     margin-left: 1em;
 }
 
-img.align-center,
-.figure.align-center,
-object.align-center {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .align-left {
@@ -271,6 +271,7 @@ object.align-center {
 }
 
 /* -- sidebars -------------------------------------------------------------- */
+
 div.sidebar {
     margin: 0 0 0.5em 1em;
     border: 1px solid #ddb;
@@ -285,6 +286,7 @@ p.sidebar-title {
 }
 
 /* -- topics ---------------------------------------------------------------- */
+
 div.topic {
     border: 1px solid #ccc;
     padding: 7px 7px 0 7px;
@@ -298,6 +300,7 @@ p.topic-title {
 }
 
 /* -- admonitions ----------------------------------------------------------- */
+
 div.admonition {
     margin-top: 10px;
     margin-bottom: 10px;
@@ -323,6 +326,7 @@ div.body p.centered {
 }
 
 /* -- tables ---------------------------------------------------------------- */
+
 table.docutils {
     border: 0;
     border-collapse: collapse;
@@ -332,10 +336,10 @@ table caption span.caption-number {
     font-style: italic;
 }
 
-table caption span.caption-text {}
+table caption span.caption-text {
+}
 
-table.docutils td,
-table.docutils th {
+table.docutils td, table.docutils th {
     padding: 1px 8px 1px 5px;
     border-top: 0;
     border-left: 0;
@@ -343,8 +347,7 @@ table.docutils th {
     border-bottom: 1px solid #aaa;
 }
 
-table.footnote td,
-table.footnote th {
+table.footnote td, table.footnote th {
     border: 0 !important;
 }
 
@@ -363,6 +366,7 @@ table.citation td {
 }
 
 /* -- figures --------------------------------------------------------------- */
+
 div.figure {
     margin: 0.5em;
     padding: 0.5em;
@@ -376,11 +380,12 @@ div.figure p.caption span.caption-number {
     font-style: italic;
 }
 
-div.figure p.caption span.caption-text {}
+div.figure p.caption span.caption-text {
+}
 
 /* -- field list styles ----------------------------------------------------- */
-table.field-list td,
-table.field-list th {
+
+table.field-list td, table.field-list th {
     border: 0 !important;
 }
 
@@ -394,6 +399,7 @@ table.field-list th {
 }
 
 /* -- other body styles ----------------------------------------------------- */
+
 ol.arabic {
     list-style: decimal;
 }
@@ -422,8 +428,7 @@ dd p {
     margin-top: 0px;
 }
 
-dd ul,
-dd table {
+dd ul, dd table {
     margin-bottom: 10px;
 }
 
@@ -433,8 +438,7 @@ dd {
     margin-left: 30px;
 }
 
-dt:target,
-.highlighted {
+dt:target, .highlighted {
     background-color: #fbe54e;
 }
 
@@ -461,7 +465,7 @@ dl.glossary dt {
     border: 3px solid red;
 }
 
-.footnote:target {
+.footnote:target  {
     background-color: #ffa;
 }
 
@@ -477,8 +481,7 @@ dl.glossary dt {
     margin-left: 1.5em;
 }
 
-.guilabel,
-.menuselection {
+.guilabel, .menuselection {
     font-family: sans-serif;
 }
 
@@ -490,17 +493,16 @@ dl.glossary dt {
     font-style: oblique;
 }
 
-abbr,
-acronym {
+abbr, acronym {
     border-bottom: dotted 1px;
     cursor: help;
 }
 
 /* -- code displays --------------------------------------------------------- */
+
 pre {
     overflow: auto;
-    overflow-y: hidden;
-    /* fixes display issues on Chrome browsers */
+    overflow-y: hidden;  /* fixes display issues on Chrome browsers */
 }
 
 span.pre {
@@ -534,7 +536,7 @@ div.code-block-caption code {
     background-color: transparent;
 }
 
-div.code-block-caption+div>div.highlight>pre {
+div.code-block-caption + div > div.highlight > pre {
     margin-top: 0;
 }
 
@@ -543,7 +545,8 @@ div.code-block-caption span.caption-number {
     font-style: italic;
 }
 
-div.code-block-caption span.caption-text {}
+div.code-block-caption span.caption-text {
+}
 
 div.literal-block-wrapper {
     padding: 1em 1em 0;
@@ -563,18 +566,12 @@ code.descclassname {
     background-color: transparent;
 }
 
-code.xref,
-a code {
+code.xref, a code {
     background-color: transparent;
     font-weight: bold;
 }
 
-h1 code,
-h2 code,
-h3 code,
-h4 code,
-h5 code,
-h6 code {
+h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
     background-color: transparent;
 }
 
@@ -593,6 +590,7 @@ div.viewcode-block:target {
 }
 
 /* -- math display ---------------------------------------------------------- */
+
 img.math {
     vertical-align: middle;
 }
@@ -616,8 +614,8 @@ div.math:hover a.headerlink {
 }
 
 /* -- printout stylesheet --------------------------------------------------- */
-@media print {
 
+@media print {
     div.document,
     div.documentwrapper,
     div.bodywrapper {
