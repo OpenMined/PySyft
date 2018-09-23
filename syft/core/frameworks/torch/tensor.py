@@ -954,12 +954,13 @@ class _FixedPrecisionTensor(_SyftTensor):
                  base=10,
                  precision_fractional=6,
                  already_encoded=False):
-        super().__init__(child=child, owner=owner)
 
-        if(torch_type is None):
-            torch_type = "syft."+type(child).__name__
+        if torch_type is None:
+            torch_type = "syft." + type(child).__name__
 
-        self.torch_type = torch_type
+        super().__init__(child=child, owner=owner, torch_type=torch_type)
+
+        #         self.torch_type = torch_type
 
         self.qbits = qbits
         self.field = 2**qbits
@@ -967,7 +968,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         self.precision_fractional = precision_fractional
         self.torch_max_value = torch.LongTensor([round(self.field / 2)])
 
-        if(already_encoded):
+        if already_encoded:
             self.child = child
         else:
             self.encode(child)
@@ -1041,26 +1042,27 @@ class _FixedPrecisionTensor(_SyftTensor):
         attr = command['command']
         args = command['args']
         kwargs = command['kwargs']
-        self = command['self']
+        has_self = command['has_self']
 
-        if (attr == '__add__'):
-            return cls.__add__(self, *args, **kwargs)
-        if (attr == 'share'):
-            return self.share(*args, **kwargs)
-        else:
-            result_child = getattr(self.child, attr)(*args, **kwargs)
-            return _FixedPrecisionTensor(result_child).wrap(True)
+        if has_self:
+            self = command['self']
+            if attr == '__add__':
+                torch_tensorvar = cls.__add__(self, *args, **kwargs)
+                return torch_tensorvar.fix_precision()
+            if attr == 'share':
+                return self.share(*args, **kwargs)
+            else:
+                result_child = getattr(self.child, attr)(*args, **kwargs)
+                return _FixedPrecisionTensor(result_child).wrap(True)
+
 
     def get(self, *args, **kwargs):
         self.child = self.child.get(*args, **kwargs)
         return self
 
     def __add__(self, other):
-        # gp_ stands for GeneralizedPointer
-        gp_response = (self.child + other.child) % self.field
-        response = _FixedPrecisionTensor(gp_response,
-                                         torch_type=self.torch_type,
-                                         already_encoded=True).wrap(True)
+        response = (self.child + other.child) % self.field
+
         return response
 
     def __repr__(self):
@@ -1358,31 +1360,57 @@ class _TorchObject(object):
                       base=10,
                       precision_fractional=6,
                       already_encoded=False):
+        # TODO: Should fix_me be an inplace op?
 
-        if(isinstance(self.child, _PointerTensor)):
+        if isinstance(self.child, _PointerTensor):
+            return self.owner._execute_call('fix_precision', self)
+            self_ = self.child
 
-            self = self.child
+            cmd = {
+                'command': 'fix_precision',
+                'self': self_,
+                'args': [],
+                'kwargs': {},
+                'has_self': True
+            }
 
-            cmd = {}
-            cmd['command'] = "fix_precision"
-            cmd['args'] = []
-            cmd['kwargs'] = {}
-            cmd['has_self'] = True
-            cmd['self'] = self
 
-            return self.handle_call(cmd, self.owner).wrap(True)
+
+            ptr = self_.handle_call(cmd, self_.owner)
+            return ptr.wrap(True)
         else:
+            fpt = lambda tensorvar, is_encoded: _FixedPrecisionTensor(tensorvar,
+                                                       qbits=qbits,
+                                                       base=base,
+                                                       precision_fractional=precision_fractional,
+                                                       already_encoded=is_encoded).wrap(True)
 
-            fpt = _FixedPrecisionTensor(self,
-                                        qbits=qbits,
-                                        base=base,
-                                        precision_fractional=precision_fractional,
-                                        already_encoded=already_encoded).wrap(True)
-
-            return fpt
+            if torch_utils.is_variable(self):
+                _var = fpt(self, already_encoded)
+                # This 2nc fpt() is just a linking:
+                # Var ------> FixP -------> Var
+                #  \                         \
+                # data -----> FixP - - - -> data
+                #                   (link)
+                _var.data.child = fpt(_var.child.child.data, True).child
+                # Add the missing .data link in the last figure
+                _var.child.data = _var.data.child
+                # Do the same with gradient
+                if self.grad is not None:
+                    _var.init_grad_()
+                    _var = fpt(self.grad, already_encoded)
+                    _var.grad.data.child = fpt(_var.grad.child.child.data, True).child
+                    _var.grad.child.data = _var.grad.data.child
+                return _var
+            else:
+                return fpt(self)
 
     def native_fix_precision(self, *args, **kwargs):
         return self.fix_precision(*args, **kwargs)
+
+    # in the case of fixed precision tensors, torch tensors need this function
+    def decode(self):
+        return self.child.decode()
 
     def sum_get(self, *args, **kwargs):
         return self.child.sum_get(*args, **kwargs)
@@ -1452,10 +1480,6 @@ class _TorchObject(object):
 
 
 class _TorchTensor(_TorchObject):
-
-    # in the case of fixed precision tensors, torch tensors need this function
-    def decode(self):
-        return self.child.decode()
 
     def __str__(self):
         if isinstance(self.child, _PointerTensor):
