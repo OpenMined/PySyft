@@ -23,162 +23,186 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.utils.data import DataLoader,Dataset
+from torchvision import datasets, transforms
 
 FLAGS = tf.flags.FLAGS
 
 ckpt_path = 'checkpoint/'
 
 
-def create_dir_if_needed(dest_directory):
-  """
-  Create directory if doesn't exist
-  :param dest_directory:
-  :return: True if everything went well
-  """
-  if not tf.gfile.IsDirectory(dest_directory):
-    tf.gfile.MakeDirs(dest_directory)
+def prepare_mnist():
+    kwargs = {'num_workers': 1}
 
-  return True
+    train_loader = torch.utils.data.DataLoader(
+        datasets.MNIST('./data', train=True, download=True,
+                       transform=transforms.Compose([
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.1307,), (0.3081,))
+                       ])),
+        batch_size=60000, shuffle=True, **kwargs)
 
+    test_loader = torch.utils.data.DataLoader(
+        datasets.MNIST('./data', train=False, transform=transforms.Compose([
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.1307,), (0.3081,))
+                       ])),
+        batch_size=10000, shuffle=False, **kwargs)
 
-def maybe_download(file_urls, directory):
-  """
-  Download a set of files in temporary local folder
-  :param directory: the directory where to download
-  :return: a tuple of filepaths corresponding to the files given as input
-  """
-  # Create directory if doesn't exist
-  assert create_dir_if_needed(directory)
+    train_data, train_labels = next(iter(train_loader))
+    test_data, test_labels = next(iter(test_loader))
 
-  # This list will include all URLS of the local copy of downloaded files
-  result = []
-
-  # For each file of the dataset
-  for file_url in file_urls:
-    # Extract filename
-    filename = file_url.split('/')[-1]
-
-    # If downloading from GitHub, remove suffix ?raw=True from local filename
-    if filename.endswith("?raw=true"):
-      filename = filename[:-9]
-
-    # Deduce local file url
-    #filepath = os.path.join(directory, filename)
-    filepath = directory + '/' + filename
-
-    # Add to result list
-    result.append(filepath)
-
-    # Test if file already exists
-    if not tf.gfile.Exists(filepath):
-      def _progress(count, block_size, total_size):
-        sys.stdout.write('\r>> Downloading %s %.1f%%' % (filename,
-            float(count * block_size) / float(total_size) * 100.0))
-        sys.stdout.flush()
-      filepath, _ = urllib.request.urlretrieve(file_url, filepath, _progress)
-      print()
-      statinfo = os.stat(filepath)
-      print('Successfully downloaded', filename, statinfo.st_size, 'bytes.')
-
-  return result
-
-
-def image_whitening(data):
-  """
-  Subtracts mean of image and divides by adjusted standard variance (for
-  stability). Operations are per image but performed for the entire array.
-  :param image: 4D array (ID, Height, Weight, Channel)
-  :return: 4D array (ID, Height, Weight, Channel)
-  """
-  assert len(np.shape(data)) == 4
-
-  # Compute number of pixels in image
-  nb_pixels = np.shape(data)[1] * np.shape(data)[2] * np.shape(data)[3]
-
-  # Subtract mean
-  mean = np.mean(data, axis=(1,2,3))
-
-  ones = np.ones(np.shape(data)[1:4], dtype=np.float32)
-  for i in xrange(len(data)):
-    data[i, :, :, :] -= mean[i] * ones
-
-  # Compute adjusted standard variance
-  adj_std_var = np.maximum(np.ones(len(data), dtype=np.float32) / math.sqrt(nb_pixels), np.std(data, axis=(1,2,3))) #NOLINT(long-line)
-
-  # Divide image
-  for i in xrange(len(data)):
-    data[i, :, :, :] = data[i, :, :, :] / adj_std_var[i]
-
-  print(np.shape(data))
-
-  return data
-
-
-def extract_mnist_data(filename, num_images, image_size, pixel_depth):
-  """
-  Extract the images into a 4D tensor [image index, y, x, channels].
-
-  Values are rescaled from [0, 255] down to [-0.5, 0.5].
-  """
-  # if not os.path.exists(file):
-  if not tf.gfile.Exists(filename+".npy"):
-    with gzip.open(filename) as bytestream:
-      bytestream.read(16)
-      buf = bytestream.read(image_size * image_size * num_images)
-      data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
-      data = (data - (pixel_depth / 2.0)) / pixel_depth
-      data = data.reshape(num_images, image_size, image_size, 1)
-      np.save(filename, data)
-      return data
-  else:
-    with tf.gfile.Open(filename+".npy", mode='r') as file_obj:
-      return np.load(file_obj)
-
-
-def extract_mnist_labels(filename, num_images):
-  """
-  Extract the labels into a vector of int64 label IDs.
-  """
-  # if not os.path.exists(file):
-  if not tf.gfile.Exists(filename+".npy"):
-    with gzip.open(filename) as bytestream:
-      bytestream.read(8)
-      buf = bytestream.read(1 * num_images)
-      labels = np.frombuffer(buf, dtype=np.uint8).astype(np.int32)
-      np.save(filename, labels)
-    return labels
-  else:
-    with tf.gfile.Open(filename+".npy", mode='r') as file_obj:
-      return np.load(file_obj)
-
-def ld_mnist(test_only=False):
-  """
-  Load the MNIST dataset
-  :param extended: include extended training data in the returned array
-  :param test_only: disables loading of both train and extra -> large speed up
-  :return: tuple of arrays which depend on the parameters
-  """
-  # Define files to be downloaded
-  # WARNING: changing the order of this list will break indices (cf. below)
-  file_urls = ['http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz',
-               'http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz',
-               'http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz',
-               'http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz',
-               ]
-
-  # Maybe download data and retrieve local storage urls
-  local_urls = maybe_download(file_urls, FLAGS.data_dir)
-
-  # Extract it into np arrays.
-  train_data = extract_mnist_data(local_urls[0], 60000, 28, 1)
-  train_labels = extract_mnist_labels(local_urls[1], 60000)
-  test_data = extract_mnist_data(local_urls[2], 10000, 28, 1)
-  test_labels = extract_mnist_labels(local_urls[3], 10000)
-
-  if test_only:
-    return test_data, test_labels
-  else:
     return train_data, train_labels, test_data, test_labels
+
+# def create_dir_if_needed(dest_directory):
+#   """
+#   Create directory if doesn't exist
+#   :param dest_directory:
+#   :return: True if everything went well
+#   """
+#   if not tf.gfile.IsDirectory(dest_directory):
+#     tf.gfile.MakeDirs(dest_directory)
+#
+#   return True
+#
+#
+# def maybe_download(file_urls, directory):
+#   """
+#   Download a set of files in temporary local folder
+#   :param directory: the directory where to download
+#   :return: a tuple of filepaths corresponding to the files given as input
+#   """
+#   # Create directory if doesn't exist
+#   assert create_dir_if_needed(directory)
+#
+#   # This list will include all URLS of the local copy of downloaded files
+#   result = []
+#
+#   # For each file of the dataset
+#   for file_url in file_urls:
+#     # Extract filename
+#     filename = file_url.split('/')[-1]
+#
+#     # If downloading from GitHub, remove suffix ?raw=True from local filename
+#     if filename.endswith("?raw=true"):
+#       filename = filename[:-9]
+#
+#     # Deduce local file url
+#     #filepath = os.path.join(directory, filename)
+#     filepath = directory + '/' + filename
+#
+#     # Add to result list
+#     result.append(filepath)
+#
+#     # Test if file already exists
+#     if not tf.gfile.Exists(filepath):
+#       def _progress(count, block_size, total_size):
+#         sys.stdout.write('\r>> Downloading %s %.1f%%' % (filename,
+#             float(count * block_size) / float(total_size) * 100.0))
+#         sys.stdout.flush()
+#       filepath, _ = urllib.request.urlretrieve(file_url, filepath, _progress)
+#       print()
+#       statinfo = os.stat(filepath)
+#       print('Successfully downloaded', filename, statinfo.st_size, 'bytes.')
+#
+#   return result
+#
+#
+# def image_whitening(data):
+#   """
+#   Subtracts mean of image and divides by adjusted standard variance (for
+#   stability). Operations are per image but performed for the entire array.
+#   :param image: 4D array (ID, Height, Weight, Channel)
+#   :return: 4D array (ID, Height, Weight, Channel)
+#   """
+#   assert len(np.shape(data)) == 4
+#
+#   # Compute number of pixels in image
+#   nb_pixels = np.shape(data)[1] * np.shape(data)[2] * np.shape(data)[3]
+#
+#   # Subtract mean
+#   mean = np.mean(data, axis=(1,2,3))
+#
+#   ones = np.ones(np.shape(data)[1:4], dtype=np.float32)
+#   for i in xrange(len(data)):
+#     data[i, :, :, :] -= mean[i] * ones
+#
+#   # Compute adjusted standard variance
+#   adj_std_var = np.maximum(np.ones(len(data), dtype=np.float32) / math.sqrt(nb_pixels), np.std(data, axis=(1,2,3))) #NOLINT(long-line)
+#
+#   # Divide image
+#   for i in xrange(len(data)):
+#     data[i, :, :, :] = data[i, :, :, :] / adj_std_var[i]
+#
+#   print(np.shape(data))
+#
+#   return data
+#
+#
+# def extract_mnist_data(filename, num_images, image_size, pixel_depth):
+#   """
+#   Extract the images into a 4D tensor [image index, y, x, channels].
+#
+#   Values are rescaled from [0, 255] down to [-0.5, 0.5].
+#   """
+#   # if not os.path.exists(file):
+#   if not tf.gfile.Exists(filename+".npy"):
+#     with gzip.open(filename) as bytestream:
+#       bytestream.read(16)
+#       buf = bytestream.read(image_size * image_size * num_images)
+#       data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
+#       data = (data - (pixel_depth / 2.0)) / pixel_depth
+#       data = data.reshape(num_images, image_size, image_size, 1)
+#       np.save(filename, data)
+#       return data
+#   else:
+#     with tf.gfile.Open(filename+".npy", mode='r') as file_obj:
+#       return np.load(file_obj)
+#
+#
+# def extract_mnist_labels(filename, num_images):
+#   """
+#   Extract the labels into a vector of int64 label IDs.
+#   """
+#   # if not os.path.exists(file):
+#   if not tf.gfile.Exists(filename+".npy"):
+#     with gzip.open(filename) as bytestream:
+#       bytestream.read(8)
+#       buf = bytestream.read(1 * num_images)
+#       labels = np.frombuffer(buf, dtype=np.uint8).astype(np.int32)
+#       np.save(filename, labels)
+#     return labels
+#   else:
+#     with tf.gfile.Open(filename+".npy", mode='r') as file_obj:
+#       return np.load(file_obj)
+#
+# def ld_mnist(test_only=False):
+#   """
+#   Load the MNIST dataset
+#   :param extended: include extended training data in the returned array
+#   :param test_only: disables loading of both train and extra -> large speed up
+#   :return: tuple of arrays which depend on the parameters
+#   """
+#   # Define files to be downloaded
+#   # WARNING: changing the order of this list will break indices (cf. below)
+#   file_urls = ['http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz',
+#                'http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz',
+#                'http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz',
+#                'http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz',
+#                ]
+#
+#   # Maybe download data and retrieve local storage urls
+#   local_urls = maybe_download(file_urls, FLAGS.data_dir)
+#
+#   # Extract it into np arrays.
+#   train_data = extract_mnist_data(local_urls[0], 60000, 28, 1)
+#   train_labels = extract_mnist_labels(local_urls[1], 60000)
+#   test_data = extract_mnist_data(local_urls[2], 10000, 28, 1)
+#   test_labels = extract_mnist_labels(local_urls[3], 10000)
+#
+#   if test_only:
+#     return test_data, test_labels
+#   else:
+#     return train_data, train_labels, test_data, test_labels
 
 
 def partition_dataset(data, labels, nb_teachers, teacher_id):
