@@ -1398,7 +1398,7 @@ class _TorchObject(object):
                 # Do the same with gradient
                 if self.grad is not None:
                     _var.init_grad_()
-                    _var = fpt(self.grad, already_encoded)
+                    _var.grad = fpt(self.grad, already_encoded)
                     _var.grad.data.child = fpt(_var.grad.child.child.data, True).child
                     _var.grad.child.data = _var.grad.data.child
                 return _var
@@ -1724,6 +1724,7 @@ class _TorchVariable(_TorchObject):
             self.data.child = variable.data.child
             if self.grad is not None and variable.grad is not None:
                 self.grad.child = variable.grad.child
+                self.grad.data.child = variable.grad.data.child
 
             # In case we have a final get() (ie returning a FloatTensor), we have e.g.
             # x = Float(...)
