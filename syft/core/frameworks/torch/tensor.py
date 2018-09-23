@@ -1749,22 +1749,23 @@ class _TorchVariable(_TorchObject):
 
         return self
 
-    def ser(self, private, as_dict=True):
+    def ser(self, private, as_dict=True, is_head=False):
         key = '__' + type(self).__name__ + '__'
 
         tensor_msg = {
             'type': str(self.__class__).split("'")[1],
             'torch_type': 'syft.' + type(self).__name__,
-            'data': self.data.ser(private),
+            'data': self.data.ser(private) if is_head else [],
             'child': self.child.ser(private),
             'requires_grad': self.requires_grad
         }
-        if self.grad is not None:
-            tensor_msg['grad'] = self.grad.ser(private)
-        elif self.data.dim() > 0:
-            # Create a .grad just if there is some data in the tensor (to avoid recursion errors)
-            self.init_grad_()
-            tensor_msg['grad'] = self.grad.ser(private)
+        if is_head:
+            if self.grad is not None:
+                tensor_msg['grad'] = self.grad.ser(private, as_dict, is_head)
+            elif self.data.dim() > 0:
+                # Create a .grad just if there is some data in the tensor (to avoid recursion errors)
+                self.init_grad_()
+                tensor_msg['grad'] = self.grad.ser(private, as_dict, is_head)
 
         if as_dict:
             return {key: tensor_msg}
@@ -1772,7 +1773,7 @@ class _TorchVariable(_TorchObject):
             return json.dumps({key: tensor_msg}) + "\n"
 
     @staticmethod
-    def deser(msg_obj, worker, acquire):
+    def deser(msg_obj, worker, acquire, is_head=False):
         obj_type, msg_obj = torch_utils.extract_type_and_obj(msg_obj)
         var_syft_obj = sy._SyftTensor.deser_routing(msg_obj['child'], worker, acquire)
 
@@ -1780,19 +1781,26 @@ class _TorchVariable(_TorchObject):
             return var_syft_obj.parent
 
         # Deser the var.data
-        var_data_type, var_data_tensor = torch_utils.extract_type_and_obj(msg_obj['data'])
-        if torch_utils.is_tensor(var_data_type):
-            var_data = torch.guard['syft.' + var_data_type].deser(msg_obj['data'], worker, acquire)
-            worker.hook.local_worker.de_register(var_data)
-        else:
-            raise TypeError('Data is not a tensor:', var_data_type)
+        try:
+            var_data_type, var_data_tensor = torch_utils.extract_type_and_obj(msg_obj['data'])
+            if is_head:
+                var_data = torch.guard['syft.' + var_data_type].deser(msg_obj['data'], worker, acquire)
+            else:
+                var_data = torch.guard['syft.' + var_data_type]()
+        except AttributeError:
+            var_data = torch.guard['syft.FloatTensor']()
+        worker.hook.local_worker.de_register(var_data)
 
         variable = sy.Variable(var_data, requires_grad=msg_obj['requires_grad'])
 
         # Deser the var.grad
         if 'grad' in msg_obj:
+
             var_grad_type, var_grad_tensor = torch_utils.extract_type_and_obj(msg_obj['grad'])
-            var_grad = torch.guard['syft.' + var_grad_type].deser(msg_obj['grad'], worker, acquire)
+            if is_head:
+                var_grad = torch.guard['syft.' + var_grad_type].deser(msg_obj['grad'], worker, acquire, is_head)
+            else:
+                var_grad = torch.guard['syft.' + var_grad_type]()
             worker.hook.local_worker.de_register(var_grad)
             variable.assign_grad_(var_grad)
         else:

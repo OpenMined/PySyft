@@ -93,7 +93,10 @@ class PythonEncoder:
             tail_object = torch_utils.find_tail_of_chain(obj)
             if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
                 self.found_pointers.append(tail_object)
-            return obj.ser(private=private_local)
+            if torch_utils.is_variable(obj):
+                return obj.ser(private=private_local, is_head=True)
+            else:
+                return obj.ser(private=private_local)
         # sy._SyftTensor (Pointer, Local)
         # [Note: shouldn't be called on regular chain with end=tensorvar]
         elif torch_utils.is_syft_tensor(obj):
@@ -267,7 +270,7 @@ class PythonJSONDecoder:
                     return o
                 # Case of a Variable
                 elif torch_utils.is_variable(obj_type):
-                    return sy.Variable.deser({key: obj}, self.worker, self.acquire)
+                    return sy.Variable.deser({key: obj}, self.worker, self.acquire, is_head=True)
                 # Case of a Syft tensor
                 elif torch_utils.is_syft_tensor(obj_type):
                     return sy._SyftTensor.deser_routing({key: obj}, self.worker, self.acquire)
