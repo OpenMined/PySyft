@@ -107,9 +107,9 @@ def enforce_owner(obj, owner):
             enforce_owner(o, owner)
 
     else:
-        if is_syft_tensor(obj) and hasattr(obj, 'data'):
+        if is_syft_tensor(obj) and not isinstance(obj, sy._LocalTensor) and hasattr(obj, 'data'):
             enforce_owner(obj.data, owner)
-        if is_syft_tensor(obj) and hasattr(obj, 'grad'):
+        if is_syft_tensor(obj) and not isinstance(obj, sy._LocalTensor) and hasattr(obj, 'grad'):
             enforce_owner(obj.grad, owner)
 
         if is_tensor(obj):
@@ -489,8 +489,13 @@ def link_var_chain_to_data_and_grad_chains(var_node, data_node, grad_node):
     if not is_variable(grad_node) or len(grad_node.size()) > 0:
         var_node.grad = grad_node
     next_node = var_node.child
-    if next_node is not None and not (is_tensor(next_node) or is_variable(next_node)):
-        link_var_chain_to_data_and_grad_chains(var_node.child, data_node.child, grad_node.child)
+    if next_node is not None:# and not (is_tensor(next_node) or is_variable(next_node)):
+        if isinstance(next_node, sy._LocalTensor):
+            next_node.data = data_node.child
+            if not is_variable(grad_node.child) or len(grad_node.child.size()) > 0:
+                next_node.grad = grad_node.child
+        else:
+            link_var_chain_to_data_and_grad_chains(var_node.child, data_node.child, grad_node.child)
 
 
 def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=None, end_chain=None):
