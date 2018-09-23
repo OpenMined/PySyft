@@ -149,7 +149,7 @@ def decode(message, worker, acquire=None, message_is_dict=False):
     :param message_is_dict: Is the message a dictionary already or a JSON string needing decoding?
     :return: The message decoded
     """
-    decoder = PythonJSONDecoder(worker=worker)
+    decoder = PythonJSONDecoder(worker=worker, acquire=acquire)
 
     # Handle when the message is a bytestring
     if isinstance(message, bytes):

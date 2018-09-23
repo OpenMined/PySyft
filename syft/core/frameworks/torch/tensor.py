@@ -3,12 +3,12 @@ import re
 import torch
 import random
 import syft as sy
-from ... import utils
 from . import utils as torch_utils
+from .. import encode
+from ... import utils
 import logging
 import numpy as np
 from syft.spdz import spdz
-
 
 
 class _SyftTensor(object):
@@ -993,9 +993,8 @@ class _FixedPrecisionTensor(_SyftTensor):
         General method for de-serializing an SPDZTensor
         """
 
-        if(acquire):
-            subset = msg_obj['child']['__LongTensor__']['child']
-            child = _SyftTensor.deser_routing(subset, worker, acquire)
+        if acquire:
+            child = encode.decode(msg_obj['child'], worker, acquire, message_is_dict=True)
 
             obj = _FixedPrecisionTensor(child=child,
                                         owner=worker,
