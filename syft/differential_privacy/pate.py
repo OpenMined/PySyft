@@ -290,8 +290,6 @@ def train(model, train_loader, test_loader, ckpt_path, filename):
             output = model(img) # forward pass
             #output = output.type(torch.float32)
             loss = F.cross_entropy(output, label,size_average=False) # calculate network loss
-            #loss.backward() # backward pass
-            #optimizer.step() # take an optimization step to update model's parameters
 
             pred = output.max(1, keepdim=True)[1] # get the index of the max logit
             test_correct += pred.eq(label.view_as(pred)).sum().item() # add to running total of hits
@@ -402,20 +400,12 @@ def prepare_student_data(model, dataset, nb_teachers, save=False):
                the labels assigned by teachers
   :return: pairs of (data, labels) to be used for student training and testing
   """
-  assert create_dir_if_needed(FLAGS.train_dir)
+  _, _, test_data, test_labels = prepare_mnist()
 
-  # Load the dataset
-  if dataset == 'svhn':
-    test_data, test_labels = ld_svhn(test_only=True)
-  elif dataset == 'cifar10':
-    test_data, test_labels = ld_cifar10(test_only=True)
-  elif dataset == 'mnist':
-    test_data, test_labels = ld_mnist(test_only=True)
-  else:
-    print("Check value of dataset flag")
-    return False
+  # Transfor tensor to numpy
+  test_labels = test_labels.data.numpy()
 
-  test_data = test_data.reshape(10000,1,28,28)
+  #test_data = test_data.reshape(10000,1,28,28)
 
   # Make sure there is data leftover to be used as a test set
   assert FLAGS.stdnt_share < len(test_data)
@@ -455,7 +445,6 @@ def train_student(model, dataset, nb_teachers):
   :param nb_teachers: number of teachers (in the ensemble) to learn from
   :return: True if student training went well
   """
-  assert create_dir_if_needed(FLAGS.train_dir)
 
   # Call helper function to prepare student data using teacher predictions
   stdnt_dataset = prepare_student_data(model, dataset, nb_teachers, save=False)
