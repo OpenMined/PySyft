@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import cPickle
+#import cPickle
 import gzip
 import math
 import numpy as np
@@ -25,7 +25,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader,Dataset
 from torchvision import datasets, transforms
 
-FLAGS = tf.flags.FLAGS
+#FLAGS = tf.flags.FLAGS
 
 ckpt_path = 'checkpoint/'
 
@@ -323,7 +323,7 @@ def train_teachers(model, train_data, train_labels, test_data, test_labels, nb_t
     train(model, train_loader, test_loader, ckpt_path, filename)
 
 
-def softmax_preds(model, images_loader, ckpt_path, return_logits=False):
+def softmax_preds(model, nb_labels, images_loader, ckpt_path, return_logits=False):
     """
     Compute softmax activations (probabilities) with the model saved in the path
     specified as an argument
@@ -334,7 +334,7 @@ def softmax_preds(model, images_loader, ckpt_path, return_logits=False):
     """
     # Compute nb samples and deduce nb of batches
     data_length = len(images_loader.dataset)
-    preds = np.zeros((data_length, FLAGS.nb_labels), dtype=np.float32)
+    preds = np.zeros((data_length, nb_labels), dtype=np.float32)
     start = 0
 
     check = torch.load(ckpt_path)
@@ -354,7 +354,7 @@ def softmax_preds(model, images_loader, ckpt_path, return_logits=False):
 
     return preds
 
-def ensemble_preds(model, dataset, nb_teachers, stdnt_data_loader):
+def ensemble_preds(model, dataset, nb_labels, nb_teachers, stdnt_data_loader):
   """
   Given a dataset, a number of teachers, and some input data, this helper
   function queries each teacher for predictions on the data and returns
@@ -369,7 +369,7 @@ def ensemble_preds(model, dataset, nb_teachers, stdnt_data_loader):
 
   # Compute shape of array that will hold probabilities produced by each
   # teacher, for each training point, and each output class
-  result_shape = (nb_teachers, len(stdnt_data_loader.dataset), FLAGS.nb_labels)
+  result_shape = (nb_teachers, len(stdnt_data_loader.dataset), nb_labels)
 
   # Create array that will hold result
   result = np.zeros(result_shape, dtype=np.float32)
@@ -379,7 +379,7 @@ def ensemble_preds(model, dataset, nb_teachers, stdnt_data_loader):
     # Compute path of checkpoint file for teacher model with ID teacher_id
     filename = str(dataset) + '_' + str(nb_teachers) + '_teachers_' + str(teacher_id) + '.pth'
     # Get predictions on our training data and store in result array
-    result[teacher_id] = softmax_preds(model, stdnt_data_loader, ckpt_path + filename)
+    result[teacher_id] = softmax_preds(model, nb_labels, stdnt_data_loader, ckpt_path + filename)
 
     # This can take a while when there are a lot of teachers so output status
     print("Computed Teacher " + str(teacher_id) + " softmax predictions")
@@ -387,17 +387,13 @@ def ensemble_preds(model, dataset, nb_teachers, stdnt_data_loader):
   return result
 
 
-def prepare_student_data(model, dataset, nb_teachers, save=False):
+def prepare_student_data(model, dataset, nb_labels, nb_teachers, stdnt_share, lap_scale):
   """
   Takes a dataset name and the size of the teacher ensemble and prepares
   training data for the student model, according to parameters indicated
   in flags above.
   :param dataset: string corresponding to mnist, cifar10, or svhn
   :param nb_teachers: number of teachers (in the ensemble) to learn from
-  :param save: if set to True, will dump student training labels predicted by
-               the ensemble of teachers (with Laplacian noise) as npy files.
-               It also dumps the clean votes for each class (without noise) and
-               the labels assigned by teachers
   :return: pairs of (data, labels) to be used for student training and testing
   """
   _, _, test_data, test_labels = prepare_mnist()
@@ -408,35 +404,35 @@ def prepare_student_data(model, dataset, nb_teachers, save=False):
   #test_data = test_data.reshape(10000,1,28,28)
 
   # Make sure there is data leftover to be used as a test set
-  assert FLAGS.stdnt_share < len(test_data)
+  assert stdnt_share < len(test_data)
 
   # Prepare [unlabeled] student training data (subset of test set)
-  stdnt_data = test_data[:FLAGS.stdnt_share]
-  stdnt_label = test_labels[:FLAGS.stdnt_share]
+  stdnt_data = test_data[:stdnt_share]
+  stdnt_label = test_labels[:stdnt_share]
 
   stdnt_prep = PrepareData(stdnt_data, stdnt_label)
 
   stdnt_loader = DataLoader(stdnt_prep, batch_size=64, shuffle=False)
 
   # Compute teacher predictions for student training data
-  teachers_preds = ensemble_preds(model, dataset, nb_teachers, stdnt_loader)
+  teachers_preds = ensemble_preds(model, dataset, nb_labels, nb_teachers, stdnt_loader)
 
   # Aggregate teacher predictions to get student training labels
-  stdnt_labels = noisy_max(teachers_preds, FLAGS.lap_scale)
+  stdnt_labels = noisy_max(teachers_preds, nb_labels, lap_scale)
 
 
   # Print accuracy of aggregated labels
-  ac_ag_labels = accuracy(stdnt_labels, test_labels[:FLAGS.stdnt_share])
+  ac_ag_labels = accuracy(stdnt_labels, test_labels[:stdnt_share])
   print("\nAccuracy of the aggregated labels: " + str(ac_ag_labels) + "\n")
 
   # Store unused part of test set for use as a test set after student training
-  stdnt_test_data = test_data[FLAGS.stdnt_share:]
-  stdnt_test_labels = test_labels[FLAGS.stdnt_share:]
+  stdnt_test_data = test_data[stdnt_share:]
+  stdnt_test_labels = test_labels[stdnt_share:]
 
   return stdnt_data, stdnt_labels, stdnt_test_data, stdnt_test_labels
 
 
-def train_student(model, dataset, nb_teachers):
+def train_student(model, dataset, nb_labels, nb_teachers, stdnt_share, lap_scale):
   """
   This function trains a student using predictions made by an ensemble of
   teachers. The student and teacher models are trained using the same
@@ -447,12 +443,12 @@ def train_student(model, dataset, nb_teachers):
   """
 
   # Call helper function to prepare student data using teacher predictions
-  stdnt_dataset = prepare_student_data(model, dataset, nb_teachers, save=False)
+  stdnt_dataset = prepare_student_data(model, dataset, nb_labels, nb_teachers, stdnt_share, lap_scale)
 
   # Unpack the student dataset
   stdnt_data, stdnt_labels, stdnt_test_data, stdnt_test_labels = stdnt_dataset
-  stdnt_data = stdnt_data.reshape(1000,1,28,28)
-  stdnt_test_data = stdnt_test_data.reshape(9000,1,28,28)
+  #stdnt_data = stdnt_data.reshape(1000,1,28,28)
+  #stdnt_test_data = stdnt_test_data.reshape(9000,1,28,28)
 
   # Prepare checkpoint filename and path
   filename = str(dataset) + '_' + str(nb_teachers) + '_student.ckpt'
@@ -467,7 +463,7 @@ def train_student(model, dataset, nb_teachers):
   train(model, stdnt_loader, stdnt_test_loader, ckpt_path, filename)
 
   # Compute final checkpoint name for student
-  student_preds = softmax_preds(model, stdnt_test_loader, ckpt_path + filename)
+  student_preds = softmax_preds(model, nb_labels, stdnt_test_loader, ckpt_path + filename)
 
   # Compute teacher accuracy
   precision = accuracy(student_preds, stdnt_test_labels)
@@ -494,7 +490,7 @@ def labels_from_probs(probs):
   return np.asarray(labels, dtype=np.int32)
 
 
-def noisy_max(logits, lap_scale, return_clean_votes=False):
+def noisy_max(logits, nb_labels, lap_scale, return_clean_votes=False):
   """
   This aggregation mechanism takes the softmax/logit output of several models
   resulting from inference on identical inputs and computes the noisy-max of
@@ -520,7 +516,7 @@ def noisy_max(logits, lap_scale, return_clean_votes=False):
 
   if return_clean_votes:
     # Initialize array to hold clean votes for each sample
-    clean_votes = np.zeros((int(labels_shape[1]), 10))
+    clean_votes = np.zeros((int(labels_shape[1]), nb_labels))
 
   # Parse each sample
   for i in xrange(int(labels_shape[1])):
