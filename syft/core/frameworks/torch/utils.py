@@ -112,23 +112,30 @@ def enforce_owner(obj, owner):
         if is_syft_tensor(obj) and hasattr(obj, 'grad'):
             enforce_owner(obj.grad, owner)
 
-        if is_variable(obj):
-            enforce_owner(obj.data.child, owner)
-            if obj.grad is not None:
-                enforce_owner(obj.grad.child, owner)
-
-        if is_syft_tensor(obj):
-            if owner != owner.hook.local_worker:
-                owner.hook.local_worker.de_register(obj)
-            obj.owner = owner
-            enforce_owner(obj.child, owner)
-
         if is_tensor(obj):
             if owner != owner.hook.local_worker:
                 owner.hook.local_worker.de_register(obj)
-            obj.child.owner = owner
+            # tensor has no attr owner, just a prop to obj.child
+            enforce_owner(obj.child, owner)
 
-        if isinstance(obj, np.ndarray):
+        elif is_variable(obj):
+            if owner != owner.hook.local_worker:
+                owner.hook.local_worker.de_register(obj)
+            # tensor has no attr owner, just a prop to obj.child
+            enforce_owner(obj.child, owner)
+            enforce_owner(obj.data, owner)
+            if obj.grad is not None:
+                enforce_owner(obj.grad, owner)
+
+        elif is_syft_tensor(obj):
+            if owner != owner.hook.local_worker:
+                owner.hook.local_worker.de_register(obj)
+            obj.owner = owner
+            # Terminal condition to avoid recursions
+            if not isinstance(obj, sy._LocalTensor):
+                enforce_owner(obj.child, owner)
+
+        elif isinstance(obj, np.ndarray):
             if owner != owner.hook.local_worker:
                 owner.hook.local_worker.de_register(obj)
             try:
@@ -521,10 +528,13 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
             assert end_chain.child is None, "Pointer shouldnt have a child"
             return True
         elif isinstance(end_chain, sy._LocalTensor):
-            assert obj.parent.id == end_chain.id, "TensorVar parent should be the tail LocalTensor"\
-                                                  + str(obj.parent.id) + ',' + str(end_chain.id)
-            assert end_chain.child.id == obj.id, "Tail LocalTensor child should be the Tensor Var"
-            return True
+            # we allow to have inner tensors in the chain, provided that its parent is a FixedPTensor
+            if not isinstance(obj.parent, sy._FixedPrecisionTensor):
+                assert obj.parent.id == end_chain.id, "TensorVar parent should be the tail LocalTensor"\
+                                                      + str(obj.parent.id) + ',' + str(end_chain.id)
+                assert end_chain.child.id == obj.id, "Tail LocalTensor child should be the Tensor Var"
+                return True
+
         elif isinstance(end_chain, sy._SPDZTensor):
             return True
         else:

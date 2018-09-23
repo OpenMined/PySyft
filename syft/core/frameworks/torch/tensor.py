@@ -836,8 +836,9 @@ class _PointerTensor(_SyftTensor):
         if has_self and utils.is_in_place_method(attr):
             return syft_command['self']
 
-        # Perform the un-wrap
+        # Perform the un-wrap: remove the head on all chains (also .data and .grad if any)
         response, _ = torch_utils.get_child_command(response)
+        # response is now a _Pointer, with a .data attr which is a _Pointer, etc.
 
         return response
 
@@ -1011,8 +1012,10 @@ class _FixedPrecisionTensor(_SyftTensor):
         return self.wrap(True)
 
     def encode(self, rational):
+        owner = rational.owner
         upscaled = (rational * self.base ** self.precision_fractional).long()
         field_element = upscaled % self.field
+        torch_utils.enforce_owner(field_element, owner)
         self.child = field_element
         return self
 

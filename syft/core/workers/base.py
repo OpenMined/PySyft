@@ -398,6 +398,7 @@ class BaseWorker(ABC):
 
             # save the results locally in self._objects and ensure
             # that .owner is set correctly
+            torch_utils.enforce_owner(result, self)
             self.register(result)
 
             # return result of torch operation
