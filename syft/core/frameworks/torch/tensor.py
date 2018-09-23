@@ -956,7 +956,10 @@ class _FixedPrecisionTensor(_SyftTensor):
                  already_encoded=False):
 
         if torch_type is None:
-            torch_type = "syft." + type(child).__name__
+            if not already_encoded:
+                torch_type = "syft." + type(child).__name__
+            else:
+                torch_type = 'syft.FloatTensor'
 
         super().__init__(child=child, owner=owner, torch_type=torch_type)
 
@@ -1021,8 +1024,11 @@ class _FixedPrecisionTensor(_SyftTensor):
         return self
 
     def decode(self):
+        self.child.child = None # <-- This is doing magic things
         value = self.child % self.field
-        gate = (value > self.torch_max_value).long()
+        if len(value.size()) == 0:
+            raise TypeError("Can't decode empty tensor")
+        gate = value.native_gt(self.torch_max_value).long()
         neg_nums = (value - spdz.torch_field) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
@@ -1374,8 +1380,6 @@ class _TorchObject(object):
                 'has_self': True
             }
 
-
-
             ptr = self_.handle_call(cmd, self_.owner)
             return ptr.wrap(True)
         else:
@@ -1407,10 +1411,6 @@ class _TorchObject(object):
 
     def native_fix_precision(self, *args, **kwargs):
         return self.fix_precision(*args, **kwargs)
-
-    # in the case of fixed precision tensors, torch tensors need this function
-    def decode(self):
-        return self.child.decode()
 
     def sum_get(self, *args, **kwargs):
         return self.child.sum_get(*args, **kwargs)
@@ -1652,6 +1652,10 @@ class _TorchTensor(_TorchObject):
 
         return self
 
+    # in the case of fixed precision tensors, torch tensors need this function
+    def decode(self):
+        return self.child.decode()
+
 
 class _TorchVariable(_TorchObject):
 
@@ -1851,4 +1855,19 @@ class _TorchVariable(_TorchObject):
 
         # put back original var_grad.data
         self.grad.data = var_grad_data
+
+    # in the case of fixed precision tensors, torch tensors need this function
+    def decode(self):
+        var = sy.Variable(self.data.decode())
+        var.child = self.child.child.child
+        # if hasattr(self, 'grad') and self.grad is not None:
+        #     var.grad = self.grad.decode()
+        return var
+
+    def decode_(self):
+        self.data = self.data.decode()
+        self.child = self.child.child.child
+        # if hasattr(self, 'grad') and self.grad is not None:
+        #    self.grad.decode_()
+
 
