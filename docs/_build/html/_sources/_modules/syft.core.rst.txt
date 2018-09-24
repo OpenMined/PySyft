@@ -17,6 +17,8 @@ syft\.core\.utils module
 
 .. automodule:: syft.core.utils
     :members:
+    :private-members:
+    :special-members:
     :undoc-members:
     :show-inheritance:
 

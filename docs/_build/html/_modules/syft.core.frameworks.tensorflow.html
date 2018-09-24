@@ -24,8 +24,7 @@
 
   
 
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
@@ -85,10 +84,15 @@
               
             
             
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.frameworks.torch.html">syft.core.frameworks.torch</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.utils.html">syft.core.utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.workers.html">syft.core.workers</a></li>
+              <p class="caption"><span class="caption-text">Notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notes/example.html">Example Note</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/frameworks.html">Frameworks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/workers.html">Workers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mpc/interface.html">MPC Interface</a></li>
 </ul>
 
             
@@ -163,7 +167,7 @@
 <p>Synchronize replicas for FedAvg training.</p>
 <dl class="class">
 <dt id="syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer">
-<em class="property">class </em><code class="descclassname">syft.core.frameworks.tensorflow.federated_averaging_optimizer.</code><code class="descname">FederatedAveragingOptimizer</code><span class="sig-paren">(</span><em>opt</em>, <em>replicas_to_aggregate</em>, <em>interval_steps</em>, <em>total_num_replicas=None</em>, <em>device_setter=None</em>, <em>use_locking=False</em>, <em>name='fedAverage'</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.frameworks.tensorflow.federated_averaging_optimizer.</code><code class="descname">FederatedAveragingOptimizer</code><span class="sig-paren">(</span><em>opt</em>, <em>replicas_to_aggregate</em>, <em>interval_steps</em>, <em>is_chief=False</em>, <em>total_num_replicas=None</em>, <em>device_setter=None</em>, <em>use_locking=False</em>, <em>name='fedAverage'</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/tensorflow/federated_averaging_optimizer.html#FederatedAveragingOptimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">tensorflow.python.training.optimizer.Optimizer</span></code></p>
 <p>Class to synchronize and aggregate model params.</p>
 <p>In a typical synchronous training environment, gradients will be averaged each
@@ -183,9 +187,7 @@ collected and then average them. The accumulator will drop all stale variables
 <blockquote>
 <div>all variables are updated.</div></blockquote>
 <p>The following local variable is created:
-* <cite>local_step</cite>, one per replica. Compared against the global_step in</p>
-<blockquote>
-<div>each accumulator to check for staleness of the variables.</div></blockquote>
+* <cite>global_step</cite>, one per replica. Updated after every average operation.</p>
 <p>The optimizer adds nodes to the graph to collect local variables and pause
 the trainers until variables are updated.
 For the Parameter Server job:
@@ -198,9 +200,9 @@ For the Parameter Server job:
 have been accumulated.</li>
 <li>Apply the averaged variables to global variables.</li>
 <li>Only after all variables have been updated, increment the global step.</li>
-<li>Only after step 4, pushes <cite>global_step</cite> in the <cite>token_queue</cite>, once for
-each worker replica. The workers can now fetch the global step, use it to
-update its local_step variable and start the next round.</li>
+<li>Only after step 4, pushes a token in the <cite>token_queue</cite>, once for
+each worker replica. The workers can now fetch the token and start
+the next round.</li>
 </ol>
 <p>For the replicas:
 &lt;empty line&gt;
@@ -209,9 +211,8 @@ update its local_step variable and start the next round.</li>
 <blockquote>
 <div>accumulators. Each accumulator will check the staleness and drop the stale.</div></blockquote>
 <ol class="arabic simple" start="3">
-<li>After pushing all the variables, dequeue an updated value of global_step
-from the token queue and record that step to its local_step variable. Note
-that this is effectively a barrier.</li>
+<li>After pushing all the variables, dequeue a token from the token queue and
+continue training. Note that this is effectively a barrier.</li>
 <li>Fetch new variables and start the next block.</li>
 </ol>
 <p>### Usage</p>
@@ -226,14 +227,15 @@ opt = GradientDescentOptimizer(learning_rate=0.1)</p>
 opt = fed_avg_optimizer.FederatedAveragingOptimizer(opt,</p>
 <blockquote>
 <div>replicas_to_aggregate=50,
+is_chief=True,
 interval_steps=100,
 device_setter)</div></blockquote>
 <p># Some models have startup_delays to help stabilize the model but when using
 # federated_average training, set it to 0.</p>
 <p># Now you can call &#8216;minimize() normally&#8217;
 # train_op = opt.minimize(loss, global_step=global_step)</p>
-<p># And also, create the hook which handles initialization, queues and averaging.
-fed_avg_hook = opt.make_session_run_hook(is_chief)
+<p># And also, create the hook which handles initialization.
+fed_avg_hook = opt.make_session_run_hook()
 <a href="#id5"><span class="problematic" id="id6">``</span></a><a href="#id7"><span class="problematic" id="id8">`</span></a></p>
 <p>In the training program, every worker will run the train_op as if not
 averaged or synchronized. Note that if you want to run other ops like
@@ -242,8 +244,8 @@ test op, you should use common session instead of MonitoredSession:</p>
 with training.MonitoredTrainingSession(</p>
 <blockquote>
 <div><blockquote>
-<div>master=workers[worker_id].target, is_chief=is_chief,
-hooks=[ma_replicas_hook, ma_hook]) as mon_sess:</div></blockquote>
+<div>master=workers[worker_id].target,
+hooks=[fed_avg_hook]) as mon_sess:</div></blockquote>
 <dl class="docutils">
 <dt>while not mon_sess.should_stop():</dt>
 <dd>mon_sess.run(training_op)
@@ -253,67 +255,35 @@ sess.run(testing_op)</dd>
 </div></blockquote>
 <p><a href="#id13"><span class="problematic" id="id14">``</span></a><a href="#id15"><span class="problematic" id="id16">`</span></a></p>
 <dl class="method">
-<dt id="syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.get_chief_queue_runner">
-<code class="descname">get_chief_queue_runner</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.get_chief_queue_runner" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the QueueRunner for the chief to execute.</p>
-<p>This includes the operations to synchronize replicas: aggregate weights,
-apply to variables, increment global step, insert tokens to token queue.</p>
-<p>Note that this can only be called after calling apply_model_average() which
-actually generates this queuerunner.</p>
-<dl class="docutils">
-<dt>Returns:</dt>
-<dd>A <cite>QueueRunner</cite> for chief to execute.</dd>
-<dt>Raises:</dt>
-<dd>ValueError: If this is called before apply_model_average().</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.get_init_tokens_op">
-<code class="descname">get_init_tokens_op</code><span class="sig-paren">(</span><em>num_tokens=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.get_init_tokens_op" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the op to fill the sync_token_queue with the tokens.</p>
-<p>This is supposed to be executed in the beginning of the chief/sync thread
-so that even if the total_num_replicas is less than replicas_to_aggregate,
-the model can still proceed as the replicas can compute multiple steps per
-variable update. Make sure:
-<cite>num_tokens &gt;= replicas_to_aggregate - total_num_replicas</cite>.</p>
+<dt id="syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.apply_gradients">
+<code class="descname">apply_gradients</code><span class="sig-paren">(</span><em>grads_and_vars</em>, <em>global_step=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/tensorflow/federated_averaging_optimizer.html#FederatedAveragingOptimizer.apply_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.apply_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply gradients to variables.
+This contains most of the synchronization implementation.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>num_tokens: Number of tokens to add to the queue.</dd>
-<dt>Returns:</dt>
-<dd>An op for the chief/sync replica to fill the token queue.</dd>
-<dt>Raises:</dt>
-<dd><p class="first">ValueError: If this is called before apply_model_average().
-ValueError: If num_tokens are smaller than replicas_to_aggregate -</p>
+<dd><p class="first">grads_and_vars: List of (local_vars, gradients) pairs.
+global_step: Variable to increment by one after the variables have been
+updated. We need it to check staleness.
+name: Optional name for the returned operation. Default to the</p>
 <blockquote class="last">
-<div>total_num_replicas.</div></blockquote>
+<div>name passed to the Optimizer constructor.</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd>train_op: The op to dequeue a token so the replicas can exit this batch
+and apply averages to local vars or an op to update vars locally.</dd>
+<dt>Raises:</dt>
+<dd><p class="first">ValueError: If the grads_and_vars is empty.
+ValueError: If global step is not provided, the staleness cannot be</p>
+<blockquote class="last">
+<div>checked.</div></blockquote>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.make_session_run_hook">
-<code class="descname">make_session_run_hook</code><span class="sig-paren">(</span><em>is_chief</em>, <em>num_tokens=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.make_session_run_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a hook to handle federated average and init operations.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.minimize">
-<code class="descname">minimize</code><span class="sig-paren">(</span><em>loss</em>, <em>global_step=None</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.minimize" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add operations to minimize <cite>loss</cite> by updating <cite>var_list</cite>.
-This simply wraps the minimize() from the real optimizer.
-Args:</p>
-<blockquote>
-<div><p>loss: A <cite>Tensor</cite> containing the value to minimize.
-global_step: Optional <cite>Variable</cite> to increment by one after the</p>
-<blockquote>
-<div>variables have been updated.</div></blockquote>
-</div></blockquote>
-<dl class="docutils">
-<dt>Returns:</dt>
-<dd>An Operation that updates the variables in <cite>var_list</cite>.  If <cite>global_step</cite>
-was not <cite>None</cite>, that operation also increments <cite>global_step</cite>.</dd>
-</dl>
+<code class="descname">make_session_run_hook</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/tensorflow/federated_averaging_optimizer.html#FederatedAveragingOptimizer.make_session_run_hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.make_session_run_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a hook to handle federated average init operations.</p>
 </dd></dl>
 
 </dd></dl>
@@ -372,10 +342,7 @@ was not <cite>None</cite>, that operation also increments <cite>global_step</cit
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {
