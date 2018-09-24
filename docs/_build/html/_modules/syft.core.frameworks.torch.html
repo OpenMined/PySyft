@@ -24,8 +24,7 @@
 
   
 
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
@@ -85,10 +84,15 @@
               
             
             
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.frameworks.torch.html">syft.core.frameworks.torch</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.utils.html">syft.core.utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../_autosummary/syft.core.workers.html">syft.core.workers</a></li>
+              <p class="caption"><span class="caption-text">Notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notes/example.html">Example Note</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/frameworks.html">Frameworks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/workers.html">Workers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mpc/interface.html">MPC Interface</a></li>
 </ul>
 
             
@@ -158,169 +162,47 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-syft.core.frameworks.torch.encode">
-<span id="syft-core-frameworks-torch-encode-module"></span><h2>syft.core.frameworks.torch.encode module<a class="headerlink" href="#module-syft.core.frameworks.torch.encode" title="Permalink to this headline">¶</a></h2>
-<p>Torch utility functions related to encoding and decoding in a JSON-serializable fashion</p>
-<dl class="class">
-<dt id="syft.core.frameworks.torch.encode.PythonEncoder">
-<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.encode.</code><code class="descname">PythonEncoder</code><a class="headerlink" href="#syft.core.frameworks.torch.encode.PythonEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Encode python and torch objects to be JSON-able.
-In particular, tensors of all types are replaced by single key dict, which
-encode the type of the tensor, and the related value includes associated
-content.
-Note that a python object is returned, not JSON.</p>
-<dl class="docutils">
-<dt>Example:</dt>
-<dd><dl class="first last docutils">
-<dt>Input:</dt>
-<dd>sy.FloatTensor([1,2,3,4])</dd>
-<dt>Output:</dt>
-<dd><dl class="first last docutils">
-<dt>...: {&#8216;__FloatTensor__&#8217;: {</dt>
-<dd><blockquote class="first">
-<div>&#8216;child&#8217;: {&#8216;___LocalTensor__&#8217;: {...},
-&#8216;data&#8217;: [1, 2, 3, 4],
-&#8216;torch_type&#8217;: &#8216;syft.FloatTensor&#8217;,
-...}</div></blockquote>
-<p class="last">}</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd>
-</dl>
-<dl class="method">
-<dt id="syft.core.frameworks.torch.encode.PythonEncoder.encode">
-<code class="descname">encode</code><span class="sig-paren">(</span><em>obj</em>, <em>retrieve_pointers=False</em>, <em>private_local=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.encode.PythonEncoder.encode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Performs encoding, and retrieves if requested all pointers found</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="syft.core.frameworks.torch.encode.PythonEncoder.python_encode">
-<code class="descname">python_encode</code><span class="sig-paren">(</span><em>obj</em>, <em>private_local</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.encode.PythonEncoder.python_encode" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="syft.core.frameworks.torch.encode.PythonJSONDecoder">
-<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.encode.</code><code class="descname">PythonJSONDecoder</code><span class="sig-paren">(</span><em>worker</em>, <em>acquire=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.encode.PythonJSONDecoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Decode JSON and reinsert python types when needed, as well as
-SyftTensors</p>
-<p>For example, the message to decode could be:
-{&#8216;__FloatTensor__&#8217;: {</p>
-<blockquote>
-<div><p>&#8216;type&#8217;: &#8216;syFloatTensor&#8217;,
-&#8216;torch_type&#8217;: &#8216;syft.FloatTensor&#8217;,
-&#8216;data&#8217;: [[1.0, 2.0], [3.0, 4.0]],
-&#8216;child&#8217;: {</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>&#8216;___LocalTensor__&#8217;: {</dt>
-<dd>&#8216;owner&#8217;: 0,
-&#8216;id&#8217;: 1000,
-&#8216;torch_type&#8217;: &#8216;syft.FloatTensor&#8217;</dd>
-</dl>
-</div></blockquote>
-</div></blockquote>
-<dl class="method">
-<dt id="syft.core.frameworks.torch.encode.PythonJSONDecoder.python_decode">
-<code class="descname">python_decode</code><span class="sig-paren">(</span><em>dct</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.encode.PythonJSONDecoder.python_decode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Is called on every dict found. We check if some keys correspond
-to special keywords referring to a type we need to re-cast
-(e.g. tuple, or torch Variable).</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
-<dt id="syft.core.frameworks.torch.encode.decode">
-<code class="descclassname">syft.core.frameworks.torch.encode.</code><code class="descname">decode</code><span class="sig-paren">(</span><em>message</em>, <em>worker</em>, <em>acquire=None</em>, <em>message_is_dict=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.encode.decode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine whether the mode should be &#8216;acquire&#8217; or &#8216;suscribe&#8217;, and
-Decode the message with this policy
-1. mode=&#8217;acquire&#8217; means that every SyftTensor seen will be copied to the worker</p>
-<blockquote>
-<div>mode=&#8217;suscribe&#8217; means that we point to every SyftTensor to keep track of it</div></blockquote>
-<ol class="arabic simple" start="2">
-<li>The mode is an indication of how to properly decode the message. Even if the
-worker is malicious it won&#8217;t be able to get any sensitive info by following
-an adversial mode, since private data is remove at encoding. This indication
-is need in cases where you get _Pointer for instance, should you store it or
-point at it?</li>
-<li>This function basically extract the mode of the message, and send the message
-to be decoded</li>
-</ol>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>message</strong> &#8211; The message to decode</li>
-<li><strong>worker</strong> &#8211; The worker performing the decode operation</li>
-<li><strong>acquire</strong> &#8211; Should we copy the data of point at it</li>
-<li><strong>message_is_dict</strong> &#8211; Is the message a dictionary already or a JSON string needing decoding?</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The message decoded</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="syft.core.frameworks.torch.encode.encode">
-<code class="descclassname">syft.core.frameworks.torch.encode.</code><code class="descname">encode</code><span class="sig-paren">(</span><em>message</em>, <em>retrieve_pointers=False</em>, <em>private_local=True</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.encode.encode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Help function to call the PythonEncoder
-:param message:
-:param retrieve_pointers: If true, return a list of all the _PointerTensor
-:param private_local: If true, ask to hide all the sensitive data (ie keep all the
-metadata like the structure of the chain)
-:return: The message encoded in a json-able dict</p>
-</dd></dl>
-
+<div class="section" id="syft-core-frameworks-torch-encode-module">
+<h2>syft.core.frameworks.torch.encode module<a class="headerlink" href="#syft-core-frameworks-torch-encode-module" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-syft.core.frameworks.torch.functions">
 <span id="syft-core-frameworks-torch-functions-module"></span><h2>syft.core.frameworks.torch.functions module<a class="headerlink" href="#module-syft.core.frameworks.torch.functions" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="syft.core.frameworks.torch.functions.MPCTorch">
-<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.functions.</code><code class="descname">MPCTorch</code><a class="headerlink" href="#syft.core.frameworks.torch.functions.MPCTorch" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.functions.</code><code class="descname">MPCTorch</code><a class="reference internal" href="syft/core/frameworks/torch/functions.html#MPCTorch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.functions.MPCTorch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <dl class="staticmethod">
 <dt id="syft.core.frameworks.torch.functions.MPCTorch.add">
-<em class="property">static </em><code class="descname">add</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.functions.MPCTorch.add" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="descname">add</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/functions.html#MPCTorch.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.functions.MPCTorch.add" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="syft.core.frameworks.torch.functions.TorchFunctions">
-<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.functions.</code><code class="descname">TorchFunctions</code><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.functions.</code><code class="descname">TorchFunctions</code><a class="reference internal" href="syft/core/frameworks/torch/functions.html#TorchFunctions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <dl class="method">
 <dt id="syft.core.frameworks.torch.functions.TorchFunctions.add">
-<code class="descname">add</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions.add" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/functions.html#TorchFunctions.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions.add" title="Permalink to this definition">¶</a></dt>
 <dd><p>routes to correct addition</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="syft.core.frameworks.torch.functions.TorchFunctions.add_fixed_prec">
-<code class="descname">add_fixed_prec</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions.add_fixed_prec" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_fixed_prec</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/functions.html#TorchFunctions.add_fixed_prec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions.add_fixed_prec" title="Permalink to this definition">¶</a></dt>
 <dd><p>stuff here</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="syft.core.frameworks.torch.functions.TorchFunctions.add_mpc">
-<code class="descname">add_mpc</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions.add_mpc" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_mpc</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/functions.html#TorchFunctions.add_mpc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions.add_mpc" title="Permalink to this definition">¶</a></dt>
 <dd><p>stuff here</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="syft.core.frameworks.torch.functions.TorchFunctions.add_normal">
-<code class="descname">add_normal</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions.add_normal" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_normal</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/functions.html#TorchFunctions.add_normal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.functions.TorchFunctions.add_normal" title="Permalink to this definition">¶</a></dt>
 <dd><p>stuff here</p>
 </dd></dl>
 
@@ -331,7 +213,7 @@ metadata like the structure of the chain)
 <span id="syft-core-frameworks-torch-hook-module"></span><h2>syft.core.frameworks.torch.hook module<a class="headerlink" href="#module-syft.core.frameworks.torch.hook" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="syft.core.frameworks.torch.hook.TorchHook">
-<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.hook.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.hook.TorchHook" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.hook.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/hook.html#TorchHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.hook.TorchHook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors -
 <strong>Currently compatible with PyTorch 0.3.1</strong></p>
@@ -352,11 +234,11 @@ PyTorch with PySyft&#8217;s added functionality (such as remote execution).</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>local_worker (</strong><a class="reference internal" href="syft.core.workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
+<li><strong>local_worker (</strong><a class="reference internal" href="../core/workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
 you can optionally provide a local worker as a parameter which
 TorchHook will assume to be the worker owned by the local machine.
 If you leave it empty, TorchClient will automatically initialize
-a <a class="reference internal" href="syft.core.workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you&#8217;re
+a <a class="reference internal" href="../core/workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you&#8217;re
 looking to do local experimentation/development.</li>
 <li><strong>is_client (bool, optional)</strong> whether or not the TorchHook is
 being initialized as an end-user client. This can impact whether
@@ -402,7 +284,7 @@ to be sent. (Default: 0)</li>
 <p>Torch static utility functions.</p>
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.assert_has_only_syft_tensors">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">assert_has_only_syft_tensors</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.assert_has_only_syft_tensors" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">assert_has_only_syft_tensors</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#assert_has_only_syft_tensors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.assert_has_only_syft_tensors" title="Permalink to this definition">¶</a></dt>
 <dd><p>A check function that an object has only syft Tensors
 at his &#8216;roots&#8217;, ie head of chain
 Is useful for development.</p>
@@ -410,7 +292,7 @@ Is useful for development.</p>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.assert_has_only_torch_tensorvars">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">assert_has_only_torch_tensorvars</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.assert_has_only_torch_tensorvars" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">assert_has_only_torch_tensorvars</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#assert_has_only_torch_tensorvars"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.assert_has_only_torch_tensorvars" title="Permalink to this definition">¶</a></dt>
 <dd><p>A check function that an object has only torch Tensors or Variable
 at his &#8216;roots&#8217;, ie head of chain
 Is useful for development.</p>
@@ -418,7 +300,7 @@ Is useful for development.</p>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.assert_is_chain_well_formed">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">assert_is_chain_well_formed</code><span class="sig-paren">(</span><em>obj</em>, <em>downward=True</em>, <em>start_id=None</em>, <em>start_type=None</em>, <em>end_chain=None</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.assert_is_chain_well_formed" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">assert_is_chain_well_formed</code><span class="sig-paren">(</span><em>obj</em>, <em>downward=True</em>, <em>start_id=None</em>, <em>start_type=None</em>, <em>end_chain=None</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#assert_is_chain_well_formed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.assert_is_chain_well_formed" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs an analysis that a chain is correctly built:
 A local chain should be something that terminates with a _LocalTensor,
 e.g. <cite>FloatTensor -&gt; _LogTensor -&gt; _LocalTensor</cite>. In this setting the
@@ -435,7 +317,7 @@ attribute which is missing for the pointer.</p>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.chain_print">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">chain_print</code><span class="sig-paren">(</span><em>obj</em>, <em>display=True</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.chain_print" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">chain_print</code><span class="sig-paren">(</span><em>obj</em>, <em>display=True</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#chain_print"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.chain_print" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print the chain of a tensor or variable. Useful for debugging
 If not verbose:</p>
 <blockquote>
@@ -460,7 +342,7 @@ If not verbose:</p>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.compile_command">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">compile_command</code><span class="sig-paren">(</span><em>attr</em>, <em>args</em>, <em>kwargs</em>, <em>has_self=False</em>, <em>self=None</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.compile_command" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">compile_command</code><span class="sig-paren">(</span><em>attr</em>, <em>args</em>, <em>kwargs</em>, <em>has_self=False</em>, <em>self=None</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#compile_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.compile_command" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the JSON serializable encoded command, the location which
 should receive it and the owners of the pointers seen in the command
 Is used in the _PointerTensor handlecall to prepare the command
@@ -469,13 +351,13 @@ before forwarding it to a remote worker.</p>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.enforce_owner">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">enforce_owner</code><span class="sig-paren">(</span><em>obj</em>, <em>owner</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.enforce_owner" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">enforce_owner</code><span class="sig-paren">(</span><em>obj</em>, <em>owner</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#enforce_owner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.enforce_owner" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reassign every elements of the chain to a specified owner (in a Virtual worker context)</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.extract_type_and_obj">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">extract_type_and_obj</code><span class="sig-paren">(</span><em>dct</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.extract_type_and_obj" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">extract_type_and_obj</code><span class="sig-paren">(</span><em>dct</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#extract_type_and_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.extract_type_and_obj" title="Permalink to this definition">¶</a></dt>
 <dd><p>Utils function, which given a serialized tensors,
 Returns a pair tuple with the tensor type (in a string)
 and the associated data in a dict</p>
@@ -483,20 +365,20 @@ and the associated data in a dict</p>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.find_tail_of_chain">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">find_tail_of_chain</code><span class="sig-paren">(</span><em>obj</em>, <em>start_id=None</em>, <em>start_type=None</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.find_tail_of_chain" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">find_tail_of_chain</code><span class="sig-paren">(</span><em>obj</em>, <em>start_id=None</em>, <em>start_type=None</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#find_tail_of_chain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.find_tail_of_chain" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the last element of a chain, and perform basic sanity checks
 on the chain like unexpected loops</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.find_torch_object_in_family_tree">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">find_torch_object_in_family_tree</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.find_torch_object_in_family_tree" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">find_torch_object_in_family_tree</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#find_torch_object_in_family_tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.find_torch_object_in_family_tree" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the torch_objects on a local_chain (without pointer)</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.fix_chain_ends">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">fix_chain_ends</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.fix_chain_ends" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">fix_chain_ends</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#fix_chain_ends"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.fix_chain_ends" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs BASIC fixes on a chain, typically useful when decoding
 a JSON-ified chain to fix the child and parents attributes
 NOTE that this doesn&#8217;t guarantee that the chain will be well-formed,
@@ -505,7 +387,7 @@ so calling after <cite>assert_is_chain_well_formed</cite> will be a good idea.</
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.get_child_command">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">get_child_command</code><span class="sig-paren">(</span><em>obj</em>, <em>child_types=[]</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.get_child_command" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">get_child_command</code><span class="sig-paren">(</span><em>obj</em>, <em>child_types=[]</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#get_child_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.get_child_command" title="Permalink to this definition">¶</a></dt>
 <dd><p>Analyse a Python object (generally dict with a command and arguments,
 And for all tensors, variables, syft tensors, replace with their first
 child and retrieve its type
@@ -516,58 +398,58 @@ child and retrieve its type
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.get_connected_variables">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">get_connected_variables</code><span class="sig-paren">(</span><em>variable</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.get_connected_variables" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">get_connected_variables</code><span class="sig-paren">(</span><em>variable</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#get_connected_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.get_connected_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return all variables involved in the backward process,
 using the auxiliary get_variables_in_backward_graph function</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.get_syft_chain">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">get_syft_chain</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.get_syft_chain" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">get_syft_chain</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#get_syft_chain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.get_syft_chain" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the chain of syft object types in a list</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.get_variables_in_backward_graph">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">get_variables_in_backward_graph</code><span class="sig-paren">(</span><em>var</em>, <em>nodes=[]</em>, <em>seen=set()</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.get_variables_in_backward_graph" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">get_variables_in_backward_graph</code><span class="sig-paren">(</span><em>var</em>, <em>nodes=[]</em>, <em>seen=set()</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#get_variables_in_backward_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.get_variables_in_backward_graph" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.is_syft_tensor">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">is_syft_tensor</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.is_syft_tensor" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">is_syft_tensor</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#is_syft_tensor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.is_syft_tensor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines whether the arg is a subclass of a SyftTensor
 or is the name of a subclass of a SyftTensor</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.is_tensor">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">is_tensor</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.is_tensor" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">is_tensor</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#is_tensor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.is_tensor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines whether the arg is a subclass of a Torch Tensor
 or is the name of a subclass of a Torch Tensor</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.is_tensor_empty">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">is_tensor_empty</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.is_tensor_empty" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">is_tensor_empty</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#is_tensor_empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.is_tensor_empty" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.is_variable">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">is_variable</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.is_variable" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">is_variable</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#is_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.is_variable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines whether the arg is a Variable
 or is the (part of the) name of a class Variable</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.link_var_chain_to_data_and_grad_chains">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">link_var_chain_to_data_and_grad_chains</code><span class="sig-paren">(</span><em>var_node</em>, <em>data_node</em>, <em>grad_node</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.link_var_chain_to_data_and_grad_chains" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">link_var_chain_to_data_and_grad_chains</code><span class="sig-paren">(</span><em>var_node</em>, <em>data_node</em>, <em>grad_node</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#link_var_chain_to_data_and_grad_chains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.link_var_chain_to_data_and_grad_chains" title="Permalink to this definition">¶</a></dt>
 <dd><p>Similar to link_var_chain_to_data_chain, but also add a .grad attribute
 pointing to the var.grad chain</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.link_var_chain_to_data_chain">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">link_var_chain_to_data_chain</code><span class="sig-paren">(</span><em>var_node</em>, <em>data_node</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.link_var_chain_to_data_chain" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">link_var_chain_to_data_chain</code><span class="sig-paren">(</span><em>var_node</em>, <em>data_node</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#link_var_chain_to_data_chain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.link_var_chain_to_data_chain" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a data attribute to all tensors involved in a Variable chain,
 pointing to the var.data chain, so that calls to .data and .child
 can be permuted</p>
@@ -575,21 +457,30 @@ can be permuted</p>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.prepare_child_command">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">prepare_child_command</code><span class="sig-paren">(</span><em>command</em>, <em>replace_tensorvar_with_child=False</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.prepare_child_command" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">prepare_child_command</code><span class="sig-paren">(</span><em>command</em>, <em>replace_tensorvar_with_child=False</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#prepare_child_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.prepare_child_command" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a command where all tensors are replaced with their child, and returns also the type
 For now we expect all the children to share the same type.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="syft.core.frameworks.torch.utils.split_to_pointer_commands">
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">split_to_pointer_commands</code><span class="sig-paren">(</span><em>syft_command</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#split_to_pointer_commands"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.split_to_pointer_commands" title="Permalink to this definition">¶</a></dt>
+<dd><p>Split a syft command containing _GeneralizedPointerTensor with n pointers in
+n syft commands, each for one pointer/worker
+:param syft_command
+:return: n syft_commands</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="syft.core.frameworks.torch.utils.wrap_command">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">wrap_command</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.wrap_command" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">wrap_command</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#wrap_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.wrap_command" title="Permalink to this definition">¶</a></dt>
 <dd><p>To a Syft command, add a torch wrapper
 Returns the wrapper</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="syft.core.frameworks.torch.utils.wrap_command_with">
-<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">wrap_command_with</code><span class="sig-paren">(</span><em>obj</em>, <em>wrapper</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.utils.wrap_command_with" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">syft.core.frameworks.torch.utils.</code><code class="descname">wrap_command_with</code><span class="sig-paren">(</span><em>obj</em>, <em>wrapper</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/utils.html#wrap_command_with"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.utils.wrap_command_with" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrap a syft object with a given wrapper</p>
 </dd></dl>
 
@@ -598,7 +489,7 @@ Returns the wrapper</p>
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-syft.core.frameworks.torch" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="syft.core.frameworks.torch.TorchHook">
-<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#syft.core.frameworks.torch.TorchHook" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">syft.core.frameworks.torch.</code><code class="descname">TorchHook</code><span class="sig-paren">(</span><em>local_worker=None</em>, <em>is_client=True</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="syft/core/frameworks/torch/hook.html#TorchHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.frameworks.torch.TorchHook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>A Hook which Overrides Methods on PyTorch Variables &amp; Tensors -
 <strong>Currently compatible with PyTorch 0.3.1</strong></p>
@@ -619,11 +510,11 @@ PyTorch with PySyft&#8217;s added functionality (such as remote execution).</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>local_worker (</strong><a class="reference internal" href="syft.core.workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
+<li><strong>local_worker (</strong><a class="reference internal" href="../core/workers.html#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.BaseWorker</span></code></a> <strong>, optional)</strong>
 you can optionally provide a local worker as a parameter which
 TorchHook will assume to be the worker owned by the local machine.
 If you leave it empty, TorchClient will automatically initialize
-a <a class="reference internal" href="syft.core.workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you&#8217;re
+a <a class="reference internal" href="../core/workers.html#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">workers.VirtualWorker</span></code></a> under the assumption you&#8217;re
 looking to do local experimentation/development.</li>
 <li><strong>is_client (bool, optional)</strong> whether or not the TorchHook is
 being initialized as an end-user client. This can impact whether
@@ -711,10 +602,7 @@ to be sent. (Default: 0)</li>
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {

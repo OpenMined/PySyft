@@ -7,6 +7,8 @@ from ... import utils
 from . import utils as torch_utils
 import logging
 import numpy as np
+from syft.mpc import spdz
+
 
 
 class _SyftTensor(object):
@@ -46,6 +48,15 @@ class _SyftTensor(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def get_shape(self):
+        if(torch_utils.is_tensor(self.child)):
+            return self.child.shape
+        else:
+            return self.child.get_shape()
+
+    def share(self, *workers):
+        return self.wrap(True).share(*workers)
 
     def set_id(self, new_id):
         """
@@ -259,6 +270,7 @@ class _SyftTensor(object):
         x = sy.FloatTensor([1, 2, 3])       # the chain is FloatTensor > _LocalTensor
         x = sy._PlusIsMinusTensor().on(x)   # the chain is FloatTensor > _PlusIsMinusTensor > _LocalTensor
         """
+
         cls = type(self)
         # Assign the newly created tensor to the good owner and torch_type
         self.torch_type = wrapper.child.torch_type
@@ -283,14 +295,16 @@ class _SyftTensor(object):
 
         return wrapper
 
-    def wrap(self):
+    def wrap(self, skip_fix_chain_end=False):
         """
         Wrap a syft node with a torch wrapper
         """
         wrapper = torch.guard[self.torch_type]()
         self.owner.rm_obj(wrapper.child.id)
         wrapper.child = self
-        torch_utils.fix_chain_ends(wrapper)
+        self.parent = wrapper
+        if not skip_fix_chain_end:
+            torch_utils.fix_chain_ends(wrapper)
         return wrapper
 
     @classmethod
@@ -298,6 +312,10 @@ class _SyftTensor(object):
         """
         Wrap a torch node with a syft wrapper
         """
+
+        if(torch_utils.is_tensor(result)):
+            return result
+
         # Insert the new syft node just before the wrapper
         syft_wrapper = cls(child=result, owner=owner)
         result.parent = syft_wrapper
@@ -400,8 +418,9 @@ class _LocalTensor(_SyftTensor):
 
         if owner.id != owner.hook.local_worker.id:
             if isinstance(response, (int, float, bool)):
-                response = sy.zeros(1) + response
+                response = torch_type([response])
             elif isinstance(response, (np.ndarray, )):
+                print("hardcoding FloatTensor")
                 response = sy.FloatTensor(response)
         else:
             if isinstance(response, (int, float, bool, np.ndarray)):
@@ -430,8 +449,12 @@ class _LocalTensor(_SyftTensor):
                     torch_utils.link_var_chain_to_data_and_grad_chains(syft_command['self'], response.data.child, response.grad.child)
 
             return_response = syft_command['self']
+
+        elif hasattr(response, 'child') and (isinstance(response.child, (_MPCTensor, _FixedPrecisionTensor))):
+            return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
         else:
+
             responses = response if isinstance(response, tuple) else (response,)
             syft_responses = []
             for resp in responses:
@@ -510,10 +533,78 @@ class _LocalTensor(_SyftTensor):
     def get(self, parent, deregister_ptr=None):
         raise TypeError("Cannot call .get() on a tensor you already have.")
 
+class _WrapTorchObjectPlusIsMinusTensor(_SyftTensor):
+    """
+    Example of a custom overloaded SyftTensor wherein the .child
+    object is also a TorchObject (such as FloatTensor or LongTensor).
+    Once implemented, you can wrap an existing tensor like.
+
+    x = torch.LongTensor([[1,2],[3,4]])
+    torch_type='syft.LongTensor'
+    fpt = _WrapTorchObjectTensorPlusIsMinus(x, torch_type=tt).wrap(True)
+
+    and then commands will automatically get executed on the child
+
+    y = fpt + fpt
+
+    after which y equals
+     2  4
+     6  8
+    [syft.core.frameworks.torch.tensor.LongTensor of size 2x2]
+
+    A production example of this tensor is _MPCTensor
+
+    """
+
+
+    def __init__(self, child=None, owner=None, torch_type=None):
+        super().__init__(child=child, owner=owner)
+
+        self.child = child
+        self.torch_type = torch_type
+
+        # The table of command you want to replace
+
+    def on(self, shares):
+        return self.wrap(True)
+
+
+
+    @classmethod
+    def handle_call(cls, command, owner):
+        """
+        This is a special handle_call method which is compatible with
+        .child objects that are themselves torch objects (wrappers) of
+        other methods.
+        :param command:
+        :param owner:
+        :return:
+        """
+
+
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        self = command['self']
+
+        if (attr == '__add__'):
+            return cls.__add__(self, *args, **kwargs)
+        else:
+            result_child = getattr(self.child, attr)(*args, **kwargs)
+            return _WrapTorchObjectPlusIsMinusTensor(result_child).wrap(True)
+
+    def __add__(self, other):
+        # gp_ stands for GeneralizedPointer
+        gp_response = self.child - other.child
+        response = _WrapTorchObjectPlusIsMinusTensor(gp_response).wrap(True)
+        return response
+
 
 class _PlusIsMinusTensor(_SyftTensor):
     """
-    Example of a custom overloaded _SyftTensor
+    Example of a custom overloaded _SyftTensor where the .child
+    object is NOT a torch tensor (instead the wrapper of the child
+    is re-purposed to the wrapper of this tensor)
 
     Role:
     Converts all add operations into sub/minus ones.
@@ -557,6 +648,105 @@ class _PlusIsMinusTensor(_SyftTensor):
         return torch.abs(self)
 
 
+class _GeneralizedPointerTensor(_SyftTensor):
+
+    def __init__(self, pointer_tensor_dict, parent=None, torch_type=None, id=None, owner=None, skip_register=False):
+         super().__init__(child=None, parent=parent, torch_type=torch_type, owner=owner, id=id,
+                         skip_register=skip_register)
+         pointer_dict = {}
+         for worker, pointer in pointer_tensor_dict.items():
+             if not isinstance(pointer, sy._PointerTensor):
+                 raise TypeError('Should use sy._Pointer without Torch wrapper.')
+             key = worker if isinstance(worker, (int, str)) else worker.id
+             pointer_dict[key] = pointer
+         self.pointer_tensor_dict = pointer_dict
+         self.torch_type = torch_type
+
+    def ser(self, private, as_dict=True):
+        pointer_dict = {}
+
+        for owner,pointer in self.pointer_tensor_dict.items():
+            pointer_dict[owner] = pointer.ser(private=private, as_dict=True)
+
+        data = {
+            'owner': self.owner.id,
+            'id': self.id,
+            'pointer_tensor_dict': pointer_dict,
+            'torch_type': self.torch_type
+        }
+        if as_dict:
+            return {'___GeneralizedPointerTensor__': data}
+        else:
+            return json.dumps({'___GeneralizedPointerTensor__': data}) + "\n"
+
+    @classmethod
+    def deser(cls, msg_obj, worker, acquire):
+
+        pointer_tensor_dict = {}
+        for owner_id, pointer in msg_obj['pointer_tensor_dict'].items():
+            obj = _PointerTensor.deser(pointer['___PointerTensor__'], worker, acquire)
+            pointer_tensor_dict[owner_id] = obj
+
+        result = _GeneralizedPointerTensor(pointer_tensor_dict,
+                                           owner=worker,
+                                           id=msg_obj['id'],
+                                           torch_type=msg_obj['torch_type'])
+        return result
+
+    @classmethod
+    def handle_call(cls, syft_command, owner):
+        try:
+
+            attr_type = "syft."+type(syft_command['attr'][0]).__name__
+        except:
+            attr_type = "syft.LongTensor"
+
+        syft_commands = torch_utils.split_to_pointer_commands(syft_command)
+        result_dict = {}
+        for worker_id in syft_commands.keys():
+            syft_command = syft_commands[worker_id]
+            result_dict[worker_id] = sy._PointerTensor.handle_call(syft_command, owner)
+
+        #TODO: @trask @theo could you take a look at this if you have better ideas on how to get these parameters
+        gpt =  _GeneralizedPointerTensor(result_dict,
+                                         parent=None,
+                                         torch_type=attr_type,
+                                         id=None,
+                                         owner=owner,
+                                         skip_register=False)
+        # Fixme: Add a generic child depending on a torch_type
+        gpt.child = torch.guard[gpt.torch_type]([])
+        return gpt
+
+    def public_add_(self, value):
+        for worker, pointer in self.pointer_tensor_dict.items():
+            location = pointer.location
+            value.send(location)
+            torch_sum = pointer.parent + value
+            self.pointer_tensor_dict[worker] = torch_sum.child
+            break
+        return self
+
+    def get(self, deregister_ptr=False):
+
+        # TODO: deregister_ptr doesn't work
+
+        res = []
+        for worker, pointer in self.pointer_tensor_dict.items():
+            res.append(pointer.get())
+        return res
+
+    def sum_get(self):
+        shares = self.get()
+        res = None
+        for share in shares:
+            if res is None:
+                res = share
+            else:
+                res += share
+        return res
+
+
 class _PointerTensor(_SyftTensor):
 
     def __init__(self, child, parent, torch_type, location=None, id_at_location=None, id=None,
@@ -577,9 +767,30 @@ class _PointerTensor(_SyftTensor):
         if self.location == self.owner and not skip_register:
             logging.warning("Do you really want a pointer pointing to itself? (self.location == self.owner)")
 
+    def share(self, *workers):
+
+        worker_ids = list()
+        for worker in workers:
+            if(hasattr(worker, 'id')):
+                worker_ids.append(worker.id)
+            else:
+                worker_ids.append(worker)
+
+        cmd = {}
+        cmd['command'] = "share"
+        cmd['args'] = worker_ids
+        cmd['kwargs'] = {}
+        cmd['has_self'] = True
+        cmd['self'] = self
+
+        return self.handle_call(cmd, self.owner)
+
     def register_pointer(self):
         worker = self.owner
-        location = self.location.id
+        if(isinstance(self.location, int)):
+            location = self.location
+        else:
+            location = self.location.id
         id_at_location = self.id_at_location
         # Add the remote location worker key if needed
         if location not in worker._pointers.keys():
@@ -606,7 +817,6 @@ class _PointerTensor(_SyftTensor):
                                                                  kwargs,
                                                                  has_self=has_self,
                                                                  self=self_)
-
         location = locations[0]
         owner = owners[0]
 
@@ -616,7 +826,7 @@ class _PointerTensor(_SyftTensor):
         torch_utils.assert_has_only_torch_tensorvars(response)
 
         # If the command is an in-place method, we only need to return the same wrapper to the same
-        # pointer, instead of returning the new wrapper created in response
+        # pointer, instead jof returning the new wrapper created in response
         if has_self and utils.is_in_place_method(attr):
             return syft_command['self']
 
@@ -682,7 +892,7 @@ class _PointerTensor(_SyftTensor):
         """
             Get back from a remote worker the chain this pointer is pointing at
         """
-        # Remove this pointer
+        # Remove this pointer - TODO: call deregister function instead of doing it by hand
         if deregister_ptr:
             if self.torch_type == 'syft.Variable':
                 self.owner.rm_obj(self.parent.data.child.id)
@@ -711,11 +921,369 @@ class _PointerTensor(_SyftTensor):
 
         return tensorvar
 
+    def get_shape(self):
+        cmd = {}
+        cmd['command'] = "get_shape"
+        cmd['args'] = []
+        cmd['kwargs'] = {}
+        cmd['has_self'] = True
+        cmd['self'] = self
+
+        return sy.Size(self.handle_call(cmd, self.owner).get().int().tolist())
+
+
 
 class _FixedPrecisionTensor(_SyftTensor):
+    """
+    TODO: write this
 
-    def __init__(self, child, parent, torch_type, owner=None):
-        super().__init__(child=child, parent=parent, torch_type=torch_type, owner=owner)
+    """
+
+    def __init__(self,
+                 child=None,
+                 owner=None,
+                 torch_type=None,
+                 qbits=31,
+                 base=10,
+                 precision_fractional=6,
+                 already_encoded=False):
+        super().__init__(child=child, owner=owner)
+
+        if(torch_type is None):
+            torch_type = "syft."+type(child).__name__
+
+        self.torch_type = torch_type
+
+        self.qbits = qbits
+        self.field = 2**qbits
+        self.base = base
+        self.precision_fractional = precision_fractional
+        self.torch_max_value = torch.LongTensor([round(self.field / 2)])
+
+        if(already_encoded):
+            self.child = child
+        else:
+            self.encode(child)
+
+    def ser(self, private, as_dict=True):
+
+        data = {
+            'owner': self.owner.id,
+            'id': self.id,
+            'child': self.child.ser(private=private, as_dict=True),
+            'torch_type': self.torch_type,
+            'qbits': self.qbits,
+            'base': self.base,
+            'precision_fractional': self.precision_fractional,
+        }
+        if as_dict:
+            return {'___FixedPrecisionTensor__': data}
+        else:
+            return json.dumps({'___FixedPrecisionTensor__': data}) + "\n"
+
+    @classmethod
+    def deser(cls, msg_obj, worker, acquire):
+        """
+        General method for de-serializing an MPCTensor
+        """
+
+        if(acquire):
+            subset = msg_obj['child']['__LongTensor__']['child']
+            child = _SyftTensor.deser_routing(subset, worker, acquire)
+
+            obj = _FixedPrecisionTensor(child=child,
+                                        owner=worker,
+                                        torch_type=msg_obj['torch_type'],
+                                        qbits=msg_obj['qbits'],
+                                        base=msg_obj['base'],
+                                        precision_fractional=msg_obj['precision_fractional'],
+                                        already_encoded=True)
+            return obj
+        else:
+            return _SyftTensor.deser(msg_obj, worker, acquire)
+
+    def on(self, shares):
+        return self.wrap(True)
+
+    def encode(self, rational):
+        upscaled = (rational * self.base ** self.precision_fractional).long()
+        field_element = upscaled % self.field
+        self.child = field_element
+        return self
+
+    def decode(self):
+        value = self.child % self.field
+        gate = (value > self.torch_max_value).long()
+        neg_nums = (value - spdz.torch_field) * gate
+        pos_nums = value * (1 - gate)
+        result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
+        return result
+
+    @classmethod
+    def handle_call(cls, command, owner):
+        """
+        This is a special handle_call method which is compatible with
+        .child objects that are themselves torch objects (wrappers) of
+        other methods.
+        :param command:
+        :param owner:
+        :return:
+        """
+
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        self = command['self']
+
+        if (attr == '__add__'):
+            return cls.__add__(self, *args, **kwargs)
+        if (attr == 'share'):
+            return self.share(*args, **kwargs)
+        else:
+            result_child = getattr(self.child, attr)(*args, **kwargs)
+            return _FixedPrecisionTensor(result_child).wrap(True)
+
+    def get(self, *args, **kwargs):
+        self.child = self.child.get(*args, **kwargs)
+        return self
+
+    def __add__(self, other):
+        # gp_ stands for GeneralizedPointer
+        gp_response = (self.child + other.child) % self.field
+        response = _FixedPrecisionTensor(gp_response,
+                                         torch_type=self.torch_type,
+                                         already_encoded=True).wrap(True)
+        return response
+
+    def __repr__(self):
+        if(not isinstance(self.child, _MPCTensor)):
+            return "[Fixed precision]\n"+self.decode().__repr__()
+        else:
+            return "[Fixed precision]\n" + self.child.__repr__()
+
+    def __str__(self):
+        if (not isinstance(self.child, _MPCTensor)):
+            return "[Fixed precision]\n" + self.decode().__repr__()
+        else:
+            return "[Fixed precision]\n" + self.child.__repr__()
+
+
+class _MPCTensor(_SyftTensor):
+    """
+    This tensor wraps a GeneralizedPointerTensor containing shares and knows how to
+    manipulate those shares properly so that the resulting methods are themselves
+    also MPCTensors.
+
+    This tensor is a special case tensor in multiple ways. First and foremost,
+    it is the first tensor we have implemented whose .child object is a Torch
+    object (a torch wrapper which is the head of another chain). This was necessary
+    to allow for multiple operations to occur within each single operation within
+    __add__ and __mul__.
+    """
+
+    def __init__(self,
+                 shares=None,
+                 child=None,
+                 torch_type='syft.LongTensor',
+                 *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Fixme: remove the share on init, declaring a MPCTensor should autmatically create a _GeneralizedPointerTensor
+
+        if(shares is not None):
+            if isinstance(shares, sy._GeneralizedPointerTensor):
+                raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
+
+            self.shares = shares  # shares is a _GeneralizedPointerTensor
+            self.child = self.shares
+
+        elif(child is not None):
+            if isinstance(child, sy._GeneralizedPointerTensor):
+                raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
+
+            self.child = child
+            self.shares = self.child
+        else:
+            print("cannot initialize MPCTensor with shares and child both == None")
+        self.torch_type = torch_type
+
+        # self.allow_arbitrary_arg_types_for_methods = set()
+        # self.allow_arbitrary_arg_types_for_methods.add("__mul__")
+
+    def ser(self, private, as_dict=True):
+
+        data = {
+            'owner': self.owner.id,
+            'id': self.id,
+            'shares': self.child.ser(private=private, as_dict=True),
+            'torch_type': self.torch_type
+        }
+        if as_dict:
+            return {'___MPCTensor__': data}
+        else:
+            return json.dumps({'___MPCTensor__': data}) + "\n"
+
+    @classmethod
+    def deser(cls, msg_obj, worker, acquire):
+        """
+        General method for de-serializing an MPCTensor
+        """
+
+        if(acquire):
+            gpt_dct = list(msg_obj['shares'].items())[0][1]['child']['___GeneralizedPointerTensor__']
+            shares = _GeneralizedPointerTensor.deser(gpt_dct, worker, acquire).wrap(True)
+
+
+            shares.child.child = shares
+
+
+            result = _MPCTensor(shares=shares,
+                                id=msg_obj['id'],
+                                owner=worker,
+                                torch_type=msg_obj['torch_type'])
+
+            return result
+        else:
+            return _SyftTensor.deser(msg_obj, worker, acquire)
+
+
+    # The table of command you want to replace
+    substitution_table = {
+        'torch.add': 'torch.add',
+        'torch.mul': 'torch.mul',
+    }
+
+    class overload_functions:
+        """
+        Put here the functions you want to overload
+        Beware of recursion errors.
+        """
+
+        @staticmethod
+        def get(attr):
+            attr = attr.split('.')[-1]
+            return getattr(sy._MPCTensor.overload_functions, attr)
+
+    def second_constructor(self):
+        return self.wrap(True)
+
+    # Put here all the methods you want to overload
+
+    def on(self, shares):
+        return self.wrap(True)
+
+    def __add__(self, other):
+        # gp_ stands for GeneralizedPointer
+        gp_response = spdz.spdz_add(self.shares, other.shares)
+        response = _MPCTensor(gp_response).wrap(True)
+        return response
+
+    def __sub__(self, other):
+        gp_response = spdz.spdz_add(self.shares, spdz.spdz_neg(other.shares))
+        response = _MPCTensor(gp_response).wrap(True)
+        return response
+
+    def __neg__(self):
+        gp_response = spdz.spdz_neg(self.shares)
+        response = _MPCTensor(gp_response).wrap(True)
+        return response
+
+    def sum(self, *args, **kwargs):
+        result_child = self.child.sum(*args, **kwargs) % spdz.field
+        response = _MPCTensor(result_child).wrap(True)
+        return response
+
+    def cumsum(self, *args, **kwargs):
+
+        result_child = self.child.cumsum(*args, **kwargs) % spdz.field
+        response = _MPCTensor(result_child).wrap(True)
+        return response
+
+    def __mul__(self, other):
+
+        if(isinstance(other, _MPCTensor)):
+            workers = list(self.shares.child.pointer_tensor_dict.keys())
+            gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
+        else:
+            gp_response = self.shares * other
+
+        response = _MPCTensor(gp_response).wrap(True)
+        return response
+
+    def mm(self, other):
+
+        workers = list(self.shares.child.pointer_tensor_dict.keys())
+        gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
+        response = _MPCTensor(gp_response).wrap(True)
+        return response
+
+    def __matmul__(self, other):
+        return self.mm(other)
+
+    def sigmoid(self):
+        workers = list(self.shares.child.pointer_tensor_dict.keys())
+        W0, W1, W3, W5 = spdz.generate_sigmoid_shares_communication(self.shape, workers)
+        x2 = x * x
+        x3 = x * x2
+        x5 = x3 * x2
+        temp5 = x5 * W5
+        temp3 = x3 * W3
+        temp1 = x * W1
+        temp53 = temp5 + temp3
+        temp531 = temp53+ temp1
+        return W0 + temp531
+
+    @classmethod
+    def handle_call(cls, command, owner):
+        """
+        This is a special handle_call method which is compatible with
+        .child objects that are themselves torch objects (wrappers) of
+        other methods.
+        :param command:
+        :param owner:
+        :return:
+        """
+
+
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        self = command['self']
+
+        if(attr == '__mul__'):
+            return cls.__mul__(self, *args, **kwargs)
+        elif (attr == '__add__'):
+            return cls.__add__(self, *args, **kwargs)
+        elif (attr == '__sub__'):
+            return cls.__sub__(self, *args, **kwargs)
+        elif(attr == 'sum'):
+            return cls.sum(self, *args, **kwargs)
+        elif(attr == 'mm'):
+            return cls.mm(self, *args, **kwargs)
+        else:
+            result_child = getattr(self.child, attr)(*args, **kwargs)
+            return _MPCTensor(result_child).wrap(True)
+
+
+    def send(self, workers):
+        self.n_workers = len(workers)
+        self.shares = self.share(self.var, self.n_workers)
+        self.child = self.shares
+        self.workers = workers
+        for share, worker in zip(self.shares, self.workers):
+            share.send(worker)
+
+
+    def get(self, deregister_ptr=False):
+        # TODO: have deregister_ptr do something
+        value = self.shares.child.sum_get() % spdz.field
+
+        gate = (value > spdz.torch_max_value).long()
+
+        neg_nums = (value - spdz.torch_field) * gate
+        pos_nums = value * (1 - gate)
+        result = neg_nums + pos_nums
+
+        return result
 
 
 class _TorchObject(object):
@@ -728,6 +1296,82 @@ class _TorchObject(object):
 
     __module__ = 'syft'
 
+    def get_shape(self):
+        return self.child.get_shape()
+
+    def native_get_shape(self):
+        return self.get_shape()
+
+    def share(self, *workers):
+
+        if(isinstance(self.child, _PointerTensor)):
+
+            return self.child.share(*workers).wrap(True)
+        elif(isinstance(self.child, _FixedPrecisionTensor)):
+
+            self.child.child = self.child.child.share(*workers)
+            return self
+        else:
+            # print("not sharing fpt or pointer")
+            # print(type(self.child))
+            # print(abc)
+            n_workers = len(workers)
+            x_enc = self._encode()
+            shares = self._share(n_workers)
+
+            pointer_shares_dict = {}
+            for share, worker in zip(shares, workers):
+                share.send(worker)
+                pointer_shares_dict[worker] = share.child
+            x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self)
+            x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
+
+            return x_mpc
+
+    def native_share(self, *workers):
+        out = self.share(*workers)
+        return out
+
+    def _share(self, n_workers):
+        return spdz.share(self, n_workers)
+
+    def _encode(self):
+        return spdz.encode(self)
+
+    def fix_precision(self,
+                      qbits=31,
+                      base=10,
+                      precision_fractional=6,
+                      already_encoded=False):
+
+        if(isinstance(self.child, _PointerTensor)):
+
+            self = self.child
+
+            cmd = {}
+            cmd['command'] = "fix_precision"
+            cmd['args'] = []
+            cmd['kwargs'] = {}
+            cmd['has_self'] = True
+            cmd['self'] = self
+
+            return self.handle_call(cmd, self.owner).wrap(True)
+        else:
+
+            fpt = _FixedPrecisionTensor(self,
+                                        qbits=qbits,
+                                        base=base,
+                                        precision_fractional=precision_fractional,
+                                        already_encoded=already_encoded).wrap(True)
+
+            return fpt
+
+    def native_fix_precision(self, *args, **kwargs):
+        return self.fix_precision(*args, **kwargs)
+
+    def sum_get(self, *args, **kwargs):
+        return self.child.sum_get(*args, **kwargs)
+
     def set_id(self, new_id):
         self.child.set_id(new_id)
         return self
@@ -739,6 +1383,10 @@ class _TorchObject(object):
 
         if torch_utils.is_tensor(self) and hasattr(self, 'child') and not isinstance(self.child, (
                 sy._LocalTensor, sy._PointerTensor)):
+
+            if(isinstance(self.child, sy._FixedPrecisionTensor)):
+                return self.child.__repr__()
+
             x_ = type(self)()
             x_.native_set_(self)
             return "[Head of chain]\n" + x_.native___repr__()
@@ -790,6 +1438,10 @@ class _TorchObject(object):
 
 class _TorchTensor(_TorchObject):
 
+    # in the case of fixed precision tensors, torch tensors need this function
+    def decode(self):
+        return self.child.decode()
+
     def __str__(self):
         if isinstance(self.child, _PointerTensor):
             return type(self).__name__ + self.child.__str__() + ""
@@ -804,6 +1456,15 @@ class _TorchTensor(_TorchObject):
                 x_.native_set_(self)
                 return "[Head of chain]\n" + x_.native___repr__()
             return self.native___str__()
+
+    @classmethod
+    def handle_call(cls, command, owner):
+
+        attr = command['command']
+        args = command['args']
+        kwargs = command['kwargs']
+        self = command['self']
+        return getattr(self, attr)(*args, **kwargs)
 
     def ser(self, private, as_dict=True):
         key = '__' + type(self).__name__ + '__'
@@ -821,6 +1482,7 @@ class _TorchTensor(_TorchObject):
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
+
         obj_type, msg_obj = torch_utils.extract_type_and_obj(msg_obj)
         syft_obj = sy._SyftTensor.deser_routing(msg_obj['child'], worker, acquire)
 
@@ -835,13 +1497,24 @@ class _TorchTensor(_TorchObject):
         # This would imply overload differently the __init__ to provide an owner for the child attr.
         worker.hook.local_worker.de_register(tensorvar)
 
+
         # Ensure that the loop is made, if needed
         if isinstance(torch_utils.find_tail_of_chain(tensorvar), sy._LocalTensor):
             torch_utils.fix_chain_ends(tensorvar)
 
         return tensorvar
 
-    def send(self, worker, ptr_id=None):
+    def broadcast(self, workers):
+        """
+        Send to multiple workers and get back a _GeneralizedPointerTensor
+        :return:
+        """
+        pointers_dict = {}
+        for worker in workers:
+            pointers_dict[worker] = self.clone().send(worker).child
+        return _GeneralizedPointerTensor(pointers_dict).on(self)
+
+    def send(self, *workers, ptr_id=None):
         """
         Give the root of the chain held by self to worker
         self->alice->obj [worker] => self->worker->alice->obj
@@ -852,6 +1525,16 @@ class _TorchTensor(_TorchObject):
                 x.send(bob, 1000)
                 will result in bob having the tensor x with id 1000
         """
+
+        if len(workers) == 1:
+            worker = workers[0]
+        else:
+            gpt_dict = {}
+            for worker in workers:
+                gpt_dict[worker] = (self*1).send(worker).child
+            sy._GeneralizedPointerTensor(gpt_dict).on(self)
+            return self
+
 
         if isinstance(worker, (int, str)):
             worker = self.owner.get_worker(worker)
@@ -892,6 +1575,20 @@ class _TorchTensor(_TorchObject):
 
         # returns a Tensor object wrapping a SyftTensor
         tensor = self.child.get(deregister_ptr=deregister_ptr)
+
+        # GeneralizedPointerTensor returns a list
+        if(isinstance(tensor, list)):
+            return tensor
+
+        # if this is the case, then child is probably
+        # a wrapper which contains other torch objects
+        # such as FixedPrecisionTensor or MPCTensor
+        # so all we really need to do is make sure self.child
+        # is correct and then return self.
+        if(torch_utils.is_syft_tensor(tensor)):
+            self.child = tensor
+            return self
+
         torch_utils.assert_has_only_torch_tensorvars(tensor)
         # this will change the pointer variable (wrapper) to instead wrap the
         # SyftTensor object that was returned so that any variable that may

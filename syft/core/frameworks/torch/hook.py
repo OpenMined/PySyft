@@ -8,7 +8,7 @@ import syft as sy
 from ... import workers
 from ... import utils
 from . import utils as torch_utils
-from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _FixedPrecisionTensor, _TorchTensor
+from .tensor import _SyftTensor, _LocalTensor, _PointerTensor, _GeneralizedPointerTensor,_FixedPrecisionTensor, _TorchTensor
 from .tensor import _TorchVariable
 
 
@@ -85,7 +85,7 @@ class TorchHook(object):
 
         if torch.torch_hooked > 0:
             logging.warn("Torch was already hooked... skipping hooking process")
-            self.local_worker = torch.local_worker
+            self.local_worker = sy.local_worker
         else:
 
             if self.local_worker is None:
@@ -108,7 +108,7 @@ class TorchHook(object):
             self._hook_backward()
             self._hook_module()
 
-            torch.local_worker = self.local_worker
+            sy.local_worker = self.local_worker
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloads given tensor_type (native)"""
@@ -134,6 +134,8 @@ class TorchHook(object):
         self._hook_SyftTensor(tensor_type)
 
         self._hook_PointerTensor(tensor_type)
+        self._hook_GeneralizedPointerTensor(tensor_type)
+
 
     def _add_registration_to___init__(hook_self, tensorvar_type, register_child_instead=False):
         """Overloads tensor_type.__new__ or Variable.__new__"""
@@ -399,6 +401,14 @@ class TorchHook(object):
             # if attr not in dir(_PointerTensor) or getattr(_PointerTensor, attr) is None:
 
             setattr(_PointerTensor, attr, self._get_overloaded_method(attr))
+    def _hook_GeneralizedPointerTensor(self, tensor_type):
+
+        for attr in self.to_auto_overload[tensor_type]:
+            # # if we haven't already overloaded this method
+            # if attr not in dir(_GeneralizedPointerTensor) or getattr(_GeneralizedPointerTensor, attr) is None:
+
+            setattr(_GeneralizedPointerTensor, attr, self._get_overloaded_method(attr))
+
 
     def _get_overloaded_method(hook_self, attr):
         """
@@ -409,7 +419,21 @@ class TorchHook(object):
         accordingly.
         """
         def _execute_method_call(self, *args, **kwargs):
-            return hook_self._execute_call(attr, self, *args, **kwargs)
+            worker = hook_self.local_worker
+            try:
+                return worker._execute_call(attr, self, *args, **kwargs)
+
+            except NotImplementedError:
+
+                result = _execute_method_call(self.child, *args, **kwargs)
+                if(not torch_utils.is_tensor(self)):
+                    result = type(self)(result)
+                    if(hasattr(result, 'second_constructor')):
+                        result = result.second_constructor()
+                    return result
+                else:
+                    return result
+
 
         return _execute_method_call
 
@@ -455,15 +479,10 @@ class TorchHook(object):
         """
 
         def _execute_function_call(*args, **kwargs):
-            return hook_self._execute_call(attr, None, *args, **kwargs)
+            worker = hook_self.local_worker
+            return worker._execute_call(attr, None, *args, **kwargs)
 
         return _execute_function_call
-
-    def _execute_call(hook_self, attr, self, *args, **kwargs):
-        """
-        Forward the call to the local_worker
-        """
-        return hook_self.local_worker._execute_call(attr, self, *args, **kwargs)
 
     def _hook_backward(hook_self):
         """

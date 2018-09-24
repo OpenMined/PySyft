@@ -73,7 +73,7 @@ class VirtualWorker(BaseWorker):
     """
 
     def __init__(
-        self,  hook, id=0, is_client_worker=False, objects={},
+        self,  hook=None, id=0, is_client_worker=False, objects={},
         tmp_objects={}, known_workers={}, verbose=False, queue_size=0,
     ):
 

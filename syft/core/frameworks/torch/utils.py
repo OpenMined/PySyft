@@ -6,10 +6,11 @@ import functools
 import numpy as np
 import logging
 import torch
+import copy
 import syft
 import syft as sy
 
-from . import encode
+from .. import encode
 from ... import utils
 
 def extract_type_and_obj(dct):
@@ -79,7 +80,7 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
         ref_child_type = sy._LocalTensor
     else:
         if all([child_type in torch.tensor_types for child_type in next_child_types]):
-            ref_child_type = sy.FloatTensor
+            ref_child_type = next_child_types[0]
         else:
             ref_child_type = next_child_types[0]
             for next_child_type in next_child_types:
@@ -97,12 +98,14 @@ def enforce_owner(obj, owner):
     """
     Reassign every elements of the chain to a specified owner (in a Virtual worker context)
     """
+
     if isinstance(obj, (list, tuple, set, bytearray)):
         for o in obj:
             enforce_owner(o, owner)
     elif isinstance(obj, dict):
         for k, o in obj.items():
             enforce_owner(o, owner)
+
     else:
         if is_syft_tensor(obj) and hasattr(obj, 'data'):
             enforce_owner(obj.data, owner)
@@ -120,6 +123,19 @@ def enforce_owner(obj, owner):
             obj.owner = owner
             enforce_owner(obj.child, owner)
 
+        if is_tensor(obj):
+            if owner != owner.hook.local_worker:
+                owner.hook.local_worker.de_register(obj)
+            obj.child.owner = owner
+
+        if isinstance(obj, np.ndarray):
+            if owner != owner.hook.local_worker:
+                owner.hook.local_worker.de_register(obj)
+            obj.owner = owner
+
+            # would normally call enforce_owner(obj.child, owner) here except since
+            # Torch is circular this creates an infinite recursion. TODO: fix after Torch 1.0
+
 
 def wrap_command_with(obj, wrapper):
     """
@@ -136,11 +152,12 @@ def wrap_command(obj):
     Returns the wrapper
     """
     # for numeric values for instance, don't add a wrapper
-    if isinstance(obj, (int, float, bool, str, np.ndarray)) or obj is None:
+    if isinstance(obj, (int, float, bool, str, np.ndarray, slice)) or obj is None:
         return obj
     # Torch tensor or variable
     elif is_tensor(obj) or is_variable(obj):
-        raise TypeError('Expecting syft tensors')
+        return obj # the tensor is already wrapped
+        # raise TypeError('Expecting syft tensors but got ' + str(type(obj)))
     # sy._SyftTensor
     elif is_syft_tensor(obj):
         _tail = find_tail_of_chain(obj)
@@ -165,7 +182,9 @@ def wrap_command(obj):
     elif isinstance(obj, dict):
         return {k: wrap_command(o) for k, o in obj.items()}
     else:
-        logging.warning('The following type wasnt wrapped:', type(obj))
+        print(obj)
+        print('The following type wasnt wrapped:', str(type(obj)))
+        print(sadf)
         return obj
 
 
@@ -231,6 +250,56 @@ def compile_command(attr, args, kwargs, has_self=False, self=None):
         raise NotImplementedError('All pointers should share the same owner.')
 
     return command, locations, owners
+
+
+def split_to_pointer_commands(syft_command):
+    """
+    Split a syft command containing _GeneralizedPointerTensor with n pointers in
+    n syft commands, each for one pointer/worker
+    :param syft_command
+    :return: n syft_commands
+    """
+    # TODO: See Issue #1480
+    base_command = {
+        'has_self': syft_command['has_self'],
+        'command': syft_command['command'],
+        'kwargs': syft_command['kwargs'],
+        'args': []
+    }
+    worker_ids = []
+    syft_commands = {}
+
+    if syft_command['has_self']:
+        if isinstance(syft_command['self'], sy._GeneralizedPointerTensor):
+            for worker_id, pointer in syft_command['self'].pointer_tensor_dict.items():
+                # Init phase >
+                syft_commands[worker_id] = copy.deepcopy(base_command)
+                worker_ids.append(worker_id)
+                # < end
+                syft_commands[worker_id]['self'] = pointer
+        else:
+            base_command['self'] = syft_command['self']
+
+    for arg in syft_command['args']:
+        if isinstance(arg, sy._GeneralizedPointerTensor):
+            if len(syft_commands) == 0:
+                for worker_id, pointer in arg.pointer_tensor_dict.items():
+                    # Init phase >
+                    syft_commands[worker_id] = copy.deepcopy(base_command)
+                    worker_ids.append(worker_id)
+                    # < end
+            for worker_id, pointer in arg.pointer_tensor_dict.items():
+                syft_commands[worker_id]['args'].append(pointer)
+        elif isinstance(arg, (list, set, tuple)):
+            raise NotImplementedError('Cant deal with nested args on Generalizd Pointers')
+        else:
+            if len(syft_commands) == 0:
+                base_command['args'].append(arg)
+            else:
+                for worker_id in worker_ids:
+                    syft_commands[worker_id]['args'].append(arg)
+
+    return syft_commands
 
 
 def assert_has_only_torch_tensorvars(obj):
@@ -350,6 +419,8 @@ def chain_print(obj, display=True, verbose=False):
                     grad_types.append('<empty>')
         if isinstance(obj.child, (sy._LocalTensor, sy._PointerTensor)):
             break
+        if isinstance(obj.child, (sy._GeneralizedPointerTensor, )):
+            break
         obj = obj.child
         i += 1
         if i >= 12:
@@ -451,6 +522,8 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
                                                   + str(obj.parent.id) + ',' + str(end_chain.id)
             assert end_chain.child.id == obj.id, "Tail LocalTensor child should be the Tensor Var"
             return True
+        elif isinstance(end_chain, sy._MPCTensor):
+            return True
         else:
             raise TypeError('Unsupported end_chain type:', obj)
 
@@ -460,6 +533,11 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
         start_id = obj.id
         start_type = type(obj)
     elif isinstance(obj, sy._LocalTensor):
+        downward = False
+        end_chain = obj
+        start_id = obj.id
+        start_type = type(obj)
+    elif isinstance(obj, sy._MPCTensor):
         downward = False
         end_chain = obj
         start_id = obj.id
@@ -491,7 +569,7 @@ def find_tail_of_chain(obj, start_id=None, start_type=None):
             raise StopIteration('The chain looped downward on id', obj.child.id, 'with obj',
                                 obj.child)
 
-    if isinstance(obj, (sy._LocalTensor, sy._PointerTensor)):
+    if isinstance(obj, (sy._LocalTensor, sy._PointerTensor, sy._MPCTensor)):
         return obj
     else:
         if obj.child is None:
@@ -528,6 +606,8 @@ def fix_chain_ends(obj):
     elif isinstance(end_obj, sy._PointerTensor):
         end_obj.child = None
         obj.parent = None
+    elif isinstance(end_obj, sy._MPCTensor):
+        ""
     else:
         raise TypeError('Unsupported end of chain:', end_obj)
 
@@ -583,3 +663,5 @@ def is_variable(obj):
         if isinstance(obj, tuple(torch.var_types)):
             return True
     return False
+
+

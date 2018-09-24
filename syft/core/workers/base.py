@@ -2,11 +2,13 @@ import torch
 import json
 import logging
 import syft as sy
+import numpy as np
 from abc import ABC, abstractmethod
 
 from .. import utils
 from ..frameworks.torch import utils as torch_utils
-from ..frameworks.torch import encode
+from ..frameworks import encode
+from ..frameworks import encode as syft_encoder_router
 
 
 class BaseWorker(ABC):
@@ -64,6 +66,9 @@ class BaseWorker(ABC):
     def __init__(self, hook=None, id=0, is_client_worker=False, objects={},
                  tmp_objects={}, known_workers={}, verbose=True, queue_size=0):
 
+        if(hook is None):
+            hook = sy.local_worker.hook
+
         # This is a reference to the hook object which overloaded
         # the underlying deep learning framework
         # (at the time of writing this is exclusively TorchHook)
@@ -117,6 +122,10 @@ class BaseWorker(ABC):
         # A list for storing messages to be sent as well as the max size of the list
         self.message_queue = []
         self.queue_size = queue_size
+
+        if hasattr(sy, 'local_worker'):
+            sy.local_worker.add_worker(self)
+            self.add_worker(sy.local_worker)
 
     def whoami(self):
         """Returns metadata information about the worker. This function returns the default
@@ -191,7 +200,9 @@ class BaseWorker(ABC):
                 return None
 
         message_wrapper_json = (json.dumps(message_wrapper) + "\n").encode()
+
         self.message_queue = []
+
         return self._send_msg(message_wrapper_json, recipient)
 
     def compile_composite_message(self):
@@ -270,31 +281,56 @@ class BaseWorker(ABC):
 
         # Receiving an object from another worker
         if message_wrapper['type'] == 'obj':
-            response = message  # response is a tensorvar
-            torch_utils.fix_chain_ends(response)
-            torch_utils.assert_is_chain_well_formed(response)
-            self.register(response)
+
+            object = message
+
+            # if object is a numpy array
+            if isinstance(message, np.ndarray):
+                "do nothing"
+
+            # if object is a Torch object - pre-process it for registration
+            else:
+                torch_utils.fix_chain_ends(object)
+                torch_utils.assert_is_chain_well_formed(object)
+
+            self.register(object)
+
             return {}, False
+
 
         #  Receiving a request for an object from another worker
         elif message_wrapper['type'] == 'req_obj':
             # Because it was pointed at, it's the first syft_object of the chain,
             # so its parent is the tensorvar
-            syft_object = self.get_obj(message)
-            tensorvar = syft_object.parent
-            if torch_utils.is_variable(syft_object.torch_type):
-                syft_data_object = tensorvar.data.child
-                self.de_register(syft_data_object)
-                if tensorvar.grad is not None:
-                    syft_grad_object = tensorvar.grad.child
-                    self.de_register(syft_grad_object)
-            self.de_register(syft_object)
-            return tensorvar, False
+            object = self.get_obj(message)
+
+            # if object being returned is a numpy array
+            if isinstance(object, np.ndarray):
+                ""
+                self.de_register(object)
+                return object, False
+
+            # object is a pytorch array
+            else:
+                tensorvar = object.parent
+                if torch_utils.is_variable(object.torch_type):
+                    syft_data_object = tensorvar.data.child
+                    self.de_register(syft_data_object)
+                    if tensorvar.grad is not None:
+                        syft_grad_object = tensorvar.grad.child
+                        self.de_register(syft_grad_object)
+                self.de_register(object)
+                return tensorvar, False
 
         #  A torch command from another worker involving one or more tensors
         #  hosted locally
         elif message_wrapper['type'] == 'torch_cmd':
-            result = self.process_command(message)
+            result = self.process_torch_command(message)
+            self.register(result)
+            return result, True  # Result is private
+
+        elif message_wrapper['type'] == 'numpy_cmd':
+            result = self.process_numpy_command(message)
             self.register(result)
             return result, True  # Result is private
 
@@ -557,6 +593,8 @@ class BaseWorker(ABC):
                 self.de_register(o)
         elif obj is None:
             "do nothing"
+        elif isinstance(obj, np.ndarray):
+            self.rm_obj(obj.id)
         else:
             raise TypeError('The type', type(obj), 'is not supported at the moment')
         return
@@ -612,6 +650,8 @@ class BaseWorker(ABC):
                 self.register(res)
         elif result is None:
             "do nothing"
+        elif isinstance(result, np.ndarray):
+            self.register_object(result)
         else:
             raise TypeError('The type', type(result), 'is not supported at the moment')
         return
@@ -647,8 +687,8 @@ class BaseWorker(ABC):
           registered contains the data locally or is instead a pointer to
           a tensor that lives on a different worker.
         """
-        if not torch_utils.is_syft_tensor(obj):
-            raise TypeError("Can't register a non-SyftTensor")
+        # if not torch_utils.is_syft_tensor(obj):
+            # raise TypeError("Can't register a non-SyftTensor")
 
         if id is None:
             id = obj.id
@@ -662,6 +702,7 @@ class BaseWorker(ABC):
             pointer = obj.create_pointer()
             pointer.owner = self
             self.set_obj(pointer.id, pointer)
+
         # DO NOT DELETE THIS TRY/CATCH UNLESS YOU KNOW WHAT YOU'RE DOING
         # PyTorch tensors wrapped invariables (if my_var.data) are python
         # objects that get deleted and re-created randomly according to
@@ -677,7 +718,95 @@ class BaseWorker(ABC):
         # except:
         #    ""
 
-    def process_command(self, command_msg):
+    def process_numpy_command(self, command_msg):
+        """process_command(self, command_msg) -> (command output, list of owners)
+        Process a command message from a client worker. Returns the
+        result of the computation and a list of the result's owners.
+
+        :Parameters:
+
+        * **command_msg (dict)** The dictionary containing a
+          command from another worker.
+
+        * **out (command output, list of** :class:`BaseWorker`
+          ids/objects **)** This executes the command
+          and returns its output along with a list of
+          the owners of the tensors involved.
+        """
+
+        # torch_utils.assert_has_only_torch_tensorvars(command_msg)
+
+        attr = command_msg['command']
+        has_self = command_msg['has_self']
+        args = command_msg['args']
+        kwargs = command_msg['kwargs']
+        self_ = command_msg['self'] if has_self else None
+
+        return self._execute_numpy_call(attr, self_, *args, **kwargs)
+
+    def _execute_numpy_call(self, attr, self_, *args, **kwargs):
+        """
+        Transmit the call to the appropriate TensorType for handling
+        """
+
+        # Distinguish between a command with torch tensors (like when called by the client,
+        # or received from another worker), and a command with syft tensor, which can occur
+        # when a function is overloaded by a SyftTensor (for instance _PlusIsMinusTensor
+        # overloads add and replace it by sub)
+        # try:
+        #     torch_utils.assert_has_only_torch_tensorvars((args, kwargs))
+        #     is_torch_command = True
+        # except AssertionError:
+        is_torch_command = False
+
+        has_self = self_ is not None
+
+        # if has_self:
+        #     command = torch._command_guard(attr, torch.tensorvar_methods)
+        # else:
+        #     command = torch._command_guard(attr, torch.torch_modules)
+        command = attr
+
+        raw_command = {
+            'command': command,
+            'has_self': has_self,
+            'args': args,
+            'kwargs': kwargs
+        }
+        if has_self:
+            raw_command['self'] = self_
+
+        # if is_torch_command:
+        #     # Unwrap the torch wrapper
+        #     syft_command, child_type = torch_utils.prepare_child_command(
+        #         raw_command, replace_tensorvar_with_child=True)
+        # else:
+        #     # Get the next syft class
+        #     # The actual syft class is the one which redirected (see the  _PlusIsMinus ex.)
+        #     syft_command, child_type = torch_utils.prepare_child_command(
+        #         raw_command, replace_tensorvar_with_child=True)
+        #
+        #     torch_utils.assert_has_only_syft_tensors(syft_command)
+
+        # Note: because we have pb of registration of tensors with the right worker,
+        # and because having Virtual workers creates even more ambiguity, we specify the worker
+        # performing the operation
+        # torch_utils.enforce_owner(raw_command, self)
+
+        result = sy.array.handle_call(raw_command, owner=self)
+
+        torch_utils.enforce_owner(result, self)
+
+        if is_torch_command:
+            # Wrap the result
+            if has_self and utils.is_in_place_method(attr):
+                result = torch_utils.wrap_command_with(result, raw_command['self'])
+            else:
+                result = torch_utils.wrap_command(result)
+
+        return result
+
+    def process_torch_command(self, command_msg):
         """process_command(self, command_msg) -> (command output, list of owners)
         Process a command message from a client worker. Returns the
         result of the computation and a list of the result's owners.
@@ -707,6 +836,16 @@ class BaseWorker(ABC):
         """
         Transmit the call to the appropriate TensorType for handling
         """
+
+        # if this is none - then it means that self_ is not a torch wrapper
+        # and we need to execute one level higher
+        if(self_ is not None):
+            if(self_.child is None):
+                new_args = list()
+                for arg in args:
+                    if(torch_utils.is_syft_tensor(arg)):
+                        new_args.append(arg.wrap(True))
+                return self._execute_call(attr, self_.wrap(True), *new_args, **kwargs)
 
         # Distinguish between a command with torch tensors (like when called by the client,
         # or received from another worker), and a command with syft tensor, which can occur
@@ -748,6 +887,7 @@ class BaseWorker(ABC):
         # Note: because we have pb of registration of tensors with the right worker,
         # and because having Virtual workers creates even more ambiguity, we specify the worker
         # performing the operation
+
         result = child_type.handle_call(syft_command, owner=self)
 
         torch_utils.enforce_owner((raw_command, result), self)
@@ -775,37 +915,44 @@ class BaseWorker(ABC):
 
         """
 
-        object.child.id = new_id
+        # if the object is a torch object, run some special checks, otherwise just set the ID
+        if(hasattr(object, 'child')):
+            object.child.id = new_id
+
+            if torch_utils.is_variable(object.child.torch_type):
+                if new_data_id is None or new_grad_id is None or new_grad_data_id is None:
+                    raise AttributeError(
+                        'Please provide the new_data_id, new_grad_id, and new_grad_data_id args, to be able to point to' +
+                        'Var.data, .grad')
+
+                if self.get_pointer_to(recipient, new_data_id) is not None:
+                    raise MemoryError('You already point at ', recipient, ':', new_id)
+                assert new_id != new_data_id, \
+                    "You can't have the same id vor the variable and its data."
+                assert new_id != new_grad_id, \
+                    "You can't have the same id vor the variable and its grad."
+                assert new_id != new_grad_data_id
+
+                assert new_data_id != new_grad_id
+
+                assert new_data_id != new_grad_data_id
+
+                assert new_grad_id != new_grad_data_id
+
+                object.data.child.id = new_data_id
+
+                if object.grad is None:
+                    object.init_grad_()
+
+                object.grad.child.id = new_grad_id
+
+                object.grad.data.child.id = new_grad_data_id
+        else:
+            object.id = new_id
+
         if self.get_pointer_to(recipient, new_id) is not None:
             raise MemoryError('You already point at ', recipient, ':', new_id)
-        if torch_utils.is_variable(object.child.torch_type):
-            if new_data_id is None or new_grad_id is None or new_grad_data_id is None:
-                raise AttributeError(
-                    'Please provide the new_data_id, new_grad_id, and new_grad_data_id args, to be able to point to'+
-                    'Var.data, .grad')
 
-            if self.get_pointer_to(recipient, new_data_id) is not None:
-                raise MemoryError('You already point at ', recipient, ':', new_id)
-            assert new_id != new_data_id, \
-                "You can't have the same id vor the variable and its data."
-            assert new_id != new_grad_id, \
-                "You can't have the same id vor the variable and its grad."
-            assert new_id != new_grad_data_id
-
-            assert new_data_id != new_grad_id
-
-            assert new_data_id != new_grad_data_id
-
-            assert new_grad_id != new_grad_data_id
-
-            object.data.child.id = new_data_id
-
-            if object.grad is None:
-                object.init_grad_()
-
-            object.grad.child.id = new_grad_id
-
-            object.grad.data.child.id = new_grad_data_id
 
         object = encode.encode(object, retrieve_pointers=False, private_local=False)
 
@@ -826,12 +973,16 @@ class BaseWorker(ABC):
 
         * **message (string)** the message being sent
         """
+        return self.send_command(recipient, message, framework="torch")
+
+    def send_command(self, recipient, message, framework="torch"):
+
         if isinstance(recipient, (str, int)):
             raise TypeError('Recipient should be a worker object not his id.')
 
         response = self.send_msg(
             message=message,
-            message_type='torch_cmd',
+            message_type=framework+'_cmd',
             recipient=recipient
         )
 
