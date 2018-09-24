@@ -522,7 +522,7 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
                                                   + str(obj.parent.id) + ',' + str(end_chain.id)
             assert end_chain.child.id == obj.id, "Tail LocalTensor child should be the Tensor Var"
             return True
-        elif isinstance(end_chain, sy._MPCTensor):
+        elif isinstance(end_chain, sy._SPDZTensor):
             return True
         else:
             raise TypeError('Unsupported end_chain type:', obj)
@@ -537,7 +537,7 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
         end_chain = obj
         start_id = obj.id
         start_type = type(obj)
-    elif isinstance(obj, sy._MPCTensor):
+    elif isinstance(obj, sy._SPDZTensor):
         downward = False
         end_chain = obj
         start_id = obj.id
@@ -569,7 +569,7 @@ def find_tail_of_chain(obj, start_id=None, start_type=None):
             raise StopIteration('The chain looped downward on id', obj.child.id, 'with obj',
                                 obj.child)
 
-    if isinstance(obj, (sy._LocalTensor, sy._PointerTensor, sy._MPCTensor)):
+    if isinstance(obj, (sy._LocalTensor, sy._PointerTensor, sy._SPDZTensor)):
         return obj
     else:
         if obj.child is None:
@@ -606,7 +606,7 @@ def fix_chain_ends(obj):
     elif isinstance(end_obj, sy._PointerTensor):
         end_obj.child = None
         obj.parent = None
-    elif isinstance(end_obj, sy._MPCTensor):
+    elif isinstance(end_obj, sy._SPDZTensor):
         ""
     else:
         raise TypeError('Unsupported end of chain:', end_obj)
