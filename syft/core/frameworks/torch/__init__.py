@@ -1,11 +1,11 @@
 from .hook import TorchHook
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
 from .tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor, _GeneralizedPointerTensor
-from .tensor import _MPCTensor
+from .tensor import _SPDZTensor
 
 __all__ = ['TorchHook', '_SyftTensor', '_LocalTensor',
            '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor',
-           '_PlusIsMinusTensor', '_GeneralizedPointerTensor', '_MPCTensor']
+           '_PlusIsMinusTensor', '_GeneralizedPointerTensor', '_SPDZTensor']
 
 import torch
 
@@ -62,7 +62,7 @@ torch.guard = {
     'syft.core.frameworks.torch.tensor._FixedPrecisionTensor': _FixedPrecisionTensor,
     'syft.core.frameworks.torch.tensor._GeneralizedPointerTensor': _GeneralizedPointerTensor,
     'syft._PlusIsMinusTensor': _PlusIsMinusTensor,
-    'syft._MPCTensor': _MPCTensor,
+    'syft._SPDZTensor': _SPDZTensor,
     'syft._FixedPrecisionTensor': _FixedPrecisionTensor,
     'syft.core.frameworks.torch.tensor.FloatTensor': torch.FloatTensor,
     'syft.core.frameworks.torch.tensor.DoubleTensor': torch.DoubleTensor,
