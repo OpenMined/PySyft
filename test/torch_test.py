@@ -9,9 +9,9 @@ import syft as sy
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks import encode
-from syft.core.frameworks.torch.tensor import _MPCTensor
+from syft.core.frameworks.torch.tensor import _SPDZTensor
 from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor
-from syft.mpc import spdz
+from syft.spdz import spdz
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable as Var
@@ -960,9 +960,9 @@ class TestTorchVariable(TestCase):
         assert (torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1]))))
 
 
-class TestMPCTensor(TestCase):
+class TestSPDZTensor(TestCase):
 
-    def generate_mpc_number_pair(self, n1, n2):
+    def generate_spdz_number_pair(self, n1, n2):
         x = torch.LongTensor([n1])
         y = torch.LongTensor([n2])
         x_enc = spdz.encode(x)
@@ -977,37 +977,37 @@ class TestMPCTensor(TestCase):
         y_pointer_tensor_dict = {alice: y_alice.child, bob: y_bob.child}
         x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict).on(x)
         y_gp = _GeneralizedPointerTensor(y_pointer_tensor_dict).on(y)
-        x_mpc = _MPCTensor(x_gp)
-        y_mpc = _MPCTensor(y_gp)
-        return x_mpc, y_mpc
+        x_spdz = _SPDZTensor(x_gp)
+        y_spdz = _SPDZTensor(y_gp)
+        return x_spdz, y_spdz
 
-    def mpc_sum(self, n1, n2):
-        x_mpc, y_mpc = self.generate_mpc_number_pair(n1, n2)
-        sum_mpc = x_mpc + y_mpc
-        sum_mpc = sum_mpc.get()
-        assert torch.eq(sum_mpc, torch.LongTensor([n1 + n2])).all()
+    def spdz_sum(self, n1, n2):
+        x_spdz, y_spdz = self.generate_spdz_number_pair(n1, n2)
+        sum_spdz = x_spdz + y_spdz
+        sum_spdz = sum_spdz.get()
+        assert torch.eq(sum_spdz, torch.LongTensor([n1 + n2])).all()
 
-    def test_mpc_sum(self):
-        self.mpc_sum(3, 5)
-        self.mpc_sum(4, 0)
-        self.mpc_sum(5, -5)
-        self.mpc_sum(3, -5)
-        self.mpc_sum(2 ** 24, 2 ** 12)
+    def test_spdz_sum(self):
+        self.spdz_sum(3, 5)
+        self.spdz_sum(4, 0)
+        self.spdz_sum(5, -5)
+        self.spdz_sum(3, -5)
+        self.spdz_sum(2 ** 24, 2 ** 12)
 
-    def mpc_mul(self, n1, n2):
-        x_mpc, y_mpc = self.generate_mpc_number_pair(n1, n2)
-        mul_mpc = x_mpc * y_mpc
-        mul_mpc = mul_mpc.get()
-        assert torch.eq(mul_mpc, torch.LongTensor([n1 * n2])).all(), (mul_mpc, 'should be', torch.LongTensor([n1 * n2]))
+    def spdz_mul(self, n1, n2):
+        x_spdz, y_spdz = self.generate_spdz_number_pair(n1, n2)
+        mul_spdz = x_spdz * y_spdz
+        mul_spdz = mul_spdz.get()
+        assert torch.eq(mul_spdz, torch.LongTensor([n1 * n2])).all(), (mul_spdz, 'should be', torch.LongTensor([n1 * n2]))
 
-    def test_mpc_mul(self):
-        self.mpc_mul(3, 5)
-        self.mpc_mul(4, 0)
-        self.mpc_mul(5, -5)
-        self.mpc_mul(3, 5)
-        self.mpc_mul(2 ** 12, 2 ** 12)
+    def test_spdz_mul(self):
+        self.spdz_mul(3, 5)
+        self.spdz_mul(4, 0)
+        self.spdz_mul(5, -5)
+        self.spdz_mul(3, 5)
+        self.spdz_mul(2 ** 12, 2 ** 12)
 
-    def test_mpc_scalar_mult(self):
+    def test_spdz_scalar_mult(self):
         x = torch.LongTensor([[-1, 2], [3, 4]])
         x = x.share(bob, alice)
 
@@ -1023,7 +1023,7 @@ class TestMPCTensor(TestCase):
         assert (z.get() == torch.LongTensor([[-2, 4], [6, 8]])).all()
 
 
-    def test_mpc_matmul(self):
+    def test_spdz_matmul(self):
         x = torch.LongTensor([[1, 2], [3, 4]])
         y = torch.LongTensor([[5, 6], [7, 8]])
 
@@ -1043,7 +1043,7 @@ class TestMPCTensor(TestCase):
         result = x.mm(y)
         assert (result.get() - target).abs().sum() < 5
 
-    def test_mpc_negation_and_subtraction(self):
+    def test_spdz_negation_and_subtraction(self):
 
         x = torch.LongTensor([[1, 2], [-3, -4]])
 
@@ -1062,7 +1062,7 @@ class TestMPCTensor(TestCase):
         z = x - y
         assert (z.get() == torch.LongTensor([[-4, -8], [-10, -12]])).all()
 
-    def test_mpc_mul_3_workers(self):
+    def test_spdz_mul_3_workers(self):
         n1, n2 = (3, -5)
         x = torch.LongTensor([n1])
         y = torch.LongTensor([n2])
@@ -1075,12 +1075,12 @@ class TestMPCTensor(TestCase):
     def test_share(self):
         x = torch.LongTensor([-3])
 
-        mpc_x = x.share(alice, bob, james)
-        assert len(mpc_x.child.shares.child.pointer_tensor_dict.keys()) == 3
+        spdz_x = x.share(alice, bob, james)
+        assert len(spdz_x.child.shares.child.pointer_tensor_dict.keys()) == 3
 
-        mpc_x.get()
+        spdz_x.get()
 
-        assert sy.eq(mpc_x, sy.LongTensor([-3])).all()
+        assert sy.eq(spdz_x, sy.LongTensor([-3])).all()
 
 
 
