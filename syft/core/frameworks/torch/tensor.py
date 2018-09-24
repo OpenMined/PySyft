@@ -50,7 +50,7 @@ class _SyftTensor(object):
         return self.__str__()
 
     def get_shape(self):
-        if(torch_utils.is_tensor(self.child)):
+        if torch_utils.is_tensor(self.child) or torch_utils.is_variable(self.child):
             return self.child.shape
         else:
             return self.child.get_shape()
