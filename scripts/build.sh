@@ -11,8 +11,8 @@ rm -rf ./_modules
 rm -rf ./_autosummary
 
 # Automatically Generates Documentation
-sphinx-apidoc -o ./_modules ../syft
 rm -rf _build
+sphinx-apidoc -o ./_modules ../syft
 make html
 cd ../
 

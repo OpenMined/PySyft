@@ -1,8 +1,7 @@
 """Some core imports..."""
 
-from . import hooks
 from . import workers
 from . import utils
-from .hooks import torch
+from . import frameworks
 
-__all__ = ['hooks', 'workers', 'utils', 'torch']
+__all__ = ['workers', 'utils', 'frameworks']

@@ -3,29 +3,30 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+:github_url: https://github.com/OpenMined/PySyft
+
+
 Welcome to PySyft's documentation!
 ==================================
 
 .. toctree::
+   :glob:
+   :maxdepth: 1
+   :caption: Notes
+
+   notes/*
+
+
+.. toctree::
+   :glob:
    :maxdepth: 2
-   :caption: Contents:
+   :caption: API Reference
 
-.. automodule:: syft
-   :members:
+   modules/*
 
-API Reference
-=============
-
-.. autosummary::
-   :toctree: _autosummary
-
-   syft.core.hooks
-   syft.core.utils
-   syft.core.workers
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`

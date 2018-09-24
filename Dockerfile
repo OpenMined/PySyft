@@ -1,33 +1,29 @@
-FROM ubuntu:18.04
+FROM python:3.6-alpine
 
-RUN apt-get update \
-    && apt-get install -y python3.6 \
-                          python3-pip \
-                          build-essential \
-                          git \
-    && apt-get -y autoremove \
-    && apt-get -y clean  \
-    && rm -rf /var/lib/apt/lists/*
+# installing alpine packages which is needed for building python packages "especially pillow" :)
+RUN apk add g++ python-dev tiff-dev zlib-dev freetype-dev
 
-RUN pip3 install jupyter \
- && pip3 install http://download.pytorch.org/whl/cpu/torch-0.3.1-cp36-cp36m-linux_x86_64.whl \
- && pip3 install torchvision \
- && rm -r /root/.cache/pip
+RUN pip install jupyter \
+    && pip install http://download.pytorch.org/whl/cpu/torch-0.3.1-cp36-cp36m-linux_x86_64.whl \
+    && pip install torchvision \
+    && rm -r /root/.cache/pip \
+    && mkdir PySyft \
+    && mkdir PySyft/examples
 
-RUN mkdir PySyft
 COPY syft/ /PySyft/syft/
-COPY examples/ /PySyft/examples/
 COPY requirements.txt /PySyft/requirements.txt
 COPY setup.py /PySyft/setup.py
 COPY README.md /PySyft/README.md
-WORKDIR /PySyft 
-RUN python3 setup.py install
 
-RUN jupyter notebook --generate-config
-RUN jupyter nbextension enable --py --sys-prefix widgetsnbextension && \
-python3 -m ipykernel.kernelspec
+WORKDIR /PySyft
 
-RUN mkdir /notebooks
+RUN python setup.py install \
+    && jupyter notebook --generate-config \
+    && jupyter nbextension enable --py --sys-prefix widgetsnbextension \
+    && python -m ipykernel.kernelspec \
+    && mkdir /notebooks \
+    && rm -rf /var/cache/apk/*
+
 WORKDIR /notebooks
 
 ENTRYPOINT ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--Notebook.open_browser=False", "--NotebookApp.token=''", "--allow-root"]
