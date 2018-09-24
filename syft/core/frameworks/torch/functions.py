@@ -6,7 +6,7 @@ class TorchFunctions(object):
     def add(self, x, y):
         "routes to correct addition"
 
-    def add_mpc(self, x, y):
+    def add_spdz(self, x, y):
         "stuff here"
 
     def add_normal(self, x, y):
@@ -16,7 +16,7 @@ class TorchFunctions(object):
         "stuff here"
 
 
-class MPCTorch(object):
+class SPDZTorch(object):
 
     @staticmethod
     def add(x, y):
@@ -27,6 +27,6 @@ class MPCTorch(object):
             res = torch.add(x.shares[i], y.shares[i])
             result.append(res)
 
-        # z = MPCTensor(result)
+        # z = SPDZTensor(result)
 
         # return z
