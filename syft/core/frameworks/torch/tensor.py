@@ -7,7 +7,7 @@ from ... import utils
 from . import utils as torch_utils
 import logging
 import numpy as np
-from syft.mpc import spdz
+from syft.spdz import spdz
 
 
 
@@ -450,7 +450,7 @@ class _LocalTensor(_SyftTensor):
 
             return_response = syft_command['self']
 
-        elif hasattr(response, 'child') and (isinstance(response.child, (_MPCTensor, _FixedPrecisionTensor))):
+        elif hasattr(response, 'child') and (isinstance(response.child, (_SPDZTensor, _FixedPrecisionTensor))):
             return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
         else:
@@ -552,7 +552,7 @@ class _WrapTorchObjectPlusIsMinusTensor(_SyftTensor):
      6  8
     [syft.core.frameworks.torch.tensor.LongTensor of size 2x2]
 
-    A production example of this tensor is _MPCTensor
+    A production example of this tensor is _SPDZTensor
 
     """
 
@@ -984,7 +984,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
         """
-        General method for de-serializing an MPCTensor
+        General method for de-serializing an SPDZTensor
         """
 
         if(acquire):
@@ -1056,23 +1056,23 @@ class _FixedPrecisionTensor(_SyftTensor):
         return response
 
     def __repr__(self):
-        if(not isinstance(self.child, _MPCTensor)):
+        if(not isinstance(self.child, _SPDZTensor)):
             return "[Fixed precision]\n"+self.decode().__repr__()
         else:
             return "[Fixed precision]\n" + self.child.__repr__()
 
     def __str__(self):
-        if (not isinstance(self.child, _MPCTensor)):
+        if (not isinstance(self.child, _SPDZTensor)):
             return "[Fixed precision]\n" + self.decode().__repr__()
         else:
             return "[Fixed precision]\n" + self.child.__repr__()
 
 
-class _MPCTensor(_SyftTensor):
+class _SPDZTensor(_SyftTensor):
     """
     This tensor wraps a GeneralizedPointerTensor containing shares and knows how to
     manipulate those shares properly so that the resulting methods are themselves
-    also MPCTensors.
+    also SPDZTensors.
 
     This tensor is a special case tensor in multiple ways. First and foremost,
     it is the first tensor we have implemented whose .child object is a Torch
@@ -1087,7 +1087,7 @@ class _MPCTensor(_SyftTensor):
                  torch_type='syft.LongTensor',
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Fixme: remove the share on init, declaring a MPCTensor should autmatically create a _GeneralizedPointerTensor
+        # Fixme: remove the share on init, declaring a SPDZTensor should autmatically create a _GeneralizedPointerTensor
 
         if(shares is not None):
             if isinstance(shares, sy._GeneralizedPointerTensor):
@@ -1103,7 +1103,7 @@ class _MPCTensor(_SyftTensor):
             self.child = child
             self.shares = self.child
         else:
-            print("cannot initialize MPCTensor with shares and child both == None")
+            print("cannot initialize SPDZTensor with shares and child both == None")
         self.torch_type = torch_type
 
         # self.allow_arbitrary_arg_types_for_methods = set()
@@ -1118,14 +1118,14 @@ class _MPCTensor(_SyftTensor):
             'torch_type': self.torch_type
         }
         if as_dict:
-            return {'___MPCTensor__': data}
+            return {'___SPDZTensor__': data}
         else:
-            return json.dumps({'___MPCTensor__': data}) + "\n"
+            return json.dumps({'___SPDZTensor__': data}) + "\n"
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
         """
-        General method for de-serializing an MPCTensor
+        General method for de-serializing an SPDZTensor
         """
 
         if(acquire):
@@ -1136,7 +1136,7 @@ class _MPCTensor(_SyftTensor):
             shares.child.child = shares
 
 
-            result = _MPCTensor(shares=shares,
+            result = _SPDZTensor(shares=shares,
                                 id=msg_obj['id'],
                                 owner=worker,
                                 torch_type=msg_obj['torch_type'])
@@ -1161,7 +1161,7 @@ class _MPCTensor(_SyftTensor):
         @staticmethod
         def get(attr):
             attr = attr.split('.')[-1]
-            return getattr(sy._MPCTensor.overload_functions, attr)
+            return getattr(sy._SPDZTensor.overload_functions, attr)
 
     def second_constructor(self):
         return self.wrap(True)
@@ -1174,46 +1174,46 @@ class _MPCTensor(_SyftTensor):
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = spdz.spdz_add(self.shares, other.shares)
-        response = _MPCTensor(gp_response).wrap(True)
+        response = _SPDZTensor(gp_response).wrap(True)
         return response
 
     def __sub__(self, other):
         gp_response = spdz.spdz_add(self.shares, spdz.spdz_neg(other.shares))
-        response = _MPCTensor(gp_response).wrap(True)
+        response = _SPDZTensor(gp_response).wrap(True)
         return response
 
     def __neg__(self):
         gp_response = spdz.spdz_neg(self.shares)
-        response = _MPCTensor(gp_response).wrap(True)
+        response = _SPDZTensor(gp_response).wrap(True)
         return response
 
     def sum(self, *args, **kwargs):
         result_child = self.child.sum(*args, **kwargs) % spdz.field
-        response = _MPCTensor(result_child).wrap(True)
+        response = _SPDZTensor(result_child).wrap(True)
         return response
 
     def cumsum(self, *args, **kwargs):
 
         result_child = self.child.cumsum(*args, **kwargs) % spdz.field
-        response = _MPCTensor(result_child).wrap(True)
+        response = _SPDZTensor(result_child).wrap(True)
         return response
 
     def __mul__(self, other):
 
-        if(isinstance(other, _MPCTensor)):
+        if(isinstance(other, _SPDZTensor)):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
             gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
         else:
             gp_response = self.shares * other
 
-        response = _MPCTensor(gp_response).wrap(True)
+        response = _SPDZTensor(gp_response).wrap(True)
         return response
 
     def mm(self, other):
 
         workers = list(self.shares.child.pointer_tensor_dict.keys())
         gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
-        response = _MPCTensor(gp_response).wrap(True)
+        response = _SPDZTensor(gp_response).wrap(True)
         return response
 
     def __matmul__(self, other):
@@ -1261,7 +1261,7 @@ class _MPCTensor(_SyftTensor):
             return cls.mm(self, *args, **kwargs)
         else:
             result_child = getattr(self.child, attr)(*args, **kwargs)
-            return _MPCTensor(result_child).wrap(True)
+            return _SPDZTensor(result_child).wrap(True)
 
 
     def send(self, workers):
@@ -1324,9 +1324,9 @@ class _TorchObject(object):
                 share.send(worker)
                 pointer_shares_dict[worker] = share.child
             x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self)
-            x_mpc = _MPCTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
+            x_spdz = _SPDZTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
 
-            return x_mpc
+            return x_spdz
 
     def native_share(self, *workers):
         out = self.share(*workers)
@@ -1582,7 +1582,7 @@ class _TorchTensor(_TorchObject):
 
         # if this is the case, then child is probably
         # a wrapper which contains other torch objects
-        # such as FixedPrecisionTensor or MPCTensor
+        # such as FixedPrecisionTensor or SPDZTensor
         # so all we really need to do is make sure self.child
         # is correct and then return self.
         if(torch_utils.is_syft_tensor(tensor)):
