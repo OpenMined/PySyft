@@ -1003,6 +1003,10 @@ class _FixedPrecisionTensor(_SyftTensor):
             return cls.__add__(self, *args, **kwargs)
         elif (attr == '__mul__'):
             return cls.__mul__(self, *args, **kwargs)
+        elif (attr == 'sum'):
+            return cls.sum(self, *args, **kwargs)
+        elif (attr == 'cumsum'):
+            return cls.cumsum(self, *args, **kwargs)
         else:
             result_child = getattr(self.child, attr)(*args, **kwargs)
             return _FixedPrecisionTensor(result_child).wrap(True)
@@ -1010,6 +1014,18 @@ class _FixedPrecisionTensor(_SyftTensor):
     def get(self, *args, **kwargs):
         self.child = self.child.get(*args, **kwargs)
         return self
+    def sum(self, *args, **kwargs):
+        response = (torch.sum(self.child, *args, **kwargs) / self.base**self.precision_fractional) % self.field
+        return response
+
+    def cumsum(self, *args, **kwargs):
+        response = (torch.cumsum(self.child, *args, **kwargs) / self.base**self.precision_fractional) % self.field
+        return response
+
+    def fsum(self, *args, **kwargs):
+        response = (torch.sum(self.child, *args, **kwargs) ) % self.field
+        return response
+
 
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
@@ -1019,7 +1035,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                                          already_encoded=True).wrap(True)
         return response
     def __mul__(self, other):
-        gp_response = ((self.child * other.child) / self.field) % self.field
+        gp_response = ((self.child * other.child) / self.base**self.precision_fractional) % self.field
         response = _FixedPrecisionTensor(gp_response,
                                         torch_type=self.torch_type,
                                         already_encoded=True).wrap(True)
