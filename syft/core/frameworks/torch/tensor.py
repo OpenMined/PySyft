@@ -1220,8 +1220,23 @@ class _SPDZTensor(_SyftTensor):
 
     # Put here all the methods you want to overload
 
-    def on(self, shares):
-        return self.wrap(True)
+    def on(self, wrapper):
+        """
+        Used to add a new _MPCTensor at the top of the chain, just before the tensorvar wrapper
+        """
+        # Assign the newly created tensor to the good owner and torch_type
+        self.torch_type = wrapper.child.torch_type
+        self.owner = wrapper.child.owner
+
+        torch_utils.wrap_command_with(self, wrapper=wrapper)
+
+        # In case wrapper is a variable, do the same with data and grad (if necessary)
+        if torch_utils.is_variable(wrapper):
+            wrapper.data = _MPCTensor(self.child.data).on(wrapper.data)
+            if torch_utils.is_variable(wrapper.grad):
+                wrapper.assign_grad_(_MPCTensor(self.child.grad).on(wrapper.grad))
+
+        return wrapper
 
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
@@ -1371,10 +1386,13 @@ class _TorchObject(object):
             for share, worker in zip(shares, workers):
                 share.send(worker)
                 pointer_shares_dict[worker] = share.child
-            x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self)
-            x_spdz = _SPDZTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
-
-            return x_spdz
+            self_copy = self*1
+            self_copy.init_grad_()
+            x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self_copy)
+            torch_utils.link_var_chain_to_data_and_grad_chains(x_gp, x_gp.data, x_gp.grad)
+            x_mpc = _SPDZTensor(x_gp, torch_type='syft.LongTensor').on(self)
+            torch_utils.link_var_chain_to_data_and_grad_chains(x_mpc, x_mpc.data, x_mpc.grad)
+            return x_mpc
 
     def native_share(self, *workers):
         out = self.share(*workers)
