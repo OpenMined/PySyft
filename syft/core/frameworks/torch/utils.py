@@ -587,7 +587,7 @@ def find_tail_of_chain(obj, start_id=None, start_type=None):
             raise StopIteration('The chain looped downward on id', obj.child.id, 'with obj',
                                 obj.child)
 
-    if isinstance(obj, (sy._LocalTensor, sy._PointerTensor, sy._SPDZTensor)):
+    if isinstance(obj, (sy._LocalTensor, sy._PointerTensor, sy._GeneralizedPointerTensor)):
         return obj
     else:
         if obj.child is None:
@@ -621,7 +621,7 @@ def fix_chain_ends(obj):
     if isinstance(end_obj, sy._LocalTensor):
         end_obj.child = obj
         obj.parent = end_obj
-    elif isinstance(end_obj, sy._PointerTensor):
+    elif isinstance(end_obj, (sy._PointerTensor, sy._GeneralizedPointerTensor)):
         end_obj.child = None
         obj.parent = None
     elif isinstance(end_obj, sy._SPDZTensor):

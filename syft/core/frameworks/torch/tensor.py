@@ -757,6 +757,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
         # Insert self between wrapper and wrapper child
         torch_utils.wrap_command_with(wrapper.child, wrapper=self)
         torch_utils.wrap_command_with(self, wrapper=wrapper)
+        self.child = None
 
         # In case wrapper is a variable, do the same with data and grad (if necessary)
         if torch_utils.is_variable(wrapper):
@@ -1184,15 +1185,27 @@ class _SPDZTensor(_SyftTensor):
         """
 
         if acquire:
-            gpt_dct = list(msg_obj['shares'].items())[0][1]['child']['___GeneralizedPointerTensor__']
-            shares = _GeneralizedPointerTensor.deser(gpt_dct, worker, acquire).wrap(True)
+            child_shares = list(msg_obj['shares'].values())[0]['child']
+            if '___GeneralizedPointerTensor__' in child_shares.keys():
 
-            shares.child.child = shares
+                gpt_dct = child_shares['___GeneralizedPointerTensor__']
+                shares = _GeneralizedPointerTensor.deser(gpt_dct, worker, acquire).wrap(True)
 
-            result = _SPDZTensor(shares=shares,
-                                id=msg_obj['id'],
-                                owner=worker,
-                                torch_type=msg_obj['torch_type'])
+                shares.child.child = shares
+
+                result = _SPDZTensor(shares=shares,
+                                    id=msg_obj['id'],
+                                    owner=worker,
+                                    torch_type=msg_obj['torch_type'])
+            elif '___LocalTensor__' in child_shares.keys():
+                # shares = sy._TorchTensor.deser(msg_obj['shares'], worker, acquire)
+                # result = sy._SPDZTensor(shares=shares,
+                #                        id=msg_obj['id'],
+                #                        owner=worker,
+                #                        torch_type=msg_obj['torch_type'])
+                result = sy._SPDZTensor(shares=sy.LongTensor())
+            else:
+                raise TypeError("Unrecognized type ", list(child_shares.keys()))
 
             return result
         else:
@@ -1232,9 +1245,9 @@ class _SPDZTensor(_SyftTensor):
 
         # In case wrapper is a variable, do the same with data and grad (if necessary)
         if torch_utils.is_variable(wrapper):
-            wrapper.data = _MPCTensor(self.child.data).on(wrapper.data)
+            wrapper.data = _SPDZTensor(self.child.data).on(wrapper.data)
             if torch_utils.is_variable(wrapper.grad):
-                wrapper.assign_grad_(_MPCTensor(self.child.grad).on(wrapper.grad))
+                wrapper.assign_grad_(_SPDZTensor(self.child.grad).on(wrapper.grad))
 
         return wrapper
 
@@ -1326,7 +1339,8 @@ class _SPDZTensor(_SyftTensor):
             result_child = getattr(self.child, attr)(*args, **kwargs)
             return _SPDZTensor(result_child).wrap(True)
 
-    def send(self, workers):
+    def send(self, *workers):
+        assert len(workers) > 0, "Please provide workers to receive the data"
         self.n_workers = len(workers)
         self.shares = self.share(self.var, self.n_workers)
         self.child = self.shares
@@ -1368,7 +1382,16 @@ class _TorchObject(object):
         Create additive shares of a tensorvar and send them to workers
         """
         if isinstance(self.child, _PointerTensor):
-            return self.child.share(*workers).wrap(True)
+            response = self.child.share(*workers)
+            if torch_utils.is_variable(self):
+                self_copy = self
+                self_copy.child = response
+                self_copy.data.child = response.data
+                self_copy.grad.child = response.grad
+                self_copy.grad.data.child = response.grad.data
+                return self_copy
+            else:
+                return response.wrap(True)
 
         elif isinstance(self.child, _FixedPrecisionTensor):
             self.child.child = self.child.child.share(*workers)
@@ -1598,6 +1621,7 @@ class _TorchTensor(_TorchObject):
                 x.send(bob, 1000)
                 will result in bob having the tensor x with id 1000
         """
+        assert len(workers) > 0, "Please provide workers to receive the data"
 
         if len(workers) == 1:
             worker = workers[0]
@@ -1699,6 +1723,7 @@ class _TorchVariable(_TorchObject):
         Because there are Variable involved, there are actually 4 chains involved,
         the variable chain, variable.data, variable.grad, variable.grad.data
         """
+        assert len(workers) > 0, "Please provide workers to receive the data"
 
         if len(workers) == 1:
             worker = workers[0]
@@ -1791,6 +1816,7 @@ class _TorchVariable(_TorchObject):
                 if self.grad is not None and variable.grad is not None:
                     self.grad.data = variable.grad.data
 
+            torch_utils.fix_chain_ends(self)
             if self.grad is not None:
                 torch_utils.link_var_chain_to_data_and_grad_chains(self, self.data, self.grad)
             else:
@@ -1872,6 +1898,7 @@ class _TorchVariable(_TorchObject):
         var_syft_obj.parent = variable
 
         # Re-assign the data, and propagate deeply
+        torch_utils.fix_chain_ends(variable)
         if var_grad is None:
             torch_utils.link_var_chain_to_data_chain(variable, var_data)
         else:
