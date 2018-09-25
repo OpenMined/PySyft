@@ -1,0 +1,427 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>syft.core package &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="syft.core.frameworks package" href="syft.core.frameworks.html" />
+    <link rel="prev" title="syft package" href="syft.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PySyft
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notes/example.html">Example Note</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">syft</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="syft.html">syft package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="syft.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">syft.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.mpc.html">syft.mpc package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="syft.html#module-syft">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="syft.html">syft package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="syft.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">syft.core package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-syft.core.utils">syft.core.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-syft.core">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="syft.mpc.html">syft.mpc package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="syft.html#module-syft">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">syft.core package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="syft.core.frameworks.html">syft.core.frameworks package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="syft.core.workers.html">syft.core.workers package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-syft.core.utils">syft.core.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-syft.core">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.frameworks.html">syft.core.frameworks package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.frameworks.tensorflow.html">syft.core.frameworks.tensorflow package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.frameworks.torch.html">syft.core.frameworks.torch package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.workers.html">syft.core.workers package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.mpc.html">syft.mpc package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.mpc.interface.html">syft.mpc.interface package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">syft</a> &raquo;</li>
+        
+          <li><a href="syft.html">syft package</a> &raquo;</li>
+        
+      <li>syft.core package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/syft.core.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="syft-core-package">
+<h1>syft.core package<a class="headerlink" href="#syft-core-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.frameworks.html">syft.core.frameworks package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.frameworks.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="syft.core.frameworks.tensorflow.html">syft.core.frameworks.tensorflow package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.tensorflow.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.tensorflow.html#module-syft.core.frameworks.tensorflow.federated_averaging_optimizer">syft.core.frameworks.tensorflow.federated_averaging_optimizer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.tensorflow.html#module-syft.core.frameworks.tensorflow">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="syft.core.frameworks.torch.html">syft.core.frameworks.torch package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.torch.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.torch.html#syft-core-frameworks-torch-encode-module">syft.core.frameworks.torch.encode module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.torch.html#module-syft.core.frameworks.torch.functions">syft.core.frameworks.torch.functions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.torch.html#module-syft.core.frameworks.torch.hook">syft.core.frameworks.torch.hook module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.torch.html#module-syft.core.frameworks.torch.tensor">syft.core.frameworks.torch.tensor module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.torch.html#module-syft.core.frameworks.torch.utils">syft.core.frameworks.torch.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.frameworks.torch.html#module-syft.core.frameworks.torch">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.frameworks.html#module-syft.core.frameworks">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.workers.html">syft.core.workers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.workers.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.workers.html#module-syft.core.workers.base">syft.core.workers.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.workers.html#module-syft.core.workers.socket">syft.core.workers.socket module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.workers.html#module-syft.core.workers.virtual">syft.core.workers.virtual module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.workers.html#module-syft.core.workers.websocket">syft.core.workers.websocket module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.workers.html#module-syft.core.workers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-syft.core.utils">
+<span id="syft-core-utils-module"></span><h2>syft.core.utils module<a class="headerlink" href="#module-syft.core.utils" title="Permalink to this headline">¶</a></h2>
+<p>Framework agnostic static utility functions.</p>
+<dl class="class">
+<dt id="syft.core.utils.PythonEncoder">
+<em class="property">class </em><code class="descclassname">syft.core.utils.</code><code class="descname">PythonEncoder</code><span class="sig-paren">(</span><em>retrieve_tensorvar: bool = False</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/syft/core/utils.html#PythonEncoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.PythonEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Encode python and torch objects to be JSON-able
+In particular, (hooked) Torch objects are replaced by their id.
+Note that a python object is returned, not JSON.</p>
+<dl class="attribute">
+<dt id="syft.core.utils.PythonEncoder.__dict__">
+<code class="descname">__dict__</code><em class="property"> = mappingproxy({'__module__': 'syft.core.utils', '__doc__': '\n        Encode python and torch objects to be JSON-able\n        In particular, (hooked) Torch objects are replaced by their id.\n        Note that a python object is returned, not JSON.\n    ', '__init__': &lt;function PythonEncoder.__init__&gt;, 'encode': &lt;function PythonEncoder.encode&gt;, 'python_encode': &lt;function PythonEncoder.python_encode&gt;, '__dict__': &lt;attribute '__dict__' of 'PythonEncoder' objects&gt;, '__weakref__': &lt;attribute '__weakref__' of 'PythonEncoder' objects&gt;})</em><a class="headerlink" href="#syft.core.utils.PythonEncoder.__dict__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.utils.PythonEncoder.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>retrieve_tensorvar: bool = False</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/syft/core/utils.html#PythonEncoder.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.PythonEncoder.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="syft.core.utils.PythonEncoder.__module__">
+<code class="descname">__module__</code><em class="property"> = 'syft.core.utils'</em><a class="headerlink" href="#syft.core.utils.PythonEncoder.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="syft.core.utils.PythonEncoder.__weakref__">
+<code class="descname">__weakref__</code><a class="headerlink" href="#syft.core.utils.PythonEncoder.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.utils.PythonEncoder.encode">
+<code class="descname">encode</code><span class="sig-paren">(</span><em>obj</em>, <em>retrieve_tensorvar: typing.Union[bool</em>, <em>NoneType] = None</em><span class="sig-paren">)</span> &#x2192; typing.Union[typing.Dict[str, str], typing.Dict[str, typing.List[str]], typing.Dict[str, typing.Dict[str, typing.List[str]]], typing.List[typing.Union[typing.Dict[str, str], typing.Dict[str, typing.List[str]], typing.Dict[str, typing.Dict[str, typing.List[str]]], typing.List[str]]], typing.List[str]]<a class="reference internal" href="../_modules/syft/core/utils.html#PythonEncoder.encode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.PythonEncoder.encode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs encoding, and retrieves if requested all the tensors and
+Variables found</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.utils.PythonEncoder.python_encode">
+<code class="descname">python_encode</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span> &#x2192; typing.Union[typing.Dict[str, str], typing.Dict[str, typing.List[str]], typing.Dict[str, typing.Dict[str, typing.List[str]]], typing.List[typing.Union[typing.Dict[str, str], typing.Dict[str, typing.List[str]], typing.Dict[str, typing.Dict[str, typing.List[str]]], typing.List[str]]], typing.List[str]]<a class="reference internal" href="../_modules/syft/core/utils.html#PythonEncoder.python_encode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.PythonEncoder.python_encode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="syft.core.utils.PythonJSONDecoder">
+<em class="property">class </em><code class="descclassname">syft.core.utils.</code><code class="descname">PythonJSONDecoder</code><span class="sig-paren">(</span><em>worker</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/syft/core/utils.html#PythonJSONDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.PythonJSONDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">json.decoder.JSONDecoder</span></code></p>
+<p>Decode JSON and reinsert python types when needed
+Retrieve Torch objects replaced by their id</p>
+<dl class="method">
+<dt id="syft.core.utils.PythonJSONDecoder.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>worker</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/syft/core/utils.html#PythonJSONDecoder.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.PythonJSONDecoder.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="syft.core.utils.PythonJSONDecoder.__module__">
+<code class="descname">__module__</code><em class="property"> = 'syft.core.utils'</em><a class="headerlink" href="#syft.core.utils.PythonJSONDecoder.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.utils.PythonJSONDecoder.custom_obj_hook">
+<code class="descname">custom_obj_hook</code><span class="sig-paren">(</span><em>dct: typing.Union[typing.Dict[str, typing.Union[int, typing.Any]], slice]</em><span class="sig-paren">)</span> &#x2192; typing.Union[typing.Dict[str, typing.Union[int, typing.Any]], slice]<a class="reference internal" href="../_modules/syft/core/utils.html#PythonJSONDecoder.custom_obj_hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.PythonJSONDecoder.custom_obj_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is called on every dict found. We check if some keys correspond
+to special keywords referring to a type we need to re-cast
+(e.g. tuple, or torch Variable).
+Note that in the case we have such a keyword, we will have created
+at encoding a dict with a single key value pair, so the return if
+the for loop is valid.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="syft.core.utils.is_in_place_method">
+<code class="descclassname">syft.core.utils.</code><code class="descname">is_in_place_method</code><span class="sig-paren">(</span><em>attr: str</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/syft/core/utils.html#is_in_place_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.is_in_place_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the method is in-place (ie modifies the self)
+TODO: Can you do better?</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="syft.core.utils.map_dict">
+<code class="descclassname">syft.core.utils.</code><code class="descname">map_dict</code><span class="sig-paren">(</span><em>hook, kwargs: typing.Dict[str, typing.Any], func: typing.Callable</em><span class="sig-paren">)</span> &#x2192; typing.Dict[str, typing.Any]<a class="reference internal" href="../_modules/syft/core/utils.html#map_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.map_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.utils.map_tuple">
+<code class="descclassname">syft.core.utils.</code><code class="descname">map_tuple</code><span class="sig-paren">(</span><em>hook, args: typing.Tuple[typing.Any, ...], func: typing.Callable</em><span class="sig-paren">)</span> &#x2192; typing.Tuple[typing.Any, ...]<a class="reference internal" href="../_modules/syft/core/utils.html#map_tuple"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.map_tuple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="syft.core.utils.pass_func_args">
+<code class="descclassname">syft.core.utils.</code><code class="descname">pass_func_args</code><span class="sig-paren">(</span><em>func: typing.Callable</em><span class="sig-paren">)</span> &#x2192; typing.Callable<a class="reference internal" href="../_modules/syft/core/utils.html#pass_func_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.pass_func_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper gathering partial object from function call.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="syft.core.utils.pass_method_args">
+<code class="descclassname">syft.core.utils.</code><code class="descname">pass_method_args</code><span class="sig-paren">(</span><em>method: typing.Callable</em><span class="sig-paren">)</span> &#x2192; typing.Callable<a class="reference internal" href="../_modules/syft/core/utils.html#pass_method_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.utils.pass_method_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper gathering partialmethod object from method call.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.core">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-syft.core" title="Permalink to this headline">¶</a></h2>
+<p>Some core imports...</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="syft.core.frameworks.html" class="btn btn-neutral float-right" title="syft.core.frameworks package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="syft.html" class="btn btn-neutral" title="syft package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1',
+            LANGUAGE:'python',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

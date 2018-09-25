@@ -1,0 +1,2012 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>syft.core.workers package &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/PySyft_docs.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="syft.mpc package" href="syft.mpc.html" />
+    <link rel="prev" title="syft.core.frameworks.torch package" href="syft.core.frameworks.torch.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PySyft
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notes/example.html">Example Note</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">syft</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="syft.html">syft package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="syft.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="syft.core.html">syft.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.mpc.html">syft.mpc package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="syft.html#module-syft">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="syft.html">syft package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="syft.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="syft.core.html">syft.core package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="syft.core.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.html#module-syft.core.utils">syft.core.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="syft.core.html#module-syft.core">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="syft.mpc.html">syft.mpc package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="syft.html#module-syft">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="syft.core.html">syft.core package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="syft.core.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="syft.core.frameworks.html">syft.core.frameworks package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">syft.core.workers package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-syft.core.workers.base">syft.core.workers.base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-syft.core.workers.socket">syft.core.workers.socket module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-syft.core.workers.virtual">syft.core.workers.virtual module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-syft.core.workers.websocket">syft.core.workers.websocket module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-syft.core.workers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.html#module-syft.core.utils">syft.core.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syft.core.html#module-syft.core">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.frameworks.html">syft.core.frameworks package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.frameworks.tensorflow.html">syft.core.frameworks.tensorflow package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.core.frameworks.torch.html">syft.core.frameworks.torch package</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">syft.core.workers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-syft.core.workers.base">syft.core.workers.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-syft.core.workers.socket">syft.core.workers.socket module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-syft.core.workers.virtual">syft.core.workers.virtual module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-syft.core.workers.websocket">syft.core.workers.websocket module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-syft.core.workers">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="syft.mpc.html">syft.mpc package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syft.mpc.interface.html">syft.mpc.interface package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">syft</a> &raquo;</li>
+        
+          <li><a href="syft.html">syft package</a> &raquo;</li>
+        
+          <li><a href="syft.core.html">syft.core package</a> &raquo;</li>
+        
+      <li>syft.core.workers package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/syft.core.workers.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="syft-core-workers-package">
+<h1>syft.core.workers package<a class="headerlink" href="#syft-core-workers-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-syft.core.workers.base">
+<span id="syft-core-workers-base-module"></span><h2>syft.core.workers.base module<a class="headerlink" href="#module-syft.core.workers.base" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.core.workers.base.BaseWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.base.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">abc.ABC</span></code></p>
+<p>The BaseWorker class establishes a consistent interface for
+communicating between different machines
+about tensors, variables, models, and other network related
+information. It defines base functionality
+for storing objects within the worker (or in some cases
+specifically not storing them), and for keeping
+track of known workers across a network.</p>
+<p>This class does NOT include any communication specific functionality
+such as peer-to-peer protocols, routing, node discovery, or even
+socket architecture. Only classes that extend the BaseWorker should
+carry such functionality.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>hook (</strong><code class="xref py py-class docutils literal"><span class="pre">hooks.BaseHook</span></code> <strong>)</strong> This is a reference
+to the hook object which overloaded the underlying deep
+learning framework.</li>
+<li><strong>id (int or string, optional)</strong> the integer or string identifier
+for this node</li>
+<li><strong>is_client_worker (bool, optional)</strong> a boolean which determines
+whether this worker is associeted with an end user client.
+If so, it assumes that the client will maintain control over when
+tensors/variables/models are instantiated or deleted as opposed
+to handling tensor/variable/model lifecycle internally.</li>
+<li><strong>objects (list of tensors, variables, or models, optional)</strong>
+When the worker is NOT a client worker, it stores all tensors
+it receives or creates in this dictionary.
+The key to each object is it&#8217;s id.</li>
+<li><strong>tmp_objects (list of tensors, variables, or models, optional)</strong>
+When the worker IS a client worker, it stores some tensors
+temporarily in this _tmp_objects simply to ensure
+that they do not get deallocated by the Python garbage
+collector while in the process of being registered.
+This dictionary can be emptied using the clear_tmp_objects method.</li>
+<li><strong>known_workers (list of **:class:`BaseWorker` ** objects, optional)</strong>
+This dictionary can include all known workers on a network.
+Some extensions of BaseWorker will use this
+list to bootstrap the network.</li>
+<li><strong>verbose (bool, optional)</strong> A flag for whether or not to
+print events to stdout.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.add_worker">
+<code class="descname">add_worker</code><span class="sig-paren">(</span><em>worker</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.add_worker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.add_worker" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method adds a worker to the list of _known_workers
+internal to the BaseWorker. It endows this class with
+the ability to communicate with the remote worker being
+added, such as sending and receiving objects, commands,
+or information about the network.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>worker (</strong><a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a> <strong>)</strong> This is an object
+pointer to a remote worker, which must have a unique id.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">TorchHook</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bob</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">VirtualWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;bob&quot;</span><span class="p">,</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span> <span class="n">is_client_worker</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span><span class="o">.</span><span class="n">add_workers</span><span class="p">([</span><span class="n">bob</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+<span class="go">[syft.core.frameworks.torch.tensor.FloatTensor of size 5]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">bob</span><span class="p">)</span>
+<span class="go">FloatTensor[_PointerTensor - id:9121428371 owner:0 loc:bob id@loc:47416674672]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+<span class="go">[syft.core.frameworks.torch.tensor.FloatTensor of size 5]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.add_workers">
+<code class="descname">add_workers</code><span class="sig-paren">(</span><em>workers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.add_workers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.add_workers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.compile_composite_message">
+<code class="descname">compile_composite_message</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.compile_composite_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.compile_composite_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a composite message in a dictionary from the message queue.
+Evenatually will take a recipient id.</p>
+<ul class="simple">
+<li><strong>out (dict)</strong> dictionary containing the message queue compiled</li>
+</ul>
+<p>as a composite message</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.de_register">
+<code class="descname">de_register</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.de_register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.de_register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Un-register an object and its attribute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.de_register_object">
+<code class="descname">de_register_object</code><span class="sig-paren">(</span><em>obj</em>, <em>_recurse_torch_objs=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.de_register_object"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.de_register_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unregisters an object and removes attributes which are indicative
+of registration. Note that the way in which attributes are deleted
+has been informed by this StackOverflow post: <a class="reference external" href="https://goo.gl/CBEKLK">https://goo.gl/CBEKLK</a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.get_obj">
+<code class="descname">get_obj</code><span class="sig-paren">(</span><em>remote_key</em><span class="sig-paren">)</span> &#x2192; a torch object<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.get_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.get_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method fetches a tensor from the worker&#8217;s internal
+registry of tensors using its id. Note that this
+will not work on client worker because they do not
+store objects internally. However, it can be used on
+remote workers, including remote <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code>
+objects, as pictured below in the example.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>remote_key (string or int)</strong> This is the id of
+the object to be returned.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.get_pointer_to">
+<code class="descname">get_pointer_to</code><span class="sig-paren">(</span><em>location</em>, <em>id_at_location</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.get_pointer_to"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.get_pointer_to" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.get_worker">
+<code class="descname">get_worker</code><span class="sig-paren">(</span><em>self</em>, <em>id_or_worker</em><span class="sig-paren">)</span> &#x2192; BaseWorker<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.get_worker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.get_worker" title="Permalink to this definition">¶</a></dt>
+<dd><p>If you pass in an ID, it will attempt to find the worker
+object (pointer) withins self._known_workers. If you
+instead pass in a pointer itself, it will save that as a
+known_worker if it does not exist as one. This method is primarily useful
+becuase often tensors have to store only the ID to a
+foreign worker which may or may not be known
+by the worker that is deserializing it at the time
+of deserialization. This method allows for resolution of
+worker ids to workers to happen automatically while also
+making the current worker aware of new ones when discovered
+through other processes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>id_or_worker (string or int or</strong> <a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a> <strong>)</strong>
+This is either the id of the object to be returned or the object itself.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">TorchHook</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bob</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">VirtualWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;bob&quot;</span><span class="p">,</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span> <span class="n">is_client_worker</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span><span class="o">.</span><span class="n">add_workers</span><span class="p">([</span><span class="n">bob</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bob</span>
+<span class="go">&lt;syft.core.workers.virtual.VirtualWorker id:bob&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># we can get the worker using it&#39;s id (1)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span><span class="o">.</span><span class="n">get_worker</span><span class="p">(</span><span class="s1">&#39;bob&#39;</span><span class="p">)</span>
+<span class="go">&lt;syft.core.workers.virtual.VirtualWorker id:bob&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># or we can get the worker by passing in the worker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span><span class="o">.</span><span class="n">get_worker</span><span class="p">(</span><span class="n">bob</span><span class="p">)</span>
+<span class="go">&lt;syft.core.workers.virtual.VirtualWorker id:bob&gt;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.process_message_type">
+<code class="descname">process_message_type</code><span class="sig-paren">(</span><em>message_wrapper</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.process_message_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.process_message_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method takes a message wrapper and attempts to process
+it agaist known processing methods. If the method is a composite
+message, it unroles applies recursively</p>
+<ul class="simple">
+<li><strong>message_wrapper (dict)</strong> Dictionary containing the message
+and meta information</li>
+<li><strong>out (object, bool)</strong> the response. This can be a variety
+of object types. However, the object is typically only
+used during testing or local development with
+<code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> workers. The bool specifies if the
+response is private or not (private: we don&#8217;t encode the data
+but juts info on the tensor; not private: we transmit data to be
+acquired by the receiver)</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.process_numpy_command">
+<code class="descname">process_numpy_command</code><span class="sig-paren">(</span><em>command_msg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.process_numpy_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.process_numpy_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>process_command(self, command_msg) -&gt; (command output, list of owners)
+Process a command message from a client worker. Returns the
+result of the computation and a list of the result&#8217;s owners.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>command_msg (dict)</strong> The dictionary containing a
+command from another worker.</li>
+<li><strong>out (command output, list of</strong> <a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a>
+ids/objects <strong>)</strong> This executes the command
+and returns its output along with a list of
+the owners of the tensors involved.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.process_torch_command">
+<code class="descname">process_torch_command</code><span class="sig-paren">(</span><em>command_msg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.process_torch_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.process_torch_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>process_command(self, command_msg) -&gt; (command output, list of owners)
+Process a command message from a client worker. Returns the
+result of the computation and a list of the result&#8217;s owners.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>command_msg (dict)</strong> The dictionary containing a
+command from another worker.</li>
+<li><strong>out (command output, list of</strong> <a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a>
+ids/objects <strong>)</strong> This executes the command
+and returns its output along with a list of
+the owners of the tensors involved.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.receive_msg">
+<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper_json</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.receive_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receives an message from a worker and then executes its contents appropriately.
+The message is encoded as a binary blob.</p>
+<ul class="simple">
+<li><strong>message (binary)</strong> the message being sent</li>
+<li><strong>out (object)</strong> the response. This can be a variety
+of object types. However, the object is typically only used during testing or
+local development with <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> workers.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.register">
+<code class="descname">register</code><span class="sig-paren">(</span><em>result</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register an object with SyftTensors</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.register_object">
+<code class="descname">register_object</code><span class="sig-paren">(</span><em>obj</em>, <em>id=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.register_object"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.register_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an object with the current worker node. Selects an
+id for the object, assigns a list of owners,
+and establishes whether it&#8217;s a pointer or not. This method
+is generally not used by the client and is
+instead used by internal processes (hooks and workers).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>obj (a torch.Tensor or torch.autograd.Variable)</strong> a Torch
+instance, e.g. Tensor or Variable to be registered</li>
+<li><strong>force_attach_to_worker (bool)</strong> if set to True, it will
+force the object to be stored in the worker&#8217;s permanent registry</li>
+<li><strong>temporary (bool)</strong> If set to True, it will store the object
+in the worker&#8217;s temporary registry.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>id (int or string)</strong> random integer between 0 and 1e10 or
+string uniquely identifying the object.</li>
+<li><strong>owners (list of ** :class:`BaseWorker` objects ** or ids)</strong>
+owner(s) of the object</li>
+<li><strong>is_pointer (bool, optional)</strong> Whether or not the tensor being
+registered contains the data locally or is instead a pointer to
+a tensor that lives on a different worker.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.request_obj">
+<code class="descname">request_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.request_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method requests that another VirtualWorker send an object to the local one.
+In the case that the local one is a client,
+it simply returns the object. In the case that the local worker is not a client,
+it stores the object in the permanent registry.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>obj_id (str or int)</strong> the id of the object being requested</li>
+<li><strong>sender (</strong> <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> <strong>)</strong> the worker who currently has the
+object who is being requested to send it.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.rm_obj">
+<code class="descname">rm_obj</code><span class="sig-paren">(</span><em>remote_key</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.rm_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.rm_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method removes an object from the permament object registory
+if it exists.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>remote_key(int or string)</strong> the id of the object to be removed</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>query='#boston'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queries all local tensors which have string ids, returning the tensors which match the query. The query is
+composed of one or more substrings which all be contained within a tensor&#8217;s ID in order for it to be a match.
+:param query: either a string or a list of strings
+:return: a list of tensors</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.send_command">
+<code class="descname">send_command</code><span class="sig-paren">(</span><em>recipient</em>, <em>message</em>, <em>framework='torch'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.send_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.send_command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.send_msg">
+<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.send_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.send_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a string message to another worker with message_type information
+indicating how the message should be processed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>recipient (</strong> <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> <strong>)</strong> the worker being sent a message.</li>
+<li><strong>message (string)</strong> the message being sent</li>
+<li><strong>message_type (string)</strong> the type of message being sent. This affects how
+the message is processed by the recipient. The types of message are described
+in <a class="reference internal" href="#syft.core.workers.base.BaseWorker.receive_msg" title="syft.core.workers.base.BaseWorker.receive_msg"><code class="xref py py-func docutils literal"><span class="pre">receive_msg()</span></code></a>.</li>
+<li><strong>out (object)</strong> the response from the message being sent. This can be a variety
+of object types. However, the object is typically only used during testing or
+local development with <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> workers.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.send_obj">
+<code class="descname">send_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj</em>, <em>new_id</em>, <em>recipient</em>, <em>new_data_id=None</em><span class="sig-paren">)</span> &#x2192; obj<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.send_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.send_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an object to another <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> and removes it
+from the local worker.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>object (object)</strong> a python object to be sent</li>
+<li><strong>new_id (int)</strong> the id where the object should be stored</li>
+<li><strong>recipient (</strong> <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> <strong>)</strong> the worker object to send the message to.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.send_torch_command">
+<code class="descname">send_torch_command</code><span class="sig-paren">(</span><em>self</em>, <em>recipient</em>, <em>message</em><span class="sig-paren">)</span> &#x2192; object<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.send_torch_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.send_torch_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method sends a message to another worker in a way that hangs... waiting until the
+worker responds with a message. It then processes the response using a response handler</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>recipient (</strong> <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> <strong>)</strong> the worker being sent a message.</li>
+<li><strong>message (string)</strong> the message being sent</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.set_obj">
+<code class="descname">set_obj</code><span class="sig-paren">(</span><em>remote_key</em>, <em>value</em>, <em>force=False</em>, <em>tmp=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.set_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.set_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method adds an object (such as a tensor) to one of
+the internal object registries. The main registry
+holds objects for a long period of time (until they are
+explicitly deleted) while the temporary registory
+will delete all object references contained therein when
+the cleanup method is called (self._clear_tmp_objects).</p>
+<p>The reason we have a temporary registry for clijen workers
+(instead of putting everything in the permanent one) is
+because when the client creates a reference to an object
+(x = torch.zeros(10)), we want to ensure that the client
+contains the only pointer to that object so that when the
+client deletes the object that __del__ gets called. If,
+however, the object was also being stored in the permanent
+registry (self._objects), then when the variable went out
+of scope on the client, the python garbage collector wouldn&#8217;t
+call __del__ because the internal registry would
+still have a reference to it. So, we use the temporary registry
+during the construction of the object but then
+delete all references to the object (other than the client&#8217;s)
+once object construction and (recursive) registration
+is complete.</p>
+<p>When the worker is not a client worker (self._is_client_worker==False),
+this method just saves an object into the permanent registry,
+where it remains until it is explicitly deleted using self._rm_obj.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>remote_key (int)</strong> This is an object id to an object to be
+stored in memory.</li>
+<li><a href="#id1"><span class="problematic" id="id2">**</span></a>value (torch.Tensor or torch.autograd.Variable) ** the
+object to be stored in memory.</li>
+<li><strong>force (bool, optional)</strong> if set to True, this will force the
+object to be stored in permenent memory, even if
+the current worker is a client worker (Default: False).</li>
+<li><strong>tmp (bool, optional)</strong> if set to True, this will allow an object
+to be stored in temporary memory if and only if
+the worker is also a client worker. If set to false, the object
+will not be stored in temporary memory, even if the
+worker is a client worker.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.base.BaseWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.whoami"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.base.BaseWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns metadata information about the worker. This function returns the default
+which is the id and type of the current worker. Other worker types can extend this
+function with additional metadata such as network information.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.core.workers.socket">
+<span id="syft-core-workers-socket-module"></span><h2>syft.core.workers.socket module<a class="headerlink" href="#module-syft.core.workers.socket" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.core.workers.socket.SocketWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.socket.</code><code class="descname">SocketWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>hostname='localhost'</em>, <em>port=8110</em>, <em>max_connections=5</em>, <em>id=0</em>, <em>is_client_worker=True</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>is_pointer=False</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/socket.html#SocketWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.socket.SocketWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.base.BaseWorker</span></code></a></p>
+<p>A worker capable of performing the functions of a BaseWorker across
+a socket connection. Note that the worker is NOT responsible for
+creating the socket connection.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>hook (</strong><code class="xref py py-class docutils literal"><span class="pre">hooks.BaseHook</span></code> <strong>)</strong> This is a reference to
+the hook object which overloaded the underlying deep learning framework.</li>
+<li><strong>id (int or string, optional)</strong> the integer or string identifier
+for this node</li>
+<li><strong>is_client_worker (bool, optional)</strong> a boolean which determines
+whether this worker is associeted with an end user client. If so,
+it assumes that the client will maintain control over when
+tensors/variables/models are instantiated or deleted as opposed to
+handling tensor/variable/model lifecycle internally.</li>
+<li><strong>objects (list of tensors, variables, or models, optional)</strong>
+When the worker is NOT a client worker, it stores all tensors
+it receives or creates in this dictionary.
+The key to each object is it&#8217;s id.</li>
+<li><strong>tmp_objects (list of tensors, variables, or models, optional)</strong>
+When the worker IS a client worker, it stores some tensors temporarily
+in this _tmp_objects simply to ensure that they do not get deallocated by
+the Python garbage collector while in the process of being registered.
+This dictionary can be emptied using the clear_tmp_objects method.</li>
+<li><strong>known_workers (list of **:class:`BaseWorker` ** objects, optional)</strong> This dictionary
+can include all known workers.</li>
+<li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example Server:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">VirtualWorker</span><span class="p">,</span> <span class="n">SocketWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local_worker</span> <span class="o">=</span> <span class="n">SocketWorker</span><span class="p">(</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span>
+<span class="go">                        id=2,</span>
+<span class="go">                        port=8181,</span>
+<span class="go">                        is_pointer=False,</span>
+<span class="go">                        is_client_worker=False)</span>
+<span class="go">Starting Socket Worker...</span>
+<span class="go">Ready to receive commands...</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example Client:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">SocketWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">(</span><span class="n">local_worker</span><span class="o">=</span><span class="n">SocketWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8182</span><span class="p">))</span>
+<span class="go">Starting Socket Worker...</span>
+<span class="go">Ready!</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">remote_client</span> <span class="o">=</span> <span class="n">SocketWorker</span><span class="p">(</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8181</span><span class="p">,</span> <span class="n">is_pointer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span><span class="o">.</span><span class="n">add_worker</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="go">Attaching Pointer to Socket Worker...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x2</span> <span class="o">+</span> <span class="n">x</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span>
+<span class="go">[torch.FloatTensor - Locations:[&lt;syft.core.workers.SocketWorker object at 0x7f94eaaa6630&gt;]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="go">  3</span>
+<span class="go">  6</span>
+<span class="go">  9</span>
+<span class="go"> 12</span>
+<span class="go"> 14</span>
+<span class="go">[torch.FloatTensor of size 5]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="syft.core.workers.socket.SocketWorker.listen">
+<code class="descname">listen</code><span class="sig-paren">(</span><em>num_messages=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/socket.html#SocketWorker.listen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.socket.SocketWorker.listen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts SocketWorker server on the correct port and handles message as they
+are received.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.socket.SocketWorker.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>query</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/socket.html#SocketWorker.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.socket.SocketWorker.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is designed to find relevant tensors present within the worker&#8217;s objects (self._objects) dict.
+It does so by looking for string overlap between one or more strings in the &#8220;query&#8221; and the id of each tensor.
+If the current worker object (self) is merely a pointer to a remote worker (connected via socket), then it sends
+a command to the remote worker which calls this function on the remote machine. If the current worker object
+(self) is NOT a pointer, then it queries the local tensors.
+:param query: a string or list of strings
+:return: if self.is_pointer==True, this returns a set of pointer tensors. Otherwise, it returns the tensors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.socket.SocketWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/socket.html#SocketWorker.whoami"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.socket.SocketWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.core.workers.virtual">
+<span id="syft-core-workers-virtual-module"></span><h2>syft.core.workers.virtual module<a class="headerlink" href="#module-syft.core.workers.virtual" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.core.workers.virtual.VirtualWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.virtual.</code><code class="descname">VirtualWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=False</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/virtual.html#VirtualWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.virtual.VirtualWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.base.BaseWorker</span></code></a></p>
+<p>A virtualized worker simulating the existence of a remote machine.
+It is intended as a testing, development, and performance evaluation
+tool that exists independent of a live or local network of workers.
+You don&#8217;t even have to be connected to the internet to create a pool
+of Virtual Workers and start running computations on them.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>hook (</strong><code class="xref py py-class docutils literal"><span class="pre">hooks.BaseHook</span></code> <strong>)</strong> This is a reference to
+the hook object which overloaded the underlying deep learning framework.</li>
+<li><strong>id (int or string, optional)</strong> the integer or string identifier
+for this node</li>
+<li><strong>is_client_worker (bool, optional)</strong> a boolean which determines
+whether this worker is associeted with an end user client. If so,
+it assumes that the client will maintain control over when
+tensors/variables/models are instantiated or deleted as opposed to
+handling tensor/variable/model lifecycle internally.</li>
+<li><strong>objects (list of tensors, variables, or models, optional)</strong>
+When the worker is NOT a client worker, it stores all tensors
+it receives or creates in this dictionary.
+The key to each object is it&#8217;s id.</li>
+<li><strong>tmp_objects (list of tensors, variables, or models, optional)</strong>
+When the worker IS a client worker, it stores some tensors temporarily
+in this _tmp_objects simply to ensure that they do not get deallocated by
+the Python garbage collector while in the process of being registered.
+This dictionary can be emptied using the clear_tmp_objects method.</li>
+<li><strong>known_workers (list of **:class:`BaseWorker` ** objects, optional)</strong> This dictionary
+can include all known workers.</li>
+<li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">VirtualWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">remote</span> <span class="o">=</span> <span class="n">VirtualWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local</span><span class="o">.</span><span class="n">add_worker</span><span class="p">(</span><span class="n">remote</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+<span class="go">[torch.FloatTensor of size 5]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go">[torch.FloatTensor - Locations:[&lt;syft.core.workers.VirtualWorker object at 0x11848bda0&gt;]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+<span class="go">[torch.FloatTensor of size 5]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.core.workers.websocket">
+<span id="syft-core-workers-websocket-module"></span><h2>syft.core.workers.websocket module<a class="headerlink" href="#module-syft.core.workers.websocket" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="syft.core.workers.websocket.WebSocketWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.websocket.</code><code class="descname">WebSocketWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>hostname='localhost'</em>, <em>port=8110</em>, <em>max_connections=5</em>, <em>id=0</em>, <em>is_client_worker=True</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>is_pointer=False</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/websocket.html#WebSocketWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.websocket.WebSocketWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.base.BaseWorker</span></code></a></p>
+<p>A worker capable of performing the functions of a BaseWorker across
+a websocket connection. This worker essentially can replace Socket
+Worker.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>hook (</strong><code class="xref py py-class docutils literal"><span class="pre">hooks.BaseHook</span></code> <strong>)</strong> This is a reference to
+the hook object which overloaded the underlying deep learning framework.</li>
+<li><strong>id (int or string, optional)</strong> the integer or string identifier
+for this node</li>
+<li><strong>is_client_worker (bool, optional)</strong> a boolean which determines
+whether this worker is associated with an end user client. If so,
+it assumes that the client will maintain control over when
+tensors/variables/models are instantiated or deleted as opposed to
+handling tensor/variable/model lifecycle internally.</li>
+<li><strong>objects (list of tensors, variables, or models, optional)</strong>
+When the worker is NOT a client worker, it stores all tensors
+it receives or creates in this dictionary.
+The key to each object is it&#8217;s id.</li>
+<li><strong>tmp_objects (list of tensors, variables, or models, optional)</strong>
+When the worker IS a client worker, it stores some tensors temporarily
+in this _tmp_objects simply to ensure that they do not get deallocated by
+the Python garbage collector while in the process of being registered.
+This dictionary can be emptied using the clear_tmp_objects method.</li>
+<li><strong>known_workers (list of **:class:`BaseWorker` ** objects, optional)</strong> This dictionary
+can include all known workers.</li>
+<li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example Server:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">WebSocketWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local_worker</span> <span class="o">=</span> <span class="n">WebSocketWorker</span><span class="p">(</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span>
+<span class="go">                        id=2,</span>
+<span class="go">                        port=8181,</span>
+<span class="go">                        is_pointer=False,</span>
+<span class="go">                        is_client_worker=False)</span>
+<span class="go">Starting a Websocket Worker....</span>
+<span class="go">Ready to receive commands....</span>
+<span class="go">Server Socket has been initialized</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example Client:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">WebSocketWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">(</span><span class="n">local_worker</span><span class="o">=</span><span class="n">WebSocketWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8182</span><span class="p">))</span>
+<span class="go">Starting Socket Worker...</span>
+<span class="go">Ready!</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">remote_client</span> <span class="o">=</span> <span class="n">WebSocketWorker</span><span class="p">(</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8181</span><span class="p">,</span> <span class="n">is_pointer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span><span class="o">.</span><span class="n">add_worker</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="go">Attaching Pointer to Socket Worker...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x2</span> <span class="o">+</span> <span class="n">x</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span>
+<span class="go">[torch.FloatTensor - Locations:[&lt;syft.core.workers.SocketWorker object at 0x7f94eaaa6630&gt;]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="go">  3</span>
+<span class="go">  6</span>
+<span class="go">  9</span>
+<span class="go"> 12</span>
+<span class="go"> 14</span>
+<span class="go">[torch.FloatTensor of size 5]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="syft.core.workers.websocket.WebSocketWorker.send_msg">
+<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/websocket.html#WebSocketWorker.send_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.websocket.WebSocketWorker.send_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a string message to another worker with message_type information
+indicating how the message should be processed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>recipient (</strong> <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> <strong>)</strong> the worker being sent a message.</li>
+<li><strong>message (string)</strong> the message being sent</li>
+<li><strong>message_type (string)</strong> the type of message being sent. This affects how
+the message is processed by the recipient. The types of message are described
+in <code class="xref py py-func docutils literal"><span class="pre">receive_msg()</span></code>.</li>
+<li><strong>out (object)</strong> the response from the message being sent. This can be a variety
+of object types. However, the object is typically only used during testing or
+local development with <code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code> workers.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.websocket.WebSocketWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/websocket.html#WebSocketWorker.whoami"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.websocket.WebSocketWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns metadata information about the worker. This method returns the default
+which is the id and uri of the worker.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-syft.core.workers">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-syft.core.workers" title="Permalink to this headline">¶</a></h2>
+<p>Interfaces for communicating about objects between Clients and Workers</p>
+<dl class="class">
+<dt id="syft.core.workers.BaseWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">BaseWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">abc.ABC</span></code></p>
+<p>The BaseWorker class establishes a consistent interface for
+communicating between different machines
+about tensors, variables, models, and other network related
+information. It defines base functionality
+for storing objects within the worker (or in some cases
+specifically not storing them), and for keeping
+track of known workers across a network.</p>
+<p>This class does NOT include any communication specific functionality
+such as peer-to-peer protocols, routing, node discovery, or even
+socket architecture. Only classes that extend the BaseWorker should
+carry such functionality.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>hook (</strong><code class="xref py py-class docutils literal"><span class="pre">hooks.BaseHook</span></code> <strong>)</strong> This is a reference
+to the hook object which overloaded the underlying deep
+learning framework.</li>
+<li><strong>id (int or string, optional)</strong> the integer or string identifier
+for this node</li>
+<li><strong>is_client_worker (bool, optional)</strong> a boolean which determines
+whether this worker is associeted with an end user client.
+If so, it assumes that the client will maintain control over when
+tensors/variables/models are instantiated or deleted as opposed
+to handling tensor/variable/model lifecycle internally.</li>
+<li><strong>objects (list of tensors, variables, or models, optional)</strong>
+When the worker is NOT a client worker, it stores all tensors
+it receives or creates in this dictionary.
+The key to each object is it&#8217;s id.</li>
+<li><strong>tmp_objects (list of tensors, variables, or models, optional)</strong>
+When the worker IS a client worker, it stores some tensors
+temporarily in this _tmp_objects simply to ensure
+that they do not get deallocated by the Python garbage
+collector while in the process of being registered.
+This dictionary can be emptied using the clear_tmp_objects method.</li>
+<li><strong>known_workers (list of **:class:`BaseWorker` ** objects, optional)</strong>
+This dictionary can include all known workers on a network.
+Some extensions of BaseWorker will use this
+list to bootstrap the network.</li>
+<li><strong>verbose (bool, optional)</strong> A flag for whether or not to
+print events to stdout.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.add_worker">
+<code class="descname">add_worker</code><span class="sig-paren">(</span><em>worker</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.add_worker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.add_worker" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method adds a worker to the list of _known_workers
+internal to the BaseWorker. It endows this class with
+the ability to communicate with the remote worker being
+added, such as sending and receiving objects, commands,
+or information about the network.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>worker (</strong><a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a> <strong>)</strong> This is an object
+pointer to a remote worker, which must have a unique id.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">TorchHook</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bob</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">VirtualWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;bob&quot;</span><span class="p">,</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span> <span class="n">is_client_worker</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span><span class="o">.</span><span class="n">add_workers</span><span class="p">([</span><span class="n">bob</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+<span class="go">[syft.core.frameworks.torch.tensor.FloatTensor of size 5]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">bob</span><span class="p">)</span>
+<span class="go">FloatTensor[_PointerTensor - id:9121428371 owner:0 loc:bob id@loc:47416674672]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+<span class="go">[syft.core.frameworks.torch.tensor.FloatTensor of size 5]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.add_workers">
+<code class="descname">add_workers</code><span class="sig-paren">(</span><em>workers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.add_workers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.add_workers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.compile_composite_message">
+<code class="descname">compile_composite_message</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.compile_composite_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.compile_composite_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a composite message in a dictionary from the message queue.
+Evenatually will take a recipient id.</p>
+<ul class="simple">
+<li><strong>out (dict)</strong> dictionary containing the message queue compiled</li>
+</ul>
+<p>as a composite message</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.de_register">
+<code class="descname">de_register</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.de_register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.de_register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Un-register an object and its attribute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.de_register_object">
+<code class="descname">de_register_object</code><span class="sig-paren">(</span><em>obj</em>, <em>_recurse_torch_objs=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.de_register_object"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.de_register_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unregisters an object and removes attributes which are indicative
+of registration. Note that the way in which attributes are deleted
+has been informed by this StackOverflow post: <a class="reference external" href="https://goo.gl/CBEKLK">https://goo.gl/CBEKLK</a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.get_obj">
+<code class="descname">get_obj</code><span class="sig-paren">(</span><em>remote_key</em><span class="sig-paren">)</span> &#x2192; a torch object<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.get_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.get_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method fetches a tensor from the worker&#8217;s internal
+registry of tensors using its id. Note that this
+will not work on client worker because they do not
+store objects internally. However, it can be used on
+remote workers, including remote <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a>
+objects, as pictured below in the example.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>remote_key (string or int)</strong> This is the id of
+the object to be returned.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.get_pointer_to">
+<code class="descname">get_pointer_to</code><span class="sig-paren">(</span><em>location</em>, <em>id_at_location</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.get_pointer_to"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.get_pointer_to" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.get_worker">
+<code class="descname">get_worker</code><span class="sig-paren">(</span><em>self</em>, <em>id_or_worker</em><span class="sig-paren">)</span> &#x2192; BaseWorker<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.get_worker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.get_worker" title="Permalink to this definition">¶</a></dt>
+<dd><p>If you pass in an ID, it will attempt to find the worker
+object (pointer) withins self._known_workers. If you
+instead pass in a pointer itself, it will save that as a
+known_worker if it does not exist as one. This method is primarily useful
+becuase often tensors have to store only the ID to a
+foreign worker which may or may not be known
+by the worker that is deserializing it at the time
+of deserialization. This method allows for resolution of
+worker ids to workers to happen automatically while also
+making the current worker aware of new ones when discovered
+through other processes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>id_or_worker (string or int or</strong> <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a> <strong>)</strong>
+This is either the id of the object to be returned or the object itself.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">TorchHook</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bob</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">VirtualWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;bob&quot;</span><span class="p">,</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span> <span class="n">is_client_worker</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span><span class="o">.</span><span class="n">add_workers</span><span class="p">([</span><span class="n">bob</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bob</span>
+<span class="go">&lt;syft.core.workers.virtual.VirtualWorker id:bob&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># we can get the worker using it&#39;s id (1)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span><span class="o">.</span><span class="n">get_worker</span><span class="p">(</span><span class="s1">&#39;bob&#39;</span><span class="p">)</span>
+<span class="go">&lt;syft.core.workers.virtual.VirtualWorker id:bob&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># or we can get the worker by passing in the worker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span><span class="o">.</span><span class="n">get_worker</span><span class="p">(</span><span class="n">bob</span><span class="p">)</span>
+<span class="go">&lt;syft.core.workers.virtual.VirtualWorker id:bob&gt;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.process_message_type">
+<code class="descname">process_message_type</code><span class="sig-paren">(</span><em>message_wrapper</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.process_message_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.process_message_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method takes a message wrapper and attempts to process
+it agaist known processing methods. If the method is a composite
+message, it unroles applies recursively</p>
+<ul class="simple">
+<li><strong>message_wrapper (dict)</strong> Dictionary containing the message
+and meta information</li>
+<li><strong>out (object, bool)</strong> the response. This can be a variety
+of object types. However, the object is typically only
+used during testing or local development with
+<a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> workers. The bool specifies if the
+response is private or not (private: we don&#8217;t encode the data
+but juts info on the tensor; not private: we transmit data to be
+acquired by the receiver)</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.process_numpy_command">
+<code class="descname">process_numpy_command</code><span class="sig-paren">(</span><em>command_msg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.process_numpy_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.process_numpy_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>process_command(self, command_msg) -&gt; (command output, list of owners)
+Process a command message from a client worker. Returns the
+result of the computation and a list of the result&#8217;s owners.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>command_msg (dict)</strong> The dictionary containing a
+command from another worker.</li>
+<li><strong>out (command output, list of</strong> <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a>
+ids/objects <strong>)</strong> This executes the command
+and returns its output along with a list of
+the owners of the tensors involved.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.process_torch_command">
+<code class="descname">process_torch_command</code><span class="sig-paren">(</span><em>command_msg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.process_torch_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.process_torch_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>process_command(self, command_msg) -&gt; (command output, list of owners)
+Process a command message from a client worker. Returns the
+result of the computation and a list of the result&#8217;s owners.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>command_msg (dict)</strong> The dictionary containing a
+command from another worker.</li>
+<li><strong>out (command output, list of</strong> <a class="reference internal" href="#syft.core.workers.BaseWorker" title="syft.core.workers.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">BaseWorker</span></code></a>
+ids/objects <strong>)</strong> This executes the command
+and returns its output along with a list of
+the owners of the tensors involved.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.receive_msg">
+<code class="descname">receive_msg</code><span class="sig-paren">(</span><em>message_wrapper_json</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.receive_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.receive_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receives an message from a worker and then executes its contents appropriately.
+The message is encoded as a binary blob.</p>
+<ul class="simple">
+<li><strong>message (binary)</strong> the message being sent</li>
+<li><strong>out (object)</strong> the response. This can be a variety
+of object types. However, the object is typically only used during testing or
+local development with <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> workers.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.register">
+<code class="descname">register</code><span class="sig-paren">(</span><em>result</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register an object with SyftTensors</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.register_object">
+<code class="descname">register_object</code><span class="sig-paren">(</span><em>obj</em>, <em>id=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.register_object"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.register_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an object with the current worker node. Selects an
+id for the object, assigns a list of owners,
+and establishes whether it&#8217;s a pointer or not. This method
+is generally not used by the client and is
+instead used by internal processes (hooks and workers).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>obj (a torch.Tensor or torch.autograd.Variable)</strong> a Torch
+instance, e.g. Tensor or Variable to be registered</li>
+<li><strong>force_attach_to_worker (bool)</strong> if set to True, it will
+force the object to be stored in the worker&#8217;s permanent registry</li>
+<li><strong>temporary (bool)</strong> If set to True, it will store the object
+in the worker&#8217;s temporary registry.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>id (int or string)</strong> random integer between 0 and 1e10 or
+string uniquely identifying the object.</li>
+<li><strong>owners (list of ** :class:`BaseWorker` objects ** or ids)</strong>
+owner(s) of the object</li>
+<li><strong>is_pointer (bool, optional)</strong> Whether or not the tensor being
+registered contains the data locally or is instead a pointer to
+a tensor that lives on a different worker.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.request_obj">
+<code class="descname">request_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj_id</em>, <em>sender</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.request_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.request_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method requests that another VirtualWorker send an object to the local one.
+In the case that the local one is a client,
+it simply returns the object. In the case that the local worker is not a client,
+it stores the object in the permanent registry.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>obj_id (str or int)</strong> the id of the object being requested</li>
+<li><strong>sender (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker who currently has the
+object who is being requested to send it.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.rm_obj">
+<code class="descname">rm_obj</code><span class="sig-paren">(</span><em>remote_key</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.rm_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.rm_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method removes an object from the permament object registory
+if it exists.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>remote_key(int or string)</strong> the id of the object to be removed</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>query='#boston'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queries all local tensors which have string ids, returning the tensors which match the query. The query is
+composed of one or more substrings which all be contained within a tensor&#8217;s ID in order for it to be a match.
+:param query: either a string or a list of strings
+:return: a list of tensors</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.send_command">
+<code class="descname">send_command</code><span class="sig-paren">(</span><em>recipient</em>, <em>message</em>, <em>framework='torch'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.send_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.send_command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.send_msg">
+<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.send_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.send_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a string message to another worker with message_type information
+indicating how the message should be processed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
+<li><strong>message (string)</strong> the message being sent</li>
+<li><strong>message_type (string)</strong> the type of message being sent. This affects how
+the message is processed by the recipient. The types of message are described
+in <a class="reference internal" href="#syft.core.workers.BaseWorker.receive_msg" title="syft.core.workers.BaseWorker.receive_msg"><code class="xref py py-func docutils literal"><span class="pre">receive_msg()</span></code></a>.</li>
+<li><strong>out (object)</strong> the response from the message being sent. This can be a variety
+of object types. However, the object is typically only used during testing or
+local development with <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> workers.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.send_obj">
+<code class="descname">send_obj</code><span class="sig-paren">(</span><em>self</em>, <em>obj</em>, <em>new_id</em>, <em>recipient</em>, <em>new_data_id=None</em><span class="sig-paren">)</span> &#x2192; obj<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.send_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.send_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an object to another <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> and removes it
+from the local worker.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>object (object)</strong> a python object to be sent</li>
+<li><strong>new_id (int)</strong> the id where the object should be stored</li>
+<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker object to send the message to.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.send_torch_command">
+<code class="descname">send_torch_command</code><span class="sig-paren">(</span><em>self</em>, <em>recipient</em>, <em>message</em><span class="sig-paren">)</span> &#x2192; object<a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.send_torch_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.send_torch_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method sends a message to another worker in a way that hangs... waiting until the
+worker responds with a message. It then processes the response using a response handler</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
+<li><strong>message (string)</strong> the message being sent</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.set_obj">
+<code class="descname">set_obj</code><span class="sig-paren">(</span><em>remote_key</em>, <em>value</em>, <em>force=False</em>, <em>tmp=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.set_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.set_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method adds an object (such as a tensor) to one of
+the internal object registries. The main registry
+holds objects for a long period of time (until they are
+explicitly deleted) while the temporary registory
+will delete all object references contained therein when
+the cleanup method is called (self._clear_tmp_objects).</p>
+<p>The reason we have a temporary registry for clijen workers
+(instead of putting everything in the permanent one) is
+because when the client creates a reference to an object
+(x = torch.zeros(10)), we want to ensure that the client
+contains the only pointer to that object so that when the
+client deletes the object that __del__ gets called. If,
+however, the object was also being stored in the permanent
+registry (self._objects), then when the variable went out
+of scope on the client, the python garbage collector wouldn&#8217;t
+call __del__ because the internal registry would
+still have a reference to it. So, we use the temporary registry
+during the construction of the object but then
+delete all references to the object (other than the client&#8217;s)
+once object construction and (recursive) registration
+is complete.</p>
+<p>When the worker is not a client worker (self._is_client_worker==False),
+this method just saves an object into the permanent registry,
+where it remains until it is explicitly deleted using self._rm_obj.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>remote_key (int)</strong> This is an object id to an object to be
+stored in memory.</li>
+<li><a href="#id3"><span class="problematic" id="id4">**</span></a>value (torch.Tensor or torch.autograd.Variable) ** the
+object to be stored in memory.</li>
+<li><strong>force (bool, optional)</strong> if set to True, this will force the
+object to be stored in permenent memory, even if
+the current worker is a client worker (Default: False).</li>
+<li><strong>tmp (bool, optional)</strong> if set to True, this will allow an object
+to be stored in temporary memory if and only if
+the worker is also a client worker. If set to false, the object
+will not be stored in temporary memory, even if the
+worker is a client worker.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.BaseWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/base.html#BaseWorker.whoami"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.BaseWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns metadata information about the worker. This function returns the default
+which is the id and type of the current worker. Other worker types can extend this
+function with additional metadata such as network information.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="syft.core.workers.SocketWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">SocketWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>hostname='localhost'</em>, <em>port=8110</em>, <em>max_connections=5</em>, <em>id=0</em>, <em>is_client_worker=True</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>is_pointer=False</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/socket.html#SocketWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.SocketWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.base.BaseWorker</span></code></a></p>
+<p>A worker capable of performing the functions of a BaseWorker across
+a socket connection. Note that the worker is NOT responsible for
+creating the socket connection.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>hook (</strong><code class="xref py py-class docutils literal"><span class="pre">hooks.BaseHook</span></code> <strong>)</strong> This is a reference to
+the hook object which overloaded the underlying deep learning framework.</li>
+<li><strong>id (int or string, optional)</strong> the integer or string identifier
+for this node</li>
+<li><strong>is_client_worker (bool, optional)</strong> a boolean which determines
+whether this worker is associeted with an end user client. If so,
+it assumes that the client will maintain control over when
+tensors/variables/models are instantiated or deleted as opposed to
+handling tensor/variable/model lifecycle internally.</li>
+<li><strong>objects (list of tensors, variables, or models, optional)</strong>
+When the worker is NOT a client worker, it stores all tensors
+it receives or creates in this dictionary.
+The key to each object is it&#8217;s id.</li>
+<li><strong>tmp_objects (list of tensors, variables, or models, optional)</strong>
+When the worker IS a client worker, it stores some tensors temporarily
+in this _tmp_objects simply to ensure that they do not get deallocated by
+the Python garbage collector while in the process of being registered.
+This dictionary can be emptied using the clear_tmp_objects method.</li>
+<li><strong>known_workers (list of **:class:`BaseWorker` ** objects, optional)</strong> This dictionary
+can include all known workers.</li>
+<li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example Server:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">VirtualWorker</span><span class="p">,</span> <span class="n">SocketWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local_worker</span> <span class="o">=</span> <span class="n">SocketWorker</span><span class="p">(</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span>
+<span class="go">                        id=2,</span>
+<span class="go">                        port=8181,</span>
+<span class="go">                        is_pointer=False,</span>
+<span class="go">                        is_client_worker=False)</span>
+<span class="go">Starting Socket Worker...</span>
+<span class="go">Ready to receive commands...</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example Client:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">SocketWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">(</span><span class="n">local_worker</span><span class="o">=</span><span class="n">SocketWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8182</span><span class="p">))</span>
+<span class="go">Starting Socket Worker...</span>
+<span class="go">Ready!</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">remote_client</span> <span class="o">=</span> <span class="n">SocketWorker</span><span class="p">(</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8181</span><span class="p">,</span> <span class="n">is_pointer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span><span class="o">.</span><span class="n">add_worker</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="go">Attaching Pointer to Socket Worker...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x2</span> <span class="o">+</span> <span class="n">x</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span>
+<span class="go">[torch.FloatTensor - Locations:[&lt;syft.core.workers.SocketWorker object at 0x7f94eaaa6630&gt;]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="go">  3</span>
+<span class="go">  6</span>
+<span class="go">  9</span>
+<span class="go"> 12</span>
+<span class="go"> 14</span>
+<span class="go">[torch.FloatTensor of size 5]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="syft.core.workers.SocketWorker.listen">
+<code class="descname">listen</code><span class="sig-paren">(</span><em>num_messages=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/socket.html#SocketWorker.listen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.SocketWorker.listen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts SocketWorker server on the correct port and handles message as they
+are received.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.SocketWorker.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>query</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/socket.html#SocketWorker.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.SocketWorker.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is designed to find relevant tensors present within the worker&#8217;s objects (self._objects) dict.
+It does so by looking for string overlap between one or more strings in the &#8220;query&#8221; and the id of each tensor.
+If the current worker object (self) is merely a pointer to a remote worker (connected via socket), then it sends
+a command to the remote worker which calls this function on the remote machine. If the current worker object
+(self) is NOT a pointer, then it queries the local tensors.
+:param query: a string or list of strings
+:return: if self.is_pointer==True, this returns a set of pointer tensors. Otherwise, it returns the tensors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.SocketWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/socket.html#SocketWorker.whoami"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.SocketWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="syft.core.workers.VirtualWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">VirtualWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>id=0</em>, <em>is_client_worker=False</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=False</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/virtual.html#VirtualWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.VirtualWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.base.BaseWorker</span></code></a></p>
+<p>A virtualized worker simulating the existence of a remote machine.
+It is intended as a testing, development, and performance evaluation
+tool that exists independent of a live or local network of workers.
+You don&#8217;t even have to be connected to the internet to create a pool
+of Virtual Workers and start running computations on them.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>hook (</strong><code class="xref py py-class docutils literal"><span class="pre">hooks.BaseHook</span></code> <strong>)</strong> This is a reference to
+the hook object which overloaded the underlying deep learning framework.</li>
+<li><strong>id (int or string, optional)</strong> the integer or string identifier
+for this node</li>
+<li><strong>is_client_worker (bool, optional)</strong> a boolean which determines
+whether this worker is associeted with an end user client. If so,
+it assumes that the client will maintain control over when
+tensors/variables/models are instantiated or deleted as opposed to
+handling tensor/variable/model lifecycle internally.</li>
+<li><strong>objects (list of tensors, variables, or models, optional)</strong>
+When the worker is NOT a client worker, it stores all tensors
+it receives or creates in this dictionary.
+The key to each object is it&#8217;s id.</li>
+<li><strong>tmp_objects (list of tensors, variables, or models, optional)</strong>
+When the worker IS a client worker, it stores some tensors temporarily
+in this _tmp_objects simply to ensure that they do not get deallocated by
+the Python garbage collector while in the process of being registered.
+This dictionary can be emptied using the clear_tmp_objects method.</li>
+<li><strong>known_workers (list of **:class:`BaseWorker` ** objects, optional)</strong> This dictionary
+can include all known workers.</li>
+<li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">VirtualWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">remote</span> <span class="o">=</span> <span class="n">VirtualWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local</span><span class="o">.</span><span class="n">add_worker</span><span class="p">(</span><span class="n">remote</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+<span class="go">[torch.FloatTensor of size 5]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go">[torch.FloatTensor - Locations:[&lt;syft.core.workers.VirtualWorker object at 0x11848bda0&gt;]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+<span class="go">[torch.FloatTensor of size 5]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="syft.core.workers.WebSocketWorker">
+<em class="property">class </em><code class="descclassname">syft.core.workers.</code><code class="descname">WebSocketWorker</code><span class="sig-paren">(</span><em>hook=None</em>, <em>hostname='localhost'</em>, <em>port=8110</em>, <em>max_connections=5</em>, <em>id=0</em>, <em>is_client_worker=True</em>, <em>objects={}</em>, <em>tmp_objects={}</em>, <em>known_workers={}</em>, <em>verbose=True</em>, <em>is_pointer=False</em>, <em>queue_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/websocket.html#WebSocketWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.WebSocketWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#syft.core.workers.base.BaseWorker" title="syft.core.workers.base.BaseWorker"><code class="xref py py-class docutils literal"><span class="pre">syft.core.workers.base.BaseWorker</span></code></a></p>
+<p>A worker capable of performing the functions of a BaseWorker across
+a websocket connection. This worker essentially can replace Socket
+Worker.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>hook (</strong><code class="xref py py-class docutils literal"><span class="pre">hooks.BaseHook</span></code> <strong>)</strong> This is a reference to
+the hook object which overloaded the underlying deep learning framework.</li>
+<li><strong>id (int or string, optional)</strong> the integer or string identifier
+for this node</li>
+<li><strong>is_client_worker (bool, optional)</strong> a boolean which determines
+whether this worker is associated with an end user client. If so,
+it assumes that the client will maintain control over when
+tensors/variables/models are instantiated or deleted as opposed to
+handling tensor/variable/model lifecycle internally.</li>
+<li><strong>objects (list of tensors, variables, or models, optional)</strong>
+When the worker is NOT a client worker, it stores all tensors
+it receives or creates in this dictionary.
+The key to each object is it&#8217;s id.</li>
+<li><strong>tmp_objects (list of tensors, variables, or models, optional)</strong>
+When the worker IS a client worker, it stores some tensors temporarily
+in this _tmp_objects simply to ensure that they do not get deallocated by
+the Python garbage collector while in the process of being registered.
+This dictionary can be emptied using the clear_tmp_objects method.</li>
+<li><strong>known_workers (list of **:class:`BaseWorker` ** objects, optional)</strong> This dictionary
+can include all known workers.</li>
+<li><strong>verbose (bool, optional)</strong> A flag for whether or not to print events to stdout.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example Server:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">WebSocketWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">()</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local_worker</span> <span class="o">=</span> <span class="n">WebSocketWorker</span><span class="p">(</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span>
+<span class="go">                        id=2,</span>
+<span class="go">                        port=8181,</span>
+<span class="go">                        is_pointer=False,</span>
+<span class="go">                        is_client_worker=False)</span>
+<span class="go">Starting a Websocket Worker....</span>
+<span class="go">Ready to receive commands....</span>
+<span class="go">Server Socket has been initialized</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example Client:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.hooks</span> <span class="k">import</span> <span class="n">TorchHook</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">syft.core.workers</span> <span class="k">import</span> <span class="n">WebSocketWorker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span> <span class="o">=</span> <span class="n">TorchHook</span><span class="p">(</span><span class="n">local_worker</span><span class="o">=</span><span class="n">WebSocketWorker</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8182</span><span class="p">))</span>
+<span class="go">Starting Socket Worker...</span>
+<span class="go">Ready!</span>
+<span class="go">Hooking into Torch...</span>
+<span class="go">Overloading complete.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">remote_client</span> <span class="o">=</span> <span class="n">WebSocketWorker</span><span class="p">(</span><span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8181</span><span class="p">,</span> <span class="n">is_pointer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span><span class="o">.</span><span class="n">add_worker</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="go">Attaching Pointer to Socket Worker...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">remote_client</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x2</span> <span class="o">+</span> <span class="n">x</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span>
+<span class="go">[torch.FloatTensor - Locations:[&lt;syft.core.workers.SocketWorker object at 0x7f94eaaa6630&gt;]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="go">  3</span>
+<span class="go">  6</span>
+<span class="go">  9</span>
+<span class="go"> 12</span>
+<span class="go"> 14</span>
+<span class="go">[torch.FloatTensor of size 5]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="syft.core.workers.WebSocketWorker.send_msg">
+<code class="descname">send_msg</code><span class="sig-paren">(</span><em>message</em>, <em>message_type</em>, <em>recipient</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/websocket.html#WebSocketWorker.send_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.WebSocketWorker.send_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a string message to another worker with message_type information
+indicating how the message should be processed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><strong>recipient (</strong> <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> <strong>)</strong> the worker being sent a message.</li>
+<li><strong>message (string)</strong> the message being sent</li>
+<li><strong>message_type (string)</strong> the type of message being sent. This affects how
+the message is processed by the recipient. The types of message are described
+in <code class="xref py py-func docutils literal"><span class="pre">receive_msg()</span></code>.</li>
+<li><strong>out (object)</strong> the response from the message being sent. This can be a variety
+of object types. However, the object is typically only used during testing or
+local development with <a class="reference internal" href="#syft.core.workers.VirtualWorker" title="syft.core.workers.VirtualWorker"><code class="xref py py-class docutils literal"><span class="pre">VirtualWorker</span></code></a> workers.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="syft.core.workers.WebSocketWorker.whoami">
+<code class="descname">whoami</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/syft/core/workers/websocket.html#WebSocketWorker.whoami"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#syft.core.workers.WebSocketWorker.whoami" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns metadata information about the worker. This method returns the default
+which is the id and uri of the worker.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="syft.mpc.html" class="btn btn-neutral float-right" title="syft.mpc package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="syft.core.frameworks.torch.html" class="btn btn-neutral" title="syft.core.frameworks.torch package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1',
+            LANGUAGE:'python',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

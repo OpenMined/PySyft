@@ -177,7 +177,6 @@
  | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
- | <a href="#N"><strong>N</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
@@ -213,19 +212,17 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.MPCTorch.add">add() (syft.core.frameworks.torch.functions.MPCTorch static method)</a>
+      <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.SPDZTorch.add">add() (syft.core.frameworks.torch.functions.SPDZTorch static method)</a>
 
       <ul>
         <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.TorchFunctions.add">(syft.core.frameworks.torch.functions.TorchFunctions method)</a>
 </li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.add">(syft.mpc.shared_variable.SharedVariable method)</a>
-</li>
       </ul></li>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.TorchFunctions.add_fixed_prec">add_fixed_prec() (syft.core.frameworks.torch.functions.TorchFunctions method)</a>
 </li>
-      <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.TorchFunctions.add_mpc">add_mpc() (syft.core.frameworks.torch.functions.TorchFunctions method)</a>
-</li>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.TorchFunctions.add_normal">add_normal() (syft.core.frameworks.torch.functions.TorchFunctions method)</a>
+</li>
+      <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.TorchFunctions.add_spdz">add_spdz() (syft.core.frameworks.torch.functions.TorchFunctions method)</a>
 </li>
       <li><a href="modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.add_worker">add_worker() (syft.core.workers.base.BaseWorker method)</a>
 
@@ -255,26 +252,6 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedAdd.backward">backward() (syft.mpc.shared_variable.SharedAdd static method)</a>
-
-      <ul>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedMatmul.backward">(syft.mpc.shared_variable.SharedMatmul static method)</a>
-</li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedMult.backward">(syft.mpc.shared_variable.SharedMult static method)</a>
-</li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedNeg.backward">(syft.mpc.shared_variable.SharedNeg static method)</a>
-</li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedSigmoid.backward">(syft.mpc.shared_variable.SharedSigmoid static method)</a>
-</li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedSub.backward">(syft.mpc.shared_variable.SharedSub static method)</a>
-</li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.backward">(syft.mpc.shared_variable.SharedVariable method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.base_interface.BaseInterface">BaseInterface (class in syft.mpc.interface.base_interface)</a>
-</li>
       <li><a href="modules/syft.core.workers.html#syft.core.workers.BaseWorker">BaseWorker (class in syft.core.workers)</a>
 
       <ul>
@@ -307,8 +284,6 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.data">data (syft.mpc.shared_variable.SharedVariable attribute)</a>
-</li>
       <li><a href="modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.de_register">de_register() (syft.core.workers.base.BaseWorker method)</a>
 
       <ul>
@@ -323,22 +298,14 @@
         <li><a href="modules/syft.core.workers.html#syft.core.workers.BaseWorker.de_register_object">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.decode">decode() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.distributed_interface.DistributedInterface">DistributedInterface (class in syft.mpc.interface.distributed_interface)</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.encode">encode() (in module syft.mpc.spdz)</a>
-
-      <ul>
-        <li><a href="modules/syft.core.html#syft.core.utils.PythonEncoder.encode">(syft.core.utils.PythonEncoder method)</a>
+      <li><a href="modules/syft.core.html#syft.core.utils.PythonEncoder.encode">encode() (syft.core.utils.PythonEncoder method)</a>
 </li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.utils.enforce_owner">enforce_owner() (in module syft.core.frameworks.torch.utils)</a>
@@ -355,42 +322,18 @@
 </li>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.utils.find_tail_of_chain">find_tail_of_chain() (in module syft.core.frameworks.torch.utils)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.utils.find_torch_object_in_family_tree">find_torch_object_in_family_tree() (in module syft.core.frameworks.torch.utils)</a>
 </li>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.utils.fix_chain_ends">fix_chain_ends() (in module syft.core.frameworks.torch.utils)</a>
 </li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedAdd.forward">forward() (syft.mpc.shared_variable.SharedAdd static method)</a>
-
-      <ul>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedMatmul.forward">(syft.mpc.shared_variable.SharedMatmul static method)</a>
-</li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedMult.forward">(syft.mpc.shared_variable.SharedMult static method)</a>
-</li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedNeg.forward">(syft.mpc.shared_variable.SharedNeg static method)</a>
-</li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedSigmoid.forward">(syft.mpc.shared_variable.SharedSigmoid static method)</a>
-</li>
-        <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedSub.forward">(syft.mpc.shared_variable.SharedSub static method)</a>
-</li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.generate_matmul_triple">generate_matmul_triple() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.generate_matmul_triple_communication">generate_matmul_triple_communication() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.generate_mul_triple">generate_mul_triple() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.generate_mul_triple_communication">generate_mul_triple_communication() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.generate_sigmoid_shares_communication">generate_sigmoid_shares_communication() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.generate_zero_shares_communication">generate_zero_shares_communication() (in module syft.mpc.spdz)</a>
-</li>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.utils.get_child_command">get_child_command() (in module syft.core.frameworks.torch.utils)</a>
 </li>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.utils.get_connected_variables">get_connected_variables() (in module syft.core.frameworks.torch.utils)</a>
@@ -401,20 +344,14 @@
         <li><a href="modules/syft.core.workers.html#syft.core.workers.BaseWorker.get_obj">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.base_interface.BaseInterface.get_party">get_party() (syft.mpc.interface.base_interface.BaseInterface method)</a>
-
-      <ul>
-        <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.distributed_interface.DistributedInterface.get_party">(syft.mpc.interface.distributed_interface.DistributedInterface method)</a>
-</li>
-      </ul></li>
       <li><a href="modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.get_pointer_to">get_pointer_to() (syft.core.workers.base.BaseWorker method)</a>
 
       <ul>
         <li><a href="modules/syft.core.workers.html#syft.core.workers.BaseWorker.get_pointer_to">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.utils.get_syft_chain">get_syft_chain() (in module syft.core.frameworks.torch.utils)</a>
 </li>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.utils.get_variables_in_backward_graph">get_variables_in_backward_graph() (in module syft.core.frameworks.torch.utils)</a>
@@ -425,12 +362,6 @@
         <li><a href="modules/syft.core.workers.html#syft.core.workers.BaseWorker.get_worker">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.grad">grad (syft.mpc.shared_variable.SharedVariable attribute)</a>
-</li>
-      <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.grid_client_interface.GridClientInterface">GridClientInterface (class in syft.mpc.interface.grid_client_interface)</a>
-</li>
-      <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.grid_worker_interface.GridWorkerInterface">GridWorkerInterface (class in syft.mpc.interface.grid_worker_interface)</a>
-</li>
   </ul></td>
 </tr></table>
 
@@ -475,25 +406,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="modules/syft.core.frameworks.tensorflow.html#syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer.make_session_run_hook">make_session_run_hook() (syft.core.frameworks.tensorflow.federated_averaging_optimizer.FederatedAveragingOptimizer method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="modules/syft.core.html#syft.core.utils.map_dict">map_dict() (in module syft.core.utils)</a>
 </li>
       <li><a href="modules/syft.core.html#syft.core.utils.map_tuple">map_tuple() (in module syft.core.utils)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.matmul">matmul() (syft.mpc.shared_variable.SharedVariable method)</a>
-</li>
-      <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.MPCTorch">MPCTorch (class in syft.core.frameworks.torch.functions)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.mul">mul() (syft.mpc.shared_variable.SharedVariable method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="N">N</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.neg">neg() (syft.mpc.shared_variable.SharedVariable method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -527,8 +444,6 @@
         <li><a href="modules/syft.core.workers.html#syft.core.workers.BaseWorker.process_torch_command">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.public_add">public_add() (in module syft.mpc.spdz)</a>
-</li>
       <li><a href="modules/syft.core.html#syft.core.utils.PythonEncoder.python_encode">python_encode() (syft.core.utils.PythonEncoder method)</a>
 </li>
       <li><a href="modules/syft.core.html#syft.core.utils.PythonEncoder">PythonEncoder (class in syft.core.utils)</a>
@@ -547,20 +462,6 @@
         <li><a href="modules/syft.core.workers.html#syft.core.workers.BaseWorker.receive_msg">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.reconstruct">reconstruct() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.base_interface.BaseInterface.recv">recv() (syft.mpc.interface.base_interface.BaseInterface method)</a>
-
-      <ul>
-        <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.distributed_interface.DistributedInterface.recv">(syft.mpc.interface.distributed_interface.DistributedInterface method)</a>
-</li>
-        <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.grid_client_interface.GridClientInterface.recv">(syft.mpc.interface.grid_client_interface.GridClientInterface method)</a>
-</li>
-        <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.grid_worker_interface.GridWorkerInterface.recv">(syft.mpc.interface.grid_worker_interface.GridWorkerInterface method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.register">register() (syft.core.workers.base.BaseWorker method)</a>
 
       <ul>
@@ -573,6 +474,8 @@
         <li><a href="modules/syft.core.workers.html#syft.core.workers.BaseWorker.register_object">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.request_obj">request_obj() (syft.core.workers.base.BaseWorker method)</a>
 
       <ul>
@@ -599,16 +502,6 @@
         <li><a href="modules/syft.core.workers.html#syft.core.workers.SocketWorker.search">(syft.core.workers.SocketWorker method)</a>
 </li>
         <li><a href="modules/syft.core.workers.html#syft.core.workers.socket.SocketWorker.search">(syft.core.workers.socket.SocketWorker method)</a>
-</li>
-      </ul></li>
-      <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.base_interface.BaseInterface.send">send() (syft.mpc.interface.base_interface.BaseInterface method)</a>
-
-      <ul>
-        <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.distributed_interface.DistributedInterface.send">(syft.mpc.interface.distributed_interface.DistributedInterface method)</a>
-</li>
-        <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.grid_client_interface.GridClientInterface.send">(syft.mpc.interface.grid_client_interface.GridClientInterface method)</a>
-</li>
-        <li><a href="modules/syft.mpc.interface.html#syft.mpc.interface.grid_worker_interface.GridWorkerInterface.send">(syft.mpc.interface.grid_worker_interface.GridWorkerInterface method)</a>
 </li>
       </ul></li>
       <li><a href="modules/syft.core.workers.html#syft.core.workers.base.BaseWorker.send_command">send_command() (syft.core.workers.base.BaseWorker method)</a>
@@ -645,47 +538,17 @@
         <li><a href="modules/syft.core.workers.html#syft.core.workers.BaseWorker.set_obj">(syft.core.workers.BaseWorker method)</a>
 </li>
       </ul></li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.share">share() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedAdd">SharedAdd (class in syft.mpc.shared_variable)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedMatmul">SharedMatmul (class in syft.mpc.shared_variable)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedMult">SharedMult (class in syft.mpc.shared_variable)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedNeg">SharedNeg (class in syft.mpc.shared_variable)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedSigmoid">SharedSigmoid (class in syft.mpc.shared_variable)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedSub">SharedSub (class in syft.mpc.shared_variable)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable">SharedVariable (class in syft.mpc.shared_variable)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.sigmoid">sigmoid() (syft.mpc.shared_variable.SharedVariable method)</a>
-</li>
       <li><a href="modules/syft.core.workers.html#syft.core.workers.SocketWorker">SocketWorker (class in syft.core.workers)</a>
 
       <ul>
         <li><a href="modules/syft.core.workers.html#syft.core.workers.socket.SocketWorker">(class in syft.core.workers.socket)</a>
 </li>
       </ul></li>
+      <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.SPDZTorch">SPDZTorch (class in syft.core.frameworks.torch.functions)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.spdz_add">spdz_add() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.spdz_matmul">spdz_matmul() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.spdz_mul">spdz_mul() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.spdz_neg">spdz_neg() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.spdz_sigmoid">spdz_sigmoid() (in module syft.mpc.spdz)</a>
-</li>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.utils.split_to_pointer_commands">split_to_pointer_commands() (in module syft.core.frameworks.torch.utils)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.sub">sub() (syft.mpc.shared_variable.SharedVariable method)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.swap_shares">swap_shares() (in module syft.mpc.spdz)</a>
 </li>
       <li><a href="modules/syft.html#module-syft">syft (module)</a>
 </li>
@@ -723,40 +586,22 @@
 </li>
       <li><a href="modules/syft.mpc.interface.html#module-syft.mpc.interface">syft.mpc.interface (module)</a>
 </li>
-      <li><a href="modules/syft.mpc.interface.html#module-syft.mpc.interface.base_interface">syft.mpc.interface.base_interface (module)</a>
-</li>
-      <li><a href="modules/syft.mpc.interface.html#module-syft.mpc.interface.distributed_interface">syft.mpc.interface.distributed_interface (module)</a>
-</li>
-      <li><a href="modules/syft.mpc.interface.html#module-syft.mpc.interface.grid_client_interface">syft.mpc.interface.grid_client_interface (module)</a>
-</li>
-      <li><a href="modules/syft.mpc.interface.html#module-syft.mpc.interface.grid_worker_interface">syft.mpc.interface.grid_worker_interface (module)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#module-syft.mpc.shared_variable">syft.mpc.shared_variable (module)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#module-syft.mpc.spdz">syft.mpc.spdz (module)</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.t_">t_() (syft.mpc.shared_variable.SharedVariable method)</a>
-</li>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.functions.TorchFunctions">TorchFunctions (class in syft.core.frameworks.torch.functions)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.TorchHook">TorchHook (class in syft.core.frameworks.torch)</a>
 
       <ul>
         <li><a href="modules/syft.core.frameworks.torch.html#syft.core.frameworks.torch.hook.TorchHook">(class in syft.core.frameworks.torch.hook)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="modules/syft.mpc.html#syft.mpc.spdz.truncate">truncate() (in module syft.mpc.spdz)</a>
-</li>
-      <li><a href="modules/syft.mpc.html#syft.mpc.shared_variable.SharedVariable.type">type() (syft.mpc.shared_variable.SharedVariable method)</a>
-</li>
   </ul></td>
 </tr></table>
 

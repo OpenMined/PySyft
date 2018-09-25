@@ -1,0 +1,415 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>syft.core.utils &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/PySyft_docs.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> PySyft
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../notes/example.html">Example Note</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/modules.html">syft</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/syft.html">syft package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/syft.core.html">syft.core package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/syft.core.frameworks.html">syft.core.frameworks package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/syft.core.frameworks.tensorflow.html">syft.core.frameworks.tensorflow package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/syft.core.frameworks.torch.html">syft.core.frameworks.torch package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/syft.core.workers.html">syft.core.workers package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/syft.mpc.html">syft.mpc package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/syft.mpc.interface.html">syft.mpc.interface package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>syft.core.utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for syft.core.utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Framework agnostic static utility functions.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">._types</span> <span class="k">import</span> <span class="n">PYTHON_ENCODE_RETURN_TYPE</span><span class="p">,</span> <span class="n">CUSTOM_OBJECT_HOOK_RETURN_TYPE</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+
+
+<div class="viewcode-block" id="is_in_place_method"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.is_in_place_method">[docs]</a><span class="k">def</span> <span class="nf">is_in_place_method</span><span class="p">(</span><span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determines if the method is in-place (ie modifies the self)</span>
+<span class="sd">    TODO: Can you do better?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pat</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;__(.+)__&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pat</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">attr</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;_&#39;</span></div>
+
+
+<div class="viewcode-block" id="PythonEncoder"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.PythonEncoder">[docs]</a><span class="k">class</span> <span class="nc">PythonEncoder</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Encode python and torch objects to be JSON-able</span>
+<span class="sd">        In particular, (hooked) Torch objects are replaced by their id.</span>
+<span class="sd">        Note that a python object is returned, not JSON.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PythonEncoder.__init__"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.PythonEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">retrieve_tensorvar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retrieve_tensorvar</span> <span class="o">=</span> <span class="n">retrieve_tensorvar</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">found_tensorvar</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tensorvar_types</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Variable</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">DoubleTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">HalfTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">ByteTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">CharTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">ShortTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">IntTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">,</span>
+        <span class="p">])</span></div>
+
+<div class="viewcode-block" id="PythonEncoder.encode"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.PythonEncoder.encode">[docs]</a>    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">retrieve_tensorvar</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PYTHON_ENCODE_RETURN_TYPE</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Performs encoding, and retrieves if requested all the tensors and</span>
+<span class="sd">            Variables found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">retrieve_tensorvar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">retrieve_tensorvar</span> <span class="o">=</span> <span class="n">retrieve_tensorvar</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve_tensorvar</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">python_encode</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">found_tensorvar</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">python_encode</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PythonEncoder.python_encode"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.PythonEncoder.python_encode">[docs]</a>    <span class="k">def</span> <span class="nf">python_encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PYTHON_ENCODE_RETURN_TYPE</span><span class="p">:</span>
+        <span class="c1"># Case of basic types</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span> <span class="ow">or</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj</span>
+        <span class="c1"># Tensors and Variable encoded with their id</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensorvar_types</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve_tensorvar</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">found_tensorvar</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="s1">&#39;__&#39;</span> <span class="o">+</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;__&#39;</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="s1">&#39;_fl.</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">)}</span>
+        <span class="c1"># Lists</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">python_encode</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span>
+        <span class="c1"># Iterables non json-serializable</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="nb">range</span><span class="p">)):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="s1">&#39;__&#39;</span> <span class="o">+</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;__&#39;</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">python_encode</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]}</span>
+        <span class="c1"># Slice</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="s1">&#39;__&#39;</span> <span class="o">+</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;__&#39;</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;args&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">step</span><span class="p">]}}</span>
+        <span class="c1"># Dict</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">python_encode</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="c1"># Generator (transformed to list)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">types</span><span class="o">.</span><span class="n">GeneratorType</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Generator args can&#39;t be transmitted&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="c1"># Else log the error</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unhandled type&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="PythonJSONDecoder"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.PythonJSONDecoder">[docs]</a><span class="k">class</span> <span class="nc">PythonJSONDecoder</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONDecoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decode JSON and reinsert python types when needed</span>
+<span class="sd">        Retrieve Torch objects replaced by their id</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PythonJSONDecoder.__init__"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.PythonJSONDecoder.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">worker</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PythonJSONDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="n">object_hook</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">custom_obj_hook</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">worker</span> <span class="o">=</span> <span class="n">worker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tensorvar_types</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Variable</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">DoubleTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">HalfTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">ByteTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">CharTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">ShortTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">IntTensor</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">,</span>
+        <span class="p">])</span></div>
+
+<div class="viewcode-block" id="PythonJSONDecoder.custom_obj_hook"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.PythonJSONDecoder.custom_obj_hook">[docs]</a>    <span class="k">def</span> <span class="nf">custom_obj_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dct</span><span class="p">:</span> <span class="n">CUSTOM_OBJECT_HOOK_RETURN_TYPE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CUSTOM_OBJECT_HOOK_RETURN_TYPE</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Is called on every dict found. We check if some keys correspond</span>
+<span class="sd">            to special keywords referring to a type we need to re-cast</span>
+<span class="sd">            (e.g. tuple, or torch Variable).</span>
+<span class="sd">            Note that in the case we have such a keyword, we will have created</span>
+<span class="sd">            at encoding a dict with a single key value pair, so the return if</span>
+<span class="sd">            the for loop is valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pat</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;__(.+)__&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">dct</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">obj_type</span> <span class="o">=</span> <span class="n">pat</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="c1"># Case of a tensor or a Variable</span>
+                <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensorvar_types</span><span class="p">):</span>
+                    <span class="n">pattern_var</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;_fl.(.*)&#39;</span><span class="p">)</span>
+                    <span class="n">id_pattern</span> <span class="o">=</span> <span class="n">pattern_var</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="nb">id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">id_pattern</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                        <span class="nb">id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">id_pattern</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">worker</span><span class="o">.</span><span class="n">get_obj</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+                <span class="c1"># Case of a iter type non json serializable</span>
+                <span class="k">elif</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;tuple&#39;</span><span class="p">,</span> <span class="s1">&#39;set&#39;</span><span class="p">,</span> <span class="s1">&#39;bytearray&#39;</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="nb">eval</span><span class="p">(</span><span class="n">obj_type</span><span class="p">)(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="c1"># Case of a slice</span>
+                <span class="k">elif</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="s1">&#39;slice&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">slice</span><span class="p">(</span><span class="o">*</span><span class="n">obj</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">obj</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">dct</span></div></div>
+
+
+<div class="viewcode-block" id="map_tuple"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.map_tuple">[docs]</a><span class="k">def</span> <span class="nf">map_tuple</span><span class="p">(</span><span class="n">hook</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">hook</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="n">hook</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="map_dict"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.map_dict">[docs]</a><span class="k">def</span> <span class="nf">map_dict</span><span class="p">(</span><span class="n">hook</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">hook</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">func</span><span class="p">(</span><span class="n">hook</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">func</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
+
+
+<div class="viewcode-block" id="pass_method_args"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.pass_method_args">[docs]</a><span class="k">def</span> <span class="nf">pass_method_args</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper gathering partialmethod object from method call.&quot;&quot;&quot;</span>
+
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">pass_args</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="k">return</span> <span class="n">functools</span><span class="o">.</span><span class="n">partialmethod</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pass_args</span></div>
+
+
+<div class="viewcode-block" id="pass_func_args"><a class="viewcode-back" href="../../../modules/syft.core.html#syft.core.utils.pass_func_args">[docs]</a><span class="k">def</span> <span class="nf">pass_func_args</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper gathering partial object from function call.&quot;&quot;&quot;</span>
+
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">pass_args</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="c1"># Return a new partial object which when called will behave like func called with the</span>
+        <span class="c1"># positional arguments args and keyword arguments keywords. If more arguments are</span>
+        <span class="c1"># supplied to the call, they are appended to args. If additional keyword arguments</span>
+        <span class="c1"># are supplied, they extend and override keywords.</span>
+        <span class="c1"># The partial() is used for partial function application which &quot;freezes&quot; some</span>
+        <span class="c1"># portion of a function&#39;s arguments and/or keywords resulting in a new object</span>
+        <span class="c1"># with a simplified signature.</span>
+        <span class="k">return</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pass_args</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1',
+            LANGUAGE:'python',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
