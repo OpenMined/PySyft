@@ -1,0 +1,453 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="python" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="python" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>syft.core.workers.socket &mdash; PySyft 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/css/PySyft_docs.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> PySyft
+          
+
+          
+            
+            <img src="../../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../notes/example.html">Example Note</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/modules.html">syft</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/syft.html">syft package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/syft.core.html">syft.core package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/syft.core.frameworks.html">syft.core.frameworks package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/syft.core.frameworks.tensorflow.html">syft.core.frameworks.tensorflow package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/syft.core.frameworks.torch.html">syft.core.frameworks.torch package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/syft.core.workers.html">syft.core.workers package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/syft.mpc.html">syft.mpc package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/syft.mpc.interface.html">syft.mpc.interface package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">PySyft</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>syft.core.workers.socket</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for syft.core.workers.socket</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseWorker</span>
+<span class="kn">from</span> <span class="nn">..frameworks</span> <span class="k">import</span> <span class="n">encode</span>
+
+
+<div class="viewcode-block" id="SocketWorker"><a class="viewcode-back" href="../../../../modules/syft.core.workers.html#syft.core.workers.socket.SocketWorker">[docs]</a><span class="k">class</span> <span class="nc">SocketWorker</span><span class="p">(</span><span class="n">BaseWorker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A worker capable of performing the functions of a BaseWorker across</span>
+<span class="sd">    a socket connection. Note that the worker is NOT responsible for</span>
+<span class="sd">    creating the socket connection.</span>
+
+<span class="sd">    :Parameters:</span>
+
+
+<span class="sd">    * **hook (**:class:`.hooks.BaseHook` **)** This is a reference to</span>
+<span class="sd">      the hook object which overloaded the underlying deep learning framework.</span>
+
+<span class="sd">    * **id (int or string, optional)** the integer or string identifier</span>
+<span class="sd">      for this node</span>
+
+<span class="sd">    * **is_client_worker (bool, optional)** a boolean which determines</span>
+<span class="sd">      whether this worker is associeted with an end user client. If so,</span>
+<span class="sd">      it assumes that the client will maintain control over when</span>
+<span class="sd">      tensors/variables/models are instantiated or deleted as opposed to</span>
+<span class="sd">      handling tensor/variable/model lifecycle internally.</span>
+
+<span class="sd">    * **objects (list of tensors, variables, or models, optional)**</span>
+<span class="sd">      When the worker is NOT a client worker, it stores all tensors</span>
+<span class="sd">      it receives or creates in this dictionary.</span>
+<span class="sd">      The key to each object is it&#39;s id.</span>
+
+<span class="sd">    * **tmp_objects (list of tensors, variables, or models, optional)**</span>
+<span class="sd">      When the worker IS a client worker, it stores some tensors temporarily</span>
+<span class="sd">      in this _tmp_objects simply to ensure that they do not get deallocated by</span>
+<span class="sd">      the Python garbage collector while in the process of being registered.</span>
+<span class="sd">      This dictionary can be emptied using the clear_tmp_objects method.</span>
+
+<span class="sd">    * **known_workers (list of **:class:`BaseWorker` ** objects, optional)** This dictionary</span>
+<span class="sd">      can include all known workers.</span>
+
+<span class="sd">    * **verbose (bool, optional)** A flag for whether or not to print events to stdout.</span>
+
+<span class="sd">    :Example Server:</span>
+
+<span class="sd">    &gt;&gt;&gt; from syft.core.hooks import TorchHook</span>
+<span class="sd">    &gt;&gt;&gt; from syft.core.workers import VirtualWorker, SocketWorker</span>
+<span class="sd">    &gt;&gt;&gt; hook = TorchHook()</span>
+<span class="sd">    Hooking into Torch...</span>
+<span class="sd">    Overloading complete.</span>
+<span class="sd">    &gt;&gt;&gt; local_worker = SocketWorker(hook=hook,</span>
+<span class="sd">                            id=2,</span>
+<span class="sd">                            port=8181,</span>
+<span class="sd">                            is_pointer=False,</span>
+<span class="sd">                            is_client_worker=False)</span>
+<span class="sd">    Starting Socket Worker...</span>
+<span class="sd">    Ready to receive commands...</span>
+
+<span class="sd">    :Example Client:</span>
+
+<span class="sd">    &gt;&gt;&gt; import torch</span>
+<span class="sd">    &gt;&gt;&gt; from syft.core.hooks import TorchHook</span>
+<span class="sd">    &gt;&gt;&gt; from syft.core.workers import SocketWorker</span>
+<span class="sd">    &gt;&gt;&gt; hook = TorchHook(local_worker=SocketWorker(id=0, port=8182))</span>
+<span class="sd">    Starting Socket Worker...</span>
+<span class="sd">    Ready!</span>
+<span class="sd">    Hooking into Torch...</span>
+<span class="sd">    Overloading complete.</span>
+<span class="sd">    &gt;&gt;&gt; remote_client = SocketWorker(hook=hook,id=2, port=8181, is_pointer=True)</span>
+<span class="sd">    &gt;&gt;&gt; hook.local_worker.add_worker(remote_client)</span>
+<span class="sd">    Attaching Pointer to Socket Worker...</span>
+<span class="sd">    &gt;&gt;&gt; x = torch.FloatTensor([1,2,3,4,5]).send(remote_client)</span>
+<span class="sd">    &gt;&gt;&gt; x2 = torch.FloatTensor([1,2,3,4,4]).send(remote_client)</span>
+<span class="sd">    &gt;&gt;&gt; y = x + x2 + x</span>
+<span class="sd">    &gt;&gt;&gt; y</span>
+<span class="sd">    [torch.FloatTensor - Locations:[&lt;syft.core.workers.SocketWorker object at 0x7f94eaaa6630&gt;]]</span>
+<span class="sd">    &gt;&gt;&gt; y.get()</span>
+<span class="sd">      3</span>
+<span class="sd">      6</span>
+<span class="sd">      9</span>
+<span class="sd">     12</span>
+<span class="sd">     14</span>
+<span class="sd">    [torch.FloatTensor of size 5]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>  <span class="n">hook</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hostname</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8110</span><span class="p">,</span> <span class="n">max_connections</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">is_client_worker</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">objects</span><span class="o">=</span><span class="p">{},</span> <span class="n">tmp_objects</span><span class="o">=</span><span class="p">{},</span>
+        <span class="n">known_workers</span><span class="o">=</span><span class="p">{},</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_pointer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">hook</span><span class="o">=</span><span class="n">hook</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">is_client_worker</span><span class="o">=</span><span class="n">is_client_worker</span><span class="p">,</span>
+            <span class="n">objects</span><span class="o">=</span><span class="n">objects</span><span class="p">,</span> <span class="n">tmp_objects</span><span class="o">=</span><span class="n">tmp_objects</span><span class="p">,</span>
+            <span class="n">known_workers</span><span class="o">=</span><span class="n">known_workers</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="n">queue_size</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span> <span class="o">=</span> <span class="n">hostname</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_connections</span> <span class="o">=</span> <span class="n">max_connections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_pointer</span> <span class="o">=</span> <span class="n">is_pointer</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_pointer</span><span class="p">):</span>
+            <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Attaching Pointer to Socket Worker...&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">serversocket</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">clientsocket</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+            <span class="n">clientsocket</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clientsocket</span> <span class="o">=</span> <span class="n">clientsocket</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting Socket Worker...&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">serversocket</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span>
+                <span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">serversocket</span><span class="o">.</span><span class="n">bind</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">))</span>
+
+            <span class="c1"># become a server socket, maximum 5 connections</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">serversocket</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_connections</span><span class="p">)</span>
+
+            <span class="c1"># if it&#39;s a client worker, then we don&#39;t want it waiting for commands</span>
+            <span class="c1"># because it&#39;s going to be issuing commands.</span>
+            <span class="k">if</span><span class="p">(</span><span class="ow">not</span> <span class="n">is_client_worker</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_pointer</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ready to receive commands...&quot;</span><span class="p">)</span>
+                <span class="c1"># self._listen()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ready!&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SocketWorker.whoami"><a class="viewcode-back" href="../../../../modules/syft.core.workers.html#syft.core.workers.socket.SocketWorker.whoami">[docs]</a>    <span class="k">def</span> <span class="nf">whoami</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;hostname&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">})</span></div>
+
+<div class="viewcode-block" id="SocketWorker.listen"><a class="viewcode-back" href="../../../../modules/syft.core.workers.html#syft.core.workers.socket.SocketWorker.listen">[docs]</a>    <span class="k">def</span> <span class="nf">listen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_messages</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Starts SocketWorker server on the correct port and handles message as they</span>
+<span class="sd">        are received.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="n">num_messages</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="c1"># blocking until a message is received</span>
+            <span class="n">connection</span><span class="p">,</span> <span class="n">address</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serversocket</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">while</span> <span class="n">num_messages</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># collapse buffer of messages into a string</span>
+                    <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_buffer</span><span class="p">(</span><span class="n">connection</span><span class="p">)</span>
+
+                    <span class="c1"># process message and generate response</span>
+                    <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">receive_msg</span><span class="p">(</span><span class="n">message</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+                    <span class="k">if</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+                        <span class="n">response</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="c1"># send response back</span>
+                    <span class="n">connection</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+
+                    <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Received Command From:&quot;</span><span class="p">,</span> <span class="n">address</span><span class="p">)</span>
+
+                    <span class="n">num_messages</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SocketWorker.search"><a class="viewcode-back" href="../../../../modules/syft.core.workers.html#syft.core.workers.socket.SocketWorker.search">[docs]</a>    <span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function is designed to find relevant tensors present within the worker&#39;s objects (self._objects) dict.</span>
+<span class="sd">        It does so by looking for string overlap between one or more strings in the &quot;query&quot; and the id of each tensor.</span>
+<span class="sd">        If the current worker object (self) is merely a pointer to a remote worker (connected via socket), then it sends</span>
+<span class="sd">        a command to the remote worker which calls this function on the remote machine. If the current worker object</span>
+<span class="sd">        (self) is NOT a pointer, then it queries the local tensors.</span>
+<span class="sd">        :param query: a string or list of strings</span>
+<span class="sd">        :return: if self.is_pointer==True, this returns a set of pointer tensors. Otherwise, it returns the tensors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+
+        <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_pointer</span><span class="p">):</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">send_msg</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">message_type</span><span class="o">=</span><span class="s2">&quot;query&quot;</span><span class="p">,</span> <span class="n">recipient</span><span class="o">=</span><span class="bp">self</span><span class="p">))</span>
+            <span class="n">ps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;obj&#39;</span><span class="p">]:</span>
+                <span class="n">ps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">encode</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;__tuple__&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">worker</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hook</span><span class="o">.</span><span class="n">local_worker</span><span class="p">,</span> <span class="n">message_is_dict</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">ps</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+            <span class="n">tensors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">:</span>
+                <span class="n">tensors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_obj</span><span class="p">(</span><span class="nb">id</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">tensors</span></div>
+
+    <span class="k">def</span> <span class="nf">_send_msg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message_wrapper_json_binary</span><span class="p">,</span> <span class="n">recipient</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sends a string message to another worker with message_type information</span>
+<span class="sd">        indicating how the message should be processed.</span>
+
+<span class="sd">        :Parameters:</span>
+
+<span class="sd">        * **recipient (** :class:`VirtualWorker` **)** the worker being sent a message.</span>
+
+<span class="sd">        * **message_wrapper_json_binary (binary)** the message being sent encoded in binary</span>
+
+<span class="sd">        * **out (object)** the response from the message being sent. This can be a variety</span>
+<span class="sd">          of object types. However, the object is typically only used during testing or</span>
+<span class="sd">          local development with :class:`VirtualWorker` workers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">recipient</span><span class="o">.</span><span class="n">clientsocket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">message_wrapper_json_binary</span><span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_buffer</span><span class="p">(</span><span class="n">recipient</span><span class="o">.</span><span class="n">clientsocket</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_process_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">socket</span><span class="p">,</span> <span class="n">buffer_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+        <span class="c1"># WARNING: will hang if buffer doesn&#39;t finish with newline</span>
+
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="n">buffer_size</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="n">buffering</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">while</span> <span class="n">buffering</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">delimiter</span> <span class="ow">in</span> <span class="n">buffer</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">buffer</span><span class="p">)</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">delimiter</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">line</span> <span class="o">+</span> <span class="n">delimiter</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">more</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="n">buffer_size</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">more</span><span class="p">:</span>
+                    <span class="n">buffering</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">buffer</span> <span class="o">+=</span> <span class="n">more</span>
+        <span class="k">if</span> <span class="n">buffer</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">buffer</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, OpenMined Contributors.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            LANGUAGE:'python',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
