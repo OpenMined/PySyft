@@ -1360,6 +1360,9 @@ class _TorchObject(object):
             return self
 
         else:
+            if torch_utils.is_variable(self):
+                if not hasattr(self, 'grad') or self.grad is None:
+                    self.init_grad_()
             n_workers = len(workers)
             x_enc = self._encode()
             shares = self._share(n_workers)
@@ -1378,10 +1381,18 @@ class _TorchObject(object):
         return out
 
     def _share(self, n_workers):
-        if(not isinstance(self, torch.LongTensor)):
-            raise TypeError("Can only MPCShare LongTensor type. You tried to share "+str(type(self).__name__)+"." +
-                            " Do you need to call .fix_precision() first?")
-        return spdz.share(self, n_workers)
+        if torch_utils.is_variable(self):
+            data_shares = self.data._share(n_workers)
+            shares = []
+            for data_share in data_shares:
+                shares.append(sy.Variable(data_share))
+            return shares
+        else:
+            if not isinstance(self, torch.LongTensor):
+                raise TypeError(
+                    "Can only MPCShare LongTensor type. You tried to share " + str(type(self).__name__) + "." +
+                    " Do you need to call .fix_precision() first?")
+            return spdz.share(self, n_workers)
 
     def _encode(self):
         return spdz.encode(self)
@@ -1675,7 +1686,8 @@ class _TorchVariable(_TorchObject):
             worker = workers[0]
         else:
             gpt_dict = {}
-            self.init_grad_()
+            if not hasattr(self, 'grad') or self.grad is None:
+                self.init_grad_()
             for worker in workers:
                 gpt_dict[worker] = (self*1).send(worker).child
             sy._GeneralizedPointerTensor(gpt_dict).on(self)
