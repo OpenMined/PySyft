@@ -746,6 +746,9 @@ class _GeneralizedPointerTensor(_SyftTensor):
                 res += share
         return res
 
+    def workers(self):
+        return self.pointer_tensor_dict.keys() 
+
 
 class _PointerTensor(_SyftTensor):
 
