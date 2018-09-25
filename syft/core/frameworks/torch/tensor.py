@@ -752,6 +752,50 @@ class _GeneralizedPointerTensor(_SyftTensor):
     def workers(self):
         return list(self.pointer_tensor_dict.keys()) 
 
+    def on(self, wrapper):
+        """
+        Used to add a new _GeneralizedPointerTensor at the top of the chain, just before the tensorvar wrapper
+        """
+        # Assign the newly created tensor to the good owner and torch_type
+        self.torch_type = wrapper.child.torch_type
+        self.owner = wrapper.child.owner
+
+        # Insert self between wrapper and wrapper child
+        torch_utils.wrap_command_with(wrapper.child, wrapper=self)
+        torch_utils.wrap_command_with(self, wrapper=wrapper)
+
+        # In case wrapper is a variable, do the same with data and grad (if necessary)
+        if torch_utils.is_variable(wrapper):
+            try:
+                data_pointer_dict = {
+                    w: p.data
+                    for w, p in self.pointer_tensor_dict.items()
+                }
+                wrapper.data = _GeneralizedPointerTensor(data_pointer_dict).on(wrapper.data)
+            except AttributeError:
+                pass
+            if torch_utils.is_variable(wrapper.grad):
+                grad_pointer_dict = {
+                    w: p.grad
+                    for w, p in self.pointer_tensor_dict.items()
+                }
+                wrapper.assign_grad_(_GeneralizedPointerTensor(grad_pointer_dict).on(wrapper.grad))
+
+            # if wrapper.grad is None and wrapper.data.dim() > 0:
+            #     # create an empty envelope in wrapper.grad
+            #     wrapper.init_grad_()
+            #     # Create the init arg:
+            #     grad_data_pointer_dict = {
+            #         w: p.grad #.data
+            #         for w, p in self.pointer_tensor_dict.items()
+            #     }
+            #     # Build the chain with _PlusIsMinusTensor
+            #     wrapper_grad = _GeneralizedPointerTensor(grad_data_pointer_dict).on(wrapper.grad)
+            #     # Insert the gradient within its chain
+            #     wrapper.grad.native_set_(wrapper_grad)
+
+        return wrapper
+
 
 class _PointerTensor(_SyftTensor):
 
@@ -1661,13 +1705,24 @@ class _TorchTensor(_TorchObject):
 
 class _TorchVariable(_TorchObject):
 
-    def send(self, worker, new_id=None, new_data_id=None, new_grad_id=None, new_grad_data_id=None):
+    def send(self, *workers, new_id=None, new_data_id=None, new_grad_id=None, new_grad_data_id=None):
         """
         Give the root of the chain held by self to worker
         self->alice->obj [worker] => self->worker->alice->obj
         Because there are Variable involved, there are actually 4 chains involved,
         the variable chain, variable.data, variable.grad, variable.grad.data
         """
+
+        if len(workers) == 1:
+            worker = workers[0]
+        else:
+            gpt_dict = {}
+            self.init_grad_()
+            for worker in workers:
+                gpt_dict[worker] = (self*1).send(worker).child
+            sy._GeneralizedPointerTensor(gpt_dict).on(self)
+            torch_utils.link_var_chain_to_data_and_grad_chains(self, self.data, self.grad)
+            return self
 
         if isinstance(worker, (int, str)):
             worker = self.owner.get_worker(worker)
@@ -1717,6 +1772,8 @@ class _TorchVariable(_TorchObject):
         messages elsewhere, or a closer pointer
         :return: self
         """
+        if isinstance(self.child, sy._GeneralizedPointerTensor) and update_ptr_wrapper:
+            raise TypeError("Can't update the wrapper of a _GeneralizedPointerTensor. Set update_ptr_wrapper=False.")
 
         # returns a Variable object wrapping a SyftTensor
         variable = self.child.get(deregister_ptr=deregister_ptr)
@@ -1754,7 +1811,9 @@ class _TorchVariable(_TorchObject):
             torch_utils.fix_chain_ends(self)
             torch_utils.assert_is_chain_well_formed(self)
 
-        return self
+            return self
+
+        return variable
 
     def ser(self, private, as_dict=True, is_head=False):
         key = '__' + type(self).__name__ + '__'
