@@ -1092,7 +1092,9 @@ class _FixedPrecisionTensor(_SyftTensor):
                 torch_tensorvar = cls.__add__(self, *args, **kwargs)
                 return torch_tensorvar.fix_precision(already_encoded=True)
             if attr == 'share':
-                return self.share(*args, **kwargs)
+                # /!\ This part is not being executed
+                response =  self.share(*args, **kwargs)
+                return response
             else:
                 result_child = getattr(self.child, attr)(*args, **kwargs)
                 return _FixedPrecisionTensor(result_child).wrap(True)
@@ -1394,7 +1396,13 @@ class _TorchObject(object):
                 return response.wrap(True)
 
         elif isinstance(self.child, _FixedPrecisionTensor):
-            self.child.child = self.child.child.share(*workers)
+            var_shared = self.child.child.share(*workers)
+            self.child.child = var_shared
+            if torch_utils.is_variable(self):
+                self.data.child.child = var_shared.data
+                if hasattr(self, 'grad'):
+                    self.grad.child.child = var_shared.grad
+                    self.grad.data.child.child = var_shared.grad.data
             return self
 
         else:
@@ -1444,6 +1452,10 @@ class _TorchObject(object):
                       precision_fractional=6,
                       already_encoded=False):
         # TODO: Should fix_me be an inplace op?
+
+        if torch_utils.is_variable(self):
+            if not hasattr(self, 'grad') or self.grad is None:
+                self.init_grad_()
 
         if isinstance(self.child, _PointerTensor):
             return self.owner._execute_call('fix_precision', self)
