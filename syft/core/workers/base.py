@@ -187,22 +187,48 @@ class BaseWorker(ABC):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
+
+        # create a an empty message wrapper
         message_wrapper = {}
+
+        # this is the contents of the message sent from a framework
         message_wrapper['message'] = message
+
+        # this information determins how the message is routed when it is received
+        # you can find how this type information is handled in the function
+        # process_message_type. At present it includes obj, req_obj, torch_cmd,
+        # numpy_cmd, composite, and query as possible values.
         message_wrapper['type'] = message_type
 
+        # if you're planning to send groups of messages at a time, this appends
+        # the message to a queue. However, by default the queue size is set to 1
+        # which means that this doesn't do anything.
         self.message_queue.append(message_wrapper)
 
+
+        # manages grouping messages (for faster performance)
         if self.queue_size:
             if len(self.message_queue) > self.queue_size:
+
+                # if the queue is full, reset the message_wrapper object
+                # with all messages to be set.
                 message_wrapper = self.compile_composite_message()
             else:
                 return None
 
+        # this packages the message dictionary into JSON and adds a final newline
+        # i believe the extra newline was necessary - possibly to make decoding
+        # batches of messages working. Note that .encode() converts this json to
+        # binary
         message_wrapper_json = (json.dumps(message_wrapper) + "\n").encode()
 
+        # empty the message queue which previously held our messages
         self.message_queue = []
 
+        # since all logic for this class is general to ALL worker types, we now
+        # need to call the worker-specific message send function wihch sends
+        # the message according to the correct protocol (such as HTTPS, Socket,
+        # or other ways of sending messages).
         return self._send_msg(message_wrapper_json, recipient)
 
     def compile_composite_message(self):
@@ -214,8 +240,10 @@ class BaseWorker(ABC):
         as a composite message
         """
 
+        # create new message container
         message_wrapper = {}
 
+        # iterate through messages and create a list
         message_wrapper['message'] = {
             message_number: message for message_number, message in enumerate(self.message_queue)}
         message_wrapper['type'] = 'composite'
@@ -225,7 +253,10 @@ class BaseWorker(ABC):
     @abstractmethod
     def _send_msg(self, message_wrapper_json_binary, recipient):
         """Sends a string message to another worker with message_type information
-        indicating how the message should be processed.
+        indicating how the message should be processed. Note that this function is
+        to be overridden by actual worker classes (BaseWorker is the generic class).
+        For example, if this was an HTTPWorker this function would initiate an HTTP
+        request and send the contents of message_wrapper_json_binary.
 
         :Parameters:
 
@@ -237,7 +268,8 @@ class BaseWorker(ABC):
           of object types. However, the object is typically only used during testing or
           local development with :class:`VirtualWorker` workers.
         """
-        return sy._LocalTensor()
+
+        raise NotImplementedError
 
     def receive_msg(self, message_wrapper_json):
         """Receives an message from a worker and then executes its contents appropriately.
@@ -250,12 +282,20 @@ class BaseWorker(ABC):
           local development with :class:`VirtualWorker` workers.
         """
 
+        # load json into a dictionary where all objects have been deserialized
         message_wrapper = encode.decode(message_wrapper_json, worker=self)
 
+        # route message to appropriate logic and execute the command, returning
+        # the "response" which should be sent back to the original worker. "private" (bool)
+        # determines whether we are intentioanlly leaving out the data in the response
+        # and instead sending pointers to the data which we will actually keep locally
         response, private = self.process_message_type(message_wrapper)
 
+
+        # serialize any objects in the response into their string/dictionary form (recursive)
         response = encode.encode(response, retrieve_pointers=False, private_local=private)
 
+        # convert the response dictionary to a string and then convert that string to binary
         response = json.dumps(response).encode()
 
         return response
@@ -277,9 +317,14 @@ class BaseWorker(ABC):
           but juts info on the tensor; not private: we transmit data to be
           acquired by the receiver)
         """
+
+        # the contents of the message
         message = message_wrapper['message']
 
-        # Receiving an object from another worker
+        # this series of if/else statements uses the message_wrapper['type']
+        # value to determine where to route the incoming message.
+
+        # if the message contains an object being sent to us
         if message_wrapper['type'] == 'obj':
 
             object = message
@@ -293,13 +338,19 @@ class BaseWorker(ABC):
                 torch_utils.fix_chain_ends(object)
                 torch_utils.assert_is_chain_well_formed(object)
 
+            # register the object, saving it in self._objects and ensuring that
+            # object.owner is set correctly
             self.register(object)
 
+            # we do not send a response back
+            # TODO: send a "successful" or "not successful" response?
             return {}, False
 
-
-        #  Receiving a request for an object from another worker
+        # if the message contains Receiving a request for an object
+        # to be sent to another worker. For example "x.get()" would execute here.
+        # if x is a pointer to an object hosted on this worker.
         elif message_wrapper['type'] == 'req_obj':
+
             # Because it was pointed at, it's the first syft_object of the chain,
             # so its parent is the tensorvar
             object = self.get_obj(message)
@@ -307,32 +358,67 @@ class BaseWorker(ABC):
             # if object being returned is a numpy array
             if isinstance(object, np.ndarray):
                 ""
+                # delete the numpy array from our local registry
                 self.de_register(object)
+
+                # send the numpy array back to the worker that asked for it
                 return object, False
 
             # object is a pytorch array
             else:
+
+                # if the object is NOT a variable, then we simply
+                # take the object's parent, and return the entire object
+                # all children will be serialized recursively
                 tensorvar = object.parent
+
+                # if the object is a variable, we have to make special
+                # considerations to ensure that the data and grad are all
+                # properly deregistered
                 if torch_utils.is_variable(object.torch_type):
                     syft_data_object = tensorvar.data.child
                     self.de_register(syft_data_object)
                     if tensorvar.grad is not None:
                         syft_grad_object = tensorvar.grad.child
                         self.de_register(syft_grad_object)
+
+                # deregister the object
                 self.de_register(object)
+
+                # return the object
+                # False means we're actually return the data (it's not private)
                 return tensorvar, False
 
         #  A torch command from another worker involving one or more tensors
-        #  hosted locally
+        #  hosted locally. For example: "z = x + y" would execute here.
         elif message_wrapper['type'] == 'torch_cmd':
-            result = self.process_torch_command(message)
-            self.register(result)
-            return result, True  # Result is private
 
-        elif message_wrapper['type'] == 'numpy_cmd':
-            result = self.process_numpy_command(message)
+            # route the command to the torch command logic
+            result = self.process_torch_command(message)
+
+            # save the results locally in self._objects and ensure
+            # that .owner is set correctly
             self.register(result)
-            return result, True  # Result is private
+
+            # return result of torch operation
+            # Result is private - so only actually return a pointer to the result
+            return result, True
+
+
+        # a numpy command from another worker involving one or more local numpy arrays
+        # hosted locally. For example "z = x + y" would execute here.
+        elif message_wrapper['type'] == 'numpy_cmd':
+
+            # route the command to the numpy command logic
+            result = self.process_numpy_command(message)
+
+            # save the result locally in self._objects and ensure that
+            # .owner is set correctly.
+            self.register(result)
+
+            # return teh result of the numpy operation
+            # Result is private - so only actually return a pointer to result
+            return result, True
 
         # A composite command. Must be unrolled
         elif message_wrapper['type'] == 'composite':
