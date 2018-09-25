@@ -1126,10 +1126,11 @@ class TestGPCTensor(TestCase):
         y.send(alice)
 
         x_pointer_tensor_dict = {alice: y.child, bob: x.child}
-        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict, torch_type='syft.LongTensor').wrap(True)
+        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict)
 
         results = x_gp.workers()
-        assert(results == list(x_pointer_tensor_dict.keys()))
+    
+        assert(results == [k.id for k in x_pointer_tensor_dict.keys()])
 
 
 
