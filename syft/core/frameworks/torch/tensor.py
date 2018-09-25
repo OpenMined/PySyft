@@ -1001,6 +1001,8 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         if (attr == '__add__'):
             return cls.__add__(self, *args, **kwargs)
+        elif (attr == '__mul__'):
+            return cls.__mul__(self, *args, **kwargs)
         else:
             result_child = getattr(self.child, attr)(*args, **kwargs)
             return _FixedPrecisionTensor(result_child).wrap(True)
@@ -1016,6 +1018,13 @@ class _FixedPrecisionTensor(_SyftTensor):
                                          torch_type=self.torch_type,
                                          already_encoded=True).wrap(True)
         return response
+    def __mul__(self, other):
+        gp_response = (self.child * other.child) % self.field
+        response = _FixedPrecisionTensor(gp_response,
+                                        torch_type=self.torch_type,
+                                        already_encoded=True).wrap(True)
+        return response
+
 
     def __repr__(self):
         return "[Fixed precision]\n"+self.decode().__repr__()
