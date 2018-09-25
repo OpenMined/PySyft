@@ -1019,7 +1019,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                                          already_encoded=True).wrap(True)
         return response
     def __mul__(self, other):
-        gp_response = (self.child * other.child) % self.field
+        gp_response = ((self.child * other.child) / self.field) % self.field
         response = _FixedPrecisionTensor(gp_response,
                                         torch_type=self.torch_type,
                                         already_encoded=True).wrap(True)
