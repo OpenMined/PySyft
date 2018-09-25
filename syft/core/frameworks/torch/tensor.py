@@ -1015,11 +1015,17 @@ class _FixedPrecisionTensor(_SyftTensor):
         self.child = self.child.get(*args, **kwargs)
         return self
     def sum(self, *args, **kwargs):
-        response = (torch.sum(self.child, *args, **kwargs) / self.base**self.precision_fractional) % self.field
+        response = torch.sum(self.child, *args, **kwargs) % self.field
+        response = _FixedPrecisionTensor(response,
+                                         torch_type=self.torch_type,
+                                         already_encoded=True).wrap(True)
         return response
 
     def cumsum(self, *args, **kwargs):
-        response = (torch.cumsum(self.child, *args, **kwargs) / self.base**self.precision_fractional) % self.field
+        response = torch.cumsum(self.child, *args, **kwargs) % self.field
+        response = _FixedPrecisionTensor(response,
+                                         torch_type=self.torch_type,
+                                         already_encoded=True).wrap(True)
         return response
 
     def fsum(self, *args, **kwargs):
