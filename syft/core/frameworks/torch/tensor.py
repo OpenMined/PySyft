@@ -30,10 +30,11 @@ class _SyftTensor(object):
         self.child = child
         self.parent = parent
         self.torch_type = torch_type
-
         if self.child is not None:
             try:
                 self.child.parent = self
+                self.shape = child.shape
+
             except AttributeError:  # for non-torch tensor child (can occur in __repr__)
                 pass
 
@@ -661,7 +662,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
              pointer_dict[key] = pointer
          self.pointer_tensor_dict = pointer_dict
          self.torch_type = torch_type
-
+         self.shape = list(self.pointer_tensor_dict.values())[0].shape
     def ser(self, private, as_dict=True):
         pointer_dict = {}
 
@@ -1214,26 +1215,14 @@ class _SPDZTensor(_SyftTensor):
 
     def mm(self, other):
 
-        workers = list(self.shares.child.pointer_tensor_dict.keys())
+        workers = spdz.get_workers(self)
         gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
         response = _SPDZTensor(gp_response).wrap(True)
         return response
 
     def __matmul__(self, other):
         return self.mm(other)
-
-    def sigmoid(self):
-        workers = list(self.shares.child.pointer_tensor_dict.keys())
-        W0, W1, W3, W5 = spdz.generate_sigmoid_shares_communication(self.shape, workers)
-        x2 = x * x
-        x3 = x * x2
-        x5 = x3 * x2
-        temp5 = x5 * W5
-        temp3 = x3 * W3
-        temp1 = x * W1
-        temp53 = temp5 + temp3
-        temp531 = temp53+ temp1
-        return W0 + temp531
+     
 
     @classmethod
     def handle_call(cls, command, owner):

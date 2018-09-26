@@ -301,7 +301,7 @@ def split_to_pointer_commands(syft_command):
 
     return syft_commands
 
-
+       
 def assert_has_only_torch_tensorvars(obj):
     """
     A check function that an object has only torch Tensors or Variable

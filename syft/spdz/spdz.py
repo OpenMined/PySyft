@@ -84,6 +84,14 @@ def truncate(x, interface, amount=PRECISION_FRACTIONAL, mod=field):
         return (x / BASE ** amount) % mod
     return (mod - ((mod - x) / BASE ** amount)) % mod
 
+def get_workers(mpct):
+    child = mpct
+    while not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor) and child is not None:
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return list(child.pointer_tensor_dict.keys())
+ 
 
 def public_add(x, y, interface):
     if (interface.get_party() == 0):
@@ -167,17 +175,18 @@ def spdz_matmul(x, y, workers, mod=field):
     # return spdz_add(share, u)
 
 
-def spdz_sigmoid(x, interface):
-    W0, W1, W3, W5 = generate_sigmoid_shares_communication(x, interface)
-    x2 = spdz_mul(x, x, interface)
-    x3 = spdz_mul(x, x2, interface)
-    x5 = spdz_mul(x3, x2, interface)
-    temp5 = spdz_mul(x5, W5, interface)
-    temp3 = spdz_mul(x3, W3, interface)
-    temp1 = spdz_mul(x, W1, interface)
-    temp53 = spdz_add(temp5, temp3)
-    temp531 = spdz_add(temp53, temp1)
-    return spdz_add(W0, temp531)
+def spdz_sigmoid(x): 
+    workers = get_workers(x)
+    W0, W1, W3, W5 = generate_sigmoid_shares_communication(x.shape, workers)
+    x2 = x * x
+    x3 = x * x2
+    x5 = x3 * x2
+    temp5 = x5 * W5
+    temp3 = x3 * W3
+    temp1 = x * W1
+    temp53 = temp5 + temp3
+    temp531 = temp53+ temp1
+    return W0 + temp531
 
 
 def generate_mul_triple(shape, mod=field):
@@ -266,4 +275,3 @@ def generate_sigmoid_shares_communication(tensor_shape, workers):
 
         quad = [W0, W1, W3, W5]
         return quad
->>>>>>> generated sigmoid triple
