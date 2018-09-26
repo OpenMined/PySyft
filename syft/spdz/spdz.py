@@ -216,7 +216,7 @@ def generate_mul_triple_communication(shape, workers):
 
 def generate_zero_shares_communication(alice, bob, *sizes):
     zeros = torch.zeros(*sizes)
-    u_alice, u_bob = share(zeros)
+    u_alice, u_bob = share(zeros, 2)
     u_alice.send(alice)
     u_bob.send(bob)
     u_gp = sy._GeneralizedPointerTensor({alice: u_alice.child, bob: u_bob.child})

@@ -1,6 +1,6 @@
 # An implementation of the SecureNN protocols from Wagh et al.
 
-from syft.mpc.spdz import (spdz_add, spdz_mul,
+from syft.spdz.spdz import (spdz_add, spdz_mul,
                            generate_zero_shares_communication,
                            Q_BITS, field)
 import torch
@@ -22,7 +22,7 @@ def decompose(tensor):
     return tensor
 
 
-def select_shares(alpha, x, y, workers, mod=L):
+def select_shares(alpha, x, y, workers):
     """
     alpha is a shared binary tensor
     x and y are private tensors to choose elements or slices from
@@ -32,12 +32,13 @@ def select_shares(alpha, x, y, workers, mod=L):
 
     Computes z = (1 - alpha) * x + alpha * y
     """
-    u = generate_zero_shares_communication()
+    # FIXME: generate_zero_shares_communication should be updated with new pysyft API
+    u = generate_zero_shares_communication(*workers, *x.get_shape())
     z = x + alpha * (y - x)
     return z + u
 
 
-def private_compare(x, r, beta):
+def private_compare(x, r, beta, workers):
     """
     computes beta XOR (x > r)
 
@@ -63,7 +64,7 @@ def private_compare(x, r, beta):
     c_other = _pc_else()
 
     # TODO: recombine c properly here
-    torch.zeros()
+    # torch.zeros()
     c = torch.cat([c_zeros, c_ones, c_other], -1)
 
     s = random_as(c, mod=p)
@@ -73,8 +74,7 @@ def private_compare(x, r, beta):
     return (d == 0).max()
 
 
-
-def msb(x):
+def msb(x, workers):
     """
     computes the most significant bit of a shared input tensor
     uses the fact that msb(x) = lsb(2x) in an odd ring,
@@ -82,7 +82,7 @@ def msb(x):
     """
     if L % 2 != 1:
         x = share_convert(x)
-    return lsb(2 * x)
+    return lsb(2 * x, workers)
 
 
 def lsb(y):
@@ -104,7 +104,7 @@ def lsb(y):
     gamma = xor(beta, beta_prime)
     delta = xor(xlsb, rlsb)
     alpha = xor(gamma, delta)
-    u = generate_zero_shares_communication()
+    u = generate_zero_shares_communication(*workers, *alpha.get_shape())
     return alpha + u
 
 
@@ -136,7 +136,7 @@ def nope(x):
 def _pc_beta0(x, r):
     # note x and r are both binary tensors,
     # and dim -1 contains their bits
-    # x will be shared, r will be public
+    # x should be shared, r should be public
     w = xor(x, r)
     z = r  - (x - 1)
     w_sum = torch.zeros(w.shape).type_as(w)
@@ -145,7 +145,6 @@ def _pc_beta0(x, r):
         w_sum[..., i] = w[..., (i + 1):].sum(dim=-1, keepdim=True)
     c = z + w_sum
     return c
-
 
 
 def _pc_beta1(x, t):
