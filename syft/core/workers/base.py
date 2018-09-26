@@ -424,22 +424,46 @@ class BaseWorker(ABC):
         elif message_wrapper['type'] == 'composite':
             raise NotImplementedError('Composite command not handled at the moment')
 
+        # a message asking for a list of tensors which fit a certain criteria.
+        # at the time of writing this comment, this is a partial string match on the id
+        # of the tensor. For example, if self._workers has a tensor with an id
+        # "12345 #boston_housing #input" then a query from a pointer to this worker of
+        # bob.search("#boston_housing") would return a list of pointers including
+        # the one with the "12345 #boston_housing #input" id.
         elif message_wrapper['type'] == 'query':
 
+            # perform the search over all tensors on the worker
             tensors = self.search(message)
 
+            # convert the resulting tensors to pointers
             pointers = list()
 
             for tensor in tensors:
+
+                # initialize a pointer to the tensor.
                 ptr = tensor.parent.create_pointer()
+
+                # serialize the pointer recursively
                 encoding = encode.encode(ptr, private_local=False, retrieve_pointers=True)
+
                 pointers.append(encoding)
 
+            # return the list of pointers.
             return pointers, True
 
+        # Hopeflly we don't reach this point.
         return "Unrecognized message type:" + message_wrapper['type']
 
     def __str__(self):
+        """This is a simple to-string for all classes that extend BaseWorker
+        which just returns the type and ID of the worker. For example, a
+        VirtualWorker instance with id 'bob' would return a string value of
+
+        <syft.core.workers.virtual.VirtualWorker id:bob>
+
+        Note that __repr__ calls this method by default.
+        """
+
         out = "<"
         out += str(type(self)).split("'")[1]
         out += " id:" + str(self.id)
@@ -494,9 +518,13 @@ class BaseWorker(ABC):
         if(worker.id in self._known_workers):
             logging.warn("Worker " + str(worker.id) + " already exists. Replacing old worker which could cause"+
                          "unexpected behavior")
+
+        # add worker to the list of known workers
+        # it's just a mapping from ID->object
         self._known_workers[worker.id] = worker
 
     def add_workers(self, workers):
+
         for worker in workers:
             self.add_worker(worker)
 
