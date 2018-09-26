@@ -399,6 +399,12 @@ class BaseWorker(ABC):
             # save the results locally in self._objects and ensure
             # that .owner is set correctly
             torch_utils.enforce_owner(result, self)
+            if torch_utils.is_variable(result):
+                if result.grad is not None:
+                    torch_utils.link_var_chain_to_data_and_grad_chains(result, result.data, result.grad)
+                else:
+                    torch_utils.link_var_chain_to_data_chain(result, result.data)
+
             self.register(result)
 
             # return result of torch operation
