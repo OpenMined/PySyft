@@ -753,7 +753,8 @@ class _GeneralizedPointerTensor(_SyftTensor):
             if res is None:
                 res = share
             else:
-                res += share
+                if len(share.size()) > 0:
+                    res += share
         return res
 
     def workers(self):
@@ -789,18 +790,11 @@ class _GeneralizedPointerTensor(_SyftTensor):
                 }
                 wrapper.assign_grad_(_GeneralizedPointerTensor(grad_pointer_dict).on(wrapper.grad))
 
-            # if wrapper.grad is None and wrapper.data.dim() > 0:
-            #     # create an empty envelope in wrapper.grad
-            #     wrapper.init_grad_()
-            #     # Create the init arg:
-            #     grad_data_pointer_dict = {
-            #         w: p.grad #.data
-            #         for w, p in self.pointer_tensor_dict.items()
-            #     }
-            #     # Build the chain with _PlusIsMinusTensor
-            #     wrapper_grad = _GeneralizedPointerTensor(grad_data_pointer_dict).on(wrapper.grad)
-            #     # Insert the gradient within its chain
-            #     wrapper.grad.native_set_(wrapper_grad)
+                # grad_data_pointer_dict = {
+                #     w: p.grad.data
+                #     for w, p in self.pointer_tensor_dict.items()
+                # }
+                # wrapper.grad.data = _GeneralizedPointerTensor(grad_data_pointer_dict).on(wrapper.grad.data)
 
         return wrapper
 
@@ -1374,9 +1368,17 @@ class _SPDZTensor(_SyftTensor):
         if torch_utils.is_variable(self.child):
             var = sy.Variable(self.data.get())
             var.child = self.child.child.child
-            #if hasattr(self, 'grad') and self.grad is not None:
-            #    var.init_grad_()
-            #    var.assign_grad_(self.grad.get())
+            if hasattr(self, 'grad') and self.grad is not None:
+                var_grad = self.grad.shares.child.sum_get()
+                value = var_grad.data % spdz.field
+                # TODO: Add this thing for negative values
+                # gate = (value > spdz.torch_max_value).long()
+                # neg_nums = (value - spdz.torch_field) * gate
+                # pos_nums = value * (1 - gate)
+                # result = neg_nums + pos_nums
+                var_grad.data = value
+                var.init_grad_()
+                var.assign_grad_(var_grad)
             return var
         # TODO: have deregister_ptr do something
         value = self.shares.child.sum_get() % spdz.field
