@@ -1117,6 +1117,23 @@ class TestGPCTensor(TestCase):
         results = y.get()
 
         assert (results[0] == (x.get() * 2)).all()
+    
+    def test_gpc_workers(self):
+        x = torch.LongTensor([1, 2, 3, 4, 5])
+        y = torch.LongTensor([1, 2, 3, 4, 5])
+
+        x.send(bob)
+        y.send(alice)
+
+        x_pointer_tensor_dict = {alice: y.child, bob: x.child}
+        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict)
+
+        results = x_gp.workers()
+    
+        assert(results == [k.id for k in x_pointer_tensor_dict.keys()])
+
+
+
 
 
 if __name__ == '__main__':
