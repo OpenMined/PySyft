@@ -1,7 +1,4 @@
 # An implementation of the SecureNN protocols from Wagh et al.
-# All contributions by Dropout Labs:
-# Copyright (c) 2018, Dropout Labs, Inc.
-# All rights reserved.
 
 from syft.mpc.spdz import (spdz_add, spdz_mul,
                            generate_zero_shares_communication,
