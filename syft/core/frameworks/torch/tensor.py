@@ -1371,6 +1371,13 @@ class _SPDZTensor(_SyftTensor):
             share.send(worker)
 
     def get(self, deregister_ptr=False):
+        if torch_utils.is_variable(self.child):
+            var = sy.Variable(self.data.get())
+            var.child = self.child.child.child
+            #if hasattr(self, 'grad') and self.grad is not None:
+            #    var.init_grad_()
+            #    var.assign_grad_(self.grad.get())
+            return var
         # TODO: have deregister_ptr do something
         value = self.shares.child.sum_get() % spdz.field
 
@@ -1426,7 +1433,8 @@ class _TorchObject(object):
             return self
 
         else:
-            if torch_utils.is_variable(self):
+            is_variable = torch_utils.is_variable(self)
+            if is_variable:
                 if not hasattr(self, 'grad') or self.grad is None:
                     self.init_grad_()
             n_workers = len(workers)
@@ -1437,12 +1445,16 @@ class _TorchObject(object):
             for share, worker in zip(shares, workers):
                 share.send(worker)
                 pointer_shares_dict[worker] = share.child
+
             self_copy = self*1
-            self_copy.init_grad_()
+            if is_variable:
+                self_copy.init_grad_()
             x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self_copy)
-            torch_utils.link_var_chain_to_data_and_grad_chains(x_gp, x_gp.data, x_gp.grad)
+            if is_variable:
+                torch_utils.link_var_chain_to_data_and_grad_chains(x_gp, x_gp.data, x_gp.grad)
             x_mpc = _SPDZTensor(x_gp, torch_type='syft.LongTensor').on(self)
-            torch_utils.link_var_chain_to_data_and_grad_chains(x_mpc, x_mpc.data, x_mpc.grad)
+            if is_variable:
+                torch_utils.link_var_chain_to_data_and_grad_chains(x_mpc, x_mpc.data, x_mpc.grad)
             return x_mpc
 
     def native_share(self, *workers):
