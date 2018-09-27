@@ -761,9 +761,10 @@ class BaseWorker(ABC):
             variable = result
             self.register(variable.child)
             self.register(variable.data.child)
-            if hasattr(variable, 'grad') and variable.grad is not None:
-                self.register(variable.grad.child)
-                self.register(variable.grad.data.child)
+            if not hasattr(variable, 'grad') or variable.grad is None:
+                variable.init_grad_()
+            self.register(variable.grad.child)
+            self.register(variable.grad.data.child)
         # Case of a iter type non json serializable
         elif isinstance(result, (list, tuple, set, bytearray, range)):
             for res in result:

@@ -705,27 +705,46 @@ class _GeneralizedPointerTensor(_SyftTensor):
 
     @classmethod
     def handle_call(cls, syft_command, owner):
-        try:
-
-            attr_type = "syft."+type(syft_command['attr'][0]).__name__
-        except:
-            attr_type = "syft.LongTensor"
 
         syft_commands = torch_utils.split_to_pointer_commands(syft_command)
         result_dict = {}
+        torch_type = None
+        var_data_type = None
         for worker_id in syft_commands.keys():
             syft_command = syft_commands[worker_id]
             result_dict[worker_id] = sy._PointerTensor.handle_call(syft_command, owner)
+            if torch_type is None:
+                torch_type = result_dict[worker_id].torch_type
+                if torch_utils.is_variable(torch_type):
+                    var_data_type = result_dict[worker_id].data.torch_type
 
-        #TODO: @trask @theo could you take a look at this if you have better ideas on how to get these parameters
-        gpt =  _GeneralizedPointerTensor(result_dict,
-                                         parent=None,
-                                         torch_type=attr_type,
-                                         id=None,
-                                         owner=owner,
-                                         skip_register=False)
-        # Fixme: Add a generic child depending on a torch_type
-        gpt.child = torch.guard[gpt.torch_type]([])
+        gpt = _GeneralizedPointerTensor(result_dict, torch_type=torch_type, owner=owner)
+
+        if torch_utils.is_variable(torch_type):
+            gpt.child = torch.guard[torch_type]()
+            data_pointer_dict = {
+                w: p.data
+                for w, p in gpt.pointer_tensor_dict.items()
+            }
+            gpt.data = _GeneralizedPointerTensor(data_pointer_dict, torch_type=var_data_type, owner=owner)
+            gpt.data.child = torch.guard[torch_type]()
+
+            grad_pointer_dict = {
+                w: p.grad
+                for w, p in gpt.pointer_tensor_dict.items()
+            }
+            gpt.grad = _GeneralizedPointerTensor(grad_pointer_dict, torch_type=torch_type, owner=owner)
+            gpt.grad.child = torch.guard[torch_type]()
+
+            grad_data_pointer_dict = {
+                w: p.grad.data
+                for w, p in gpt.pointer_tensor_dict.items()
+            }
+            gpt.grad.data = _GeneralizedPointerTensor(grad_data_pointer_dict, torch_type=var_data_type, owner=owner)
+            gpt.grad.data.child = torch.guard[torch_type]()
+
+        else:  # else tensor
+            gpt.child = torch.guard[torch_type]([])
         return gpt
 
     def public_add_(self, value):
@@ -1111,9 +1130,9 @@ class _FixedPrecisionTensor(_SyftTensor):
             self = command['self']
             if attr == '__add__':
                 torch_tensorvar = cls.__add__(self, *args, **kwargs)
-                return torch_tensorvar.fix_precision(already_encoded=True)
+                response = torch_tensorvar.fix_precision(already_encoded=True)
+                return response
             if attr == 'share':
-                # /!\ This part is not being executed
                 response = self.share(*args, **kwargs)
                 return response
             else:
@@ -1176,7 +1195,7 @@ class _SPDZTensor(_SyftTensor):
     def __init__(self,
                  shares=None,
                  child=None,
-                 torch_type='syft.LongTensor',
+                 torch_type=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Fixme: remove the share on init, declaring a SPDZTensor should autmatically create a _GeneralizedPointerTensor
@@ -1184,14 +1203,14 @@ class _SPDZTensor(_SyftTensor):
         if shares is not None:
             if isinstance(shares, sy._GeneralizedPointerTensor):
                 raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
-
-            self.shares = shares  # shares is a _GeneralizedPointerTensor
+            torch_type = shares.child.torch_type
+            self.shares = shares  # shares is a Tensorvar > _GeneralizedPointerTensor
             self.child = self.shares
 
         elif child is not None:
             if isinstance(child, sy._GeneralizedPointerTensor):
                 raise TypeError('Should have a wrapper on the _GeneralizedPointerTensor')
-
+            torch_type = child.child.torch_type
             self.child = child
             self.shares = self.child
         else:
@@ -1295,45 +1314,41 @@ class _SPDZTensor(_SyftTensor):
     def __add__(self, other):
         # gp_ stands for GeneralizedPointer
         gp_response = spdz.spdz_add(self.shares, other.shares)
-        response = _SPDZTensor(gp_response).wrap(True)
-        return response
+        return gp_response
 
     def __sub__(self, other):
         gp_response = spdz.spdz_add(self.shares, spdz.spdz_neg(other.shares))
-        response = _SPDZTensor(gp_response).wrap(True)
-        return response
+        return gp_response
 
     def __neg__(self):
         gp_response = spdz.spdz_neg(self.shares)
-        response = _SPDZTensor(gp_response).wrap(True)
-        return response
+        return gp_response
 
     def sum(self, *args, **kwargs):
-        result_child = self.child.sum(*args, **kwargs) % spdz.field
-        response = _SPDZTensor(result_child).wrap(True)
-        return response
+        gp_response = self.child.sum(*args, **kwargs) % spdz.field
+        return gp_response
 
     def cumsum(self, *args, **kwargs):
-
-        result_child = self.child.cumsum(*args, **kwargs) % spdz.field
-        response = _SPDZTensor(result_child).wrap(True)
-        return response
+        gp_response = self.child.cumsum(*args, **kwargs) % spdz.field
+        return gp_response
 
     def __mul__(self, other):
         if(isinstance(other, _SPDZTensor)):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
-            gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
+            if torch_utils.is_variable(self.torch_type):
+                gp_response = self*1
+                gp_response.data = spdz.spdz_mul(self.data.shares, other.data.shares, workers)
+                #TODO: and the grad ?
+            else:
+                gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
         else:
             gp_response = self.shares * other
-
-        response = _SPDZTensor(gp_response).wrap(True)
-        return response
+        return gp_response
 
     def mm(self, other):
         workers = list(self.shares.child.pointer_tensor_dict.keys())
         gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
-        response = _SPDZTensor(gp_response).wrap(True)
-        return response
+        return gp_response
 
     def __matmul__(self, other):
         return self.mm(other)
@@ -1367,18 +1382,34 @@ class _SPDZTensor(_SyftTensor):
         self = command['self']
 
         if attr == '__mul__':
-            return cls.__mul__(self, *args, **kwargs)
+            gp_response = cls.__mul__(self, *args, **kwargs)
         elif attr == '__add__':
-            return cls.__add__(self, *args, **kwargs)
+            gp_response = cls.__add__(self, *args, **kwargs)
         elif attr == '__sub__':
-            return cls.__sub__(self, *args, **kwargs)
+            gp_response = cls.__sub__(self, *args, **kwargs)
         elif attr == 'sum':
-            return cls.sum(self, *args, **kwargs)
+            gp_response = cls.sum(self, *args, **kwargs)
+        elif attr == 'cumsum':
+            gp_response = cls.sum(self, *args, **kwargs)
         elif attr == 'mm':
-            return cls.mm(self, *args, **kwargs)
+            gp_response = cls.mm(self, *args, **kwargs)
         else:
-            result_child = getattr(self.child, attr)(*args, **kwargs)
-            return _SPDZTensor(result_child).wrap(True)
+            gp_response = getattr(self.child, attr)(*args, **kwargs)
+
+        if torch_utils.is_variable(gp_response.child.torch_type):
+            var_data_type = gp_response.child.data.torch_type
+            variable = sy.Variable(torch.guard[var_data_type]())
+            variable.init_grad_()
+            mpc_node = _MPCTensor(gp_response)
+            mpc_node.data = _MPCTensor(gp_response.data)
+            mpc_node.grad = _MPCTensor(gp_response.grad)
+            mpc_node.grad.data = _MPCTensor(gp_response.grad.data)
+            mpc_node.grad.data.child.child = None # FIXME: is it necessary?
+            torch_utils.bind_var_like_objects(variable, mpc_node, grad=True)
+            return variable
+        else:
+            response = _MPCTensor(gp_response).wrap(True)
+            return response
 
     def send(self, *workers):
         assert len(workers) > 0, "Please provide workers to receive the data"
@@ -1392,7 +1423,7 @@ class _SPDZTensor(_SyftTensor):
     def get(self, deregister_ptr=False):
         if torch_utils.is_variable(self.child):
             var = sy.Variable(self.data.get())
-            var.child = self.child.child.child
+            var.child = None
             if hasattr(self, 'grad') and self.grad is not None:
                 var_grad = self.grad.shares.child.sum_get()
                 value = var_grad.data % spdz.field
@@ -1994,12 +2025,13 @@ class _TorchVariable(_TorchObject):
     def decode(self):
         var_data = self.data.decode()
         if var_data is not None:
-            var = sy.Variable()
+            var = sy.Variable(var_data)
             var.child = self.child.child.child
             if hasattr(self, 'grad') and self.grad is not None:
                 var.assign_grad_(self.grad.decode())
         else:
             var = sy.Variable()
+        torch_utils.fix_chain_ends(var)
         return var
 
     def decode_(self):
@@ -2011,6 +2043,7 @@ class _TorchVariable(_TorchObject):
         else:
             self.data.child = self.data.child.child.child
         self.child = self.child.child.child
+        torch_utils.fix_chain_ends(self)
 
 
 

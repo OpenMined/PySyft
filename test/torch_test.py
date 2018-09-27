@@ -990,52 +990,74 @@ class TestTorchVariable(TestCase):
 
 class TestSPDZTensor(TestCase):
 
-    def generate_spdz_number_pair(self, n1, n2):
+    def mpc_sum(self, n1, n2):
         x = torch.LongTensor([n1])
         y = torch.LongTensor([n2])
-        x_enc = spdz.encode(x)
-        y_enc = spdz.encode(y)
-        x_alice, x_bob = spdz.share(x_enc, 2)
-        y_alice, y_bob = spdz.share(y_enc, 2)
-        x_alice.send(alice)
-        x_bob.send(bob)
-        y_alice.send(alice)
-        y_bob.send(bob)
-        x_pointer_tensor_dict = {alice: x_alice.child, bob: x_bob.child}
-        y_pointer_tensor_dict = {alice: y_alice.child, bob: y_bob.child}
-        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict).on(x)
-        y_gp = _GeneralizedPointerTensor(y_pointer_tensor_dict).on(y)
-        x_spdz = _SPDZTensor(x_gp)
-        y_spdz = _SPDZTensor(y_gp)
-        return x_spdz, y_spdz
+        x = x.share(alice, bob)
+        y = y.share(alice, bob)
+        z = x + y
+        z = z.get()
+        assert torch.eq(z, torch.LongTensor([n1 + n2])).all()
 
-    def spdz_sum(self, n1, n2):
-        x_spdz, y_spdz = self.generate_spdz_number_pair(n1, n2)
-        sum_spdz = x_spdz + y_spdz
-        sum_spdz = sum_spdz.get()
-        assert torch.eq(sum_spdz, torch.LongTensor([n1 + n2])).all()
+    def mpc_var_sum(self, n1, n2):
+        x = sy.Variable(torch.LongTensor([n1]))
+        y = sy.Variable(torch.LongTensor([n2]))
+        x = x.share(alice, bob)
+        y = y.share(alice, bob)
+        z = x + y
+        z = z.get()
+        z_ = sy.Variable(torch.LongTensor([n1 + n2]))
+        assert torch.native_eq(z, z_).all()
 
-    def test_spdz_sum(self):
-        self.spdz_sum(3, 5)
-        self.spdz_sum(4, 0)
-        self.spdz_sum(5, -5)
-        self.spdz_sum(3, -5)
-        self.spdz_sum(2 ** 24, 2 ** 12)
+    def test_mpc_sum(self):
+        self.mpc_sum(3, 5)
+        self.mpc_sum(4, 0)
+        self.mpc_sum(5, -5)
+        self.mpc_sum(3, -5)
+        self.mpc_sum(2 ** 24, 2 ** 12)
 
-    def spdz_mul(self, n1, n2):
-        x_spdz, y_spdz = self.generate_spdz_number_pair(n1, n2)
-        mul_spdz = x_spdz * y_spdz
-        mul_spdz = mul_spdz.get()
-        assert torch.eq(mul_spdz, torch.LongTensor([n1 * n2])).all(), (mul_spdz, 'should be', torch.LongTensor([n1 * n2]))
+    def test_mpc_var_sum(self):
+        self.mpc_var_sum(3, 5)
+        self.mpc_var_sum(4, 0)
+        self.mpc_var_sum(5, -5)
+        self.mpc_var_sum(3, -5)
+        self.mpc_var_sum(2 ** 24, 2 ** 12)
 
-    def test_spdz_mul(self):
-        self.spdz_mul(3, 5)
-        self.spdz_mul(4, 0)
-        self.spdz_mul(5, -5)
-        self.spdz_mul(3, 5)
-        self.spdz_mul(2 ** 12, 2 ** 12)
+    def mpc_mul(self, n1, n2):
+        x = torch.LongTensor([n1])
+        y = torch.LongTensor([n2])
+        x = x.share(alice, bob)
+        y = y.share(alice, bob)
+        z = x * y
+        z = z.get()
+        assert torch.eq(z, torch.LongTensor([n1 * n2])).all(), (z, 'should be', torch.LongTensor([n1 * n2]))
 
-    def test_spdz_scalar_mult(self):
+    def mpc_var_mul(self, n1, n2):
+        x = sy.Variable(torch.LongTensor([n1]))
+        y = sy.Variable(torch.LongTensor([n2]))
+        x = x.share(alice, bob)
+        y = y.share(alice, bob)
+        z = x * y
+        z = z.get()
+        z_ = sy.Variable(torch.LongTensor([n1 * n2]))
+        assert torch.native_eq(z, z_).all()
+
+    def test_mpc_mul(self):
+        self.mpc_mul(3, 5)
+        self.mpc_mul(4, 0)
+        self.mpc_mul(5, -5)
+        self.mpc_mul(3, 5)
+        self.mpc_mul(2 ** 12, 2 ** 12)
+
+    def test_mpc_var_mul(self):
+        self.mpc_var_mul(3, 5)
+        self.mpc_var_mul(4, 0)
+        self.mpc_var_mul(5, -5)
+        self.mpc_var_mul(3, 5)
+        self.mpc_var_mul(2 ** 12, 2 ** 12)
+
+    def test_mpc_scalar_mult(self):
+>>>>>>> Add operative unittest to prove add working on local fixP MPC and
         x = torch.LongTensor([[-1, 2], [3, 4]])
         x = x.share(bob, alice)
 
@@ -1111,7 +1133,7 @@ class TestSPDZTensor(TestCase):
         assert sy.eq(spdz_x, sy.LongTensor([-3])).all()
 
     def test_var_fix_precision_decode(self):
-        x = sy.Variable(torch.FloatTensor([1.1, 2, 3]))
+        x = sy.Variable(torch.FloatTensor([0.1, 0.2, 0.1, 0.2]))
         x = x.fix_precision()
 
         assert torch_utils.chain_print(x, display=False) == display_chain.var.fixp_local
@@ -1119,6 +1141,15 @@ class TestSPDZTensor(TestCase):
         x = x.decode()
 
         assert torch_utils.chain_print(x, display=False) == display_chain.var.local
+
+        x = x.fix_precision()
+        z = x + x
+        z = z.decode()
+        assert torch.eq(z, sy.Variable(torch.FloatTensor([0.2, 0.4, 0.2, 0.4]))).all()
+        z = x + x
+        z.decode_()
+        assert torch.eq(z, sy.Variable(torch.FloatTensor([0.2, 0.4, 0.2, 0.4]))).all()
+        x = x.decode()
 
         x = x.fix_precision()
 
@@ -1129,12 +1160,16 @@ class TestSPDZTensor(TestCase):
         assert torch_utils.chain_print(x, display=False) == display_chain.var.local
 
     def test_var_remote_fix_precision(self):
-        x = sy.Variable(torch.FloatTensor([1.1, 2, 3]))
+        x = sy.Variable(torch.FloatTensor([0.1, 0.2, 0.1, 0.2]))
         x = x.send(bob).fix_precision()
 
         assert torch_utils.chain_print(x, display=False) == display_chain.var.pointer
         x_ = bob.get_obj(x.id_at_location).parent
         assert torch_utils.chain_print(x_, display=False) == display_chain.var.fixp_local
+
+        z = x + x
+        z.get().decode_()
+        torch.eq(z, sy.Variable(torch.FloatTensor([0.2, 0.4, 0.2, 0.4]))).all()
 
         x = x.get()
 
@@ -1149,6 +1184,10 @@ class TestSPDZTensor(TestCase):
         x = x.fix_precision().share(alice, bob)
 
         assert torch_utils.chain_print(x, display=False) == display_chain.var.fixp_mpc_gpt
+
+        z = x + x
+        z = z.get().decode()
+        assert torch.eq(z, sy.Variable(torch.FloatTensor([2.2, 4, 6]))).all()
 
         x = x.get()
 
@@ -1219,6 +1258,8 @@ class TestGPCTensor(TestCase):
         results = x_gp.workers()
     
         assert(results == [k.id for k in x_pointer_tensor_dict.keys()])
+
+
 
 
 

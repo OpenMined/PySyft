@@ -154,6 +154,14 @@ def bind_var_like_objects(obj, child_obj, grad=False):
     obj.data.child = child_obj.data
     child_obj.data.parent = obj.data
 
+    if grad:
+        obj.grad.child = child_obj.grad
+        child_obj.grad.parent = obj.grad
+
+        obj.grad.data.child = child_obj.grad.data
+        child_obj.grad.data.parent = obj.grad.data
+
+
 def wrap_command_with(obj, wrapper):
     """
     Wrap a syft object with a given wrapper
