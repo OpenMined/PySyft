@@ -1295,7 +1295,7 @@ class _SPDZTensor(_SyftTensor):
 
     def on(self, wrapper):
         """
-        Used to add a new _MPCTensor at the top of the chain, just before the tensorvar wrapper
+        Used to add a new _SPDZTensor at the top of the chain, just before the tensorvar wrapper
         """
         # Assign the newly created tensor to the good owner and torch_type
         self.torch_type = wrapper.child.torch_type
@@ -1400,15 +1400,15 @@ class _SPDZTensor(_SyftTensor):
             var_data_type = gp_response.child.data.torch_type
             variable = sy.Variable(torch.guard[var_data_type]())
             variable.init_grad_()
-            mpc_node = _MPCTensor(gp_response)
-            mpc_node.data = _MPCTensor(gp_response.data)
-            mpc_node.grad = _MPCTensor(gp_response.grad)
-            mpc_node.grad.data = _MPCTensor(gp_response.grad.data)
+            mpc_node = _SPDZTensor(gp_response)
+            mpc_node.data = _SPDZTensor(gp_response.data)
+            mpc_node.grad = _SPDZTensor(gp_response.grad)
+            mpc_node.grad.data = _SPDZTensor(gp_response.grad.data)
             mpc_node.grad.data.child.child = None # FIXME: is it necessary?
             torch_utils.bind_var_like_objects(variable, mpc_node, grad=True)
             return variable
         else:
-            response = _MPCTensor(gp_response).wrap(True)
+            response = _SPDZTensor(gp_response).wrap(True)
             return response
 
     def send(self, *workers):

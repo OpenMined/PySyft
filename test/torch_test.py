@@ -1067,7 +1067,6 @@ class TestSPDZTensor(TestCase):
         self.mpc_var_mul(2 ** 12, 2 ** 12)
 
     def test_mpc_scalar_mult(self):
->>>>>>> Add operative unittest to prove add working on local fixP MPC and
         x = torch.LongTensor([[-1, 2], [3, 4]])
         x = x.share(bob, alice)
 
