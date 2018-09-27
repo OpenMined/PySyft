@@ -13,12 +13,12 @@ def decompose(tensor):
     """
     decompose a tensor into its binary representation
     """
-    powers = torch.arange(Q_BITS)
+    powers = torch.arange(0,Q_BITS)
     for i in range(len(tensor.shape)):
         powers = powers.unsqueeze(0)
     tensor = tensor.unsqueeze(-1)
     moduli = 2 ** powers
-    tensor = (tensor / moduli.type_as(tensor)) % 2
+    tensor = ((tensor+2**(Q_BITS)) / moduli.type_as(tensor)) % 2
     return tensor
 
 

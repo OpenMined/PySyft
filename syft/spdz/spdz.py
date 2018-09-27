@@ -44,9 +44,9 @@ def decode(field_element, precision_fractional=PRECISION_FRACTIONAL, mod=field):
 #     return result
 
 
-def share(secret, n_workers, mod=field):
+def share(secret, n_workers, mod=field, random_type=torch.LongTensor):
 
-    random_shares = [torch.LongTensor(secret.get_shape()) for i in range(n_workers - 1)]
+    random_shares = [random_type(secret.get_shape()) for i in range(n_workers - 1)]
 
     for share in random_shares:
         share.random_(mod)
@@ -102,8 +102,8 @@ def spdz_neg(a, mod=field):
 
 
 def spdz_mul(x, y, workers, mod=field):
-    if x.shape != y.shape:
-        raise ValueError()
+    if x.get_shape() != y.get_shape():
+        raise ValueError("Shapes must be identical in order to multiply them")
     shape = x.shape
     triple = generate_mul_triple_communication(shape, workers)
     a, b, c = triple
@@ -214,13 +214,8 @@ def generate_mul_triple_communication(shape, workers):
     return triple
 
 
-def generate_zero_shares_communication(alice, bob, *sizes):
-    zeros = torch.zeros(*sizes)
-    u_alice, u_bob = share(zeros, 2)
-    u_alice.send(alice)
-    u_bob.send(bob)
-    u_gp = sy._GeneralizedPointerTensor({alice: u_alice.child, bob: u_bob.child})
-    return u_gp
+def generate_zero_shares_communication(alice, bob, sizes):
+    return torch.zeros(sizes).long().share(alice, bob)
 
 
 def generate_matmul_triple(shapes, mod=field):
