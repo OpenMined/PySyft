@@ -835,7 +835,7 @@ class _PointerTensor(_SyftTensor):
         cmd['has_self'] = True
         cmd['self'] = self
 
-        response =  self.handle_call(cmd, self.owner)
+        response = self.handle_call(cmd, self.owner)
 
         return response
 
@@ -953,7 +953,8 @@ class _PointerTensor(_SyftTensor):
         # Remove this pointer - TODO: call deregister function instead of doing it by hand
         if deregister_ptr:
             if self.torch_type == 'syft.Variable':
-                self.owner.rm_obj(self.parent.data.child.id)
+                if hasattr(self.parent, 'data'):
+                    self.owner.rm_obj(self.parent.data.child.id)
             self.owner.rm_obj(self.id)
 
         # if the pointer happens to be pointing to a local object,
@@ -968,12 +969,14 @@ class _PointerTensor(_SyftTensor):
         syft_tensor = tensorvar.child
         syft_tensor.id = self.id
         if self.torch_type == 'syft.Variable':
-            tensorvar.data.child.id = self.parent.data.child.id
+            if hasattr(self.parent, 'data'):
+                tensorvar.data.child.id = self.parent.data.child.id
 
         # Register the result
         self.owner.register(syft_tensor)
         if syft_tensor.torch_type == 'syft.Variable':
-            self.owner.register(tensorvar.data.child)
+            if hasattr(self.parent, 'data'):
+                self.owner.register(tensorvar.data.child)
 
         torch_utils.fix_chain_ends(tensorvar)
 
@@ -988,6 +991,9 @@ class _PointerTensor(_SyftTensor):
         cmd['self'] = self
 
         return sy.Size(self.handle_call(cmd, self.owner).get().int().tolist())
+
+    def decode(self):
+        raise NotImplementedError("It is not possible to remotely decode a tensorvar for the moment")
 
 
 class _FixedPrecisionTensor(_SyftTensor):
@@ -1076,7 +1082,8 @@ class _FixedPrecisionTensor(_SyftTensor):
         self.child.child = None # <-- This is doing magic things
         value = self.child % self.field
         if len(value.size()) == 0:
-            raise TypeError("Can't decode empty tensor")
+            # raise TypeError("Can't decode empty tensor")
+            return None
         gate = value.native_gt(self.torch_max_value).long()
         neg_nums = (value - spdz.torch_field) * gate
         pos_nums = value * (1 - gate)
@@ -1114,8 +1121,26 @@ class _FixedPrecisionTensor(_SyftTensor):
                 return _FixedPrecisionTensor(result_child).wrap(True)
 
     def get(self, *args, **kwargs):
-        self.child = self.child.get(*args, **kwargs)
-        return self
+        """
+        /!\ Return a tensorvar
+        """
+        if torch_utils.is_variable(self.child):
+            var = self.parent
+            if self.child.grad is None:
+                self.child.init_grad_()
+            child_child_var = self.child.get(*args, **kwargs)
+            torch_utils.bind_var_like_objects(self, child_child_var)
+
+            if hasattr(var, 'grad') and var.grad is not None:
+                self.child.assign_grad_(child_child_var.grad)
+                self.grad = var.grad.child
+                self.grad.child = self.child.grad
+                self.grad.data = var.grad.data.child
+                self.grad.data.child = self.child.grad.data
+            return var
+        else:
+            self.child = self.child.get(*args, **kwargs)
+            return self.parent
 
     def __add__(self, other):
         response = (self.child + other.child) % self.field
@@ -1388,7 +1413,6 @@ class _SPDZTensor(_SyftTensor):
         neg_nums = (value - spdz.torch_field) * gate
         pos_nums = value * (1 - gate)
         result = neg_nums + pos_nums
-
         return result
 
 
@@ -1490,21 +1514,8 @@ class _TorchObject(object):
         if torch_utils.is_variable(self):
             if not hasattr(self, 'grad') or self.grad is None:
                 self.init_grad_()
-
         if isinstance(self.child, _PointerTensor):
             return self.owner._execute_call('fix_precision', self)
-            self_ = self.child
-
-            cmd = {
-                'command': 'fix_precision',
-                'self': self_,
-                'args': [],
-                'kwargs': {},
-                'has_self': True
-            }
-
-            ptr = self_.handle_call(cmd, self_.owner)
-            return ptr.wrap(True)
         else:
             fpt = lambda tensorvar, is_encoded: _FixedPrecisionTensor(tensorvar,
                                                                       torch_type=tensorvar.child.torch_type,
@@ -1521,6 +1532,7 @@ class _TorchObject(object):
                 # data -----> FixP - - - -> data
                 #                   (link)
                 _var.data.child = fpt(_var.child.child.data, True).child
+                _var.data.child.torch_type = self.data.child.torch_type
                 # Add the missing .data link in the last figure
                 _var.child.data = _var.data.child
                 # Do the same with gradient
@@ -1528,6 +1540,7 @@ class _TorchObject(object):
                     _var.init_grad_()
                     _var.grad = fpt(self.grad, already_encoded)
                     _var.grad.data.child = fpt(_var.grad.child.child.data, True).child
+                    _var.grad.data.child.torch_type = self.grad.data.child.torch_type
                     _var.grad.child.data = _var.grad.data.child
                 return _var
             else:
@@ -1870,7 +1883,6 @@ class _TorchVariable(_TorchObject):
 
             torch_utils.fix_chain_ends(self)
             torch_utils.assert_is_chain_well_formed(self)
-
             return self
 
         return variable
@@ -1980,16 +1992,25 @@ class _TorchVariable(_TorchObject):
 
     # in the case of fixed precision tensors, torch tensors need this function
     def decode(self):
-        var = sy.Variable(self.data.decode())
-        var.child = self.child.child.child
-        # if hasattr(self, 'grad') and self.grad is not None:
-        #     var.grad = self.grad.decode()
+        var_data = self.data.decode()
+        if var_data is not None:
+            var = sy.Variable()
+            var.child = self.child.child.child
+            if hasattr(self, 'grad') and self.grad is not None:
+                var.assign_grad_(self.grad.decode())
+        else:
+            var = sy.Variable()
         return var
 
     def decode_(self):
-        self.data = self.data.decode()
+        var_data = self.data.decode()
+        if var_data is not None:
+            self.data = var_data
+            if hasattr(self, 'grad') and self.grad is not None:
+                self.grad.decode_()
+        else:
+            self.data.child = self.data.child.child.child
         self.child = self.child.child.child
-        # if hasattr(self, 'grad') and self.grad is not None:
-        #    self.grad.decode_()
+
 
 

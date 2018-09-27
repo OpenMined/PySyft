@@ -147,6 +147,13 @@ def enforce_owner(obj, owner):
             # Torch is circular this creates an infinite recursion. TODO: fix after Torch 1.0
 
 
+def bind_var_like_objects(obj, child_obj, grad=False):
+    obj.child = child_obj
+    child_obj.parent = obj
+
+    obj.data.child = child_obj.data
+    child_obj.data.parent = obj.data
+
 def wrap_command_with(obj, wrapper):
     """
     Wrap a syft object with a given wrapper
@@ -192,9 +199,7 @@ def wrap_command(obj):
     elif isinstance(obj, dict):
         return {k: wrap_command(o) for k, o in obj.items()}
     else:
-        print(obj)
         print('The following type wasnt wrapped:', str(type(obj)))
-        print(sadf)
         return obj
 
 
@@ -593,6 +598,7 @@ def find_tail_of_chain(obj, start_id=None, start_type=None):
         if obj.child is None:
             raise AttributeError('Chain is broken on', obj)
         else:
+            obj.child.parent = obj
             return find_tail_of_chain(obj.child, start_id, start_type)
 
 
