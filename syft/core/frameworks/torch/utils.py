@@ -207,7 +207,7 @@ def wrap_command(obj):
     elif isinstance(obj, dict):
         return {k: wrap_command(o) for k, o in obj.items()}
     else:
-        print('The following type wasnt wrapped:', str(type(obj)))
+        # print('The following type wasnt wrapped:', str(type(obj)))
         return obj
 
 

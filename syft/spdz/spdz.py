@@ -217,6 +217,9 @@ def generate_mul_triple_communication(shape, workers):
 def generate_zero_shares_communication(alice, bob, sizes):
     return torch.zeros(sizes).long().share(alice, bob)
 
+def generate_one_shares_communication(alice, bob, sizes):
+    return torch.ones(sizes).long().share(alice, bob)
+
 
 def generate_matmul_triple(shapes, mod=field):
     r = torch.LongTensor(shapes[0]).random_(mod)
