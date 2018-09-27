@@ -662,7 +662,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
              pointer_dict[key] = pointer
          self.pointer_tensor_dict = pointer_dict
          self.torch_type = torch_type
-         self.shape = list(self.pointer_tensor_dict.values())[0].shape
+         self.shape = list(self.pointer_tensor_dict.values())[0].get_shape()
     def ser(self, private, as_dict=True):
         pointer_dict = {}
 

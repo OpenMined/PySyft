@@ -1,5 +1,6 @@
 import torch
 import syft as sy
+from syft.core.frameworks.torch.utils import chain_print as pp
 
 BASE = 2
 KAPPA = 3  # ~29 bits
@@ -45,7 +46,7 @@ def decode(field_element, precision_fractional=PRECISION_FRACTIONAL, mod=field):
 
 
 def share(secret, n_workers, mod=field):
-
+    print(n_workers)
     random_shares = [torch.LongTensor(secret.get_shape()) for i in range(n_workers - 1)]
 
     for share in random_shares:
@@ -92,6 +93,13 @@ def get_workers(mpct):
         raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
     return list(child.pointer_tensor_dict.keys())
  
+def get_shape(mpct):
+    child = mpct
+    while not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor) and child is not None:
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return child.shape
 
 def public_add(x, y, interface):
     if (interface.get_party() == 0):
@@ -177,7 +185,8 @@ def spdz_matmul(x, y, workers, mod=field):
 
 def spdz_sigmoid(x): 
     workers = get_workers(x)
-    W0, W1, W3, W5 = generate_sigmoid_shares_communication(x.shape, workers)
+    W0, W1, W3, W5 = generate_sigmoid_shares_communication(get_shape(x), workers)
+    pp(x)
     x2 = x * x
     x3 = x * x2
     x5 = x3 * x2
@@ -268,10 +277,10 @@ def generate_matmul_triple_communication(shapes, workers):
 
 
 def generate_sigmoid_shares_communication(tensor_shape, workers):
-        W0 = (torch.FloatTensor(tensor_shape).one_() * 1 / 2).fix_precision().send(workers)
-        W1 = (torch.FloatTensor(tensor_shape).one_() * 1 / 4).fix_precision().send(workers)
-        W3 = (torch.FloatTensor(tensor_shape).one_() * -1 / 48).fix_precision().send(workers)
-        W5 = (torch.FloatTensor(tensor_shape).one_() * 1 / 480).fix_precision().send(workers)
+        W0 = (torch.ones(tensor_shape) * 1 / 2).fix_precision().share(*workers)
+        W1 = (torch.ones(tensor_shape) * 1 / 4).fix_precision().share(*workers)
+        W3 = (torch.ones(tensor_shape) * -1 / 48).fix_precision().share(*workers)
+        W5 = (torch.ones(tensor_shape) * 1 / 480).fix_precision().share(*workers)
 
         quad = [W0, W1, W3, W5]
         return quad
