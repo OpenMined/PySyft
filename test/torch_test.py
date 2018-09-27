@@ -1168,6 +1168,15 @@ class TestSPDZTensor(TestCase):
 
         assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
 
+    def test_fix_precision_mul(self):
+        x = torch.FloatTensor([2.1, 1])
+        y = torch.FloatTensor([1.2, 1.111])
+        x = x.fix_precision()
+        y = y.fix_precision()
+        z = x + y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([3.3, 2.111])).all()
+
     def test_var_fix_precision_decode(self):
         x = sy.Variable(torch.FloatTensor([0.1, 0.2, 0.1, 0.2]))
         x = x.fix_precision()

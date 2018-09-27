@@ -1025,9 +1025,9 @@ class _FixedPrecisionTensor(_SyftTensor):
                  child=None,
                  owner=None,
                  torch_type=None,
-                 bits=31,
+                 bits=32,
                  base=10,
-                 precision_fractional=6,
+                 precision_fractional=3,
                  already_encoded=False):
 
         if torch_type is None:
@@ -1128,9 +1128,35 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         if has_self:
             self = command['self']
-            if attr == '__add__':
-                torch_tensorvar = cls.__add__(self, *args, **kwargs)
-                response = torch_tensorvar.fix_precision(already_encoded=True)
+            if attr in ('__add__', '__mul__') and isinstance(args[0], sy._FixedPrecisionTensor):
+                # Compute the precision to keep
+                other = args[0]
+                assert (self.base == other.base) and (self.bits == other.bits), \
+                    'Arguments should share the same base and field'
+                self_precision = self.precision_fractional
+                other_precision = other.precision_fractional
+                precision = min(self_precision, other_precision)
+                precision_loss = max(self_precision, other_precision)
+
+                # Perform the computation
+                torch_tensorvar = None
+                if attr == '__add__':
+                    torch_tensorvar = cls.__add__(self, *args, **kwargs)
+                elif attr == '__mul__':
+                    torch_tensorvar = cls.__mul__(self, other)
+                    # Decimal rounding to the appropriate precision
+                    if precision_loss > 0:
+                        torch_tensorvar = torch_tensorvar / self.base ** precision_loss
+
+                # Check overflow
+                if (torch_tensorvar > self.field).any():
+                    torch_tensorvar = torch_tensorvar % self.field
+                    logging.warning('{} on FixPrecision Tensor/Variable overflowed, '
+                                    'try reducing precision_fractional.'.format(attr))
+                response = torch_tensorvar.fix_precision(
+                    already_encoded=True,
+                    precision_fractional=precision
+                )
                 return response
             if attr == 'share':
                 response = self.share(*args, **kwargs)
@@ -1162,8 +1188,11 @@ class _FixedPrecisionTensor(_SyftTensor):
             return self.parent
 
     def __add__(self, other):
-        response = (self.child + other.child) % self.field
+        response = self.child + other.child
+        return response
 
+    def __mul__(self, other):
+        response = self.child * other.child
         return response
 
     def __repr__(self):
@@ -1536,9 +1565,9 @@ class _TorchObject(object):
         return spdz.encode(self)
 
     def fix_precision(self,
-                      bits=31,
+                      bits=32,
                       base=10,
-                      precision_fractional=6,
+                      precision_fractional=3,
                       already_encoded=False):
         # TODO: Should fix_me be an inplace op?
 
