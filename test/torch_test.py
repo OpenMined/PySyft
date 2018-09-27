@@ -48,11 +48,21 @@ def setUpModule():
     class Chain():
         def __init__(self, leaf=False):
             if not leaf:
+                self.tensor = Chain(True)
                 self.var = Chain(True)
 
     global display_chain
 
     display_chain = Chain()
+
+    display_chain.tensor.local = 'FloatTensor > _LocalTensor'
+
+    display_chain.tensor.pointer = 'FloatTensor > _PointerTensor'
+
+    display_chain.tensor.fixp_local = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor'
+
+    display_chain.tensor.fixp_mpc_gpt = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _MPCTensor > LongTensor > _GeneralizedPointerTensor'
+
     display_chain.var.local = 'Variable > _LocalTensor\n' \
                               ' - FloatTensor > _LocalTensor\n' \
                               ' - - Variable > _LocalTensor\n' \
@@ -1132,6 +1142,33 @@ class TestSPDZTensor(TestCase):
 
         assert sy.eq(spdz_x, sy.LongTensor([-3])).all()
 
+    def test_fix_precision_decode(self):
+        x = torch.FloatTensor([0.1, 0.2, 0.1, 0.2])
+        x = x.fix_precision()
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+
+        x = x.decode()
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
+
+        x = x.fix_precision()
+        z = x + x
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([0.2, 0.4, 0.2, 0.4])).all()
+        z = x + x
+        z.decode_()
+        assert torch.eq(z, torch.FloatTensor([0.2, 0.4, 0.2, 0.4])).all()
+        x = x.decode()
+
+        x = x.fix_precision()
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+
+        x.decode_()
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
+
     def test_var_fix_precision_decode(self):
         x = sy.Variable(torch.FloatTensor([0.1, 0.2, 0.1, 0.2]))
         x = x.fix_precision()
@@ -1159,6 +1196,26 @@ class TestSPDZTensor(TestCase):
 
         assert torch_utils.chain_print(x, display=False) == display_chain.var.local
 
+    def test_remote_fix_precision(self):
+        x = torch.FloatTensor([0.1, 0.2, 0.1, 0.2])
+        x = x.send(bob).fix_precision()
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.pointer
+        x_ = bob.get_obj(x.id_at_location).parent
+        assert torch_utils.chain_print(x_, display=False) == display_chain.tensor.fixp_local
+
+        z = x + x
+        z.get().decode_()
+        torch.eq(z, torch.FloatTensor([0.2, 0.4, 0.2, 0.4])).all()
+
+        x = x.get()
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+
+        x = x.decode()
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
+
     def test_var_remote_fix_precision(self):
         x = sy.Variable(torch.FloatTensor([0.1, 0.2, 0.1, 0.2]))
         x = x.send(bob).fix_precision()
@@ -1179,6 +1236,21 @@ class TestSPDZTensor(TestCase):
 
         assert torch_utils.chain_print(x, display=False) == display_chain.var.local
 
+    def test_fix_precision_share(self):
+        x = torch.FloatTensor([1.1, 2, 3])
+        x = x.fix_precision().share(alice, bob)
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_mpc_gpt
+
+        z = x + x
+
+        x = x.get()
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+
+        z = z.get().decode()
+        assert torch.eq(z, torch.FloatTensor([2.2, 4, 6])).all()
+
     def test_var_fix_precision_share(self):
         x = sy.Variable(torch.FloatTensor([1.1, 2, 3]))
         x = x.fix_precision().share(alice, bob)
@@ -1186,12 +1258,35 @@ class TestSPDZTensor(TestCase):
         assert torch_utils.chain_print(x, display=False) == display_chain.var.fixp_mpc_gpt
 
         z = x + x
-        z = z.get().decode()
-        assert torch.eq(z, sy.Variable(torch.FloatTensor([2.2, 4, 6]))).all()
 
         x = x.get()
 
         assert torch_utils.chain_print(x, display=False) == display_chain.var.fixp_local
+
+        z = z.get().decode()
+        assert torch.eq(z, sy.Variable(torch.FloatTensor([2.2, 4, 6]))).all()
+
+    def test_remote_fix_precision_share(self):
+        x = torch.FloatTensor([1.1, 2, 3])
+        x = x.send(bob).fix_precision().share(alice, bob)
+
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.pointer
+        x_ = bob.get_obj(x.id_at_location).parent
+        assert torch_utils.chain_print(x_, display=False) == display_chain.tensor.fixp_mpc_gpt
+
+        z = x + x
+
+        x = x.get()
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_mpc_gpt
+
+        x = x.get()
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+
+        x = x.decode()
+        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
+
+        z = z.get().get().decode()
+        assert torch.eq(z, torch.FloatTensor([2.2, 4, 6])).all()
 
     def test_var_remote_fix_precision_share(self):
         x = sy.Variable(torch.FloatTensor([1.1, 2, 3]))
@@ -1201,6 +1296,8 @@ class TestSPDZTensor(TestCase):
         x_ = bob.get_obj(x.id_at_location).parent
         assert torch_utils.chain_print(x_, display=False) == display_chain.var.fixp_mpc_gpt
 
+        z = x + x
+
         x = x.get()
         assert torch_utils.chain_print(x, display=False) == display_chain.var.fixp_mpc_gpt
 
@@ -1209,6 +1306,9 @@ class TestSPDZTensor(TestCase):
 
         x = x.decode()
         assert torch_utils.chain_print(x, display=False) == display_chain.var.local
+
+        z = z.get().get().decode()
+        assert torch.eq(z, sy.Variable(torch.FloatTensor([2.2, 4, 6]))).all()
 
 
 class TestGPCTensor(TestCase):

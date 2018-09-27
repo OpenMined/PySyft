@@ -727,7 +727,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
                 for w, p in gpt.pointer_tensor_dict.items()
             }
             gpt.data = _GeneralizedPointerTensor(data_pointer_dict, torch_type=var_data_type, owner=owner)
-            gpt.data.child = torch.guard[torch_type]()
+            gpt.data.child = torch.guard[var_data_type]()
 
             grad_pointer_dict = {
                 w: p.grad
@@ -741,7 +741,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
                 for w, p in gpt.pointer_tensor_dict.items()
             }
             gpt.grad.data = _GeneralizedPointerTensor(grad_data_pointer_dict, torch_type=var_data_type, owner=owner)
-            gpt.grad.data.child = torch.guard[torch_type]()
+            gpt.grad.data.child = torch.guard[var_data_type]()
 
         else:  # else tensor
             gpt.child = torch.guard[torch_type]([])
@@ -1802,6 +1802,9 @@ class _TorchTensor(_TorchObject):
     # in the case of fixed precision tensors, torch tensors need this function
     def decode(self):
         return self.child.decode()
+
+    def decode_(self):
+        self.child = self.child.decode().child
 
 
 class _TorchVariable(_TorchObject):
