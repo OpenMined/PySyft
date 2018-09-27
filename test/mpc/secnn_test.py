@@ -29,22 +29,23 @@ class TestSecureNN(unittest.TestCase):
 
     def prep_decompose(self):
         x = np.array([2 ** 32 + 3,
-                      2 ** 31 - 1,
-                      2 ** 31,
+                      2 ** 30 - 1,
+                      2 ** 30,
                       -3])
         expected = np.array([
-            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-            ]).reshape([2, 2, 32])
+            list(reversed(np.binary_repr(3, width=31))),
+            list(reversed(np.binary_repr(2 ** 30 - 1, width=31))),
+            list(reversed(np.binary_repr(2 ** 30, width=31))),
+            list(reversed(np.binary_repr(-3, width=31)))
+        ]).astype('int')
         tensor = torch.LongTensor(x)
+        expected = torch.LongTensor(expected)
         return expected, tensor
 
     def test_decompose(self):
         expected, tensor = self.prep_decompose()
         bin = decompose(tensor)
-        np.testing.assert_array_equal(expected, bin)
+        assert (bin == expected).all()
 
     def test_select_shares(self):
         workers = (self.alice, self.bob)

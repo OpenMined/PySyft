@@ -131,7 +131,10 @@ def enforce_owner(obj, owner):
         if isinstance(obj, np.ndarray):
             if owner != owner.hook.local_worker:
                 owner.hook.local_worker.de_register(obj)
-            obj.owner = owner
+            try:
+                obj.owner = owner
+            except:
+                "sometimes this failes"
 
             # would normally call enforce_owner(obj.child, owner) here except since
             # Torch is circular this creates an infinite recursion. TODO: fix after Torch 1.0
