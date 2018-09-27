@@ -24,8 +24,11 @@ class TestSecureNN(unittest.TestCase):
         self.bob.add_workers([me, self.alice])
         self.alice.add_workers([me, self.bob])
 
-    def generate_mpc_number_pair(self, n1, n2):
-        return _generate_mpc_number_pair(self, n1, n2)
+    def generate_mpc_number_pair(self, n1, n2, workers):
+        mpcs = []
+        for i in [n1, n2]:
+            mpcs.append(torch.LongTensor([i]).share(*workers))
+        return mpcs
 
     def prep_decompose(self):
         x = np.array([2 ** 32 + 3,
@@ -49,14 +52,14 @@ class TestSecureNN(unittest.TestCase):
 
     def test_select_shares(self):
         workers = (self.alice, self.bob)
-        a, b = self.generate_mpc_number_pair(5, 10)
-        abit, bbit = self.generate_mpc_number_pair(0, 1)
+        a, b = self.generate_mpc_number_pair(5, 10, workers)
+        abit, bbit = self.generate_mpc_number_pair(0, 1, workers)
+
         za = select_shares(abit, a, b, workers)
         zb = select_shares(bbit, a, b, workers)
-        print('za', za)
-        print('zb', zb)
-        assert za == a
-        assert zb == b
+
+        assert za.get()[0] == 5
+        assert zb.get()[0] == 10
 
 
 if __name__ == '__main__':

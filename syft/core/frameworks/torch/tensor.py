@@ -662,6 +662,9 @@ class _GeneralizedPointerTensor(_SyftTensor):
          self.pointer_tensor_dict = pointer_dict
          self.torch_type = torch_type
 
+    def get_shape(self):
+        return list(self.pointer_tensor_dict.values())[0].get_shape()
+
     def ser(self, private, as_dict=True):
         pointer_dict = {}
 
@@ -1112,6 +1115,10 @@ class _SPDZTensor(_SyftTensor):
         # self.allow_arbitrary_arg_types_for_methods = set()
         # self.allow_arbitrary_arg_types_for_methods.add("__mul__")
 
+    def get_shape(self):
+        # skip .child since it's a wrapper
+        return self.child.child.get_shape()
+
     def ser(self, private, as_dict=True):
 
         data = {
@@ -1336,6 +1343,9 @@ class _TorchObject(object):
         return out
 
     def _share(self, n_workers):
+        if(not isinstance(self, torch.LongTensor)):
+            raise TypeError("Can only MPCShare LongTensor type. You tried to share "+str(type(self).__name__)+"." +
+                            " Do you need to call .fix_precision() first?")
         return spdz.share(self, n_workers)
 
     def _encode(self):
