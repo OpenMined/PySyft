@@ -107,28 +107,35 @@ def enforce_owner(obj, owner):
             enforce_owner(o, owner)
 
     else:
-        if is_syft_tensor(obj) and hasattr(obj, 'data'):
+        if is_syft_tensor(obj) and not isinstance(obj, sy._LocalTensor) and hasattr(obj, 'data'):
             enforce_owner(obj.data, owner)
-        if is_syft_tensor(obj) and hasattr(obj, 'grad'):
+        if is_syft_tensor(obj) and not isinstance(obj, sy._LocalTensor) and hasattr(obj, 'grad'):
             enforce_owner(obj.grad, owner)
-
-        if is_variable(obj):
-            enforce_owner(obj.data.child, owner)
-            if obj.grad is not None:
-                enforce_owner(obj.grad.child, owner)
-
-        if is_syft_tensor(obj):
-            if owner != owner.hook.local_worker:
-                owner.hook.local_worker.de_register(obj)
-            obj.owner = owner
-            enforce_owner(obj.child, owner)
 
         if is_tensor(obj):
             if owner != owner.hook.local_worker:
                 owner.hook.local_worker.de_register(obj)
-            obj.child.owner = owner
+            # tensor has no attr owner, just a prop to obj.child
+            enforce_owner(obj.child, owner)
 
-        if isinstance(obj, np.ndarray):
+        elif is_variable(obj):
+            if owner != owner.hook.local_worker:
+                owner.hook.local_worker.de_register(obj)
+            # tensor has no attr owner, just a prop to obj.child
+            enforce_owner(obj.child, owner)
+            enforce_owner(obj.data, owner)
+            if obj.grad is not None:
+                enforce_owner(obj.grad, owner)
+
+        elif is_syft_tensor(obj):
+            if owner != owner.hook.local_worker:
+                owner.hook.local_worker.de_register(obj)
+            obj.owner = owner
+            # Terminal condition to avoid recursions
+            if not isinstance(obj, sy._LocalTensor):
+                enforce_owner(obj.child, owner)
+
+        elif isinstance(obj, np.ndarray):
             if owner != owner.hook.local_worker:
                 owner.hook.local_worker.de_register(obj)
             try:
@@ -138,6 +145,21 @@ def enforce_owner(obj, owner):
 
             # would normally call enforce_owner(obj.child, owner) here except since
             # Torch is circular this creates an infinite recursion. TODO: fix after Torch 1.0
+
+
+def bind_var_like_objects(obj, child_obj, grad=False):
+    obj.child = child_obj
+    child_obj.parent = obj
+
+    obj.data.child = child_obj.data
+    child_obj.data.parent = obj.data
+
+    if grad:
+        obj.grad.child = child_obj.grad
+        child_obj.grad.parent = obj.grad
+
+        obj.grad.data.child = child_obj.grad.data
+        child_obj.grad.data.parent = obj.grad.data
 
 
 def wrap_command_with(obj, wrapper):
@@ -185,9 +207,7 @@ def wrap_command(obj):
     elif isinstance(obj, dict):
         return {k: wrap_command(o) for k, o in obj.items()}
     else:
-        print(obj)
         print('The following type wasnt wrapped:', str(type(obj)))
-        print(sadf)
         return obj
 
 
@@ -482,8 +502,13 @@ def link_var_chain_to_data_and_grad_chains(var_node, data_node, grad_node):
     if not is_variable(grad_node) or len(grad_node.size()) > 0:
         var_node.grad = grad_node
     next_node = var_node.child
-    if next_node is not None and not (is_tensor(next_node) or is_variable(next_node)):
-        link_var_chain_to_data_and_grad_chains(var_node.child, data_node.child, grad_node.child)
+    if next_node is not None:# and not (is_tensor(next_node) or is_variable(next_node)):
+        if isinstance(next_node, sy._LocalTensor):
+            next_node.data = data_node.child
+            if not is_variable(grad_node.child) or len(grad_node.child.size()) > 0:
+                next_node.grad = grad_node.child
+        else:
+            link_var_chain_to_data_and_grad_chains(var_node.child, data_node.child, grad_node.child)
 
 
 def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=None, end_chain=None):
@@ -521,10 +546,13 @@ def assert_is_chain_well_formed(obj, downward=True, start_id=None, start_type=No
             assert end_chain.child is None, "Pointer shouldnt have a child"
             return True
         elif isinstance(end_chain, sy._LocalTensor):
-            assert obj.parent.id == end_chain.id, "TensorVar parent should be the tail LocalTensor"\
-                                                  + str(obj.parent.id) + ',' + str(end_chain.id)
-            assert end_chain.child.id == obj.id, "Tail LocalTensor child should be the Tensor Var"
-            return True
+            # we allow to have inner tensors in the chain, provided that its parent is a FixedPTensor
+            if not isinstance(obj.parent, sy._FixedPrecisionTensor):
+                assert obj.parent.id == end_chain.id, "TensorVar parent should be the tail LocalTensor"\
+                                                      + str(obj.parent.id) + ',' + str(end_chain.id)
+                assert end_chain.child.id == obj.id, "Tail LocalTensor child should be the Tensor Var"
+                return True
+
         elif isinstance(end_chain, sy._SPDZTensor):
             return True
         else:
@@ -572,12 +600,13 @@ def find_tail_of_chain(obj, start_id=None, start_type=None):
             raise StopIteration('The chain looped downward on id', obj.child.id, 'with obj',
                                 obj.child)
 
-    if isinstance(obj, (sy._LocalTensor, sy._PointerTensor, sy._SPDZTensor)):
+    if isinstance(obj, (sy._LocalTensor, sy._PointerTensor, sy._GeneralizedPointerTensor)):
         return obj
     else:
         if obj.child is None:
             raise AttributeError('Chain is broken on', obj)
         else:
+            obj.child.parent = obj
             return find_tail_of_chain(obj.child, start_id, start_type)
 
 
@@ -606,7 +635,7 @@ def fix_chain_ends(obj):
     if isinstance(end_obj, sy._LocalTensor):
         end_obj.child = obj
         obj.parent = end_obj
-    elif isinstance(end_obj, sy._PointerTensor):
+    elif isinstance(end_obj, (sy._PointerTensor, sy._GeneralizedPointerTensor)):
         end_obj.child = None
         obj.parent = None
     elif isinstance(end_obj, sy._SPDZTensor):

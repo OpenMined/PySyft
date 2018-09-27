@@ -398,6 +398,13 @@ class BaseWorker(ABC):
 
             # save the results locally in self._objects and ensure
             # that .owner is set correctly
+            torch_utils.enforce_owner(result, self)
+            if torch_utils.is_variable(result):
+                if result.grad is not None:
+                    torch_utils.link_var_chain_to_data_and_grad_chains(result, result.data, result.grad)
+                else:
+                    torch_utils.link_var_chain_to_data_chain(result, result.data)
+
             self.register(result)
 
             # return result of torch operation
@@ -754,9 +761,10 @@ class BaseWorker(ABC):
             variable = result
             self.register(variable.child)
             self.register(variable.data.child)
-            if hasattr(variable, 'grad') and variable.grad is not None:
-                self.register(variable.grad.child)
-                self.register(variable.grad.data.child)
+            if not hasattr(variable, 'grad') or variable.grad is None:
+                variable.init_grad_()
+            self.register(variable.grad.child)
+            self.register(variable.grad.data.child)
         # Case of a iter type non json serializable
         elif isinstance(result, (list, tuple, set, bytearray, range)):
             for res in result:
