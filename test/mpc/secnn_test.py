@@ -61,6 +61,12 @@ class TestSecureNN(unittest.TestCase):
         assert za.get()[0] == 5
         assert zb.get()[0] == 10
 
+    def prepPC(self):
+        self.beta = 
+
+    def test_private_compare(self):
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

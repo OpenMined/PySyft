@@ -43,29 +43,31 @@ def private_compare(x, r, beta, workers):
     """
     computes beta XOR (x > r)
 
-    x is private input
+    x is private shared bit tensor (shared output of decompose)
     r is public input for comparison
     beta is public random bit tensor
 
     all of type _GeneralizedPointerTensor
     """
+    dimlen = len(x.size())
+    while len(beta.size()) < dimlen:
+        beta = beta.unsqueeze(-1)
+    beta = beta.expand_as(x)
+
     t = (r + 1) % (2 ** Q_BITS)
 
-    x_bits = decompose(x)
     r_bits = decompose(r)
     t_bits = decompose(t)
 
     zeros = beta == 0
     ones = beta == 1
     others = r == (2 ** Q_BITS - 1)
-    ones = ones & (others - 1).abs()
-
+    ones = ones & (others - 1).long().abs().byte()
 
     c_zeros = _pc_beta0(x_bits[zeros], r_bits[zeros])
     c_ones = _pc_beta1(x_bits[ones], t_bits[ones])
     c_other = _pc_else(*x_bits.shape, workers)
 
-    # TODO: recombine c properly here
     c = torch.zeros(*x_bits.shape).long()
     c[zeros] = c_zeros
     c[ones] = c_ones
@@ -89,18 +91,20 @@ def msb(x, workers):
     return lsb(2 * x, workers)
 
 
-def lsb(y):
+def lsb(y, workers):
     """
     computes the least significant bit of a shared input tensor
     """
     # happens on crypto producer
-    x = random_as(y)
-    xbits = decompose(x)
+    xcrypt = random_as(y)
+    xbits = decompose(xcrypt)
     xlsb = xbits[..., 0]
     beta = random_as(y, mod=2)
     # share x, xlsb, and xbits here, send to the 2 parties
+
+
     r = y + x
-    # r.get()  # reconstruct r
+    r.get()
     rbits = decompose(r)
     rlsb = rbits[..., 0]
     beta_prime = private_compare(xbits, r, beta)
@@ -112,21 +116,21 @@ def lsb(y):
     return alpha + u
 
 
-def share_convert(x):
-    # FIXME: implement share convert protocol
-    raise NotImplementedError("Share convert protocol unfinished -- Ring modulus needs to be odd.")
+def relu(x, workers):
+    return x * nonnegative(x, workers)
+
+
+def nonnegative(a, workers):
+    c = 2 * a
+    alpha = msb(c)
+    gamma = nope(alpha)
+    u = generate_zero_shares_communication(*workers, *gamma.get_shape())
+    return gamma + u
 
 
 def random_as(tensor, mod=L):
     r = torch.LongTensor(tensor.shape).random_(mod)
     return r.type_as(tensor)
-
-
-def get_wrap(x, y, mod=L):
-    # FIXME: the conditional on the right should include a plaintext add of x and y,
-    # not an MPC add since the > test needs to be done without a modulus
-    # needed for share_convert
-    return x + y, x + y > mod
 
 
 def xor(x, y):
@@ -137,13 +141,25 @@ def nope(x):
     return 1 - x
 
 
+def get_wrap(x, y, mod=L):
+    # FIXME: the conditional on the right should include a plaintext add of x and y,
+    # not an MPC add since the > test needs to be done without a modulus
+    # needed for share_convert
+    return x + y, x + y > mod
+
+
+def share_convert(x):
+    # FIXME: implement share convert protocol
+    raise NotImplementedError("Share convert protocol unfinished -- Ring modulus needs to be odd.")
+
+
 def _pc_beta0(x, r):
     # note x and r are both binary tensors,
     # and dim -1 contains their bits
     # x should be shared, r should be public
     w = xor(x, r)
     z = r  - (x - 1)
-    w_sum = torch.zeros(w.shape).type_as(w)
+    w_sum = torch.zeros(*w.get_shape()).type_as(w)
     for i in range(Q_BITS - 2, -1, -1):
         w_sum[..., i] = w[..., (i + 1):].sum(dim=-1, keepdim=True)
     c = z + w_sum
@@ -153,7 +169,7 @@ def _pc_beta0(x, r):
 def _pc_beta1(x, t):
     w = xor(x, t)
     z = (x + 1) - t
-    w_sum = torch.zeros(w.shape).type_as(w)
+    w_sum = torch.zeros(*w.get_shape()).type_as(w)
     for i in range(Q_BITS - 2, -1, -1):
         w_sum[..., i] = w[..., (i + 1):].sum(dim=-1, keepdim=True)
     c = z + w_sum
