@@ -32,7 +32,7 @@ Furthermore the container is deleted when it is stopped, in a way to facilitate 
 
 > PySyft supports Python >= 3.6 and PyTorch 0.3.1
 
-Pick the proper PyTorch version according to your machine: [CPU](http://download.pytorch.org/whl/cpu/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [CUDA9.1](http://download.pytorch.org/whl/cu91/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [CUDA9.0](http://download.pytorch.org/whl/cu90/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [CUDA8.0](http://download.pytorch.org/whl/cu80/torch-0.3.1-cp36-cp36m-linux_x86_64.whl)
+Pick the proper PyTorch version according to your machine: [CPU](http://download.pytorch.org/whl/cpu/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [CUDA9.1](http://download.pytorch.org/whl/cu91/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [CUDA9.0](http://download.pytorch.org/whl/cu90/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [CUDA8.0](http://download.pytorch.org/whl/cu80/torch-0.3.1-cp36-cp36m-linux_x86_64.whl) | [Windows-CPU](https://anaconda.org/peterjc123/pytorch-cpu)
 
 ```bash
 conda install pytorch=0.3.1 -c soumith
