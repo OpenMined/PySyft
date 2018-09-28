@@ -777,7 +777,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
         return res
 
     def workers(self):
-        return list(self.pointer_tensor_dict.keys()) 
+        return list(self.pointer_tensor_dict.keys())
 
     def on(self, wrapper):
         """
@@ -1131,7 +1131,17 @@ class _FixedPrecisionTensor(_SyftTensor):
             if attr == '__add__':
                 torch_tensorvar = cls.__add__(self, *args, **kwargs)
                 response = torch_tensorvar.fix_precision(already_encoded=True)
-                return response
+            elif (attr == '__sub__'):
+                torch_tensorvar = cls.__sub__(self, *args, **kwargs)
+                response = torch_tensorvar.fix_precision(already_encoded=True)
+            elif (attr == '__trudiv__'):
+                torch_tensorvar = cls.__div__(self, *args, **kwargs)
+                response = torch_tensorvar.fix_precision(already_encoded=True)
+            elif (attr == '__mul__'):
+                torch_tensorvar = cls.__mul__(self, *args, **kwargs)
+                response = torch_tensorvar.fix_precision(already_encoded=True)
+            return response
+            
             if attr == 'share':
                 response = self.share(*args, **kwargs)
                 return response
@@ -1162,9 +1172,119 @@ class _FixedPrecisionTensor(_SyftTensor):
             return self.parent
 
     def __add__(self, other):
-        response = (self.child + other.child) % self.field
+    # check for inconsistencies in precision points
+        if (self.precision_fractional == other.precision_fractional):
+            gp_response = (self.child + other.child) % self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             precision_fractional=self.precision_fractional,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True).wrap(True)
+        elif (self.precision_fractional > other.precision_fractional):
+            gp_response = (self.child + other.child * 10 ** (self.precision_fractional -
+                                                             other.precision_fractional)) % self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             precision_fractional=self.precision_fractional,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True).wrap(True)
+
+            other.precision_fractional = self.precision_fractional
+        elif (self.precision_fractional < other.precision_fractional):
+            gp_response = (self.child * 10 ** (other.precision_fractional -
+                                               self.precision_fractional)+ other.child) % self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             precision_fractional=other.precision_fractional,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True).wrap(True)
 
         return response
+
+    def __div__(self, other):
+        if (self.precision_fractional == other.precision_fractional):
+            gp_response = (self.child * 10 ** self.precision_fractional / other.child) % \
+                          self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True,
+                                             precision_fractional = self.precision_fractional)\
+                                            .wrap(True)
+
+        elif (self.precision_fractional > other.precision_fractional):
+            gp_response = (self.child / other.child * 10 ** other.precision_fractional) % \
+                          self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True,
+                                             precision_fractional = self.precision_fractional)\
+                                            .wrap(True)
+
+
+        elif (self.precision_fractional < other.precision_fractional):
+            gp_response = (self.child / other.child * 10 ** self.precision_fractional) % \
+                          self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True,
+                                             precision_fractional=other.precision_fractional) \
+                                            .wrap(True)
+        return response
+
+    def __mul__(self, other):
+        if (self.precision_fractional == other.precision_fractional):
+            gp_response = ((self.child * other.child) / 10 ** self.precision_fractional) % \
+                          self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True,
+                                             precision_fractional = self.precision_fractional)\
+                                            .wrap(True)
+
+        elif (self.precision_fractional > other.precision_fractional):
+            gp_response = (self.child * other.child / 10 ** other.precision_fractional) % \
+                          self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True,
+                                             precision_fractional = self.precision_fractional)\
+                                            .wrap(True)
+
+
+        elif (self.precision_fractional < other.precision_fractional):
+            gp_response = (self.child * other.child / 10 ** self.precision_fractional) % \
+                          self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True,
+                                             precision_fractional=other.precision_fractional) \
+                                            .wrap(True)
+        return response
+
+    def __sub__(self, other):
+        if (self.precision_fractional == other.precision_fractional):
+            gp_response = (self.child - other.child) % self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             precision_fractional=self.precision_fractional,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True).wrap(True)
+        elif (self.precision_fractional > other.precision_fractional):
+            gp_response = (self.child - other.child * 10 ** (self.precision_fractional -
+                                                             other.precision_fractional)) % self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             precision_fractional=self.precision_fractional,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True).wrap(True)
+
+            other.precision_fractional = self.precision_fractional
+        elif (self.precision_fractional < other.precision_fractional):
+            gp_response = (self.child * 10 ** (other.precision_fractional -
+                                               self.precision_fractional) - other.child) % \
+                          self.field
+            response = _FixedPrecisionTensor(gp_response,
+                                             precision_fractional=other.precision_fractional,
+                                             torch_type=self.torch_type,
+                                             already_encoded=True).wrap(True)
+
+        return response
+
 
     def __repr__(self):
         if(not isinstance(self.child, _SPDZTensor)):
@@ -2047,6 +2167,3 @@ class _TorchVariable(_TorchObject):
             self.data.child = self.data.child.child.child
         self.child = self.child.child.child
         torch_utils.fix_chain_ends(self)
-
-
-
