@@ -214,8 +214,8 @@ def generate_mul_triple_communication(shape, workers):
     return triple
 
 
-def generate_zero_shares_communication(alice, bob, sizes):
-    return torch.zeros(sizes).long().share(alice, bob)
+def generate_zero_shares_communication(alice, bob, *sizes):
+    return torch.zeros(*sizes).long().share(alice, bob)
 
 def generate_one_shares_communication(alice, bob, sizes):
     return torch.ones(sizes).long().share(alice, bob)

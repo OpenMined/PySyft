@@ -19,6 +19,7 @@ class TestSecureNN(unittest.TestCase):
 
         self.bob = sy.VirtualWorker(id="bob", hook=self.hook, is_client_worker=False)
         self.alice = sy.VirtualWorker(id="alice", hook=self.hook, is_client_worker=False)
+        self.workers = (self.alice, self.bob)
 
         me.add_workers([self.bob, self.alice])
         self.bob.add_workers([me, self.alice])
@@ -51,21 +52,26 @@ class TestSecureNN(unittest.TestCase):
         assert (bin == expected).all()
 
     def test_select_shares(self):
-        workers = (self.alice, self.bob)
-        a, b = self.generate_mpc_number_pair(5, 10, workers)
-        abit, bbit = self.generate_mpc_number_pair(0, 1, workers)
+        a, b = self.generate_mpc_number_pair(5, 10, self.workers)
+        abit, bbit = self.generate_mpc_number_pair(0, 1, self.workers)
 
-        za = select_shares(abit, a, b, workers)
-        zb = select_shares(bbit, a, b, workers)
+        za = select_shares(abit, a, b, self.workers)
+        zb = select_shares(bbit, a, b, self.workers)
 
         assert za.get()[0] == 5
         assert zb.get()[0] == 10
 
     def prepPC(self):
-        self.beta = 
+        beta = torch.LongTensor([0, 1, 1, 0])
+        x = decompose(torch.LongTensor([5, 3, 6, 4]))#.share(*self.workers)
+        r = torch.LongTensor([4, 6, 3, 7])
+        exp = torch.LongTensor([1, 1, 0, 0])
+        return x, r, beta, exp
 
     def test_private_compare(self):
-        pass
+        x, r, beta, exp = self.prepPC()
+        actual = private_compare(x, r, beta, self.workers)
+        assert (actual == exp).all()
 
 
 if __name__ == '__main__':

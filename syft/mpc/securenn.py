@@ -61,12 +61,12 @@ def private_compare(x, r, beta, workers):
 
     zeros = beta == 0
     ones = beta == 1
-    others = r == (2 ** Q_BITS - 1)
+    others = (r == (2 ** Q_BITS - 1)).unsqueeze(-1).expand_as(ones)
     ones = ones & (others - 1).long().abs().byte()
 
-    c_zeros = _pc_beta0(x_bits[zeros], r_bits[zeros])
-    c_ones = _pc_beta1(x_bits[ones], t_bits[ones])
-    c_other = _pc_else(*x_bits.shape, workers)
+    c_zeros = _pc_beta0(x[zeros], r_bits[zeros])
+    c_ones = _pc_beta1(x[ones], t_bits[ones])
+    c_other = _pc_else(workers, *x.size())
 
     c = torch.zeros(*x_bits.shape).long()
     c[zeros] = c_zeros
@@ -107,6 +107,7 @@ def lsb(y, workers):
     r.get()
     rbits = decompose(r)
     rlsb = rbits[..., 0]
+    r = r.share(*workers)  # TODO: remove this line when public-private addition works
     beta_prime = private_compare(xbits, r, beta)
 
     gamma = xor(beta, beta_prime)
@@ -161,7 +162,7 @@ def _pc_beta0(x, r):
     z = r  - (x - 1)
     w_sum = torch.zeros(*w.get_shape()).type_as(w)
     for i in range(Q_BITS - 2, -1, -1):
-        w_sum[..., i] = w[..., (i + 1):].sum(dim=-1, keepdim=True)
+        w_sum[..., i] = w[..., (i + 1):].sum(dim=-1, keepdim=False)[0]
     c = z + w_sum
     return c
 
@@ -171,13 +172,14 @@ def _pc_beta1(x, t):
     z = (x + 1) - t
     w_sum = torch.zeros(*w.get_shape()).type_as(w)
     for i in range(Q_BITS - 2, -1, -1):
-        w_sum[..., i] = w[..., (i + 1):].sum(dim=-1, keepdim=True)
+        w_sum[..., i] = w[..., (i + 1):].sum(dim=-1, keepdim=False)[0]
     c = z + w_sum
     return c
 
 
 def _pc_else(workers, *sizes):
     u = generate_zero_shares_communication(*workers, *sizes)
+    print('u', type(u), u)
     (w0, u0), (w1, u1) = u.shares.pointer_tensor_dict.items()
     for i in range(Q_BITS - 2, -1, -1):
         if i == 0:
