@@ -2,8 +2,10 @@
 
 from syft.spdz.spdz import (spdz_add, spdz_mul,
                            generate_zero_shares_communication,
+                           get_ptrdict,
                            Q_BITS, field)
 from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor, _SPDZTensor
+from syft.core.frameworks.torch.utils import chain_print
 import torch
 
 L = field
@@ -179,14 +181,18 @@ def _pc_beta1(x, t):
 
 def _pc_else(workers, *sizes):
     u = generate_zero_shares_communication(*workers, *sizes)
-    print('u', type(u), u)
-    (w0, u0), (w1, u1) = u.shares.pointer_tensor_dict.items()
+    u_ptrdict = get_ptrdict(u)
+    (w0, u0), (w1, u1) = u_ptrdict.items()
+    print(u1)
     for i in range(Q_BITS - 2, -1, -1):
+        print('i', i)
         if i == 0:
-            c0[..., i] = -u0
+            c0[..., i] = -1 * u0
             c1[..., i] = u1
+        print('this one prints')
         c0[..., i] = u0 + 1
-        c1[..., i] = -u1
+        print('this one doesn\'t')
+        c1[..., i] = -1 * u1
     ptr_dict = {w0:c0, w1:c1}
     c_gp = _GeneralizedPointerTensor(ptr_dict, torch_type='syft.LongTensor').wrap(True)
     c = _SPDZTensor(x_gp, torch_type='syft.LongTensor').wrap(True)

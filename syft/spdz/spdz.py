@@ -180,6 +180,33 @@ def spdz_sigmoid(x, interface):
     return spdz_add(W0, temp531)
 
 
+def get_ptrdict(mpct):
+    child = mpct
+    while not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor) and child is not None:
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return child.pointer_tensor_dict
+
+
+def get_workers(mpct):
+    child = mpct
+    while not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor) and child is not None:
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return list(child.pointer_tensor_dict.keys())
+
+
+def get_shape(mpct):
+    child = mpct
+    while not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor) and child is not None:
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return child.shape
+
+
 def generate_mul_triple(shape, mod=field):
     r = torch.LongTensor(shape).random_(mod)
     s = torch.LongTensor(shape).random_(mod)
@@ -215,7 +242,7 @@ def generate_mul_triple_communication(shape, workers):
 
 
 def generate_zero_shares_communication(alice, bob, *sizes):
-    return torch.zeros(*sizes).long().share(alice, bob)
+    return torch.zeros(*sizes).fix_precision().share(alice, bob)
 
 def generate_one_shares_communication(alice, bob, sizes):
     return torch.ones(sizes).long().share(alice, bob)
