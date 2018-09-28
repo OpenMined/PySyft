@@ -1,20 +1,20 @@
 """Torch utility functions related to encoding and decoding in a JSON-serializable fashion """
 import json
+import logging
 import re
 import types
-import functools
-import logging
-import torch
-import syft
-import syft as sy
-import numpy as np
+from typing import Any, Optional, Dict
 
-from syft.core import utils
+import numpy as np
+import torch
+from jsonschema._validators import items
+
+import syft as sy
 from syft.core.frameworks.torch import utils as torch_utils
 from .numpy import array, array_ptr
 
 
-def encode(message, retrieve_pointers=False, private_local=True):
+def encode(message: Any, retrieve_pointers: bool = False, private_local: bool = True):
     """
     Help function to call the PythonEncoder
     :param message:
@@ -57,7 +57,7 @@ class PythonEncoder:
         self.found_next_child_types = []
         self.tensorvar_types = tuple(torch.tensorvar_types)
 
-    def encode(self, obj, retrieve_pointers=False, private_local=True):
+    def encode(self, obj: Any, retrieve_pointers: bool = False, private_local: bool = True):
         """
             Performs encoding, and retrieves if requested all pointers found
         """
@@ -82,7 +82,7 @@ class PythonEncoder:
         else:
             return tuple(response)
 
-    def python_encode(self, obj, private_local):
+    def python_encode(self, obj: Any, private_local: Any):
         # Case of basic types
         if isinstance(obj, (int, float, str)) or obj is None:
             return obj
@@ -133,7 +133,7 @@ class PythonEncoder:
             raise ValueError('Unhandled type', type(obj))
 
 
-def decode(message, worker, acquire=None, message_is_dict=False):
+def decode(message: Optional[{__contains__, items}], worker: Any, acquire: bool = None, message_is_dict: bool = False):
     """
     Determine whether the mode should be 'acquire' or 'suscribe', and
     Decode the message with this policy
@@ -158,7 +158,7 @@ def decode(message, worker, acquire=None, message_is_dict=False):
     if isinstance(message, bytes):
         message = message.decode('utf-8')
 
-    if(message_is_dict):
+    if (message_is_dict):
         dict_message = message
     else:
         dict_message = json.loads(message)
@@ -205,12 +205,12 @@ class PythonJSONDecoder:
     }}}}
     """
 
-    def __init__(self, worker, acquire=False):
+    def __init__(self, worker: Any, acquire: bool = False):
         self.worker = worker
         self.tensor_types = tuple(torch.tensor_types)
         self.acquire = acquire
 
-    def python_decode(self, dct):
+    def python_decode(self, dct: Any):
         """
             Is called on every dict found. We check if some keys correspond
             to special keywords referring to a type we need to re-cast
@@ -233,7 +233,7 @@ class PythonJSONDecoder:
 
         # PLAN B: If the dct object IS a dictionary, check to see if it has a "type" key
 
-        if('type' in dct):
+        if ('type' in dct):
             if dct['type'] == "numpy.array":
 
                 # at first glance, the following if statement might seem a bit confusing
@@ -245,7 +245,7 @@ class PythonJSONDecoder:
                 # otherwise, id_at_location is set to be dct['id']. Similarly with dct['owner'].
 
                 # if we intend to receive the tensor itself, construct an array
-                if(self.acquire):
+                if (self.acquire):
                     return array(dct['data'], id=dct['id'], owner=self.worker)
 
                 # if we intend to create a pointer, construct a pointer. Note that
