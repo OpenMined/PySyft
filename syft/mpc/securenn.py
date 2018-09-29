@@ -35,6 +35,8 @@ def decompose(tensor):
     decompose a tensor into its binary representation
     """
     powers = torch.arange(Q_BITS)
+    if hasattr(tensor.child, 'pointer_tensor_dict'):
+        powers.send(*list(tensor.child.pointer_tensor_dict.keys()))
     for i in range(len(tensor.shape)):
         powers = powers.unsqueeze(0)
     tensor = tensor.unsqueeze(-1)
@@ -52,28 +54,24 @@ def flip(x, dim):
     return x.index_select(dim, indices)
 
 
-def private_compare(x, r, BETA, alice, bob):
+def private_compare(x, r, BETA, j, alice, bob):
     l = Q_BITS
 
     workers = (alice, bob)
 
     t = (r + 1) % 2 ** l
 
-    R_MASK = r == ((2 ** l) - 1)
+    R_MASK = (r == ((2 ** l) - 1)).long()
 
-    x = decompose(torch.LongTensor([x])).share(bob, alice).child.child
-    r = decompose(torch.LongTensor([r])).send(bob, alice)
-    t = decompose(torch.LongTensor([t])).send(bob, alice)
-    BETA = torch.LongTensor([BETA]).unsqueeze(1).expand(r.get_shape()).send(bob, alice)
-    R_MASK = torch.LongTensor([R_MASK]).unsqueeze(1).expand(r.get_shape()).send(bob, alice)
+    x = x.child.child
+    r = decompose(r)
+    t = decompose(t)
+    BETA = BETA.unsqueeze(1).expand(list(r.get_shape()))
+    R_MASK = R_MASK.unsqueeze(1).expand(list(r.get_shape()))
     u = (torch.rand(x.get_shape()) > 0.5).long().send(bob, alice)
     l1_mask = torch.zeros(x.get_shape()).long()
-    l1_mask[:, -1] = 1
+    l1_mask[:, -1:] = 1
     l1_mask = l1_mask.send(bob, alice)
-
-    j0 = torch.zeros(x.get_shape()).long().send(bob).child
-    j1 = (torch.ones(x.get_shape())).long().send(alice).child
-    j = _GeneralizedPointerTensor({bob: j0, alice: j1}, torch_type='syft.LongTensor').wrap(True)
 
     # if BETA == 0
     w = (j * r) + x - (2 * x * r)
@@ -100,16 +98,65 @@ def private_compare(x, r, BETA, alice, bob):
     result = (cmpc == 0).sum(1)
     return result
 
+def msb(a, alice, bob):
+    a = a + 0
+    a_sh = a.share(bob, alice)
 
-def msb(x, workers):
-    """
-    computes the most significant bit of a shared input tensor
-    uses the fact that msb(x) = lsb(2x) in an odd ring,
-    so coerces the shares to an odd ring if needed (FIXME)
-    """
-    if L % 2 != 1:
-        x = share_convert(x)
-    return lsb(2 * x, workers)
+    # 1)
+
+    x = torch.LongTensor(a.get_shape()).random_(L-1)
+    x_bit = decompose(x)
+    x_sh = x.share(bob,alice)
+    x_bit_0 = x_bit[...,-1:]  # pretty sure decompose is backwards...
+    x_bit_sh_0 = x_bit_0.share(bob, alice).child.child # least -> greatest from left -> right
+    x_bit_sh = x_bit.share(bob, alice)
+
+    # 2)
+    y_sh = 2*a_sh
+    r_sh = y_sh + x_sh
+
+    # 3)
+    r = r_sh.get().send(bob, alice) #TODO: make this secure by exchanging shares remotely
+
+    j0 = torch.zeros(x_bit_sh.get_shape()).long().send(bob).child
+    j1 = (torch.ones(x_bit_sh.get_shape())).long().send(alice).child
+    j = _GeneralizedPointerTensor({bob: j0, alice: j1}, torch_type='syft.LongTensor').wrap(True)
+    j_0 = j[...,0]
+
+    # 4)
+    BETA = torch.LongTensor(a.get_shape()).send(bob, alice)
+    BETA_prime = private_compare(x_bit_sh,
+                                 r,
+                                 BETA=BETA,
+                                 j=j,
+                                 alice=alice,
+                                 bob=bob).long()
+    # 5)
+    BETA_prime_sh = BETA_prime.share(bob, alice).child.child
+
+    # 7)
+    _lambda = _SPDZTensor(BETA_prime_sh + (j_0 * BETA) - (2 * BETA * BETA_prime_sh)).wrap(True)
+
+    # 8)
+    _delta = _SPDZTensor(x_bit_sh_0.squeeze(-1) + (j_0 * r[...,-1:]) - (2 * r[...,-1:] * x_bit_sh_0.squeeze(-1))).wrap(True)
+
+    # 9)
+    theta = _lambda * _delta
+
+    # 10)
+    u = torch.zeros(list(theta.get_shape())).long().share(alice, bob)
+    a = _lambda + _delta - (2 * theta) + u
+    return a
+
+# def msb(x, workers):
+#     """
+#     computes the most significant bit of a shared input tensor
+#     uses the fact that msb(x) = lsb(2x) in an odd ring,
+#     so coerces the shares to an odd ring if needed (FIXME)
+#     """
+#     if L % 2 != 1:
+#         x = share_convert(x)
+#     return lsb(2 * x, workers)
 
 
 def lsb(y, workers):

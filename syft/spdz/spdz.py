@@ -104,7 +104,7 @@ def spdz_neg(a, mod=field):
 def spdz_mul(x, y, workers, mod=field):
     if x.get_shape() != y.get_shape():
         raise ValueError("Shapes must be identical in order to multiply them")
-    shape = x.shape
+    shape = x.get_shape()
     triple = generate_mul_triple_communication(shape, workers)
     a, b, c = triple
 
@@ -130,13 +130,13 @@ def spdz_mul(x, y, workers, mod=field):
 
 
 def spdz_matmul(x, y, workers, mod=field):
-    shapes = [x.shape, y.shape]
-    if len(x.shape) != 1:
-        x_width = x.shape[1]
+    shapes = [x.get_shape(), y.get_shape()]
+    if len(x.get_shape()) != 1:
+        x_width = x.get_shape()[1]
     else:
         x_width = 1
 
-    y_height = y.shape[0]
+    y_height = y.get_shape()[0]
 
     assert x_width == y_height, 'dimension mismatch: %r != %r' % (
         x_width, y_height,
