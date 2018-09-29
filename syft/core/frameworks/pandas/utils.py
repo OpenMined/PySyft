@@ -57,7 +57,6 @@ class Serialiser():
         assert isinstance(obj_json, str)
         raw_obj = json.loads(obj_json)
         if 'Series' == raw_obj['dtype']:
-            print('lol')
             return pd.Series(data=raw_obj['data'], index=raw_obj['index'])
         if 'DataFrame' in raw_obj['dtype']:
             df = pd.DataFrame(raw_obj['data'])
