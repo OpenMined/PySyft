@@ -1169,13 +1169,88 @@ class TestSPDZTensor(TestCase):
         assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
 
     def test_fix_precision_mul(self):
-        x = torch.FloatTensor([2.1, 1])
-        y = torch.FloatTensor([1.2, 1.111])
+        x = torch.FloatTensor([1, 1])
+        y = torch.FloatTensor([1, 1])
+        x = x.fix_precision()
+        y = y.fix_precision()
+        z = x * y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([1, 1])).all()
+
+        # with different precision fractions x's > y's
+        x = torch.FloatTensor([1,1])
+        y = torch.FloatTensor([1,1])
+        x = x.fix_precision(precision_fractional = 4)
+        y = y.fix_precision(precision_fractional = 3)
+        z = x * y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([1, 1])).all()
+
+        # with different precision fractions x's < y's
+        x = torch.FloatTensor([1,1])
+        y = torch.FloatTensor([1,1])
+        x = x.fix_precision(precision_fractional = 3)
+        y = y.fix_precision(precision_fractional = 4)
+        z = x * y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([1, 1])).all()
+
+
+    def test_fix_precision_add(self):
+        x = torch.FloatTensor([1, 1])
+        y = torch.FloatTensor([1, 1])
         x = x.fix_precision()
         y = y.fix_precision()
         z = x + y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([3.3, 2.111])).all()
+        assert torch.eq(z, torch.FloatTensor([2, 2])).all()
+
+        # with different precision fractions x's > y's
+        x = torch.FloatTensor([1,1])
+        y = torch.FloatTensor([1,1])
+        x = x.fix_precision(precision_fractional = 4)
+        y = y.fix_precision(precision_fractional = 3)
+        z = x + y
+        z = z.decode()
+        print("here 533", z)
+        assert torch.eq(z, torch.FloatTensor([2, 2])).all()
+
+        # with different precision fractions x's < y's
+        x = torch.FloatTensor([1,1])
+        y = torch.FloatTensor([1,1])
+        x = x.fix_precision(precision_fractional = 3)
+        y = y.fix_precision(precision_fractional = 4)
+        z = x + y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([2, 2])).all()
+
+    def test_fix_precision_sub(self):
+        x = torch.FloatTensor([1, 1])
+        y = torch.FloatTensor([1, 1])
+        x = x.fix_precision()
+        y = y.fix_precision()
+        z = x - y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([0, 0])).all()
+
+        # with different precision fractions x's > y's
+        x = torch.FloatTensor([1,1])
+        y = torch.FloatTensor([1,1])
+        x = x.fix_precision(precision_fractional = 4)
+        y = y.fix_precision(precision_fractional = 3)
+        z = x - y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([0, 0])).all()
+
+        # with different precision fractions x's < y's
+        x = torch.FloatTensor([1,1])
+        y = torch.FloatTensor([1,1])
+        x = x.fix_precision(precision_fractional = 3)
+        y = y.fix_precision(precision_fractional = 4)
+        z = x - y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([0, 0])).all()
+
 
     def test_var_fix_precision_decode(self):
         x = sy.Variable(torch.FloatTensor([0.1, 0.2, 0.1, 0.2]))
@@ -1352,7 +1427,7 @@ class TestGPCTensor(TestCase):
         results = y.get()
 
         assert (results[0] == (x.get() * 2)).all()
-    
+
     def test_gpc_workers(self):
         x = torch.LongTensor([1, 2, 3, 4, 5])
         y = torch.LongTensor([1, 2, 3, 4, 5])
@@ -1364,7 +1439,7 @@ class TestGPCTensor(TestCase):
         x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict)
 
         results = x_gp.workers()
-    
+
         assert(results == [k.id for k in x_pointer_tensor_dict.keys()])
 
 
