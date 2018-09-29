@@ -242,8 +242,6 @@ def generate_mul_triple_communication(shape, workers):
 
 
 def generate_zero_shares_communication(alice, bob, *sizes):
-    print('gen sz', *sizes)
-    zs = torch.zeros(*sizes)
     return torch.zeros(*sizes).fix_precision().share(alice, bob)
 
 def generate_one_shares_communication(alice, bob, sizes):

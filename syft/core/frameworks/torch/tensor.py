@@ -1009,7 +1009,18 @@ class _PointerTensor(_SyftTensor):
         cmd['has_self'] = True
         cmd['self'] = self
 
-        return sy.Size(self.handle_call(cmd, self.owner).get().int().tolist())
+        raw_output = self.handle_call(cmd, self.owner)
+
+        if(isinstance(raw_output, (tuple, list))):
+            dims = list()
+            for each in raw_output:
+                dims.append(each.get().int().tolist())
+                if(len(dims[-1]) == 1):
+                    dims[-1] = dims[-1][0]
+
+            return sy.Size(dims)
+
+        return sy.Size(raw_output.get().int().tolist())
 
     def decode(self):
         raise NotImplementedError("It is not possible to remotely decode a tensorvar for the moment")

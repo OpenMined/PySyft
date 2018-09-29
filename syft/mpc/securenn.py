@@ -12,18 +12,7 @@ L = field
 p = field  # 67 in original # TODO: extend to ops over multiple rings
 
 
-def decompose(tensor):
-    """
-    decompose a tensor into its binary representation
-    """
-    powers = torch.arange(Q_BITS)
-    for i in range(len(tensor.shape)):
-        powers = powers.unsqueeze(0)
-    tensor = tensor.unsqueeze(-1)
-    moduli = 2 ** powers
-    tensor = ((tensor + 2 ** (Q_BITS)) / moduli.type_as(tensor)) % 2
-    return tensor
-
+spdz_params.append((params[remote_index][param_i].data+0).fix_precision().share(bob, alice).get())
 
 def select_shares(alpha, x, y, workers):
     """
