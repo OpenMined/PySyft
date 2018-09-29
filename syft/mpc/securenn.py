@@ -12,7 +12,7 @@ L = field
 p = field  # 67 in original # TODO: extend to ops over multiple rings
 
 
-spdz_params.append((params[remote_index][param_i].data+0).fix_precision().share(bob, alice).get())
+# spdz_params.append((params[remote_index][param_i].data+0).fix_precision().share(bob, alice).get())
 
 def select_shares(alpha, x, y, workers):
     """
@@ -30,45 +30,75 @@ def select_shares(alpha, x, y, workers):
     return z + u
 
 
-def private_compare(x, r, beta, workers):
+def decompose(tensor):
     """
-    computes beta XOR (x > r)
-
-    x is private shared bit tensor (shared output of decompose)
-    r is public input for comparison
-    beta is public random bit tensor
-
-    all of type _GeneralizedPointerTensor
+    decompose a tensor into its binary representation
     """
-    dimlen = len(x.size())
-    while len(beta.size()) < dimlen:
-        beta = beta.unsqueeze(-1)
-    beta = beta.expand_as(x)
+    powers = torch.arange(Q_BITS)
+    for i in range(len(tensor.shape)):
+        powers = powers.unsqueeze(0)
+    tensor = tensor.unsqueeze(-1)
+    moduli = 2 ** powers
+    tensor = ((tensor + 2 ** (Q_BITS)) / moduli.type_as(tensor)) % 2
+    return tensor
 
-    t = (r + 1) % (2 ** Q_BITS)
 
-    r_bits = decompose(r)
-    t_bits = decompose(t)
+def flip(x, dim):
+    indices = torch.arange(x.get_shape()[dim] - 1, -1, -1).long()
 
-    zeros = beta == 0
-    ones = beta == 1
-    others = (r == (2 ** Q_BITS - 1)).unsqueeze(-1).expand_as(ones)
-    ones = ones & (others - 1).long().abs().byte()
+    if hasattr(x.child, 'pointer_tensor_dict'):
+        indices = indices.send(*list(x.child.pointer_tensor_dict.keys()))
 
-    c_zeros = _pc_beta0(x[zeros], r_bits[zeros])
-    c_ones = _pc_beta1(x[ones], t_bits[ones])
-    c_other = _pc_else(workers, *x.size())
+    return x.index_select(dim, indices)
 
-    c = torch.zeros(*x_bits.shape).long()
-    c[zeros] = c_zeros
-    c[ones] = c_ones
-    c[others] = c_other
 
-    s = random_as(c, mod=p)
-    permute = torch.randperm(c.size(-1))
-    d = s * c[..., permute]
-    d.get()
-    return (d == 0).max()
+def private_compare(x, r, BETA, alice, bob):
+    l = Q_BITS
+
+    workers = (alice, bob)
+
+    t = (r + 1) % 2 ** l
+
+    R_MASK = r == ((2 ** l) - 1)
+
+    x = decompose(torch.LongTensor([x])).share(bob, alice).child.child
+    r = decompose(torch.LongTensor([r])).send(bob, alice)
+    t = decompose(torch.LongTensor([t])).send(bob, alice)
+    BETA = torch.LongTensor([BETA]).unsqueeze(1).expand(r.get_shape()).send(bob, alice)
+    R_MASK = torch.LongTensor([R_MASK]).unsqueeze(1).expand(r.get_shape()).send(bob, alice)
+    u = (torch.rand(x.get_shape()) > 0.5).long().send(bob, alice)
+    l1_mask = torch.zeros(x.get_shape()).long()
+    l1_mask[:, -1] = 1
+    l1_mask = l1_mask.send(bob, alice)
+
+    j0 = torch.zeros(x.get_shape()).long().send(bob).child
+    j1 = (torch.ones(x.get_shape())).long().send(alice).child
+    j = _GeneralizedPointerTensor({bob: j0, alice: j1}, torch_type='syft.LongTensor').wrap(True)
+
+    # if BETA == 0
+    w = (j * r) + x - (2 * x * r)
+
+    wf = flip(w, 1)
+    wfc = wf.cumsum(1) - wf
+    wfcf = flip(wfc, 1)
+
+    c_beta0 = ((j * r) - x + j + wfcf)
+
+    # elif BETA == 1 AND r != 2**Q_BITS - 1
+    w = x + (j * t) - (2 * t * x)
+    c_beta1 = (-j * t) + x + j + wfcf
+
+    # else
+    c_igt1 = (1 - j) * (u + 1) - (j * u)
+    c_ie1 = (j * -2) + 1
+    c_21l = (l1_mask * c_ie1) + ((1 - l1_mask) * c_igt1)
+
+    c = (BETA * c_beta0) + (1 - BETA) * c_beta1
+    c = (c * (1 - R_MASK)) + (c_21l * R_MASK)
+
+    cmpc = _SPDZTensor(c).wrap(True).get()  # /2
+    result = (cmpc == 0).sum(1)
+    return result
 
 
 def msb(x, workers):

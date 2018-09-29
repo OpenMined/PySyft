@@ -663,7 +663,10 @@ class _GeneralizedPointerTensor(_SyftTensor):
          pointer_dict = {}
          for worker, pointer in pointer_tensor_dict.items():
              if not isinstance(pointer, sy._PointerTensor):
-                 raise TypeError('Should use sy._Pointer without Torch wrapper.')
+                 if isinstance(pointer.child, sy._PointerTensor):
+                     pointer_tensor_dict[worker] = pointer.child
+                 else:
+                    raise TypeError('Passed in non-pointer'+str(type(pointer))+' to GeneralizedPointerTensor')
              key = worker if isinstance(worker, (int, str)) else worker.id
              pointer_dict[key] = pointer
          self.pointer_tensor_dict = pointer_dict
