@@ -98,33 +98,36 @@ def private_compare(x, r, BETA, j, alice, bob):
     result = (cmpc == 0).sum(1)
     return result
 
+
 def msb(a, alice, bob):
     a = a + 0
     a_sh = a.share(bob, alice)
 
     # 1)
 
-    x = torch.LongTensor(a.get_shape()).random_(L-1)
+    x = torch.LongTensor(a.get_shape()).random_(L - 1)
     x_bit = decompose(x)
-    x_sh = x.share(bob,alice)
-    x_bit_0 = x_bit[...,-1:]  # pretty sure decompose is backwards...
-    x_bit_sh_0 = x_bit_0.share(bob, alice).child.child # least -> greatest from left -> right
+    x_sh = x.share(bob, alice)
+    x_bit_0 = x_bit[..., -1:]  # pretty sure decompose is backwards...
+    x_bit_sh_0 = x_bit_0.share(bob, alice).child.child  # least -> greatest from left -> right
     x_bit_sh = x_bit.share(bob, alice)
 
     # 2)
-    y_sh = 2*a_sh
+    y_sh = 2 * a_sh
     r_sh = y_sh + x_sh
 
     # 3)
-    r = r_sh.get().send(bob, alice) #TODO: make this secure by exchanging shares remotely
+    r = r_sh.get()  # .send(bob, alice) #TODO: make this secure by exchanging shares remotely
+    r_0 = decompose(r)[..., -1].send(bob, alice)
+    r = r.send(bob, alice)
 
     j0 = torch.zeros(x_bit_sh.get_shape()).long().send(bob).child
     j1 = (torch.ones(x_bit_sh.get_shape())).long().send(alice).child
     j = _GeneralizedPointerTensor({bob: j0, alice: j1}, torch_type='syft.LongTensor').wrap(True)
-    j_0 = j[...,0]
+    j_0 = j[..., -1]
 
     # 4)
-    BETA = torch.LongTensor(a.get_shape()).send(bob, alice)
+    BETA = (torch.rand(a.get_shape()) > 0.5).long().send(bob, alice)
     BETA_prime = private_compare(x_bit_sh,
                                  r,
                                  BETA=BETA,
@@ -138,7 +141,7 @@ def msb(a, alice, bob):
     _lambda = _SPDZTensor(BETA_prime_sh + (j_0 * BETA) - (2 * BETA * BETA_prime_sh)).wrap(True)
 
     # 8)
-    _delta = _SPDZTensor(x_bit_sh_0.squeeze(-1) + (j_0 * r[...,-1:]) - (2 * r[...,-1:] * x_bit_sh_0.squeeze(-1))).wrap(True)
+    _delta = _SPDZTensor(x_bit_sh_0.squeeze(-1) + (j_0 * r_0) - (2 * r_0 * x_bit_sh_0.squeeze(-1))).wrap(True)
 
     # 9)
     theta = _lambda * _delta
@@ -146,6 +149,7 @@ def msb(a, alice, bob):
     # 10)
     u = torch.zeros(list(theta.get_shape())).long().share(alice, bob)
     a = _lambda + _delta - (2 * theta) + u
+
     return a
 
 # def msb(x, workers):
