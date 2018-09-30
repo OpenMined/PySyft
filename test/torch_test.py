@@ -1576,24 +1576,24 @@ class TestSPDZTensor(TestCase):
                                                   [[14.1, 21],
                                                    [10, -11.8]], op='matmul')
 
-    # def test_var_matmul_remote_fix_precision_share(self):
-    #     self.remote_fix_precision_share_operation([[3.3, 2.1],
-    #                                                [1.1, 5.2]],
-    #                                               [[1, 2],
-    #                                                [3, 4]], var=True, op='matmul')
-    #     self.remote_fix_precision_share_operation([[-3.3, -2.1],
-    #                                                [1.1, 5.2]],
-    #                                               [[1, 2],
-    #                                                [3, -4.8]], var=True, op='matmul')
-    #     self.remote_fix_precision_share_operation([[1.1, -2.1],
-    #                                                [3.2, 8.1],
-    #                                                [3.0, -7]],
-    #                                               [[-3.3, -2.1],
-    #                                                [1.1, 5.2]], var=True, op='matmul')
-    #     self.remote_fix_precision_share_operation([[-40.2, -20.1],
-    #                                                [10.7, 21.2]],
-    #                                               [[14.1, 21],
-    #                                                [10, -11.8]], op='matmul')
+    def test_var_matmul_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([[3.3, 2.1],
+                                                   [1.1, 5.2]],
+                                                  [[1, 2],
+                                                   [3, 4]], var=True, op='matmul')
+        self.remote_fix_precision_share_operation([[-3.3, -2.1],
+                                                   [1.1, 5.2]],
+                                                  [[1, 2],
+                                                   [3, -4.8]], var=True, op='matmul')
+        self.remote_fix_precision_share_operation([[1.1, -2.1],
+                                                   [3.2, 8.1],
+                                                   [3.0, -7]],
+                                                  [[-3.3, -2.1],
+                                                   [1.1, 5.2]], var=True, op='matmul')
+        self.remote_fix_precision_share_operation([[-40.2, -20.1],
+                                                   [10.7, 21.2]],
+                                                  [[14.1, 21],
+                                                   [10, -11.8]], op='matmul')
 
 
 class TestGPCTensor(TestCase):

@@ -1418,10 +1418,10 @@ class _SPDZTensor(_SyftTensor):
         return gp_response
 
     def __mul__(self, other):
-        if(isinstance(other, _SPDZTensor)):
+        if isinstance(other, _SPDZTensor):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
             if torch_utils.is_variable(self.torch_type):
-                gp_response = self*1
+                gp_response = self * 1
                 gp_response.data = spdz.spdz_mul(self.data.shares, other.data.shares, workers)
                 #TODO: and the grad ?
             else:
@@ -1432,7 +1432,13 @@ class _SPDZTensor(_SyftTensor):
 
     def mm(self, other):
         workers = list(self.shares.child.pointer_tensor_dict.keys())
-        gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
+        if torch_utils.is_variable(self.torch_type):
+            gp_response = self * 1
+            gp_response.data = spdz.spdz_matmul(self.data.shares, other.data.shares, workers)
+            # TODO: and the grad ?
+        else:
+            gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
+
         return gp_response
 
     def __matmul__(self, other):
