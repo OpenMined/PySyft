@@ -1025,7 +1025,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                  child=None,
                  owner=None,
                  torch_type=None,
-                 bits=32,
+                 bits=30,
                  base=10,
                  precision_fractional=3,
                  already_encoded=False):
@@ -1047,7 +1047,25 @@ class _FixedPrecisionTensor(_SyftTensor):
         if already_encoded:
             self.child = child
         else:
-            self.encode(child)
+            torch_utils.assert_has_only_torch_tensorvars(child)
+            chain_tail = None
+            if not isinstance(child.child, sy._LocalTensor):
+                chain_tail = child.child
+
+            if torch_utils.is_variable(child):
+                var_data = child.data
+                if len(var_data.size()) > 0:
+                    self.encode(var_data)  # this puts in .child an encoded Tensor
+                    self.child = sy.Variable(self.child)
+                else:
+                    self.child = sy.Variable(sy.LongTensor())
+                self.child.child = chain_tail
+            else:
+                if len(child.size()) > 0:
+                    self.encode(child)
+                else:
+                    self.child = sy.LongTensor()
+                self.child.child = chain_tail
 
     def ser(self, private, as_dict=True):
 
@@ -1092,6 +1110,13 @@ class _FixedPrecisionTensor(_SyftTensor):
         owner = rational.owner
         upscaled = (rational * self.base ** self.precision_fractional).long()
         field_element = upscaled % self.field
+
+        # Handle neg values
+        gate = field_element.gt(self.torch_max_value).long()
+        neg_nums = (field_element - self.field) * gate
+        pos_nums = field_element * (1 - gate)
+        field_element = (neg_nums + pos_nums)
+
         torch_utils.enforce_owner(field_element, owner)
         self.child = field_element
         return self
@@ -1104,7 +1129,7 @@ class _FixedPrecisionTensor(_SyftTensor):
             # raise TypeError("Can't decode empty tensor")
             return None
         gate = value.native_gt(self.torch_max_value).long()
-        neg_nums = (value - spdz.torch_field) * gate
+        neg_nums = (value - self.field) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
         self.child.child = save.child
@@ -1148,11 +1173,13 @@ class _FixedPrecisionTensor(_SyftTensor):
                     if precision_loss > 0:
                         torch_tensorvar = torch_tensorvar / self.base ** precision_loss
 
-                # Check overflow
-                if (torch_tensorvar > self.field).any():
-                    torch_tensorvar = torch_tensorvar % self.field
-                    logging.warning('{} on FixPrecision Tensor/Variable overflowed, '
-                                    'try reducing precision_fractional.'.format(attr))
+                torch_tensorvar = torch_tensorvar % self.field
+                # We could check overflow, but it is a pb for shared values.
+                # if (torch_tensorvar > self.field).any():
+                #     torch_tensorvar = torch_tensorvar % self.field
+                #     logging.warning('{} on FixPrecision Tensor/Variable overflowed, '
+                #                     'try reducing precision_fractional.'.format(attr))
+
                 response = torch_tensorvar.fix_precision(
                     already_encoded=True,
                     precision_fractional=precision
@@ -1565,7 +1592,7 @@ class _TorchObject(object):
         return spdz.encode(self)
 
     def fix_precision(self,
-                      bits=32,
+                      bits=30,
                       base=10,
                       precision_fractional=3,
                       already_encoded=False):
