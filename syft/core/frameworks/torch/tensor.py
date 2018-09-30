@@ -1023,8 +1023,10 @@ class _PointerTensor(_SyftTensor):
 
 class _FixedPrecisionTensor(_SyftTensor):
     """
-    TODO: write this
-
+    The FixedPrecision enables to manipulate floats over an interface which supports only integers,
+    Such as _SPDZTensor.
+    This is done by specifying a precision p and given a float x, multiply it with 10**p before
+    rounding to an integer (hence you keep p decimals)
     """
 
     def __init__(self,
@@ -1162,27 +1164,53 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         if has_self:
             self = command['self']
-            if attr in ('__add__', '__mul__', 'mm') and isinstance(args[0], sy._FixedPrecisionTensor):
+            if attr == 'share':
+                response = self.share(*args, **kwargs)
+                return response
+            else:
+                if attr in ('__add__', '__mul__', 'mm') and isinstance(args[0], sy._FixedPrecisionTensor):
+                    other = args[0]
+                    assert (self.base == other.base) and (self.bits == other.bits), \
+                        'Arguments should share the same base and field'
+
+                    # Perform the computation
+                    torch_tensorvar = None
+                    if attr == '__add__':
+                        torch_tensorvar = cls.__add__(self, *args, **kwargs)
+                        torch_tensorvar = torch_tensorvar % self.field
+                    elif attr == '__mul__':
+                        torch_tensorvar = cls.__mul__(self, other)
+                    elif attr in ('mm',):
+                        torch_tensorvar = cls.mm(self, other)
+
+                    # We could check overflow, but it is a pb for shared values.
+                    # if (torch_tensorvar > self.field).any():
+                    #     torch_tensorvar = torch_tensorvar % self.field
+                    #     logging.warning('{} on FixPrecision Tensor/Variable overflowed, '
+                    #                     'try reducing precision_fractional.'.format(attr))
+
+                else:  # Standard procedure for methods
+                    # Get the next node type and update in command tensorvar with tensorvar.child
+                    next_command, child_type = torch_utils.prepare_child_command(
+                        command, replace_tensorvar_with_child=True)
+
+                    is_var = torch_utils.is_variable(child_type.__name__)
+
+                    if is_var:
+                        child_type = torch.guard[self.data.torch_type]
+
+                    # Forward the call to the next child
+                    torch_tensorvar = child_type.handle_call(next_command, owner)
+
                 # Compute the precision to keep
-                other = args[0]
-                assert (self.base == other.base) and (self.bits == other.bits), \
-                    'Arguments should share the same base and field'
-                self_precision = self.precision_fractional
-                other_precision = other.precision_fractional
-                precision = min(self_precision, other_precision)
-                precision_loss = max(self_precision, other_precision)
+                precision = self.precision_fractional
+                if attr in ('__mul__', 'mm', 'matmul'):
+                    other = args[0]
+                    self_precision = self.precision_fractional
+                    other_precision = other.precision_fractional
+                    precision = min(self_precision, other_precision)
+                    precision_loss = max(self_precision, other_precision)
 
-                # Perform the computation
-                torch_tensorvar = None
-                if attr == '__add__':
-                    torch_tensorvar = cls.__add__(self, *args, **kwargs)
-                    torch_tensorvar = torch_tensorvar % self.field
-                elif attr == '__mul__':
-                    torch_tensorvar = cls.__mul__(self, other)
-                elif attr == 'mm':
-                    torch_tensorvar = cls.mm(self, other)
-
-                if attr in ('__mul__', 'mm'):
                     # Decimal rounding to the appropriate precision
                     # FIXME:
                     # Given a field F, shares s1 ad s2, we should do the following:
@@ -1198,24 +1226,11 @@ class _FixedPrecisionTensor(_SyftTensor):
                         else:
                             torch_tensorvar = torch_tensorvar / self.base ** precision_loss
 
-
-                # We could check overflow, but it is a pb for shared values.
-                # if (torch_tensorvar > self.field).any():
-                #     torch_tensorvar = torch_tensorvar % self.field
-                #     logging.warning('{} on FixPrecision Tensor/Variable overflowed, '
-                #                     'try reducing precision_fractional.'.format(attr))
-
                 response = torch_tensorvar.fix_precision(
                     already_encoded=True,
                     precision_fractional=precision
                 )
                 return response
-            if attr == 'share':
-                response = self.share(*args, **kwargs)
-                return response
-            else:
-                result_child = getattr(self.child, attr)(*args, **kwargs)
-                return _FixedPrecisionTensor(result_child).wrap(True)
 
     def get(self, *args, **kwargs):
         """
@@ -1631,11 +1646,11 @@ class _TorchObject(object):
                       base=10,
                       precision_fractional=3,
                       already_encoded=False):
-        # TODO: Should fix_me be an inplace op?
 
         if torch_utils.is_variable(self):
             if not hasattr(self, 'grad') or self.grad is None:
                 self.init_grad_()
+
         if isinstance(self.child, _PointerTensor):
             return self.owner._execute_call('fix_precision', self)
         else:
@@ -1664,12 +1679,23 @@ class _TorchObject(object):
                     _var.grad.data.child = fpt(_var.grad.child.child.data, True).child
                     _var.grad.data.child.torch_type = self.grad.data.child.torch_type
                     _var.grad.child.data = _var.grad.data.child
+                    _var.child.grad = _var.grad.child
                 return _var
             else:
                 return fpt(self, already_encoded)
 
     def native_fix_precision(self, *args, **kwargs):
         return self.fix_precision(*args, **kwargs)
+
+    def fix_precision_(self, *args, **kwargs):
+        tensorvar = self.fix_precision(*args, **kwargs)
+        if torch_utils.is_variable(self):  # grad are already created
+            torch_utils.bind_var_like_objects(self, tensorvar.child, grad=True)
+        else:
+            self.child = tensorvar.child
+
+    def native_fix_precision_(self, *args, **kwargs):
+        return self.fix_precision_(*args, **kwargs)
 
     def sum_get(self, *args, **kwargs):
         return self.child.sum_get(*args, **kwargs)
