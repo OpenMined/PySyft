@@ -1162,7 +1162,7 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         if has_self:
             self = command['self']
-            if attr in ('__add__', '__mul__') and isinstance(args[0], sy._FixedPrecisionTensor):
+            if attr in ('__add__', '__mul__', 'mm') and isinstance(args[0], sy._FixedPrecisionTensor):
                 # Compute the precision to keep
                 other = args[0]
                 assert (self.base == other.base) and (self.bits == other.bits), \
@@ -1179,6 +1179,10 @@ class _FixedPrecisionTensor(_SyftTensor):
                     torch_tensorvar = torch_tensorvar % self.field
                 elif attr == '__mul__':
                     torch_tensorvar = cls.__mul__(self, other)
+                elif attr == 'mm':
+                    torch_tensorvar = cls.mm(self, other)
+
+                if attr in ('__mul__', 'mm'):
                     # Decimal rounding to the appropriate precision
                     # FIXME:
                     # Given a field F, shares s1 ad s2, we should do the following:
@@ -1241,6 +1245,10 @@ class _FixedPrecisionTensor(_SyftTensor):
 
     def __mul__(self, other):
         response = self.child * other.child
+        return response
+
+    def mm(self, other):
+        response = self.child.mm(other.child)
         return response
 
     def __repr__(self):
