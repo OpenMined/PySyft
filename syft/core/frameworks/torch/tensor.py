@@ -1025,7 +1025,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                  child=None,
                  owner=None,
                  torch_type=None,
-                 bits=30,
+                 bits=31,
                  base=10,
                  precision_fractional=3,
                  already_encoded=False):
@@ -1040,6 +1040,9 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         self.bits = bits
         self.field = 2 ** bits
+        if spdz.field != self.field:
+            logging.warning("spdz.field != self.field, be careful you may experience issues with "
+                            "multiplication on fix precision shared tensors.")
         self.base = base
         self.precision_fractional = precision_fractional
         self.torch_max_value = torch.LongTensor([round(self.field / 2)])
@@ -1167,13 +1170,25 @@ class _FixedPrecisionTensor(_SyftTensor):
                 torch_tensorvar = None
                 if attr == '__add__':
                     torch_tensorvar = cls.__add__(self, *args, **kwargs)
+                    torch_tensorvar = torch_tensorvar % self.field
                 elif attr == '__mul__':
                     torch_tensorvar = cls.__mul__(self, other)
                     # Decimal rounding to the appropriate precision
+                    # FIXME:
+                    # Given a field F, shares s1 ad s2, we should do the following:
+                    # let n := self.base ** precision_loss
+                    # s1 /= n, s2 /= n, and also F /= n
                     if precision_loss > 0:
-                        torch_tensorvar = torch_tensorvar / self.base ** precision_loss
+                        tail_node = torch_utils.find_tail_of_chain(torch_tensorvar)
+                        if isinstance(tail_node, sy._GeneralizedPointerTensor):
+                            workers = list(tail_node.pointer_tensor_dict.keys())
+                            torch_tensorvar = torch_tensorvar.get()
+                            torch_tensorvar = torch_tensorvar / self.base ** precision_loss
+                            torch_tensorvar = torch_tensorvar.share(*workers)
+                        else:
+                            torch_tensorvar = torch_tensorvar / self.base ** precision_loss
 
-                torch_tensorvar = torch_tensorvar % self.field
+
                 # We could check overflow, but it is a pb for shared values.
                 # if (torch_tensorvar > self.field).any():
                 #     torch_tensorvar = torch_tensorvar % self.field
@@ -1592,7 +1607,7 @@ class _TorchObject(object):
         return spdz.encode(self)
 
     def fix_precision(self,
-                      bits=30,
+                      bits=31,
                       base=10,
                       precision_fractional=3,
                       already_encoded=False):

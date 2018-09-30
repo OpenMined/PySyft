@@ -1457,19 +1457,19 @@ class TestSPDZTensor(TestCase):
         self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], var=True)
         self.remote_fix_precision_share_operation([-19000, 3.3], [-1.9, 17654], var=True)
 
-    # def test_mult_remote_fix_precision_share(self):
-    #     self.remote_fix_precision_share_operation([3.3], [5.1], op='mul')
-    #     self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], op='mul')
-    #     self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], op='mul')
-    #     self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], op='mul')
-    #     self.remote_fix_precision_share_operation([-19000, 3.3], [-1.9, 17654], op='mul')
-    #
-    # def test_var_mult_remote_fix_precision_share(self):
-    #     self.remote_fix_precision_share_operation([3.3], [5.1], var=True, op='mul')
-    #     self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
-    #     self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
-    #     self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
-    #     self.remote_fix_precision_share_operation([-19000, 3.3], [-1.9, 17654], var=True, op='mul')
+    def test_mult_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1], op='mul')
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], op='mul')
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], op='mul')
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], op='mul')
+        #self.remote_fix_precision_share_operation([-19000, 3.3], [-1.9, 17654], op='mul')
+
+    def test_var_mult_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
+        #self.remote_fix_precision_share_operation([-19000, 3.3], [-1.9, 17654], var=True, op='mul')
 
 
 class TestGPCTensor(TestCase):
