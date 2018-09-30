@@ -1206,25 +1206,26 @@ class _FixedPrecisionTensor(_SyftTensor):
                 precision = self.precision_fractional
                 if attr in ('__mul__', 'mm', 'matmul'):
                     other = args[0]
-                    self_precision = self.precision_fractional
-                    other_precision = other.precision_fractional
-                    precision = min(self_precision, other_precision)
-                    precision_loss = max(self_precision, other_precision)
+                    if isinstance(other, sy._FixedPrecisionTensor):
+                        self_precision = self.precision_fractional
+                        other_precision = other.precision_fractional
+                        precision = min(self_precision, other_precision)
+                        precision_loss = max(self_precision, other_precision)
 
-                    # Decimal rounding to the appropriate precision
-                    # FIXME:
-                    # Given a field F, shares s1 ad s2, we should do the following:
-                    # let n := self.base ** precision_loss
-                    # s1 /= n, s2 /= n, and also F /= n
-                    if precision_loss > 0:
-                        tail_node = torch_utils.find_tail_of_chain(torch_tensorvar)
-                        if isinstance(tail_node, sy._GeneralizedPointerTensor):
-                            workers = list(tail_node.pointer_tensor_dict.keys())
-                            torch_tensorvar = torch_tensorvar.get()
-                            torch_tensorvar = torch_tensorvar / self.base ** precision_loss
-                            torch_tensorvar = torch_tensorvar.share(*workers)
-                        else:
-                            torch_tensorvar = torch_tensorvar / self.base ** precision_loss
+                        # Decimal rounding to the appropriate precision
+                        # FIXME:
+                        # Given a field F, shares s1 ad s2, we should do the following:
+                        # let n := self.base ** precision_loss
+                        # s1 /= n, s2 /= n, and also F /= n
+                        if precision_loss > 0:
+                            tail_node = torch_utils.find_tail_of_chain(torch_tensorvar)
+                            if isinstance(tail_node, sy._GeneralizedPointerTensor):
+                                workers = list(tail_node.pointer_tensor_dict.keys())
+                                torch_tensorvar = torch_tensorvar.get()
+                                torch_tensorvar = torch_tensorvar / self.base ** precision_loss
+                                torch_tensorvar = torch_tensorvar.share(*workers)
+                            else:
+                                torch_tensorvar = torch_tensorvar / self.base ** precision_loss
 
                 response = torch_tensorvar.fix_precision(
                     already_encoded=True,
