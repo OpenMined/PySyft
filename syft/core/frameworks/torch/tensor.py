@@ -1002,14 +1002,20 @@ class _PointerTensor(_SyftTensor):
         return tensorvar
 
     def get_shape(self):
-        cmd = {}
-        cmd['command'] = "get_shape"
-        cmd['args'] = []
-        cmd['kwargs'] = {}
-        cmd['has_self'] = True
-        cmd['self'] = self
+        cmd = {
+            'command': 'get_shape',
+            'self': self,
+            'args': [],
+            'kwargs': {},
+            'has_self': True
+        }
+        shape_ptr = self.handle_call(cmd, self.owner)
 
-        return sy.Size(self.handle_call(cmd, self.owner).get().int().tolist())
+        if not isinstance(shape_ptr, tuple):
+            shape_ptr = (shape_ptr, )
+
+        shape = [shape_i.get().int().tolist()[0] for shape_i in shape_ptr]
+        return sy.Size(shape)
 
     def decode(self):
         raise NotImplementedError("It is not possible to remotely decode a tensorvar for the moment")
