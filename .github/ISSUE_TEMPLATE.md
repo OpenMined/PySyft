@@ -1,12 +1,5 @@
 # Issue Template
 
-## Context
-### User Story:
-As a Data Scientist using PySyft's... <br>
-Enter what you would like to be implemented as a feature, in case of an issue regrading a bug in our code specify what is actually going wrong, here.
-
-
-
 Please delete (for bugs) or (for features) sections that are not relevant to the Issue you are creating.
 
 Please provide any relevant information about your setup. This is important in case the issue is not reproducible except for under certain conditions.
@@ -19,13 +12,9 @@ Please provide any relevant information about your setup. This is important in c
 * OpenMined Unity App Version:
 
 
-## Expected Behavior
+## Description
 
-Please describe the behavior you are expecting
-
-## Current Behavior
-
-What is the current behavior?
+Please describe the behavior you are expecting and the current behavior?
 
 ## Failure Information (for bugs)
 
