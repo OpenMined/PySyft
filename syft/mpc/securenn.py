@@ -3,6 +3,7 @@
 from syft.spdz.spdz import (spdz_add, spdz_mul,
                            generate_zero_shares_communication,
                            Q_BITS, field)
+from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor, _SPDZTensor
 import torch
 
 L = field
@@ -13,12 +14,12 @@ def decompose(tensor):
     """
     decompose a tensor into its binary representation
     """
-    powers = torch.arange(0,Q_BITS)
+    powers = torch.arange(Q_BITS)
     for i in range(len(tensor.shape)):
         powers = powers.unsqueeze(0)
     tensor = tensor.unsqueeze(-1)
     moduli = 2 ** powers
-    tensor = ((tensor+2**(Q_BITS)) / moduli.type_as(tensor)) % 2
+    tensor = ((tensor + 2 ** (Q_BITS)) / moduli.type_as(tensor)) % 2
     return tensor
 
 
@@ -59,13 +60,16 @@ def private_compare(x, r, beta, workers):
     others = r == (2 ** Q_BITS - 1)
     ones = ones & (others - 1).abs()
 
-    c_zeros = _pc_beta0(x_bits, r_bits)
-    c_ones = _pc_beta1(x_bits, t_bits)
-    c_other = _pc_else()
+
+    c_zeros = _pc_beta0(x_bits[zeros], r_bits[zeros])
+    c_ones = _pc_beta1(x_bits[ones], t_bits[ones])
+    c_other = _pc_else(*x_bits.shape, workers)
 
     # TODO: recombine c properly here
-    # torch.zeros()
-    c = torch.cat([c_zeros, c_ones, c_other], -1)
+    c = torch.zeros(*x_bits.shape).long()
+    c[zeros] = c_zeros
+    c[ones] = c_ones
+    c[others] = c_other
 
     s = random_as(c, mod=p)
     permute = torch.randperm(c.size(-1))
@@ -121,7 +125,7 @@ def random_as(tensor, mod=L):
 def get_wrap(x, y, mod=L):
     # FIXME: the conditional on the right should include a plaintext add of x and y,
     # not an MPC add since the > test needs to be done without a modulus
-    # needed to complete share_convert
+    # needed for share_convert
     return x + y, x + y > mod
 
 
@@ -140,16 +144,32 @@ def _pc_beta0(x, r):
     w = xor(x, r)
     z = r  - (x - 1)
     w_sum = torch.zeros(w.shape).type_as(w)
-    for i in range(bits - 1, -1, -1):
-        # FIXME: double check if keepdim should be True/False here
+    for i in range(Q_BITS - 2, -1, -1):
         w_sum[..., i] = w[..., (i + 1):].sum(dim=-1, keepdim=True)
     c = z + w_sum
     return c
 
 
 def _pc_beta1(x, t):
-    pass
+    w = xor(x, t)
+    z = (x + 1) - t
+    w_sum = torch.zeros(w.shape).type_as(w)
+    for i in range(Q_BITS - 2, -1, -1):
+        w_sum[..., i] = w[..., (i + 1):].sum(dim=-1, keepdim=True)
+    c = z + w_sum
+    return c
 
 
-def _pc_else():
-    pass
+def _pc_else(workers, *sizes):
+    u = generate_zero_shares_communication(*workers, *sizes)
+    (w0, u0), (w1, u1) = u.shares.pointer_tensor_dict.items()
+    for i in range(Q_BITS - 2, -1, -1):
+        if i == 0:
+            c0[..., i] = -u0
+            c1[..., i] = u1
+        c0[..., i] = u0 + 1
+        c1[..., i] = -u1
+    ptr_dict = {w0:c0, w1:c1}
+    c_gp = _GeneralizedPointerTensor(ptr_dict, torch_type='syft.LongTensor').wrap(True)
+    c = _SPDZTensor(x_gp, torch_type='syft.LongTensor').wrap(True)
+    return c

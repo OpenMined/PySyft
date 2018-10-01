@@ -331,7 +331,7 @@ def assert_has_only_torch_tensorvars(obj):
     at his 'roots', ie head of chain
     Is useful for development.
     """
-    if isinstance(obj, (int, float, str, slice)):
+    if isinstance(obj, (int, float, str, slice, type(...))):
         return True
     elif is_tensor(obj):
         return True
@@ -357,7 +357,7 @@ def assert_has_only_syft_tensors(obj):
     at his 'roots', ie head of chain
     Is useful for development.
     """
-    if isinstance(obj, (int, float, str, slice)):
+    if isinstance(obj, (int, float, str, slice, type(...))):
         return True
     elif issubclass(obj.__class__, sy._SyftTensor):
         return True
