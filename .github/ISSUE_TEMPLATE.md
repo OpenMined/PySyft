@@ -5,16 +5,15 @@ Please delete (for bugs) or (for features) sections that are not relevant to the
 Please provide any relevant information about your setup. This is important in case the issue is not reproducible except for under certain conditions.
 
 **Test Configuration**:
-* CPU:
-* GPU:
-* PySyft Version:
-* Unity Version:
-* OpenMined Unity App Version:
+* Operating System type:
+* Operating System version:
+* PyTorch version:
+* TensorFlow version:
 
 
 ## Description
 
-Please describe the behavior you are expecting and the current behavior?
+Please describe the expected behavior and how it differs from current behavior.
 
 ## Failure Information (for bugs)
 
