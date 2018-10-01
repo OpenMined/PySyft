@@ -560,6 +560,8 @@ class TorchHook(object):
             for p in self.parameters():
                 p.send(dest)
 
+            return self
+
         torch.nn.Module.send = module_send_
 
         def module_get_(self):
@@ -568,5 +570,17 @@ class TorchHook(object):
                 p.get()
 
         torch.nn.Module.get = module_get_
+
+        def module_fix_precision_(self):
+            """Overloads fix_precision for torch.nn.Module"""
+            if module_is_missing_grad(self):
+                create_grad_objects(self)
+
+            for p in self.parameters():
+                p.fix_precision_()
+
+            return self
+
+        torch.nn.Module.fix_precision = module_fix_precision_
 
 
