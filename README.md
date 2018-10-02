@@ -39,7 +39,11 @@ conda install pytorch=0.3.1 -c soumith
 pip3 install -r requirements.txt
 python3 setup.py install
 ```
-
+On Windows use the following steps to install PyTorch 0.3.1-
+```
+conda install -c peterjc123 pytorch
+conda install -c peterjc123 pytorch-cpu
+```
 ## Run Unit Tests
 
 ```

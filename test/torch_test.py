@@ -6,6 +6,7 @@ from unittest import TestCase
 
 import random
 import syft as sy
+import numpy as np
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks import encode
@@ -1174,6 +1175,15 @@ class TestSPDZTensor(TestCase):
 
         assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
 
+    def test_fix_precision_mul(self):
+        x = torch.FloatTensor([2.1, 1])
+        y = torch.FloatTensor([1.2, 1.111])
+        x = x.fix_precision()
+        y = y.fix_precision()
+        z = x + y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([3.3, 2.111])).all()
+
     def test_var_fix_precision_decode(self):
         x = sy.Variable(torch.FloatTensor([0.1, 0.2, 0.1, 0.2]))
         x = x.fix_precision()
@@ -1314,6 +1324,282 @@ class TestSPDZTensor(TestCase):
 
         z = z.get().get().decode()
         assert torch.eq(z, sy.Variable(torch.FloatTensor([2.2, 4, 6]))).all()
+
+    def fix_precision_operation(self, l1, l2, var=False, op='plus'):
+        if var:
+            x = sy.Variable(torch.FloatTensor(l1))
+            y = sy.Variable(torch.FloatTensor(l2))
+        else:
+            x = torch.FloatTensor(l1)
+            y = torch.FloatTensor(l2)
+        x = x.fix_precision()
+        y = y.fix_precision()
+        if op == 'plus':
+            z = x + y
+            l_res = [e1 + e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'mul':
+            z = x * y
+            l_res = [e1 * e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'matmul':
+            z = x.mm(y)
+            l_res = np.dot(np.array(l1), np.array(l2)).tolist()
+        else:
+            raise ArithmeticError('Unknown operator')
+        z = z.decode()
+        if var:
+            assert torch.eq(z, sy.Variable(torch.FloatTensor(l_res))).all()
+        else:
+            assert torch.eq(z, torch.FloatTensor(l_res)).all()
+
+    def test_addition_fix_precision(self):
+        self.fix_precision_operation([3.3], [5.1])
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1])
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1])
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1])
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654])
+
+    def test_var_addition_fix_precision(self):
+        self.fix_precision_operation([3.3], [5.1], var=True)
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True)
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1], var=True)
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1], var=True)
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True)
+
+    def test_mult_fix_precision(self):
+        self.fix_precision_operation([3.3], [5.1], op='mul')
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], op='mul')
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1], op='mul')
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1], op='mul')
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], op='mul')
+
+    def test_var_mult_fix_precision(self):
+        self.fix_precision_operation([3.3], [5.1], var=True, op='mul')
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True, op='mul')
+
+    def test_matmul_fix_precision(self):
+        self.fix_precision_operation([[3.3, 2.1],
+                                      [1.1, 5.2]],
+                                     [[1, 2],
+                                      [3, 4]], op='matmul')
+        self.fix_precision_operation([[-3.3, -2.1],
+                                      [1.1,  5.2]],
+                                     [[1,  2],
+                                      [3, -4.8]], op='matmul')
+        self.fix_precision_operation([[1.1, -2.1],
+                                      [3.2, 8.1],
+                                      [3.0, -7]],
+                                     [[-3.3, -2.1],
+                                      [1.1, 5.2]], op='matmul')
+        self.fix_precision_operation([[-40.2, -20.1],
+                                      [100.7, 51.2]],
+                                     [[14.1, 21],
+                                      [30, -41.8]], op='matmul')
+
+    def test_var_matmul_fix_precision(self):
+        self.fix_precision_operation([[3.3, 2.1],
+                                      [1.1, 5.2]],
+                                     [[1, 2],
+                                      [3, 4]], var=True, op='matmul')
+        self.fix_precision_operation([[-3.3, -2.1],
+                                      [1.1, 5.2]],
+                                     [[1, 2],
+                                      [3, -4.8]], var=True, op='matmul')
+        self.fix_precision_operation([[1.1, -2.1],
+                                      [3.2, 8.1],
+                                      [3.0, -7]],
+                                     [[-3.3, -2.1],
+                                      [1.1, 5.2]], var=True, op='matmul')
+        self.fix_precision_operation([[-40.2, -20.1],
+                                      [100.7, 51.2]],
+                                     [[14.1, 21],
+                                      [30, -41.8]], var=True, op='matmul')
+
+    def remote_fix_precision_operation(self, l1, l2, var=False, op='plus'):
+        if var:
+            x = sy.Variable(torch.FloatTensor(l1))
+            y = sy.Variable(torch.FloatTensor(l2))
+        else:
+            x = torch.FloatTensor(l1)
+            y = torch.FloatTensor(l2)
+        x = x.send(bob).fix_precision()
+        y = y.send(bob).fix_precision()
+        if op == 'plus':
+            z = x + y
+            l_res = [e1 + e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'mul':
+            z = x * y
+            l_res = [e1 * e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'matmul':
+            z = x.mm(y)
+            l_res = np.dot(np.array(l1), np.array(l2)).tolist()
+        else:
+            raise ArithmeticError('Unknown operator')
+        z = z.get().decode()
+        if var:
+            assert torch.eq(z, sy.Variable(torch.FloatTensor(l_res))).all()
+        else:
+            assert torch.eq(z, torch.FloatTensor(l_res)).all()
+
+    def test_addition_remote_fix_precision(self):
+        self.remote_fix_precision_operation([3.3], [5.1])
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1])
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1])
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1])
+        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654])
+
+    def test_var_addition_remote_fix_precision(self):
+        self.remote_fix_precision_operation([3.3], [5.1], var=True)
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True)
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], var=True)
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], var=True)
+        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True)
+
+    def test_mult_remote_fix_precision(self):
+        self.remote_fix_precision_operation([3.3], [5.1], op='mul')
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], op='mul')
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], op='mul')
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], op='mul')
+        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], op='mul')
+
+    def test_var_mult_remote_fix_precision(self):
+        self.remote_fix_precision_operation([3.3], [5.1], var=True, op='mul')
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
+        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True, op='mul')
+
+    def test_matmul_remote_fix_precision(self):
+        self.remote_fix_precision_operation([[3.3, 2.1],
+                                             [1.1, 5.2]],
+                                            [[1, 2],
+                                             [3, 4]], op='matmul')
+        self.remote_fix_precision_operation([[-3.3, -2.1],
+                                             [1.1,  5.2]],
+                                            [[1,  2],
+                                             [3, -4.8]], op='matmul')
+        self.remote_fix_precision_operation([[1.1, -2.1],
+                                             [3.2, 8.1],
+                                             [3.0, -7]],
+                                            [[-3.3, -2.1],
+                                             [1.1, 5.2]], op='matmul')
+        self.remote_fix_precision_operation([[-40.2, -20.1],
+                                             [100.7, 51.2]],
+                                            [[14.1, 21],
+                                             [30, -41.8]], op='matmul')
+
+    def test_var_matmul_remote_fix_precision(self):
+        self.remote_fix_precision_operation([[3.3, 2.1],
+                                             [1.1, 5.2]],
+                                            [[1, 2],
+                                             [3, 4]], var=True, op='matmul')
+        self.remote_fix_precision_operation([[-3.3, -2.1],
+                                             [1.1, 5.2]],
+                                            [[1, 2],
+                                             [3, -4.8]], var=True, op='matmul')
+        self.remote_fix_precision_operation([[1.1, -2.1],
+                                             [3.2, 8.1],
+                                             [3.0, -7]],
+                                            [[-3.3, -2.1],
+                                             [1.1, 5.2]], var=True, op='matmul')
+        self.remote_fix_precision_operation([[-40.2, -20.1],
+                                             [100.7, 51.2]],
+                                            [[14.1, 21],
+                                             [30, -41.8]], var=True, op='matmul')
+
+    def remote_fix_precision_share_operation(self, l1, l2, var=False, op='plus'):
+        if var:
+            x = sy.Variable(torch.FloatTensor(l1))
+            y = sy.Variable(torch.FloatTensor(l2))
+        else:
+            x = torch.FloatTensor(l1)
+            y = torch.FloatTensor(l2)
+        x = x.send(bob).fix_precision().share(alice, bob)
+        y = y.send(bob).fix_precision().share(alice, bob)
+        if op == 'plus':
+            z = x + y
+            l_res = [e1 + e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'mul':
+            z = x * y
+            l_res = [e1 * e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'matmul':
+            z = x.mm(y)
+            l_res = np.dot(np.array(l1), np.array(l2)).tolist()
+        else:
+            raise ArithmeticError('Unknown operator')
+        z = z.get().get().decode()
+        if var:
+            assert torch.eq(z, sy.Variable(torch.FloatTensor(l_res))).all()
+        else:
+            assert torch.eq(z, torch.FloatTensor(l_res)).all()
+
+    def test_addition_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1])
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1])
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1])
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1])
+        self.remote_fix_precision_share_operation([-19000, 3.3], [-1.9, 17654])
+
+    def test_var_addition_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1], var=True)
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], var=True)
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], var=True)
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], var=True)
+        self.remote_fix_precision_share_operation([-19000, 3.3], [-1.9, 17654], var=True)
+
+    def test_mult_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1], op='mul')
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], op='mul')
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], op='mul')
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], op='mul')
+        #self.remote_fix_precision_share_operation([-19000, 3.3], [-1.9, 17654], op='mul')
+
+    def test_var_mult_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
+        #self.remote_fix_precision_share_operation([-19000, 3.3], [-1.9, 17654], var=True, op='mul')
+
+    def test_matmul_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([[3.3, 2.1],
+                                                   [1.1, 5.2]],
+                                                  [[1, 2],
+                                                   [3, 4]], op='matmul')
+        self.remote_fix_precision_share_operation([[-3.3, -2.1],
+                                                   [1.1,  5.2]],
+                                                  [[1,  2],
+                                                   [3, -4.8]], op='matmul')
+        self.remote_fix_precision_share_operation([[1.1, -2.1],
+                                                   [3.2, 8.1],
+                                                   [3.0, -7]],
+                                                  [[-3.3, -2.1],
+                                                   [1.1, 5.2]], op='matmul')
+        self.remote_fix_precision_share_operation([[-40.2, -20.1],
+                                                   [10.7, 21.2]],
+                                                  [[14.1, 21],
+                                                   [10, -11.8]], op='matmul')
+
+    def test_var_matmul_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([[3.3, 2.1],
+                                                   [1.1, 5.2]],
+                                                  [[1, 2],
+                                                   [3, 4]], var=True, op='matmul')
+        self.remote_fix_precision_share_operation([[-3.3, -2.1],
+                                                   [1.1, 5.2]],
+                                                  [[1, 2],
+                                                   [3, -4.8]], var=True, op='matmul')
+        self.remote_fix_precision_share_operation([[1.1, -2.1],
+                                                   [3.2, 8.1],
+                                                   [3.0, -7]],
+                                                  [[-3.3, -2.1],
+                                                   [1.1, 5.2]], var=True, op='matmul')
+        self.remote_fix_precision_share_operation([[-40.2, -20.1],
+                                                   [10.7, 21.2]],
+                                                  [[14.1, 21],
+                                                   [10, -11.8]], op='matmul')
 
 
 class TestGPCTensor(TestCase):
