@@ -9,6 +9,7 @@ from ... import utils
 import logging
 import numpy as np
 from syft.spdz import spdz
+from syft.mpc.securenn import relu, relu_deriv
 
 
 class _SyftTensor(object):
@@ -461,7 +462,7 @@ class _LocalTensor(_SyftTensor):
 
             return_response = syft_command['self']
 
-        elif hasattr(response, 'child') and (isinstance(response.child, (_SPDZTensor, _FixedPrecisionTensor))):
+        elif hasattr(response, 'child') and (isinstance(response.child, (cls, _FixedPrecisionTensor))):
             return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
         else:
@@ -1347,7 +1348,7 @@ class _SPDZTensor(_SyftTensor):
         return gp_response
 
     def __mul__(self, other):
-        if(isinstance(other, _SPDZTensor)):
+        if(isinstance(other, type(self))):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
             if torch_utils.is_variable(self.torch_type):
                 gp_response = self*1
@@ -1414,15 +1415,15 @@ class _SPDZTensor(_SyftTensor):
             var_data_type = gp_response.child.data.torch_type
             variable = sy.Variable(torch.guard[var_data_type]())
             variable.init_grad_()
-            mpc_node = _SPDZTensor(gp_response)
-            mpc_node.data = _SPDZTensor(gp_response.data)
-            mpc_node.grad = _SPDZTensor(gp_response.grad)
-            mpc_node.grad.data = _SPDZTensor(gp_response.grad.data)
+            mpc_node = type(self)(gp_response)
+            mpc_node.data = type(self)(gp_response.data)
+            mpc_node.grad = type(self)(gp_response.grad)
+            mpc_node.grad.data = type(self)(gp_response.grad.data)
             mpc_node.grad.data.child.child = None # FIXME: is it necessary?
             torch_utils.bind_var_like_objects(variable, mpc_node, grad=True)
             return variable
         else:
-            response = _SPDZTensor(gp_response).wrap(True)
+            response = type(self)(gp_response).wrap(True)
             return response
 
     def send(self, *workers):
@@ -1461,6 +1462,21 @@ class _SPDZTensor(_SyftTensor):
         return result
 
 
+class _SNNTensor(_SPDZTensor):
+
+    """
+    This tensor extends the _SPDZTensor class with additional functionality for
+    an encrypted comparison operator, which can compare shared values with either
+    other shared values or with plaintext values. This functionality is also core
+    to higher level functions such as argmax, softmax, ReLU non-linearities as well
+    as clipping the unstable tails of polynomial approximations of non-linearities
+    # such as Sigmoid.
+    """
+
+    def relu(self):
+        return relu(self.parent)
+
+
 class _TorchObject(object):
     """
     This tensor is simply a more convenient way to add custom
@@ -1473,6 +1489,9 @@ class _TorchObject(object):
 
     def get_shape(self):
         return self.child.get_shape()
+
+    def relu(self, *args, **kwargs):
+        return self.child.relu(*args, **kwargs)
 
     def native_get_shape(self):
         return self.get_shape()
@@ -1523,7 +1542,7 @@ class _TorchObject(object):
             x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self_copy)
             if is_variable:
                 torch_utils.link_var_chain_to_data_and_grad_chains(x_gp, x_gp.data, x_gp.grad)
-            x_mpc = _SPDZTensor(x_gp, torch_type='syft.LongTensor').on(self)
+            x_mpc = _SNNTensor(x_gp, torch_type='syft.LongTensor').on(self)
             if is_variable:
                 torch_utils.link_var_chain_to_data_and_grad_chains(x_mpc, x_mpc.data, x_mpc.grad)
             return x_mpc

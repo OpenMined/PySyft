@@ -8,7 +8,7 @@ from torch.nn import Parameter
 from torch.autograd import Variable as Var
 from .core.frameworks.torch import TorchHook
 from .core.frameworks.torch import _LocalTensor, _PointerTensor, _FixedPrecisionTensor, \
-    _PlusIsMinusTensor, _GeneralizedPointerTensor, _SPDZTensor
+    _PlusIsMinusTensor, _GeneralizedPointerTensor, _SPDZTensor, _SNNTensor
 from syft.core.workers import VirtualWorker, SocketWorker
 from .core.frameworks.numpy import array
 

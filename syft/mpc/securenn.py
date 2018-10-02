@@ -4,7 +4,7 @@ from syft.spdz.spdz import (spdz_add, spdz_mul,
                            generate_zero_shares_communication,
                            get_ptrdict,
                            Q_BITS, field)
-from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor, _SPDZTensor
+import syft
 from syft.core.frameworks.torch.utils import chain_print
 import torch
 
@@ -93,7 +93,7 @@ def private_compare(x, r, BETA, j, alice, bob):
     c = (BETA * c_beta0) + (1 - BETA) * c_beta1
     c = (c * (1 - R_MASK)) + (c_21l * R_MASK)
 
-    cmpc = _SPDZTensor(c).wrap(True).get()  # /2
+    cmpc = syft._SNNTensor(c).wrap(True).get()  # /2
     result = (cmpc == 0).sum(1)
     return result
 
@@ -121,7 +121,7 @@ def msb(a_sh, alice, bob):
 
     j0 = torch.zeros(x_bit_sh.get_shape()).long().send(bob).child
     j1 = (torch.ones(x_bit_sh.get_shape())).long().send(alice).child
-    j = _GeneralizedPointerTensor({bob: j0, alice: j1}, torch_type='syft.LongTensor').wrap(True)
+    j = syft._GeneralizedPointerTensor({bob: j0, alice: j1}, torch_type='syft.LongTensor').wrap(True)
     j_0 = j[..., -1]
 
     # 4)
@@ -136,10 +136,10 @@ def msb(a_sh, alice, bob):
     BETA_prime_sh = BETA_prime.share(bob, alice).child.child
 
     # 7)
-    _lambda = _SPDZTensor(BETA_prime_sh + (j_0 * BETA) - (2 * BETA * BETA_prime_sh)).wrap(True)
+    _lambda = syft._SNNTensor(BETA_prime_sh + (j_0 * BETA) - (2 * BETA * BETA_prime_sh)).wrap(True)
 
     # 8)
-    _delta = _SPDZTensor(x_bit_sh_0.squeeze(-1) + (j_0 * r_0) - (2 * r_0 * x_bit_sh_0.squeeze(-1))).wrap(True)
+    _delta = syft._SNNTensor(x_bit_sh_0.squeeze(-1) + (j_0 * r_0) - (2 * r_0 * x_bit_sh_0.squeeze(-1))).wrap(True)
 
     # 9)
     theta = _lambda * _delta

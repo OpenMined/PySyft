@@ -1,11 +1,12 @@
 from .hook import TorchHook
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
 from .tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor, _GeneralizedPointerTensor
-from .tensor import _SPDZTensor
+from .tensor import _SPDZTensor, _SNNTensor
 
 __all__ = ['TorchHook', '_SyftTensor', '_LocalTensor',
            '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor',
-           '_PlusIsMinusTensor', '_GeneralizedPointerTensor', '_SPDZTensor']
+           '_PlusIsMinusTensor', '_GeneralizedPointerTensor', '_SPDZTensor',
+           '_SNNTensor']
 
 import torch
 
