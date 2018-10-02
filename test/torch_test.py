@@ -62,7 +62,7 @@ def setUpModule():
 
     display_chain.tensor.fixp_local = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor'
 
-    display_chain.tensor.fixp_mpc_gpt = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _SPDZTensor > LongTensor > _GeneralizedPointerTensor'
+    display_chain.tensor.fixp_mpc_gpt = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor'
 
     display_chain.var.local = 'Variable > _LocalTensor\n' \
                               ' - FloatTensor > _LocalTensor\n' \
@@ -79,10 +79,10 @@ def setUpModule():
                                    ' - - Variable > _FixedPrecisionTensor > Variable > _LocalTensor\n' \
                                    '   - FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor'
 
-    display_chain.var.fixp_mpc_gpt = 'Variable > _FixedPrecisionTensor > Variable > _SPDZTensor > Variable > _GeneralizedPointerTensor\n' \
-                                     ' - FloatTensor > _FixedPrecisionTensor > LongTensor > _SPDZTensor > LongTensor > _GeneralizedPointerTensor\n' \
-                                     ' - - Variable > _FixedPrecisionTensor > Variable > _SPDZTensor > Variable > _GeneralizedPointerTensor\n' \
-                                     '   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SPDZTensor > LongTensor > _LocalTensor'
+    display_chain.var.fixp_mpc_gpt = 'Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n' \
+                                     ' - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor\n' \
+                                     ' - - Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n' \
+                                     '   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _LocalTensor'
 
 
 class TestChainTensor(TestCase):
@@ -998,6 +998,12 @@ class TestTorchVariable(TestCase):
         z = torch.ge(x, y)
         assert (torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1]))))
 
+class TestSNNTensor(TestCase):
+
+    def test_mpc_relu(self):
+        a = (torch.LongTensor([-1, 3, -5, 7])).share(alice, bob)
+        b = a.relu()
+        assert (b.get() == torch.LongTensor([0, 3, 0, 7])).all()
 
 class TestSPDZTensor(TestCase):
 

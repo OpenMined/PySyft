@@ -86,6 +86,8 @@ class PythonEncoder:
         # Case of basic types
         if isinstance(obj, (int, float, str)) or obj is None:
             return obj
+        elif isinstance(obj, type(...)):
+            return "..."
         elif isinstance(obj, np.ndarray):
             return obj.ser(private=private_local, to_json=False)
         # Tensors and Variable encoded with their id
@@ -222,6 +224,9 @@ class PythonJSONDecoder:
         # each case.
 
         if isinstance(dct, (int, str, float)):
+            # a very strange special case
+            if(dct == '...'):
+                return ...
             return dct
         if isinstance(dct, (list,)):
             return [self.python_decode(o) for o in dct]

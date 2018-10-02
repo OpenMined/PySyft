@@ -9,6 +9,7 @@ from ... import utils
 import logging
 import numpy as np
 from syft.spdz import spdz
+from syft.mpc.securenn import relu, relu_deriv
 
 
 class _SyftTensor(object):
@@ -238,6 +239,8 @@ class _SyftTensor(object):
                     syft_type = torch.guard['syft.' + obj_type]
                     return syft_type.deser(obj, worker, acquire)
 
+        raise Exception("could not deserialize an object sent to router\n"+str(dct))
+
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
         """
@@ -461,7 +464,7 @@ class _LocalTensor(_SyftTensor):
 
             return_response = syft_command['self']
 
-        elif hasattr(response, 'child') and (isinstance(response.child, (_SPDZTensor, _FixedPrecisionTensor))):
+        elif hasattr(response, 'child') and (isinstance(response.child, (_SPDZTensor, _SNNTensor, _FixedPrecisionTensor))):
             return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
         else:
@@ -663,7 +666,10 @@ class _GeneralizedPointerTensor(_SyftTensor):
          pointer_dict = {}
          for worker, pointer in pointer_tensor_dict.items():
              if not isinstance(pointer, sy._PointerTensor):
-                 raise TypeError('Should use sy._Pointer without Torch wrapper.')
+                 if isinstance(pointer.child, sy._PointerTensor):
+                     pointer_tensor_dict[worker] = pointer.child
+                 else:
+                    raise TypeError('Passed in non-pointer'+str(type(pointer))+' to GeneralizedPointerTensor')
              key = worker if isinstance(worker, (int, str)) else worker.id
              pointer_dict[key] = pointer
          self.pointer_tensor_dict = pointer_dict
@@ -1014,8 +1020,18 @@ class _PointerTensor(_SyftTensor):
         if not isinstance(shape_ptr, tuple):
             shape_ptr = (shape_ptr, )
 
-        shape = [shape_i.get().int().tolist()[0] for shape_i in shape_ptr]
-        return sy.Size(shape)
+        raw_output = self.handle_call(cmd, self.owner)
+
+        if(isinstance(raw_output, (tuple, list))):
+            dims = list()
+            for each in raw_output:
+                dims.append(each.get().int().tolist())
+                if(len(dims[-1]) == 1):
+                    dims[-1] = dims[-1][0]
+
+            return sy.Size(dims)
+
+        return sy.Size(raw_output.get().int().tolist())
 
     def decode(self):
         raise NotImplementedError("It is not possible to remotely decode a tensorvar for the moment")
@@ -1268,13 +1284,13 @@ class _FixedPrecisionTensor(_SyftTensor):
         return response
 
     def __repr__(self):
-        if(not isinstance(self.child, _SPDZTensor)):
+        if(not isinstance(self.child, _SNNTensor)):
             return "[Fixed precision]\n"+self.decode().__repr__()
         else:
             return "[Fixed precision]\n" + self.child.__repr__()
 
     def __str__(self):
-        if (not isinstance(self.child, _SPDZTensor)):
+        if (not isinstance(self.child, _SNNTensor)):
             return "[Fixed precision]\n" + self.decode().__repr__()
         else:
             return "[Fixed precision]\n" + self.child.__repr__()
@@ -1334,10 +1350,11 @@ class _SPDZTensor(_SyftTensor):
             'shares': self.child.ser(private=private, as_dict=True),
             'torch_type': self.torch_type
         }
+        str_type = "__" + type(self).__name__ + "__"
         if as_dict:
-            return {'___SPDZTensor__': data}
+            return {str_type: data}
         else:
-            return json.dumps({'___SPDZTensor__': data}) + "\n"
+            return json.dumps({str_type: data}) + "\n"
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -1354,7 +1371,7 @@ class _SPDZTensor(_SyftTensor):
 
                 shares.child.child = shares
 
-                result = _SPDZTensor(shares=shares,
+                result = cls(shares=shares,
                                     id=msg_obj['id'],
                                     owner=worker,
                                     torch_type=msg_obj['torch_type'])
@@ -1364,7 +1381,7 @@ class _SPDZTensor(_SyftTensor):
                 #                        id=msg_obj['id'],
                 #                        owner=worker,
                 #                        torch_type=msg_obj['torch_type'])
-                result = sy._SPDZTensor(shares=sy.LongTensor())
+                result = cls(shares=sy.LongTensor())
             else:
                 raise TypeError("Unrecognized type ", list(child_shares.keys()))
 
@@ -1434,7 +1451,8 @@ class _SPDZTensor(_SyftTensor):
         return gp_response
 
     def __mul__(self, other):
-        if isinstance(other, _SPDZTensor):
+
+        if(isinstance(other, type(self))):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
             if torch_utils.is_variable(self.torch_type):
                 gp_response = self * 1
@@ -1507,15 +1525,15 @@ class _SPDZTensor(_SyftTensor):
             var_data_type = gp_response.child.data.torch_type
             variable = sy.Variable(torch.guard[var_data_type]())
             variable.init_grad_()
-            mpc_node = _SPDZTensor(gp_response)
-            mpc_node.data = _SPDZTensor(gp_response.data)
-            mpc_node.grad = _SPDZTensor(gp_response.grad)
-            mpc_node.grad.data = _SPDZTensor(gp_response.grad.data)
+            mpc_node = type(self)(gp_response)
+            mpc_node.data = type(self)(gp_response.data)
+            mpc_node.grad = type(self)(gp_response.grad)
+            mpc_node.grad.data = type(self)(gp_response.grad.data)
             mpc_node.grad.data.child.child = None # FIXME: is it necessary?
             torch_utils.bind_var_like_objects(variable, mpc_node, grad=True)
             return variable
         else:
-            response = _SPDZTensor(gp_response).wrap(True)
+            response = type(self)(gp_response).wrap(True)
             return response
 
     def send(self, *workers):
@@ -1554,6 +1572,55 @@ class _SPDZTensor(_SyftTensor):
         return result
 
 
+class _SNNTensor(_SPDZTensor, _SyftTensor):
+
+    """
+    This tensor extends the _SPDZTensor class with additional functionality for
+    an encrypted comparison operator, which can compare shared values with either
+    other shared values or with plaintext values. This functionality is also core
+    to higher level functions such as argmax, softmax, ReLU non-linearities as well
+    as clipping the unstable tails of polynomial approximations of non-linearities
+    # such as Sigmoid.
+    """
+
+    class overload_functions:
+        """
+        Put here the functions you want to overload
+        Beware of recursion errors.
+        """
+
+        @staticmethod
+        def get(attr):
+            attr = attr.split('.')[-1]
+            return getattr(sy._SNNTensor.overload_functions, attr)
+
+    def second_constructor(self):
+        return self.wrap(True)
+
+    # Put here all the methods you want to overload
+
+    def on(self, wrapper):
+        """
+        Used to add a new _SPDZTensor at the top of the chain, just before the tensorvar wrapper
+        """
+        # Assign the newly created tensor to the good owner and torch_type
+        self.torch_type = wrapper.child.torch_type
+        self.owner = wrapper.child.owner
+
+        torch_utils.wrap_command_with(self, wrapper=wrapper)
+
+        # In case wrapper is a variable, do the same with data and grad (if necessary)
+        if torch_utils.is_variable(wrapper):
+            wrapper.data = _SNNTensor(self.child.data).on(wrapper.data)
+            if torch_utils.is_variable(wrapper.grad):
+                wrapper.assign_grad_(_SNNTensor(self.child.grad).on(wrapper.grad))
+
+        return wrapper
+
+    def relu(self):
+        return relu(self.parent)
+
+
 class _TorchObject(object):
     """
     This tensor is simply a more convenient way to add custom
@@ -1566,6 +1633,9 @@ class _TorchObject(object):
 
     def get_shape(self):
         return self.child.get_shape()
+
+    def relu(self, *args, **kwargs):
+        return self.child.relu(*args, **kwargs)
 
     def native_get_shape(self):
         return self.get_shape()
@@ -1616,7 +1686,7 @@ class _TorchObject(object):
             x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self_copy)
             if is_variable:
                 torch_utils.link_var_chain_to_data_and_grad_chains(x_gp, x_gp.data, x_gp.grad)
-            x_mpc = _SPDZTensor(x_gp, torch_type='syft.LongTensor').on(self)
+            x_mpc = _SNNTensor(x_gp, torch_type='syft.LongTensor').on(self)
             if is_variable:
                 torch_utils.link_var_chain_to_data_and_grad_chains(x_mpc, x_mpc.data, x_mpc.grad)
             return x_mpc
