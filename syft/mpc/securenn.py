@@ -56,6 +56,8 @@ def flip(x, dim):
 
 def private_compare(x, r, BETA, j, alice, bob):
 
+    l = Q_BITS
+
     t = (r + 1) % 2 ** l
 
     R_MASK = (r == ((2 ** l) - 1)).long()
