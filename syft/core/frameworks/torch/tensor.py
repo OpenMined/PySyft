@@ -239,6 +239,8 @@ class _SyftTensor(object):
                     syft_type = torch.guard['syft.' + obj_type]
                     return syft_type.deser(obj, worker, acquire)
 
+        raise Exception("could not deserialize an object sent to router\n"+str(dct))
+
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
         """
@@ -462,7 +464,7 @@ class _LocalTensor(_SyftTensor):
 
             return_response = syft_command['self']
 
-        elif hasattr(response, 'child') and (isinstance(response.child, (cls, _FixedPrecisionTensor))):
+        elif hasattr(response, 'child') and (isinstance(response.child, (_SPDZTensor, _SNNTensor, _FixedPrecisionTensor))):
             return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
         else:
@@ -1182,13 +1184,13 @@ class _FixedPrecisionTensor(_SyftTensor):
         return response
 
     def __repr__(self):
-        if(not isinstance(self.child, _SPDZTensor)):
+        if(not isinstance(self.child, _SNNTensor)):
             return "[Fixed precision]\n"+self.decode().__repr__()
         else:
             return "[Fixed precision]\n" + self.child.__repr__()
 
     def __str__(self):
-        if (not isinstance(self.child, _SPDZTensor)):
+        if (not isinstance(self.child, _SNNTensor)):
             return "[Fixed precision]\n" + self.decode().__repr__()
         else:
             return "[Fixed precision]\n" + self.child.__repr__()
@@ -1248,10 +1250,11 @@ class _SPDZTensor(_SyftTensor):
             'shares': self.child.ser(private=private, as_dict=True),
             'torch_type': self.torch_type
         }
+        str_type = "__" + type(self).__name__ + "__"
         if as_dict:
-            return {'___SPDZTensor__': data}
+            return {str_type: data}
         else:
-            return json.dumps({'___SPDZTensor__': data}) + "\n"
+            return json.dumps({str_type: data}) + "\n"
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -1268,7 +1271,7 @@ class _SPDZTensor(_SyftTensor):
 
                 shares.child.child = shares
 
-                result = _SPDZTensor(shares=shares,
+                result = cls(shares=shares,
                                     id=msg_obj['id'],
                                     owner=worker,
                                     torch_type=msg_obj['torch_type'])
@@ -1278,7 +1281,7 @@ class _SPDZTensor(_SyftTensor):
                 #                        id=msg_obj['id'],
                 #                        owner=worker,
                 #                        torch_type=msg_obj['torch_type'])
-                result = sy._SPDZTensor(shares=sy.LongTensor())
+                result = cls(shares=sy.LongTensor())
             else:
                 raise TypeError("Unrecognized type ", list(child_shares.keys()))
 
@@ -1462,7 +1465,7 @@ class _SPDZTensor(_SyftTensor):
         return result
 
 
-class _SNNTensor(_SPDZTensor):
+class _SNNTensor(_SPDZTensor, _SyftTensor):
 
     """
     This tensor extends the _SPDZTensor class with additional functionality for
@@ -1472,6 +1475,40 @@ class _SNNTensor(_SPDZTensor):
     as clipping the unstable tails of polynomial approximations of non-linearities
     # such as Sigmoid.
     """
+
+    class overload_functions:
+        """
+        Put here the functions you want to overload
+        Beware of recursion errors.
+        """
+
+        @staticmethod
+        def get(attr):
+            attr = attr.split('.')[-1]
+            return getattr(sy._SNNTensor.overload_functions, attr)
+
+    def second_constructor(self):
+        return self.wrap(True)
+
+    # Put here all the methods you want to overload
+
+    def on(self, wrapper):
+        """
+        Used to add a new _SPDZTensor at the top of the chain, just before the tensorvar wrapper
+        """
+        # Assign the newly created tensor to the good owner and torch_type
+        self.torch_type = wrapper.child.torch_type
+        self.owner = wrapper.child.owner
+
+        torch_utils.wrap_command_with(self, wrapper=wrapper)
+
+        # In case wrapper is a variable, do the same with data and grad (if necessary)
+        if torch_utils.is_variable(wrapper):
+            wrapper.data = _SNNTensor(self.child.data).on(wrapper.data)
+            if torch_utils.is_variable(wrapper.grad):
+                wrapper.assign_grad_(_SNNTensor(self.child.grad).on(wrapper.grad))
+
+        return wrapper
 
     def relu(self):
         return relu(self.parent)
