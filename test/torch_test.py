@@ -997,6 +997,12 @@ class TestTorchVariable(TestCase):
         z = torch.ge(x, y)
         assert (torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1]))))
 
+class TestSNNTensor(TestCase):
+
+    def test_mpc_relu(self):
+        a = (torch.LongTensor([-1, 3, -5, 7])).share(alice, bob)
+        b = a.relu()
+        assert (b.get() == torch.LongTensor([0, 3, 0, 7])).all()
 
 class TestSPDZTensor(TestCase):
 

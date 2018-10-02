@@ -99,6 +99,10 @@ def private_compare(x, r, BETA, j, alice, bob):
 
 
 def msb(a_sh, alice, bob):
+
+    input_shape = a_sh.get_shape()
+    a_sh = a_sh.view(-1)
+
     # a_sh = a.share(bob, alice)
 
     # 1)
@@ -148,7 +152,7 @@ def msb(a_sh, alice, bob):
     u = torch.zeros(list(theta.get_shape())).long().share(alice, bob)
     a = _lambda + _delta - (2 * theta) + u
 
-    return a
+    return a.view(*list(input_shape))
 
 def relu_deriv(a_sh):
     return msb(a_sh, *list(a_sh.child.shares.child.pointer_tensor_dict.keys()))
