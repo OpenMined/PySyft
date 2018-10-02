@@ -103,7 +103,9 @@ def msb(a_sh, alice, bob):
     input_shape = a_sh.get_shape()
     a_sh = a_sh.view(-1)
 
-    # a_sh = a.share(bob, alice)
+    # the commented out numbers below correspond to the
+    # line numbers in Table 5 of the SecureNN paper
+    # https://eprint.iacr.org/2018/442.pdf
 
     # 1)
 
