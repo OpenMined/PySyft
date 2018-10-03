@@ -1,4 +1,4 @@
-# KnownIssues
+# Known Issues
 
 1. Non-leaf variables do not register/track gradients.
 
