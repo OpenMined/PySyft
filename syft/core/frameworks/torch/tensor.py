@@ -1125,13 +1125,11 @@ class _FixedPrecisionTensor(_SyftTensor):
         args = command['args']
         kwargs = command['kwargs']
         has_self = command['has_self']
-
         if has_self:
             self = command['self']
             if attr in ('__add__', '__mul__', '__sub__', '__div__', '__truediv__') and \
                     isinstance(args[0], sy._FixedPrecisionTensor):
                 # Compute the precision to keep
-                print('here')
                 other = args[0]
                 assert (self.base == other.base) and (self.bits == other.bits), \
                     'Arguments should share the same base and field'
@@ -1144,15 +1142,11 @@ class _FixedPrecisionTensor(_SyftTensor):
                 if attr == '__mul__':
                     torch_tensorvar = cls.__mul__(self, *args, **kwargs)
                 elif attr == '__add__':
-                    print('here')
                     torch_tensorvar = cls.__add__(self, *args, **kwargs)
                 elif attr == '__sub__':
-                    print('here')
                     torch_tensorvar = cls.__sub__(self, *args, **kwargs)
                 elif attr == '__div__' or '__truediv__':
                     torch_tensorvar = cls.__div__(self, *args, **kwargs)
-                elif attr == 'prod':
-                    torch_tensorvar = cls.prod(self, *args, **kwargs)
 
                 # Check overflow
                 if (torch_tensorvar > self.field).any():
@@ -1164,6 +1158,18 @@ class _FixedPrecisionTensor(_SyftTensor):
                     precision_fractional=precision
                 )
                 return response
+
+            if has_self and attr in ('prod', 'sum', 'cumsum'):
+                if args == ():
+                    raise AttributeError('Please enter a dimension')
+                if attr == 'prod':
+                    response = cls.prod(self, *args, **kwargs)
+                elif attr == 'sum':
+                    response = cls.sum(self, *args, **kwargs)
+                elif attr == 'cumsum':
+                    response = cls.cumsum(self, *args, **kwargs)
+                return _FixedPrecisionTensor(response).wrap(True)
+
             if attr == 'share':
                 response = self.share(*args, **kwargs)
                 return response
@@ -1224,7 +1230,6 @@ class _FixedPrecisionTensor(_SyftTensor):
                            - self.precision_fractional)) / other.child) % \
                           self.field
         return gp_response
-
     def __mul__(self, other):
         # if other is not a fixed tensor, convert it to a fixed one
         if (not hasattr(other, 'precision_fractional')):
@@ -1237,13 +1242,10 @@ class _FixedPrecisionTensor(_SyftTensor):
         elif (self.precision_fractional > other.precision_fractional):
             gp_response = ((self.child * other.child) / 10 ** other.precision_fractional) % \
                           self.field
-            print ('here')
         elif (self.precision_fractional < other.precision_fractional):
             gp_response = ((self.child * other.child) / 10 ** self.precision_fractional) % \
                           self.field
-            print('here')
         return gp_response
-
     def __sub__(self, other):
         # if other is not a fixed tensor, convert it to a fixed one
         if (not hasattr(other, 'precision_fractional')):
@@ -1262,6 +1264,13 @@ class _FixedPrecisionTensor(_SyftTensor):
                           self.field
 
         return gp_response
+    def prod(self, *args, **kwargs):
+        dim = self.child.size()[args[0]]
+        return self.child.prod(*args, **kwargs) / 10 ** (self.precision_fractional * dim)
+    def sum(self, *args, **kwargs):
+        return (self.child.sum(*args, *kwargs) / 10 ** self.precision_fractional)
+    def cumsum(self, *args, **kwargs):
+        return (self.child.cumsum(*args, *kwargs) / 10 ** self.precision_fractional)
 
     def __repr__(self):
         if(not isinstance(self.child, _SPDZTensor)):
