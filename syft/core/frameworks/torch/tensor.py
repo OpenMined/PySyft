@@ -1467,8 +1467,8 @@ class _SPDZTensor(_SyftTensor):
 
     def __mul__(self, other):
 
-        if (isinstance(other, (int, float, bool))):
-            other = self.share_scalar(other)
+        # if (isinstance(other, (int, float, bool))):
+        #     other = self.share_scalar(other)
 
         if(isinstance(other, type(self))):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
@@ -1691,10 +1691,13 @@ class _TorchObject(object):
             return self.native___ge__(*args, **kwargs)
 
     def __eq__(self, *args, **kwargs):
-        try:
-            return self.child == args[0].child
-        except:
+        if(isinstance(self.child, _LocalTensor)):
             return self.native___eq__(*args, **kwargs)
+        else:
+            try:
+                return self.child == args[0].child
+            except:
+                return self.native___eq__(*args, **kwargs)
 
     def get_shape(self):
         return self.child.get_shape()
