@@ -1385,6 +1385,10 @@ class _FixedPrecisionTensor(_SyftTensor):
         response = self.child.mm(other.child)
         return response
 
+    def mm(self, other):
+        response = self.child.mm(other.child)
+        return response
+
     def __repr__(self):
         if(not isinstance(self.child, _SNNTensor)):
             return "[Fixed precision]\n"+self.decode().__repr__()
