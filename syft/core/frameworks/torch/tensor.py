@@ -1429,12 +1429,27 @@ class _SPDZTensor(_SyftTensor):
 
         return wrapper
 
+    def share_scalar(self, scalar):
+
+        other = torch.zeros(list(self.get_shape())).long() + scalar
+        other = other.share(*list(self.shares.child.pointer_tensor_dict.keys())).child
+
+        return other
+
     def __add__(self, other):
+
+        if (isinstance(other, (int, float, bool))):
+            other = self.share_scalar(other)
+
         # gp_ stands for GeneralizedPointer
         gp_response = spdz.spdz_add(self.shares, other.shares)
         return gp_response
 
     def __sub__(self, other):
+
+        if (isinstance(other, (int, float, bool))):
+            other = self.share_scalar(other)
+
         gp_response = spdz.spdz_add(self.shares, spdz.spdz_neg(other.shares))
         return gp_response
 
@@ -1451,6 +1466,9 @@ class _SPDZTensor(_SyftTensor):
         return gp_response
 
     def __mul__(self, other):
+
+        if (isinstance(other, (int, float, bool))):
+            other = self.share_scalar(other)
 
         if(isinstance(other, type(self))):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
@@ -1620,6 +1638,23 @@ class _SNNTensor(_SPDZTensor, _SyftTensor):
     def relu(self):
         return relu(self.parent)
 
+    def positive(self):
+        return relu_deriv(self.parent)
+
+    def __gt__(self, other):
+        return (self.parent - other.parent - 1).positive()
+
+    def __ge__(self, other):
+        return (self.parent - other.parent).positive()
+
+    def __lt__(self, other):
+        return (other.parent - self.parent - 1).positive()
+
+    def __le__(self, other):
+        return (other.parent - self.parent).positive()
+
+    def __eq__(self, other):
+        return (self.parent >= other.parent) * (self.parent <= other.parent)
 
 class _TorchObject(object):
     """
@@ -1631,11 +1666,44 @@ class _TorchObject(object):
 
     __module__ = 'syft'
 
+    def __gt__(self, *args, **kwargs):
+        try:
+            return self.child > args[0].child
+        except:
+            return self.native___gt__(*args, **kwargs)
+
+    def __lt__(self, *args, **kwargs):
+        try:
+            return self.child < args[0].child
+        except:
+            return self.native___lt__(*args, **kwargs)
+
+    def __le__(self, *args, **kwargs):
+        try:
+            return self.child <= args[0].child
+        except:
+            return self.native___le__(*args, **kwargs)
+
+    def __ge__(self, *args, **kwargs):
+        try:
+            return self.child >= args[0].child
+        except:
+            return self.native___ge__(*args, **kwargs)
+
+    def __eq__(self, *args, **kwargs):
+        try:
+            return self.child == args[0].child
+        except:
+            return self.native___eq__(*args, **kwargs)
+
     def get_shape(self):
         return self.child.get_shape()
 
     def relu(self, *args, **kwargs):
         return self.child.relu(*args, **kwargs)
+
+    def positive(self, *args, **kwargs):
+        return self.child.positive(*args, **kwargs)
 
     def native_get_shape(self):
         return self.get_shape()
