@@ -1,11 +1,12 @@
 from .hook import TorchHook
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
 from .tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor, _GeneralizedPointerTensor
-from .tensor import _SPDZTensor
+from .tensor import _SPDZTensor, _SNNTensor
 
 __all__ = ['TorchHook', '_SyftTensor', '_LocalTensor',
            '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor',
-           '_PlusIsMinusTensor', '_GeneralizedPointerTensor', '_SPDZTensor']
+           '_PlusIsMinusTensor', '_GeneralizedPointerTensor', '_SPDZTensor',
+           '_SNNTensor']
 
 import torch
 
@@ -50,6 +51,7 @@ torch.tensorvar_methods.append('get_shape')
 torch.tensorvar_methods.append("share")
 torch.tensorvar_methods.append("fix_precision")
 torch.tensorvar_methods.append("decode")
+torch.tensorvar_methods.append("__gt__")
 
 # Torch functions we don't want to override
 torch.torch_exclude = ['save', 'load', 'typename', 'is_tensor', 'manual_seed']
@@ -61,8 +63,10 @@ torch.guard = {
     'syft.core.frameworks.torch.tensor._LocalTensor': _LocalTensor,
     'syft.core.frameworks.torch.tensor._FixedPrecisionTensor': _FixedPrecisionTensor,
     'syft.core.frameworks.torch.tensor._GeneralizedPointerTensor': _GeneralizedPointerTensor,
+    'syft.core.frameworks.torch.tensor._SNNTensor': _SNNTensor,
     'syft._PlusIsMinusTensor': _PlusIsMinusTensor,
     'syft._SPDZTensor': _SPDZTensor,
+    'syft._SNNTensor': _SNNTensor,
     'syft._FixedPrecisionTensor': _FixedPrecisionTensor,
     'syft.core.frameworks.torch.tensor.FloatTensor': torch.FloatTensor,
     'syft.core.frameworks.torch.tensor.DoubleTensor': torch.DoubleTensor,

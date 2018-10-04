@@ -104,7 +104,7 @@ def spdz_neg(a, mod=field):
 def spdz_mul(x, y, workers, mod=field):
     if x.get_shape() != y.get_shape():
         raise ValueError("Shapes must be identical in order to multiply them")
-    shape = x.shape
+    shape = x.get_shape()
     triple = generate_mul_triple_communication(shape, workers)
     a, b, c = triple
 
@@ -130,13 +130,13 @@ def spdz_mul(x, y, workers, mod=field):
 
 
 def spdz_matmul(x, y, workers, mod=field):
-    shapes = [x.shape, y.shape]
-    if len(x.shape) != 1:
-        x_width = x.shape[1]
+    shapes = [x.get_shape(), y.get_shape()]
+    if len(x.get_shape()) != 1:
+        x_width = x.get_shape()[1]
     else:
         x_width = 1
 
-    y_height = y.shape[0]
+    y_height = y.get_shape()[0]
 
     assert x_width == y_height, 'dimension mismatch: %r != %r' % (
         x_width, y_height,
@@ -180,6 +180,33 @@ def spdz_sigmoid(x, interface):
     return spdz_add(W0, temp531)
 
 
+def get_ptrdict(mpct):
+    child = mpct
+    while not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor) and child is not None:
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return child.pointer_tensor_dict
+
+
+def get_workers(mpct):
+    child = mpct
+    while not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor) and child is not None:
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return list(child.pointer_tensor_dict.keys())
+
+
+def get_shape(mpct):
+    child = mpct
+    while not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor) and child is not None:
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return child.shape
+
+
 def generate_mul_triple(shape, mod=field):
     r = torch.LongTensor(shape).random_(mod)
     s = torch.LongTensor(shape).random_(mod)
@@ -214,8 +241,11 @@ def generate_mul_triple_communication(shape, workers):
     return triple
 
 
-def generate_zero_shares_communication(alice, bob, sizes):
-    return torch.zeros(sizes).long().share(alice, bob)
+def generate_zero_shares_communication(alice, bob, *sizes):
+    return torch.zeros(*sizes).fix_precision().share(alice, bob)
+
+def generate_one_shares_communication(alice, bob, sizes):
+    return torch.ones(sizes).long().share(alice, bob)
 
 
 def generate_matmul_triple(shapes, mod=field):

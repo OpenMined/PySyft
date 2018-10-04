@@ -207,7 +207,7 @@ def wrap_command(obj):
     elif isinstance(obj, dict):
         return {k: wrap_command(o) for k, o in obj.items()}
     else:
-        print('The following type wasnt wrapped:', str(type(obj)))
+        # print('The following type wasnt wrapped:', str(type(obj)))
         return obj
 
 
@@ -314,7 +314,12 @@ def split_to_pointer_commands(syft_command):
             for worker_id, pointer in arg.pointer_tensor_dict.items():
                 syft_commands[worker_id]['args'].append(pointer)
         elif isinstance(arg, (list, set, tuple)):
-            raise NotImplementedError('Cant deal with nested args on Generalizd Pointers')
+            if(len(syft_commands) == 0):
+                base_command['args'] = arg
+            else:
+                for worker_id in worker_ids:
+                    syft_commands[worker_id]['args'].append(arg)
+            # raise NotImplementedError('Cant deal with nested args on Generalizd Pointers')
         else:
             if len(syft_commands) == 0:
                 base_command['args'].append(arg)
@@ -331,7 +336,7 @@ def assert_has_only_torch_tensorvars(obj):
     at his 'roots', ie head of chain
     Is useful for development.
     """
-    if isinstance(obj, (int, float, str, slice)):
+    if isinstance(obj, (int, float, str, slice, type(...))):
         return True
     elif is_tensor(obj):
         return True
@@ -357,7 +362,7 @@ def assert_has_only_syft_tensors(obj):
     at his 'roots', ie head of chain
     Is useful for development.
     """
-    if isinstance(obj, (int, float, str, slice)):
+    if isinstance(obj, (int, float, str, slice, type(...))):
         return True
     elif issubclass(obj.__class__, sy._SyftTensor):
         return True
