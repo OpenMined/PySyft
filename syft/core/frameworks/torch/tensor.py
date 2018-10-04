@@ -783,7 +783,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
         return res
 
     def workers(self):
-        return list(self.pointer_tensor_dict.keys()) 
+        return list(self.pointer_tensor_dict.keys())
 
     def on(self, wrapper):
         """
@@ -1177,33 +1177,69 @@ class _FixedPrecisionTensor(_SyftTensor):
         args = command['args']
         kwargs = command['kwargs']
         has_self = command['has_self']
-
         if has_self:
             self = command['self']
+            # Overriding prod, sum and cumsum or similar methods, which may have an argument but
+            # do not include the parameters when they're called. i.e. given an argument prod(
+            # dim=3) the value of args[0] is just 3, therefore it does not satisfy the second
+            # part of the if statement.
+            if attr in ('prod', 'sum', 'cumsum'):
+                if args == ():
+                    raise AttributeError('Please provide a dimension')
+                if attr == 'prod':
+                    response = cls.prod(self, *args, **kwargs)
+                elif attr == 'sum':
+                    response = cls.sum(self, *args, **kwargs)
+                elif attr == 'cumsum':
+                    response = cls.cumsum(self, *args, **kwargs)
+                return _FixedPrecisionTensor(response).wrap(True)
+
             if attr == 'share':
                 response = self.share(*args, **kwargs)
                 return response
             else:
-                if attr in ('__add__', '__mul__', 'mm') and isinstance(args[0], sy._FixedPrecisionTensor):
+                if attr in ('__add__', '__mul__', '__sub__', '__div__', '__truediv__', 'mm',
+                            'matmul') and\
+                        isinstance(args[0], sy._FixedPrecisionTensor):
+                    # Compute the precision to keep
                     other = args[0]
                     assert (self.base == other.base) and (self.bits == other.bits), \
                         'Arguments should share the same base and field'
+                    self_precision = self.precision_fractional
+                    other_precision = other.precision_fractional
 
+                    # If the precision fractional of self is different than other's raise an exception
+                    # You may uncomment this line out if you do care about different precisions,
+                    # the code will work either way.
+                    # if not(self_precision == other_precision):
+                    #     raise ArithmeticError("The tensors have different precisions")
+                    precision = max(self_precision, other_precision)
+                    precision_loss = min(self_precision, other_precision)
                     # Perform the computation
                     torch_tensorvar = None
-                    if attr == '__add__':
-                        torch_tensorvar = cls.__add__(self, *args, **kwargs)
-                        torch_tensorvar = torch_tensorvar % self.field
-                    elif attr == '__mul__':
+                    if attr == '__mul__':
                         torch_tensorvar = cls.__mul__(self, other)
-                    elif attr in ('mm',):
+                    elif attr in ('mm',) or attr == 'matmul':
                         torch_tensorvar = cls.mm(self, other)
+                    elif attr == '__add__':
+                        torch_tensorvar = cls.__add__(self, *args, **kwargs)
+                    elif attr == '__sub__':
+                        torch_tensorvar = cls.__sub__(self, *args, **kwargs)
+                    elif attr == '__div__' or '__truediv__':
+                        torch_tensorvar = cls.__div__(self, *args, **kwargs)
+                    if attr not in ('mm',) and attr != '__mul__':
+                        response = torch_tensorvar.fix_precision(
+                            already_encoded=True,
+                            precision_fractional=precision
+                        )
+                        return response
 
-                    # We could check overflow, but it is a pb for shared values.
-                    # if (torch_tensorvar > self.field).any():
-                    #     torch_tensorvar = torch_tensorvar % self.field
-                    #     logging.warning('{} on FixPrecision Tensor/Variable overflowed, '
-                    #                     'try reducing precision_fractional.'.format(attr))
+
+                        # We could check overflow, but it is a pb for shared values.
+                        # if (torch_tensorvar > self.field).any():
+                        #     torch_tensorvar = torch_tensorvar % self.field
+                        #     logging.warning('{} on FixPrecision Tensor/Variable overflowed, '
+                        #                     'try reducing precision_fractional.'.format(attr))
 
                 else:  # Standard procedure for methods
                     # Get the next node type and update in command tensorvar with tensorvar.child
@@ -1220,7 +1256,7 @@ class _FixedPrecisionTensor(_SyftTensor):
 
                 # Compute the precision to keep
                 precision = self.precision_fractional
-                if attr in ('__mul__', 'mm', 'matmul'):
+                if attr in ('mm', 'matmul', '__mul__'):
                     other = args[0]
                     if isinstance(other, sy._FixedPrecisionTensor):
                         self_precision = self.precision_fractional
@@ -1272,12 +1308,74 @@ class _FixedPrecisionTensor(_SyftTensor):
             return self.parent
 
     def __add__(self, other):
-        response = self.child + other.child
-        return response
+        # if other is not a fixed tensor, convert it to a fixed one
+        if (not hasattr(other, 'precision_fractional')):
+            other = other.fix_precision(precision_fractional = self.precision_fractional)
+        # check for inconsistencies in precision points
+        if (self.precision_fractional == other.precision_fractional):
+            gp_response = (self.child + other.child) % self.field
+        elif (self.precision_fractional > other.precision_fractional):
+            gp_response = (self.child + other.child * 10 ** (self.precision_fractional -
+                                                             other.precision_fractional)) % self.field
+        elif (self.precision_fractional < other.precision_fractional):
+            gp_response = (self.child * 10 ** (other.precision_fractional -
+                                               self.precision_fractional)+ other.child) % self.field
+        return gp_response
+
+    def __div__(self, other):
+        # if other is not a fixed tensor, convert it to a fixed one
+        if (not hasattr(other, 'precision_fractional')):
+            other = other.fix_precision(precision_fractional = self.precision_fractional)
+
+        if (self.precision_fractional == other.precision_fractional):
+            gp_response = (self.child * 10 ** self.precision_fractional / other.child) % \
+                          self.field
+        elif (self.precision_fractional > other.precision_fractional):
+            gp_response = (self.child / other.child * 10 ** other.precision_fractional) % \
+                          self.field
+
+        elif (self.precision_fractional < other.precision_fractional):
+            gp_response = ((self.child *10 ** (2 * other.precision_fractional
+                           - self.precision_fractional)) / other.child) % \
+                          self.field
+        return gp_response
 
     def __mul__(self, other):
-        response = self.child * other.child
-        return response
+        # if other is not a fixed tensor, convert it to a fixed one
+        if (not hasattr(other, 'precision_fractional')):
+            other = other.fix_precision(precision_fractional = self.precision_fractional)
+        return self.child * other.child
+
+    def __sub__(self, other):
+        # if other is not a fixed tensor, convert it to a fixed one
+        if (not hasattr(other, 'precision_fractional')):
+            other = other.fix_precision(precision_fractional = self.precision_fractional)
+
+        if (self.precision_fractional == other.precision_fractional):
+            gp_response = self.child - other.child
+        elif (self.precision_fractional > other.precision_fractional):
+            gp_response = (self.child - other.child * 10 ** (self.precision_fractional -
+                                                             other.precision_fractional)) % self.field
+
+            other.precision_fractional = self.precision_fractional
+        elif (self.precision_fractional < other.precision_fractional):
+            gp_response = (self.child * 10 ** (other.precision_fractional -
+                                               self.precision_fractional) - other.child) % \
+                          self.field
+
+        return gp_response
+
+    def prod(self, *args, **kwargs):
+        # getting the dimension of the tensor which prod will be applied to. (needed for fixing
+        # the precision precision problems)
+        dim = self.child.size()[args[0]]
+        return self.child.prod(*args, **kwargs) / 10 ** (self.precision_fractional * dim)
+
+    def sum(self, *args, **kwargs):
+        return (self.child.sum(*args, *kwargs) / 10 ** self.precision_fractional)
+
+    def cumsum(self, *args, **kwargs):
+        return (self.child.cumsum(*args, *kwargs) / 10 ** self.precision_fractional)
 
     def mm(self, other):
         response = self.child.mm(other.child)
@@ -1429,12 +1527,27 @@ class _SPDZTensor(_SyftTensor):
 
         return wrapper
 
+    def share_scalar(self, scalar):
+
+        other = torch.zeros(list(self.get_shape())).long() + scalar
+        other = other.share(*list(self.shares.child.pointer_tensor_dict.keys())).child
+
+        return other
+
     def __add__(self, other):
+
+        if (isinstance(other, (int, float, bool))):
+            other = self.share_scalar(other)
+
         # gp_ stands for GeneralizedPointer
         gp_response = spdz.spdz_add(self.shares, other.shares)
         return gp_response
 
     def __sub__(self, other):
+
+        if (isinstance(other, (int, float, bool))):
+            other = self.share_scalar(other)
+
         gp_response = spdz.spdz_add(self.shares, spdz.spdz_neg(other.shares))
         return gp_response
 
@@ -1620,6 +1733,23 @@ class _SNNTensor(_SPDZTensor, _SyftTensor):
     def relu(self):
         return relu(self.parent)
 
+    def positive(self):
+        return relu_deriv(self.parent)
+
+    def __gt__(self, other):
+        return (self.parent - other.parent - 1).positive()
+
+    def __ge__(self, other):
+        return (self.parent - other.parent).positive()
+
+    def __lt__(self, other):
+        return (other.parent - self.parent - 1).positive()
+
+    def __le__(self, other):
+        return (other.parent - self.parent).positive()
+
+    def __eq__(self, other):
+        return (self.parent >= other.parent) * (self.parent <= other.parent)
 
 class _TorchObject(object):
     """
@@ -1631,11 +1761,47 @@ class _TorchObject(object):
 
     __module__ = 'syft'
 
+    def __gt__(self, *args, **kwargs):
+        try:
+            return self.child > args[0].child
+        except:
+            return self.native___gt__(*args, **kwargs)
+
+    def __lt__(self, *args, **kwargs):
+        try:
+            return self.child < args[0].child
+        except:
+            return self.native___lt__(*args, **kwargs)
+
+    def __le__(self, *args, **kwargs):
+        try:
+            return self.child <= args[0].child
+        except:
+            return self.native___le__(*args, **kwargs)
+
+    def __ge__(self, *args, **kwargs):
+        try:
+            return self.child >= args[0].child
+        except:
+            return self.native___ge__(*args, **kwargs)
+
+    def __eq__(self, *args, **kwargs):
+        if(isinstance(self.child, _LocalTensor)):
+            return self.native___eq__(*args, **kwargs)
+        else:
+            try:
+                return self.child == args[0].child
+            except:
+                return self.native___eq__(*args, **kwargs)
+
     def get_shape(self):
         return self.child.get_shape()
 
     def relu(self, *args, **kwargs):
         return self.child.relu(*args, **kwargs)
+
+    def positive(self, *args, **kwargs):
+        return self.child.positive(*args, **kwargs)
 
     def native_get_shape(self):
         return self.get_shape()
@@ -2235,6 +2401,3 @@ class _TorchVariable(_TorchObject):
             self.data.child = self.data.child.child.child
         self.child = self.child.child.child
         torch_utils.fix_chain_ends(self)
-
-
-

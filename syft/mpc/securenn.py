@@ -1,34 +1,11 @@
 # An implementation of the SecureNN protocols from Wagh et al.
 
-from syft.spdz.spdz import (spdz_add, spdz_mul,
-                           generate_zero_shares_communication,
-                           get_ptrdict,
-                           Q_BITS, field)
+from syft.spdz.spdz import (Q_BITS, field)
 import syft
-from syft.core.frameworks.torch.utils import chain_print
 import torch
 
 L = field
-p = field  # 67 in original # TODO: extend to ops over multiple rings
-
-
-# spdz_params.append((params[remote_index][param_i].data+0).fix_precision().share(bob, alice).get())
-
-def select_shares(alpha, x, y, workers):
-    """
-    alpha is a shared binary tensor
-    x and y are private tensors to choose elements or slices from
-        (following broadcasting rules)
-
-    all of type _GeneralizedPointerTensor
-
-    Computes z = (1 - alpha) * x + alpha * y
-    """
-    # FIXME: generate_zero_shares_communication should be updated with new pysyft API
-    u = generate_zero_shares_communication(*workers, *x.get_shape())
-    z = x + alpha * (y - x)
-    return z + u
-
+p = field
 
 def decompose(tensor):
     """
@@ -162,6 +139,3 @@ def relu_deriv(a_sh):
 def relu(a):
     return a * relu_deriv(a)
 
-def random_as(tensor, mod=L):
-    r = torch.LongTensor(tensor.shape).random_(mod)
-    return r.type_as(tensor)
