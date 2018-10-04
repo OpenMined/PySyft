@@ -1467,9 +1467,6 @@ class _SPDZTensor(_SyftTensor):
 
     def __mul__(self, other):
 
-        # if (isinstance(other, (int, float, bool))):
-        #     other = self.share_scalar(other)
-
         if(isinstance(other, type(self))):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
             if torch_utils.is_variable(self.torch_type):
