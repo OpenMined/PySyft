@@ -80,6 +80,7 @@ def swap_shares(shares):
 
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL, mod=field):
+    print("truncating")
     if (interface.get_party() == 0):
         return (x / BASE ** amount) % mod
     return (mod - ((mod - x) / BASE ** amount)) % mod
