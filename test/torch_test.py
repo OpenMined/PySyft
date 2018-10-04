@@ -1169,88 +1169,138 @@ class TestSPDZTensor(TestCase):
         assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
 
     def test_fix_precision_mul(self):
-        x = torch.FloatTensor([1, 1])
-        y = torch.FloatTensor([1, 1])
-        x = x.fix_precision()
-        y = y.fix_precision()
+        x = torch.FloatTensor([1, 2, 0.4])
+        y = torch.FloatTensor([1, 1, 2])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=3)
         z = x * y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([1, 1])).all()
+        assert torch.eq(z, torch.FloatTensor([1, 2, 0.8])).all()
 
         # with different precision fractions x's > y's
-        x = torch.FloatTensor([1,1])
-        y = torch.FloatTensor([1,1])
-        x = x.fix_precision(precision_fractional = 4)
-        y = y.fix_precision(precision_fractional = 3)
+        x = torch.FloatTensor([1, 2, 0.4])
+        y = torch.FloatTensor([1, 1, 2])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=4)
         z = x * y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([1, 1])).all()
+        assert torch.eq(z, torch.FloatTensor([1, 2, 0.8])).all()
 
         # with different precision fractions x's < y's
-        x = torch.FloatTensor([1,1])
-        y = torch.FloatTensor([1,1])
-        x = x.fix_precision(precision_fractional = 3)
-        y = y.fix_precision(precision_fractional = 4)
+        x = torch.FloatTensor([1, 2, 0.4])
+        y = torch.FloatTensor([1, 1, 2])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=2)
         z = x * y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([1, 1])).all()
+        assert torch.eq(z, torch.FloatTensor([1, 2, 0.8])).all()
+
 
 
     def test_fix_precision_add(self):
-        x = torch.FloatTensor([1, 1])
-        y = torch.FloatTensor([1, 1])
+        x = torch.FloatTensor([[1, 0.2], [0.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
         x = x.fix_precision()
         y = y.fix_precision()
         z = x + y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([2, 2])).all()
+        assert torch.eq(z, torch.FloatTensor([[1.8, 1.2], [1.9, 14]])).all()
 
         # with different precision fractions x's > y's
-        x = torch.FloatTensor([1,1])
-        y = torch.FloatTensor([1,1])
-        x = x.fix_precision(precision_fractional = 4)
-        y = y.fix_precision(precision_fractional = 3)
+        x = torch.FloatTensor([[1, 0.2], [0.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        y = y.fix_precision(precision_fractional=3)
         z = x + y
         z = z.decode()
-        print("here 533", z)
-        assert torch.eq(z, torch.FloatTensor([2, 2])).all()
+        assert torch.eq(z, torch.FloatTensor([[1.8, 1.2], [1.9, 14]])).all()
 
         # with different precision fractions x's < y's
-        x = torch.FloatTensor([1,1])
-        y = torch.FloatTensor([1,1])
-        x = x.fix_precision(precision_fractional = 3)
-        y = y.fix_precision(precision_fractional = 4)
+        x = torch.FloatTensor([[1, 0.2], [0.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=4)
         z = x + y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([2, 2])).all()
+        assert torch.eq(z, torch.FloatTensor([[1.8, 1.2], [1.9, 14]])).all()
 
     def test_fix_precision_sub(self):
-        x = torch.FloatTensor([1, 1])
-        y = torch.FloatTensor([1, 1])
+        x = torch.FloatTensor([[1, 1.2], [1.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
         x = x.fix_precision()
         y = y.fix_precision()
         z = x - y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([0, 0])).all()
+        assert torch.eq(z, torch.FloatTensor([[0.2, .2], [.9, 8]])).all()
 
         # with different precision fractions x's > y's
-        x = torch.FloatTensor([1,1])
-        y = torch.FloatTensor([1,1])
-        x = x.fix_precision(precision_fractional = 4)
-        y = y.fix_precision(precision_fractional = 3)
+        x = torch.FloatTensor([[1, 1.2], [1.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        y = y.fix_precision(precision_fractional=3)
         z = x - y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([0, 0])).all()
+        assert torch.eq(z, torch.FloatTensor([[0.2, .2], [.9, 8]])).all()
 
         # with different precision fractions x's < y's
-        x = torch.FloatTensor([1,1])
-        y = torch.FloatTensor([1,1])
-        x = x.fix_precision(precision_fractional = 3)
-        y = y.fix_precision(precision_fractional = 4)
+        x = torch.FloatTensor([[1, 1.2], [1.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=4)
         z = x - y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([0, 0])).all()
+        assert torch.eq(z, torch.FloatTensor([[0.2, .2], [.9, 8]])).all()
 
+    def test_fix_precision_div(self):
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision()
+        y = y.fix_precision()
+        z = x / y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1.2500, 3], [1.9, 4]])).all()
+
+        # with different precision fractions x's > y's
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        y = y.fix_precision(precision_fractional=3)
+        z = x / y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1.2000, 3], [1.9, 4]])).all()
+
+        # with different precision fractions x's < y's
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=4)
+        z = x / y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1.2500, 3], [1.9, 4]])).all()
+
+    def test_fix_precision_sum(self):
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        z = x.sum(0)
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([2, 13])).all()
+
+    def test_fix_precision_cumsum(self):
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        z = x.cumsum(0)
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1, 1], [2, 13]])).all()
+
+    def test_fix_precision_prod(self):
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        z = x.prod(0)
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([1, 14])).all()
 
     def test_var_fix_precision_decode(self):
         x = sy.Variable(torch.FloatTensor([0.1, 0.2, 0.1, 0.2]))

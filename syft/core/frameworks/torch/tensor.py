@@ -1135,6 +1135,12 @@ class _FixedPrecisionTensor(_SyftTensor):
                     'Arguments should share the same base and field'
                 self_precision = self.precision_fractional
                 other_precision = other.precision_fractional
+
+                # If the precision fractional of self is different than other's raise an exception
+                # You may uncomment this line out if you do care about different precisions,
+                # the code will work either way.
+                # if not(self_precision == other_precision):
+                #     raise ArithmeticError("The tensors have different precisions")
                 precision = max(self_precision, other_precision)
                 precision_loss = min(self_precision, other_precision)
                 # Perform the computation
@@ -1158,7 +1164,10 @@ class _FixedPrecisionTensor(_SyftTensor):
                     precision_fractional=precision
                 )
                 return response
-
+            # Overriding prod, sum and cumsum or similar methods, which may have an argument but
+            # do not include the parameters when they're called. i.e. given an argument prod(
+            # dim=3) the value of args[0] is just 3, therefore it does not satisfy the second
+            # part of the if statement.
             if has_self and attr in ('prod', 'sum', 'cumsum'):
                 if args == ():
                     raise AttributeError('Please enter a dimension')
@@ -1252,7 +1261,6 @@ class _FixedPrecisionTensor(_SyftTensor):
             other = other.fix_precision(precision_fractional = self.precision_fractional)
 
         if (self.precision_fractional == other.precision_fractional):
-            gp_response = (self.child - other.child) % self.field
         elif (self.precision_fractional > other.precision_fractional):
             gp_response = (self.child - other.child * 10 ** (self.precision_fractional -
                                                              other.precision_fractional)) % self.field
@@ -1264,7 +1272,10 @@ class _FixedPrecisionTensor(_SyftTensor):
                           self.field
 
         return gp_response
+
     def prod(self, *args, **kwargs):
+        # getting the dimension of the tensor which prod will be applied to. (needed for fixing
+        # the precision precision problems)
         dim = self.child.size()[args[0]]
         return self.child.prod(*args, **kwargs) / 10 ** (self.precision_fractional * dim)
     def sum(self, *args, **kwargs):
