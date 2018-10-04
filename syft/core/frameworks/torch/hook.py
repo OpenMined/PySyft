@@ -118,8 +118,7 @@ class TorchHook(object):
 
         self._hook_properties(tensor_type)
 
-        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
-            tensor_type)
+        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(tensor_type)
 
         self._rename_native_functions(tensor_type)
 
@@ -134,6 +133,7 @@ class TorchHook(object):
         self._hook_SyftTensor(tensor_type)
 
         self._hook_PointerTensor(tensor_type)
+
         self._hook_GeneralizedPointerTensor(tensor_type)
 
 
@@ -396,6 +396,7 @@ class TorchHook(object):
             # if attr not in dir(_PointerTensor) or getattr(_PointerTensor, attr) is None:
 
             setattr(_PointerTensor, attr, self._get_overloaded_method(attr))
+
     def _hook_GeneralizedPointerTensor(self, tensor_type):
 
         for attr in self.to_auto_overload[tensor_type]:

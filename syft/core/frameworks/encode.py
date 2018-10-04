@@ -1,5 +1,7 @@
 """Torch utility functions related to encoding and decoding in a JSON-serializable fashion """
 import json
+import msgpack
+
 import re
 import types
 import functools
@@ -8,6 +10,7 @@ import torch
 import syft
 import syft as sy
 import numpy as np
+import time
 
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
@@ -24,10 +27,13 @@ def encode(message, retrieve_pointers=False, private_local=True):
     :return: The message encoded in a json-able dict
     """
 
+    # start_time = time.time()
+
     encoder = PythonEncoder()
     response = encoder.encode(message,
                               retrieve_pointers=retrieve_pointers,
                               private_local=private_local)
+    # torch.encode_timer += time.time() - start_time
     return response
 
 
@@ -90,6 +96,12 @@ class PythonEncoder:
             return "..."
         elif isinstance(obj, np.ndarray):
             return obj.ser(private=private_local, to_json=False)
+        # Dict
+        elif isinstance(obj, dict):
+            return {
+                k: self.python_encode(v, private_local)
+                for k, v in obj.items()
+            }
         # Tensors and Variable encoded with their id
         elif torch_utils.is_tensor(obj) or torch_utils.is_variable(obj):
             tail_object = torch_utils.find_tail_of_chain(obj)
@@ -109,6 +121,9 @@ class PythonEncoder:
         # List
         elif isinstance(obj, list):
             return [self.python_encode(i, private_local) for i in obj]
+        # np array
+        elif isinstance(obj, np.ndarray):
+            return obj.ser(private=private_local, to_json=False)
         # Iterables non json-serializable
         elif isinstance(obj, (tuple, set, bytearray, range)):
             key = '__' + type(obj).__name__ + '__'
@@ -117,12 +132,6 @@ class PythonEncoder:
         elif isinstance(obj, slice):
             key = '__' + type(obj).__name__ + '__'
             return {key: {'args': [obj.start, obj.stop, obj.step]}}
-        # Dict
-        elif isinstance(obj, dict):
-            return {
-                k: self.python_encode(v, private_local)
-                for k, v in obj.items()
-            }
         # Generator
         elif isinstance(obj, types.GeneratorType):
             logging.warning("Generator args can't be transmitted")
@@ -154,21 +163,21 @@ def decode(message, worker, acquire=None, message_is_dict=False):
     :param message_is_dict: Is the message a dictionary already or a JSON string needing decoding?
     :return: The message decoded
     """
+    # start_time = time.time()
+
     decoder = PythonJSONDecoder(worker=worker, acquire=acquire)
 
-    # Handle when the message is a bytestring
-    if isinstance(message, bytes):
-        message = message.decode('utf-8')
-
-    if(message_is_dict):
+    if message_is_dict:
         dict_message = message
     else:
-        dict_message = json.loads(message)
+        dict_message = msgpack.unpackb(message, raw=False)
 
     # If acquire is specified, then know how we want to decode, and implicitly
     # we want to decode everything of the message
     if acquire is not None:
-        return decoder.python_decode(message)
+        r = decoder.python_decode(message)
+        # torch.encode_timer += time.time() - start_time
+        return r
 
     # TODO It would be good to have a standardized place to put the 'mode' argument
     # Extract the mode: depending of the structure of the message, the mode argument
@@ -186,6 +195,8 @@ def decode(message, worker, acquire=None, message_is_dict=False):
         dict_message['message'] = message
     else:
         dict_message = message
+
+    # torch.encode_timer += time.time() - start_time
     return dict_message
 
 
@@ -223,17 +234,14 @@ class PythonJSONDecoder:
         # PLAN A: See if the dct object is not actually a dictionary and address
         # each case.
 
-        if isinstance(dct, (int, str, float)):
+        if isinstance(dct, (int, str, float)) or dct is None:
             # a very strange special case
-            if(dct == '...'):
+            if dct == '...':
                 return ...
             return dct
         if isinstance(dct, (list,)):
             return [self.python_decode(o) for o in dct]
-        if dct is None:
-            return None
         if not isinstance(dct, dict):
-            print(type(dct))
             raise TypeError('Type not handled', dct)
 
         # PLAN B: If the dct object IS a dictionary, check to see if it has a "type" key
@@ -271,14 +279,14 @@ class PythonJSONDecoder:
                 obj_type = pat.search(key).group(1)
                 # Case of a tensor
                 if torch_utils.is_tensor(obj_type):
-                    o = torch.guard['syft.' + obj_type].deser({key: obj}, self.worker, self.acquire)
+                    o = torch.guard['syft.' + obj_type].deser(obj_type, obj, self.worker, self.acquire)
                     return o
                 # Case of a Variable
                 elif torch_utils.is_variable(obj_type):
-                    return sy.Variable.deser({key: obj}, self.worker, self.acquire, is_head=True)
+                    return sy.Variable.deser(obj_type, obj, self.worker, self.acquire, is_head=True)
                 # Case of a Syft tensor
                 elif torch_utils.is_syft_tensor(obj_type):
-                    return sy._SyftTensor.deser_routing({key: obj}, self.worker, self.acquire)
+                    return sy._SyftTensor.deser_routing(obj_type, obj, self.worker, self.acquire)
                 # Case of a iter type non json serializable
                 elif obj_type in ('tuple', 'set', 'bytearray', 'range'):
                     return eval(obj_type)([self.python_decode(o) for o in obj])

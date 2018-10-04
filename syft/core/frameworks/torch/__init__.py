@@ -2,6 +2,7 @@ from .hook import TorchHook
 from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
 from .tensor import _FixedPrecisionTensor, _TorchTensor, _PlusIsMinusTensor, _GeneralizedPointerTensor
 from .tensor import _SPDZTensor, _SNNTensor
+from enum import Enum, auto
 
 __all__ = ['TorchHook', '_SyftTensor', '_LocalTensor',
            '_PointerTensor', '_FixedPrecisionTensor', '_TorchTensor',
@@ -9,6 +10,10 @@ __all__ = ['TorchHook', '_SyftTensor', '_LocalTensor',
            '_SNNTensor']
 
 import torch
+
+torch.encode_timer = 0
+torch.handle_call_timer = 0
+torch.execute_call_timer = 0
 
 # this is a list of all module functions in the torch module
 torch.torch_funcs = dir(torch)
@@ -21,6 +26,7 @@ torch.torch_modules = {
     'torch': torch.torch_funcs,
     'torch.nn.functional': torch.torch_functional_funcs
 }
+# 'torch.nn.functional': torch.torch_functional_funcs
 
 # this is the list of torch tensor types that we will override for remote execution
 torch.tensor_types = [torch.FloatTensor,
@@ -31,14 +37,19 @@ torch.tensor_types = [torch.FloatTensor,
                       torch.ShortTensor,
                       torch.IntTensor,
                       torch.LongTensor]
+torch.tensor_types_tuple = tuple(torch.tensor_types)
 
 torch.var_types = [torch.autograd.variable.Variable, torch.nn.Parameter]
+torch.var_types_tuple = tuple(torch.var_types)
 
 # a list of all classes in which we will override their methods for remote execution
-torch.tensorvar_types = torch.tensor_types + \
-                        [torch.autograd.variable.Variable]
+torch.tensorvar_types = torch.tensor_types +  [torch.autograd.variable.Variable]
 
 torch.tensorvar_types_strs = [x.__name__ for x in torch.tensorvar_types]
+
+torch.syft_tensor_name = None
+torch.tensor_type_names = [x.__name__ for x in torch.tensor_types]
+torch.var_type_names = [x.__name__ for x in torch.var_types] + ['syft.Variable', 'syft.Parameter']
 
 torch.tensorvar_methods = list(
     set(

@@ -1,5 +1,7 @@
 import torch
 import json
+import msgpack
+import time
 import logging
 import syft as sy
 import numpy as np
@@ -133,7 +135,7 @@ class BaseWorker(ABC):
         function with additional metadata such as network information.
         """
 
-        return json.dumps({"id": self.id, "type": type(self)})
+        return msgpack.packb({"id": self.id, "type": type(self)}, use_bin_type=True)
 
     def _search(self, query):
         """
@@ -220,7 +222,7 @@ class BaseWorker(ABC):
         # i believe the extra newline was necessary - possibly to make decoding
         # batches of messages working. Note that .encode() converts this json to
         # binary
-        message_wrapper_json = (json.dumps(message_wrapper) + "\n").encode()
+        message_wrapper_json = msgpack.packb(message_wrapper, use_bin_type=True)
 
         # empty the message queue which previously held our messages
         self.message_queue = []
@@ -296,7 +298,7 @@ class BaseWorker(ABC):
         response = encode.encode(response, retrieve_pointers=False, private_local=private)
 
         # convert the response dictionary to a string and then convert that string to binary
-        response = json.dumps(response).encode()
+        response = msgpack.packb(response, use_bin_type=True)
 
         return response
 
@@ -336,7 +338,7 @@ class BaseWorker(ABC):
             # if object is a Torch object - pre-process it for registration
             else:
                 torch_utils.fix_chain_ends(object)
-                torch_utils.assert_is_chain_well_formed(object)
+                # torch_utils.assert_is_chain_well_formed(object)
 
             # register the object, saving it in self._objects and ensuring that
             # object.owner is set correctly
@@ -943,7 +945,7 @@ class BaseWorker(ABC):
           the owners of the tensors involved.
         """
 
-        torch_utils.assert_has_only_torch_tensorvars(command_msg)
+        # torch_utils.assert_has_only_torch_tensorvars(command_msg)
 
         attr = command_msg['command']
         has_self = command_msg['has_self']
@@ -959,13 +961,11 @@ class BaseWorker(ABC):
         """
 
         # if this is none - then it means that self_ is not a torch wrapper
-        # and we need to execute one level higher
-        if(self_ is not None):
-            if(self_.child is None):
-                new_args = list()
-                for arg in args:
-                    if(torch_utils.is_syft_tensor(arg)):
-                        new_args.append(arg.wrap(True))
+        # and we need to execute one level higher TODO: not ok for complex args
+        #start_time = time.time()
+        if self_ is not None and self_.child is None:
+                new_args = [arg.wrap(True) for arg in args]
+                #torch.execute_call_timer += time.time() - start_time
                 return self._execute_call(attr, self_.wrap(True), *new_args, **kwargs)
 
         # Distinguish between a command with torch tensors (like when called by the client,
@@ -1003,25 +1003,33 @@ class BaseWorker(ABC):
             syft_command, child_type = torch_utils.prepare_child_command(
                 raw_command, replace_tensorvar_with_child=True)
 
-            torch_utils.assert_has_only_syft_tensors(syft_command)
+            # torch_utils.assert_has_only_syft_tensors(syft_command)
 
         # Note: because we have pb of registration of tensors with the right worker,
         # and because having Virtual workers creates even more ambiguity, we specify the worker
         # performing the operation
 
+        #torch.execute_call_timer += time.time() - start_time
         result = child_type.handle_call(syft_command, owner=self)
+        #start_time = time.time()
 
         torch_utils.enforce_owner((raw_command, result), self)
 
         if is_torch_command:
             # Wrap the result
             if has_self and utils.is_in_place_method(attr):
-                wrapper = torch_utils.wrap_command_with(result, raw_command['self'])
+                # TODO: fix this properly: don't wrap the same way if syft or Variable
+                if torch_utils.is_variable(result) or torch_utils.is_tensor(result):
+                    wrapper = torch_utils.wrap_command_with(result.child, raw_command['self'])
+                else:
+                    wrapper = torch_utils.wrap_command_with(result, raw_command['self'])
             else:
                 wrapper = torch_utils.wrap_command(result)
+            #torch.execute_call_timer += time.time() - start_time
             return wrapper
         else:
             # We don't need to wrap
+            #torch.execute_call_timer += time.time() - start_time
             return result
 
     def send_obj(self, object, new_id, recipient, new_data_id=None, new_grad_id=None, new_grad_data_id=None):
@@ -1073,7 +1081,6 @@ class BaseWorker(ABC):
 
         if self.get_pointer_to(recipient, new_id) is not None:
             raise MemoryError('You already point at ', recipient, ':', new_id)
-
 
         object = encode.encode(object, retrieve_pointers=False, private_local=False)
 
@@ -1159,8 +1166,3 @@ class BaseWorker(ABC):
                 if object_id in self._objects:
                     return self._objects[object_id]
 
-        # for key, syft_tensor in self._objects.items():
-        #     if isinstance(syft_tensor, sy._PointerTensor):
-        #         if syft_tensor.location.id == location \
-        #                 and syft_tensor.id_at_location == id_at_location:
-        #             return syft_tensor
