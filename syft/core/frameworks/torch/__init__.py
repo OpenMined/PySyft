@@ -62,7 +62,6 @@ torch.tensorvar_methods.append('get_shape')
 torch.tensorvar_methods.append("share")
 torch.tensorvar_methods.append("fix_precision")
 torch.tensorvar_methods.append("decode")
-torch.tensorvar_methods.append("__gt__")
 
 # Torch functions we don't want to override
 torch.torch_exclude = ['save', 'load', 'typename', 'is_tensor', 'manual_seed']

@@ -1163,7 +1163,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def decode(self):
         save = self.child.child*1
         self.child.child = None # <-- This is doing magic things
-        value = self.child % self.field
+        value = self.child.long() % self.field
         if len(value.size()) == 0:
             # raise TypeError("Can't decode empty tensor")
             return None
@@ -1189,6 +1189,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         args = command['args']
         kwargs = command['kwargs']
         has_self = command['has_self']
+
         if has_self:
             self = command['self']
 
@@ -1391,6 +1392,54 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __mul__(self, other):
         a, b = self.check_and_scale_precision_if_needed(other)
         return (a * b)# % self.field # - modulus performed later
+
+    def __gt__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a > b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True).wrap(True)
+        return result
+
+    def __lt__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a < b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True)
+        return result
+
+    def __ge__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a >= b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True)
+        return result
+
+    def __le__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a <= b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True)
+        return result
 
     def __div__(self, other):
         # if other is not a fixed tensor, convert it to a fixed one
