@@ -1,4 +1,6 @@
 import json
+import msgpack
+import time
 import re
 import torch
 import random
@@ -216,10 +218,10 @@ class _SyftTensor(object):
         if as_dict:
             return {'__{}__'.format(self.__class__.__name__): data}
         else:
-            return json.dumps({'__{}__'.format(self.__class__.__name__): data}) + "\n"
+            return msgpack.packb({'__{}__'.format(self.__class__.__name__): data}, use_bin_type=True)
 
     @classmethod
-    def deser_routing(cls, dct, worker, acquire):
+    def deser_routing(cls, obj_type, obj, worker, acquire):
         """
         Method analysing the dict given to see which Syft Tensor should deserialized,
         and forwarding the call
@@ -227,17 +229,14 @@ class _SyftTensor(object):
         [Is this case note that the dct param is assumed to have a single key, which is
         compatible with our encode/decode process (ex: {'___PointerTensor__': {...} })]
         """
-        pat = re.compile('__(.+)__')
-        for key, obj in dct.items():  # A trick, we don't really loop
-            obj_type = pat.search(key).group(1)
-            if torch_utils.is_syft_tensor(obj_type):
-                if obj_type == '_LocalTensor':
-                    return sy._LocalTensor.deser(obj, worker, acquire)
-                elif obj_type == '_PointerTensor':
-                    return sy._PointerTensor.deser(obj, worker, acquire)
-                else:
-                    syft_type = torch.guard['syft.' + obj_type]
-                    return syft_type.deser(obj, worker, acquire)
+        syft_code = torch.syft_tensor_codes[obj_type]
+        if syft_code == torch.syft_tensor_codes._LocalTensor:
+            return sy._LocalTensor.deser(obj, worker, acquire)
+        elif syft_code == torch.syft_tensor_codes._PointerTensor:
+            return sy._PointerTensor.deser(obj, worker, acquire)
+        else:
+            syft_type = torch.guard[obj_type]
+            return syft_type.deser(obj, worker, acquire)
 
         raise Exception("could not deserialize an object sent to router\n"+str(dct))
 
@@ -256,7 +255,8 @@ class _SyftTensor(object):
                            skip_register=True
                            )
             if 'child' in msg_obj:
-                syft_child = cls.deser_routing(msg_obj['child'], worker, acquire)
+                child_type, child_obj = torch_utils.extract_type_and_obj(msg_obj['child'])
+                syft_child = cls.deser_routing(child_type, child_obj, worker, acquire)
                 syft_obj.child = syft_child
                 syft_child.parent = syft_obj
 
@@ -348,8 +348,8 @@ class _SyftTensor(object):
         State if a function name corresponds to a Syft Tensor method which
         overloads a torch method
         """
-        exclude = ['on', '__init__', 'native___init__', '__repr__', '__str__', 'create_pointer',
-                   'ser', 'deser', 'handle_call']
+        exclude = ('on', '__init__', 'native___init__', '__repr__', '__str__', 'create_pointer',
+                   'ser', 'deser', 'handle_call')
         if attr in exclude:
             return False
         if hasattr(getattr(cls, attr), '__module__') \
@@ -404,6 +404,7 @@ class _LocalTensor(_SyftTensor):
         native torch args. Excute native operations and converts it back into
         syft response using _LocalTensors.
         """
+        # start_time = time.time()
         tensor_command, torch_type = torch_utils.prepare_child_command(syft_command,
                                                                        replace_tensorvar_with_child=True)
         torch_utils.assert_has_only_torch_tensorvars(tensor_command)
@@ -415,19 +416,21 @@ class _LocalTensor(_SyftTensor):
 
         if has_self:
             self = tensor_command['self']
-            attr = torch._command_guard(attr, torch.tensorvar_methods)
+            attr = torch._command_guard(attr, 'tensorvar_methods')
             command = getattr(self, "native_" + attr)
         else:
-            attr = torch._command_guard(attr, torch.torch_modules)
+            attr = torch._command_guard(attr, 'torch_modules')
             elems = attr.split('.')
             elems[-1] = 'native_' + elems[-1]
             native_func_name = '.'.join(elems)
             command = eval(native_func_name)
-
+        # torch.handle_call_timer += time.time() - start_time
         response = command(*args, **kwargs)
+        # start_time = time.time()
 
         # TODO : control registration process
         if response is None:
+            # torch.handle_call_timer += time.time() - start_time
             return response
 
         if owner.id != owner.hook.local_worker.id:
@@ -438,6 +441,7 @@ class _LocalTensor(_SyftTensor):
                 response = sy.FloatTensor(response)
         else:
             if isinstance(response, (int, float, bool, np.ndarray)):
+                # torch.handle_call_timer += time.time() - start_time
                 return response
 
         # If the command is an in-place method, wrap self and return
@@ -497,6 +501,7 @@ class _LocalTensor(_SyftTensor):
 
             return_response = tuple(syft_responses) if len(syft_responses) > 1 else syft_responses[0]
 
+        # torch.handle_call_timer += time.time() - start_time
         return return_response
 
     def ser(self, private, as_dict=True):
@@ -510,7 +515,7 @@ class _LocalTensor(_SyftTensor):
         if as_dict:
             return {'___LocalTensor__': data}
         else:
-            return json.dumps({'___LocalTensor__': data}) + "\n"
+            return msgpack.packb({'___LocalTensor__': data}, use_bin_type=True)
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
@@ -693,7 +698,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
         if as_dict:
             return {'___GeneralizedPointerTensor__': data}
         else:
-            return json.dumps({'___GeneralizedPointerTensor__': data}) + "\n"
+            return msgpack.packb({'___GeneralizedPointerTensor__': data}, use_bin_type=True)
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -883,6 +888,7 @@ class _PointerTensor(_SyftTensor):
         _PointerTensor has an overloaded handle_call function because it converts
         the command to torch tensors and send it over the network
         """
+        #start_time = time.time()
         tensor_command = torch_utils.wrap_command(syft_command)
 
         attr = tensor_command['command']
@@ -899,8 +905,10 @@ class _PointerTensor(_SyftTensor):
         location = locations[0]
         owner = owners[0]
 
+        #torch.handle_call_timer += time.time() - start_time
         # Else we send the command
         response = owner.send_torch_command(recipient=location, message=command)
+        # start_time = time.time()
 
         torch_utils.assert_has_only_torch_tensorvars(response)
 
@@ -915,7 +923,7 @@ class _PointerTensor(_SyftTensor):
         # Perform the un-wrap: remove the head on all chains (also .data and .grad if any)
         response, _ = torch_utils.get_child_command(response)
         # response is now a _Pointer, with a .data attr which is a _Pointer, etc.
-
+        # torch.handle_call_timer += time.time() - start_time
         return response
 
     def __str__(self):
@@ -934,7 +942,7 @@ class _PointerTensor(_SyftTensor):
         if as_dict:
             return {'___PointerTensor__': data}
         else:
-            return json.dumps({'___PointerTensor__': data}) + "\n"
+            return msgpack.packb({'___PointerTensor__': data}, use_bin_type=True)
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -1108,7 +1116,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         if as_dict:
             return {'___FixedPrecisionTensor__': data}
         else:
-            return json.dumps({'___FixedPrecisionTensor__': data}) + "\n"
+            return msgpack.packb({'___FixedPrecisionTensor__': data}, use_bin_type=True)
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -1216,19 +1224,19 @@ class _FixedPrecisionTensor(_SyftTensor):
                     precision = max(self_precision, other_precision)
                     precision_loss = min(self_precision, other_precision)
                     # Perform the computation
-                    torch_tensorvar = None
+                    long_tensorvar = None
                     if attr == '__mul__':
-                        torch_tensorvar = cls.__mul__(self, other)
+                        long_tensorvar = cls.__mul__(self, other)
                     elif attr in ('mm',) or attr == 'matmul':
-                        torch_tensorvar = cls.mm(self, other)
+                        long_tensorvar = cls.mm(self, other)
                     elif attr == '__add__':
-                        torch_tensorvar = cls.__add__(self, *args, **kwargs)
+                        long_tensorvar = cls.__add__(self, *args, **kwargs)
                     elif attr == '__sub__':
-                        torch_tensorvar = cls.__sub__(self, *args, **kwargs)
+                        long_tensorvar = cls.__sub__(self, *args, **kwargs)
                     elif attr == '__div__' or '__truediv__':
-                        torch_tensorvar = cls.__div__(self, *args, **kwargs)
+                        long_tensorvar = cls.__div__(self, *args, **kwargs)
                     if attr not in ('mm',) and attr != '__mul__':
-                        response = torch_tensorvar.fix_precision(
+                        response = long_tensorvar.fix_precision(
                             already_encoded=True,
                             precision_fractional=precision
                         )
@@ -1241,6 +1249,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                         #     logging.warning('{} on FixPrecision Tensor/Variable overflowed, '
                         #                     'try reducing precision_fractional.'.format(attr))
 
+
                 else:  # Standard procedure for methods
                     # Get the next node type and update in command tensorvar with tensorvar.child
                     next_command, child_type = torch_utils.prepare_child_command(
@@ -1252,11 +1261,11 @@ class _FixedPrecisionTensor(_SyftTensor):
                         child_type = torch.guard[self.data.torch_type]
 
                     # Forward the call to the next child
-                    torch_tensorvar = child_type.handle_call(next_command, owner)
+                    long_tensorvar = child_type.handle_call(next_command, owner)
 
                 # Compute the precision to keep
                 precision = self.precision_fractional
-                if attr in ('mm', 'matmul', '__mul__'):
+                if attr in ('__mul__', 'mm', 'matmul'):
                     other = args[0]
                     if isinstance(other, sy._FixedPrecisionTensor):
                         self_precision = self.precision_fractional
@@ -1270,20 +1279,33 @@ class _FixedPrecisionTensor(_SyftTensor):
                         # let n := self.base ** precision_loss
                         # s1 /= n, s2 /= n, and also F /= n
                         if precision_loss > 0:
-                            tail_node = torch_utils.find_tail_of_chain(torch_tensorvar)
+                            tail_node = torch_utils.find_tail_of_chain(long_tensorvar)
                             if isinstance(tail_node, sy._GeneralizedPointerTensor):
                                 workers = list(tail_node.pointer_tensor_dict.keys())
-                                torch_tensorvar = torch_tensorvar.get()
-                                torch_tensorvar = torch_tensorvar / self.base ** precision_loss
-                                torch_tensorvar = torch_tensorvar.share(*workers)
+                                long_tensorvar = long_tensorvar.get()
+                                long_tensorvar = long_tensorvar / self.base ** precision_loss
+                                long_tensorvar = long_tensorvar.share(*workers)
                             else:
-                                torch_tensorvar = torch_tensorvar / self.base ** precision_loss
+                                long_tensorvar = long_tensorvar / self.base ** precision_loss
 
-                response = torch_tensorvar.fix_precision(
-                    already_encoded=True,
-                    precision_fractional=precision
-                )
-                return response
+                if long_tensorvar is not None:
+                    response = long_tensorvar.fix_precision(
+                        already_encoded=True,
+                        precision_fractional=precision
+                    )
+                    # # If possible replace the float tensorvar wrapper with a real one.
+                    # if float_tensorvar is not None:
+                    #     float_tensorvar.child = response.child
+                    #     if torch_utils.is_variable(float_tensorvar):
+                    #         float_tensorvar.data.child = response.data.child
+                    #         float_tensorvar.grad.child = response.grad.child
+                    #         float_tensorvar.grad.data.child = response.grad.data.child
+                    #     return float_tensorvar
+                    return response
+                else:
+                    return None
+        else:
+            logging.warning('TODO: handle non-method with Fix Precision T')
 
     def get(self, *args, **kwargs):
         """
@@ -1452,7 +1474,7 @@ class _SPDZTensor(_SyftTensor):
         if as_dict:
             return {str_type: data}
         else:
-            return json.dumps({str_type: data}) + "\n"
+            return msgpack.packb({str_type: data}, use_bin_type=True)
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -2017,13 +2039,12 @@ class _TorchTensor(_TorchObject):
         if as_dict:
             return {key: tensor_msg}
         else:
-            return json.dumps({key: tensor_msg}) + "\n"
+            return msgpack.packb({key: tensor_msg}, use_bin_type=True)
 
     @staticmethod
-    def deser(msg_obj, worker, acquire):
-
-        obj_type, msg_obj = torch_utils.extract_type_and_obj(msg_obj)
-        syft_obj = sy._SyftTensor.deser_routing(msg_obj['child'], worker, acquire)
+    def deser(obj_type, msg_obj, worker, acquire):
+        child_type, child_obj = torch_utils.extract_type_and_obj(msg_obj['child'])
+        syft_obj = sy._SyftTensor.deser_routing(child_type, child_obj, worker, acquire)
 
         # If we have retrieved an already existing object (TODO: add checks) then return it
         if syft_obj.parent is not None and syft_obj.child is not None:
@@ -2296,12 +2317,12 @@ class _TorchVariable(_TorchObject):
         if as_dict:
             return {key: tensor_msg}
         else:
-            return json.dumps({key: tensor_msg}) + "\n"
+            return msgpack.packb({key: tensor_msg}, use_bin_type=True)
 
     @staticmethod
-    def deser(msg_obj, worker, acquire, is_head=False):
-        obj_type, msg_obj = torch_utils.extract_type_and_obj(msg_obj)
-        var_syft_obj = sy._SyftTensor.deser_routing(msg_obj['child'], worker, acquire)
+    def deser(obj_type, msg_obj, worker, acquire, is_head=False):
+        child_type, msg_child= torch_utils.extract_type_and_obj(msg_obj['child'])
+        var_syft_obj = sy._SyftTensor.deser_routing(child_type, msg_child, worker, acquire)
 
         if var_syft_obj.parent is not None and var_syft_obj.child is not None:
             return var_syft_obj.parent
@@ -2310,23 +2331,22 @@ class _TorchVariable(_TorchObject):
         try:
             var_data_type, var_data_tensor = torch_utils.extract_type_and_obj(msg_obj['data'])
             if is_head:
-                var_data = torch.guard['syft.' + var_data_type].deser(msg_obj['data'], worker, acquire)
+                var_data = torch.guard[var_data_type].deser(var_data_type, var_data_tensor, worker, acquire)
             else:
-                var_data = torch.guard['syft.' + var_data_type]()
+                var_data = torch.guard[var_data_type]()
         except AttributeError:
-            var_data = torch.guard['syft.FloatTensor']()
+            var_data = torch.guard['FloatTensor']()
         worker.hook.local_worker.de_register(var_data)
 
         variable = sy.Variable(var_data, requires_grad=msg_obj['requires_grad'])
 
         # Deser the var.grad
         if 'grad' in msg_obj:
-
             var_grad_type, var_grad_tensor = torch_utils.extract_type_and_obj(msg_obj['grad'])
             if is_head:
-                var_grad = torch.guard['syft.' + var_grad_type].deser(msg_obj['grad'], worker, acquire, is_head)
+                var_grad = torch.guard[var_grad_type].deser(var_grad_type, var_grad_tensor, worker, acquire, is_head)
             else:
-                var_grad = torch.guard['syft.' + var_grad_type]()
+                var_grad = torch.guard[var_grad_type]()
             worker.hook.local_worker.de_register(var_grad)
             variable.assign_grad_(var_grad)
         else:
@@ -2356,10 +2376,11 @@ class _TorchVariable(_TorchObject):
         """
         Initialise grad as an empty tensor
         """
-        self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
-        self.grad.native_set_()
-        self.grad.child.owner = self.owner
-        self.grad.data.child.owner = self.owner
+        if self.grad is None or torch_utils.is_tensor_empty(self.grad):
+            self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
+            self.grad.native_set_()
+            self.grad.child.owner = self.owner
+            self.grad.data.child.owner = self.owner
 
     def assign_grad_(self, var_grad):
         """
@@ -2371,7 +2392,8 @@ class _TorchVariable(_TorchObject):
         # Transform var_grad into an envelope compatible with .grad assignment
         if self.size() != var_grad.size():
             var_grad.data = sy.zeros(self.data.size())
-        var_grad.data = var_grad.data.type(type(self.data))
+        if type(var_grad.data) != type(self.data):
+            var_grad.data = var_grad.data.type(type(self.data))
 
         self.grad = var_grad
 
