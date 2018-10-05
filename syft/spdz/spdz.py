@@ -12,7 +12,7 @@ BOUND = BASE ** PRECISION
 
 # Q field
 Q_BITS = 31#32#62
-field = 2 ** Q_BITS  # < 63 bits
+field = (2 ** Q_BITS) - 1  # < 63 bits
 Q_MAXDEGREE = 1
 torch_max_value = torch.LongTensor([round(field/2)])
 torch_field = torch.LongTensor([field])
