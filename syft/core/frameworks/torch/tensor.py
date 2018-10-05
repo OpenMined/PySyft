@@ -1313,6 +1313,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                     b_masked_low = torch.fmod(b_masked, self.base ** result_precision_fractional)
                     b_low = b_masked_low.share(*workers) - mask_low.share(*workers).get()
 
+                    # TODO: calculating the inverse every time is stupid slow - but i need to keep moving
                     c = (a - b_low) * modinv(self.base**result_precision_fractional, self.field)
 
                     if (isinstance(torch_tensorvar, sy.Variable)):
