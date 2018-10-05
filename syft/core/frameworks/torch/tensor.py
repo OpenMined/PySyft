@@ -716,14 +716,19 @@ class _GeneralizedPointerTensor(_SyftTensor):
 
     @classmethod
     def handle_call(cls, syft_command, owner):
-
+        print("handling call")
+        print(syft_command)
         syft_commands = torch_utils.split_to_pointer_commands(syft_command)
+        print("------")
+        print(syft_commands)
         result_dict = {}
         torch_type = None
         var_data_type = None
         for worker_id in syft_commands.keys():
+            print("iterating")
             syft_command = syft_commands[worker_id]
             result_dict[worker_id] = sy._PointerTensor.handle_call(syft_command, owner)
+            print(result_dict[worker_id])
             if torch_type is None:
                 torch_type = result_dict[worker_id].torch_type
                 if torch_utils.is_variable(torch_type):
