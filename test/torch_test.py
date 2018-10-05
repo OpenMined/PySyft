@@ -17,6 +17,7 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import Variable as Var
 import json
+import msgpack
 
 bob = None
 alice = None
@@ -668,10 +669,10 @@ class TestTorchVariable(TestCase):
         x.send(bob)
         obj = [None, ({'marcel': (1, [1.3], x), 'proust': slice(0, 2, None)}, 3)]
         enc, t = encode.encode(obj)
-        enc = json.dumps(enc)
+        enc = msgpack.packb(enc, use_bin_type=True)
         dec1 = encode.decode(enc, me)
         enc, t = encode.encode(dec1)
-        enc = json.dumps(enc)
+        enc = msgpack.packb(enc, use_bin_type=True)
         dec2 = encode.decode(enc, me)
         assert dec1 == dec2
 
