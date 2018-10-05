@@ -1006,6 +1006,12 @@ class TestSNNTensor(TestCase):
         b = a.relu()
         assert (b.get() == torch.LongTensor([0, 3, 0, 7])).all()
 
+
+    def test_mpc_argmax(self):
+        x = (torch.FloatTensor([[0.1, 0.2, 0.4, 0.3], [0.9, 0, 0, 0.1]])).fix_precision().share(alice, bob)
+        out = x.argmax()
+        assert (out.get().decode() == torch.FloatTensor([[0, 0, 1, 0], [1, 0, 0, 0]])).all()
+
 class TestSPDZTensor(TestCase):
 
     def mpc_sum(self, n1, n2):
@@ -1785,8 +1791,6 @@ class TestGPCTensor(TestCase):
         results = x_gp.workers()
 
         assert(results == [k.id for k in x_pointer_tensor_dict.keys()])
-
-
 
 
 
