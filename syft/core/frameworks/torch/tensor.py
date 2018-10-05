@@ -1414,7 +1414,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                                           field=self.field,
                                           precision_fractional=self.precision_fractional,
                                           precision_integral=self.precision_integral,
-                                          already_encoded=True)
+                                          already_encoded=True).wrap(True)
         return result
 
     def __ge__(self, other):
@@ -1426,7 +1426,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                                           field=self.field,
                                           precision_fractional=self.precision_fractional,
                                           precision_integral=self.precision_integral,
-                                          already_encoded=True)
+                                          already_encoded=True).wrap(True)
         return result
 
     def __le__(self, other):
@@ -1438,7 +1438,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                                           field=self.field,
                                           precision_fractional=self.precision_fractional,
                                           precision_integral=self.precision_integral,
-                                          already_encoded=True)
+                                          already_encoded=True).wrap(True)
         return result
 
     def __div__(self, other):
