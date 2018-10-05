@@ -246,7 +246,7 @@ class PythonJSONDecoder:
 
         # PLAN B: If the dct object IS a dictionary, check to see if it has a "type" key
 
-        if('type' in dct):
+        if 'type' in dct:
             if dct['type'] == "numpy.array":
 
                 # at first glance, the following if statement might seem a bit confusing
@@ -273,14 +273,14 @@ class PythonJSONDecoder:
         # Plan C: As a last resort, use a Regex to try to find a type somewhere.
         # TODO: Plan C should never be called - but is used extensively in PySyft's PyTorch integratio
 
-        pat = re.compile('__(.+)__')
+        type_codes = torch.type_codes
         for key, obj in dct.items():
-            if pat.search(key) is not None:
-                obj_type = pat.search(key).group(1)
+            type_code = torch_utils.type_code(key)
+            if type_code != -1:
+                obj_type = type_code.name
                 # Case of a tensor
                 if torch_utils.is_tensor(obj_type):
-                    o = torch.guard['syft.' + obj_type].deser(obj_type, obj, self.worker, self.acquire)
-                    return o
+                    return torch.guard[obj_type].deser(obj_type, obj, self.worker, self.acquire)
                 # Case of a Variable
                 elif torch_utils.is_variable(obj_type):
                     return sy.Variable.deser(obj_type, obj, self.worker, self.acquire, is_head=True)
@@ -288,13 +288,13 @@ class PythonJSONDecoder:
                 elif torch_utils.is_syft_tensor(obj_type):
                     return sy._SyftTensor.deser_routing(obj_type, obj, self.worker, self.acquire)
                 # Case of a iter type non json serializable
-                elif obj_type in ('tuple', 'set', 'bytearray', 'range'):
+                elif type_code in (type_codes.tuple, type_codes.set, type_codes.bytearray, type_codes.range):
                     return eval(obj_type)([self.python_decode(o) for o in obj])
                 # Case of a slice
-                elif obj_type == 'slice':
+                elif type_code == type_codes.slice:
                     return slice(*obj['args'])
                 # Case of a worker
-                elif obj_type == 'worker':
+                elif type_code == type_codes.worker:
                     return self.worker.get_worker(obj)
                 else:
                     raise TypeError('The special object type', obj_type, 'is not supported')

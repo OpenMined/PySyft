@@ -68,46 +68,42 @@ torch.tensorvar_methods.append("__gt__")
 torch.torch_exclude = ['save', 'load', 'typename', 'is_tensor', 'manual_seed']
 
 torch.guard = {
-    'syft.core.frameworks.torch.tensor.Variable': torch.autograd.Variable,
-    'syft.core.frameworks.torch.tensor._PointerTensor': _PointerTensor,
-    'syft.core.frameworks.torch.tensor._SyftTensor': _SyftTensor,
-    'syft.core.frameworks.torch.tensor._LocalTensor': _LocalTensor,
-    'syft.core.frameworks.torch.tensor._FixedPrecisionTensor': _FixedPrecisionTensor,
-    'syft.core.frameworks.torch.tensor._GeneralizedPointerTensor': _GeneralizedPointerTensor,
-    'syft.core.frameworks.torch.tensor._SNNTensor': _SNNTensor,
-    'syft._PlusIsMinusTensor': _PlusIsMinusTensor,
-    'syft._SPDZTensor': _SPDZTensor,
-    'syft._SNNTensor': _SNNTensor,
-    'syft._FixedPrecisionTensor': _FixedPrecisionTensor,
-    'syft.core.frameworks.torch.tensor.FloatTensor': torch.FloatTensor,
-    'syft.core.frameworks.torch.tensor.DoubleTensor': torch.DoubleTensor,
-    'syft.core.frameworks.torch.tensor.HalfTensor': torch.HalfTensor,
-    'syft.core.frameworks.torch.tensor.ByteTensor': torch.ByteTensor,
-    'syft.core.frameworks.torch.tensor.CharTensor': torch.CharTensor,
-    'syft.core.frameworks.torch.tensor.ShortTensor': torch.ShortTensor,
-    'syft.core.frameworks.torch.tensor.IntTensor': torch.IntTensor,
-    'syft.core.frameworks.torch.tensor.LongTensor': torch.LongTensor,
-    'syft.Variable': torch.autograd.Variable,
-    'syft.FloatTensor': torch.FloatTensor,
-    'syft.DoubleTensor': torch.DoubleTensor,
-    'syft.HalfTensor': torch.HalfTensor,
-    'syft.ByteTensor': torch.ByteTensor,
-    'syft.CharTensor': torch.CharTensor,
-    'syft.ShortTensor': torch.ShortTensor,
-    'syft.IntTensor': torch.IntTensor,
-    'syft.LongTensor': torch.LongTensor,
-    'syft.Parameter': torch.nn.Parameter
+    '_PlusIsMinusTensor': _PlusIsMinusTensor,
+    '_SPDZTensor': _SPDZTensor,
+    '_FixedPrecisionTensor': _FixedPrecisionTensor,
+    '_SNNTensor': _SNNTensor,
+    'Variable': torch.autograd.Variable,
+    'FloatTensor': torch.FloatTensor,
+    'DoubleTensor': torch.DoubleTensor,
+    'HalfTensor': torch.HalfTensor,
+    'ByteTensor': torch.ByteTensor,
+    'CharTensor': torch.CharTensor,
+    'ShortTensor': torch.ShortTensor,
+    'IntTensor': torch.IntTensor,
+    'LongTensor': torch.LongTensor,
+    'Parameter': torch.nn.Parameter
 }
+keys = list(torch.guard.keys())
+for key in keys:
+    torch.guard['syft.' + key] = torch.guard[key]
 
 
-def _command_guard(command, allowed):
+def get_allowed_command(allowed):
     if isinstance(allowed, dict):
-        allowed_names = []
+        allowed_names = set()
         for module_name, func_names in allowed.items():
             for func_name in func_names:
-                allowed_names.append(module_name + '.' + func_name)
+                allowed_names.add(module_name + '.' + func_name)
         allowed = allowed_names
-    if command not in allowed:
+    return allowed
+
+allowed_commands = {
+    'tensorvar_methods': get_allowed_command(torch.tensorvar_methods),
+    'torch_modules': get_allowed_command(torch.torch_modules)
+}
+
+def _command_guard(command, torch_domain):
+    if command not in allowed_commands[torch_domain]:
         raise RuntimeError(
             'Command "{}" is not a supported Torch operation.'.format(command))
     return command

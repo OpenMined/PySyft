@@ -885,9 +885,9 @@ class BaseWorker(ABC):
         has_self = self_ is not None
 
         # if has_self:
-        #     command = torch._command_guard(attr, torch.tensorvar_methods)
+        #     command = torch._command_guard(attr, 'tensorvar_methods')
         # else:
-        #     command = torch._command_guard(attr, torch.torch_modules)
+        #     command = torch._command_guard(attr, 'torch_modules')
         command = attr
 
         raw_command = {
@@ -981,9 +981,9 @@ class BaseWorker(ABC):
         has_self = self_ is not None
 
         if has_self:
-            command = torch._command_guard(attr, torch.tensorvar_methods)
+            command = torch._command_guard(attr, 'tensorvar_methods')
         else:
-            command = torch._command_guard(attr, torch.torch_modules)
+            command = torch._command_guard(attr, 'torch_modules')
 
         raw_command = {
             'command': command,

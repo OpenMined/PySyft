@@ -229,12 +229,13 @@ class _SyftTensor(object):
         [Is this case note that the dct param is assumed to have a single key, which is
         compatible with our encode/decode process (ex: {'___PointerTensor__': {...} })]
         """
-        if obj_type == '_LocalTensor':
+        syft_code = torch.syft_tensor_codes[obj_type]
+        if syft_code == torch.syft_tensor_codes._LocalTensor:
             return sy._LocalTensor.deser(obj, worker, acquire)
-        elif obj_type == '_PointerTensor':
+        elif syft_code == torch.syft_tensor_codes._PointerTensor:
             return sy._PointerTensor.deser(obj, worker, acquire)
         else:
-            syft_type = torch.guard['syft.' + obj_type]
+            syft_type = torch.guard[obj_type]
             return syft_type.deser(obj, worker, acquire)
 
         raise Exception("could not deserialize an object sent to router\n"+str(dct))
@@ -347,8 +348,8 @@ class _SyftTensor(object):
         State if a function name corresponds to a Syft Tensor method which
         overloads a torch method
         """
-        exclude = ['on', '__init__', 'native___init__', '__repr__', '__str__', 'create_pointer',
-                   'ser', 'deser', 'handle_call']
+        exclude = ('on', '__init__', 'native___init__', '__repr__', '__str__', 'create_pointer',
+                   'ser', 'deser', 'handle_call')
         if attr in exclude:
             return False
         if hasattr(getattr(cls, attr), '__module__') \
@@ -415,10 +416,10 @@ class _LocalTensor(_SyftTensor):
 
         if has_self:
             self = tensor_command['self']
-            attr = torch._command_guard(attr, torch.tensorvar_methods)
+            attr = torch._command_guard(attr, 'tensorvar_methods')
             command = getattr(self, "native_" + attr)
         else:
-            attr = torch._command_guard(attr, torch.torch_modules)
+            attr = torch._command_guard(attr, 'torch_modules')
             elems = attr.split('.')
             elems[-1] = 'native_' + elems[-1]
             native_func_name = '.'.join(elems)
@@ -2330,11 +2331,11 @@ class _TorchVariable(_TorchObject):
         try:
             var_data_type, var_data_tensor = torch_utils.extract_type_and_obj(msg_obj['data'])
             if is_head:
-                var_data = torch.guard['syft.' + var_data_type].deser(var_data_type, var_data_tensor, worker, acquire)
+                var_data = torch.guard[var_data_type].deser(var_data_type, var_data_tensor, worker, acquire)
             else:
-                var_data = torch.guard['syft.' + var_data_type]()
+                var_data = torch.guard[var_data_type]()
         except AttributeError:
-            var_data = torch.guard['syft.FloatTensor']()
+            var_data = torch.guard['FloatTensor']()
         worker.hook.local_worker.de_register(var_data)
 
         variable = sy.Variable(var_data, requires_grad=msg_obj['requires_grad'])
@@ -2343,9 +2344,9 @@ class _TorchVariable(_TorchObject):
         if 'grad' in msg_obj:
             var_grad_type, var_grad_tensor = torch_utils.extract_type_and_obj(msg_obj['grad'])
             if is_head:
-                var_grad = torch.guard['syft.' + var_grad_type].deser(var_grad_type, var_grad_tensor, worker, acquire, is_head)
+                var_grad = torch.guard[var_grad_type].deser(var_grad_type, var_grad_tensor, worker, acquire, is_head)
             else:
-                var_grad = torch.guard['syft.' + var_grad_type]()
+                var_grad = torch.guard[var_grad_type]()
             worker.hook.local_worker.de_register(var_grad)
             variable.assign_grad_(var_grad)
         else:

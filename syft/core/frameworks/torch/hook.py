@@ -69,6 +69,9 @@ class TorchHook(object):
     def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
         self.local_worker = local_worker
 
+        torch.syft_tensor_name = [x.__name__ for x in sy._SyftTensor.__subclasses__()]
+        torch_utils.define_enums()
+
         if not hasattr(torch, 'torch_hooked'):
             torch.torch_hooked = 0
         else:
