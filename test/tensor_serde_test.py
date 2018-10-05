@@ -23,118 +23,118 @@ me.add_workers([bob, alice])
 
 class TestTensorPointerSerde(TestCase):
 
-    def test_floattensordata2json2floattensordata(self):
-        # this tests the serialization / deserialization of the data FloatTensor
-        # objects (which is different from those which are merely wrappers).
+    # def test_floattensordata2json2floattensordata(self):
+    #     # this tests the serialization / deserialization of the data FloatTensor
+    #     # objects (which is different from those which are merely wrappers).
+    #
+    #     x = sy.FloatTensor([1, 2, 3, 4, 5])
+    #
+    #     xs = {
+    #         '__FloatTensor__': {
+    #             'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
+    #             'torch_type': 'syft.FloatTensor',
+    #             'data': [1.0, 2.0, 3.0, 4.0, 5.0],
+    #             'child': {
+    #                 '___LocalTensor__': {
+    #                     'owner': 0,
+    #                     'id': x.id,
+    #                     'torch_type': 'syft.FloatTensor'
+    #                 }}}}
+    #
+    #     assert x.ser(private=False) == xs
+    #
+    #     x2 = sy.FloatTensor.deser(xs, worker=me, acquire=True)
+    #
+    #     # ensure values are the same as what was serialized
+    #     assert x2.tolist() == x.tolist()
+    #
+    #     # assert the objects are the same
+    #     assert (x == x2).all()
 
-        x = sy.FloatTensor([1, 2, 3, 4, 5])
+    # def test_localtensor2json2localtensor(self):
+    #     xs = {
+    #         '__FloatTensor__': {
+    #             'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
+    #             'torch_type': 'syft.FloatTensor',
+    #             'data': [1.0, 2.0, 3.0, 4.0],
+    #             'child': {
+    #                 '___LocalTensor__': {
+    #                     'owner': 0,
+    #                     'id': 1000,
+    #                     'torch_type': 'syft.FloatTensor'
+    #                 }}}}
+    #
+    #     x = sy.FloatTensor([1, 2, 3, 4])
+    #     x.child.id = xs['__FloatTensor__']['child']['___LocalTensor__']['id']
+    #
+    #     # check that serialization is correct
+    #     assert xs == x.ser(private=False)
+    #
+    #     # reset ID for further testing
+    #     xs['__FloatTensor__']['child']['___LocalTensor__']['id'] = 54321
+    #
+    #     x = sy.FloatTensor.deser(xs, worker=me, acquire=True)
+    #
+    #     # correct id
+    #     assert x.id == xs['__FloatTensor__']['child']['___LocalTensor__']['id']
+    #
+    #     # correct owner
+    #     assert x.owner.id == xs['__FloatTensor__']['child']['___LocalTensor__']['owner']
+    #
+    #     # correct type
+    #     assert type(x).__name__ == xs['__FloatTensor__']['type'].split(".")[-1]
+    #
+    #     # correct size
+    #     assert len(x) == 4
+    #
+    #     # correct data
+    #     assert (x[0:4] == sy.FloatTensor([1, 2, 3, 4])).all()
+    #
+    #     # object shouldn't be in registry yet
+    #     assert x.id not in me._objects
 
-        xs = {
-            '__FloatTensor__': {
-                'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
-                'torch_type': 'syft.FloatTensor',
-                'data': [1.0, 2.0, 3.0, 4.0, 5.0],
-                'child': {
-                    '___LocalTensor__': {
-                        'owner': 0,
-                        'id': x.id,
-                        'torch_type': 'syft.FloatTensor'
-                    }}}}
-
-        assert x.ser(private=False) == xs
-
-        x2 = sy.FloatTensor.deser(xs, worker=me, acquire=True)
-
-        # ensure values are the same as what was serialized
-        assert x2.tolist() == x.tolist()
-
-        # assert the objects are the same
-        assert (x == x2).all()
-
-    def test_localtensor2json2localtensor(self):
-        xs = {
-            '__FloatTensor__': {
-                'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
-                'torch_type': 'syft.FloatTensor',
-                'data': [1.0, 2.0, 3.0, 4.0],
-                'child': {
-                    '___LocalTensor__': {
-                        'owner': 0,
-                        'id': 1000,
-                        'torch_type': 'syft.FloatTensor'
-                    }}}}
-
-        x = sy.FloatTensor([1, 2, 3, 4])
-        x.child.id = xs['__FloatTensor__']['child']['___LocalTensor__']['id']
-
-        # check that serialization is correct
-        assert xs == x.ser(private=False)
-
-        # reset ID for further testing
-        xs['__FloatTensor__']['child']['___LocalTensor__']['id'] = 54321
-
-        x = sy.FloatTensor.deser(xs, worker=me, acquire=True)
-
-        # correct id
-        assert x.id == xs['__FloatTensor__']['child']['___LocalTensor__']['id']
-
-        # correct owner
-        assert x.owner.id == xs['__FloatTensor__']['child']['___LocalTensor__']['owner']
-
-        # correct type
-        assert type(x).__name__ == xs['__FloatTensor__']['type'].split(".")[-1]
-
-        # correct size
-        assert len(x) == 4
-
-        # correct data
-        assert (x[0:4] == sy.FloatTensor([1, 2, 3, 4])).all()
-
-        # object shouldn't be in registry yet
-        assert x.id not in me._objects
-
-    def test_floattensor2json2floattensor(self):
-        xs = {
-            '__FloatTensor__': {
-                'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
-                'torch_type': 'syft.FloatTensor',
-                'data': [1.0, 2.0, 3.0, 4.0, 5.0],
-                'child': {
-                    '___LocalTensor__': {
-                        'owner': 0,
-                        'id': 234152,
-                        'torch_type': 'syft.FloatTensor'
-                    }}}}
-
-        x = sy.FloatTensor([1, 2, 3, 4, 5])
-        x.child.id = 234152
-
-        # test that serialization happens correctly
-        assert x.ser(private=False) == xs
-
-        # initialize tensor without registering it
-        x2 = sy.FloatTensor.deser(xs, worker=me, acquire=True)
-
-        # check id and owner are correct
-        assert x2.id == 234152
-        assert x2.owner.id == 0
-
-        # make sure it works (can do operations)
-        y = x2.add(x2)
-
-        assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
-        assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
-
-        y = torch.add(x2, x2)
-
-        assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
-        assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
-
-        y = x2 + x2
-        assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
-        assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
-
-        assert x2.id not in me._objects
+    # def test_floattensor2json2floattensor(self):
+    #     xs = {
+    #         '__FloatTensor__': {
+    #             'type': 'syft.core.frameworks.torch.tensor.FloatTensor',
+    #             'torch_type': 'syft.FloatTensor',
+    #             'data': [1.0, 2.0, 3.0, 4.0, 5.0],
+    #             'child': {
+    #                 '___LocalTensor__': {
+    #                     'owner': 0,
+    #                     'id': 234152,
+    #                     'torch_type': 'syft.FloatTensor'
+    #                 }}}}
+    #
+    #     x = sy.FloatTensor([1, 2, 3, 4, 5])
+    #     x.child.id = 234152
+    #
+    #     # test that serialization happens correctly
+    #     assert x.ser(private=False) == xs
+    #
+    #     # initialize tensor without registering it
+    #     x2 = sy.FloatTensor.deser(xs, worker=me, acquire=True)
+    #
+    #     # check id and owner are correct
+    #     assert x2.id == 234152
+    #     assert x2.owner.id == 0
+    #
+    #     # make sure it works (can do operations)
+    #     y = x2.add(x2)
+    #
+    #     assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
+    #     assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
+    #
+    #     y = torch.add(x2, x2)
+    #
+    #     assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
+    #     assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
+    #
+    #     y = x2 + x2
+    #     assert (x2 == sy.FloatTensor([1, 2, 3, 4, 5])).all()
+    #     assert (y == sy.FloatTensor([2, 4, 6, 8, 10])).all()
+    #
+    #     assert x2.id not in me._objects
 
     def test_tensor2unregsitered_pointer2tensor(self):
         # Tensor: Local -> Pointer (unregistered) -> Local

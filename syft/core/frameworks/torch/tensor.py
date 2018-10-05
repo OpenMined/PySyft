@@ -1062,6 +1062,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                  precision_fractional=3,
                  precision_integral=1,
                  already_encoded=False,
+                 kappa=1
                  ):
 
         if torch_type is None:
@@ -1082,6 +1083,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         self.precision_integral = precision_integral
         self.precision = self.precision_fractional + self.precision_integral
         self.torch_max_value = torch.LongTensor([round(self.field / 2)])
+        self.kappa = kappa
 
         if already_encoded:
             self.child = child
@@ -1163,7 +1165,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def decode(self):
         save = self.child.child*1
         self.child.child = None # <-- This is doing magic things
-        value = self.child % self.field
+        value = self.child.long() % self.field
         if len(value.size()) == 0:
             # raise TypeError("Can't decode empty tensor")
             return None
@@ -1189,6 +1191,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         args = command['args']
         kwargs = command['kwargs']
         has_self = command['has_self']
+
         if has_self:
             self = command['self']
 
@@ -1293,6 +1296,7 @@ class _FixedPrecisionTensor(_SyftTensor):
             result_precision_fractional = max(self.precision_fractional, other.precision_fractional)
             result_precision_integral = self.precision_integral
             result_precision = result_precision_fractional + result_precision_integral
+            result_kappa = self.kappa
 
             if result_precision_fractional > 0:
                 tail_node = torch_utils.find_tail_of_chain(torch_tensorvar)
@@ -1312,7 +1316,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                     rand_shape = torch.IntTensor(list(b.get_shape())).prod()
 
                     mask = torch.LongTensor(1).send(workers[0]).expand(rand_shape).contiguous().view(list(b.get_shape()))
-                    mask.random_(self.base ** result_precision)
+                    mask.random_(self.base ** (result_precision + result_kappa))
 
                     mask_low = torch.fmod(mask, self.base ** result_precision_fractional)
                     mpc_mask = mask.share(*workers).get()
@@ -1364,7 +1368,6 @@ class _FixedPrecisionTensor(_SyftTensor):
         # checks the terms of self and other to make sure they have the same
         # precision - if not it returns two new params with the same precision
 
-
         # if other is not a fixed tensor, convert it to a fixed one
         if (not hasattr(other, 'precision_fractional')):
             other = other.fix_precision(precision_fractional=self.precision_fractional)
@@ -1391,6 +1394,54 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __mul__(self, other):
         a, b = self.check_and_scale_precision_if_needed(other)
         return (a * b)# % self.field # - modulus performed later
+
+    def __gt__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a > b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True).wrap(True)
+        return result
+
+    def __lt__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a < b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True).wrap(True)
+        return result
+
+    def __ge__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a >= b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True).wrap(True)
+        return result
+
+    def __le__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a <= b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True).wrap(True)
+        return result
 
     def __div__(self, other):
         # if other is not a fixed tensor, convert it to a fixed one
@@ -1432,17 +1483,44 @@ class _FixedPrecisionTensor(_SyftTensor):
         response = self.child.mm(other.child)
         return response
 
+    def argmax(self):
+        return self.very_slow_argmax()
+
+    def very_slow_argmax(self):
+        # there are a TON of things about this that are stupidly slow
+        # but unfortunately there are bugs elsewhere that I don't have
+        # time to fix. TODO: optimize the crap out of this
+
+        self = self.wrap(True)
+
+        my_shape = list(self.get_shape())
+        assert len(my_shape) == 2
+
+        max_vals = self[:, 0:1]
+        for i in range(1, my_shape[1]):
+            new_vals = self[:, i:i + 1]
+            gate = (max_vals > new_vals)
+            left = (gate * max_vals)
+
+            gate = (max_vals < new_vals)
+            right = gate * new_vals
+            max_vals = left + right
+
+        max_vals = max_vals.expand(my_shape)
+        out = (max_vals >= self) * (max_vals <= self)
+        return out
+
     def __repr__(self):
-        if(not isinstance(self.child, _SNNTensor)):
-            return "[Fixed precision]\n"+self.decode().__repr__()
-        else:
-            return "[Fixed precision]\n" + self.child.__repr__()
+        # if(not isinstance(self.child.child, _SNNTensor)):
+        #     return "[Fixed precision]\n"+self.decode().__repr__()
+        # else:
+        return "[Fixed precision tensor]\n"# + (self.child*1).__repr__()
 
     def __str__(self):
-        if (not isinstance(self.child, _SNNTensor)):
-            return "[Fixed precision]\n" + self.decode().__repr__()
-        else:
-            return "[Fixed precision]\n" + self.child.__repr__()
+        # if (not isinstance(self.child.child, _SNNTensor)):
+        #     return "[Fixed precision]\n" + self.decode().__repr__()
+        # else:
+        return "[Fixed precision tensor]\n"# + (self.child*1).__repr__()
 
 
 class _SPDZTensor(_SyftTensor):
@@ -1851,6 +1929,9 @@ class _TorchObject(object):
                 return self.child == args[0].child
             except:
                 return self.native___eq__(*args, **kwargs)
+
+    def argmax(self):
+        return self.child.argmax()
 
     def get_shape(self):
         return self.child.get_shape()
