@@ -1368,7 +1368,6 @@ class _FixedPrecisionTensor(_SyftTensor):
         # checks the terms of self and other to make sure they have the same
         # precision - if not it returns two new params with the same precision
 
-
         # if other is not a fixed tensor, convert it to a fixed one
         if (not hasattr(other, 'precision_fractional')):
             other = other.fix_precision(precision_fractional=self.precision_fractional)
@@ -1484,17 +1483,44 @@ class _FixedPrecisionTensor(_SyftTensor):
         response = self.child.mm(other.child)
         return response
 
+    def argmax(self):
+        return self.very_slow_argmax()
+
+    def very_slow_argmax(self):
+        # there are a TON of things about this that are stupidly slow
+        # but unfortunately there are bugs elsewhere that I don't have
+        # time to fix. TODO: optimize the crap out of this
+
+        self = self.wrap(True)
+
+        my_shape = list(self.get_shape())
+        assert len(my_shape) == 2
+
+        max_vals = self[:, 0:1]
+        for i in range(1, my_shape[1]):
+            new_vals = self[:, i:i + 1]
+            gate = (max_vals > new_vals)
+            left = (gate * max_vals)
+
+            gate = (max_vals < new_vals)
+            right = gate * new_vals
+            max_vals = left + right
+
+        max_vals = max_vals.expand(my_shape)
+        out = (max_vals >= self) * (max_vals <= self)
+        return out
+
     def __repr__(self):
-        if(not isinstance(self.child, _SNNTensor)):
-            return "[Fixed precision]\n"+self.decode().__repr__()
-        else:
-            return "[Fixed precision]\n" + self.child.__repr__()
+        # if(not isinstance(self.child.child, _SNNTensor)):
+        #     return "[Fixed precision]\n"+self.decode().__repr__()
+        # else:
+        return "[Fixed precision tensor]\n"# + (self.child*1).__repr__()
 
     def __str__(self):
-        if (not isinstance(self.child, _SNNTensor)):
-            return "[Fixed precision]\n" + self.decode().__repr__()
-        else:
-            return "[Fixed precision]\n" + self.child.__repr__()
+        # if (not isinstance(self.child.child, _SNNTensor)):
+        #     return "[Fixed precision]\n" + self.decode().__repr__()
+        # else:
+        return "[Fixed precision tensor]\n"# + (self.child*1).__repr__()
 
 
 class _SPDZTensor(_SyftTensor):
@@ -1903,6 +1929,9 @@ class _TorchObject(object):
                 return self.child == args[0].child
             except:
                 return self.native___eq__(*args, **kwargs)
+
+    def argmax(self):
+        return self.child.argmax()
 
     def get_shape(self):
         return self.child.get_shape()
