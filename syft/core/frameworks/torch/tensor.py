@@ -1062,6 +1062,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                  precision_fractional=3,
                  precision_integral=1,
                  already_encoded=False,
+                 kappa=1
                  ):
 
         if torch_type is None:
@@ -1082,6 +1083,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         self.precision_integral = precision_integral
         self.precision = self.precision_fractional + self.precision_integral
         self.torch_max_value = torch.LongTensor([round(self.field / 2)])
+        self.kappa = kappa
 
         if already_encoded:
             self.child = child
@@ -1294,6 +1296,7 @@ class _FixedPrecisionTensor(_SyftTensor):
             result_precision_fractional = max(self.precision_fractional, other.precision_fractional)
             result_precision_integral = self.precision_integral
             result_precision = result_precision_fractional + result_precision_integral
+            result_kappa = self.kappa
 
             if result_precision_fractional > 0:
                 tail_node = torch_utils.find_tail_of_chain(torch_tensorvar)
@@ -1313,7 +1316,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                     rand_shape = torch.IntTensor(list(b.get_shape())).prod()
 
                     mask = torch.LongTensor(1).send(workers[0]).expand(rand_shape).contiguous().view(list(b.get_shape()))
-                    mask.random_(self.base ** result_precision)
+                    mask.random_(self.base ** (result_precision + result_kappa))
 
                     mask_low = torch.fmod(mask, self.base ** result_precision_fractional)
                     mpc_mask = mask.share(*workers).get()
