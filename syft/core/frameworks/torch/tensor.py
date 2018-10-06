@@ -216,9 +216,10 @@ class _SyftTensor(object):
             data['child'] = self.child.ser(private, as_dict)
 
         if as_dict:
-            return {'__{}__'.format(self.__class__.__name__): data}
+            key = encode.get_serialized_key(self)
+            return {key: data}
         else:
-            return msgpack.packb({'__{}__'.format(self.__class__.__name__): data}, use_bin_type=True)
+            return msgpack.packb({key: data}, use_bin_type=True)
 
     @classmethod
     def deser_routing(cls, obj_type, obj, worker, acquire):
@@ -229,10 +230,10 @@ class _SyftTensor(object):
         [Is this case note that the dct param is assumed to have a single key, which is
         compatible with our encode/decode process (ex: {'___PointerTensor__': {...} })]
         """
-        syft_code = torch.syft_tensor_codes[obj_type]
-        if syft_code == torch.syft_tensor_codes._LocalTensor:
+        syft_code = torch.type_codes[obj_type]
+        if syft_code == torch.type_codes._LocalTensor:
             return sy._LocalTensor.deser(obj, worker, acquire)
-        elif syft_code == torch.syft_tensor_codes._PointerTensor:
+        elif syft_code == torch.type_codes._PointerTensor:
             return sy._PointerTensor.deser(obj, worker, acquire)
         else:
             syft_type = torch.guard[obj_type]
@@ -334,7 +335,7 @@ class _SyftTensor(object):
         syft_wrapper = cls(child=result, owner=owner)
         result.parent = syft_wrapper
 
-        if torch_utils.is_variable(result.torch_type):
+        if torch_utils.is_variable_name(result.torch_type):
             syft_response_data = cls(child=result.data, owner=owner)
             result.data.parent = syft_response_data
             syft_wrapper.data = syft_response_data
@@ -404,11 +405,8 @@ class _LocalTensor(_SyftTensor):
         native torch args. Excute native operations and converts it back into
         syft response using _LocalTensors.
         """
-        # start_time = time.time()
         tensor_command, torch_type = torch_utils.prepare_child_command(syft_command,
                                                                        replace_tensorvar_with_child=True)
-        torch_utils.assert_has_only_torch_tensorvars(tensor_command)
-
         attr = tensor_command['command']
         args = tensor_command['args']
         kwargs = tensor_command['kwargs']
@@ -416,21 +414,15 @@ class _LocalTensor(_SyftTensor):
 
         if has_self:
             self = tensor_command['self']
-            attr = torch._command_guard(attr, 'tensorvar_methods')
-            command = getattr(self, "native_" + attr)
+            native_attr = torch._command_guard(attr, 'tensorvar_methods', get_native=True)
+            command = getattr(self, native_attr)
         else:
-            attr = torch._command_guard(attr, 'torch_modules')
-            elems = attr.split('.')
-            elems[-1] = 'native_' + elems[-1]
-            native_func_name = '.'.join(elems)
-            command = eval(native_func_name)
-        # torch.handle_call_timer += time.time() - start_time
+            native_func = torch._command_guard(attr, 'torch_modules', get_native=True)
+            command = native_func
         response = command(*args, **kwargs)
-        # start_time = time.time()
 
         # TODO : control registration process
         if response is None:
-            # torch.handle_call_timer += time.time() - start_time
             return response
 
         if owner.id != owner.hook.local_worker.id:
@@ -441,7 +433,6 @@ class _LocalTensor(_SyftTensor):
                 response = sy.FloatTensor(response)
         else:
             if isinstance(response, (int, float, bool, np.ndarray)):
-                # torch.handle_call_timer += time.time() - start_time
                 return response
 
         # If the command is an in-place method, wrap self and return
@@ -489,7 +480,7 @@ class _LocalTensor(_SyftTensor):
                         continue
 
                 syft_response = sy._LocalTensor(child=resp, parent=resp, owner=owner,
-                                                torch_type='syft.' + type(resp).__name__)
+                                                torch_type=type(resp).__name__)
 
                 if torch_utils.is_variable(resp):
                     if resp.grad is None:
@@ -501,7 +492,6 @@ class _LocalTensor(_SyftTensor):
 
             return_response = tuple(syft_responses) if len(syft_responses) > 1 else syft_responses[0]
 
-        # torch.handle_call_timer += time.time() - start_time
         return return_response
 
     def ser(self, private, as_dict=True):
@@ -519,12 +509,12 @@ class _LocalTensor(_SyftTensor):
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
-
-        if 'owner' not in msg_obj:
-            raise TypeError("sy._LocalTensor can't deserialize a non-valid sy._LocalTensor. "
+        try:
+            if msg_obj['owner'] == worker.id:
+                logging.warning('_LocalTensor sent to itself')
+        except TypeError:
+            logging.warning("sy._LocalTensor can't deserialize a non-valid sy._LocalTensor. "
                             "Do you wan to call sy.FloatTensor.deser() instead?")
-        if msg_obj['owner'] == worker.id:
-            logging.warning('_LocalTensor sent to itself')
         if acquire:  # We need to register the info given
             syft_obj = sy._LocalTensor(child=None,
                                        parent=None,
@@ -732,12 +722,12 @@ class _GeneralizedPointerTensor(_SyftTensor):
 
             if torch_type is None:
                 torch_type = result_dict[worker_id].torch_type
-                if torch_utils.is_variable(torch_type):
+                if torch_utils.is_variable_name(torch_type):
                     var_data_type = result_dict[worker_id].data.torch_type
 
         gpt = _GeneralizedPointerTensor(result_dict, torch_type=torch_type, owner=owner)
 
-        if torch_utils.is_variable(torch_type):
+        if torch_utils.is_variable_name(torch_type):
             gpt.child = torch.guard[torch_type]()
             data_pointer_dict = {
                 w: p.data
@@ -882,11 +872,9 @@ class _PointerTensor(_SyftTensor):
         else:
             location = self.location.id
         id_at_location = self.id_at_location
-        # Add the remote location worker key if needed
-        if location not in worker._pointers.keys():
-            worker._pointers[location] = {}
         # Add the remote address
         worker._pointers[location][id_at_location] = self.id
+
 
     @classmethod
     def handle_call(cls, syft_command, owner):
@@ -894,7 +882,6 @@ class _PointerTensor(_SyftTensor):
         _PointerTensor has an overloaded handle_call function because it converts
         the command to torch tensors and send it over the network
         """
-        #start_time = time.time()
         tensor_command = torch_utils.wrap_command(syft_command)
 
         attr = tensor_command['command']
@@ -911,12 +898,10 @@ class _PointerTensor(_SyftTensor):
         location = locations[0]
         owner = owners[0]
 
-        #torch.handle_call_timer += time.time() - start_time
         # Else we send the command
         response = owner.send_torch_command(recipient=location, message=command)
-        # start_time = time.time()
 
-        torch_utils.assert_has_only_torch_tensorvars(response)
+        # torch_utils.assert_has_only_torch_tensorvars(response)
 
         # If the command is an in-place method, we only need to return the same wrapper to the same
         # pointer, instead jof returning the new wrapper created in response
@@ -929,7 +914,6 @@ class _PointerTensor(_SyftTensor):
         # Perform the un-wrap: remove the head on all chains (also .data and .grad if any)
         response, _ = torch_utils.get_child_command(response)
         # response is now a _Pointer, with a .data attr which is a _Pointer, etc.
-        # torch.handle_call_timer += time.time() - start_time
         return response
 
     def __str__(self):
@@ -991,7 +975,7 @@ class _PointerTensor(_SyftTensor):
         """
         # Remove this pointer - TODO: call deregister function instead of doing it by hand
         if deregister_ptr:
-            if self.torch_type == 'syft.Variable':
+            if torch_utils.is_variable_name(self.torch_type):
                 if hasattr(self.parent, 'data'):
                     self.owner.rm_obj(self.parent.data.child.id)
             self.owner.rm_obj(self.id)
@@ -1003,17 +987,18 @@ class _PointerTensor(_SyftTensor):
 
         # get SyftTensor (Local or Pointer) from remote machine
         tensorvar = self.owner.request_obj(self.id_at_location, self.location)
-        torch_utils.assert_has_only_torch_tensorvars(tensorvar)
+
+        # torch_utils.assert_has_only_torch_tensorvars(tensorvar)
 
         syft_tensor = tensorvar.child
         syft_tensor.id = self.id
-        if self.torch_type == 'syft.Variable':
+        if torch_utils.is_variable_name(self.torch_type):
             if hasattr(self.parent, 'data'):
                 tensorvar.data.child.id = self.parent.data.child.id
 
         # Register the result
         self.owner.register(syft_tensor)
-        if syft_tensor.torch_type == 'syft.Variable':
+        if torch_utils.is_variable_name(syft_tensor.torch_type):
             if hasattr(self.parent, 'data'):
                 self.owner.register(tensorvar.data.child)
 
@@ -1036,11 +1021,11 @@ class _PointerTensor(_SyftTensor):
 
         raw_output = self.handle_call(cmd, self.owner)
 
-        if(isinstance(raw_output, (tuple, list))):
+        if isinstance(raw_output, (tuple, list)):
             dims = list()
             for each in raw_output:
                 dims.append(each.get().int().tolist())
-                if(len(dims[-1]) == 1):
+                if len(dims[-1]) == 1:
                     dims[-1] = dims[-1][0]
 
             return sy.Size(dims)
@@ -1094,7 +1079,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         if already_encoded:
             self.child = child
         else:
-            torch_utils.assert_has_only_torch_tensorvars(child)
+            # torch_utils.assert_has_only_torch_tensorvars(child)
             chain_tail = None
             if not isinstance(child.child, sy._LocalTensor):
                 chain_tail = child.child
@@ -1223,8 +1208,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                 return _FixedPrecisionTensor(self.child.relu()).wrap(True)
             # C) override functions which have tensors as arguments
             elif attr in ('__add__', '__mul__', '__sub__', '__div__', '__truediv__', 'mm',
-                        'matmul') and\
-                    isinstance(args[0], sy._FixedPrecisionTensor):
+                        'matmul') and isinstance(args[0], sy._FixedPrecisionTensor):
 
                 # Compute the precision to keep
                 other = args[0]
@@ -1264,7 +1248,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                 next_command, child_type = torch_utils.prepare_child_command(
                     command, replace_tensorvar_with_child=True)
 
-                is_var = torch_utils.is_variable(child_type.__name__)
+                is_var = torch_utils.is_variable_name(child_type.__name__)
 
                 if is_var:
                     child_type = torch.guard[self.data.torch_type]
@@ -1725,7 +1709,7 @@ class _SPDZTensor(_SyftTensor):
 
         if(isinstance(other, type(self))):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
-            if torch_utils.is_variable(self.torch_type):
+            if torch_utils.is_variable_name(self.torch_type):
                 gp_response = self * 1
                 gp_response.data = spdz.spdz_mul(self.data.shares, other.data.shares, workers)
                 #TODO: and the grad ?
@@ -1737,7 +1721,7 @@ class _SPDZTensor(_SyftTensor):
 
     def mm(self, other):
         workers = list(self.shares.child.pointer_tensor_dict.keys())
-        if torch_utils.is_variable(self.torch_type):
+        if torch_utils.is_variable_name(self.torch_type):
             gp_response = self * 1
             gp_response.data = spdz.spdz_matmul(self.data.shares, other.data.shares, workers)
             # TODO: and the grad ?
@@ -1804,7 +1788,7 @@ class _SPDZTensor(_SyftTensor):
             else:
                 gp_response = getattr(self.child, attr)(*args, **kwargs)
 
-            if torch_utils.is_variable(gp_response.child.torch_type):
+            if torch_utils.is_variable_name(gp_response.child.torch_type):
                 var_data_type = gp_response.child.data.torch_type
                 variable = sy.Variable(torch.guard[var_data_type]())
                 variable.init_grad_()
@@ -1818,7 +1802,6 @@ class _SPDZTensor(_SyftTensor):
             else:
                 response = type(self)(gp_response).wrap(True)
                 return response
-
         else:
 
             if(attr == "torch.cat"):
@@ -2191,11 +2174,10 @@ class _TorchTensor(_TorchObject):
         return getattr(self, attr)(*args, **kwargs)
 
     def ser(self, private, as_dict=True):
-        key = '__' + type(self).__name__ + '__'
+        key = encode.get_serialized_key(self)
         data = self.tolist() if not private else []
         tensor_msg = {
-            'type': str(self.__class__).split("'")[1],
-            'torch_type': 'syft.' + type(self).__name__,
+            'torch_type': type(self).__name__,
             'data': data,
             'child': self.child.ser(private)
         }
@@ -2213,7 +2195,7 @@ class _TorchTensor(_TorchObject):
         if syft_obj.parent is not None and syft_obj.child is not None:
             return syft_obj.parent
 
-        tensorvar = torch.guard['syft.' + obj_type](msg_obj['data'])
+        tensorvar = torch.guard[obj_type](msg_obj['data'])
         torch_utils.wrap_command_with(syft_obj, tensorvar)
 
         # TODO: Find a smart way to skip register and not leaking the info to the local worker
@@ -2313,7 +2295,8 @@ class _TorchTensor(_TorchObject):
             self.child = tensor
             return self
 
-        torch_utils.assert_has_only_torch_tensorvars(tensor)
+        # torch_utils.assert_has_only_torch_tensorvars(tensor)
+
         # this will change the pointer variable (wrapper) to instead wrap the
         # SyftTensor object that was returned so that any variable that may
         # still exist referencing this pointer will simply call local data instead
@@ -2421,7 +2404,9 @@ class _TorchVariable(_TorchObject):
 
         # returns a Variable object wrapping a SyftTensor
         variable = self.child.get(deregister_ptr=deregister_ptr)
-        torch_utils.assert_has_only_torch_tensorvars(variable)
+
+        # torch_utils.assert_has_only_torch_tensorvars(variable)
+
         # this will change the wrapper variable to instead wrap the
         # SyftTensor object that was returned so that any variable that may
         # still exist referencing this pointer will simply call local data instead
@@ -2460,11 +2445,10 @@ class _TorchVariable(_TorchObject):
         return variable
 
     def ser(self, private, as_dict=True, is_head=False):
-        key = '__' + type(self).__name__ + '__'
+        key = encode.get_serialized_key(self)
 
         tensor_msg = {
-            'type': str(self.__class__).split("'")[1],
-            'torch_type': 'syft.' + type(self).__name__,
+            'torch_type': type(self).__name__,
             'data': self.data.ser(private) if is_head else [],
             'child': self.child.ser(private),
             'requires_grad': self.requires_grad

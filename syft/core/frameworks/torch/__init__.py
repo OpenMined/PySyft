@@ -43,7 +43,7 @@ torch.var_types = [torch.autograd.variable.Variable, torch.nn.Parameter]
 torch.var_types_tuple = tuple(torch.var_types)
 
 # a list of all classes in which we will override their methods for remote execution
-torch.tensorvar_types = torch.tensor_types +  [torch.autograd.variable.Variable]
+torch.tensorvar_types = torch.tensor_types + [torch.autograd.variable.Variable]
 
 torch.tensorvar_types_strs = [x.__name__ for x in torch.tensorvar_types]
 
@@ -101,10 +101,43 @@ allowed_commands = {
     'torch_modules': get_allowed_command(torch.torch_modules)
 }
 
-def _command_guard(command, torch_domain):
+
+def get_native_torch_name(attr):
+    elems = attr.split('.')
+    elems[-1] = 'native_' + elems[-1]
+    native_func_name = '.'.join(elems)
+    return native_func_name
+
+native_commands = {
+    'tensorvar_methods': {
+        cmd: 'native_' + cmd for cmd in allowed_commands['tensorvar_methods']
+    },
+    'torch_modules': {
+        cmd: get_native_torch_name(cmd) for cmd in allowed_commands['torch_modules']
+    }
+}
+
+
+def eval_torch_modules():
+    for cmd_name, native_cmd_name in native_commands['torch_modules'].items():
+        if cmd_name not in torch.torch_exclude:
+            try:
+                native_commands['torch_modules'][cmd_name] = eval(native_cmd_name)
+            except AttributeError:
+                native_commands['torch_modules'][cmd_name] = eval(cmd_name)
+        else:
+            native_commands['torch_modules'][cmd_name] = eval(cmd_name)
+
+torch.eval_torch_modules = eval_torch_modules
+
+
+
+def _command_guard(command, torch_domain, get_native=False):
     if command not in allowed_commands[torch_domain]:
         raise RuntimeError(
             'Command "{}" is not a supported Torch operation.'.format(command))
+    if get_native:
+        return native_commands[torch_domain][command]
     return command
 
 torch._command_guard = _command_guard
