@@ -552,6 +552,9 @@ class _LocalTensor(_SyftTensor):
     def get(self, parent, deregister_ptr=None):
         raise TypeError("Cannot call .get() on a tensor you already have.")
 
+    def relu(self):
+        return torch.guard[self.torch_type](self.parent > 0) * self.parent
+
 class _WrapTorchObjectPlusIsMinusTensor(_SyftTensor):
     """
     Example of a custom overloaded SyftTensor wherein the .child
@@ -1216,7 +1219,8 @@ class _FixedPrecisionTensor(_SyftTensor):
             elif attr == 'cumsum':
                 response = cls.cumsum(self, *args, **kwargs)
                 return _FixedPrecisionTensor(response).wrap(True)
-
+            elif attr == 'relu':
+                return _FixedPrecisionTensor(self.child.relu()).wrap(True)
             # C) override functions which have tensors as arguments
             elif attr in ('__add__', '__mul__', '__sub__', '__div__', '__truediv__', 'mm',
                         'matmul') and\
@@ -1490,6 +1494,16 @@ class _FixedPrecisionTensor(_SyftTensor):
         response = self.child.mm(other.child)
         return response
 
+    def relu(self):
+        result = self.child.relu()
+
+        return sy._FixedPrecisionTensor(result,
+                                        base=self.base,
+                                        field=self.field,
+                                        precision_fractional=self.precision_fractional,
+                                        precision_integral=self.precision_integral,
+                                        already_encoded=True).wrap(True)
+
     def argmax(self):
         return self.very_slow_argmax()
 
@@ -1516,6 +1530,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         max_vals = max_vals.expand(my_shape)
         out = (max_vals >= self) * (max_vals <= self)
         return out
+
 
     def __repr__(self):
         # if(not isinstance(self.child.child, _SNNTensor)):
