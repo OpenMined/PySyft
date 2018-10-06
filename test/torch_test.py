@@ -1006,7 +1006,6 @@ class TestSNNTensor(TestCase):
         b = a.relu()
         assert (b.get() == torch.LongTensor([0, 3, 0, 7])).all()
 
-
     def test_mpc_argmax(self):
         x = (torch.FloatTensor([[0.1, 0.2, 0.4, 0.3], [0.9, 0, 0, 0.1]])).fix_precision().share(alice, bob)
         out = x.argmax()

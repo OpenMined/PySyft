@@ -718,12 +718,15 @@ class _GeneralizedPointerTensor(_SyftTensor):
     def handle_call(cls, syft_command, owner):
 
         syft_commands = torch_utils.split_to_pointer_commands(syft_command)
+
         result_dict = {}
         torch_type = None
         var_data_type = None
         for worker_id in syft_commands.keys():
+
             syft_command = syft_commands[worker_id]
             result_dict[worker_id] = sy._PointerTensor.handle_call(syft_command, owner)
+
             if torch_type is None:
                 torch_type = result_dict[worker_id].torch_type
                 if torch_utils.is_variable(torch_type):
@@ -1057,7 +1060,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                  child=None,
                  owner=None,
                  torch_type=None,
-                 field=2**31 - 1,
+                 field=(2**31) - 1,
                  base=10,
                  precision_fractional=3,
                  precision_integral=1,
@@ -1692,7 +1695,7 @@ class _SPDZTensor(_SyftTensor):
         return gp_response
 
     def sum(self, *args, **kwargs):
-        gp_response = self.child.sum(*args, **kwargs) % spdz.field
+        gp_response = torch.fmod(self.child.sum(*args, **kwargs), spdz.field)
         return gp_response
 
     def cumsum(self, *args, **kwargs):
@@ -1740,6 +1743,10 @@ class _SPDZTensor(_SyftTensor):
         temp531 = temp53+ temp1
         return W0 + temp531
 
+    def set_(self, *args, **kwargs):
+        self.child.set_(args[0].child)
+        return self
+
     @classmethod
     def handle_call(cls, command, owner):
         """
@@ -1750,40 +1757,56 @@ class _SPDZTensor(_SyftTensor):
         :param owner:
         :return:
         """
+
         attr = command['command']
         args = command['args']
         kwargs = command['kwargs']
-        self = command['self']
+        has_self = command['has_self']
 
-        if attr == '__mul__':
-            gp_response = cls.__mul__(self, *args, **kwargs)
-        elif attr == '__add__':
-            gp_response = cls.__add__(self, *args, **kwargs)
-        elif attr == '__sub__':
-            gp_response = cls.__sub__(self, *args, **kwargs)
-        elif attr == 'sum':
-            gp_response = cls.sum(self, *args, **kwargs)
-        elif attr == 'cumsum':
-            gp_response = cls.sum(self, *args, **kwargs)
-        elif attr == 'mm':
-            gp_response = cls.mm(self, *args, **kwargs)
-        else:
-            gp_response = getattr(self.child, attr)(*args, **kwargs)
+        if(has_self):
 
-        if torch_utils.is_variable(gp_response.child.torch_type):
-            var_data_type = gp_response.child.data.torch_type
-            variable = sy.Variable(torch.guard[var_data_type]())
-            variable.init_grad_()
-            mpc_node = type(self)(gp_response)
-            mpc_node.data = type(self)(gp_response.data)
-            mpc_node.grad = type(self)(gp_response.grad)
-            mpc_node.grad.data = type(self)(gp_response.grad.data)
-            mpc_node.grad.data.child.child = None # FIXME: is it necessary?
-            torch_utils.bind_var_like_objects(variable, mpc_node, grad=True)
-            return variable
+            self = command['self']
+
+            if attr == '__mul__':
+                gp_response = cls.__mul__(self, *args, **kwargs)
+            elif attr == '__add__':
+                gp_response = cls.__add__(self, *args, **kwargs)
+            elif attr == '__sub__':
+                gp_response = cls.__sub__(self, *args, **kwargs)
+            elif attr == 'sum':
+                gp_response = cls.sum(self, *args, **kwargs)
+            elif attr == 'cumsum':
+                gp_response = cls.sum(self, *args, **kwargs)
+            elif attr == 'mm':
+                gp_response = cls.mm(self, *args, **kwargs)
+            elif attr == "set_":
+                gp_response = cls.set_(self, *args, **kwargs)
+                return gp_response
+            else:
+                gp_response = getattr(self.child, attr)(*args, **kwargs)
+
+            if torch_utils.is_variable(gp_response.child.torch_type):
+                var_data_type = gp_response.child.data.torch_type
+                variable = sy.Variable(torch.guard[var_data_type]())
+                variable.init_grad_()
+                mpc_node = type(self)(gp_response)
+                mpc_node.data = type(self)(gp_response.data)
+                mpc_node.grad = type(self)(gp_response.grad)
+                mpc_node.grad.data = type(self)(gp_response.grad.data)
+                mpc_node.grad.data.child.child = None # FIXME: is it necessary?
+                torch_utils.bind_var_like_objects(variable, mpc_node, grad=True)
+                return variable
+            else:
+                response = type(self)(gp_response).wrap(True)
+                return response
+
         else:
-            response = type(self)(gp_response).wrap(True)
-            return response
+
+            if(attr == "torch.cat"):
+                args = torch_utils.get_child_command(args)[0]
+                kwargs = torch_utils.get_child_command(kwargs)[0]
+                response = torch.cat(*args, **kwargs)
+                return cls(response, torch_type="syft.LongTensor")
 
     def send(self, *workers):
         assert len(workers) > 0, "Please provide workers to receive the data"
@@ -1931,7 +1954,32 @@ class _TorchObject(object):
                 return self.native___eq__(*args, **kwargs)
 
     def argmax(self):
-        return self.child.argmax()
+        if(hasattr(self.child, 'argmax')):
+            return self.child.argmax()
+        else:
+            return self.very_slow_argmax()
+
+    def very_slow_argmax(self):
+        # there are a TON of things about this that are stupidly slow
+        # but unfortunately there are bugs elsewhere that I don't have
+        # time to fix. TODO: optimize the crap out of this
+
+        my_shape = list(self.get_shape())
+        assert len(my_shape) == 2
+
+        max_vals = self[:, 0:1]
+        for i in range(1, my_shape[1]):
+            new_vals = self[:, i:i + 1]
+            gate = (max_vals > new_vals).float()
+            left = (gate * max_vals)
+
+            gate = (max_vals < new_vals).float()
+            right = gate * new_vals
+            max_vals = left + right
+
+        max_vals = max_vals.expand(my_shape)
+        out = ((max_vals >= self) * (max_vals <= self)).float()
+        return out
 
     def get_shape(self):
         return self.child.get_shape()
@@ -2018,7 +2066,7 @@ class _TorchObject(object):
         return spdz.encode(self)
 
     def fix_precision(self,
-                      field=2**31-1,
+                      field=(2**31)-1,
                       base=10,
                       precision_fractional=3,
                       already_encoded=False):

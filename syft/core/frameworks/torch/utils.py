@@ -314,6 +314,26 @@ def split_to_pointer_commands(syft_command):
                     # < end
             for worker_id, pointer in arg.pointer_tensor_dict.items():
                 syft_commands[worker_id]['args'].append(pointer)
+        elif isinstance(arg, list) and isinstance(arg[0], sy._GeneralizedPointerTensor):
+            # this logic is supposed to handle hierarchical lists of generalizedpointertensors
+            # with somewhat tested support for torch.cat
+            if len(syft_commands) == 0:
+                for worker_id, pointer in arg[0].pointer_tensor_dict.items():
+                    # Init phase >
+                    syft_commands[worker_id] = copy.deepcopy(base_command)
+                    worker_ids.append(worker_id)
+
+            arg_lists = {}
+            for worker_id, pointer in arg[0].pointer_tensor_dict.items():
+                arg_lists[worker_id] = list()
+
+            for _arg in arg:
+                for worker_id, pointer in _arg.pointer_tensor_dict.items():
+                    arg_lists[worker_id].append(pointer)
+
+            for worker_id, arg_list in arg_lists.items():
+                syft_commands[worker_id]['args'].append(arg_list)
+
         elif isinstance(arg, (list, set, tuple)):
             if(len(syft_commands) == 0):
                 base_command['args'] = arg
