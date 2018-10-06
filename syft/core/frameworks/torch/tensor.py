@@ -1957,29 +1957,7 @@ class _TorchObject(object):
         if(hasattr(self.child, 'argmax')):
             return self.child.argmax()
         else:
-            return self.very_slow_argmax()
-
-    def very_slow_argmax(self):
-        # there are a TON of things about this that are stupidly slow
-        # but unfortunately there are bugs elsewhere that I don't have
-        # time to fix. TODO: optimize the crap out of this
-
-        my_shape = list(self.get_shape())
-        assert len(my_shape) == 2
-
-        max_vals = self[:, 0:1]
-        for i in range(1, my_shape[1]):
-            new_vals = self[:, i:i + 1]
-            gate = (max_vals > new_vals).float()
-            left = (gate * max_vals)
-
-            gate = (max_vals < new_vals).float()
-            right = gate * new_vals
-            max_vals = left + right
-
-        max_vals = max_vals.expand(my_shape)
-        out = ((max_vals >= self) * (max_vals <= self)).float()
-        return out
+            return (self.max() == self).float()
 
     def get_shape(self):
         return self.child.get_shape()
