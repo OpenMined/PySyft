@@ -1111,6 +1111,9 @@ class _FixedPrecisionTensor(_SyftTensor):
                     self.child = sy.LongTensor()
                 self.child.child = chain_tail
 
+    def get_shape(self):
+        return self.child.get_shape()
+
     def ser(self, private, as_dict=True):
 
         data = {
@@ -1295,7 +1298,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                 return x % m
 
         if isinstance(other, sy._FixedPrecisionTensor):
-
+            # print("is a fixed precision tensor")
             result_precision_fractional = max(self.precision_fractional, other.precision_fractional)
             result_precision_integral = self.precision_integral
             result_precision = result_precision_fractional + result_precision_integral
@@ -1303,8 +1306,9 @@ class _FixedPrecisionTensor(_SyftTensor):
 
             if result_precision_fractional > 0:
                 tail_node = torch_utils.find_tail_of_chain(torch_tensorvar)
+                # print("result_precision_fractional > 0")
                 if isinstance(tail_node, sy._GeneralizedPointerTensor):
-
+                    # print("truncating MPC")
                     if(isinstance(torch_tensorvar, sy.Variable)):
                         a = torch_tensorvar.data
                     else:
