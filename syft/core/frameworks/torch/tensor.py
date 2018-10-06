@@ -1307,7 +1307,7 @@ class _FixedPrecisionTensor(_SyftTensor):
             if result_precision_fractional > 0:
                 tail_node = torch_utils.find_tail_of_chain(torch_tensorvar)
                 if isinstance(tail_node, sy._GeneralizedPointerTensor):
-
+                    print("truncating MPC")
                     if(isinstance(torch_tensorvar, sy.Variable)):
                         a = torch_tensorvar.data
                     else:
