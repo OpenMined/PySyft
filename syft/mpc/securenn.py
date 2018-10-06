@@ -18,7 +18,7 @@ def decompose(tensor):
         powers = powers.unsqueeze(0)
     tensor = tensor.unsqueeze(-1)
     moduli = 2 ** powers
-    tensor = ((tensor + 2 ** (Q_BITS)) / moduli.type_as(tensor)) % 2
+    tensor = torch.fmod(((tensor + 2 ** (Q_BITS)) / moduli.type_as(tensor)), 2)
     return tensor
 
 
@@ -35,9 +35,11 @@ def private_compare(x, r, BETA, j, alice, bob):
 
     l = Q_BITS
 
-    t = (r + 1) % 2 ** l
+    # t = torch.fmod((r + 1), 2 ** l)
+    t = torch.fmod((r + 1), field)
 
-    R_MASK = (r == ((2 ** l) - 1)).long()
+    # R_MASK = (r == ((2 ** l) - 1)).long()
+    R_MASK = (r == (field - 1)).long()
 
     x = x.child.child
     r = decompose(r)
