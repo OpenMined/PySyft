@@ -1111,6 +1111,9 @@ class _FixedPrecisionTensor(_SyftTensor):
                     self.child = sy.LongTensor()
                 self.child.child = chain_tail
 
+    def get_shape(self):
+        return self.child.get_shape()
+
     def ser(self, private, as_dict=True):
 
         data = {
