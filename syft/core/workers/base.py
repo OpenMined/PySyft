@@ -377,7 +377,7 @@ class BaseWorker(ABC):
                 # if the object is a variable, we have to make special
                 # considerations to ensure that the data and grad are all
                 # properly deregistered
-                if torch_utils.is_variable(object.torch_type):
+                if torch_utils.is_variable_name(object.torch_type):
                     syft_data_object = tensorvar.data.child
                     self.de_register(syft_data_object)
                     if tensorvar.grad is not None:
@@ -530,6 +530,8 @@ class BaseWorker(ABC):
         # add worker to the list of known workers
         # it's just a mapping from ID->object
         self._known_workers[worker.id] = worker
+
+        self._pointers[worker.id] =  {}
 
     def add_workers(self, workers):
 
@@ -962,10 +964,8 @@ class BaseWorker(ABC):
 
         # if this is none - then it means that self_ is not a torch wrapper
         # and we need to execute one level higher TODO: not ok for complex args
-        #start_time = time.time()
         if self_ is not None and self_.child is None:
                 new_args = [arg.wrap(True) for arg in args]
-                #torch.execute_call_timer += time.time() - start_time
                 return self._execute_call(attr, self_.wrap(True), *new_args, **kwargs)
 
         # Distinguish between a command with torch tensors (like when called by the client,
@@ -1009,9 +1009,7 @@ class BaseWorker(ABC):
         # and because having Virtual workers creates even more ambiguity, we specify the worker
         # performing the operation
 
-        #torch.execute_call_timer += time.time() - start_time
         result = child_type.handle_call(syft_command, owner=self)
-        #start_time = time.time()
 
         torch_utils.enforce_owner((raw_command, result), self)
 
@@ -1025,11 +1023,9 @@ class BaseWorker(ABC):
                     wrapper = torch_utils.wrap_command_with(result, raw_command['self'])
             else:
                 wrapper = torch_utils.wrap_command(result)
-            #torch.execute_call_timer += time.time() - start_time
             return wrapper
         else:
             # We don't need to wrap
-            #torch.execute_call_timer += time.time() - start_time
             return result
 
     def send_obj(self, object, new_id, recipient, new_data_id=None, new_grad_id=None, new_grad_data_id=None):
@@ -1048,7 +1044,7 @@ class BaseWorker(ABC):
         if(hasattr(object, 'child')):
             object.child.id = new_id
 
-            if torch_utils.is_variable(object.child.torch_type):
+            if torch_utils.is_variable_name(object.child.torch_type):
                 if new_data_id is None or new_grad_id is None or new_grad_data_id is None:
                     raise AttributeError(
                         'Please provide the new_data_id, new_grad_id, and new_grad_data_id args, to be able to point to' +

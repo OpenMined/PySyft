@@ -39,7 +39,7 @@ def get_child_command(obj, child_types=[]):
     :return:
     """
     # Torch tensor or variable, or sy._SyftTensor
-    if (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)) and not isinstance(obj, str):
+    if not isinstance(obj, str) and (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)):
         obj_type = type(obj.child)
         # We identify Parameter type with Variable type since they are quite close
         # TODO: What are the risks due to this assimilation? (see usage @ torch/utils.py l.74)
@@ -706,24 +706,15 @@ def define_enums():
     torch.encoded_types = encoded_types
 
     # Add an enum for syft tensor
-    syft_tensor_codes = IntEnum(
-        'DynamicEnum',
-        torch.syft_tensor_name
-    )
+    syft_tensor_codes = set([normal_types[syft_tensor] for syft_tensor in torch.syft_tensor_name])
     torch.syft_tensor_codes = syft_tensor_codes
 
     # Add an enum for tensor
-    tensor_codes = IntEnum(
-        'DynamicEnum',
-        torch.tensor_type_names
-    )
+    tensor_codes = set([normal_types[tensor] for tensor in torch.tensor_type_names])
     torch.tensor_codes = tensor_codes
 
     # Add an enum for variable
-    var_codes = IntEnum(
-        'DynamicEnum',
-        torch.var_type_names
-    )
+    var_codes = set([normal_types[variable] for variable in torch.var_type_names])
     torch.var_codes = var_codes
 
 
@@ -739,33 +730,36 @@ def is_syft_tensor(obj):
     Determines whether the arg is a subclass of a SyftTensor
     or is the name of a subclass of a SyftTensor
     """
-    if isinstance(obj, str):
-        try:
-            _ = torch.syft_tensor_codes[obj]
-            return True
-        except KeyError:
-            return False
-    else:
-        if issubclass(obj.__class__, sy._SyftTensor):
-            return True
-    return False
+    return issubclass(type(obj), sy._SyftTensor)
+
+def is_syft_tensor_name(obj):
+    """
+    Determines whether the arg is a subclass of a SyftTensor
+    or is the name of a subclass of a SyftTensor
+    """
+    try:
+        type_code = torch.type_codes[obj]
+        return type_code in torch.syft_tensor_codes
+    except KeyError:
+        return False
 
 
 def is_tensor(obj):
     """
     Determines whether the arg is a subclass of a Torch Tensor
-    or is the name of a subclass of a Torch Tensor
     """
-    if isinstance(obj, str):
-        try:
-            _ = torch.tensor_codes[obj]
-            return True
-        except KeyError:
-            return False
-    else:
-        if isinstance(obj, tuple(torch.tensor_types)):
-            return True
-    return False
+    return isinstance(obj, tuple(torch.tensor_types))
+
+
+def is_tensor_name(name):
+    """
+    Determines whether the arg is the name of a subclass of a Torch Tensor
+    """
+    try:
+        type_code = torch.type_codes[name]
+        return type_code in torch.tensor_codes
+    except KeyError:
+        return False
 
 
 def is_variable(obj):
@@ -773,15 +767,17 @@ def is_variable(obj):
     Determines whether the arg is a Variable
     or is the (part of the) name of a class Variable
     """
-    if isinstance(obj, str):
-        try:
-            _ = torch.var_codes[obj]
-            return True
-        except KeyError:
-            return False
-    else:
-        if isinstance(obj, tuple(torch.var_types)):
-            return True
-    return False
+    return isinstance(obj, tuple(torch.var_types))
+
+
+def is_variable_name(obj):
+    """
+    Determines whether the arg is the (part of the) name of a class Variable
+    """
+    try:
+        type_code = torch.type_codes[obj]
+        return type_code in torch.var_codes
+    except KeyError:
+        return False
 
 

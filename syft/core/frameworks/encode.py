@@ -17,6 +17,18 @@ from syft.core.frameworks.torch import utils as torch_utils
 from .numpy import array, array_ptr
 
 
+serialized_keys = {}
+
+
+def get_serialized_key(obj):
+    type_name = type(obj).__name__
+    try:
+        return serialized_keys[type_name]
+    except KeyError:
+        serialized_keys[type_name] = '__' + type_name + '__'
+        return serialized_keys[type_name]
+
+
 def encode(message, retrieve_pointers=False, private_local=True):
     """
     Help function to call the PythonEncoder
@@ -27,13 +39,10 @@ def encode(message, retrieve_pointers=False, private_local=True):
     :return: The message encoded in a json-able dict
     """
 
-    # start_time = time.time()
-
     encoder = PythonEncoder()
     response = encoder.encode(message,
                               retrieve_pointers=retrieve_pointers,
                               private_local=private_local)
-    # torch.encode_timer += time.time() - start_time
     return response
 
 
@@ -61,7 +70,7 @@ class PythonEncoder:
         self.retrieve_pointers = False
         self.found_pointers = []
         self.found_next_child_types = []
-        self.tensorvar_types = tuple(torch.tensorvar_types)
+        self.tensorvar_types = torch.tensor_types_tuple
 
     def encode(self, obj, retrieve_pointers=False, private_local=True):
         """
@@ -79,14 +88,15 @@ class PythonEncoder:
         else:  # If it's public, you can acquire the data directly
             serialized_msg['mode'] = 'acquire'
 
-        response = [serialized_msg]
         if self.retrieve_pointers:
-            response.append(self.found_pointers)
+            response = (serialized_msg, self.found_pointers)
+        else:
+            response = (serialized_msg, )
 
         if len(response) == 1:
             return response[0]
         else:
-            return tuple(response)
+            return response
 
     def python_encode(self, obj, private_local):
         # Case of basic types
@@ -102,15 +112,18 @@ class PythonEncoder:
                 k: self.python_encode(v, private_local)
                 for k, v in obj.items()
             }
-        # Tensors and Variable encoded with their id
-        elif torch_utils.is_tensor(obj) or torch_utils.is_variable(obj):
+        # Variable
+        elif torch_utils.is_variable(obj):
             tail_object = torch_utils.find_tail_of_chain(obj)
             if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
                 self.found_pointers.append(tail_object)
-            if torch_utils.is_variable(obj):
-                return obj.ser(private=private_local, is_head=True)
-            else:
-                return obj.ser(private=private_local)
+            return obj.ser(private=private_local, is_head=True)
+        # Tensors
+        elif torch_utils.is_tensor(obj):
+            tail_object = torch_utils.find_tail_of_chain(obj)
+            if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
+                self.found_pointers.append(tail_object)
+            return obj.ser(private=private_local)
         # sy._SyftTensor (Pointer, Local)
         # [Note: shouldn't be called on regular chain with end=tensorvar]
         elif torch_utils.is_syft_tensor(obj):
@@ -126,11 +139,11 @@ class PythonEncoder:
             return obj.ser(private=private_local, to_json=False)
         # Iterables non json-serializable
         elif isinstance(obj, (tuple, set, bytearray, range)):
-            key = '__' + type(obj).__name__ + '__'
+            key = get_serialized_key(obj)
             return {key: [self.python_encode(i, private_local) for i in obj]}
         # Slice
         elif isinstance(obj, slice):
-            key = '__' + type(obj).__name__ + '__'
+            key = get_serialized_key(obj)
             return {key: {'args': [obj.start, obj.stop, obj.step]}}
         # Generator
         elif isinstance(obj, types.GeneratorType):
@@ -163,7 +176,6 @@ def decode(message, worker, acquire=None, message_is_dict=False):
     :param message_is_dict: Is the message a dictionary already or a JSON string needing decoding?
     :return: The message decoded
     """
-    # start_time = time.time()
 
     decoder = PythonJSONDecoder(worker=worker, acquire=acquire)
 
@@ -176,7 +188,6 @@ def decode(message, worker, acquire=None, message_is_dict=False):
     # we want to decode everything of the message
     if acquire is not None:
         r = decoder.python_decode(message)
-        # torch.encode_timer += time.time() - start_time
         return r
 
     # TODO It would be good to have a standardized place to put the 'mode' argument
@@ -196,7 +207,6 @@ def decode(message, worker, acquire=None, message_is_dict=False):
     else:
         dict_message = message
 
-    # torch.encode_timer += time.time() - start_time
     return dict_message
 
 
@@ -220,7 +230,7 @@ class PythonJSONDecoder:
 
     def __init__(self, worker, acquire=False):
         self.worker = worker
-        self.tensor_types = tuple(torch.tensor_types)
+        self.tensor_types = torch.tensor_types_tuple
         self.acquire = acquire
 
     def python_decode(self, dct):
@@ -279,13 +289,13 @@ class PythonJSONDecoder:
             if type_code != -1:
                 obj_type = type_code.name
                 # Case of a tensor
-                if torch_utils.is_tensor(obj_type):
+                if type_code in torch.tensor_codes:
                     return torch.guard[obj_type].deser(obj_type, obj, self.worker, self.acquire)
                 # Case of a Variable
-                elif torch_utils.is_variable(obj_type):
+                elif type_code in torch.var_codes:
                     return sy.Variable.deser(obj_type, obj, self.worker, self.acquire, is_head=True)
                 # Case of a Syft tensor
-                elif torch_utils.is_syft_tensor(obj_type):
+                elif type_code in torch.syft_tensor_codes:
                     return sy._SyftTensor.deser_routing(obj_type, obj, self.worker, self.acquire)
                 # Case of a iter type non json serializable
                 elif type_code in (type_codes.tuple, type_codes.set, type_codes.bytearray, type_codes.range):

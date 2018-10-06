@@ -111,6 +111,8 @@ class TorchHook(object):
             self._hook_backward()
             self._hook_module()
 
+            torch.eval_torch_modules()
+
             sy.local_worker = self.local_worker
 
     def _hook_native_tensors_and_variables(self, tensor_type):
