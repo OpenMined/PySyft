@@ -1,6 +1,7 @@
 """Torch static utility functions."""
 import json
 import re
+from enum import IntEnum
 import types
 import functools
 import numpy as np
@@ -38,7 +39,7 @@ def get_child_command(obj, child_types=[]):
     :return:
     """
     # Torch tensor or variable, or sy._SyftTensor
-    if (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)) and not isinstance(obj, str):
+    if not isinstance(obj, str) and (is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)):
         obj_type = type(obj.child)
         # We identify Parameter type with Variable type since they are quite close
         # TODO: What are the risks due to this assimilation? (see usage @ torch/utils.py l.74)
@@ -207,7 +208,7 @@ def wrap_command(obj):
     elif isinstance(obj, dict):
         return {k: wrap_command(o) for k, o in obj.items()}
     else:
-        print('The following type wasnt wrapped:', str(type(obj)))
+        # print('The following type wasnt wrapped:', str(type(obj)))
         return obj
 
 
@@ -313,8 +314,33 @@ def split_to_pointer_commands(syft_command):
                     # < end
             for worker_id, pointer in arg.pointer_tensor_dict.items():
                 syft_commands[worker_id]['args'].append(pointer)
+        elif isinstance(arg, list) and isinstance(arg[0], sy._GeneralizedPointerTensor):
+            # this logic is supposed to handle hierarchical lists of generalizedpointertensors
+            # with somewhat tested support for torch.cat
+            if len(syft_commands) == 0:
+                for worker_id, pointer in arg[0].pointer_tensor_dict.items():
+                    # Init phase >
+                    syft_commands[worker_id] = copy.deepcopy(base_command)
+                    worker_ids.append(worker_id)
+
+            arg_lists = {}
+            for worker_id, pointer in arg[0].pointer_tensor_dict.items():
+                arg_lists[worker_id] = list()
+
+            for _arg in arg:
+                for worker_id, pointer in _arg.pointer_tensor_dict.items():
+                    arg_lists[worker_id].append(pointer)
+
+            for worker_id, arg_list in arg_lists.items():
+                syft_commands[worker_id]['args'].append(arg_list)
+
         elif isinstance(arg, (list, set, tuple)):
-            raise NotImplementedError('Cant deal with nested args on Generalizd Pointers')
+            if(len(syft_commands) == 0):
+                base_command['args'] = arg
+            else:
+                for worker_id in worker_ids:
+                    syft_commands[worker_id]['args'].append(arg)
+            # raise NotImplementedError('Cant deal with nested args on Generalizd Pointers')
         else:
             if len(syft_commands) == 0:
                 base_command['args'].append(arg)
@@ -654,32 +680,86 @@ def is_tensor_empty(obj):
     return obj.dim() == 0
 
 
+def define_enums():
+    """
+    Define int encoding of usual string for fast type comparison
+    """
+    # A global binding binding encoded types and integers
+    supported_types = \
+        ['worker'] + \
+        ['tuple', 'set', 'bytearray', 'range'] + \
+        ['slice'] + \
+        torch.tensor_type_names + \
+        torch.var_type_names + \
+        torch.syft_tensor_name
+
+    normal_types = IntEnum(
+        'DynamicEnum',
+        supported_types
+    )
+    torch.type_codes = normal_types
+
+    # Add a conversion dictionary to remove __**__
+    encoded_types = {
+        '__' + t + '__': t for t in supported_types
+    }
+    torch.encoded_types = encoded_types
+
+    # Add an enum for syft tensor
+    syft_tensor_codes = set([normal_types[syft_tensor] for syft_tensor in torch.syft_tensor_name])
+    torch.syft_tensor_codes = syft_tensor_codes
+
+    # Add an enum for tensor
+    tensor_codes = set([normal_types[tensor] for tensor in torch.tensor_type_names])
+    torch.tensor_codes = tensor_codes
+
+    # Add an enum for variable
+    var_codes = set([normal_types[variable] for variable in torch.var_type_names])
+    torch.var_codes = var_codes
+
+
+def type_code(type_name):
+    try:
+        return torch.type_codes[torch.encoded_types[type_name]]
+    except KeyError:
+        return -1
+
+
 def is_syft_tensor(obj):
     """
     Determines whether the arg is a subclass of a SyftTensor
     or is the name of a subclass of a SyftTensor
     """
-    if isinstance(obj, str):
-        if obj in map(lambda x: x.__name__, sy._SyftTensor.__subclasses__()):
-            return True
-    else:
-        if issubclass(obj.__class__, sy._SyftTensor):
-            return True
-    return False
+    return issubclass(type(obj), sy._SyftTensor)
+
+def is_syft_tensor_name(obj):
+    """
+    Determines whether the arg is a subclass of a SyftTensor
+    or is the name of a subclass of a SyftTensor
+    """
+    try:
+        type_code = torch.type_codes[obj]
+        return type_code in torch.syft_tensor_codes
+    except KeyError:
+        return False
 
 
 def is_tensor(obj):
     """
     Determines whether the arg is a subclass of a Torch Tensor
-    or is the name of a subclass of a Torch Tensor
     """
-    if isinstance(obj, str):
-        if obj in map(lambda x: x.__name__, torch.tensor_types):
-            return True
-    else:
-        if isinstance(obj, tuple(torch.tensor_types)):
-            return True
-    return False
+    return isinstance(obj, tuple(torch.tensor_types))
+
+
+def is_tensor_name(name):
+    """
+    Determines whether the arg is the name of a subclass of a Torch Tensor
+    """
+    try:
+        type_code = torch.type_codes[name]
+        return type_code in torch.tensor_codes
+    except KeyError:
+        return False
 
 
 def is_variable(obj):
@@ -687,13 +767,17 @@ def is_variable(obj):
     Determines whether the arg is a Variable
     or is the (part of the) name of a class Variable
     """
-    if isinstance(obj, str):
-        if obj in list(map(lambda x: x.__name__, torch.var_types)) + ['syft.Variable',
-                                                                      'syft.Parameter']:
-            return True
-    else:
-        if isinstance(obj, tuple(torch.var_types)):
-            return True
-    return False
+    return isinstance(obj, tuple(torch.var_types))
+
+
+def is_variable_name(obj):
+    """
+    Determines whether the arg is the (part of the) name of a class Variable
+    """
+    try:
+        type_code = torch.type_codes[obj]
+        return type_code in torch.var_codes
+    except KeyError:
+        return False
 
 

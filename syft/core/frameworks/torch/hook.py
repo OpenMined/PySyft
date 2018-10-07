@@ -69,6 +69,9 @@ class TorchHook(object):
     def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
         self.local_worker = local_worker
 
+        torch.syft_tensor_name = [x.__name__ for x in sy._SyftTensor.__subclasses__()]
+        torch_utils.define_enums()
+
         if not hasattr(torch, 'torch_hooked'):
             torch.torch_hooked = 0
         else:
@@ -108,6 +111,8 @@ class TorchHook(object):
             self._hook_backward()
             self._hook_module()
 
+            torch.eval_torch_modules()
+
             sy.local_worker = self.local_worker
 
     def _hook_native_tensors_and_variables(self, tensor_type):
@@ -118,8 +123,7 @@ class TorchHook(object):
 
         self._hook_properties(tensor_type)
 
-        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
-            tensor_type)
+        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(tensor_type)
 
         self._rename_native_functions(tensor_type)
 
@@ -134,6 +138,7 @@ class TorchHook(object):
         self._hook_SyftTensor(tensor_type)
 
         self._hook_PointerTensor(tensor_type)
+
         self._hook_GeneralizedPointerTensor(tensor_type)
 
 
@@ -304,16 +309,11 @@ class TorchHook(object):
                    '__dir__',
                    '__doc__',
                    '__dict__',
-                   '__eq__',
                    '__format__',
-                   '__ge__',
                    '__getattribute__',
-                   '__gt__',
                    '__hash__',
                    '__init__',
                    '__init_subclass__',
-                   '__le__',
-                   '__lt__',
                    '__weakref__',
                    '__ne__',
                    '__new__',
@@ -401,6 +401,7 @@ class TorchHook(object):
             # if attr not in dir(_PointerTensor) or getattr(_PointerTensor, attr) is None:
 
             setattr(_PointerTensor, attr, self._get_overloaded_method(attr))
+
     def _hook_GeneralizedPointerTensor(self, tensor_type):
 
         for attr in self.to_auto_overload[tensor_type]:
@@ -560,6 +561,8 @@ class TorchHook(object):
             for p in self.parameters():
                 p.send(dest)
 
+            return self
+
         torch.nn.Module.send = module_send_
 
         def module_get_(self):
@@ -568,5 +571,17 @@ class TorchHook(object):
                 p.get()
 
         torch.nn.Module.get = module_get_
+
+        def module_fix_precision_(self):
+            """Overloads fix_precision for torch.nn.Module"""
+            if module_is_missing_grad(self):
+                create_grad_objects(self)
+
+            for p in self.parameters():
+                p.fix_precision_()
+
+            return self
+
+        torch.nn.Module.fix_precision = module_fix_precision_
 
 

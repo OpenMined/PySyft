@@ -6,6 +6,7 @@ from unittest import TestCase
 
 import random
 import syft as sy
+import numpy as np
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks import encode
@@ -16,6 +17,7 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import Variable as Var
 import json
+import msgpack
 
 bob = None
 alice = None
@@ -61,7 +63,7 @@ def setUpModule():
 
     display_chain.tensor.fixp_local = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor'
 
-    display_chain.tensor.fixp_mpc_gpt = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _SPDZTensor > LongTensor > _GeneralizedPointerTensor'
+    display_chain.tensor.fixp_mpc_gpt = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor'
 
     display_chain.var.local = 'Variable > _LocalTensor\n' \
                               ' - FloatTensor > _LocalTensor\n' \
@@ -78,10 +80,10 @@ def setUpModule():
                                    ' - - Variable > _FixedPrecisionTensor > Variable > _LocalTensor\n' \
                                    '   - FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor'
 
-    display_chain.var.fixp_mpc_gpt = 'Variable > _FixedPrecisionTensor > Variable > _SPDZTensor > Variable > _GeneralizedPointerTensor\n' \
-                                     ' - FloatTensor > _FixedPrecisionTensor > LongTensor > _SPDZTensor > LongTensor > _GeneralizedPointerTensor\n' \
-                                     ' - - Variable > _FixedPrecisionTensor > Variable > _SPDZTensor > Variable > _GeneralizedPointerTensor\n' \
-                                     '   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SPDZTensor > LongTensor > _LocalTensor'
+    display_chain.var.fixp_mpc_gpt = 'Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n' \
+                                     ' - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor\n' \
+                                     ' - - Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n' \
+                                     '   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _LocalTensor'
 
 
 class TestChainTensor(TestCase):
@@ -667,10 +669,10 @@ class TestTorchVariable(TestCase):
         x.send(bob)
         obj = [None, ({'marcel': (1, [1.3], x), 'proust': slice(0, 2, None)}, 3)]
         enc, t = encode.encode(obj)
-        enc = json.dumps(enc)
+        enc = msgpack.packb(enc, use_bin_type=True)
         dec1 = encode.decode(enc, me)
         enc, t = encode.encode(dec1)
-        enc = json.dumps(enc)
+        enc = msgpack.packb(enc, use_bin_type=True)
         dec2 = encode.decode(enc, me)
         assert dec1 == dec2
 
@@ -997,6 +999,17 @@ class TestTorchVariable(TestCase):
         z = torch.ge(x, y)
         assert (torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1]))))
 
+class TestSNNTensor(TestCase):
+
+    def test_mpc_relu(self):
+        a = (torch.LongTensor([-1, 3, -5, 7])).share(alice, bob)
+        b = a.relu()
+        assert (b.get() == torch.LongTensor([0, 3, 0, 7])).all()
+
+    def test_mpc_argmax(self):
+        x = (torch.FloatTensor([[0.1, 0.2, 0.4, 0.3], [0.9, 0, 0, 0.1]])).fix_precision().share(alice, bob)
+        out = x.argmax()
+        assert (out.get().decode() == torch.FloatTensor([[0, 0, 1, 0], [1, 0, 0, 0]])).all()
 
 class TestSPDZTensor(TestCase):
 
@@ -1168,6 +1181,140 @@ class TestSPDZTensor(TestCase):
 
         assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
 
+    def test_fix_precision_mul(self):
+        x = torch.FloatTensor([1, 2, 0.4])
+        y = torch.FloatTensor([1, 1, 2])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=3)
+        z = x * y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([1, 2, 0.8])).all()
+
+        # with different precision fractions x's > y's
+        x = torch.FloatTensor([1, 2, 0.4])
+        y = torch.FloatTensor([1, 1, 2])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=4)
+        z = x * y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([1, 2, 0.8])).all()
+
+        # with different precision fractions x's < y's
+        x = torch.FloatTensor([1, 2, 0.4])
+        y = torch.FloatTensor([1, 1, 2])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=2)
+        z = x * y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([1, 2, 0.8])).all()
+
+
+
+    def test_fix_precision_add(self):
+        x = torch.FloatTensor([[1, 0.2], [0.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision()
+        y = y.fix_precision()
+        z = x + y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1.8, 1.2], [1.9, 14]])).all()
+
+        # with different precision fractions x's > y's
+        x = torch.FloatTensor([[1, 0.2], [0.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        y = y.fix_precision(precision_fractional=3)
+        z = x + y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1.8, 1.2], [1.9, 14]])).all()
+
+        # with different precision fractions x's < y's
+        x = torch.FloatTensor([[1, 0.2], [0.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=4)
+        z = x + y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1.8, 1.2], [1.9, 14]])).all()
+
+    def test_fix_precision_sub(self):
+        x = torch.FloatTensor([[1, 1.2], [1.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision()
+        y = y.fix_precision()
+        z = x - y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[0.2, .2], [.9, 8]])).all()
+
+        # with different precision fractions x's > y's
+        x = torch.FloatTensor([[1, 1.2], [1.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        y = y.fix_precision(precision_fractional=3)
+        z = x - y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[0.2, .2], [.9, 8]])).all()
+
+        # with different precision fractions x's < y's
+        x = torch.FloatTensor([[1, 1.2], [1.9, 11]])
+        y = torch.FloatTensor([[0.8, 1], [1, 3]])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=4)
+        z = x - y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[0.2, .2], [.9, 8]])).all()
+
+    def test_fix_precision_div(self):
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision()
+        y = y.fix_precision()
+        z = x / y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1.2500, 3], [1.9, 4]])).all()
+
+        # with different precision fractions x's > y's
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        y = y.fix_precision(precision_fractional=3)
+        z = x / y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1.2000, 3], [1.9, 4]])).all()
+
+        # with different precision fractions x's < y's
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=3)
+        y = y.fix_precision(precision_fractional=4)
+        z = x / y
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1.2500, 3], [1.9, 4]])).all()
+
+    def test_fix_precision_sum(self):
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        z = x.sum(0)
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([2, 13])).all()
+
+    def test_fix_precision_cumsum(self):
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        z = x.cumsum(0)
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([[1, 1], [2, 13]])).all()
+
+    def test_fix_precision_prod(self):
+        x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
+        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
+        x = x.fix_precision(precision_fractional=4)
+        z = x.prod(0)
+        z = z.decode()
+        assert torch.eq(z, torch.FloatTensor([1, 14])).all()
+
     def test_var_fix_precision_decode(self):
         x = sy.Variable(torch.FloatTensor([0.1, 0.2, 0.1, 0.2]))
         x = x.fix_precision()
@@ -1309,6 +1456,292 @@ class TestSPDZTensor(TestCase):
         z = z.get().get().decode()
         assert torch.eq(z, sy.Variable(torch.FloatTensor([2.2, 4, 6]))).all()
 
+    def fix_precision_operation(self, l1, l2, var=False, op='plus'):
+        if var:
+            x = sy.Variable(torch.FloatTensor(l1))
+            y = sy.Variable(torch.FloatTensor(l2))
+        else:
+            x = torch.FloatTensor(l1)
+            y = torch.FloatTensor(l2)
+        x = x.fix_precision()
+        y = y.fix_precision()
+        if op == 'plus':
+            z = x + y
+            l_res = [e1 + e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'mul':
+            z = x * y
+            l_res = [e1 * e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'matmul':
+            z = x.mm(y)
+            l_res = np.dot(np.array(l1), np.array(l2)).tolist()
+        else:
+            raise ArithmeticError('Unknown operator')
+        z = z.decode()
+        if var:
+            assert torch.eq(z, sy.Variable(torch.FloatTensor(l_res))).all()
+        else:
+            assert torch.eq(z, torch.FloatTensor(l_res)).all()
+
+    def test_addition_fix_precision(self):
+        self.fix_precision_operation([3.3], [5.1])
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1])
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1])
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1])
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654])
+
+    def test_var_addition_fix_precision(self):
+        self.fix_precision_operation([3.3], [5.1], var=True)
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True)
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1], var=True)
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1], var=True)
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True)
+
+    def test_mult_fix_precision(self):
+        self.fix_precision_operation([3.3], [5.1], op='mul')
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], op='mul')
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1], op='mul')
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1], op='mul')
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], op='mul')
+
+    def test_var_mult_fix_precision(self):
+        self.fix_precision_operation([3.3], [5.1], var=True, op='mul')
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True, op='mul')
+
+    def test_matmul_fix_precision(self):
+        self.fix_precision_operation([[3.3, 2.1],
+                                      [1.1, 5.2]],
+                                     [[1, 2],
+                                      [3, 4]], op='matmul')
+        self.fix_precision_operation([[-3.3, -2.1],
+                                      [1.1,  5.2]],
+                                     [[1,  2],
+                                      [3, -4.8]], op='matmul')
+        self.fix_precision_operation([[1.1, -2.1],
+                                      [3.2, 8.1],
+                                      [3.0, -7]],
+                                     [[-3.3, -2.1],
+                                      [1.1, 5.2]], op='matmul')
+        self.fix_precision_operation([[-40.2, -20.1],
+                                      [100.7, 51.2]],
+                                     [[14.1, 21],
+                                      [30, -41.8]], op='matmul')
+
+    def test_var_matmul_fix_precision(self):
+        self.fix_precision_operation([[3.3, 2.1],
+                                      [1.1, 5.2]],
+                                     [[1, 2],
+                                      [3, 4]], var=True, op='matmul')
+        self.fix_precision_operation([[-3.3, -2.1],
+                                      [1.1, 5.2]],
+                                     [[1, 2],
+                                      [3, -4.8]], var=True, op='matmul')
+        self.fix_precision_operation([[1.1, -2.1],
+                                      [3.2, 8.1],
+                                      [3.0, -7]],
+                                     [[-3.3, -2.1],
+                                      [1.1, 5.2]], var=True, op='matmul')
+        self.fix_precision_operation([[-40.2, -20.1],
+                                      [100.7, 51.2]],
+                                     [[14.1, 21],
+                                      [30, -41.8]], var=True, op='matmul')
+
+    def remote_fix_precision_operation(self, l1, l2, var=False, op='plus'):
+        if var:
+            x = sy.Variable(torch.FloatTensor(l1))
+            y = sy.Variable(torch.FloatTensor(l2))
+        else:
+            x = torch.FloatTensor(l1)
+            y = torch.FloatTensor(l2)
+        x = x.send(bob).fix_precision()
+        y = y.send(bob).fix_precision()
+        if op == 'plus':
+            z = x + y
+            l_res = [e1 + e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'mul':
+            z = x * y
+            l_res = [e1 * e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'matmul':
+            z = x.mm(y)
+            l_res = np.dot(np.array(l1), np.array(l2)).tolist()
+        else:
+            raise ArithmeticError('Unknown operator')
+        z = z.get().decode()
+        if var:
+            assert torch.eq(z, sy.Variable(torch.FloatTensor(l_res))).all()
+        else:
+            assert torch.eq(z, torch.FloatTensor(l_res)).all()
+
+    def test_addition_remote_fix_precision(self):
+        self.remote_fix_precision_operation([3.3], [5.1])
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1])
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1])
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1])
+        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654])
+
+    def test_var_addition_remote_fix_precision(self):
+        self.remote_fix_precision_operation([3.3], [5.1], var=True)
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True)
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], var=True)
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], var=True)
+        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True)
+
+    def test_mult_remote_fix_precision(self):
+        self.remote_fix_precision_operation([3.3], [5.1], op='mul')
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], op='mul')
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], op='mul')
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], op='mul')
+        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], op='mul')
+
+    def test_var_mult_remote_fix_precision(self):
+        self.remote_fix_precision_operation([3.3], [5.1], var=True, op='mul')
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
+        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True, op='mul')
+
+    def test_matmul_remote_fix_precision(self):
+        self.remote_fix_precision_operation([[3.3, 2.1],
+                                             [1.1, 5.2]],
+                                            [[1, 2],
+                                             [3, 4]], op='matmul')
+        self.remote_fix_precision_operation([[-3.3, -2.1],
+                                             [1.1,  5.2]],
+                                            [[1,  2],
+                                             [3, -4.8]], op='matmul')
+        self.remote_fix_precision_operation([[1.1, -2.1],
+                                             [3.2, 8.1],
+                                             [3.0, -7]],
+                                            [[-3.3, -2.1],
+                                             [1.1, 5.2]], op='matmul')
+        self.remote_fix_precision_operation([[-40.2, -20.1],
+                                             [100.7, 51.2]],
+                                            [[14.1, 21],
+                                             [30, -41.8]], op='matmul')
+
+    def test_var_matmul_remote_fix_precision(self):
+        self.remote_fix_precision_operation([[3.3, 2.1],
+                                             [1.1, 5.2]],
+                                            [[1, 2],
+                                             [3, 4]], var=True, op='matmul')
+        self.remote_fix_precision_operation([[-3.3, -2.1],
+                                             [1.1, 5.2]],
+                                            [[1, 2],
+                                             [3, -4.8]], var=True, op='matmul')
+        self.remote_fix_precision_operation([[1.1, -2.1],
+                                             [3.2, 8.1],
+                                             [3.0, -7]],
+                                            [[-3.3, -2.1],
+                                             [1.1, 5.2]], var=True, op='matmul')
+        self.remote_fix_precision_operation([[-40.2, -20.1],
+                                             [100.7, 51.2]],
+                                            [[14.1, 21],
+                                             [30, -41.8]], var=True, op='matmul')
+
+    def remote_fix_precision_share_operation(self, l1, l2, var=False, op='plus'):
+        if var:
+            x = sy.Variable(torch.FloatTensor(l1))
+            y = sy.Variable(torch.FloatTensor(l2))
+        else:
+            x = torch.FloatTensor(l1)
+            y = torch.FloatTensor(l2)
+        x = x.send(bob).fix_precision().share(alice, bob)
+        y = y.send(bob).fix_precision().share(alice, bob)
+        if op == 'plus':
+            z = x + y
+            l_res = [e1 + e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'mul':
+            z = x * y
+            l_res = [e1 * e2 for e1, e2 in zip(l1, l2)]
+        elif op == 'matmul':
+            z = x.mm(y)
+            l_res = np.dot(np.array(l1), np.array(l2)).tolist()
+        else:
+            raise ArithmeticError('Unknown operator')
+        z = z.get().get().decode()
+        if var:
+            assert torch.eq(z, sy.Variable(torch.FloatTensor(l_res))).all()
+        else:
+            assert torch.eq(z, torch.FloatTensor(l_res)).all()
+
+    def test_addition_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1])
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1])
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1])
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1])
+        self.remote_fix_precision_share_operation([-190, 3.3], [-1.9, 174])
+
+    def test_var_addition_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1], var=True)
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], var=True)
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], var=True)
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], var=True)
+        self.remote_fix_precision_share_operation([-190, 3.3], [-1.9, 174], var=True)
+
+    def test_mult_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1], op='mul')
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], op='mul')
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], op='mul')
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], op='mul')
+
+        # available precision too small for this at the moment
+        # self.remote_fix_precision_share_operation([-190, 3.3], [-1.9, 174], op='mul')
+
+    def test_var_mult_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([3.3], [5.1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
+
+        # available precision too small for this at the moment
+        # self.remote_fix_precision_share_operation([-190, 3.3], [-1.9, 174], var=True, op='mul')
+
+    def test_matmul_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([[3.3, 2.1],
+                                                   [1.1, 5.2]],
+                                                  [[1, 2],
+                                                   [3, 4]], op='matmul')
+        self.remote_fix_precision_share_operation([[-3.3, -2.1],
+                                                   [1.1,  5.2]],
+                                                  [[1,  2],
+                                                   [3, -4.8]], op='matmul')
+        self.remote_fix_precision_share_operation([[1.1, -2.1],
+                                                   [3.2, 8.1],
+                                                   [3.0, -7]],
+                                                  [[-3.3, -2.1],
+                                                   [1.1, 5.2]], op='matmul')
+
+        # available precision too small for this at the moment
+
+        # self.remote_fix_precision_share_operation([[-40.2, -20.1],
+        #                                            [10.7, 21.2]],
+        #                                           [[14.1, 21],
+        #                                            [10, -11.8]], op='matmul')
+
+    def test_var_matmul_remote_fix_precision_share(self):
+        self.remote_fix_precision_share_operation([[3.3, 2.1],
+                                                   [1.1, 5.2]],
+                                                  [[1, 2],
+                                                   [3, 4]], var=True, op='matmul')
+        # self.remote_fix_precision_share_operation([[-3.3, -2.1],
+        #                                            [1.1, 5.2]],
+        #                                           [[1, 2],
+        #                                            [3, -4.8]], var=True, op='matmul')
+        # self.remote_fix_precision_share_operation([[1.1, -2.1],
+        #                                            [3.2, 8.1],
+        #                                            [3.0, -7]],
+        #                                           [[-3.3, -2.1],
+        #                                            [1.1, 5.2]], var=True, op='matmul')
+
+        # available precision too small for this at the moment
+
+        # self.remote_fix_precision_share_operation([[-40.2, -20.1],
+        #                                            [10.7, 21.2]],
+        #                                           [[14.1, 21],
+        #                                            [10, -11.8]], op='matmul')
+
 
 class TestGPCTensor(TestCase):
 
@@ -1343,7 +1776,7 @@ class TestGPCTensor(TestCase):
         results = y.get()
 
         assert (results[0] == (x.get() * 2)).all()
-    
+
     def test_gpc_workers(self):
         x = torch.LongTensor([1, 2, 3, 4, 5])
         y = torch.LongTensor([1, 2, 3, 4, 5])
@@ -1355,10 +1788,8 @@ class TestGPCTensor(TestCase):
         x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict)
 
         results = x_gp.workers()
-    
+
         assert(results == [k.id for k in x_pointer_tensor_dict.keys()])
-
-
 
 
 

@@ -1,4 +1,6 @@
 import json
+import msgpack
+import time
 import re
 import torch
 import random
@@ -9,6 +11,7 @@ from ... import utils
 import logging
 import numpy as np
 from syft.spdz import spdz
+from syft.mpc.securenn import relu, relu_deriv
 
 
 class _SyftTensor(object):
@@ -213,12 +216,13 @@ class _SyftTensor(object):
             data['child'] = self.child.ser(private, as_dict)
 
         if as_dict:
-            return {'__{}__'.format(self.__class__.__name__): data}
+            key = encode.get_serialized_key(self)
+            return {key: data}
         else:
-            return json.dumps({'__{}__'.format(self.__class__.__name__): data}) + "\n"
+            return msgpack.packb({key: data}, use_bin_type=True)
 
     @classmethod
-    def deser_routing(cls, dct, worker, acquire):
+    def deser_routing(cls, obj_type, obj, worker, acquire):
         """
         Method analysing the dict given to see which Syft Tensor should deserialized,
         and forwarding the call
@@ -226,17 +230,16 @@ class _SyftTensor(object):
         [Is this case note that the dct param is assumed to have a single key, which is
         compatible with our encode/decode process (ex: {'___PointerTensor__': {...} })]
         """
-        pat = re.compile('__(.+)__')
-        for key, obj in dct.items():  # A trick, we don't really loop
-            obj_type = pat.search(key).group(1)
-            if torch_utils.is_syft_tensor(obj_type):
-                if obj_type == '_LocalTensor':
-                    return sy._LocalTensor.deser(obj, worker, acquire)
-                elif obj_type == '_PointerTensor':
-                    return sy._PointerTensor.deser(obj, worker, acquire)
-                else:
-                    syft_type = torch.guard['syft.' + obj_type]
-                    return syft_type.deser(obj, worker, acquire)
+        syft_code = torch.type_codes[obj_type]
+        if syft_code == torch.type_codes._LocalTensor:
+            return sy._LocalTensor.deser(obj, worker, acquire)
+        elif syft_code == torch.type_codes._PointerTensor:
+            return sy._PointerTensor.deser(obj, worker, acquire)
+        else:
+            syft_type = torch.guard[obj_type]
+            return syft_type.deser(obj, worker, acquire)
+
+        raise Exception("could not deserialize an object sent to router\n"+str(dct))
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -253,7 +256,8 @@ class _SyftTensor(object):
                            skip_register=True
                            )
             if 'child' in msg_obj:
-                syft_child = cls.deser_routing(msg_obj['child'], worker, acquire)
+                child_type, child_obj = torch_utils.extract_type_and_obj(msg_obj['child'])
+                syft_child = cls.deser_routing(child_type, child_obj, worker, acquire)
                 syft_obj.child = syft_child
                 syft_child.parent = syft_obj
 
@@ -331,7 +335,7 @@ class _SyftTensor(object):
         syft_wrapper = cls(child=result, owner=owner)
         result.parent = syft_wrapper
 
-        if torch_utils.is_variable(result.torch_type):
+        if torch_utils.is_variable_name(result.torch_type):
             syft_response_data = cls(child=result.data, owner=owner)
             result.data.parent = syft_response_data
             syft_wrapper.data = syft_response_data
@@ -345,8 +349,8 @@ class _SyftTensor(object):
         State if a function name corresponds to a Syft Tensor method which
         overloads a torch method
         """
-        exclude = ['on', '__init__', 'native___init__', '__repr__', '__str__', 'create_pointer',
-                   'ser', 'deser', 'handle_call']
+        exclude = ('on', '__init__', 'native___init__', '__repr__', '__str__', 'create_pointer',
+                   'ser', 'deser', 'handle_call')
         if attr in exclude:
             return False
         if hasattr(getattr(cls, attr), '__module__') \
@@ -403,8 +407,6 @@ class _LocalTensor(_SyftTensor):
         """
         tensor_command, torch_type = torch_utils.prepare_child_command(syft_command,
                                                                        replace_tensorvar_with_child=True)
-        torch_utils.assert_has_only_torch_tensorvars(tensor_command)
-
         attr = tensor_command['command']
         args = tensor_command['args']
         kwargs = tensor_command['kwargs']
@@ -412,15 +414,11 @@ class _LocalTensor(_SyftTensor):
 
         if has_self:
             self = tensor_command['self']
-            attr = torch._command_guard(attr, torch.tensorvar_methods)
-            command = getattr(self, "native_" + attr)
+            native_attr = torch._command_guard(attr, 'tensorvar_methods', get_native=True)
+            command = getattr(self, native_attr)
         else:
-            attr = torch._command_guard(attr, torch.torch_modules)
-            elems = attr.split('.')
-            elems[-1] = 'native_' + elems[-1]
-            native_func_name = '.'.join(elems)
-            command = eval(native_func_name)
-
+            native_func = torch._command_guard(attr, 'torch_modules', get_native=True)
+            command = native_func
         response = command(*args, **kwargs)
 
         # TODO : control registration process
@@ -461,7 +459,7 @@ class _LocalTensor(_SyftTensor):
 
             return_response = syft_command['self']
 
-        elif hasattr(response, 'child') and (isinstance(response.child, (_SPDZTensor, _FixedPrecisionTensor))):
+        elif hasattr(response, 'child') and (isinstance(response.child, (_SPDZTensor, _SNNTensor, _FixedPrecisionTensor))):
             return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
         else:
@@ -482,7 +480,7 @@ class _LocalTensor(_SyftTensor):
                         continue
 
                 syft_response = sy._LocalTensor(child=resp, parent=resp, owner=owner,
-                                                torch_type='syft.' + type(resp).__name__)
+                                                torch_type=type(resp).__name__)
 
                 if torch_utils.is_variable(resp):
                     if resp.grad is None:
@@ -507,16 +505,16 @@ class _LocalTensor(_SyftTensor):
         if as_dict:
             return {'___LocalTensor__': data}
         else:
-            return json.dumps({'___LocalTensor__': data}) + "\n"
+            return msgpack.packb({'___LocalTensor__': data}, use_bin_type=True)
 
     @staticmethod
     def deser(msg_obj, worker, acquire):
-
-        if 'owner' not in msg_obj:
-            raise TypeError("sy._LocalTensor can't deserialize a non-valid sy._LocalTensor. "
+        try:
+            if msg_obj['owner'] == worker.id:
+                logging.warning('_LocalTensor sent to itself')
+        except TypeError:
+            logging.warning("sy._LocalTensor can't deserialize a non-valid sy._LocalTensor. "
                             "Do you wan to call sy.FloatTensor.deser() instead?")
-        if msg_obj['owner'] == worker.id:
-            logging.warning('_LocalTensor sent to itself')
         if acquire:  # We need to register the info given
             syft_obj = sy._LocalTensor(child=None,
                                        parent=None,
@@ -543,6 +541,9 @@ class _LocalTensor(_SyftTensor):
 
     def get(self, parent, deregister_ptr=None):
         raise TypeError("Cannot call .get() on a tensor you already have.")
+
+    def relu(self):
+        return torch.guard[self.torch_type](self.parent > 0) * self.parent
 
 class _WrapTorchObjectPlusIsMinusTensor(_SyftTensor):
     """
@@ -663,7 +664,10 @@ class _GeneralizedPointerTensor(_SyftTensor):
          pointer_dict = {}
          for worker, pointer in pointer_tensor_dict.items():
              if not isinstance(pointer, sy._PointerTensor):
-                 raise TypeError('Should use sy._Pointer without Torch wrapper.')
+                 if isinstance(pointer.child, sy._PointerTensor):
+                     pointer_tensor_dict[worker] = pointer.child
+                 else:
+                    raise TypeError('Passed in non-pointer'+str(type(pointer))+' to GeneralizedPointerTensor')
              key = worker if isinstance(worker, (int, str)) else worker.id
              pointer_dict[key] = pointer
          self.pointer_tensor_dict = pointer_dict
@@ -687,7 +691,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
         if as_dict:
             return {'___GeneralizedPointerTensor__': data}
         else:
-            return json.dumps({'___GeneralizedPointerTensor__': data}) + "\n"
+            return msgpack.packb({'___GeneralizedPointerTensor__': data}, use_bin_type=True)
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -707,20 +711,23 @@ class _GeneralizedPointerTensor(_SyftTensor):
     def handle_call(cls, syft_command, owner):
 
         syft_commands = torch_utils.split_to_pointer_commands(syft_command)
+
         result_dict = {}
         torch_type = None
         var_data_type = None
         for worker_id in syft_commands.keys():
+
             syft_command = syft_commands[worker_id]
             result_dict[worker_id] = sy._PointerTensor.handle_call(syft_command, owner)
+
             if torch_type is None:
                 torch_type = result_dict[worker_id].torch_type
-                if torch_utils.is_variable(torch_type):
+                if torch_utils.is_variable_name(torch_type):
                     var_data_type = result_dict[worker_id].data.torch_type
 
         gpt = _GeneralizedPointerTensor(result_dict, torch_type=torch_type, owner=owner)
 
-        if torch_utils.is_variable(torch_type):
+        if torch_utils.is_variable_name(torch_type):
             gpt.child = torch.guard[torch_type]()
             data_pointer_dict = {
                 w: p.data
@@ -777,7 +784,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
         return res
 
     def workers(self):
-        return list(self.pointer_tensor_dict.keys()) 
+        return list(self.pointer_tensor_dict.keys())
 
     def on(self, wrapper):
         """
@@ -865,11 +872,9 @@ class _PointerTensor(_SyftTensor):
         else:
             location = self.location.id
         id_at_location = self.id_at_location
-        # Add the remote location worker key if needed
-        if location not in worker._pointers.keys():
-            worker._pointers[location] = {}
         # Add the remote address
         worker._pointers[location][id_at_location] = self.id
+
 
     @classmethod
     def handle_call(cls, syft_command, owner):
@@ -896,7 +901,7 @@ class _PointerTensor(_SyftTensor):
         # Else we send the command
         response = owner.send_torch_command(recipient=location, message=command)
 
-        torch_utils.assert_has_only_torch_tensorvars(response)
+        # torch_utils.assert_has_only_torch_tensorvars(response)
 
         # If the command is an in-place method, we only need to return the same wrapper to the same
         # pointer, instead jof returning the new wrapper created in response
@@ -909,7 +914,6 @@ class _PointerTensor(_SyftTensor):
         # Perform the un-wrap: remove the head on all chains (also .data and .grad if any)
         response, _ = torch_utils.get_child_command(response)
         # response is now a _Pointer, with a .data attr which is a _Pointer, etc.
-
         return response
 
     def __str__(self):
@@ -928,7 +932,7 @@ class _PointerTensor(_SyftTensor):
         if as_dict:
             return {'___PointerTensor__': data}
         else:
-            return json.dumps({'___PointerTensor__': data}) + "\n"
+            return msgpack.packb({'___PointerTensor__': data}, use_bin_type=True)
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -971,7 +975,7 @@ class _PointerTensor(_SyftTensor):
         """
         # Remove this pointer - TODO: call deregister function instead of doing it by hand
         if deregister_ptr:
-            if self.torch_type == 'syft.Variable':
+            if torch_utils.is_variable_name(self.torch_type):
                 if hasattr(self.parent, 'data'):
                     self.owner.rm_obj(self.parent.data.child.id)
             self.owner.rm_obj(self.id)
@@ -983,17 +987,18 @@ class _PointerTensor(_SyftTensor):
 
         # get SyftTensor (Local or Pointer) from remote machine
         tensorvar = self.owner.request_obj(self.id_at_location, self.location)
-        torch_utils.assert_has_only_torch_tensorvars(tensorvar)
+
+        # torch_utils.assert_has_only_torch_tensorvars(tensorvar)
 
         syft_tensor = tensorvar.child
         syft_tensor.id = self.id
-        if self.torch_type == 'syft.Variable':
+        if torch_utils.is_variable_name(self.torch_type):
             if hasattr(self.parent, 'data'):
                 tensorvar.data.child.id = self.parent.data.child.id
 
         # Register the result
         self.owner.register(syft_tensor)
-        if syft_tensor.torch_type == 'syft.Variable':
+        if torch_utils.is_variable_name(syft_tensor.torch_type):
             if hasattr(self.parent, 'data'):
                 self.owner.register(tensorvar.data.child)
 
@@ -1002,14 +1007,30 @@ class _PointerTensor(_SyftTensor):
         return tensorvar
 
     def get_shape(self):
-        cmd = {}
-        cmd['command'] = "get_shape"
-        cmd['args'] = []
-        cmd['kwargs'] = {}
-        cmd['has_self'] = True
-        cmd['self'] = self
+        cmd = {
+            'command': 'get_shape',
+            'self': self,
+            'args': [],
+            'kwargs': {},
+            'has_self': True
+        }
+        shape_ptr = self.handle_call(cmd, self.owner)
 
-        return sy.Size(self.handle_call(cmd, self.owner).get().int().tolist())
+        if not isinstance(shape_ptr, tuple):
+            shape_ptr = (shape_ptr, )
+
+        raw_output = self.handle_call(cmd, self.owner)
+
+        if isinstance(raw_output, (tuple, list)):
+            dims = list()
+            for each in raw_output:
+                dims.append(each.get().int().tolist())
+                if len(dims[-1]) == 1:
+                    dims[-1] = dims[-1][0]
+
+            return sy.Size(dims)
+
+        return sy.Size(raw_output.get().int().tolist())
 
     def decode(self):
         raise NotImplementedError("It is not possible to remotely decode a tensorvar for the moment")
@@ -1017,18 +1038,23 @@ class _PointerTensor(_SyftTensor):
 
 class _FixedPrecisionTensor(_SyftTensor):
     """
-    TODO: write this
-
+    The FixedPrecision enables to manipulate floats over an interface which supports only integers,
+    Such as _SPDZTensor.
+    This is done by specifying a precision p and given a float x, multiply it with 10**p before
+    rounding to an integer (hence you keep p decimals)
     """
 
     def __init__(self,
                  child=None,
                  owner=None,
                  torch_type=None,
-                 bits=31,
+                 field=(2**31) - 1,
                  base=10,
-                 precision_fractional=6,
-                 already_encoded=False):
+                 precision_fractional=3,
+                 precision_integral=1,
+                 already_encoded=False,
+                 kappa=1
+                 ):
 
         if torch_type is None:
             if not already_encoded:
@@ -1038,16 +1064,43 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         super().__init__(child=child, owner=owner, torch_type=torch_type)
 
-        self.bits = bits
-        self.field = 2 ** bits
+        self.field = field
+
+        if spdz.field != self.field:
+            logging.warning("spdz.field != self.field, be careful you may experience issues with "
+                            "multiplication on fix precision shared tensors.")
         self.base = base
         self.precision_fractional = precision_fractional
+        self.precision_integral = precision_integral
+        self.precision = self.precision_fractional + self.precision_integral
         self.torch_max_value = torch.LongTensor([round(self.field / 2)])
+        self.kappa = kappa
 
         if already_encoded:
             self.child = child
         else:
-            self.encode(child)
+            # torch_utils.assert_has_only_torch_tensorvars(child)
+            chain_tail = None
+            if not isinstance(child.child, sy._LocalTensor):
+                chain_tail = child.child
+
+            if torch_utils.is_variable(child):
+                var_data = child.data
+                if len(var_data.size()) > 0:
+                    self.encode(var_data)  # this puts in .child an encoded Tensor
+                    self.child = sy.Variable(self.child)
+                else:
+                    self.child = sy.Variable(sy.LongTensor())
+                self.child.child = chain_tail
+            else:
+                if len(child.size()) > 0:
+                    self.encode(child)
+                else:
+                    self.child = sy.LongTensor()
+                self.child.child = chain_tail
+
+    def get_shape(self):
+        return self.child.get_shape()
 
     def ser(self, private, as_dict=True):
 
@@ -1056,14 +1109,14 @@ class _FixedPrecisionTensor(_SyftTensor):
             'id': self.id,
             'child': self.child.ser(private=private, as_dict=True),
             'torch_type': self.torch_type,
-            'bits': self.bits,
+            'field': self.field,
             'base': self.base,
             'precision_fractional': self.precision_fractional,
         }
         if as_dict:
             return {'___FixedPrecisionTensor__': data}
         else:
-            return json.dumps({'___FixedPrecisionTensor__': data}) + "\n"
+            return msgpack.packb({'___FixedPrecisionTensor__': data}, use_bin_type=True)
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -1077,7 +1130,7 @@ class _FixedPrecisionTensor(_SyftTensor):
             obj = _FixedPrecisionTensor(child=child,
                                         owner=worker,
                                         torch_type=msg_obj['torch_type'],
-                                        bits=msg_obj['bits'],
+                                        field=msg_obj['field'],
                                         base=msg_obj['base'],
                                         precision_fractional=msg_obj['precision_fractional'],
                                         already_encoded=True)
@@ -1092,6 +1145,13 @@ class _FixedPrecisionTensor(_SyftTensor):
         owner = rational.owner
         upscaled = (rational * self.base ** self.precision_fractional).long()
         field_element = upscaled % self.field
+
+        # Handle neg values
+        gate = field_element.gt(self.torch_max_value).long()
+        neg_nums = (field_element - self.field) * gate
+        pos_nums = field_element * (1 - gate)
+        field_element = (neg_nums + pos_nums)
+
         torch_utils.enforce_owner(field_element, owner)
         self.child = field_element
         return self
@@ -1099,12 +1159,12 @@ class _FixedPrecisionTensor(_SyftTensor):
     def decode(self):
         save = self.child.child*1
         self.child.child = None # <-- This is doing magic things
-        value = self.child % self.field
+        value = self.child.long() % self.field
         if len(value.size()) == 0:
             # raise TypeError("Can't decode empty tensor")
             return None
         gate = value.native_gt(self.torch_max_value).long()
-        neg_nums = (value - spdz.torch_field) * gate
+        neg_nums = (value - self.field) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
         self.child.child = save.child
@@ -1128,16 +1188,154 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         if has_self:
             self = command['self']
-            if attr == '__add__':
-                torch_tensorvar = cls.__add__(self, *args, **kwargs)
-                response = torch_tensorvar.fix_precision(already_encoded=True)
-                return response
+
+            # A) override the "share" command (which would normally call .share on the .child object
             if attr == 'share':
                 response = self.share(*args, **kwargs)
                 return response
+
+            # B) override commands which take no other tensors as arguments
+            elif attr == 'prod':
+                response = cls.prod(self, *args, **kwargs)
+                return _FixedPrecisionTensor(response).wrap(True)
+            elif attr == 'sum':
+                response = cls.sum(self, *args, **kwargs)
+                return _FixedPrecisionTensor(response).wrap(True)
+            elif attr == 'cumsum':
+                response = cls.cumsum(self, *args, **kwargs)
+                return _FixedPrecisionTensor(response).wrap(True)
+            elif attr == 'relu':
+                return _FixedPrecisionTensor(self.child.relu()).wrap(True)
+            # C) override functions which have tensors as arguments
+            elif attr in ('__add__', '__mul__', '__sub__', '__div__', '__truediv__', 'mm',
+                        'matmul') and isinstance(args[0], sy._FixedPrecisionTensor):
+
+                # Compute the precision to keep
+                other = args[0]
+                assert (self.base == other.base) and (self.field == other.field), \
+                    'Arguments should share the same base and field'
+
+                self_precision = self.precision_fractional
+                other_precision = other.precision_fractional
+
+                # If the precision fractional of self is different than other's raise an exception
+                # You may uncomment this line out if you do care about different precisions,
+                # the code will work either way.
+                # if not(self_precision == other_precision):
+                #     raise ArithmeticError("The tensors have different precisions")
+
+                # Perform the computation
+                torch_tensorvar = None
+                if attr == '__mul__':
+                    torch_tensorvar = cls.__mul__(self, other)
+                elif attr in ('mm',) or attr == 'matmul':
+                    torch_tensorvar = cls.mm(self, other)
+                elif attr == '__add__':
+                    torch_tensorvar = cls.__add__(self, *args, **kwargs)
+                elif attr == '__sub__':
+                    torch_tensorvar = cls.__sub__(self, *args, **kwargs)
+                elif attr == '__div__' or '__truediv__':
+                    torch_tensorvar = cls.__div__(self, *args, **kwargs)
+                if attr not in ('mm','__mul__') :
+                    response = torch_tensorvar.fix_precision(
+                        already_encoded=True,
+                        precision_fractional=max(self_precision, other_precision)
+                    )
+                    return response
+
+            else:  # Standard procedure for methods
+                # Get the next node type and update in command tensorvar with tensorvar.child
+                next_command, child_type = torch_utils.prepare_child_command(
+                    command, replace_tensorvar_with_child=True)
+
+                is_var = torch_utils.is_variable_name(child_type.__name__)
+
+                if is_var:
+                    child_type = torch.guard[self.data.torch_type]
+
+                # Forward the call to the next child
+                torch_tensorvar = child_type.handle_call(next_command, owner)
+
+
+            # Compute the precision to keep
+            precision = self.precision_fractional
+            if attr in ('mm', 'matmul', '__mul__'):
+                other = args[0]
+                torch_tensorvar, precision = self.truncate(torch_tensorvar, args[0])
+
+            response = torch_tensorvar.fix_precision(
+                already_encoded=True,
+                precision_fractional=precision
+            )
+            return response
+
+    def truncate(self, torch_tensorvar, other):
+
+        def egcd(a, b):
+            if a == 0:
+                return (b, 0, 1)
             else:
-                result_child = getattr(self.child, attr)(*args, **kwargs)
-                return _FixedPrecisionTensor(result_child).wrap(True)
+                g, y, x = egcd(b % a, a)
+                return (g, x - (b // a) * y, y)
+
+        def modinv(a, m):
+            g, x, y = egcd(a, m)
+            if g != 1:
+                raise Exception('modular inverse does not exist')
+            else:
+                return x % m
+
+        if isinstance(other, sy._FixedPrecisionTensor):
+            # print("is a fixed precision tensor")
+            result_precision_fractional = max(self.precision_fractional, other.precision_fractional)
+            result_precision_integral = self.precision_integral
+            result_precision = result_precision_fractional + result_precision_integral
+            result_kappa = self.kappa
+
+            if result_precision_fractional > 0:
+                tail_node = torch_utils.find_tail_of_chain(torch_tensorvar)
+                # print("result_precision_fractional > 0")
+                if isinstance(tail_node, sy._GeneralizedPointerTensor):
+                    # print("truncating MPC")
+                    if(isinstance(torch_tensorvar, sy.Variable)):
+                        a = torch_tensorvar.data
+                    else:
+                        a = torch_tensorvar
+
+                    workers = list(tail_node.pointer_tensor_dict.keys())
+
+                    b_ = int((self.base ** (2 * result_precision + 1)))
+
+                    b = a + b_
+
+                    rand_shape = torch.IntTensor(list(b.get_shape())).prod()
+
+                    mask = torch.LongTensor(1).send(workers[0]).expand(rand_shape).contiguous().view(list(b.get_shape()))
+                    mask.random_(self.base ** (result_precision + result_kappa))
+
+                    mask_low = torch.fmod(mask, self.base ** result_precision_fractional)
+                    mpc_mask = mask.share(*workers).get()
+
+                    b_masked = (b + mpc_mask).get()
+                    b_masked_low = torch.fmod(b_masked, self.base ** result_precision_fractional)
+                    b_low = b_masked_low.share(*workers) - mask_low.share(*workers).get()
+
+                    # TODO: calculating the inverse every time is stupid slow - but i need to keep moving
+                    c = (a - b_low) * modinv(self.base**result_precision_fractional, self.field)
+
+                    if (isinstance(torch_tensorvar, sy.Variable)):
+                        torch_tensorvar = (torch_tensorvar * 0)
+                        torch_tensorvar.data.child.child += c.child.child
+                    else:
+                        torch_tensorvar = c
+
+                else:
+                    torch_tensorvar = torch_tensorvar / self.base ** result_precision_fractional
+
+            return torch_tensorvar, result_precision_fractional
+
+        return torch_tensorvar, self.precision_fractional
+
 
     def get(self, *args, **kwargs):
         """
@@ -1161,22 +1359,174 @@ class _FixedPrecisionTensor(_SyftTensor):
             self.child = self.child.get(*args, **kwargs)
             return self.parent
 
-    def __add__(self, other):
-        response = (self.child + other.child) % self.field
+    def check_and_scale_precision_if_needed(self, other):
+        # checks the terms of self and other to make sure they have the same
+        # precision - if not it returns two new params with the same precision
 
+        # if other is not a fixed tensor, convert it to a fixed one
+        if (not hasattr(other, 'precision_fractional')):
+            other = other.fix_precision(precision_fractional=self.precision_fractional)
+
+        if (self.precision_fractional == other.precision_fractional):
+            return self.child, other.child
+
+        elif (self.precision_fractional > other.precision_fractional):
+            scaling = self.base ** (self.precision_fractional - other.precision_fractional)
+            return  self.child, other.child * scaling
+
+        else: #(self.precision_fractional < other.precision_fractional):
+            scaling = self.base ** (other.precision_fractional - self.precision_fractional)
+            return self.child * scaling, other.child
+
+    def __add__(self, other):
+        a, b = self.check_and_scale_precision_if_needed(other)
+        return (a + b) % self.field
+
+    def __sub__(self, other):
+        a, b = self.check_and_scale_precision_if_needed(other)
+        return (a - b) % self.field
+
+    def __mul__(self, other):
+        a, b = self.check_and_scale_precision_if_needed(other)
+        return (a * b)# % self.field # - modulus performed later
+
+    def __gt__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a > b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True).wrap(True)
+        return result
+
+    def __lt__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a < b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True).wrap(True)
+        return result
+
+    def __ge__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a >= b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True).wrap(True)
+        return result
+
+    def __le__(self, other):
+
+        a, b = self.check_and_scale_precision_if_needed(other)
+        result = (a <= b).long() * self.base**self.precision_fractional
+        result = sy._FixedPrecisionTensor(result,
+                                          base=self.base,
+                                          field=self.field,
+                                          precision_fractional=self.precision_fractional,
+                                          precision_integral=self.precision_integral,
+                                          already_encoded=True).wrap(True)
+        return result
+
+    def __div__(self, other):
+        # if other is not a fixed tensor, convert it to a fixed one
+        if (not hasattr(other, 'precision_fractional')):
+            other = other.fix_precision(precision_fractional = self.precision_fractional)
+
+        if (self.precision_fractional == other.precision_fractional):
+            gp_response = (self.child * 10 ** self.precision_fractional / other.child) % \
+                          self.field
+        elif (self.precision_fractional > other.precision_fractional):
+            gp_response = (self.child / other.child * 10 ** other.precision_fractional) % \
+                          self.field
+
+        elif (self.precision_fractional < other.precision_fractional):
+            gp_response = ((self.child *10 ** (2 * other.precision_fractional
+                           - self.precision_fractional)) / other.child) % \
+                          self.field
+        return gp_response
+
+    # def __mul__(self, other):
+    #     # if other is not a fixed tensor, convert it to a fixed one
+    #     if (not hasattr(other, 'precision_fractional')):
+    #         other = other.fix_precision(precision_fractional = self.precision_fractional)
+    #     return self.child * other.child
+
+    def prod(self, *args, **kwargs):
+        # getting the dimension of the tensor which prod will be applied to. (needed for fixing
+        # the precision precision problems)
+        dim = self.child.size()[args[0]]
+        return self.child.prod(*args, **kwargs) / 10 ** (self.precision_fractional * dim)
+
+    def sum(self, *args, **kwargs):
+        return (self.child.sum(*args, *kwargs) / 10 ** self.precision_fractional)
+
+    def cumsum(self, *args, **kwargs):
+        return (self.child.cumsum(*args, *kwargs) / 10 ** self.precision_fractional)
+
+    def mm(self, other):
+        response = self.child.mm(other.child)
         return response
 
+    def relu(self):
+        result = self.child.relu()
+
+        return sy._FixedPrecisionTensor(result,
+                                        base=self.base,
+                                        field=self.field,
+                                        precision_fractional=self.precision_fractional,
+                                        precision_integral=self.precision_integral,
+                                        already_encoded=True).wrap(True)
+
+    def argmax(self):
+        return self.very_slow_argmax()
+
+    def very_slow_argmax(self):
+        # there are a TON of things about this that are stupidly slow
+        # but unfortunately there are bugs elsewhere that I don't have
+        # time to fix. TODO: optimize the crap out of this
+
+        self = self.wrap(True)
+
+        my_shape = list(self.get_shape())
+        assert len(my_shape) == 2
+
+        max_vals = self[:, 0:1]
+        for i in range(1, my_shape[1]):
+            new_vals = self[:, i:i + 1]
+            gate = (max_vals > new_vals)
+            left = (gate * max_vals)
+
+            gate = (max_vals < new_vals)
+            right = gate * new_vals
+            max_vals = left + right
+
+        max_vals = max_vals.expand(my_shape)
+        out = (max_vals >= self) * (max_vals <= self)
+        return out
+
+
     def __repr__(self):
-        if(not isinstance(self.child, _SPDZTensor)):
-            return "[Fixed precision]\n"+self.decode().__repr__()
-        else:
-            return "[Fixed precision]\n" + self.child.__repr__()
+        # if(not isinstance(self.child.child, _SNNTensor)):
+        #     return "[Fixed precision]\n"+self.decode().__repr__()
+        # else:
+        return "[Fixed precision tensor]\n"# + (self.child*1).__repr__()
 
     def __str__(self):
-        if (not isinstance(self.child, _SPDZTensor)):
-            return "[Fixed precision]\n" + self.decode().__repr__()
-        else:
-            return "[Fixed precision]\n" + self.child.__repr__()
+        # if (not isinstance(self.child.child, _SNNTensor)):
+        #     return "[Fixed precision]\n" + self.decode().__repr__()
+        # else:
+        return "[Fixed precision tensor]\n"# + (self.child*1).__repr__()
 
 
 class _SPDZTensor(_SyftTensor):
@@ -1233,10 +1583,11 @@ class _SPDZTensor(_SyftTensor):
             'shares': self.child.ser(private=private, as_dict=True),
             'torch_type': self.torch_type
         }
+        str_type = "__" + type(self).__name__ + "__"
         if as_dict:
-            return {'___SPDZTensor__': data}
+            return {str_type: data}
         else:
-            return json.dumps({'___SPDZTensor__': data}) + "\n"
+            return msgpack.packb({str_type: data}, use_bin_type=True)
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -1253,7 +1604,7 @@ class _SPDZTensor(_SyftTensor):
 
                 shares.child.child = shares
 
-                result = _SPDZTensor(shares=shares,
+                result = cls(shares=shares,
                                     id=msg_obj['id'],
                                     owner=worker,
                                     torch_type=msg_obj['torch_type'])
@@ -1263,7 +1614,7 @@ class _SPDZTensor(_SyftTensor):
                 #                        id=msg_obj['id'],
                 #                        owner=worker,
                 #                        torch_type=msg_obj['torch_type'])
-                result = sy._SPDZTensor(shares=sy.LongTensor())
+                result = cls(shares=sy.LongTensor())
             else:
                 raise TypeError("Unrecognized type ", list(child_shares.keys()))
 
@@ -1311,12 +1662,34 @@ class _SPDZTensor(_SyftTensor):
 
         return wrapper
 
+    def share_scalar(self, scalar):
+        other = torch.zeros(list(self.get_shape())).long() + scalar
+
+        # if the parent is a Variable type then we need to cast this to
+        # a Varible of longs instead (which is silly and redundant but
+        # i need this to work by Monday so i'm hacking this here... realistically
+        # SPDZTensor should NEVER point to variable objects TODO:fix
+        if(self.torch_type == 'syft.Variable'):
+            other = sy.Variable(other)
+
+        other = other.share(*list(self.shares.child.pointer_tensor_dict.keys())).child
+
+        return other
+
     def __add__(self, other):
+
+        if (isinstance(other, (int, float, bool))):
+            other = self.share_scalar(other)
+
         # gp_ stands for GeneralizedPointer
         gp_response = spdz.spdz_add(self.shares, other.shares)
         return gp_response
 
     def __sub__(self, other):
+
+        if (isinstance(other, (int, float, bool))):
+            other = self.share_scalar(other)
+
         gp_response = spdz.spdz_add(self.shares, spdz.spdz_neg(other.shares))
         return gp_response
 
@@ -1325,7 +1698,7 @@ class _SPDZTensor(_SyftTensor):
         return gp_response
 
     def sum(self, *args, **kwargs):
-        gp_response = self.child.sum(*args, **kwargs) % spdz.field
+        gp_response = torch.fmod(self.child.sum(*args, **kwargs), spdz.field)
         return gp_response
 
     def cumsum(self, *args, **kwargs):
@@ -1333,10 +1706,11 @@ class _SPDZTensor(_SyftTensor):
         return gp_response
 
     def __mul__(self, other):
-        if(isinstance(other, _SPDZTensor)):
+
+        if(isinstance(other, type(self))):
             workers = list(self.shares.child.pointer_tensor_dict.keys())
-            if torch_utils.is_variable(self.torch_type):
-                gp_response = self*1
+            if torch_utils.is_variable_name(self.torch_type):
+                gp_response = self * 1
                 gp_response.data = spdz.spdz_mul(self.data.shares, other.data.shares, workers)
                 #TODO: and the grad ?
             else:
@@ -1347,7 +1721,13 @@ class _SPDZTensor(_SyftTensor):
 
     def mm(self, other):
         workers = list(self.shares.child.pointer_tensor_dict.keys())
-        gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
+        if torch_utils.is_variable_name(self.torch_type):
+            gp_response = self * 1
+            gp_response.data = spdz.spdz_matmul(self.data.shares, other.data.shares, workers)
+            # TODO: and the grad ?
+        else:
+            gp_response = spdz.spdz_matmul(self.shares, other.shares, workers)
+
         return gp_response
 
     def __matmul__(self, other):
@@ -1366,6 +1746,10 @@ class _SPDZTensor(_SyftTensor):
         temp531 = temp53+ temp1
         return W0 + temp531
 
+    def set_(self, *args, **kwargs):
+        self.child.set_(args[0].child)
+        return self
+
     @classmethod
     def handle_call(cls, command, owner):
         """
@@ -1376,40 +1760,55 @@ class _SPDZTensor(_SyftTensor):
         :param owner:
         :return:
         """
+
         attr = command['command']
         args = command['args']
         kwargs = command['kwargs']
-        self = command['self']
+        has_self = command['has_self']
 
-        if attr == '__mul__':
-            gp_response = cls.__mul__(self, *args, **kwargs)
-        elif attr == '__add__':
-            gp_response = cls.__add__(self, *args, **kwargs)
-        elif attr == '__sub__':
-            gp_response = cls.__sub__(self, *args, **kwargs)
-        elif attr == 'sum':
-            gp_response = cls.sum(self, *args, **kwargs)
-        elif attr == 'cumsum':
-            gp_response = cls.sum(self, *args, **kwargs)
-        elif attr == 'mm':
-            gp_response = cls.mm(self, *args, **kwargs)
-        else:
-            gp_response = getattr(self.child, attr)(*args, **kwargs)
+        if(has_self):
 
-        if torch_utils.is_variable(gp_response.child.torch_type):
-            var_data_type = gp_response.child.data.torch_type
-            variable = sy.Variable(torch.guard[var_data_type]())
-            variable.init_grad_()
-            mpc_node = _SPDZTensor(gp_response)
-            mpc_node.data = _SPDZTensor(gp_response.data)
-            mpc_node.grad = _SPDZTensor(gp_response.grad)
-            mpc_node.grad.data = _SPDZTensor(gp_response.grad.data)
-            mpc_node.grad.data.child.child = None # FIXME: is it necessary?
-            torch_utils.bind_var_like_objects(variable, mpc_node, grad=True)
-            return variable
+            self = command['self']
+
+            if attr == '__mul__':
+                gp_response = cls.__mul__(self, *args, **kwargs)
+            elif attr == '__add__':
+                gp_response = cls.__add__(self, *args, **kwargs)
+            elif attr == '__sub__':
+                gp_response = cls.__sub__(self, *args, **kwargs)
+            elif attr == 'sum':
+                gp_response = cls.sum(self, *args, **kwargs)
+            elif attr == 'cumsum':
+                gp_response = cls.sum(self, *args, **kwargs)
+            elif attr == 'mm':
+                gp_response = cls.mm(self, *args, **kwargs)
+            elif attr == "set_":
+                gp_response = cls.set_(self, *args, **kwargs)
+                return gp_response
+            else:
+                gp_response = getattr(self.child, attr)(*args, **kwargs)
+
+            if torch_utils.is_variable_name(gp_response.child.torch_type):
+                var_data_type = gp_response.child.data.torch_type
+                variable = sy.Variable(torch.guard[var_data_type]())
+                variable.init_grad_()
+                mpc_node = type(self)(gp_response)
+                mpc_node.data = type(self)(gp_response.data)
+                mpc_node.grad = type(self)(gp_response.grad)
+                mpc_node.grad.data = type(self)(gp_response.grad.data)
+                mpc_node.grad.data.child.child = None # FIXME: is it necessary?
+                torch_utils.bind_var_like_objects(variable, mpc_node, grad=True)
+                return variable
+            else:
+                response = type(self)(gp_response).wrap(True)
+                return response
         else:
-            response = _SPDZTensor(gp_response).wrap(True)
-            return response
+
+            if(attr == "torch.cat"):
+                args = torch_utils.get_child_command(args)[0]
+                kwargs = torch_utils.get_child_command(kwargs)[0]
+                response = torch.cat(*args, **kwargs)
+                return cls(response, torch_type="syft.LongTensor")
 
     def send(self, *workers):
         assert len(workers) > 0, "Please provide workers to receive the data"
@@ -1447,6 +1846,72 @@ class _SPDZTensor(_SyftTensor):
         return result
 
 
+class _SNNTensor(_SPDZTensor, _SyftTensor):
+
+    """
+    This tensor extends the _SPDZTensor class with additional functionality for
+    an encrypted comparison operator, which can compare shared values with either
+    other shared values or with plaintext values. This functionality is also core
+    to higher level functions such as argmax, softmax, ReLU non-linearities as well
+    as clipping the unstable tails of polynomial approximations of non-linearities
+    # such as Sigmoid.
+    """
+
+    class overload_functions:
+        """
+        Put here the functions you want to overload
+        Beware of recursion errors.
+        """
+
+        @staticmethod
+        def get(attr):
+            attr = attr.split('.')[-1]
+            return getattr(sy._SNNTensor.overload_functions, attr)
+
+    def second_constructor(self):
+        return self.wrap(True)
+
+    # Put here all the methods you want to overload
+
+    def on(self, wrapper):
+        """
+        Used to add a new _SPDZTensor at the top of the chain, just before the tensorvar wrapper
+        """
+        # Assign the newly created tensor to the good owner and torch_type
+        self.torch_type = wrapper.child.torch_type
+        self.owner = wrapper.child.owner
+
+        torch_utils.wrap_command_with(self, wrapper=wrapper)
+
+        # In case wrapper is a variable, do the same with data and grad (if necessary)
+        if torch_utils.is_variable(wrapper):
+            wrapper.data = _SNNTensor(self.child.data).on(wrapper.data)
+            if torch_utils.is_variable(wrapper.grad):
+                wrapper.assign_grad_(_SNNTensor(self.child.grad).on(wrapper.grad))
+
+        return wrapper
+
+    def relu(self):
+        return relu(self.parent)
+
+    def positive(self):
+        return relu_deriv(self.parent)
+
+    def __gt__(self, other):
+        return (self.parent - other.parent - 1).positive()
+
+    def __ge__(self, other):
+        return (self.parent - other.parent).positive()
+
+    def __lt__(self, other):
+        return (other.parent - self.parent - 1).positive()
+
+    def __le__(self, other):
+        return (other.parent - self.parent).positive()
+
+    def __eq__(self, other):
+        return (self.parent >= other.parent) * (self.parent <= other.parent)
+
 class _TorchObject(object):
     """
     This tensor is simply a more convenient way to add custom
@@ -1457,8 +1922,53 @@ class _TorchObject(object):
 
     __module__ = 'syft'
 
+    def __gt__(self, *args, **kwargs):
+        try:
+            return self.child > args[0].child
+        except:
+            return self.native___gt__(*args, **kwargs)
+
+    def __lt__(self, *args, **kwargs):
+        try:
+            return self.child < args[0].child
+        except:
+            return self.native___lt__(*args, **kwargs)
+
+    def __le__(self, *args, **kwargs):
+        try:
+            return self.child <= args[0].child
+        except:
+            return self.native___le__(*args, **kwargs)
+
+    def __ge__(self, *args, **kwargs):
+        try:
+            return self.child >= args[0].child
+        except:
+            return self.native___ge__(*args, **kwargs)
+
+    def __eq__(self, *args, **kwargs):
+        if(isinstance(self.child, _LocalTensor)):
+            return self.native___eq__(*args, **kwargs)
+        else:
+            try:
+                return self.child == args[0].child
+            except:
+                return self.native___eq__(*args, **kwargs)
+
+    def argmax(self):
+        if(hasattr(self.child, 'argmax')):
+            return self.child.argmax()
+        else:
+            return (self.max() == self).float()
+
     def get_shape(self):
         return self.child.get_shape()
+
+    def relu(self, *args, **kwargs):
+        return self.child.relu(*args, **kwargs)
+
+    def positive(self, *args, **kwargs):
+        return self.child.positive(*args, **kwargs)
 
     def native_get_shape(self):
         return self.get_shape()
@@ -1509,7 +2019,7 @@ class _TorchObject(object):
             x_gp = _GeneralizedPointerTensor(pointer_shares_dict, torch_type='syft.LongTensor').on(self_copy)
             if is_variable:
                 torch_utils.link_var_chain_to_data_and_grad_chains(x_gp, x_gp.data, x_gp.grad)
-            x_mpc = _SPDZTensor(x_gp, torch_type='syft.LongTensor').on(self)
+            x_mpc = _SNNTensor(x_gp, torch_type='syft.LongTensor').on(self)
             if is_variable:
                 torch_utils.link_var_chain_to_data_and_grad_chains(x_mpc, x_mpc.data, x_mpc.grad)
             return x_mpc
@@ -1536,21 +2046,21 @@ class _TorchObject(object):
         return spdz.encode(self)
 
     def fix_precision(self,
-                      bits=31,
+                      field=(2**31)-1,
                       base=10,
-                      precision_fractional=6,
+                      precision_fractional=3,
                       already_encoded=False):
-        # TODO: Should fix_me be an inplace op?
 
         if torch_utils.is_variable(self):
             if not hasattr(self, 'grad') or self.grad is None:
                 self.init_grad_()
+
         if isinstance(self.child, _PointerTensor):
             return self.owner._execute_call('fix_precision', self)
         else:
             fpt = lambda tensorvar, is_encoded: _FixedPrecisionTensor(tensorvar,
                                                                       torch_type=tensorvar.child.torch_type,
-                                                                      bits=bits,
+                                                                      field=field,
                                                                       base=base,
                                                                       precision_fractional=precision_fractional,
                                                                       already_encoded=is_encoded).wrap(True)
@@ -1573,12 +2083,23 @@ class _TorchObject(object):
                     _var.grad.data.child = fpt(_var.grad.child.child.data, True).child
                     _var.grad.data.child.torch_type = self.grad.data.child.torch_type
                     _var.grad.child.data = _var.grad.data.child
+                    _var.child.grad = _var.grad.child
                 return _var
             else:
                 return fpt(self, already_encoded)
 
     def native_fix_precision(self, *args, **kwargs):
         return self.fix_precision(*args, **kwargs)
+
+    def fix_precision_(self, *args, **kwargs):
+        tensorvar = self.fix_precision(*args, **kwargs)
+        if torch_utils.is_variable(self):  # grad are already created
+            torch_utils.bind_var_like_objects(self, tensorvar.child, grad=True)
+        else:
+            self.child = tensorvar.child
+
+    def native_fix_precision_(self, *args, **kwargs):
+        return self.fix_precision_(*args, **kwargs)
 
     def sum_get(self, *args, **kwargs):
         return self.child.sum_get(*args, **kwargs)
@@ -1649,33 +2170,32 @@ class _TorchTensor(_TorchObject):
         args = command['args']
         kwargs = command['kwargs']
         self = command['self']
+
         return getattr(self, attr)(*args, **kwargs)
 
     def ser(self, private, as_dict=True):
-        key = '__' + type(self).__name__ + '__'
+        key = encode.get_serialized_key(self)
         data = self.tolist() if not private else []
         tensor_msg = {
-            'type': str(self.__class__).split("'")[1],
-            'torch_type': 'syft.' + type(self).__name__,
+            'torch_type': type(self).__name__,
             'data': data,
             'child': self.child.ser(private)
         }
         if as_dict:
             return {key: tensor_msg}
         else:
-            return json.dumps({key: tensor_msg}) + "\n"
+            return msgpack.packb({key: tensor_msg}, use_bin_type=True)
 
     @staticmethod
-    def deser(msg_obj, worker, acquire):
-
-        obj_type, msg_obj = torch_utils.extract_type_and_obj(msg_obj)
-        syft_obj = sy._SyftTensor.deser_routing(msg_obj['child'], worker, acquire)
+    def deser(obj_type, msg_obj, worker, acquire):
+        child_type, child_obj = torch_utils.extract_type_and_obj(msg_obj['child'])
+        syft_obj = sy._SyftTensor.deser_routing(child_type, child_obj, worker, acquire)
 
         # If we have retrieved an already existing object (TODO: add checks) then return it
         if syft_obj.parent is not None and syft_obj.child is not None:
             return syft_obj.parent
 
-        tensorvar = torch.guard['syft.' + obj_type](msg_obj['data'])
+        tensorvar = torch.guard[obj_type](msg_obj['data'])
         torch_utils.wrap_command_with(syft_obj, tensorvar)
 
         # TODO: Find a smart way to skip register and not leaking the info to the local worker
@@ -1775,7 +2295,8 @@ class _TorchTensor(_TorchObject):
             self.child = tensor
             return self
 
-        torch_utils.assert_has_only_torch_tensorvars(tensor)
+        # torch_utils.assert_has_only_torch_tensorvars(tensor)
+
         # this will change the pointer variable (wrapper) to instead wrap the
         # SyftTensor object that was returned so that any variable that may
         # still exist referencing this pointer will simply call local data instead
@@ -1883,7 +2404,9 @@ class _TorchVariable(_TorchObject):
 
         # returns a Variable object wrapping a SyftTensor
         variable = self.child.get(deregister_ptr=deregister_ptr)
-        torch_utils.assert_has_only_torch_tensorvars(variable)
+
+        # torch_utils.assert_has_only_torch_tensorvars(variable)
+
         # this will change the wrapper variable to instead wrap the
         # SyftTensor object that was returned so that any variable that may
         # still exist referencing this pointer will simply call local data instead
@@ -1922,11 +2445,10 @@ class _TorchVariable(_TorchObject):
         return variable
 
     def ser(self, private, as_dict=True, is_head=False):
-        key = '__' + type(self).__name__ + '__'
+        key = encode.get_serialized_key(self)
 
         tensor_msg = {
-            'type': str(self.__class__).split("'")[1],
-            'torch_type': 'syft.' + type(self).__name__,
+            'torch_type': type(self).__name__,
             'data': self.data.ser(private) if is_head else [],
             'child': self.child.ser(private),
             'requires_grad': self.requires_grad
@@ -1942,12 +2464,12 @@ class _TorchVariable(_TorchObject):
         if as_dict:
             return {key: tensor_msg}
         else:
-            return json.dumps({key: tensor_msg}) + "\n"
+            return msgpack.packb({key: tensor_msg}, use_bin_type=True)
 
     @staticmethod
-    def deser(msg_obj, worker, acquire, is_head=False):
-        obj_type, msg_obj = torch_utils.extract_type_and_obj(msg_obj)
-        var_syft_obj = sy._SyftTensor.deser_routing(msg_obj['child'], worker, acquire)
+    def deser(obj_type, msg_obj, worker, acquire, is_head=False):
+        child_type, msg_child= torch_utils.extract_type_and_obj(msg_obj['child'])
+        var_syft_obj = sy._SyftTensor.deser_routing(child_type, msg_child, worker, acquire)
 
         if var_syft_obj.parent is not None and var_syft_obj.child is not None:
             return var_syft_obj.parent
@@ -1956,23 +2478,22 @@ class _TorchVariable(_TorchObject):
         try:
             var_data_type, var_data_tensor = torch_utils.extract_type_and_obj(msg_obj['data'])
             if is_head:
-                var_data = torch.guard['syft.' + var_data_type].deser(msg_obj['data'], worker, acquire)
+                var_data = torch.guard[var_data_type].deser(var_data_type, var_data_tensor, worker, acquire)
             else:
-                var_data = torch.guard['syft.' + var_data_type]()
+                var_data = torch.guard[var_data_type]()
         except AttributeError:
-            var_data = torch.guard['syft.FloatTensor']()
+            var_data = torch.guard['FloatTensor']()
         worker.hook.local_worker.de_register(var_data)
 
         variable = sy.Variable(var_data, requires_grad=msg_obj['requires_grad'])
 
         # Deser the var.grad
         if 'grad' in msg_obj:
-
             var_grad_type, var_grad_tensor = torch_utils.extract_type_and_obj(msg_obj['grad'])
             if is_head:
-                var_grad = torch.guard['syft.' + var_grad_type].deser(msg_obj['grad'], worker, acquire, is_head)
+                var_grad = torch.guard[var_grad_type].deser(var_grad_type, var_grad_tensor, worker, acquire, is_head)
             else:
-                var_grad = torch.guard['syft.' + var_grad_type]()
+                var_grad = torch.guard[var_grad_type]()
             worker.hook.local_worker.de_register(var_grad)
             variable.assign_grad_(var_grad)
         else:
@@ -2002,10 +2523,11 @@ class _TorchVariable(_TorchObject):
         """
         Initialise grad as an empty tensor
         """
-        self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
-        self.grad.native_set_()
-        self.grad.child.owner = self.owner
-        self.grad.data.child.owner = self.owner
+        if self.grad is None or torch_utils.is_tensor_empty(self.grad):
+            self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
+            self.grad.native_set_()
+            self.grad.child.owner = self.owner
+            self.grad.data.child.owner = self.owner
 
     def assign_grad_(self, var_grad):
         """
@@ -2017,7 +2539,8 @@ class _TorchVariable(_TorchObject):
         # Transform var_grad into an envelope compatible with .grad assignment
         if self.size() != var_grad.size():
             var_grad.data = sy.zeros(self.data.size())
-        var_grad.data = var_grad.data.type(type(self.data))
+        if type(var_grad.data) != type(self.data):
+            var_grad.data = var_grad.data.type(type(self.data))
 
         self.grad = var_grad
 
@@ -2047,6 +2570,3 @@ class _TorchVariable(_TorchObject):
             self.data.child = self.data.child.child.child
         self.child = self.child.child.child
         torch_utils.fix_chain_ends(self)
-
-
-
