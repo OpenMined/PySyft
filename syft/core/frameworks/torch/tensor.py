@@ -975,8 +975,7 @@ class _PointerTensor(_SyftTensor):
     def handle_call(cls, syft_command, owner):
         """_PointerTensor has an overloaded handle_call function because it
         converts the command to torch tensors and send it over the network."""
-
-        tensor_command = torch_utils.wrap_command(syft_command)
+        tensor_command = torch_utils.wrap_command_pre_ser(syft_command)
 
         attr = tensor_command["command"]
         args = tensor_command["args"]
@@ -2499,6 +2498,16 @@ class _TorchTensor(_TorchObject):
             return msgpack.packb({key: tensor_msg}, use_bin_type=True)
 
     @staticmethod
+    def ser_wrap(torch_type, child):
+        key = '__' + torch_type + '__'
+        tensor_msg = {
+            'torch_type': torch_type,
+            'data': [],
+            'child': child
+        }
+        return {key: tensor_msg}
+
+    @staticmethod
     def deser(obj_type, msg_obj, worker, acquire):
         child_type, child_obj = torch_utils.extract_type_and_obj(msg_obj["child"])
         syft_obj = sy._SyftTensor.deser_routing(child_type, child_obj, worker, acquire)
@@ -2726,6 +2735,8 @@ class _TorchVariable(_TorchObject):
             wrapper.parent = None
 
         torch_utils.link_var_chain_to_data_and_grad_chains(self, self.data, self.grad)
+        # todo: fix this in link_var_chain_to_data_and_grad_chains
+        self.child.grad.data = self.grad.data.child
 
         return self
 
@@ -2811,6 +2822,20 @@ class _TorchVariable(_TorchObject):
             return {key: tensor_msg}
         else:
             return msgpack.packb({key: tensor_msg}, use_bin_type=True)
+
+    @staticmethod
+    def ser_wrap(torch_type, child, data=None, grad=None):
+        key = '__' + torch_type + '__'
+        var_msg = {
+            'torch_type': torch_type,
+            'child': child
+        }
+        if data is not None:
+            var_msg['data'] = sy.FloatTensor.ser_wrap(data.torch_type, data)
+        if grad is not None:
+            var_msg['grad'] = sy.Variable.ser_wrap(grad.torch_type, grad, grad.data, None)
+
+        return {key: var_msg}
 
     @staticmethod
     def deser(obj_type, msg_obj, worker, acquire, is_head=False):

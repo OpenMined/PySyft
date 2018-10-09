@@ -308,6 +308,34 @@ def wrap_command(obj):
         # print('The following type wasnt wrapped:', str(type(obj)))
         return obj
 
+def wrap_command_pre_ser(obj):
+    """
+    To a Syft command, add a torch wrapper
+    Returns the wrapper
+    """
+    # for numeric values for instance, don't add a wrapper
+    if isinstance(obj, (int, float, bool, str, np.ndarray, slice)) or obj is None:
+        return obj
+    # Torch tensor or variable
+    elif is_tensor(obj) or is_variable(obj):
+        return obj # the tensor is already wrapped
+    # sy._SyftTensor
+    elif is_syft_tensor(obj):
+        if not is_variable_name(obj.torch_type):
+            wrapper = sy.FloatTensor.ser_wrap(obj.torch_type, obj)
+        else:
+            wrapper = sy.Variable.ser_wrap(obj.torch_type, obj, obj.data, obj.grad)
+        return wrapper
+    # List or iterables which could contain tensors
+    elif isinstance(obj, (list, tuple, set, bytearray, range)):
+        return type(obj)([wrap_command_pre_ser(o) for o in obj])
+    # Dict
+    elif isinstance(obj, dict):
+        return {k: wrap_command_pre_ser(o) for k, o in obj.items()}
+    else:
+        # print('The following type wasnt wrapped:', str(type(obj)))
+        return obj
+
 
 def get_connected_variables(variable):
     """Return all variables involved in the backward process, using the
