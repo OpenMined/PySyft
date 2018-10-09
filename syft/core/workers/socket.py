@@ -1,5 +1,6 @@
 import socket
 import json
+import msgpack
 
 from .base import BaseWorker
 from ..frameworks import encode
@@ -149,12 +150,12 @@ class SocketWorker(BaseWorker):
                     message = self._process_buffer(connection)
 
                     # process message and generate response
-                    response = self.receive_msg(message).decode()
+                    response = self.receive_msg(message)#.decode()
 
-                    if(response[-1] != "\n"):
-                        response += "\n"
+                    #if(response[-1] != b"\n"):
+                    #    response += b"\n"
                     # send response back
-                    connection.send(response.encode())
+                    connection.send(response) #.encode()
 
                     if(self.verbose):
                         print("Received Command From:", address)
@@ -176,7 +177,10 @@ class SocketWorker(BaseWorker):
 
 
         if(self.is_pointer):
-            response = json.loads(self.send_msg(message=query, message_type="query", recipient=self))
+            raw_response  = self.send_msg(message=query, message_type="query", recipient=self)
+            
+            response = self.decode_msg(raw_response)
+
             ps = list()
             for p in response['obj']:
                 ps.append(encode.decode(p['__tuple__'][0], worker=self.hook.local_worker, message_is_dict=True))
@@ -210,10 +214,14 @@ class SocketWorker(BaseWorker):
         return response
 
     @classmethod
-    def _process_buffer(cls, socket, buffer_size=1024, delimiter="\n"):
+    def _process_buffer(cls, socket, buffer_size=108192, delimiter="\n"):
         # WARNING: will hang if buffer doesn't finish with newline
 
-        buffer = socket.recv(buffer_size).decode('utf-8')
+        buffer = socket.recv(buffer_size)#.decode('utf-8')
+        #buffer = msgpack.unpackb(buffer, raw=False)
+        #print('decoded')
+        #print(buffer)
+        return buffer
         buffering = True
         while buffering:
 
@@ -221,7 +229,8 @@ class SocketWorker(BaseWorker):
                 (line, buffer) = buffer.split(delimiter, 1)
                 return line + delimiter
             else:
-                more = socket.recv(buffer_size).decode('utf-8')
+                more = socket.recv(buffer_size)#.decode('utf-8')
+                more = msgpack.unpackb(more, raw=False)
                 if not more:
                     buffering = False
                 else:

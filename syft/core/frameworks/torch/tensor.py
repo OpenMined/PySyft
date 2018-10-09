@@ -215,8 +215,8 @@ class _SyftTensor(object):
         if self.child is not None and not torch_utils.is_tensor(self.child):
             data['child'] = self.child.ser(private, as_dict)
 
+        key = encode.get_serialized_key(self)
         if as_dict:
-            key = encode.get_serialized_key(self)
             return {key: data}
         else:
             return msgpack.packb({key: data}, use_bin_type=True)
