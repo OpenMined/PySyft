@@ -1,23 +1,21 @@
 import torch
 
 
-class TorchFunctions(object):
-
+class TorchFunctions:
     def add(self, x, y):
-        "routes to correct addition"
+        """routes to correct addition."""
 
     def add_spdz(self, x, y):
-        "stuff here"
+        """stuff here."""
 
     def add_normal(self, x, y):
-        "stuff here"
+        """stuff here."""
 
     def add_fixed_prec(self, x, y):
-        "stuff here"
+        """stuff here."""
 
 
-class SPDZTorch(object):
-
+class SPDZTorch:
     @staticmethod
     def add(x, y):
         result = []
