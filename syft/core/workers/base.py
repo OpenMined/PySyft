@@ -135,7 +135,7 @@ class BaseWorker(ABC):
         function with additional metadata such as network information.
         """
 
-        return msgpack.packb({"id": self.id, "type": type(self)}, use_bin_type=True)
+        return self.encode_msg({"id": self.id, "type": type(self)})
 
     def _search(self, query):
         """
@@ -222,7 +222,7 @@ class BaseWorker(ABC):
         # i believe the extra newline was necessary - possibly to make decoding
         # batches of messages working. Note that .encode() converts this json to
         # binary
-        message_wrapper_json = msgpack.packb(message_wrapper, use_bin_type=True)
+        message_wrapper_json = self.encode_msg(message_wrapper)
 
         # empty the message queue which previously held our messages
         self.message_queue = []
@@ -285,7 +285,7 @@ class BaseWorker(ABC):
         """
 
         # load json into a dictionary where all objects have been deserialized
-        message_wrapper = encode.decode(message_wrapper_json, worker=self)
+        message_wrapper = encode.decode(self.decode_msg(message_wrapper_json), worker=self)
 
         # route message to appropriate logic and execute the command, returning
         # the "response" which should be sent back to the original worker. "private" (bool)
@@ -297,10 +297,16 @@ class BaseWorker(ABC):
         # serialize any objects in the response into their string/dictionary form (recursive)
         response = encode.encode(response, retrieve_pointers=False, private_local=private)
 
-        # convert the response dictionary to a string and then convert that string to binary
-        response = msgpack.packb(response, use_bin_type=True)
+        response = self.encode_msg(response)
 
         return response
+
+    def encode_msg(self, msg):
+        # convert the response dictionary to a string and then convert that string to binary
+        return msgpack.packb(msg, use_bin_type=True)
+
+    def decode_msg(self, msg):
+        return msgpack.unpackb(msg, raw=False)
 
     def process_message_type(self, message_wrapper):
         """

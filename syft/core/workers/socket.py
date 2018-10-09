@@ -177,7 +177,10 @@ class SocketWorker(BaseWorker):
 
 
         if(self.is_pointer):
-            response = json.loads(self.send_msg(message=query, message_type="query", recipient=self))
+            raw_response  = self.send_msg(message=query, message_type="query", recipient=self)
+            
+            response = self.decode_msg(raw_response)
+
             ps = list()
             for p in response['obj']:
                 ps.append(encode.decode(p['__tuple__'][0], worker=self.hook.local_worker, message_is_dict=True))

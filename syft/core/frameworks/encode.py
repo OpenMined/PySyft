@@ -179,10 +179,11 @@ def decode(message, worker, acquire=None, message_is_dict=False):
 
     decoder = PythonJSONDecoder(worker=worker, acquire=acquire)
 
-    if message_is_dict:
+    # on the off chance someone forgot to decode the message format into a dict before sending it here
+    if isinstance(message, dict):
         dict_message = message
     else:
-        dict_message = msgpack.unpackb(message, raw=False)
+        dict_message = worker.decode_msg(message)
 
     # If acquire is specified, then know how we want to decode, and implicitly
     # we want to decode everything of the message
