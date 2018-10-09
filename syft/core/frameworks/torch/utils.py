@@ -86,6 +86,12 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
             ref_child_type = next_child_types[0]
             for next_child_type in next_child_types:
                 if next_child_type != ref_child_type:
+
+                    if('self' in next_command):
+                        assert_tensors_on_same_machine(list(next_command['args']) + list([next_command['self']]))
+                    else:
+                        assert_tensors_on_same_machine(next_command['args'])
+
                     raise NotImplementedError('All arguments should share the same child type.',
                                               next_child_types)
 
@@ -93,6 +99,63 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
         return next_command, ref_child_type
     else:
         return command, ref_child_type
+
+def assert_tensors_on_same_machine(tensors):
+
+    def fail_msg(a, b):
+        raise Exception("Tensors must be on the same machine - {0} != {1}. Move them to the same machine using"
+                        "my_tensor.send()", a, b)
+
+    reference_tensor = tensors[0]
+
+    if(isinstance(reference_tensor, sy._PointerTensor)):
+        for tensor in tensors[1:]:
+            if isinstance(tensor, sy._PointerTensor):
+                if tensor.location != reference_tensor.location:
+                    fail_msg(tensor.location, reference_tensor.location)
+
+            elif isinstance(tensor, sy._GeneralizedPointerTensor):
+                pt_gpt_error(reference_tensor, tensor)
+            elif(isinstance(tensor.child, sy._PointerTensor)):
+                raise Exception("All tensors must have the same class hierarchy. Your tensor with id:"\
+                                + tensor.child.id + " might line up except the PointerTensor object is wrapped"\
+                                + "with a tensor of type " + str(type(tensor)))
+
+            elif(isinstance(tensor, sy._LocalTensor)):
+                pt_loc_error(reference_tensor, tensor)
+
+    elif(isinstance(reference_tensor, sy._GeneralizedPointerTensor)):
+        for tensor in tensors[1:]:
+            if isinstance(tensor, sy._GeneralizedPointerTensor):
+                if(tensor.pointer_tensor_dict.keys() != reference_tensor.pointer_tensor_dict.keys()):
+                    msg = "All pointers must point to the same group of workers!\n\n"
+                    msg += str(tensor.pointer_tensor_dict.keys())
+                    msg += "\n is not the same as\n\n"
+                    msg += str(reference_tensor.pointer_tensor_dict.keys())
+                    raise Exception(msg)
+
+    elif(isinstance(reference_tensor, sy._LocalTensor)):
+
+        for tensor in tensors[1:]:
+            if isinstance(tensor, sy._PointerTensor):
+                pt_loc_error(tensor, reference_tensor)
+
+    return True
+
+def pt_loc_error(ptr, local):
+    raise Exception("All tensors must be on the same machine. \n\nYou just tried to call an operation" \
+                    + " between a tensor on your local machine and a tensor on remote worker '" \
+                    + str(ptr.location.id) + "'. Call .send(\"" + str(ptr.location.id) \
+                    + "\") on the local tensor (the one with ID:" + str(local.id) + ") or .get() on the" \
+                    + " remote tensor (the one with ID:" + str(ptr.id) + ")")
+
+def pt_gpt_error(ptr, gptr):
+    raise Exception("Tensors must be on the same machine. You just tried to perform an operation"
+                    "between a PointerTensor (which points to one machine: " + str(ptr.location)
+                    + ") and a GeneralizedPointerTensor"
+                      "(which points to several machines" + str(gptr.pointer_tensor_dict.keys()) + "). Try "
+                     "sending your PointerTensor to all machines"
+                     "in the GeneralizedPointerTensor or vise versa. ")
 
 
 def enforce_owner(obj, owner):
@@ -260,13 +323,13 @@ def compile_command(attr, args, kwargs, has_self=False, self=None):
     command, pointers = encode.encode(command, retrieve_pointers=True)
 
     # Get information about the location and owner of the pointers
-    locations = []
-    owners = []
+    locations = set()
+    owners = set()
     for pointer in pointers:
-        locations.append(pointer.location)
-        owners.append(pointer.owner)
-    locations = list(set(locations))
-    owners = list(set(owners))
+        locations.add(pointer.location)
+        owners.add(pointer.owner)
+    locations = list(locations)
+    owners = list(owners)
 
     if len(locations) > 1:
         raise NotImplementedError('All pointers should point to the same worker')
@@ -748,7 +811,7 @@ def is_tensor(obj):
     """
     Determines whether the arg is a subclass of a Torch Tensor
     """
-    return isinstance(obj, tuple(torch.tensor_types))
+    return isinstance(obj, torch.tensor_types_tuple)
 
 
 def is_tensor_name(name):
@@ -767,7 +830,7 @@ def is_variable(obj):
     Determines whether the arg is a Variable
     or is the (part of the) name of a class Variable
     """
-    return isinstance(obj, tuple(torch.var_types))
+    return isinstance(obj, torch.var_types_tuple)
 
 
 def is_variable_name(obj):
