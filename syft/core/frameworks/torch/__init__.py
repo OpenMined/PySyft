@@ -150,9 +150,7 @@ torch.eval_torch_modules = eval_torch_modules
 
 def _command_guard(command, torch_domain, get_native=False):
     if command not in allowed_commands[torch_domain]:
-        raise RuntimeError(
-            f'Command "{command}" is not a supported Torch operation.'
-        )
+        raise RuntimeError(f'Command "{command}" is not a supported Torch operation.')
     if get_native:
         return native_commands[torch_domain][command]
     return command

@@ -265,7 +265,9 @@ class _SyftTensor:
             syft_type = torch.guard[obj_type]
             return syft_type.deser(obj, worker, acquire)
 
-        raise Exception("could not deserialize an object sent to router\n" + str(dct))
+        raise Exception(
+            "could not deserialize an object sent to router\n" + str(obj_type)
+        )
 
     @classmethod
     def deser(cls, msg_obj, worker, acquire):
@@ -1989,19 +1991,6 @@ class _SPDZTensor(_SyftTensor):
     def __matmul__(self, other):
         return self.mm(other)
 
-    def sigmoid(self):
-        workers = list(self.shares.child.pointer_tensor_dict.keys())
-        W0, W1, W3, W5 = spdz.generate_sigmoid_shares_communication(self.shape, workers)
-        x2 = x * x
-        x3 = x * x2
-        x5 = x3 * x2
-        temp5 = x5 * W5
-        temp3 = x3 * W3
-        temp1 = x * W1
-        temp53 = temp5 + temp3
-        temp531 = temp53 + temp1
-        return W0 + temp531
-
     def set_(self, *args, **kwargs):
         self.child.set_(args[0].child)
         return self
@@ -2263,7 +2252,6 @@ class _TorchObject:
                 if not hasattr(self, "grad") or self.grad is None:
                     self.init_grad_()
             n_workers = len(workers)
-            x_enc = self._encode()
             shares = self._share(n_workers)
 
             pointer_shares_dict = {}
