@@ -96,8 +96,10 @@ class TorchHook(object):
                 # interfacing with other workers. The worker interface is what allows the Torch
                 # specific code in TorchHook to be agnostic to the means by which workers communicate
                 # (such as peer-to-peer, sockets, through local ports, or all within the same process)
-                self.local_worker = workers.VirtualWorker(hook=self, is_client_worker=is_client,
-                                                          queue_size=queue_size)
+                self.local_worker = workers.VirtualWorker(hook=self,
+                                                          is_client_worker=is_client,
+                                                          queue_size=queue_size,
+                                                          id="me")
             else:
                 # if the local_worker already exists, then it MUST not know about the hook which is
                 # just being created. Thus, we must inform it.

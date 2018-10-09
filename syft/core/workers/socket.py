@@ -222,11 +222,13 @@ class SocketWorker(BaseWorker):
         #print('decoded')
         #print(buffer)
         return buffer
+
         buffering = True
         while buffering:
-
+            print(buffer)
             if delimiter in buffer:
                 (line, buffer) = buffer.split(delimiter, 1)
+                print("processed")
                 return line + delimiter
             else:
                 more = socket.recv(buffer_size)#.decode('utf-8')
@@ -236,4 +238,5 @@ class SocketWorker(BaseWorker):
                 else:
                     buffer += more
         if buffer:
+            print("processed")
             return buffer

@@ -613,7 +613,21 @@ class BaseWorker(ABC):
 
         """
 
-        obj = self._objects[remote_key]
+        try:
+            obj = self._objects[remote_key]
+        except:
+            msg = "Tensor \""+str(remote_key)+"\" not found on worker \""+str(self.id)+"\"!!!\n\n"
+            msg += "You just tried to interact with an object ID:"+str(remote_key)+" on worker " + str(self.id) + \
+                   " which does not exist!!! "
+            msg += "Use .send() and .get() on all your tensors to make sure they're on the same machines.\n\n"
+            msg += "If you think this tensor does exist, check the ._objects dictionary on the worker and see for"
+            msg += " yourself!!! "
+            msg += "The most common reason this error happens is because someone calls .get() on the object's"
+            msg += " pointer without realizing it (which deletes the remote object and sends it to the pointer)."
+            msg += " Check your code to make sure you haven't already called .get() on this pointer!!!"
+
+
+            raise Exception(msg)
         # Fix ownership if the obj has been modified out of control (like with backward())
         torch_utils.enforce_owner(obj, self)
         return obj
