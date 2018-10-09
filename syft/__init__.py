@@ -22,3 +22,6 @@ for f in dir(torch):
         setattr(syft, f, getattr(torch, f))
 
 setattr(syft, 'deser', _SyftTensor.deser)
+
+
+hook = TorchHook(verbose=False)

@@ -212,13 +212,15 @@ class SocketWorker(BaseWorker):
     @classmethod
     def _process_buffer(cls, socket, buffer_size=1024, delimiter="\n"):
         # WARNING: will hang if buffer doesn't finish with newline
-
+        print("processing buffer")
         buffer = socket.recv(buffer_size).decode('utf-8')
+        print(buffer)
         buffering = True
         while buffering:
-
+            print(buffer)
             if delimiter in buffer:
                 (line, buffer) = buffer.split(delimiter, 1)
+                print("processed")
                 return line + delimiter
             else:
                 more = socket.recv(buffer_size).decode('utf-8')
@@ -227,4 +229,5 @@ class SocketWorker(BaseWorker):
                 else:
                     buffer += more
         if buffer:
+            print("processed")
             return buffer
