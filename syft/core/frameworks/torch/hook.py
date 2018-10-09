@@ -158,20 +158,24 @@ class TorchHook(object):
 
         def new___init__(cls, *args, **kwargs):
 
+            # FIXME: this doesn't work since putting owner='...' => RuntimeError: torch.FloatTensor constructor doesn't accept any keyword arguments
             if 'owner' in kwargs and kwargs['owner'] is not None:
                 owner = kwargs['owner']
+                del kwargs['owner']
             else:
                 owner = hook_self.local_worker
 
             if 'id' in kwargs:
                 id = kwargs['id']
+                del kwargs['id']
             else:
                 id = None
 
             if register_child_instead:
                 cls.native___init__()
-                _ = cls.child
-                _ = "ignore pep8"
+                cls._child = _LocalTensor(child=cls,
+                                          parent=cls,
+                                          torch_type=type(cls).__name__)
             else:
                 cls.native___init__(*args, **kwargs)
                 if id is None:
@@ -195,7 +199,7 @@ class TorchHook(object):
                 else:
                     self._child = _LocalTensor(child=self,
                                                parent=self,
-                                               torch_type='syft.' + type(self).__name__)
+                                               torch_type=type(self).__name__)
                     return self._child
             except TypeError:
                 # for some reason, hasattr(self, '_child') returns a TypeError saying
@@ -208,7 +212,7 @@ class TorchHook(object):
 
                 self._child = _LocalTensor(child=self,
                                            parent=self,
-                                           torch_type='syft.' + type(self).__name__)
+                                           torch_type=type(self).__name__)
                 return self._child
 
         @child.setter

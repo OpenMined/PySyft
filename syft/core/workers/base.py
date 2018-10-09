@@ -68,7 +68,7 @@ class BaseWorker(ABC):
     def __init__(self, hook=None, id=0, is_client_worker=False, objects={},
                  tmp_objects={}, known_workers={}, verbose=True, queue_size=0):
 
-        if(hook is None):
+        if hook is None and hasattr(sy, 'local_worker'):
             hook = sy.local_worker.hook
 
         # This is a reference to the hook object which overloaded

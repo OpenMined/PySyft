@@ -260,13 +260,13 @@ def compile_command(attr, args, kwargs, has_self=False, self=None):
     command, pointers = encode.encode(command, retrieve_pointers=True)
 
     # Get information about the location and owner of the pointers
-    locations = []
-    owners = []
+    locations = set()
+    owners = set()
     for pointer in pointers:
-        locations.append(pointer.location)
-        owners.append(pointer.owner)
-    locations = list(set(locations))
-    owners = list(set(owners))
+        locations.add(pointer.location)
+        owners.add(pointer.owner)
+    locations = list(locations)
+    owners = list(owners)
 
     if len(locations) > 1:
         raise NotImplementedError('All pointers should point to the same worker')
@@ -748,7 +748,7 @@ def is_tensor(obj):
     """
     Determines whether the arg is a subclass of a Torch Tensor
     """
-    return isinstance(obj, tuple(torch.tensor_types))
+    return isinstance(obj, torch.tensor_types_tuple)
 
 
 def is_tensor_name(name):
@@ -767,7 +767,7 @@ def is_variable(obj):
     Determines whether the arg is a Variable
     or is the (part of the) name of a class Variable
     """
-    return isinstance(obj, tuple(torch.var_types))
+    return isinstance(obj, torch.var_types_tuple)
 
 
 def is_variable_name(obj):
