@@ -76,10 +76,13 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
 
     # Check that the next child type of all tensorvar is the same
     # TODO: should allow to mix Variable and Parameter in next_child_types
-    if len(next_child_types) == 0:
+    n_types = len(next_child_types)
+    if n_types == 0:
         ref_child_type = sy._LocalTensor
+    elif n_types == 1:
+        ref_child_type = next_child_types[0]
     else:
-        if all(child_type in torch.tensor_types for child_type in next_child_types):
+        if all(child_type in torch.tensorvar_types_tuple for child_type in next_child_types):
             ref_child_type = next_child_types[0]
         else:
             ref_child_type = next_child_types[0]
