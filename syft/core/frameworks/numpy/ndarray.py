@@ -307,7 +307,14 @@ exclude = ['__array__',
            'tostring',
            'trace']
 
-for attr in dir(np.ndarray):
-    if(attr not in exclude):
-        method = get_array_ptr_override_method(attr)
-        setattr(array_ptr, str(attr), method)
+#for attr in dir(np.ndarray):
+#    if(attr not in exclude):
+#        method = get_array_ptr_override_method(attr)
+#        setattr(array_ptr, str(attr), method)
+
+def func(attr):
+    method = get_array_ptr_override_method(attr)
+    setattr(array_ptr, str(attr), method)
+
+list_attr = [attr for attr in dir(np.ndarray) if (attr not in exclude)]
+map(func, list_attr)
