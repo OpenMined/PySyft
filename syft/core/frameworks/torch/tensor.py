@@ -203,7 +203,7 @@ class _SyftTensor:
             if not local_pointer:
                 ptr_id = self.id
             else:
-                ptr_id = random.randint(0, 10e10)
+                ptr_id = int(10e10 * random.random())
 
         if hasattr(self, "torch_type") and self.torch_type is not None:
             torch_type = self.torch_type
@@ -519,13 +519,13 @@ class _LocalTensor(_SyftTensor):
 
             return_response = syft_command["self"]
 
-        elif hasattr(response, "child") and (
-            isinstance(response.child, (_SPDZTensor, _SNNTensor, _FixedPrecisionTensor))
-        ):
+        try:
+            assert isinstance(
+                response._child, (_SPDZTensor, _SNNTensor, _FixedPrecisionTensor)
+            )
             return response
         # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
-        else:
-
+        except (AttributeError, AssertionError):
             responses = response if isinstance(response, tuple) else (response,)
             syft_responses = []
             for resp in responses:
@@ -977,8 +977,7 @@ class _PointerTensor(_SyftTensor):
     def handle_call(cls, syft_command, owner):
         """_PointerTensor has an overloaded handle_call function because it
         converts the command to torch tensors and send it over the network."""
-
-        tensor_command = torch_utils.wrap_command(syft_command)
+        tensor_command = torch_utils.wrap_command_pre_ser(syft_command)
 
         attr = tensor_command["command"]
         args = tensor_command["args"]
@@ -1140,8 +1139,6 @@ class _PointerTensor(_SyftTensor):
         if torch_utils.is_variable_name(syft_tensor.torch_type):
             if hasattr(self.parent, "data"):
                 self.owner.register(tensorvar.data.child)
-
-        torch_utils.fix_chain_ends(tensorvar)
 
         return tensorvar
 
@@ -2501,6 +2498,12 @@ class _TorchTensor(_TorchObject):
             return msgpack.packb({key: tensor_msg}, use_bin_type=True)
 
     @staticmethod
+    def ser_wrap(torch_type, child):
+        key = "__" + torch_type + "__"
+        tensor_msg = {"torch_type": torch_type, "data": [], "child": child}
+        return {key: tensor_msg}
+
+    @staticmethod
     def deser(obj_type, msg_obj, worker, acquire):
         child_type, child_obj = torch_utils.extract_type_and_obj(msg_obj["child"])
         syft_obj = sy._SyftTensor.deser_routing(child_type, child_obj, worker, acquire)
@@ -2564,7 +2567,7 @@ class _TorchTensor(_TorchObject):
             worker = self.owner.get_worker(worker)
 
         if ptr_id is None:
-            ptr_id = random.randint(0, 10e10)
+            ptr_id = int(10e10 * random.random())
 
         obj_id = self.child.id
 
@@ -2689,7 +2692,7 @@ class _TorchVariable(_TorchObject):
         (new_id, new_data_id, new_grad_id, new_grad_data_id) = utils.map_tuple(
             None,
             (new_id, new_data_id, new_grad_id, new_grad_data_id),
-            lambda id: id if id is not None else random.randint(0, 10e10),
+            lambda id: id if id is not None else int(10e10 * random.random()),
         )
 
         # Store tensorvar ids
@@ -2728,6 +2731,8 @@ class _TorchVariable(_TorchObject):
             wrapper.parent = None
 
         torch_utils.link_var_chain_to_data_and_grad_chains(self, self.data, self.grad)
+        # todo: fix this in link_var_chain_to_data_and_grad_chains
+        self.child.grad.data = self.grad.data.child
 
         return self
 
@@ -2778,7 +2783,7 @@ class _TorchVariable(_TorchObject):
                 if self.grad is not None and variable.grad is not None:
                     self.grad.data = variable.grad.data
 
-            torch_utils.fix_chain_ends(self)
+            torch_utils.fix_chain_structure(self, self.data, self.grad)
             if self.grad is not None:
                 torch_utils.link_var_chain_to_data_and_grad_chains(
                     self, self.data, self.grad
@@ -2786,7 +2791,7 @@ class _TorchVariable(_TorchObject):
             else:
                 torch_utils.link_var_chain_to_data_chain(self, self.data)
 
-            torch_utils.fix_chain_ends(self)
+            # torch_utils.fix_chain_ends(self)
             torch_utils.assert_is_chain_well_formed(self)
             return self
 
@@ -2813,6 +2818,19 @@ class _TorchVariable(_TorchObject):
             return {key: tensor_msg}
         else:
             return msgpack.packb({key: tensor_msg}, use_bin_type=True)
+
+    @staticmethod
+    def ser_wrap(torch_type, child, data=None, grad=None):
+        key = "__" + torch_type + "__"
+        var_msg = {"torch_type": torch_type, "child": child}
+        if data is not None:
+            var_msg["data"] = sy.FloatTensor.ser_wrap(data.torch_type, data)
+        if grad is not None:
+            var_msg["grad"] = sy.Variable.ser_wrap(
+                grad.torch_type, grad, grad.data, None
+            )
+
+        return {key: var_msg}
 
     @staticmethod
     def deser(obj_type, msg_obj, worker, acquire, is_head=False):
@@ -2868,14 +2886,8 @@ class _TorchVariable(_TorchObject):
         variable.child = var_syft_obj
         var_syft_obj.parent = variable
 
-        # Re-assign the data, and propagate deeply
-        torch_utils.fix_chain_ends(variable)
-        if var_grad is None:
-            torch_utils.link_var_chain_to_data_chain(variable, var_data)
-        else:
-            torch_utils.link_var_chain_to_data_and_grad_chains(
-                variable, var_data, var_grad
-            )
+        # Fix chain ends and links between chains
+        torch_utils.fix_chain_structure(variable, variable.data, variable.grad)
 
         return variable
 

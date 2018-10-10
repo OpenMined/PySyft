@@ -18,13 +18,8 @@ from ... import utils
 def extract_type_and_obj(dct):
     """Utils function, which given a serialized tensors, Returns a pair tuple
     with the tensor type (in a string) and the associated data in a dict."""
-    pat = re.compile("__(.+)__")
     for key, obj in dct.items():
-        if pat.search(key) is not None:
-            obj_type = pat.search(key).group(1)
-            return obj_type, obj
-        else:
-            raise TypeError("Key", key, "is not recognized.")
+        return encode.get_deserialized_key(key), obj
 
 
 def get_child_command(obj, child_types=[]):
@@ -76,10 +71,15 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
 
     # Check that the next child type of all tensorvar is the same
     # TODO: should allow to mix Variable and Parameter in next_child_types
-    if len(next_child_types) == 0:
+    n_types = len(next_child_types)
+    if n_types == 0:
         ref_child_type = sy._LocalTensor
+    elif n_types == 1:
+        ref_child_type = next_child_types[0]
     else:
-        if all(child_type in torch.tensor_types for child_type in next_child_types):
+        if all(
+            child_type in torch.tensorvar_types_tuple for child_type in next_child_types
+        ):
             ref_child_type = next_child_types[0]
         else:
             ref_child_type = next_child_types[0]
@@ -301,6 +301,35 @@ def wrap_command(obj):
     # Dict
     elif isinstance(obj, dict):
         return {k: wrap_command(o) for k, o in obj.items()}
+    else:
+        # print('The following type wasnt wrapped:', str(type(obj)))
+        return obj
+
+
+def wrap_command_pre_ser(obj):
+    """
+    To a Syft command, add a torch wrapper
+    Returns the wrapper
+    """
+    # for numeric values for instance, don't add a wrapper
+    if isinstance(obj, (int, float, bool, str, np.ndarray, slice)) or obj is None:
+        return obj
+    # Torch tensor or variable
+    elif is_tensor(obj) or is_variable(obj):
+        return obj  # the tensor is already wrapped
+    # sy._SyftTensor
+    elif is_syft_tensor(obj):
+        if not is_variable_name(obj.torch_type):
+            wrapper = sy.FloatTensor.ser_wrap(obj.torch_type, obj)
+        else:
+            wrapper = sy.Variable.ser_wrap(obj.torch_type, obj, obj.data, obj.grad)
+        return wrapper
+    # List or iterables which could contain tensors
+    elif isinstance(obj, (list, tuple, set, bytearray, range)):
+        return type(obj)([wrap_command_pre_ser(o) for o in obj])
+    # Dict
+    elif isinstance(obj, dict):
+        return {k: wrap_command_pre_ser(o) for k, o in obj.items()}
     else:
         # print('The following type wasnt wrapped:', str(type(obj)))
         return obj
@@ -640,6 +669,63 @@ def link_var_chain_to_data_and_grad_chains(var_node, data_node, grad_node):
             )
 
 
+def fix_chain_structure(var_node, data_node=None, grad_node=None, head_node=None):
+    """
+    Combine link_var_chain_to_data_and_grad_chains and fix_chain_ends
+    """
+    if head_node is None:
+        head_node = var_node
+
+    if var_node is not None:
+        # Don't bind for torch nodes, it's already done
+        if is_syft_tensor(var_node):
+            if data_node is not None:
+                var_node.data = data_node
+            if grad_node is not None:
+                var_node.grad = grad_node
+
+        # Check terminal cases
+        if isinstance(var_node, sy._LocalTensor):
+            wrap_command_with(head_node, var_node)
+            if data_node is not None:
+                wrap_command_with(head_node.data, var_node.data)
+            if grad_node is not None:
+                wrap_command_with(head_node.grad, var_node.grad)
+        elif isinstance(var_node, (sy._PointerTensor, sy._GeneralizedPointerTensor)):
+            var_node.child = None
+            head_node.parent = None
+            if data_node is not None:
+                var_node.data.child = None
+                head_node.data.parent = None
+            if grad_node is not None:
+                var_node.grad.child = None
+                head_node.grad.parent = None
+        else:
+            # Fix parents
+            var_node_child = var_node.child
+            data_node_child = data_node.child if data_node is not None else None
+            grad_node_child = (
+                grad_node.child
+                if grad_node is not None
+                and not isinstance(
+                    grad_node,
+                    (sy._LocalTensor, sy._PointerTensor, sy._GeneralizedPointerTensor),
+                )
+                else None
+            )
+
+            if var_node_child is not None:
+                var_node.child.parent = var_node
+            if data_node_child is not None:
+                data_node.child.parent = data_node
+            if grad_node_child is not None:
+                grad_node.child.parent = grad_node
+
+            fix_chain_structure(
+                var_node_child, data_node_child, grad_node_child, head_node
+            )
+
+
 def assert_is_chain_well_formed(
     obj, downward=True, start_id=None, start_type=None, end_chain=None
 ):
@@ -694,7 +780,9 @@ def assert_is_chain_well_formed(
                 )
                 assert (
                     end_chain.child.id == obj.id
-                ), "Tail LocalTensor child should be the Tensor Var"
+                ), "Tail LocalTensor child {} should be the Tensor Var {}".format(
+                    end_chain.child.id, obj.id
+                )
                 return True
 
         elif isinstance(end_chain, sy._SPDZTensor):
@@ -737,13 +825,16 @@ def assert_is_chain_well_formed(
 
 
 def find_tail_of_chain(obj, start_id=None, start_type=None):
-    """Returns the last element of a chain, and perform basic sanity checks on
-    the chain like unexpected loops."""
+    """
+    Returns the last element of a chain, and perform basic sanity checks
+    on the chain like unexpected loops
+    """
+    obj_type = type(obj)
     if start_id is None:
         start_id = obj.id
-        start_type = type(obj)
+        start_type = obj_type
     else:
-        if start_id == obj.id and start_type == type(obj):
+        if start_id == obj.id and start_type == obj_type:
             raise StopIteration(
                 "The chain looped downward on id", obj.child.id, "with obj", obj.child
             )

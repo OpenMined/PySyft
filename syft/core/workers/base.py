@@ -1159,10 +1159,11 @@ class BaseWorker(ABC):
         if isinstance(recipient, (str, int)):
             raise TypeError("Recipient should be a worker object not his id.")
 
+        # print(message)
         response = self.send_msg(
             message=message, message_type=framework + "_cmd", recipient=recipient
         )
-
+        # print(response)
         response = encode.decode(response, worker=self)
 
         return response
