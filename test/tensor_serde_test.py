@@ -21,6 +21,7 @@ me.add_workers([bob, alice])
 # torch.manual_seed(1)
 # random.seed(1)
 
+
 class TestTensorPointerSerde(TestCase):
 
     # def test_floattensordata2json2floattensordata(self):
@@ -234,5 +235,5 @@ class TestTensorPointerSerde(TestCase):
         assert 1234 not in me._objects
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

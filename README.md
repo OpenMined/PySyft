@@ -60,6 +60,10 @@ We are very grateful for contributions to PySyft from the following organization
   
  [coMind Website](https://comind.org/) & [coMind Github](https://github.com/coMindOrg/federated-averaging-tutorials)
 
+## Disclaimer
+
+Do NOT use this code to protect data (private or otherwise) - at present it is very insecure. 
+
 ## License
 
 [Apache License 2.0](https://github.com/OpenMined/PySyft/blob/master/LICENSE)
