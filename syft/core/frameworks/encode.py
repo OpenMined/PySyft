@@ -96,16 +96,29 @@ class PythonEncoder:
             return response
 
     def python_encode(self, obj, private_local):
-        # Case of basic types
-        if isinstance(obj, (int, float, str)) or obj is None:
-            return obj
-        elif isinstance(obj, type(...)):
-            return "..."
-        elif isinstance(obj, np.ndarray):
-            return obj.ser(private=private_local, to_json=False)
+        # /!\ Sort by frequency
         # Dict
-        elif isinstance(obj, dict):
-            return {k: self.python_encode(v, private_local) for k, v in obj.items()}
+        if isinstance(obj, dict):
+            return {
+                k: self.python_encode(v, private_local)
+                for k, v in obj.items()
+            }
+        # sy._SyftTensor (Pointer, Local)
+        elif torch_utils.is_syft_tensor(obj):
+            tail_object = torch_utils.find_tail_of_chain(obj)
+            if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
+                self.found_pointers.append(tail_object)
+            return obj.ser(private=private_local)
+        # Case of basic types
+        elif isinstance(obj, (int, float, str)) or obj is None:
+            return obj
+        # List
+        elif isinstance(obj, list):
+            return [self.python_encode(i, private_local) for i in obj]
+        # Iterables non json-serializable
+        elif isinstance(obj, (tuple, set, bytearray, range)):
+            key = get_serialized_key(obj)
+            return {key: [self.python_encode(i, private_local) for i in obj]}
         # Variable
         elif torch_utils.is_variable(obj):
             tail_object = torch_utils.find_tail_of_chain(obj)
@@ -118,23 +131,12 @@ class PythonEncoder:
             if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
                 self.found_pointers.append(tail_object)
             return obj.ser(private=private_local)
-        # sy._SyftTensor (Pointer, Local)
-        # [Note: shouldn't be called on regular chain with end=tensorvar]
-        elif torch_utils.is_syft_tensor(obj):
-            tail_object = torch_utils.find_tail_of_chain(obj)
-            if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
-                self.found_pointers.append(tail_object)
-            return obj.ser(private=private_local)
-        # List
-        elif isinstance(obj, list):
-            return [self.python_encode(i, private_local) for i in obj]
-        # np array
+        # Ellipsis
+        elif isinstance(obj, type(...)):
+            return "..."
+        # np.array
         elif isinstance(obj, np.ndarray):
             return obj.ser(private=private_local, to_json=False)
-        # Iterables non json-serializable
-        elif isinstance(obj, (tuple, set, bytearray, range)):
-            key = get_serialized_key(obj)
-            return {key: [self.python_encode(i, private_local) for i in obj]}
         # Slice
         elif isinstance(obj, slice):
             key = get_serialized_key(obj)
