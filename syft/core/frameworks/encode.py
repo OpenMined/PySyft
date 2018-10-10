@@ -35,14 +35,13 @@ def get_deserialized_key(ser_type_name):
     try:
         return deserialized_keys[ser_type_name]
     except KeyError:
-        pat = re.compile('__(.+)__')
+        pat = re.compile("__(.+)__")
         if pat.search(ser_type_name) is not None:
             type_name = pat.search(ser_type_name).group(1)
             deserialized_keys[ser_type_name] = type_name
             return deserialized_keys[ser_type_name]
         else:
-            raise TypeError('ser_type_name', ser_type_name, 'is not recognized.')
-
+            raise TypeError("ser_type_name", ser_type_name, "is not recognized.")
 
 
 def encode(message, retrieve_pointers=False, private_local=True):
@@ -114,10 +113,7 @@ class PythonEncoder:
         # /!\ Sort by frequency
         # Dict
         if isinstance(obj, dict):
-            return {
-                k: self.python_encode(v, private_local)
-                for k, v in obj.items()
-            }
+            return {k: self.python_encode(v, private_local) for k, v in obj.items()}
         # sy._SyftTensor (Pointer, Local)
         elif torch_utils.is_syft_tensor(obj):
             tail_object = torch_utils.find_tail_of_chain(obj)

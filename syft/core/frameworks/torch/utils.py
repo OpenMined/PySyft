@@ -77,7 +77,9 @@ def prepare_child_command(command, replace_tensorvar_with_child=False):
     elif n_types == 1:
         ref_child_type = next_child_types[0]
     else:
-        if all(child_type in torch.tensorvar_types_tuple for child_type in next_child_types):
+        if all(
+            child_type in torch.tensorvar_types_tuple for child_type in next_child_types
+        ):
             ref_child_type = next_child_types[0]
         else:
             ref_child_type = next_child_types[0]
@@ -303,6 +305,7 @@ def wrap_command(obj):
         # print('The following type wasnt wrapped:', str(type(obj)))
         return obj
 
+
 def wrap_command_pre_ser(obj):
     """
     To a Syft command, add a torch wrapper
@@ -313,7 +316,7 @@ def wrap_command_pre_ser(obj):
         return obj
     # Torch tensor or variable
     elif is_tensor(obj) or is_variable(obj):
-        return obj # the tensor is already wrapped
+        return obj  # the tensor is already wrapped
     # sy._SyftTensor
     elif is_syft_tensor(obj):
         if not is_variable_name(obj.torch_type):
@@ -666,6 +669,63 @@ def link_var_chain_to_data_and_grad_chains(var_node, data_node, grad_node):
             )
 
 
+def fix_chain_structure(var_node, data_node=None, grad_node=None, head_node=None):
+    """
+    Combine link_var_chain_to_data_and_grad_chains and fix_chain_ends
+    """
+    if head_node is None:
+        head_node = var_node
+
+    if var_node is not None:
+        # Don't bind for torch nodes, it's already done
+        if is_syft_tensor(var_node):
+            if data_node is not None:
+                var_node.data = data_node
+            if grad_node is not None:
+                var_node.grad = grad_node
+
+        # Check terminal cases
+        if isinstance(var_node, sy._LocalTensor):
+            wrap_command_with(head_node, var_node)
+            if data_node is not None:
+                wrap_command_with(head_node.data, var_node.data)
+            if grad_node is not None:
+                wrap_command_with(head_node.grad, var_node.grad)
+        elif isinstance(var_node, (sy._PointerTensor, sy._GeneralizedPointerTensor)):
+            var_node.child = None
+            head_node.parent = None
+            if data_node is not None:
+                var_node.data.child = None
+                head_node.data.parent = None
+            if grad_node is not None:
+                var_node.grad.child = None
+                head_node.grad.parent = None
+        else:
+            # Fix parents
+            var_node_child = var_node.child
+            data_node_child = data_node.child if data_node is not None else None
+            grad_node_child = (
+                grad_node.child
+                if grad_node is not None
+                and not isinstance(
+                    grad_node,
+                    (sy._LocalTensor, sy._PointerTensor, sy._GeneralizedPointerTensor),
+                )
+                else None
+            )
+
+            if var_node_child is not None:
+                var_node.child.parent = var_node
+            if data_node_child is not None:
+                data_node.child.parent = data_node
+            if grad_node_child is not None:
+                grad_node.child.parent = grad_node
+
+            fix_chain_structure(
+                var_node_child, data_node_child, grad_node_child, head_node
+            )
+
+
 def assert_is_chain_well_formed(
     obj, downward=True, start_id=None, start_type=None, end_chain=None
 ):
@@ -720,7 +780,9 @@ def assert_is_chain_well_formed(
                 )
                 assert (
                     end_chain.child.id == obj.id
-                ), "Tail LocalTensor child should be the Tensor Var"
+                ), "Tail LocalTensor child {} should be the Tensor Var {}".format(
+                    end_chain.child.id, obj.id
+                )
                 return True
 
         elif isinstance(end_chain, sy._SPDZTensor):

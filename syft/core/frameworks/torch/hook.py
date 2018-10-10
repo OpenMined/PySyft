@@ -184,7 +184,9 @@ class TorchHook:
         if "native___init__" not in dir(tensorvar_type):
             tensorvar_type.native___init__ = tensorvar_type.__init__
 
-        def new___init__(cls, *args, owner=None, id=None, skip_register=False, **kwargs):
+        def new___init__(
+            cls, *args, owner=None, id=None, skip_register=False, **kwargs
+        ):
 
             if owner is None:
                 owner = hook_self.local_worker
@@ -195,12 +197,12 @@ class TorchHook:
                     child=cls, parent=cls, torch_type=type(cls).__name__
                 )
             else:
-                kwargs['owner'] = owner
-                kwargs['id'] = id
-                kwargs['skip_register'] = skip_register
+                kwargs["owner"] = owner
+                kwargs["id"] = id
+                kwargs["skip_register"] = skip_register
                 cls.native___init__(*args, **kwargs)
                 if id is None:
-                    id = int(10e10*random.random())
+                    id = int(10e10 * random.random())
                 cls.id = id
                 cls.owner = owner
 
@@ -219,9 +221,9 @@ class TorchHook:
                     assert self._child is not None
                     return self._child
                 except (AttributeError, AssertionError):
-                    self._child = _LocalTensor(child=self,
-                                               parent=self,
-                                               torch_type=type(self).__name__)
+                    self._child = _LocalTensor(
+                        child=self, parent=self, torch_type=type(self).__name__
+                    )
                     return self._child
             except TypeError:
                 # for some reason, hasattr(self, '_child') returns a TypeError saying
