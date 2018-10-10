@@ -328,6 +328,7 @@ def compile_command(attr, args, kwargs, has_self=False, self=None):
     for pointer in pointers:
         locations.add(pointer.location)
         owners.add(pointer.owner)
+        
     locations = list(locations)
     owners = list(owners)
 
