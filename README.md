@@ -49,6 +49,16 @@ conda install -c peterjc123 pytorch-cpu
 ```text
 python3 setup.py test
 ```
+Alternatively, tests can be run with
+```bash
+make test
+```
+## Run Local Notebook Server
+All the examples can be played with by running the command
+```bash
+make notebook
+```
+and selecting the pysyft kernel
 
 Join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.org) and help us in our mission. We are really friendly people!
 
