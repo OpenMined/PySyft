@@ -18,13 +18,8 @@ from ... import utils
 def extract_type_and_obj(dct):
     """Utils function, which given a serialized tensors, Returns a pair tuple
     with the tensor type (in a string) and the associated data in a dict."""
-    pat = re.compile("__(.+)__")
     for key, obj in dct.items():
-        if pat.search(key) is not None:
-            obj_type = pat.search(key).group(1)
-            return obj_type, obj
-        else:
-            raise TypeError("Key", key, "is not recognized.")
+        return encode.get_deserialized_key(key), obj
 
 
 def get_child_command(obj, child_types=[]):
@@ -768,13 +763,16 @@ def assert_is_chain_well_formed(
 
 
 def find_tail_of_chain(obj, start_id=None, start_type=None):
-    """Returns the last element of a chain, and perform basic sanity checks on
-    the chain like unexpected loops."""
+    """
+    Returns the last element of a chain, and perform basic sanity checks
+    on the chain like unexpected loops
+    """
+    obj_type = type(obj)
     if start_id is None:
         start_id = obj.id
-        start_type = type(obj)
+        start_type = obj_type
     else:
-        if start_id == obj.id and start_type == type(obj):
+        if start_id == obj.id and start_type == obj_type:
             raise StopIteration(
                 "The chain looped downward on id", obj.child.id, "with obj", obj.child
             )

@@ -19,6 +19,7 @@ from .numpy import array, array_ptr
 
 
 serialized_keys = {}
+deserialized_keys = {}
 
 
 def get_serialized_key(obj):
@@ -28,6 +29,20 @@ def get_serialized_key(obj):
     except KeyError:
         serialized_keys[type_name] = "__" + type_name + "__"
         return serialized_keys[type_name]
+
+
+def get_deserialized_key(ser_type_name):
+    try:
+        return deserialized_keys[ser_type_name]
+    except KeyError:
+        pat = re.compile('__(.+)__')
+        if pat.search(ser_type_name) is not None:
+            type_name = pat.search(ser_type_name).group(1)
+            deserialized_keys[ser_type_name] = type_name
+            return deserialized_keys[ser_type_name]
+        else:
+            raise TypeError('ser_type_name', ser_type_name, 'is not recognized.')
+
 
 
 def encode(message, retrieve_pointers=False, private_local=True):
