@@ -93,7 +93,7 @@ def setUpModule():
         "Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
         " - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor\n"
         " - - Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
-        "   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _LocalTensor"
+        "   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor"
     )
 
 
