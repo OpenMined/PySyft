@@ -6,6 +6,7 @@ RUN apk add g++ python-dev tiff-dev zlib-dev freetype-dev libc6-compat
 RUN pip install jupyter \
     && pip install http://download.pytorch.org/whl/cpu/torch-0.3.1-cp36-cp36m-linux_x86_64.whl \
     && pip install torchvision \
+    && pip install msgpack \
     && rm -r /root/.cache/pip \
     && mkdir PySyft \
     && mkdir PySyft/examples
