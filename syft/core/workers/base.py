@@ -1109,10 +1109,10 @@ class BaseWorker(ABC):
                     raise MemoryError("You already point at ", recipient, ":", new_id)
                 assert (
                     new_id != new_data_id
-                ), "You can't have the same id vor the variable and its data."
+                ), "You can't have the same id for the variable and its data."
                 assert (
                     new_id != new_grad_id
-                ), "You can't have the same id vor the variable and its grad."
+                ), "You can't have the same id for the variable and its grad."
                 assert new_id != new_grad_data_id
 
                 assert new_data_id != new_grad_id
