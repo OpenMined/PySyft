@@ -175,6 +175,7 @@ class _SyftTensor:
         location=None,
         id_at_location=None,
         register=False,
+        original_pointer=False,
     ):
 
         if owner is None:
@@ -223,6 +224,7 @@ class _SyftTensor:
                 id_at_location=id_at_location,
                 owner=owner,
                 skip_register=(not register),
+                original_pointer=original_pointer,
             )
             if not register:
                 ptr.owner.rm_obj(ptr.id)
@@ -915,6 +917,7 @@ class _PointerTensor(_SyftTensor):
         id=None,
         owner=None,
         skip_register=False,
+        original_pointer=False,
     ):
         super().__init__(
             child=child,
@@ -931,7 +934,7 @@ class _PointerTensor(_SyftTensor):
         self.torch_type = torch_type
 
         self.register_pointer()
-
+        self.original_pointer = original_pointer
         # pointers to themselves that get registered should trigger the flat
         # if it's not getting registered the pointer is probably about to be
         # sent over the wire
@@ -974,6 +977,7 @@ class _PointerTensor(_SyftTensor):
     def handle_call(cls, syft_command, owner):
         """_PointerTensor has an overloaded handle_call function because it
         converts the command to torch tensors and send it over the network."""
+
         tensor_command = torch_utils.wrap_command(syft_command)
 
         attr = tensor_command["command"]
@@ -982,14 +986,17 @@ class _PointerTensor(_SyftTensor):
         has_self = tensor_command["has_self"]
         self_ = tensor_command["self"] if has_self else None
 
-        command, locations, owners = torch_utils.compile_command(
-            attr, args, kwargs, has_self=has_self, self=self_
-        )
-        location = locations[0]
-        owner = owners[0]
+        if attr == "end_get":
+            response = self_.get()
+        else:
+            command, locations, owners = torch_utils.compile_command(
+                attr, args, kwargs, has_self=has_self, self=self_
+            )
+            location = locations[0]
+            owner = owners[0]
 
-        # Else we send the command
-        response = owner.send_torch_command(recipient=location, message=command)
+            # Else we send the command
+            response = owner.send_torch_command(recipient=location, message=command)
 
         # torch_utils.assert_has_only_torch_tensorvars(response)
 
@@ -1006,6 +1013,25 @@ class _PointerTensor(_SyftTensor):
         # Perform the un-wrap: remove the head on all chains (also .data and .grad if any)
         response, _ = torch_utils.get_child_command(response)
         # response is now a _Pointer, with a .data attr which is a _Pointer, etc.
+        return response
+
+    def end_get(self):
+
+        attr = "end_get"
+        args = []
+        kwargs = {}
+        has_self = True
+        self_ = self
+
+        command, locations, owners = torch_utils.compile_command(
+            attr, args, kwargs, has_self=has_self, self=self_
+        )
+        location = locations[0]
+        owner = owners[0]
+
+        # Else we send the command
+        response = owner.send_torch_command(recipient=location, message=command)
+
         return response
 
     def __str__(self):
@@ -1030,6 +1056,7 @@ class _PointerTensor(_SyftTensor):
             "location": self.location.id,
             "id_at_location": self.id_at_location,
             "torch_type": self.torch_type,
+            "original_pointer": self.original_pointer,
         }
         if as_dict:
             return {"___PointerTensor__": data}
@@ -1057,6 +1084,7 @@ class _PointerTensor(_SyftTensor):
                         owner=worker,
                         id=msg_obj["id"],
                         skip_register=True,
+                        original_pointer=msg_obj["original_pointer"],
                     )
                 else:
                     syft_obj = previous_pointer
@@ -1074,6 +1102,7 @@ class _PointerTensor(_SyftTensor):
                         owner=worker,
                         id=None,
                         skip_register=True,
+                        original_pointer=msg_obj["original_pointer"],
                     )
                 else:
                     syft_obj = previous_pointer
@@ -2172,6 +2201,9 @@ class _TorchObject:
 
     __module__ = "syft"
 
+    def end_get(self):
+        return self.child.end_get()
+
     def __gt__(self, *args, **kwargs):
         try:
             return self.child > args[0].child
@@ -2404,10 +2436,29 @@ class _TorchObject:
         ).wrap()
 
     def move(self, worker, new_id=None):
-        """Give the end leaf of the chain to worker, just like if the last elmt
-        was send its child to worker self->alice->obj [worker] =>
-        self->alice->worker->obj."""
-        raise NotImplementedError("Move is not supported anymore.")
+
+        if isinstance(self.child, _PointerTensor):
+            if self.child.original_pointer:
+
+                return self.send(worker).end_get()
+            else:
+
+                raise Exception(
+                    "You tried to call .move("
+                    + str(worker.id)
+                    + ") on a pointer which points to another pointers."
+                    "You can only call .move("
+                    + str(worker.id)
+                    + ") on Pointers which point directly to data. Try calling"
+                    ".get() until you get a pointer whose attribute .original_pointer == True"
+                    "Then you can call .move(" + str(worker.id) + ")"
+                )
+        else:
+            raise Exception(
+                "You can only call .move() on pointers to data. Perhaps you meant .send("
+                + str(worker.id)
+                + ")?"
+            )
 
 
 class _TorchTensor(_TorchObject):
@@ -2495,6 +2546,11 @@ class _TorchTensor(_TorchObject):
         """
         assert len(workers) > 0, "Please provide workers to receive the data"
 
+        if isinstance(self.child, _LocalTensor):
+            original_pointer = True
+        else:
+            original_pointer = False
+
         if len(workers) == 1:
             worker = workers[0]
         else:
@@ -2525,7 +2581,10 @@ class _TorchTensor(_TorchObject):
         # set this wrapper's child to be the newly created PointerTensor
         self.child.id = obj_id
         syft_pointer = self.child.create_pointer(
-            location=worker, id_at_location=ptr_id, register=True
+            location=worker,
+            id_at_location=ptr_id,
+            register=True,
+            original_pointer=original_pointer,
         )
         torch_utils.wrap_command_with(syft_pointer, self)
         self.parent = None
