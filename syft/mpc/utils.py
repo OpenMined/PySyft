@@ -1,8 +1,9 @@
 cache = {}
 
+
 def egcd(a, b):
-    """
-    greatest common denominator
+    """greatest common denominator.
+
     :param a:
     :param b:
     :return:
@@ -14,9 +15,9 @@ def egcd(a, b):
         g, y, x = egcd(b % a, a)
         return (g, x - (b // a) * y, y)
 
+
 def modinv(a, m):
-    """
-    calculate the multiplicative inverse of a modulus m such that
+    """calculate the multiplicative inverse of a modulus m such that.
 
     (x * result) % m == (x / a)
 
@@ -27,7 +28,7 @@ def modinv(a, m):
     :return: the number we can multiply by to actually divide by a
     """
 
-    if(a in cache):
+    if a in cache:
         sub_cache = cache[a]
         if m in sub_cache:
             return sub_cache[m]
@@ -36,7 +37,7 @@ def modinv(a, m):
 
     g, x, y = egcd(a, m)
     if g != 1:
-        raise Exception('modular inverse does not exist')
+        raise Exception("modular inverse does not exist")
     else:
         result = x % m
         cache[a][m] = result

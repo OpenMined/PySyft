@@ -1,16 +1,16 @@
-import socket
 import json
+import socket
+
 import msgpack
 
-from .base import BaseWorker
 from ..frameworks import encode
+from .base import BaseWorker
 
 
 class SocketWorker(BaseWorker):
-    """
-    A worker capable of performing the functions of a BaseWorker across
-    a socket connection. Note that the worker is NOT responsible for
-    creating the socket connection.
+    """A worker capable of performing the functions of a BaseWorker across a
+    socket connection. Note that the worker is NOT responsible for creating the
+    socket connection.
 
     :Parameters:
 
@@ -86,15 +86,30 @@ class SocketWorker(BaseWorker):
     """
 
     def __init__(
-        self,  hook=None, hostname='localhost', port=8110, max_connections=5,
-        id=0, is_client_worker=True, objects={}, tmp_objects={},
-        known_workers={}, verbose=True, is_pointer=False, queue_size=0,
+        self,
+        hook=None,
+        hostname="localhost",
+        port=8110,
+        max_connections=5,
+        id=0,
+        is_client_worker=True,
+        objects={},
+        tmp_objects={},
+        known_workers={},
+        verbose=True,
+        is_pointer=False,
+        queue_size=0,
     ):
 
         super().__init__(
-            hook=hook, id=id, is_client_worker=is_client_worker,
-            objects=objects, tmp_objects=tmp_objects,
-            known_workers=known_workers, verbose=verbose, queue_size=queue_size,
+            hook=hook,
+            id=id,
+            is_client_worker=is_client_worker,
+            objects=objects,
+            tmp_objects=tmp_objects,
+            known_workers=known_workers,
+            verbose=verbose,
+            queue_size=queue_size,
         )
 
         self.hostname = hostname
@@ -103,8 +118,8 @@ class SocketWorker(BaseWorker):
         self.max_connections = max_connections
         self.is_pointer = is_pointer
 
-        if(self.is_pointer):
-            if(self.verbose):
+        if self.is_pointer:
+            if self.verbose:
                 print("Attaching Pointer to Socket Worker...")
             self.serversocket = None
 
@@ -114,11 +129,9 @@ class SocketWorker(BaseWorker):
 
         else:
 
-            if(self.verbose):
+            if self.verbose:
                 print("Starting Socket Worker...")
-            self.serversocket = socket.socket(
-                socket.AF_INET, socket.SOCK_STREAM,
-            )
+            self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.serversocket.bind((self.hostname, self.port))
 
             # become a server socket, maximum 5 connections
@@ -126,7 +139,7 @@ class SocketWorker(BaseWorker):
 
             # if it's a client worker, then we don't want it waiting for commands
             # because it's going to be issuing commands.
-            if(not is_client_worker or self.is_pointer):
+            if not is_client_worker or self.is_pointer:
                 print("Ready to receive commands...")
                 # self._listen()
             else:
@@ -136,10 +149,8 @@ class SocketWorker(BaseWorker):
         return json.dumps({"hostname": self.hostname, "port": self.port, "id": self.id})
 
     def listen(self, num_messages=-1):
-        """
-        Starts SocketWorker server on the correct port and handles message as they
-        are received.
-        """
+        """Starts SocketWorker server on the correct port and handles message
+        as they are received."""
         while num_messages != 0:
 
             # blocking until a message is received
@@ -150,14 +161,14 @@ class SocketWorker(BaseWorker):
                     message = self._process_buffer(connection)
 
                     # process message and generate response
-                    response = self.receive_msg(message)#.decode()
+                    response = self.receive_msg(message)  # .decode()
 
-                    #if(response[-1] != b"\n"):
+                    # if(response[-1] != b"\n"):
                     #    response += b"\n"
                     # send response back
-                    connection.send(response) #.encode()
+                    connection.send(response)  # .encode()
 
-                    if(self.verbose):
+                    if self.verbose:
                         print("Received Command From:", address)
 
                     num_messages -= 1
@@ -165,36 +176,46 @@ class SocketWorker(BaseWorker):
                 connection.close()
 
     def search(self, query):
-        """
-        This function is designed to find relevant tensors present within the worker's objects (self._objects) dict.
-        It does so by looking for string overlap between one or more strings in the "query" and the id of each tensor.
-        If the current worker object (self) is merely a pointer to a remote worker (connected via socket), then it sends
-        a command to the remote worker which calls this function on the remote machine. If the current worker object
-        (self) is NOT a pointer, then it queries the local tensors.
+        """This function is designed to find relevant tensors present within
+        the worker's objects (self._objects) dict. It does so by looking for
+        string overlap between one or more strings in the "query" and the id of
+        each tensor. If the current worker object (self) is merely a pointer to
+        a remote worker (connected via socket), then it sends a command to the
+        remote worker which calls this function on the remote machine. If the
+        current worker object (self) is NOT a pointer, then it queries the
+        local tensors.
+
         :param query: a string or list of strings
         :return: if self.is_pointer==True, this returns a set of pointer tensors. Otherwise, it returns the tensors.
         """
 
+        if self.is_pointer:
+            raw_response = self.send_msg(
+                message=query, message_type="query", recipient=self
+            )
 
-        if(self.is_pointer):
-            raw_response  = self.send_msg(message=query, message_type="query", recipient=self)
-            
             response = self.decode_msg(raw_response)
 
-            ps = list()
-            for p in response['obj']:
-                ps.append(encode.decode(p['__tuple__'][0], worker=self.hook.local_worker, message_is_dict=True))
+            ps = []
+            for p in response["obj"]:
+                ps.append(
+                    encode.decode(
+                        p["__tuple__"][0],
+                        worker=self.hook.local_worker,
+                        message_is_dict=True,
+                    )
+                )
             return ps
         else:
             ids = self._search(query)
-            tensors = list()
+            tensors = []
             for id in ids:
                 tensors.append(self.get_obj(id))
             return tensors
 
     def _send_msg(self, message_wrapper_json_binary, recipient):
-        """Sends a string message to another worker with message_type information
-        indicating how the message should be processed.
+        """Sends a string message to another worker with message_type
+        information indicating how the message should be processed.
 
         :Parameters:
 
@@ -214,24 +235,25 @@ class SocketWorker(BaseWorker):
         return response
 
     @classmethod
-    def _process_buffer(cls, socket, buffer_size=108192, delimiter="\n"):
+    def _process_buffer(cls, socket, buffer_size=108_192, delimiter="\n"):
         # WARNING: will hang if buffer doesn't finish with newline
 
-        buffer = socket.recv(buffer_size)#.decode('utf-8')
-        #buffer = msgpack.unpackb(buffer, raw=False)
-        #print('decoded')
-        #print(buffer)
+        buffer = socket.recv(buffer_size)  # .decode('utf-8')
+        # buffer = msgpack.unpackb(buffer, raw=False)
+        # print('decoded')
+        # print(buffer)
         return buffer
 
         buffering = True
         while buffering:
             print(buffer)
             if delimiter in buffer:
+
                 (line, buffer) = buffer.split(delimiter, 1)
-                print("processed")
+
                 return line + delimiter
             else:
-                more = socket.recv(buffer_size)#.decode('utf-8')
+                more = socket.recv(buffer_size)  # .decode('utf-8')
                 more = msgpack.unpackb(more, raw=False)
                 if not more:
                     buffering = False

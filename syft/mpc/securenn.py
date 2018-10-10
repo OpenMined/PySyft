@@ -1,18 +1,17 @@
 # An implementation of the SecureNN protocols from Wagh et al.
 
-from syft.spdz.spdz import (Q_BITS, field)
+from syft.spdz.spdz import Q_BITS, field
 import syft
 import torch
 
 L = field
 p = field
 
+
 def decompose(tensor):
-    """
-    decompose a tensor into its binary representation
-    """
+    """decompose a tensor into its binary representation."""
     powers = torch.arange(Q_BITS)
-    if hasattr(tensor.child, 'pointer_tensor_dict'):
+    if hasattr(tensor.child, "pointer_tensor_dict"):
         powers.send(*list(tensor.child.pointer_tensor_dict.keys()))
     for i in range(len(tensor.shape)):
         powers = powers.unsqueeze(0)
@@ -25,7 +24,7 @@ def decompose(tensor):
 def flip(x, dim):
     indices = torch.arange(x.get_shape()[dim] - 1, -1, -1).long()
 
-    if hasattr(x.child, 'pointer_tensor_dict'):
+    if hasattr(x.child, "pointer_tensor_dict"):
         indices = indices.send(*list(x.child.pointer_tensor_dict.keys()))
 
     return x.index_select(dim, indices)
@@ -58,7 +57,7 @@ def private_compare(x, r, BETA, j, alice, bob):
     wfc = wf.cumsum(1) - wf
     wfcf = flip(wfc, 1)
 
-    c_beta0 = ((j * r) - x + j + wfcf)
+    c_beta0 = (j * r) - x + j + wfcf
 
     # elif BETA == 1 AND r != 2**Q_BITS - 1
     w = x + (j * t) - (2 * t * x)
@@ -92,7 +91,9 @@ def msb(a_sh, alice, bob):
     x_bit = decompose(x)
     x_sh = x.share(bob, alice)
     x_bit_0 = x_bit[..., -1:]  # pretty sure decompose is backwards...
-    x_bit_sh_0 = x_bit_0.share(bob, alice).child.child  # least -> greatest from left -> right
+    x_bit_sh_0 = x_bit_0.share(
+        bob, alice
+    ).child.child  # least -> greatest from left -> right
     x_bit_sh = x_bit.share(bob, alice)
 
     # 2)
@@ -100,31 +101,36 @@ def msb(a_sh, alice, bob):
     r_sh = y_sh + x_sh
 
     # 3)
-    r = r_sh.get()  # .send(bob, alice) #TODO: make this secure by exchanging shares remotely
+    r = (
+        r_sh.get()
+    )  # .send(bob, alice) #TODO: make this secure by exchanging shares remotely
     r_0 = decompose(r)[..., -1].send(bob, alice)
     r = r.send(bob, alice)
 
     j0 = torch.zeros(x_bit_sh.get_shape()).long().send(bob).child
     j1 = (torch.ones(x_bit_sh.get_shape())).long().send(alice).child
-    j = syft._GeneralizedPointerTensor({bob: j0, alice: j1}, torch_type='syft.LongTensor').wrap(True)
+    j = syft._GeneralizedPointerTensor(
+        {bob: j0, alice: j1}, torch_type="syft.LongTensor"
+    ).wrap(True)
     j_0 = j[..., -1]
 
     # 4)
     BETA = (torch.rand(a_sh.get_shape()) > 0.5).long().send(bob, alice)
-    BETA_prime = private_compare(x_bit_sh,
-                                 r,
-                                 BETA=BETA,
-                                 j=j,
-                                 alice=alice,
-                                 bob=bob).long()
+    BETA_prime = private_compare(
+        x_bit_sh, r, BETA=BETA, j=j, alice=alice, bob=bob
+    ).long()
     # 5)
     BETA_prime_sh = BETA_prime.share(bob, alice).child.child
 
     # 7)
-    _lambda = syft._SNNTensor(BETA_prime_sh + (j_0 * BETA) - (2 * BETA * BETA_prime_sh)).wrap(True)
+    _lambda = syft._SNNTensor(
+        BETA_prime_sh + (j_0 * BETA) - (2 * BETA * BETA_prime_sh)
+    ).wrap(True)
 
     # 8)
-    _delta = syft._SNNTensor(x_bit_sh_0.squeeze(-1) + (j_0 * r_0) - (2 * r_0 * x_bit_sh_0.squeeze(-1))).wrap(True)
+    _delta = syft._SNNTensor(
+        x_bit_sh_0.squeeze(-1) + (j_0 * r_0) - (2 * r_0 * x_bit_sh_0.squeeze(-1))
+    ).wrap(True)
 
     # 9)
     theta = _lambda * _delta
@@ -135,9 +141,10 @@ def msb(a_sh, alice, bob):
 
     return a.view(*list(input_shape))
 
+
 def relu_deriv(a_sh):
     return msb(a_sh, *list(a_sh.child.shares.child.pointer_tensor_dict.keys()))
 
+
 def relu(a):
     return a * relu_deriv(a)
-

@@ -4,7 +4,6 @@ from . import spdz
 
 
 class SharedAdd(Function):
-
     @staticmethod
     def forward(ctx, a, b):
         return spdz.spdz_add(a, b)
@@ -16,7 +15,6 @@ class SharedAdd(Function):
 
 
 class SharedNeg(Function):
-
     @staticmethod
     def forward(ctx, a):
         return spdz.spdz_neg(a)
@@ -27,7 +25,6 @@ class SharedNeg(Function):
 
 
 class SharedSub(Function):
-
     @staticmethod
     def forward(ctx, a, b):
         return spdz.spdz_add(a, spdz.spdz_neg(b))
@@ -38,7 +35,6 @@ class SharedSub(Function):
 
 
 class SharedMult(Function):
-
     @staticmethod
     def forward(ctx, a, b, interface):
         ctx.save_for_backward(a, b)
@@ -58,7 +54,6 @@ class SharedMult(Function):
 
 
 class SharedMatmul(Function):
-
     @staticmethod
     def forward(ctx, a, b, interface):
         ctx.save_for_backward(a, b)
@@ -70,13 +65,12 @@ class SharedMatmul(Function):
         a, b = ctx.saved_tensors
         interface = ctx.interface
         grad_out = grad_out.data
-        a_grad = Variable(spdz.spdz_matmul(grad_out,  b.t_(), interface))
+        a_grad = Variable(spdz.spdz_matmul(grad_out, b.t_(), interface))
         b_grad = Variable(spdz.spdz_matmul(a.t_(), grad_out, interface))
         return a_grad, b_grad, None
 
 
 class SharedSigmoid(Function):
-
     @staticmethod
     def forward(ctx, a, interface):
         ctx.save_for_backwards(a)
@@ -91,11 +85,10 @@ class SharedSigmoid(Function):
         return spdz.spdz_mul(a, spdz.public_add(ones, -a, interface), interface)
 
 
-class SharedVariable(object):
-
+class SharedVariable:
     def __init__(self, var, interface):
         if not isinstance(var, Variable):
-            raise ValueError('Var must be a variable')
+            raise ValueError("Var must be a variable")
         else:
             self.var = var
         self.interface = interface
@@ -116,30 +109,29 @@ class SharedVariable(object):
         return self.matmul(other)
 
     def sigmoid(self):
-        return SharedVariable(SharedSigmoid.apply(self.var, self.interface), self.interface)
+        return SharedVariable(
+            SharedSigmoid.apply(self.var, self.interface), self.interface
+        )
 
     def neg(self):
         return SharedVariable(SharedNeg.apply(self.var), self.interface)
 
     def add(self, other):
         return SharedVariable(
-            SharedAdd.apply(self.var, other.var),
-            self.interface, self.requires_grad,
+            SharedAdd.apply(self.var, other.var), self.interface, self.requires_grad
         )
 
     def sub(self, other):
         return SharedVariable(SharedSub.apply(self.var, other.var), self.interface)
 
     def mul(self, other):
-        return SharedVariable(SharedMult.apply(self.var, other.var, self.interface), self.interface)
+        return SharedVariable(
+            SharedMult.apply(self.var, other.var, self.interface), self.interface
+        )
 
     def matmul(self, other):
         return SharedVariable(
-            SharedMatmul.apply(
-                self.var, other.var,
-                self.interface,
-            ),
-            self.interface,
+            SharedMatmul.apply(self.var, other.var, self.interface), self.interface
         )
 
     @property
@@ -160,4 +152,4 @@ class SharedVariable(object):
         return self.var.__repr__()
 
     def type(self):
-        return 'SharedVariable'
+        return "SharedVariable"

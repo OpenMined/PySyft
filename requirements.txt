@@ -1,3 +1,5 @@
 pre-commit
 sphinx_rtd_theme
 websockets
+msgpack
+black

@@ -25,6 +25,7 @@ james = None
 me = None
 hook = None
 
+
 def setUpModule():
     print("setup module")
 
@@ -47,7 +48,7 @@ def setUpModule():
     alice.add_workers([bob, james])
     james.add_workers([bob, alice])
 
-    class Chain():
+    class Chain:
         def __init__(self, leaf=False):
             if not leaf:
                 self.tensor = Chain(True)
@@ -57,50 +58,63 @@ def setUpModule():
 
     display_chain = Chain()
 
-    display_chain.tensor.local = 'FloatTensor > _LocalTensor'
+    display_chain.tensor.local = "FloatTensor > _LocalTensor"
 
-    display_chain.tensor.pointer = 'FloatTensor > _PointerTensor'
+    display_chain.tensor.pointer = "FloatTensor > _PointerTensor"
 
-    display_chain.tensor.fixp_local = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor'
+    display_chain.tensor.fixp_local = (
+        "FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor"
+    )
 
-    display_chain.tensor.fixp_mpc_gpt = 'FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor'
+    display_chain.tensor.fixp_mpc_gpt = "FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor"
 
-    display_chain.var.local = 'Variable > _LocalTensor\n' \
-                              ' - FloatTensor > _LocalTensor\n' \
-                              ' - - Variable > _LocalTensor\n' \
-                              '   - FloatTensor > _LocalTensor'
+    display_chain.var.local = (
+        "Variable > _LocalTensor\n"
+        " - FloatTensor > _LocalTensor\n"
+        " - - Variable > _LocalTensor\n"
+        "   - FloatTensor > _LocalTensor"
+    )
 
-    display_chain.var.pointer = 'Variable > _PointerTensor\n' \
-                                ' - FloatTensor > _PointerTensor\n' \
-                                ' - - Variable > _PointerTensor\n' \
-                                '   - FloatTensor > _PointerTensor'
+    display_chain.var.pointer = (
+        "Variable > _PointerTensor\n"
+        " - FloatTensor > _PointerTensor\n"
+        " - - Variable > _PointerTensor\n"
+        "   - FloatTensor > _PointerTensor"
+    )
 
-    display_chain.var.fixp_local = 'Variable > _FixedPrecisionTensor > Variable > _LocalTensor\n' \
-                                   ' - FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor\n' \
-                                   ' - - Variable > _FixedPrecisionTensor > Variable > _LocalTensor\n' \
-                                   '   - FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor'
+    display_chain.var.fixp_local = (
+        "Variable > _FixedPrecisionTensor > Variable > _LocalTensor\n"
+        " - FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor\n"
+        " - - Variable > _FixedPrecisionTensor > Variable > _LocalTensor\n"
+        "   - FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor"
+    )
 
-    display_chain.var.fixp_mpc_gpt = 'Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n' \
-                                     ' - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor\n' \
-                                     ' - - Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n' \
-                                     '   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _LocalTensor'
+    display_chain.var.fixp_mpc_gpt = (
+        "Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
+        " - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor\n"
+        " - - Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
+        "   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _LocalTensor"
+    )
 
 
 class TestChainTensor(TestCase):
-
     def test_plus_is_minus_tensor_local(self):
         x = torch.FloatTensor([5, 6])
         y = torch.FloatTensor([3, 4])
         x = sy._PlusIsMinusTensor().on(x)
         y = sy._PlusIsMinusTensor().on(y)
 
-        assert torch_utils.chain_print(x,
-                                 display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert (
+            torch_utils.chain_print(x, display=False)
+            == "FloatTensor > _PlusIsMinusTensor > _LocalTensor"
+        )
 
         z = x.add(y)
 
-        assert torch_utils.chain_print(z,
-                                 display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert (
+            torch_utils.chain_print(z, display=False)
+            == "FloatTensor > _PlusIsMinusTensor > _LocalTensor"
+        )
 
         # cut chain for the equality check
         z.child = z.child.child
@@ -124,16 +138,22 @@ class TestChainTensor(TestCase):
         y.send(bob, ptr_id=id2)
 
         z = x.add(y)
-        assert torch_utils.chain_print(z, display=False) == 'FloatTensor > _PointerTensor'
+        assert (
+            torch_utils.chain_print(z, display=False) == "FloatTensor > _PointerTensor"
+        )
 
         # Check chain on remote
         ptr_id = z.child.id_at_location
-        assert torch_utils.chain_print(bob._objects[ptr_id].parent,
-                                 display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert (
+            torch_utils.chain_print(bob._objects[ptr_id].parent, display=False)
+            == "FloatTensor > _PlusIsMinusTensor > _LocalTensor"
+        )
 
         z.get()
-        assert torch_utils.chain_print(z,
-                                 display=False) == 'FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        assert (
+            torch_utils.chain_print(z, display=False)
+            == "FloatTensor > _PlusIsMinusTensor > _LocalTensor"
+        )
 
         # cut chain for the equality check
         z.child = z.child.child
@@ -145,19 +165,23 @@ class TestChainTensor(TestCase):
         x = sy._PlusIsMinusTensor().on(x)
         y = sy._PlusIsMinusTensor().on(y)
 
-        display = 'Variable > _PlusIsMinusTensor > _LocalTensor\n' \
-                  ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
-                  ' - - Variable > _PlusIsMinusTensor > _LocalTensor\n' \
-                  '   - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
+        display = (
+            "Variable > _PlusIsMinusTensor > _LocalTensor\n"
+            " - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n"
+            " - - Variable > _PlusIsMinusTensor > _LocalTensor\n"
+            "   - FloatTensor > _PlusIsMinusTensor > _LocalTensor"
+        )
 
         assert torch_utils.chain_print(x, display=False) == display
 
         z = x.add(y)
 
-        assert torch_utils.chain_print(z,
-                                 display=False) == 'Variable > _PlusIsMinusTensor > ' \
-                                                   '_LocalTensor\n - FloatTensor >' \
-                                                   ' _PlusIsMinusTensor > _LocalTensor'
+        assert (
+            torch_utils.chain_print(z, display=False)
+            == "Variable > _PlusIsMinusTensor > "
+            "_LocalTensor\n - FloatTensor >"
+            " _PlusIsMinusTensor > _LocalTensor"
+        )
 
         # cut chain for the equality check
         z.data.child = z.data.child.child
@@ -183,38 +207,52 @@ class TestChainTensor(TestCase):
         y.send(bob, new_id=id2, new_data_id=id21)
 
         z = x.add(y)
-        assert torch_utils.chain_print(z, display=False) == 'Variable > _PointerTensor\n' \
-                                                      ' - FloatTensor > _PointerTensor\n' \
-                                                      ' - - Variable > _PointerTensor\n' \
-                                                      '   - FloatTensor > _PointerTensor'
+        assert (
+            torch_utils.chain_print(z, display=False) == "Variable > _PointerTensor\n"
+            " - FloatTensor > _PointerTensor\n"
+            " - - Variable > _PointerTensor\n"
+            "   - FloatTensor > _PointerTensor"
+        )
 
-        assert bob._objects[z.id_at_location].owner.id == 'bob'
-        assert bob._objects[z.data.id_at_location].owner.id == 'bob'
+        assert bob._objects[z.id_at_location].owner.id == "bob"
+        assert bob._objects[z.data.id_at_location].owner.id == "bob"
 
         # Check chain on remote
         ptr_id = x.child.id_at_location
-        display = 'Variable > _PlusIsMinusTensor > _LocalTensor\n' \
-                  ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
-                  ' - - Variable > _PlusIsMinusTensor > _LocalTensor\n' \
-                  '   - FloatTensor > _PlusIsMinusTensor > _LocalTensor'
-        assert torch_utils.chain_print(bob._objects[ptr_id].parent, display=False) == display
+        display = (
+            "Variable > _PlusIsMinusTensor > _LocalTensor\n"
+            " - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n"
+            " - - Variable > _PlusIsMinusTensor > _LocalTensor\n"
+            "   - FloatTensor > _PlusIsMinusTensor > _LocalTensor"
+        )
+        assert (
+            torch_utils.chain_print(bob._objects[ptr_id].parent, display=False)
+            == display
+        )
 
         # Check chain on remote
         # TODO For now we don't reconstruct the grad chain one non-leaf variable (in our case a leaf
         # variable is a variable that we sent), because we don't care about their gradient. But if we do,
         # then this is a TODO!
         ptr_id = z.child.id_at_location
-        display = 'Variable > _PlusIsMinusTensor > _LocalTensor\n' \
-                  ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
-                  ' - - Variable > _LocalTensor\n' \
-                  '   - FloatTensor > _LocalTensor'
-        assert torch_utils.chain_print(bob._objects[ptr_id].parent, display=False) == display
+        display = (
+            "Variable > _PlusIsMinusTensor > _LocalTensor\n"
+            " - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n"
+            " - - Variable > _LocalTensor\n"
+            "   - FloatTensor > _LocalTensor"
+        )
+        assert (
+            torch_utils.chain_print(bob._objects[ptr_id].parent, display=False)
+            == display
+        )
 
         z.get()
-        display = 'Variable > _PlusIsMinusTensor > _LocalTensor\n' \
-                  ' - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n' \
-                  ' - - Variable > _LocalTensor\n' \
-                  '   - FloatTensor > _LocalTensor'
+        display = (
+            "Variable > _PlusIsMinusTensor > _LocalTensor\n"
+            " - FloatTensor > _PlusIsMinusTensor > _LocalTensor\n"
+            " - - Variable > _LocalTensor\n"
+            "   - FloatTensor > _LocalTensor"
+        )
         assert torch_utils.chain_print(z, display=False) == display
 
         # cut chain for the equality check
@@ -261,23 +299,22 @@ class TestChainTensor(TestCase):
 
 
 class TestTorchTensor(TestCase):
-
     def test_set_id(self):
 
         init_state = hook.local_worker.is_client_worker
         hook.local_worker.is_client_worker = False
 
-        x = torch.FloatTensor([-2, -1, 0, 1, 2, 3]).set_id('bobs tensor')
-        assert x.id == 'bobs tensor'
-        assert x.child.id == 'bobs tensor'
+        x = torch.FloatTensor([-2, -1, 0, 1, 2, 3]).set_id("bobs tensor")
+        assert x.id == "bobs tensor"
+        assert x.child.id == "bobs tensor"
 
         assert x.id in hook.local_worker._objects
         assert list(x.child.old_ids)[0] in hook.local_worker._objects
         assert list(x.child.old_ids)[0] != x.id
 
-        x = sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id('bobs variable')
-        assert x.id == 'bobs variable'
-        assert x.child.id == 'bobs variable'
+        x = sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id("bobs variable")
+        assert x.id == "bobs variable"
+        assert x.child.id == "bobs variable"
 
         assert x.id in hook.local_worker._objects
         assert list(x.child.old_ids)[0] in hook.local_worker._objects
@@ -286,8 +323,10 @@ class TestTorchTensor(TestCase):
     def test___repr__(self):
         x = torch.FloatTensor([1, 2, 3, 4, 5])
         # assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[torch.FloatTensor of size 5]\n'
-        assert x.__repr__() == '\n 1\n 2\n 3\n 4\n 5\n[' \
-                               'syft.core.frameworks.torch.tensor.FloatTensor of size 5]\n'
+        assert (
+            x.__repr__() == "\n 1\n 2\n 3\n 4\n 5\n["
+            "syft.core.frameworks.torch.tensor.FloatTensor of size 5]\n"
+        )
 
     def test_send_get_tensor(self):
 
@@ -313,7 +352,7 @@ class TestTorchTensor(TestCase):
         assert x.id in me._objects
         assert torch.equal(me._objects[x.id].child, x)
 
-        assert ((x == torch.FloatTensor([1, 2, 3, 4, 5])).all())
+        assert (x == torch.FloatTensor([1, 2, 3, 4, 5])).all()
 
         # because .get_() was called, x should no longer be in the remote worker's objects dict
         assert ptr_id not in bob._objects
@@ -412,19 +451,17 @@ class TestTorchTensor(TestCase):
     #         assert ((x - y).free_precision() == torch.FloatTensor([0, 0, 0, 0, 0])).all()
 
     def test_local_tensor_unary_methods(self):
-        ''' Unit tests for methods mentioned on issue 1385
-        https://github.com/OpenMined/PySyft/issues/1385'''
+        """Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385."""
 
         x = torch.FloatTensor([1, 2, -3, 4, 5])
         assert (x.abs() == torch.FloatTensor([1, 2, 3, 4, 5])).all()
         assert (x.abs_() == torch.FloatTensor([1, 2, 3, 4, 5])).all()
         x = x.cos()
-        assert (x.int() == torch.IntTensor(
-            [0, 0, 0, 0, 0])).all()
+        assert (x.int() == torch.IntTensor([0, 0, 0, 0, 0])).all()
 
         x = x.cos_()
-        assert (x.int() == torch.IntTensor(
-            [0, 0, 0, 0, 0])).all()
+        assert (x.int() == torch.IntTensor([0, 0, 0, 0, 0])).all()
 
         x = torch.FloatTensor([1, 2, -3, 4, 5])
 
@@ -433,59 +470,58 @@ class TestTorchTensor(TestCase):
         assert (x.cpu() == x).all()
 
     def test_local_tensor_binary_methods(self):
-        ''' Unit tests for methods mentioned on issue 1385
-        https://github.com/OpenMined/PySyft/issues/1385'''
+        """Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385."""
 
         x = torch.FloatTensor([1, 2, 3, 4])
         y = torch.FloatTensor([[1, 2, 3, 4]])
         z = torch.matmul(x, y.t())
-        assert (torch.equal(z, torch.FloatTensor([30])))
+        assert torch.equal(z, torch.FloatTensor([30]))
 
         z = torch.add(x, y)
-        assert (torch.equal(z, torch.FloatTensor([[2, 4, 6, 8]])))
+        assert torch.equal(z, torch.FloatTensor([[2, 4, 6, 8]]))
 
         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         z = torch.cross(x, y, dim=1)
-        assert (torch.equal(z, torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])))
+        assert torch.equal(z, torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))
 
         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         z = torch.dist(x, y)
-        assert (torch.equal(torch.FloatTensor([z]), torch.FloatTensor([0])))
+        assert torch.equal(torch.FloatTensor([z]), torch.FloatTensor([0]))
 
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([1, 2, 3])
         z = torch.dot(x, y)
         # There is an issue with some Macs getting 0.0 instead
         # Solved here: https://github.com/pytorch/pytorch/issues/5609
-        assert torch.equal(torch.FloatTensor([z]), torch.FloatTensor([
-            14])), "There is an issue with some Macs getting 0.0 instead, " \
-                   "see https://github.com/pytorch/pytorch/issues/5609"
+        assert torch.equal(torch.FloatTensor([z]), torch.FloatTensor([14])), (
+            "There is an issue with some Macs getting 0.0 instead, "
+            "see https://github.com/pytorch/pytorch/issues/5609"
+        )
 
         z = torch.eq(x, y)
-        assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
+        assert torch.equal(z, torch.ByteTensor([1, 1, 1]))
 
         z = torch.ge(x, y)
-        assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
+        assert torch.equal(z, torch.ByteTensor([1, 1, 1]))
 
         x = torch.FloatTensor([1, 2, 3, 4, 5])
         y = torch.FloatTensor([1, 2, 3, 4, 5])
         assert (x.add_(y) == torch.FloatTensor([2, 4, 6, 8, 10])).all()
 
     def test_remote_tensor_unary_methods(self):
-        ''' Unit tests for methods mentioned on issue 1385
-        https://github.com/OpenMined/PySyft/issues/1385'''
+        """Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385."""
 
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(bob)
         assert (x.abs().get() == torch.FloatTensor([1, 2, 3, 4, 5])).all()
 
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(bob)
-        assert (x.cos().int().get() == torch.IntTensor(
-            [0, 0, 0, 0, 0])).all()
+        assert (x.cos().int().get() == torch.IntTensor([0, 0, 0, 0, 0])).all()
         y = x.cos_()
-        assert (y.cos_().int().get() == torch.IntTensor(
-            [0, 0, 0, 0, 0])).all()
+        assert (y.cos_().int().get() == torch.IntTensor([0, 0, 0, 0, 0])).all()
         x = torch.FloatTensor([1, 2, -3, 4, 5]).send(bob)
         assert (x.ceil().get() == torch.FloatTensor([1, 2, -3, 4, 5])).all()
 
@@ -500,18 +536,20 @@ class TestTorchTensor(TestCase):
         x = torch.FloatTensor([1, 2, 3, 4]).send(bob)
         y = torch.FloatTensor([[1], [2], [3], [4]]).send(bob)
         z = torch.matmul(x, y)
-        assert (torch.equal(z.get(), torch.FloatTensor([30])))
+        assert torch.equal(z.get(), torch.FloatTensor([30]))
 
         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(bob)
         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(bob)
         z = torch.cross(x, y, dim=1)
-        assert (torch.equal(z.get(), torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])))
+        assert torch.equal(
+            z.get(), torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        )
 
         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(bob)
         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]]).send(bob)
         z = torch.dist(x, y)
         z.get()
-        assert (torch.equal(z, torch.FloatTensor([0.])))
+        assert torch.equal(z, torch.FloatTensor([0.0]))
 
         x = torch.FloatTensor([1, 2, 3]).send(bob).send(alice)
         y = torch.FloatTensor([1, 2, 3]).send(bob).send(alice)
@@ -520,60 +558,71 @@ class TestTorchTensor(TestCase):
         assert torch.equal(z, torch.FloatTensor([14]))
 
         z = torch.eq(x, y)
-        assert (torch.equal(z.get().get(), torch.ByteTensor([1, 1, 1])))
+        assert torch.equal(z.get().get(), torch.ByteTensor([1, 1, 1]))
 
         z = torch.ge(x, y)
-        assert (torch.equal(z.get().get(), torch.ByteTensor([1, 1, 1])))
+        assert torch.equal(z.get().get(), torch.ByteTensor([1, 1, 1]))
 
     def test_local_tensor_tertiary_methods(self):
 
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([1, 2, 3])
         z = torch.FloatTensor([1, 2, 3])
-        assert (torch.equal(torch.addcmul(z, 2, x, y), torch.FloatTensor([3., 10., 21.])))
+        assert torch.equal(
+            torch.addcmul(z, 2, x, y), torch.FloatTensor([3.0, 10.0, 21.0])
+        )
 
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([1, 2, 3])
         z = torch.FloatTensor([1, 2, 3])
         z.addcmul_(2, x, y)
-        assert (torch.equal(z, torch.FloatTensor([3., 10., 21.])))
+        assert torch.equal(z, torch.FloatTensor([3.0, 10.0, 21.0]))
 
         x = torch.FloatTensor([[1, 2]])
         y = torch.FloatTensor([[1, 2, 3], [4, 5, 6]])
         z = torch.FloatTensor([1, 2, 3])
-        assert (torch.equal(torch.addmm(z, x, y), torch.FloatTensor([[10., 14., 18.]])))
+        assert torch.equal(
+            torch.addmm(z, x, y), torch.FloatTensor([[10.0, 14.0, 18.0]])
+        )
 
     def test_remote_tensor_tertiary_methods(self):
 
         x = torch.FloatTensor([1, 2, 3]).send(bob)
         y = torch.FloatTensor([1, 2, 3]).send(bob)
         z = torch.FloatTensor([1, 2, 3]).send(bob)
-        assert (torch.equal(torch.addcmul(z, 2, x, y).get(), torch.FloatTensor([3., 10., 21.])))
+        assert torch.equal(
+            torch.addcmul(z, 2, x, y).get(), torch.FloatTensor([3.0, 10.0, 21.0])
+        )
 
         # Uses a method
         x = torch.FloatTensor([1, 2, 3]).send(bob)
         y = torch.FloatTensor([1, 2, 3]).send(bob)
         z = torch.FloatTensor([1, 2, 3]).send(bob)
         z.addcmul_(2, x, y)
-        assert (torch.equal(z.get(), torch.FloatTensor([3., 10., 21.])))
+        assert torch.equal(z.get(), torch.FloatTensor([3.0, 10.0, 21.0]))
 
         x = torch.FloatTensor([[1, 2]]).send(bob)
         y = torch.FloatTensor([[1, 2, 3], [4, 5, 6]]).send(bob)
         z = torch.FloatTensor([1, 2, 3]).send(bob)
-        assert (torch.equal(torch.addmm(z, x, y).get(), torch.FloatTensor([[10., 14., 18.]])))
+        assert torch.equal(
+            torch.addmm(z, x, y).get(), torch.FloatTensor([[10.0, 14.0, 18.0]])
+        )
 
     def test_local_tensor_iterable_methods(self):
 
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([2, 3, 4])
         z = torch.FloatTensor([5, 6, 7])
-        assert (torch.equal(torch.stack([x, y, z]),
-                            torch.FloatTensor([[1, 2, 3], [2, 3, 4], [5, 6, 7]])))
+        assert torch.equal(
+            torch.stack([x, y, z]), torch.FloatTensor([[1, 2, 3], [2, 3, 4], [5, 6, 7]])
+        )
 
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([2, 3, 4])
         z = torch.FloatTensor([5, 6, 7])
-        assert (torch.equal(torch.cat([x, y, z]), torch.FloatTensor([1, 2, 3, 2, 3, 4, 5, 6, 7])))
+        assert torch.equal(
+            torch.cat([x, y, z]), torch.FloatTensor([1, 2, 3, 2, 3, 4, 5, 6, 7])
+        )
 
     def test_remote_tensor_iterable_methods(self):
 
@@ -583,8 +632,9 @@ class TestTorchTensor(TestCase):
         x.get()
         y.get()
         z.get()
-        assert (torch.equal(torch.stack([x, y, z]),
-                            torch.FloatTensor([[1, 2, 3], [2, 3, 4], [5, 6, 7]])))
+        assert torch.equal(
+            torch.stack([x, y, z]), torch.FloatTensor([[1, 2, 3], [2, 3, 4], [5, 6, 7]])
+        )
 
         x = torch.FloatTensor([1, 2, 3]).send(bob)
         y = torch.FloatTensor([2, 3, 4]).send(bob)
@@ -592,7 +642,9 @@ class TestTorchTensor(TestCase):
         x.get()
         y.get()
         z.get()
-        assert (torch.equal(torch.cat([x, y, z]), torch.FloatTensor([1, 2, 3, 2, 3, 4, 5, 6, 7])))
+        assert torch.equal(
+            torch.cat([x, y, z]), torch.FloatTensor([1, 2, 3, 2, 3, 4, 5, 6, 7])
+        )
 
     def test_remote_tensor_unwrapped_addition(self):
 
@@ -602,7 +654,6 @@ class TestTorchTensor(TestCase):
 
 
 class TestTorchVariable(TestCase):
-
     def test_remote_backprop(self):
 
         x = sy.Variable(torch.ones(2, 2), requires_grad=True).send(bob)
@@ -613,10 +664,16 @@ class TestTorchVariable(TestCase):
         y.sum().backward()
 
         # remote grads should be correct
-        assert (bob._objects[x2.child.id_at_location].child.grad.data == torch.ones(2, 2)).all()
+        assert (
+            bob._objects[x2.child.id_at_location].child.grad.data == torch.ones(2, 2)
+        ).all()
         # In particular, you can call .grad on a syft tensor, which make .child and .grad commutative
-        assert (bob._objects[x2.child.id_at_location].grad.child.data == torch.ones(2, 2)).all()
-        assert (bob._objects[x.child.id_at_location].child.grad.data == torch.ones(2, 2) * 2).all()
+        assert (
+            bob._objects[x2.child.id_at_location].grad.child.data == torch.ones(2, 2)
+        ).all()
+        assert (
+            bob._objects[x.child.id_at_location].child.grad.data == torch.ones(2, 2) * 2
+        ).all()
 
         assert (y.get().data == torch.ones(2, 2) * 2).all()
 
@@ -636,11 +693,11 @@ class TestTorchVariable(TestCase):
         # indcated below)
 
         def relu(x):
-            """Rectified linear activation"""
-            return torch.clamp(x, min=0.)
+            """Rectified linear activation."""
+            return torch.clamp(x, min=0.0)
 
         def linear(x, w):
-            """Linear transformation of x by w"""
+            """Linear transformation of x by w."""
             return x.mm(w)
 
         x = Var(torch.FloatTensor([[1, 1], [2, 2]]), requires_grad=True)
@@ -658,16 +715,16 @@ class TestTorchVariable(TestCase):
         assert True
 
     def test_encode_decode_json_python(self):
-        """
-            Test that the python objects are correctly encoded and decoded in
-            json with our encoder/JSONDecoder.
-            The main focus is on non-serializable objects, such as torch Variable
-            or tuple, or even slice().
+        """Test that the python objects are correctly encoded and decoded in
+        json with our encoder/JSONDecoder.
+
+        The main focus is on non-serializable objects, such as torch
+        Variable or tuple, or even slice().
         """
 
         x = Var(torch.FloatTensor([[1, -1], [0, 1]]))
         x.send(bob)
-        obj = [None, ({'marcel': (1, [1.3], x), 'proust': slice(0, 2, None)}, 3)]
+        obj = [None, ({"marcel": (1, [1.3], x), "proust": slice(0, 2, None)}, 3)]
         enc, t = encode.encode(obj)
         enc = msgpack.packb(enc, use_bin_type=True)
         dec1 = encode.decode(enc, me)
@@ -691,7 +748,7 @@ class TestTorchVariable(TestCase):
 
         # generates grad objects on model
         pred = data.mm(model)
-        loss = ((pred - target)**2).sum()
+        loss = ((pred - target) ** 2).sum()
         loss.backward()
 
         # the grad's true id
@@ -792,9 +849,16 @@ class TestTorchVariable(TestCase):
             else:
                 x.append(i.data[0])
 
-        y = [0.5406, 0.5869, -0.16565567255020142, 0.6732, 0.5103, -0.0841369703412056]
+        y = [
+            0.5406,
+            0.5869,
+            -0.165_655_672_550_201_42,
+            0.6732,
+            0.5103,
+            -0.084_136_970_341_205_6,
+        ]
 
-        assert (self.assertAlmostEqual(X,Y) for X,Y in zip(x,y))
+        assert (self.assertAlmostEqual(X, Y) for X, Y in zip(x, y))
 
     def test_federated_learning(self):
 
@@ -834,15 +898,15 @@ class TestTorchVariable(TestCase):
                 # update the model
                 model.zero_grad()
                 pred = model(data)
-                loss = ((pred - target)**2).sum()
+                loss = ((pred - target) ** 2).sum()
                 loss.backward()
                 opt.step()
 
                 model.get()
-                if(iter == 1):
+                if iter == 1:
                     final_loss = loss.get().data[0]
 
-        assert (final_loss - 0.18085284531116486) < 0.001
+        assert (final_loss - 0.180_852_845_311_164_86) < 0.001
 
     def test_torch_function_on_remote_var(self):
         x = sy.Variable(torch.FloatTensor([[1, 2], [3, 4]]))
@@ -902,117 +966,138 @@ class TestTorchVariable(TestCase):
         assert torch.equal(conv, expected_conv)
 
     def test_local_var_unary_methods(self):
-        ''' Unit tests for methods mentioned on issue 1385
-            https://github.com/OpenMined/PySyft/issues/1385'''
+        """Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385."""
 
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5]))
         assert torch.equal(x.abs(), sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])))
         assert torch.equal(x.abs_(), sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])))
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5]))
-        assert torch.equal(x.cos().int(), sy.Variable(torch.IntTensor(
-            [0, 0, 0, 0, 0])))
+        assert torch.equal(x.cos().int(), sy.Variable(torch.IntTensor([0, 0, 0, 0, 0])))
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5]))
-        assert torch.equal(x.cos_().int(), sy.Variable(torch.IntTensor(
-            [0, 0, 0, 0, 0])))
+        assert torch.equal(
+            x.cos_().int(), sy.Variable(torch.IntTensor([0, 0, 0, 0, 0]))
+        )
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5]))
         assert torch.equal(x.ceil(), x)
         assert torch.equal(x.ceil_(), x)
         assert torch.equal(x.cpu(), x)
 
     def test_local_var_binary_methods(self):
-        ''' Unit tests for methods mentioned on issue 1385
-            https://github.com/OpenMined/PySyft/issues/1385'''
+        """Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385."""
         x = torch.FloatTensor([1, 2, 3, 4])
         y = torch.FloatTensor([[1, 2, 3, 4]])
         z = torch.matmul(x, y.t())
-        assert (torch.equal(z, torch.FloatTensor([30])))
+        assert torch.equal(z, torch.FloatTensor([30]))
         z = torch.add(x, y)
-        assert (torch.equal(z, torch.FloatTensor([[2, 4, 6, 8]])))
+        assert torch.equal(z, torch.FloatTensor([[2, 4, 6, 8]]))
         x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
         y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
         assert torch.equal(x.add_(y), sy.Variable(torch.FloatTensor([2, 4, 6, 8, 10])))
         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         z = torch.cross(x, y, dim=1)
-        assert (torch.equal(z, torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])))
+        assert torch.equal(z, torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))
         x = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         y = torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
         z = torch.dist(x, y)
         t = torch.FloatTensor([z])
-        assert (torch.equal(t, torch.FloatTensor([0.])))
+        assert torch.equal(t, torch.FloatTensor([0.0]))
         x = torch.FloatTensor([1, 2, 3])
         y = torch.FloatTensor([1, 2, 3])
         z = torch.dot(x, y)
         t = torch.FloatTensor([z])
         assert torch.equal(t, torch.FloatTensor([14]))
         z = torch.eq(x, y)
-        assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
+        assert torch.equal(z, torch.ByteTensor([1, 1, 1]))
         z = torch.ge(x, y)
-        assert (torch.equal(z, torch.ByteTensor([1, 1, 1])))
+        assert torch.equal(z, torch.ByteTensor([1, 1, 1]))
 
     def test_remote_var_unary_methods(self):
-        ''' Unit tests for methods mentioned on issue 1385
-            https://github.com/OpenMined/PySyft/issues/1385'''
+        """Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385."""
 
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
-        assert torch.equal(x.abs().get(), sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])))
-        assert torch.equal(x.abs_().get(), sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])))
+        assert torch.equal(
+            x.abs().get(), sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
+        )
+        assert torch.equal(
+            x.abs_().get(), sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5]))
+        )
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
-        assert torch.equal(x.cos().int().get(), sy.Variable(torch.IntTensor(
-            [0, 0, 0, 0, 0])))
-        assert torch.equal(x.cos_().int().get(), sy.Variable(torch.IntTensor(
-            [0, 0, 0, 0, 0])))
+        assert torch.equal(
+            x.cos().int().get(), sy.Variable(torch.IntTensor([0, 0, 0, 0, 0]))
+        )
+        assert torch.equal(
+            x.cos_().int().get(), sy.Variable(torch.IntTensor([0, 0, 0, 0, 0]))
+        )
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
-        assert torch.equal(x.ceil().get(), sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])))
-        assert torch.equal(x.ceil_().get(), sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])))
+        assert torch.equal(
+            x.ceil().get(), sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5]))
+        )
+        assert torch.equal(
+            x.ceil_().get(), sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5]))
+        )
         x = sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])).send(bob)
-        assert torch.equal(x.cpu().get(), sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5])))
+        assert torch.equal(
+            x.cpu().get(), sy.Variable(torch.FloatTensor([1, 2, -3, 4, 5]))
+        )
 
     def test_remote_var_binary_methods(self):
-        ''' Unit tests for methods mentioned on issue 1385
-            https://github.com/OpenMined/PySyft/issues/1385'''
+        """Unit tests for methods mentioned on issue 1385
+        https://github.com/OpenMined/PySyft/issues/1385."""
 
         x = sy.Variable(torch.FloatTensor([1, 2, 3, 4])).send(bob)
         y = sy.Variable(torch.FloatTensor([[1, 2, 3, 4]])).send(bob)
         z = torch.matmul(x, y.t())
-        assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([30]))))
+        assert torch.equal(z.get(), sy.Variable(torch.FloatTensor([30])))
         z = torch.add(x, y)
-        assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([[2, 4, 6, 8]]))))
+        assert torch.equal(z.get(), sy.Variable(torch.FloatTensor([[2, 4, 6, 8]])))
         x = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
         y = sy.Variable(torch.FloatTensor([1, 2, 3, 4, 5])).send(bob)
-        assert torch.equal(x.add_(y).get(), sy.Variable(torch.FloatTensor([2, 4, 6, 8, 10])))
+        assert torch.equal(
+            x.add_(y).get(), sy.Variable(torch.FloatTensor([2, 4, 6, 8, 10]))
+        )
         x = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         y = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         z = torch.cross(x, y, dim=1)
-        assert (
-            torch.equal(z.get(), sy.Variable(torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))))
+        assert torch.equal(
+            z.get(), sy.Variable(torch.FloatTensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))
+        )
         x = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         y = sy.Variable(torch.FloatTensor([[1, 2, 3], [3, 4, 5], [5, 6, 7]])).send(bob)
         z = torch.dist(x, y)
-        assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([0.]))))
+        assert torch.equal(z.get(), sy.Variable(torch.FloatTensor([0.0])))
         x = sy.Variable(torch.FloatTensor([1, 2, 3])).send(bob)
         y = sy.Variable(torch.FloatTensor([1, 2, 3])).send(bob)
         z = torch.dot(x, y)
-        assert (torch.equal(z.get(), sy.Variable(torch.FloatTensor([14]))))
+        assert torch.equal(z.get(), sy.Variable(torch.FloatTensor([14])))
         z = torch.eq(x, y)
-        assert (torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1]))))
+        assert torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1])))
         z = torch.ge(x, y)
-        assert (torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1]))))
+        assert torch.equal(z.get(), sy.Variable(torch.ByteTensor([1, 1, 1])))
+
 
 class TestSNNTensor(TestCase):
-
     def test_mpc_relu(self):
         a = (torch.LongTensor([-1, 3, -5, 7])).share(alice, bob)
         b = a.relu()
         assert (b.get() == torch.LongTensor([0, 3, 0, 7])).all()
 
     def test_mpc_argmax(self):
-        x = (torch.FloatTensor([[0.1, 0.2, 0.4, 0.3], [0.9, 0, 0, 0.1]])).fix_precision().share(alice, bob)
+        x = (
+            (torch.FloatTensor([[0.1, 0.2, 0.4, 0.3], [0.9, 0, 0, 0.1]]))
+            .fix_precision()
+            .share(alice, bob)
+        )
         out = x.argmax()
-        assert (out.get().decode() == torch.FloatTensor([[0, 0, 1, 0], [1, 0, 0, 0]])).all()
+        assert (
+            out.get().decode() == torch.FloatTensor([[0, 0, 1, 0], [1, 0, 0, 0]])
+        ).all()
+
 
 class TestSPDZTensor(TestCase):
-
     def mpc_sum(self, n1, n2):
         x = torch.LongTensor([n1])
         y = torch.LongTensor([n2])
@@ -1053,7 +1138,11 @@ class TestSPDZTensor(TestCase):
         y = y.share(alice, bob)
         z = x * y
         z = z.get()
-        assert torch.eq(z, torch.LongTensor([n1 * n2])).all(), (z, 'should be', torch.LongTensor([n1 * n2]))
+        assert torch.eq(z, torch.LongTensor([n1 * n2])).all(), (
+            z,
+            "should be",
+            torch.LongTensor([n1 * n2]),
+        )
 
     def mpc_var_mul(self, n1, n2):
         x = sy.Variable(torch.LongTensor([n1]))
@@ -1086,14 +1175,13 @@ class TestSPDZTensor(TestCase):
         y = torch.LongTensor([[2, 2], [2, 2]]).send(bob, alice)
 
         z = x * y
-        assert (z.get() == torch.LongTensor([[-2, 4],[6, 8]])).all()
+        assert (z.get() == torch.LongTensor([[-2, 4], [6, 8]])).all()
 
         x = torch.LongTensor([[-1, 2], [3, 4]])
         x = x.share(bob, alice)
 
         z = x * 2
         assert (z.get() == torch.LongTensor([[-2, 4], [6, 8]])).all()
-
 
     def test_spdz_matmul(self):
         x = torch.LongTensor([[1, 2], [3, 4]])
@@ -1142,7 +1230,11 @@ class TestSPDZTensor(TestCase):
         y = y.share(alice, bob, james)
         z = x * y
         z = z.get()
-        assert (z == torch.LongTensor([n1 * n2])).all(), (z, 'should be', torch.LongTensor([n1 * n2]))
+        assert (z == torch.LongTensor([n1 * n2])).all(), (
+            z,
+            "should be",
+            torch.LongTensor([n1 * n2]),
+        )
 
     def test_share(self):
         x = torch.LongTensor([-3])
@@ -1158,7 +1250,9 @@ class TestSPDZTensor(TestCase):
         x = torch.FloatTensor([0.1, 0.2, 0.1, 0.2])
         x = x.fix_precision()
 
-        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        assert (
+            torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        )
 
         x = x.decode()
 
@@ -1175,7 +1269,9 @@ class TestSPDZTensor(TestCase):
 
         x = x.fix_precision()
 
-        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        assert (
+            torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        )
 
         x.decode_()
 
@@ -1207,8 +1303,6 @@ class TestSPDZTensor(TestCase):
         z = x * y
         z = z.decode()
         assert torch.eq(z, torch.FloatTensor([1, 2, 0.8])).all()
-
-
 
     def test_fix_precision_add(self):
         x = torch.FloatTensor([[1, 0.2], [0.9, 11]])
@@ -1244,7 +1338,7 @@ class TestSPDZTensor(TestCase):
         y = y.fix_precision()
         z = x - y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([[0.2, .2], [.9, 8]])).all()
+        assert torch.eq(z, torch.FloatTensor([[0.2, 0.2], [0.9, 8]])).all()
 
         # with different precision fractions x's > y's
         x = torch.FloatTensor([[1, 1.2], [1.9, 11]])
@@ -1253,7 +1347,7 @@ class TestSPDZTensor(TestCase):
         y = y.fix_precision(precision_fractional=3)
         z = x - y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([[0.2, .2], [.9, 8]])).all()
+        assert torch.eq(z, torch.FloatTensor([[0.2, 0.2], [0.9, 8]])).all()
 
         # with different precision fractions x's < y's
         x = torch.FloatTensor([[1, 1.2], [1.9, 11]])
@@ -1262,7 +1356,7 @@ class TestSPDZTensor(TestCase):
         y = y.fix_precision(precision_fractional=4)
         z = x - y
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([[0.2, .2], [.9, 8]])).all()
+        assert torch.eq(z, torch.FloatTensor([[0.2, 0.2], [0.9, 8]])).all()
 
     def test_fix_precision_div(self):
         x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
@@ -1348,7 +1442,10 @@ class TestSPDZTensor(TestCase):
 
         assert torch_utils.chain_print(x, display=False) == display_chain.tensor.pointer
         x_ = bob.get_obj(x.id_at_location).parent
-        assert torch_utils.chain_print(x_, display=False) == display_chain.tensor.fixp_local
+        assert (
+            torch_utils.chain_print(x_, display=False)
+            == display_chain.tensor.fixp_local
+        )
 
         z = x + x
         z.get().decode_()
@@ -1356,7 +1453,9 @@ class TestSPDZTensor(TestCase):
 
         x = x.get()
 
-        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        assert (
+            torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        )
 
         x = x.decode()
 
@@ -1368,7 +1467,9 @@ class TestSPDZTensor(TestCase):
 
         assert torch_utils.chain_print(x, display=False) == display_chain.var.pointer
         x_ = bob.get_obj(x.id_at_location).parent
-        assert torch_utils.chain_print(x_, display=False) == display_chain.var.fixp_local
+        assert (
+            torch_utils.chain_print(x_, display=False) == display_chain.var.fixp_local
+        )
 
         z = x + x
         z.get().decode_()
@@ -1386,13 +1487,18 @@ class TestSPDZTensor(TestCase):
         x = torch.FloatTensor([1.1, 2, 3])
         x = x.fix_precision().share(alice, bob)
 
-        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_mpc_gpt
+        assert (
+            torch_utils.chain_print(x, display=False)
+            == display_chain.tensor.fixp_mpc_gpt
+        )
 
         z = x + x
 
         x = x.get()
 
-        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        assert (
+            torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        )
 
         z = z.get().decode()
         assert torch.eq(z, torch.FloatTensor([2.2, 4, 6])).all()
@@ -1401,7 +1507,9 @@ class TestSPDZTensor(TestCase):
         x = sy.Variable(torch.FloatTensor([1.1, 2, 3]))
         x = x.fix_precision().share(alice, bob)
 
-        assert torch_utils.chain_print(x, display=False) == display_chain.var.fixp_mpc_gpt
+        assert (
+            torch_utils.chain_print(x, display=False) == display_chain.var.fixp_mpc_gpt
+        )
 
         z = x + x
 
@@ -1418,15 +1526,23 @@ class TestSPDZTensor(TestCase):
 
         assert torch_utils.chain_print(x, display=False) == display_chain.tensor.pointer
         x_ = bob.get_obj(x.id_at_location).parent
-        assert torch_utils.chain_print(x_, display=False) == display_chain.tensor.fixp_mpc_gpt
+        assert (
+            torch_utils.chain_print(x_, display=False)
+            == display_chain.tensor.fixp_mpc_gpt
+        )
 
         z = x + x
 
         x = x.get()
-        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_mpc_gpt
+        assert (
+            torch_utils.chain_print(x, display=False)
+            == display_chain.tensor.fixp_mpc_gpt
+        )
 
         x = x.get()
-        assert torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        assert (
+            torch_utils.chain_print(x, display=False) == display_chain.tensor.fixp_local
+        )
 
         x = x.decode()
         assert torch_utils.chain_print(x, display=False) == display_chain.tensor.local
@@ -1440,12 +1556,16 @@ class TestSPDZTensor(TestCase):
 
         assert torch_utils.chain_print(x, display=False) == display_chain.var.pointer
         x_ = bob.get_obj(x.id_at_location).parent
-        assert torch_utils.chain_print(x_, display=False) == display_chain.var.fixp_mpc_gpt
+        assert (
+            torch_utils.chain_print(x_, display=False) == display_chain.var.fixp_mpc_gpt
+        )
 
         z = x + x
 
         x = x.get()
-        assert torch_utils.chain_print(x, display=False) == display_chain.var.fixp_mpc_gpt
+        assert (
+            torch_utils.chain_print(x, display=False) == display_chain.var.fixp_mpc_gpt
+        )
 
         x = x.get()
         assert torch_utils.chain_print(x, display=False) == display_chain.var.fixp_local
@@ -1456,7 +1576,7 @@ class TestSPDZTensor(TestCase):
         z = z.get().get().decode()
         assert torch.eq(z, sy.Variable(torch.FloatTensor([2.2, 4, 6]))).all()
 
-    def fix_precision_operation(self, l1, l2, var=False, op='plus'):
+    def fix_precision_operation(self, l1, l2, var=False, op="plus"):
         if var:
             x = sy.Variable(torch.FloatTensor(l1))
             y = sy.Variable(torch.FloatTensor(l2))
@@ -1465,17 +1585,17 @@ class TestSPDZTensor(TestCase):
             y = torch.FloatTensor(l2)
         x = x.fix_precision()
         y = y.fix_precision()
-        if op == 'plus':
+        if op == "plus":
             z = x + y
             l_res = [e1 + e2 for e1, e2 in zip(l1, l2)]
-        elif op == 'mul':
+        elif op == "mul":
             z = x * y
             l_res = [e1 * e2 for e1, e2 in zip(l1, l2)]
-        elif op == 'matmul':
+        elif op == "matmul":
             z = x.mm(y)
             l_res = np.dot(np.array(l1), np.array(l2)).tolist()
         else:
-            raise ArithmeticError('Unknown operator')
+            raise ArithmeticError("Unknown operator")
         z = z.decode()
         if var:
             assert torch.eq(z, sy.Variable(torch.FloatTensor(l_res))).all()
@@ -1497,58 +1617,56 @@ class TestSPDZTensor(TestCase):
         self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True)
 
     def test_mult_fix_precision(self):
-        self.fix_precision_operation([3.3], [5.1], op='mul')
-        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], op='mul')
-        self.fix_precision_operation([-2.8, -3.9], [-1, -1], op='mul')
-        self.fix_precision_operation([-2, 3.3], [-1.9, 1], op='mul')
-        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], op='mul')
+        self.fix_precision_operation([3.3], [5.1], op="mul")
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], op="mul")
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1], op="mul")
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1], op="mul")
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], op="mul")
 
     def test_var_mult_fix_precision(self):
-        self.fix_precision_operation([3.3], [5.1], var=True, op='mul')
-        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
-        self.fix_precision_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
-        self.fix_precision_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
-        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True, op='mul')
+        self.fix_precision_operation([3.3], [5.1], var=True, op="mul")
+        self.fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True, op="mul")
+        self.fix_precision_operation([-2.8, -3.9], [-1, -1], var=True, op="mul")
+        self.fix_precision_operation([-2, 3.3], [-1.9, 1], var=True, op="mul")
+        self.fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True, op="mul")
 
     def test_matmul_fix_precision(self):
-        self.fix_precision_operation([[3.3, 2.1],
-                                      [1.1, 5.2]],
-                                     [[1, 2],
-                                      [3, 4]], op='matmul')
-        self.fix_precision_operation([[-3.3, -2.1],
-                                      [1.1,  5.2]],
-                                     [[1,  2],
-                                      [3, -4.8]], op='matmul')
-        self.fix_precision_operation([[1.1, -2.1],
-                                      [3.2, 8.1],
-                                      [3.0, -7]],
-                                     [[-3.3, -2.1],
-                                      [1.1, 5.2]], op='matmul')
-        self.fix_precision_operation([[-40.2, -20.1],
-                                      [100.7, 51.2]],
-                                     [[14.1, 21],
-                                      [30, -41.8]], op='matmul')
+        self.fix_precision_operation(
+            [[3.3, 2.1], [1.1, 5.2]], [[1, 2], [3, 4]], op="matmul"
+        )
+        self.fix_precision_operation(
+            [[-3.3, -2.1], [1.1, 5.2]], [[1, 2], [3, -4.8]], op="matmul"
+        )
+        self.fix_precision_operation(
+            [[1.1, -2.1], [3.2, 8.1], [3.0, -7]],
+            [[-3.3, -2.1], [1.1, 5.2]],
+            op="matmul",
+        )
+        self.fix_precision_operation(
+            [[-40.2, -20.1], [100.7, 51.2]], [[14.1, 21], [30, -41.8]], op="matmul"
+        )
 
     def test_var_matmul_fix_precision(self):
-        self.fix_precision_operation([[3.3, 2.1],
-                                      [1.1, 5.2]],
-                                     [[1, 2],
-                                      [3, 4]], var=True, op='matmul')
-        self.fix_precision_operation([[-3.3, -2.1],
-                                      [1.1, 5.2]],
-                                     [[1, 2],
-                                      [3, -4.8]], var=True, op='matmul')
-        self.fix_precision_operation([[1.1, -2.1],
-                                      [3.2, 8.1],
-                                      [3.0, -7]],
-                                     [[-3.3, -2.1],
-                                      [1.1, 5.2]], var=True, op='matmul')
-        self.fix_precision_operation([[-40.2, -20.1],
-                                      [100.7, 51.2]],
-                                     [[14.1, 21],
-                                      [30, -41.8]], var=True, op='matmul')
+        self.fix_precision_operation(
+            [[3.3, 2.1], [1.1, 5.2]], [[1, 2], [3, 4]], var=True, op="matmul"
+        )
+        self.fix_precision_operation(
+            [[-3.3, -2.1], [1.1, 5.2]], [[1, 2], [3, -4.8]], var=True, op="matmul"
+        )
+        self.fix_precision_operation(
+            [[1.1, -2.1], [3.2, 8.1], [3.0, -7]],
+            [[-3.3, -2.1], [1.1, 5.2]],
+            var=True,
+            op="matmul",
+        )
+        self.fix_precision_operation(
+            [[-40.2, -20.1], [100.7, 51.2]],
+            [[14.1, 21], [30, -41.8]],
+            var=True,
+            op="matmul",
+        )
 
-    def remote_fix_precision_operation(self, l1, l2, var=False, op='plus'):
+    def remote_fix_precision_operation(self, l1, l2, var=False, op="plus"):
         if var:
             x = sy.Variable(torch.FloatTensor(l1))
             y = sy.Variable(torch.FloatTensor(l2))
@@ -1557,17 +1675,17 @@ class TestSPDZTensor(TestCase):
             y = torch.FloatTensor(l2)
         x = x.send(bob).fix_precision()
         y = y.send(bob).fix_precision()
-        if op == 'plus':
+        if op == "plus":
             z = x + y
             l_res = [e1 + e2 for e1, e2 in zip(l1, l2)]
-        elif op == 'mul':
+        elif op == "mul":
             z = x * y
             l_res = [e1 * e2 for e1, e2 in zip(l1, l2)]
-        elif op == 'matmul':
+        elif op == "matmul":
             z = x.mm(y)
             l_res = np.dot(np.array(l1), np.array(l2)).tolist()
         else:
-            raise ArithmeticError('Unknown operator')
+            raise ArithmeticError("Unknown operator")
         z = z.get().decode()
         if var:
             assert torch.eq(z, sy.Variable(torch.FloatTensor(l_res))).all()
@@ -1589,58 +1707,58 @@ class TestSPDZTensor(TestCase):
         self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True)
 
     def test_mult_remote_fix_precision(self):
-        self.remote_fix_precision_operation([3.3], [5.1], op='mul')
-        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], op='mul')
-        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], op='mul')
-        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], op='mul')
-        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], op='mul')
+        self.remote_fix_precision_operation([3.3], [5.1], op="mul")
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], op="mul")
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], op="mul")
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], op="mul")
+        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], op="mul")
 
     def test_var_mult_remote_fix_precision(self):
-        self.remote_fix_precision_operation([3.3], [5.1], var=True, op='mul')
-        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
-        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
-        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
-        self.remote_fix_precision_operation([-19000, 3.3], [-1.9, 17654], var=True, op='mul')
+        self.remote_fix_precision_operation([3.3], [5.1], var=True, op="mul")
+        self.remote_fix_precision_operation([2.5, 3.2], [5.4, -1.1], var=True, op="mul")
+        self.remote_fix_precision_operation([-2.8, -3.9], [-1, -1], var=True, op="mul")
+        self.remote_fix_precision_operation([-2, 3.3], [-1.9, 1], var=True, op="mul")
+        self.remote_fix_precision_operation(
+            [-19000, 3.3], [-1.9, 17654], var=True, op="mul"
+        )
 
     def test_matmul_remote_fix_precision(self):
-        self.remote_fix_precision_operation([[3.3, 2.1],
-                                             [1.1, 5.2]],
-                                            [[1, 2],
-                                             [3, 4]], op='matmul')
-        self.remote_fix_precision_operation([[-3.3, -2.1],
-                                             [1.1,  5.2]],
-                                            [[1,  2],
-                                             [3, -4.8]], op='matmul')
-        self.remote_fix_precision_operation([[1.1, -2.1],
-                                             [3.2, 8.1],
-                                             [3.0, -7]],
-                                            [[-3.3, -2.1],
-                                             [1.1, 5.2]], op='matmul')
-        self.remote_fix_precision_operation([[-40.2, -20.1],
-                                             [100.7, 51.2]],
-                                            [[14.1, 21],
-                                             [30, -41.8]], op='matmul')
+        self.remote_fix_precision_operation(
+            [[3.3, 2.1], [1.1, 5.2]], [[1, 2], [3, 4]], op="matmul"
+        )
+        self.remote_fix_precision_operation(
+            [[-3.3, -2.1], [1.1, 5.2]], [[1, 2], [3, -4.8]], op="matmul"
+        )
+        self.remote_fix_precision_operation(
+            [[1.1, -2.1], [3.2, 8.1], [3.0, -7]],
+            [[-3.3, -2.1], [1.1, 5.2]],
+            op="matmul",
+        )
+        self.remote_fix_precision_operation(
+            [[-40.2, -20.1], [100.7, 51.2]], [[14.1, 21], [30, -41.8]], op="matmul"
+        )
 
     def test_var_matmul_remote_fix_precision(self):
-        self.remote_fix_precision_operation([[3.3, 2.1],
-                                             [1.1, 5.2]],
-                                            [[1, 2],
-                                             [3, 4]], var=True, op='matmul')
-        self.remote_fix_precision_operation([[-3.3, -2.1],
-                                             [1.1, 5.2]],
-                                            [[1, 2],
-                                             [3, -4.8]], var=True, op='matmul')
-        self.remote_fix_precision_operation([[1.1, -2.1],
-                                             [3.2, 8.1],
-                                             [3.0, -7]],
-                                            [[-3.3, -2.1],
-                                             [1.1, 5.2]], var=True, op='matmul')
-        self.remote_fix_precision_operation([[-40.2, -20.1],
-                                             [100.7, 51.2]],
-                                            [[14.1, 21],
-                                             [30, -41.8]], var=True, op='matmul')
+        self.remote_fix_precision_operation(
+            [[3.3, 2.1], [1.1, 5.2]], [[1, 2], [3, 4]], var=True, op="matmul"
+        )
+        self.remote_fix_precision_operation(
+            [[-3.3, -2.1], [1.1, 5.2]], [[1, 2], [3, -4.8]], var=True, op="matmul"
+        )
+        self.remote_fix_precision_operation(
+            [[1.1, -2.1], [3.2, 8.1], [3.0, -7]],
+            [[-3.3, -2.1], [1.1, 5.2]],
+            var=True,
+            op="matmul",
+        )
+        self.remote_fix_precision_operation(
+            [[-40.2, -20.1], [100.7, 51.2]],
+            [[14.1, 21], [30, -41.8]],
+            var=True,
+            op="matmul",
+        )
 
-    def remote_fix_precision_share_operation(self, l1, l2, var=False, op='plus'):
+    def remote_fix_precision_share_operation(self, l1, l2, var=False, op="plus"):
         if var:
             x = sy.Variable(torch.FloatTensor(l1))
             y = sy.Variable(torch.FloatTensor(l2))
@@ -1649,17 +1767,17 @@ class TestSPDZTensor(TestCase):
             y = torch.FloatTensor(l2)
         x = x.send(bob).fix_precision().share(alice, bob)
         y = y.send(bob).fix_precision().share(alice, bob)
-        if op == 'plus':
+        if op == "plus":
             z = x + y
             l_res = [e1 + e2 for e1, e2 in zip(l1, l2)]
-        elif op == 'mul':
+        elif op == "mul":
             z = x * y
             l_res = [e1 * e2 for e1, e2 in zip(l1, l2)]
-        elif op == 'matmul':
+        elif op == "matmul":
             z = x.mm(y)
             l_res = np.dot(np.array(l1), np.array(l2)).tolist()
         else:
-            raise ArithmeticError('Unknown operator')
+            raise ArithmeticError("Unknown operator")
         z = z.get().get().decode()
         if var:
             assert torch.eq(z, sy.Variable(torch.FloatTensor(l_res))).all()
@@ -1681,37 +1799,41 @@ class TestSPDZTensor(TestCase):
         self.remote_fix_precision_share_operation([-190, 3.3], [-1.9, 174], var=True)
 
     def test_mult_remote_fix_precision_share(self):
-        self.remote_fix_precision_share_operation([3.3], [5.1], op='mul')
-        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], op='mul')
-        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], op='mul')
-        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], op='mul')
+        self.remote_fix_precision_share_operation([3.3], [5.1], op="mul")
+        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], op="mul")
+        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], op="mul")
+        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], op="mul")
 
         # available precision too small for this at the moment
         # self.remote_fix_precision_share_operation([-190, 3.3], [-1.9, 174], op='mul')
 
     def test_var_mult_remote_fix_precision_share(self):
-        self.remote_fix_precision_share_operation([3.3], [5.1], var=True, op='mul')
-        self.remote_fix_precision_share_operation([2.5, 3.2], [5.4, -1.1], var=True, op='mul')
-        self.remote_fix_precision_share_operation([-2.8, -3.9], [-1, -1], var=True, op='mul')
-        self.remote_fix_precision_share_operation([-2, 3.3], [-1.9, 1], var=True, op='mul')
+        self.remote_fix_precision_share_operation([3.3], [5.1], var=True, op="mul")
+        self.remote_fix_precision_share_operation(
+            [2.5, 3.2], [5.4, -1.1], var=True, op="mul"
+        )
+        self.remote_fix_precision_share_operation(
+            [-2.8, -3.9], [-1, -1], var=True, op="mul"
+        )
+        self.remote_fix_precision_share_operation(
+            [-2, 3.3], [-1.9, 1], var=True, op="mul"
+        )
 
         # available precision too small for this at the moment
         # self.remote_fix_precision_share_operation([-190, 3.3], [-1.9, 174], var=True, op='mul')
 
     def test_matmul_remote_fix_precision_share(self):
-        self.remote_fix_precision_share_operation([[3.3, 2.1],
-                                                   [1.1, 5.2]],
-                                                  [[1, 2],
-                                                   [3, 4]], op='matmul')
-        self.remote_fix_precision_share_operation([[-3.3, -2.1],
-                                                   [1.1,  5.2]],
-                                                  [[1,  2],
-                                                   [3, -4.8]], op='matmul')
-        self.remote_fix_precision_share_operation([[1.1, -2.1],
-                                                   [3.2, 8.1],
-                                                   [3.0, -7]],
-                                                  [[-3.3, -2.1],
-                                                   [1.1, 5.2]], op='matmul')
+        self.remote_fix_precision_share_operation(
+            [[3.3, 2.1], [1.1, 5.2]], [[1, 2], [3, 4]], op="matmul"
+        )
+        self.remote_fix_precision_share_operation(
+            [[-3.3, -2.1], [1.1, 5.2]], [[1, 2], [3, -4.8]], op="matmul"
+        )
+        self.remote_fix_precision_share_operation(
+            [[1.1, -2.1], [3.2, 8.1], [3.0, -7]],
+            [[-3.3, -2.1], [1.1, 5.2]],
+            op="matmul",
+        )
 
         # available precision too small for this at the moment
 
@@ -1721,10 +1843,9 @@ class TestSPDZTensor(TestCase):
         #                                            [10, -11.8]], op='matmul')
 
     def test_var_matmul_remote_fix_precision_share(self):
-        self.remote_fix_precision_share_operation([[3.3, 2.1],
-                                                   [1.1, 5.2]],
-                                                  [[1, 2],
-                                                   [3, 4]], var=True, op='matmul')
+        self.remote_fix_precision_share_operation(
+            [[3.3, 2.1], [1.1, 5.2]], [[1, 2], [3, 4]], var=True, op="matmul"
+        )
         # self.remote_fix_precision_share_operation([[-3.3, -2.1],
         #                                            [1.1, 5.2]],
         #                                           [[1, 2],
@@ -1744,7 +1865,6 @@ class TestSPDZTensor(TestCase):
 
 
 class TestGPCTensor(TestCase):
-
     def test_gpc_add(self):
         x = torch.LongTensor([1, 2, 3, 4, 5])
         y = torch.LongTensor([1, 2, 3, 4, 5])
@@ -1753,7 +1873,9 @@ class TestGPCTensor(TestCase):
         y.send(alice)
 
         x_pointer_tensor_dict = {alice: y.child, bob: x.child}
-        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict, torch_type='syft.LongTensor').wrap(True)
+        x_gp = _GeneralizedPointerTensor(
+            x_pointer_tensor_dict, torch_type="syft.LongTensor"
+        ).wrap(True)
 
         y = x_gp + x_gp
 
@@ -1769,7 +1891,9 @@ class TestGPCTensor(TestCase):
         y.send(alice)
 
         x_pointer_tensor_dict = {alice: y.child, bob: x.child}
-        x_gp = _GeneralizedPointerTensor(x_pointer_tensor_dict, torch_type='syft.LongTensor').wrap(True)
+        x_gp = _GeneralizedPointerTensor(
+            x_pointer_tensor_dict, torch_type="syft.LongTensor"
+        ).wrap(True)
 
         y = x_gp.child + x_gp.child
 
@@ -1789,11 +1913,8 @@ class TestGPCTensor(TestCase):
 
         results = x_gp.workers()
 
-        assert(results == [k.id for k in x_pointer_tensor_dict.keys()])
+        assert results == [k.id for k in x_pointer_tensor_dict.keys()]
 
 
-
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

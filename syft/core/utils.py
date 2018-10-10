@@ -22,10 +22,11 @@ def is_in_place_method(attr: str) -> bool:
     try:
         return is_in_place_method_dict[attr]
     except KeyError:
-        pat = re.compile('__(.+)__')
-        is_in_place = pat.search(attr) is None and attr[-1] == '_'
+        pat = re.compile("__(.+)__")
+        is_in_place = pat.search(attr) is None and attr[-1] == "_"
         is_in_place_method_dict[attr] = is_in_place
         return is_in_place
+
 
 def map_tuple(hook, args: Tuple[Any, ...], func: Callable) -> Tuple[Any, ...]:
     if hook:
