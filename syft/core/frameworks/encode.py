@@ -1,4 +1,5 @@
-"""Torch utility functions related to encoding and decoding in a JSON-serializable fashion """
+"""Torch utility functions related to encoding and decoding in a JSON-
+serializable fashion."""
 import json
 import msgpack
 
@@ -25,13 +26,13 @@ def get_serialized_key(obj):
     try:
         return serialized_keys[type_name]
     except KeyError:
-        serialized_keys[type_name] = '__' + type_name + '__'
+        serialized_keys[type_name] = "__" + type_name + "__"
         return serialized_keys[type_name]
 
 
 def encode(message, retrieve_pointers=False, private_local=True):
-    """
-    Help function to call the PythonEncoder
+    """Help function to call the PythonEncoder.
+
     :param message:
     :param retrieve_pointers: If true, return a list of all the _PointerTensor
     :param private_local: If true, ask to hide all the sensitive data (ie keep all the
@@ -40,30 +41,28 @@ def encode(message, retrieve_pointers=False, private_local=True):
     """
 
     encoder = PythonEncoder()
-    response = encoder.encode(message,
-                              retrieve_pointers=retrieve_pointers,
-                              private_local=private_local)
+    response = encoder.encode(
+        message, retrieve_pointers=retrieve_pointers, private_local=private_local
+    )
     return response
 
 
 class PythonEncoder:
-    """
-        Encode python and torch objects to be JSON-able.
-        In particular, tensors of all types are replaced by single key dict, which
-        encode the type of the tensor, and the related value includes associated
-        content.
-        Note that a python object is returned, not JSON.
+    """Encode python and torch objects to be JSON-able. In particular, tensors
+    of all types are replaced by single key dict, which encode the type of the
+    tensor, and the related value includes associated content. Note that a
+    python object is returned, not JSON.
 
-        Example:
-            Input:
-                sy.FloatTensor([1,2,3,4])
-            Output:
-                ...: {'__FloatTensor__': {
-                            'child': {'___LocalTensor__': {...},
-                            'data': [1, 2, 3, 4],
-                            'torch_type': 'syft.FloatTensor',
-                            ...}
-                     }
+    Example:
+        Input:
+            sy.FloatTensor([1,2,3,4])
+        Output:
+            ...: {'__FloatTensor__': {
+                        'child': {'___LocalTensor__': {...},
+                        'data': [1, 2, 3, 4],
+                        'torch_type': 'syft.FloatTensor',
+                        ...}
+                 }
     """
 
     def __init__(self):
@@ -73,25 +72,23 @@ class PythonEncoder:
         self.tensorvar_types = torch.tensor_types_tuple
 
     def encode(self, obj, retrieve_pointers=False, private_local=True):
-        """
-            Performs encoding, and retrieves if requested all pointers found
-        """
+        """Performs encoding, and retrieves if requested all pointers found."""
         self.retrieve_pointers = retrieve_pointers
 
         serialized_obj = self.python_encode(obj, private_local)
 
-        serialized_msg = {'obj': serialized_obj}
+        serialized_msg = {"obj": serialized_obj}
         # Give instruction to the decoder, should he acquire the tensor or register them
         # If it's private, you can't access directly the data, so you subscribe to it with a pointer
         if private_local:
-            serialized_msg['mode'] = 'subscribe'
+            serialized_msg["mode"] = "subscribe"
         else:  # If it's public, you can acquire the data directly
-            serialized_msg['mode'] = 'acquire'
+            serialized_msg["mode"] = "acquire"
 
         if self.retrieve_pointers:
             response = (serialized_msg, self.found_pointers)
         else:
-            response = (serialized_msg, )
+            response = (serialized_msg,)
 
         if len(response) == 1:
             return response[0]
@@ -108,10 +105,7 @@ class PythonEncoder:
             return obj.ser(private=private_local, to_json=False)
         # Dict
         elif isinstance(obj, dict):
-            return {
-                k: self.python_encode(v, private_local)
-                for k, v in obj.items()
-            }
+            return {k: self.python_encode(v, private_local) for k, v in obj.items()}
         # Variable
         elif torch_utils.is_variable(obj):
             tail_object = torch_utils.find_tail_of_chain(obj)
@@ -144,17 +138,17 @@ class PythonEncoder:
         # Slice
         elif isinstance(obj, slice):
             key = get_serialized_key(obj)
-            return {key: {'args': [obj.start, obj.stop, obj.step]}}
+            return {key: {"args": [obj.start, obj.stop, obj.step]}}
         # Generator
         elif isinstance(obj, types.GeneratorType):
             logging.warning("Generator args can't be transmitted")
             return []
         # worker
         elif isinstance(obj, (sy.SocketWorker, sy.VirtualWorker)):
-            return {'__worker__': obj.id}
+            return {"__worker__": obj.id}
         # Else log the error
         else:
-            raise ValueError('Unhandled type', type(obj))
+            raise ValueError("Unhandled type", type(obj))
 
 
 def decode(message, worker, acquire=None, message_is_dict=False):
@@ -194,17 +188,17 @@ def decode(message, worker, acquire=None, message_is_dict=False):
     # TODO It would be good to have a standardized place to put the 'mode' argument
     # Extract the mode: depending of the structure of the message, the mode argument
     # is not at the same place
-    if 'message' in dict_message:
-        message = dict_message['message']
+    if "message" in dict_message:
+        message = dict_message["message"]
     else:
         message = dict_message
 
-    if isinstance(message, dict) and 'mode' in message:
-        decoder.acquire = True if message['mode'] == 'acquire' else False
-        message = decoder.python_decode(message['obj'])
+    if isinstance(message, dict) and "mode" in message:
+        decoder.acquire = True if message["mode"] == "acquire" else False
+        message = decoder.python_decode(message["obj"])
 
-    if 'message' in dict_message:
-        dict_message['message'] = message
+    if "message" in dict_message:
+        dict_message["message"] = message
     else:
         dict_message = message
 
@@ -212,9 +206,8 @@ def decode(message, worker, acquire=None, message_is_dict=False):
 
 
 class PythonJSONDecoder:
-    """
-    Decode JSON and reinsert python types when needed, as well as
-    SyftTensors
+    """Decode JSON and reinsert python types when needed, as well as
+    SyftTensors.
 
     For example, the message to decode could be:
     {'__FloatTensor__': {
@@ -235,11 +228,10 @@ class PythonJSONDecoder:
         self.acquire = acquire
 
     def python_decode(self, dct):
-        """
-            Is called on every dict found. We check if some keys correspond
-            to special keywords referring to a type we need to re-cast
-            (e.g. tuple, or torch Variable).
+        """Is called on every dict found.
 
+        We check if some keys correspond to special keywords referring
+        to a type we need to re-cast (e.g. tuple, or torch Variable).
         """
 
         # PLAN A: See if the dct object is not actually a dictionary and address
@@ -247,18 +239,18 @@ class PythonJSONDecoder:
 
         if isinstance(dct, (int, str, float)) or dct is None:
             # a very strange special case
-            if dct == '...':
+            if dct == "...":
                 return ...
             return dct
         if isinstance(dct, (list,)):
             return [self.python_decode(o) for o in dct]
         if not isinstance(dct, dict):
-            raise TypeError('Type not handled', dct)
+            raise TypeError("Type not handled", dct)
 
         # PLAN B: If the dct object IS a dictionary, check to see if it has a "type" key
 
-        if 'type' in dct:
-            if dct['type'] == "numpy.array":
+        if "type" in dct:
+            if dct["type"] == "numpy.array":
 
                 # at first glance, the following if statement might seem a bit confusing
                 # since the dct object is identical for both. Basically, the pointer object
@@ -269,17 +261,19 @@ class PythonJSONDecoder:
                 # otherwise, id_at_location is set to be dct['id']. Similarly with dct['owner'].
 
                 # if we intend to receive the tensor itself, construct an array
-                if(self.acquire):
-                    return array(dct['data'], id=dct['id'], owner=self.worker)
+                if self.acquire:
+                    return array(dct["data"], id=dct["id"], owner=self.worker)
 
                 # if we intend to create a pointer, construct a pointer. Note that
                 else:
-                    return array_ptr(dct['data'],
-                                     owner=self.worker,
-                                     location=self.worker.get_worker(dct['owner']),
-                                     id_at_location=dct['id'])
-            elif dct['type'] == 'numpy.array_ptr':
-                return self.worker.get_obj(dct['id_at_location'])
+                    return array_ptr(
+                        dct["data"],
+                        owner=self.worker,
+                        location=self.worker.get_worker(dct["owner"]),
+                        id_at_location=dct["id"],
+                    )
+            elif dct["type"] == "numpy.array_ptr":
+                return self.worker.get_obj(dct["id_at_location"])
 
         # Plan C: As a last resort, use a Regex to try to find a type somewhere.
         # TODO: Plan C should never be called - but is used extensively in PySyft's PyTorch integratio
@@ -291,24 +285,37 @@ class PythonJSONDecoder:
                 obj_type = type_code.name
                 # Case of a tensor
                 if type_code in torch.tensor_codes:
-                    return torch.guard[obj_type].deser(obj_type, obj, self.worker, self.acquire)
+                    return torch.guard[obj_type].deser(
+                        obj_type, obj, self.worker, self.acquire
+                    )
                 # Case of a Variable
                 elif type_code in torch.var_codes:
-                    return sy.Variable.deser(obj_type, obj, self.worker, self.acquire, is_head=True)
+                    return sy.Variable.deser(
+                        obj_type, obj, self.worker, self.acquire, is_head=True
+                    )
                 # Case of a Syft tensor
                 elif type_code in torch.syft_tensor_codes:
-                    return sy._SyftTensor.deser_routing(obj_type, obj, self.worker, self.acquire)
+                    return sy._SyftTensor.deser_routing(
+                        obj_type, obj, self.worker, self.acquire
+                    )
                 # Case of a iter type non json serializable
-                elif type_code in (type_codes.tuple, type_codes.set, type_codes.bytearray, type_codes.range):
+                elif type_code in (
+                    type_codes.tuple,
+                    type_codes.set,
+                    type_codes.bytearray,
+                    type_codes.range,
+                ):
                     return eval(obj_type)([self.python_decode(o) for o in obj])
                 # Case of a slice
                 elif type_code == type_codes.slice:
-                    return slice(*obj['args'])
+                    return slice(*obj["args"])
                 # Case of a worker
                 elif type_code == type_codes.worker:
                     return self.worker.get_worker(obj)
                 else:
-                    raise TypeError('The special object type', obj_type, 'is not supported')
+                    raise TypeError(
+                        "The special object type", obj_type, "is not supported"
+                    )
             else:
                 dct[key] = self.python_decode(obj)
         return dct

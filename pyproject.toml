@@ -1,0 +1,11 @@
+[tool.black]
+py36 = true
+exclude = '''
+(
+    | \.git
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | \.eggs
+)
+'''
