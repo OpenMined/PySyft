@@ -31,4 +31,4 @@ for f in dir(torch):
 setattr(syft, "deser", _SyftTensor.deser)
 
 
-hook = TorchHook(verbose=False)
+# hook = TorchHook(verbose=False)

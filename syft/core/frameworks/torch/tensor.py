@@ -1080,6 +1080,7 @@ class _PointerTensor(_SyftTensor):
         return syft_obj
 
     def get(self, deregister_ptr=True):
+
         """Get back from a remote worker the chain this pointer is pointing
         at."""
         # Remove this pointer - TODO: call deregister function instead of doing it by hand

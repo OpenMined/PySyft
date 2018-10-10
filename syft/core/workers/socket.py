@@ -248,8 +248,9 @@ class SocketWorker(BaseWorker):
         while buffering:
             print(buffer)
             if delimiter in buffer:
+
                 (line, buffer) = buffer.split(delimiter, 1)
-                print("processed")
+
                 return line + delimiter
             else:
                 more = socket.recv(buffer_size)  # .decode('utf-8')
