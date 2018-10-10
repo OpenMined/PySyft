@@ -1134,10 +1134,14 @@ class BaseWorker(ABC):
 
         if self.get_pointer_to(recipient, new_id) is not None:
             raise MemoryError("You already point at ", recipient, ":", new_id)
-        
+
         if self is recipient:
-            raise MemoryError("The recipient {} is the same as the owner {} of the object {} that you are trying to send".format(recipient, self, object.id))
-            
+            raise MemoryError(
+                "The recipient {} is the same as the owner {} of the object {} that you are trying to send".format(
+                    recipient, self, object.id
+                )
+            )
+
         object = encode.encode(object, retrieve_pointers=False, private_local=False)
 
         # We don't need any response to proceed to registration
