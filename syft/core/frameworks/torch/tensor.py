@@ -2439,7 +2439,19 @@ class _TorchObject:
         """Give the end leaf of the chain to worker, just like if the last elmt
         was send its child to worker self->alice->obj [worker] =>
         self->alice->worker->obj."""
-        return self.send(worker).end_get()
+
+        if(isinstance(self.child, _PointerTensor)):
+            if(self.child.original_pointer):
+
+                return self.send(worker).end_get()
+            else:
+
+                raise Exception("You tried to call .move("+str(worker.id)+") on a pointer which points to another pointers."
+                                "You can only call .move("+str(worker.id)+") on Pointers which point directly to data. Try calling"
+                                ".get() until you get a pointer whose attribute .original_pointer == True"
+                                "Then you can call .move("+str(worker.id)+")")
+        else:
+            raise Exception("You can only call .move() on pointers to data. Perhaps you meant .send("+str(worker.id)+")?")
 
 
 class _TorchTensor(_TorchObject):
