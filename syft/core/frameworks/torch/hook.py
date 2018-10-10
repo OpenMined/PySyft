@@ -75,6 +75,7 @@ class TorchHook:
      """
 
     def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
+
         self.local_worker = local_worker
 
         torch.syft_tensor_name = [x.__name__ for x in sy._SyftTensor.__subclasses__()]
@@ -136,6 +137,8 @@ class TorchHook:
             torch.eval_torch_modules()
 
             sy.local_worker = self.local_worker
+
+        sy.hook = self
 
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloads given tensor_type (native)"""
