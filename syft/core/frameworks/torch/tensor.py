@@ -1157,9 +1157,9 @@ class _FixedPrecisionTensor(_SyftTensor):
         return self
 
     def decode(self):
-        save = self.child.child*1
+        save = self.child.child * 1
         self.child.child = None # <-- This is doing magic things
-        value = self.child.long() % self.field
+        value = torch.fmod(self.child.long(), self.field)
         if len(value.size()) == 0:
             # raise TypeError("Can't decode empty tensor")
             return None
@@ -1396,15 +1396,15 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __add__(self, other):
 
         a, b = self.check_and_scale_precision_if_needed(other)
-        return (a + b) % self.field
+        return torch.fmod((a + b), self.field)
 
     def __sub__(self, other):
         a, b = self.check_and_scale_precision_if_needed(other)
-        return (a - b) % self.field
+        return torch.fmod((a - b), self.field)
 
     def __rsub__(self, other):
         a, b = self.check_and_scale_precision_if_needed(other)
-        return (b - a) % self.field
+        return torch.fmod((b - a), self.field)
 
     def __mul__(self, other):
         a, b = self.check_and_scale_precision_if_needed(other)
@@ -1413,7 +1413,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __gt__(self, other):
 
         a, b = self.check_and_scale_precision_if_needed(other)
-        result = (a > b).long() * self.base**self.precision_fractional
+        result = (a > b).long() * self.base ** self.precision_fractional
         result = sy._FixedPrecisionTensor(result,
                                           base=self.base,
                                           field=self.field,
@@ -1425,7 +1425,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __lt__(self, other):
 
         a, b = self.check_and_scale_precision_if_needed(other)
-        result = (a < b).long() * self.base**self.precision_fractional
+        result = (a < b).long() * self.base ** self.precision_fractional
         result = sy._FixedPrecisionTensor(result,
                                           base=self.base,
                                           field=self.field,
@@ -1437,7 +1437,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __ge__(self, other):
 
         a, b = self.check_and_scale_precision_if_needed(other)
-        result = (a >= b).long() * self.base**self.precision_fractional
+        result = (a >= b).long() * self.base ** self.precision_fractional
         result = sy._FixedPrecisionTensor(result,
                                           base=self.base,
                                           field=self.field,
@@ -1449,7 +1449,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __le__(self, other):
 
         a, b = self.check_and_scale_precision_if_needed(other)
-        result = (a <= b).long() * self.base**self.precision_fractional
+        result = (a <= b).long() * self.base ** self.precision_fractional
         result = sy._FixedPrecisionTensor(result,
                                           base=self.base,
                                           field=self.field,
@@ -1461,7 +1461,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def __eq__(self, other):
 
         a, b = self.check_and_scale_precision_if_needed(other)
-        result = (a == b).long() * self.base**self.precision_fractional
+        result = (a == b).long() * self.base ** self.precision_fractional
         result = sy._FixedPrecisionTensor(result,
                                           base=self.base,
                                           field=self.field,
@@ -1475,18 +1475,15 @@ class _FixedPrecisionTensor(_SyftTensor):
         if (not hasattr(other, 'precision_fractional')):
             other = other.fix_precision(precision_fractional = self.precision_fractional)
 
-        if (self.precision_fractional == other.precision_fractional):
-            gp_response = (self.child * 10 ** self.precision_fractional / other.child) % \
-                          self.field
-        elif (self.precision_fractional > other.precision_fractional):
-            gp_response = (self.child / other.child * 10 ** other.precision_fractional) % \
-                          self.field
-
+          if (self.precision_fractional > other.precision_fractional):
+            gp_response = (self.child / other.child * 10 ** other.precision_fractional)
         elif (self.precision_fractional < other.precision_fractional):
             gp_response = ((self.child *10 ** (2 * other.precision_fractional
-                           - self.precision_fractional)) / other.child) % \
-                          self.field
-        return gp_response
+                           - self.precision_fractional)) / other.child)
+        else:
+            gp_response = (self.child * 10 ** self.precision_fractional / other.child)
+            
+        return torch.fmod(gp_response, self.field)
 
     # def __mul__(self, other):
     #     # if other is not a fixed tensor, convert it to a fixed one
@@ -1796,7 +1793,7 @@ class _SPDZTensor(_SyftTensor):
         return gp_response
 
     def cumsum(self, *args, **kwargs):
-        gp_response = self.child.cumsum(*args, **kwargs) % spdz.field
+        gp_response = torch.fmod(self.child.cumsum(*args, **kwargs), spdz.field)
         return gp_response
 
     def __mul__(self, other):
@@ -1919,7 +1916,7 @@ class _SPDZTensor(_SyftTensor):
             var.child = None
             if hasattr(self, 'grad') and self.grad is not None:
                 var_grad = self.grad.shares.child.sum_get()
-                value = var_grad.data % spdz.field
+                value = torch.fmod(var_grad.data, spdz.field)
                 # TODO: Add this thing for negative values
                 # gate = (value > spdz.torch_max_value).long()
                 # neg_nums = (value - spdz.torch_field) * gate
@@ -1930,7 +1927,7 @@ class _SPDZTensor(_SyftTensor):
                 var.assign_grad_(var_grad)
             return var
         # TODO: have deregister_ptr do something
-        value = self.shares.child.sum_get() % spdz.field
+        value = torch.fmod(self.shares.child.sum_get(), spdz.field)
 
         gate = (value > spdz.torch_max_value).long()
 
