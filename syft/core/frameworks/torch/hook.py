@@ -138,8 +138,6 @@ class TorchHook:
 
             sy.local_worker = self.local_worker
 
-        sy.hook = self
-
     def _hook_native_tensors_and_variables(self, tensor_type):
         """Overloads given tensor_type (native)"""
         # Overload 'special' methods here
