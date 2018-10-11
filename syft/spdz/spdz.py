@@ -20,7 +20,7 @@ torch_field = torch.LongTensor([field])
 
 def encode(rational, precision_fractional=PRECISION_FRACTIONAL, mod=field):
     upscaled = (rational * BASE ** precision_fractional).long()
-    field_element = upscaled % mod
+    field_element = torch.fmod(upscaled, mod)
     return field_element
 
 
@@ -83,10 +83,10 @@ def swap_shares(shares):
 
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL, mod=field):
-    print("truncating")
+
     if interface.get_party() == 0:
-        return (x / BASE ** amount) % mod
-    return (mod - ((mod - x) / BASE ** amount)) % mod
+        return torch.fmod((x / BASE ** amount), mod)
+    return torch.fmod((mod - ((mod - x) / BASE ** amount)), mod)
 
 
 def public_add(x, y, interface):
@@ -98,11 +98,11 @@ def public_add(x, y, interface):
 
 def spdz_add(a, b, mod=field):
     c = a + b
-    return c % mod
+    return torch.fmod(c, mod)
 
 
 def spdz_neg(a, mod=field):
-    return (mod - a) % mod
+    return torch.fmod((mod - a), mod)
 
 
 def spdz_mul(x, y, workers, mod=field):
@@ -112,18 +112,20 @@ def spdz_mul(x, y, workers, mod=field):
     triple = generate_mul_triple_communication(shape, workers)
     a, b, c = triple
 
-    d = (x - a) % mod
-    e = (y - b) % mod
+    d = torch.fmod((x - a), mod)
+    e = torch.fmod((y - b), mod)
 
-    delta = d.child.sum_get() % mod
-    epsilon = e.child.sum_get() % mod
+    delta = torch.fmod(d.child.sum_get(), mod)
+    epsilon = torch.fmod(e.child.sum_get(), mod)
 
     epsilon_delta = epsilon * delta
 
     delta = delta.broadcast(workers)
     epsilon = epsilon.broadcast(workers)
 
-    z = (c + (delta * b) % mod + (epsilon * a) % mod) % mod
+    z = torch.fmod(
+        (c + torch.fmod((delta * b), mod) + torch.fmod((epsilon * a), mod)), mod
+    )
 
     z.child.public_add_(epsilon_delta)
 
@@ -142,21 +144,21 @@ def spdz_matmul(x, y, workers, mod=field):
     assert x_width == y_height, f"dimension mismatch: {x_width!r} != {y_height!r}"
     a, b, c = generate_matmul_triple_communication(shapes, workers)
 
-    r = (x - a) % mod
-    s = (y - b) % mod
+    r = torch.fmod((x - a), mod)
+    s = torch.fmod((y - b), mod)
 
     # Communication
-    rho = r.child.sum_get() % mod
-    sigma = s.child.sum_get() % mod
-    rho_sigma = torch.mm(rho, sigma) % mod
+    rho = torch.fmod(r.child.sum_get(), mod)
+    sigma = torch.fmod(s.child.sum_get(), mod)
+    rho_sigma = torch.fmod(torch.mm(rho, sigma), mod)
 
     rho = rho.broadcast(workers)
     sigma = sigma.broadcast(workers)
 
-    a_sigma = torch.mm(a, sigma) % mod
-    rho_b = torch.mm(rho, b) % mod
+    a_sigma = torch.fmod(torch.mm(a, sigma), mod)
+    rho_b = torch.fmod(torch.mm(rho, b), mod)
 
-    z = (a_sigma + rho_b + c) % mod
+    z = torch.fmod((a_sigma + rho_b + c), mod)
     z.child.public_add_(rho_sigma)
 
     return z
