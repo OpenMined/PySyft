@@ -1,3 +1,3 @@
 from .utils import Serialiser
 
-__all__ = ['Serialiser']
+__all__ = ["Serialiser"]
