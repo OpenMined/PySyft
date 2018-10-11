@@ -293,6 +293,7 @@ def wrap_command(obj):
             if hasattr(obj, "grad"):
                 wrapper_grad = wrap_command(obj.grad)
                 wrapper.assign_grad_(wrapper_grad)
+        fix_chain_structure(wrapper)
 
         return wrapper
     # List or iterables which could contain tensors
@@ -673,7 +674,9 @@ def fix_chain_structure(var_node, data_node=None, grad_node=None, head_node=None
     """
     Combine link_var_chain_to_data_and_grad_chains and fix_chain_ends
     """
+    middle_var_node = True
     if head_node is None:
+        middle_var_node = False
         head_node = var_node
 
     if var_node is not None:
@@ -683,6 +686,9 @@ def fix_chain_structure(var_node, data_node=None, grad_node=None, head_node=None
                 var_node.data = data_node
             if grad_node is not None:
                 var_node.grad = grad_node
+        elif middle_var_node:
+            if data_node is not None:
+                var_node.data = data_node
 
         # Check terminal cases
         if isinstance(var_node, sy._LocalTensor):

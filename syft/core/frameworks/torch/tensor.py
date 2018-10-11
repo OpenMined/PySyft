@@ -461,6 +461,8 @@ class _LocalTensor(_SyftTensor):
         tensor_command, torch_type = torch_utils.prepare_child_command(
             syft_command, replace_tensorvar_with_child=True
         )
+        # torch_utils.assert_has_only_torch_tensorvars(tensor_command)
+
         attr = tensor_command["command"]
         args = tensor_command["args"]
         kwargs = tensor_command["kwargs"]
@@ -499,67 +501,55 @@ class _LocalTensor(_SyftTensor):
             if torch_utils.is_variable(response):
                 # Also wrap the data if it's a variable (don't use wrap_command_with: the chain is not well formed yet)
                 syft_command["self"].child.data = response.data
-                response.data.parent = syft_command["self"].child.data.parent
                 # And wrap the grad if there is one
                 if response.grad is not None:
                     if response.grad.data.dim() > 0:
                         syft_command["self"].child.grad = response.grad
                     else:
                         syft_command["self"].child.grad.native_set_()
-                    response.grad.parent = syft_command["self"].child.grad.parent
-                # Finally, fix the links .data and .grad
-                if response.grad is None:
-                    torch_utils.link_var_chain_to_data_chain(
-                        syft_command["self"], response.data.child
-                    )
-                else:
-                    torch_utils.link_var_chain_to_data_and_grad_chains(
-                        syft_command["self"], response.data.child, response.grad.child
-                    )
+
 
             return_response = syft_command["self"]
-
-        try:
-            assert isinstance(
-                response._child, (_SPDZTensor, _SNNTensor, _FixedPrecisionTensor)
-            )
-            return response
-        # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
-        except (AttributeError, AssertionError):
-            responses = response if isinstance(response, tuple) else (response,)
-            syft_responses = []
-            for resp in responses:
-                if resp is None:  # Don't wrap None
-                    syft_responses.append(resp)
-                    continue
-
-                if isinstance(resp, (int, float, bool)):
-                    # if not final worker, convert into Float Tensor, which comes with a _LocalTensor
-                    if owner.id != owner.hook.local_worker.id:
-                        resp = sy.zeros(1) + resp
-                    else:  # Else don't wrap it
+        else:
+            try:
+                assert isinstance(
+                    response._child, (_SPDZTensor, _SNNTensor, _FixedPrecisionTensor)
+                )
+                return response
+            # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
+            except (AttributeError, AssertionError):
+                responses = response if isinstance(response, tuple) else (response,)
+                syft_responses = []
+                for resp in responses:
+                    if resp is None:  # Don't wrap None
                         syft_responses.append(resp)
                         continue
 
-                syft_response = sy._LocalTensor(
-                    child=resp, parent=resp, owner=owner, torch_type=type(resp).__name__
+                    if isinstance(resp, (int, float, bool)):
+                        # if not final worker, convert into Float Tensor, which comes with a _LocalTensor
+                        if owner.id != owner.hook.local_worker.id:
+                            resp = sy.zeros(1) + resp
+                        else:  # Else don't wrap it
+                            syft_responses.append(resp)
+                            continue
+
+                    syft_response = sy._LocalTensor(
+                        child=resp, parent=resp, owner=owner, torch_type=type(resp).__name__
+                    )
+                    if torch_utils.is_variable(resp):
+                        syft_response.data = sy._LocalTensor(
+                            child=resp.data, parent=resp.data, owner=owner, torch_type=type(resp.data).__name__
+                        )
+                        if resp.grad is not None and not torch_utils.is_tensor_empty(resp.grad):
+                            syft_response.grad = sy._LocalTensor(
+                                child=resp.grad, parent=resp.grad, owner=owner, torch_type=type(resp.grad).__name__
+                            )
+
+                    syft_responses.append(syft_response)
+
+                return_response = (
+                    tuple(syft_responses) if len(syft_responses) > 1 else syft_responses[0]
                 )
-
-                if torch_utils.is_variable(resp):
-                    if resp.grad is None:
-                        torch_utils.link_var_chain_to_data_chain(
-                            syft_response, resp.data.child
-                        )
-                    else:
-                        torch_utils.link_var_chain_to_data_and_grad_chains(
-                            syft_response, resp.data.child, resp.grad.child
-                        )
-
-                syft_responses.append(syft_response)
-
-            return_response = (
-                tuple(syft_responses) if len(syft_responses) > 1 else syft_responses[0]
-            )
 
         return return_response
 
@@ -1003,11 +993,6 @@ class _PointerTensor(_SyftTensor):
         # pointer, instead jof returning the new wrapper created in response
         if has_self and utils.is_in_place_method(attr):
             return syft_command["self"]
-
-        if torch_utils.is_variable(response):
-            torch_utils.link_var_chain_to_data_and_grad_chains(
-                response, response.data, response.grad
-            )
 
         # Perform the un-wrap: remove the head on all chains (also .data and .grad if any)
         response, _ = torch_utils.get_child_command(response)
@@ -2295,10 +2280,7 @@ class _TorchObject:
             x_gp = _GeneralizedPointerTensor(
                 pointer_shares_dict, torch_type="syft.LongTensor"
             ).on(self_copy)
-            if is_variable:
-                torch_utils.link_var_chain_to_data_and_grad_chains(
-                    x_gp, x_gp.data, x_gp.grad
-                )
+
             x_mpc = _SNNTensor(x_gp, torch_type="syft.LongTensor").on(self)
             if is_variable:
                 torch_utils.link_var_chain_to_data_and_grad_chains(
@@ -2519,9 +2501,7 @@ class _TorchTensor(_TorchObject):
         # This would imply overload differently the __init__ to provide an owner for the child attr.
         worker.hook.local_worker.de_register(tensorvar)
 
-        # Ensure that the loop is made, if needed
-        if isinstance(torch_utils.find_tail_of_chain(tensorvar), sy._LocalTensor):
-            torch_utils.fix_chain_ends(tensorvar)
+        torch_utils.fix_chain_structure(tensorvar)
 
         return tensorvar
 
@@ -2784,15 +2764,7 @@ class _TorchVariable(_TorchObject):
                     self.grad.data = variable.grad.data
 
             torch_utils.fix_chain_structure(self, self.data, self.grad)
-            if self.grad is not None:
-                torch_utils.link_var_chain_to_data_and_grad_chains(
-                    self, self.data, self.grad
-                )
-            else:
-                torch_utils.link_var_chain_to_data_chain(self, self.data)
-
-            # torch_utils.fix_chain_ends(self)
-            torch_utils.assert_is_chain_well_formed(self)
+            # torch_utils.assert_is_chain_well_formed(self)
             return self
 
         return variable

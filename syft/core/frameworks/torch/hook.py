@@ -574,10 +574,6 @@ class TorchHook:
                         var.grad.data.native_set_(computed_grad.data)
                 # Make sure everyone has the right owner
                 torch_utils.enforce_owner(var, worker)
-                # Fix the .data and .grad attributes on the chain
-                torch_utils.link_var_chain_to_data_and_grad_chains(
-                    var, var.data, var.grad
-                )
 
         sy.Variable.native_backward = new_backward
 
