@@ -48,7 +48,7 @@ class _SyftTensor:
                 pass
 
         if owner is not None:
-            if not isinstance(owner, sy.core.workers.BaseWorker):
+            if isinstance(owner, str):
                 owner = self.child.owner.get_worker(owner)
         self.owner = owner
 
@@ -508,7 +508,6 @@ class _LocalTensor(_SyftTensor):
                     else:
                         syft_command["self"].child.grad.native_set_()
 
-
             return_response = syft_command["self"]
         else:
             try:
@@ -534,21 +533,34 @@ class _LocalTensor(_SyftTensor):
                             continue
 
                     syft_response = sy._LocalTensor(
-                        child=resp, parent=resp, owner=owner, torch_type=type(resp).__name__
+                        child=resp,
+                        parent=resp,
+                        owner=owner,
+                        torch_type=type(resp).__name__,
                     )
                     if torch_utils.is_variable(resp):
                         syft_response.data = sy._LocalTensor(
-                            child=resp.data, parent=resp.data, owner=owner, torch_type=type(resp.data).__name__
+                            child=resp.data,
+                            parent=resp.data,
+                            owner=owner,
+                            torch_type=type(resp.data).__name__,
                         )
-                        if resp.grad is not None and not torch_utils.is_tensor_empty(resp.grad):
+                        if resp.grad is not None and not torch_utils.is_tensor_empty(
+                            resp.grad
+                        ):
                             syft_response.grad = sy._LocalTensor(
-                                child=resp.grad, parent=resp.grad, owner=owner, torch_type=type(resp.grad).__name__
+                                child=resp.grad,
+                                parent=resp.grad,
+                                owner=owner,
+                                torch_type=type(resp.grad).__name__,
                             )
 
                     syft_responses.append(syft_response)
 
                 return_response = (
-                    tuple(syft_responses) if len(syft_responses) > 1 else syft_responses[0]
+                    tuple(syft_responses)
+                    if len(syft_responses) > 1
+                    else syft_responses[0]
                 )
 
         return return_response
@@ -955,10 +967,7 @@ class _PointerTensor(_SyftTensor):
 
     def register_pointer(self):
         worker = self.owner
-        if isinstance(self.location, int):
-            location = self.location
-        else:
-            location = self.location.id
+        location = self.location.id
         id_at_location = self.id_at_location
         # Add the remote address
         worker._pointers[location][id_at_location] = self.id
@@ -2468,7 +2477,12 @@ class _TorchTensor(_TorchObject):
 
     def ser(self, private, as_dict=True):
         key = encode.get_serialized_key(self)
-        data = self.tolist() if not private else []
+
+        data = (
+            self.tolist()
+            if not private and not torch_utils.is_tensor_empty(self)
+            else []
+        )
         tensor_msg = {
             "torch_type": type(self).__name__,
             "data": data,
