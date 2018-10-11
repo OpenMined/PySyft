@@ -146,7 +146,7 @@ class _SyftTensor:
                 command["command"] = cls.replaced_functions(attr)
 
             # Or do whatever you want, but be careful not to overwrite the args!
-            # (...)
+            cls.custom_handle(command)
 
             # Get the next node type and update in command tensorvar with tensorvar.child
             next_command, child_type = torch_utils.prepare_child_command(
@@ -427,6 +427,10 @@ class _SyftTensor:
     substitution_table = {}
 
     class overload_functions:
+        pass
+
+    @classmethod
+    def custom_handle(cls, *args, **kwargs):
         pass
 
 
@@ -719,6 +723,35 @@ class _PlusIsMinusTensor(_SyftTensor):
     def abs(self):
         """Overload the abs() method and execute another function."""
         return torch.abs(self)
+
+
+class _LogTensor(_SyftTensor):
+    """
+    The LogTensor
+    Role: Logs all incoming operations
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    # The table of command you want to replace
+    substitution_table = {}
+
+    @classmethod
+    def custom_handle(cls, command):
+        """Put here all the things you want to do with a non-overloaded command."""
+        print(command)
+
+    class overload_functions:
+        """Put here the functions you want to overload Beware of recursion
+        errors."""
+
+        @staticmethod
+        def get(attr):
+            attr = attr.split(".")[-1]
+            return getattr(sy._PlusIsMinusTensor.overload_functions, attr)
+
+    # Put here all the methods you want to overload
 
 
 class _GeneralizedPointerTensor(_SyftTensor):
