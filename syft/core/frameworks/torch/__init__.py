@@ -59,6 +59,7 @@ torch.var_types_tuple = tuple(torch.var_types)
 
 # a list of all classes in which we will override their methods for remote execution
 torch.tensorvar_types = torch.tensor_types + [torch.autograd.variable.Variable]
+torch.tensorvar_types_tuple = tuple(torch.tensorvar_types)
 
 torch.tensorvar_types_strs = [x.__name__ for x in torch.tensorvar_types]
 
@@ -76,6 +77,7 @@ torch.tensorvar_methods.append("get_shape")
 torch.tensorvar_methods.append("share")
 torch.tensorvar_methods.append("fix_precision")
 torch.tensorvar_methods.append("decode")
+torch.tensorvar_methods.append("end_get")
 
 # Torch functions we don't want to override
 torch.torch_exclude = ["save", "load", "typename", "is_tensor", "manual_seed"]

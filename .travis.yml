@@ -33,14 +33,14 @@ install:
       elif [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
           pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.10.1-cp36-cp36m-linux_x86_64.whl;
       fi
-    - pip install -r requirements.txt
+    - pip install -r requirements.txt >build.log
     - pip install flake8
     - pip install flake8-docstrings
     - pip install flake8-comprehensions
     - pip install pep8-naming
     - pip install black
     - pip install torchvision
-    - python setup.py install
+    - python setup.py install >> build.log
 before_script:
     # stop the build if there are Python syntax errors or undefined
     # names

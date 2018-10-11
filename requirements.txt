@@ -1,5 +1,8 @@
+black
+ipykernel
+msgpack
 pre-commit
 sphinx_rtd_theme
+tensorflow
+torch==0.3.1
 websockets
-msgpack
-black

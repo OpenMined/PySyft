@@ -93,7 +93,7 @@ def setUpModule():
         "Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
         " - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor\n"
         " - - Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
-        "   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _LocalTensor"
+        "   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor"
     )
 
 
@@ -1097,6 +1097,33 @@ class TestSNNTensor(TestCase):
             out.get().decode() == torch.FloatTensor([[0, 0, 1, 0], [1, 0, 0, 0]])
         ).all()
 
+    def test_mpc_train(self):
+        # create our dataset
+        data = sy.FloatTensor([[0, 0], [0, 1], [1, 0], [1, 1]])
+        target = sy.FloatTensor([[0], [0], [1], [1]])
+
+        model = sy.zeros(2, 1)
+
+        data = data.fix_precision().share(alice, bob)
+        target = target.fix_precision().share(alice, bob)
+        model = model.fix_precision().share(alice, bob)
+
+        for i in range(10):
+            pred = data.mm(model)
+            grad = pred - target
+            update = data.transpose(0, 1).mm(grad)
+
+            model = model - update * 0.1
+            loss = grad.get().decode().abs().sum()
+
+        assert loss < 0.8
+
+    def test_mpc_scalar_mult(self):
+
+        data = torch.FloatTensor([1, 2, 3]).fix_precision().share(alice, bob)
+        assert ((data * 0.1).get().decode() == torch.FloatTensor([0.1, 0.2, 0.3])).all()
+        assert ((data * -0.1).get().decode() == torch.FloatTensor([-0.1, -0.2, -0.3])).all()
+        assert ((data * 1.1).get().decode() == torch.FloatTensor([1.1, 2.2, 3.3])).all()
 
 class TestSPDZTensor(TestCase):
     def mpc_sum(self, n1, n2):
@@ -1865,6 +1892,8 @@ class TestSPDZTensor(TestCase):
         #                                            [10, -11.8]], op='matmul')
 
 
+
+
 class TestGPCTensor(TestCase):
     def test_gpc_add(self):
         x = torch.LongTensor([1, 2, 3, 4, 5])
@@ -1915,6 +1944,8 @@ class TestGPCTensor(TestCase):
         results = x_gp.workers()
 
         assert results == [k.id for k in x_pointer_tensor_dict.keys()]
+
+
 
 
 if __name__ == "__main__":

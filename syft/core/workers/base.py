@@ -361,8 +361,7 @@ class BaseWorker(ABC):
 
             # if object is a Torch object - pre-process it for registration
             else:
-                torch_utils.fix_chain_ends(object)
-                # torch_utils.assert_is_chain_well_formed(object)
+                torch_utils.fix_chain_structure(object)
 
             # register the object, saving it in self._objects and ensuring that
             # object.owner is set correctly
@@ -422,17 +421,7 @@ class BaseWorker(ABC):
             # route the command to the torch command logic
             result = self.process_torch_command(message)
 
-            # save the results locally in self._objects and ensure
-            # that .owner is set correctly
-            torch_utils.enforce_owner(result, self)
-            if torch_utils.is_variable(result):
-                if result.grad is not None:
-                    torch_utils.link_var_chain_to_data_and_grad_chains(
-                        result, result.data, result.grad
-                    )
-                else:
-                    torch_utils.link_var_chain_to_data_chain(result, result.data)
-
+            # save the results locally in self._objects
             self.register(result)
 
             # return result of torch operation
@@ -487,7 +476,7 @@ class BaseWorker(ABC):
             # return the list of pointers.
             return pointers, True
 
-        # Hopeflly we don't reach this point.
+        # Hopefully we don't reach this point.
         return "Unrecognized message type:" + message_wrapper["type"]
 
     def __str__(self):
@@ -606,24 +595,18 @@ class BaseWorker(ABC):
         >>> me.get_worker(bob)
         <syft.core.workers.virtual.VirtualWorker id:bob>
         """
-
-        if issubclass(type(id_or_worker), BaseWorker):
-            if id_or_worker.id not in self._known_workers:
-                self.add_worker(id_or_worker)
-            result = self._known_workers[id_or_worker.id]
+        if id_or_worker in self._known_workers:
+            return self._known_workers[id_or_worker]
         else:
-            if id_or_worker in self._known_workers:
-                result = self._known_workers[id_or_worker]
-            else:
+            if isinstance(id_or_worker, (str, int)):
                 logging.warning(
                     "Worker", self.id, "couldnt recognize worker", id_or_worker
                 )
-                result = id_or_worker
-
-        if result is not None:
-            return result
-        else:
-            return id_or_worker
+                return id_or_worker
+            else:
+                if id_or_worker.id not in self._known_workers:
+                    self.add_worker(id_or_worker)
+                return self._known_workers[id_or_worker.id]
 
     def get_obj(self, remote_key):
         """get_obj(remote_key) -> a torch object This method fetches a tensor
@@ -663,8 +646,6 @@ class BaseWorker(ABC):
             msg += " Check your code to make sure you haven't already called .get() on this pointer!!!"
 
             raise Exception(msg)
-        # Fix ownership if the obj has been modified out of control (like with backward())
-        torch_utils.enforce_owner(obj, self)
         return obj
 
     def set_obj(self, remote_key, value, force=False, tmp=False):
@@ -1052,8 +1033,6 @@ class BaseWorker(ABC):
 
         result = child_type.handle_call(syft_command, owner=self)
 
-        torch_utils.enforce_owner((raw_command, result), self)
-
         if is_torch_command:
             # Wrap the result
             if has_self and utils.is_in_place_method(attr):
@@ -1066,9 +1045,11 @@ class BaseWorker(ABC):
                     wrapper = torch_utils.wrap_command_with(result, raw_command["self"])
             else:
                 wrapper = torch_utils.wrap_command(result)
+            torch_utils.enforce_owner(wrapper, self)
             return wrapper
         else:
             # We don't need to wrap
+            torch_utils.enforce_owner(result, self)
             return result
 
     def send_obj(
@@ -1109,10 +1090,10 @@ class BaseWorker(ABC):
                     raise MemoryError("You already point at ", recipient, ":", new_id)
                 assert (
                     new_id != new_data_id
-                ), "You can't have the same id vor the variable and its data."
+                ), "You can't have the same id for the variable and its data."
                 assert (
                     new_id != new_grad_id
-                ), "You can't have the same id vor the variable and its grad."
+                ), "You can't have the same id for the variable and its grad."
                 assert new_id != new_grad_data_id
 
                 assert new_data_id != new_grad_id
@@ -1134,6 +1115,13 @@ class BaseWorker(ABC):
 
         if self.get_pointer_to(recipient, new_id) is not None:
             raise MemoryError("You already point at ", recipient, ":", new_id)
+
+        if self is recipient:
+            raise MemoryError(
+                "The recipient {} is the same as the owner {} of the object {} that you are trying to send".format(
+                    recipient, self, object.id
+                )
+            )
 
         object = encode.encode(object, retrieve_pointers=False, private_local=False)
 
@@ -1159,10 +1147,11 @@ class BaseWorker(ABC):
         if isinstance(recipient, (str, int)):
             raise TypeError("Recipient should be a worker object not his id.")
 
+        # print(message)
         response = self.send_msg(
             message=message, message_type=framework + "_cmd", recipient=recipient
         )
-
+        # print(response)
         response = encode.decode(response, worker=self)
 
         return response
