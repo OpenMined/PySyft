@@ -84,7 +84,7 @@ def swap_shares(shares):
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL, mod=field):
 
-    if (interface.get_party() == 0):
+    if interface.get_party() == 0:
         return torch.fmod((x / BASE ** amount), mod)
     return torch.fmod((mod - ((mod - x) / BASE ** amount)), mod)
 
@@ -123,11 +123,9 @@ def spdz_mul(x, y, workers, mod=field):
     delta = delta.broadcast(workers)
     epsilon = epsilon.broadcast(workers)
 
-    z = torch.fmod((c
-                    + torch.fmod((delta * b), mod)
-                    + torch.fmod((epsilon * a), mod)
-                    ), mod)
-
+    z = torch.fmod(
+        (c + torch.fmod((delta * b), mod) + torch.fmod((epsilon * a), mod)), mod
+    )
 
     z.child.public_add_(epsilon_delta)
 

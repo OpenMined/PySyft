@@ -1631,7 +1631,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         if (not hasattr(other, 'precision_fractional')):
             other = other.fix_precision(precision_fractional = self.precision_fractional)
 
-          if (self.precision_fractional > other.precision_fractional):
+        if (self.precision_fractional > other.precision_fractional):
             gp_response = (self.child / other.child * 10 ** other.precision_fractional)
         elif (self.precision_fractional < other.precision_fractional):
             gp_response = ((self.child *10 ** (2 * other.precision_fractional
