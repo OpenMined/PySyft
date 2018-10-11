@@ -93,7 +93,7 @@ def setUpModule():
         "Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
         " - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor\n"
         " - - Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
-        "   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor"
+        "   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _LocalTensor"
     )
 
 
@@ -496,11 +496,11 @@ class TestTorchTensor(TestCase):
         z = torch.dot(x, y)
         # There is an issue with some Macs getting 0.0 instead
         # Solved here: https://github.com/pytorch/pytorch/issues/5609
-
         assert torch.equal(torch.FloatTensor([z]), torch.FloatTensor([14])), (
             "There is an issue with some Macs getting 0.0 instead, "
             "see https://github.com/pytorch/pytorch/issues/5609"
         )
+
         z = torch.eq(x, y)
         assert torch.equal(z, torch.ByteTensor([1, 1, 1]))
 
@@ -554,7 +554,6 @@ class TestTorchTensor(TestCase):
         x = torch.FloatTensor([1, 2, 3]).send(bob).send(alice)
         y = torch.FloatTensor([1, 2, 3]).send(bob).send(alice)
         z = torch.dot(x, y)
-
         z.get().get()
         assert torch.equal(z, torch.FloatTensor([14]))
 
