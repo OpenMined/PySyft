@@ -479,17 +479,20 @@ class _LocalTensor(_SyftTensor):
             command = native_func
         response = command(*args, **kwargs)
 
-        # TODO : control registration process
         if response is None:
             return response
 
-        if owner.id != owner.hook.local_worker.id:
+        is_execution_remote = owner.id != owner.hook.local_worker.id
+
+        # If the execution is not local, basic types must be put in a Tensor for pointing etc.
+        if is_execution_remote:
             if isinstance(response, (int, float, bool)):
                 response = torch_type([response])
             elif isinstance(response, (np.ndarray,)):
                 logging.warning("[np.ndarray] Hardcoding FloatTensor")
                 response = sy.FloatTensor(response)
         else:
+            # If not we can directly return
             if isinstance(response, (int, float, bool, np.ndarray)):
                 return response
 
@@ -526,7 +529,7 @@ class _LocalTensor(_SyftTensor):
 
                     if isinstance(resp, (int, float, bool)):
                         # if not final worker, convert into Float Tensor, which comes with a _LocalTensor
-                        if owner.id != owner.hook.local_worker.id:
+                        if is_execution_remote:
                             resp = sy.zeros(1) + resp
                         else:  # Else don't wrap it
                             syft_responses.append(resp)
