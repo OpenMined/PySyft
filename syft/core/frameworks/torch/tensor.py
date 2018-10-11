@@ -1428,11 +1428,9 @@ class _FixedPrecisionTensor(_SyftTensor):
                 other = args[0]
                 torch_tensorvar, precision = self.truncate(torch_tensorvar, args[0])
 
-
             response = torch_tensorvar.fix_precision(
                 already_encoded=True, precision_fractional=precision
             )
-
 
             # response.child.torch_type = 'syft.FloatTensor'
             # response = response.child.wrap(True)
@@ -1456,13 +1454,12 @@ class _FixedPrecisionTensor(_SyftTensor):
 
     def truncate(self, torch_tensorvar, other, base=None, fractional=None):
 
-        if(base is None):
+        if base is None:
             base = self.base
-
 
         if isinstance(other, (sy._FixedPrecisionTensor, float, int)):
 
-            if(isinstance(other, sy._FixedPrecisionTensor)):
+            if isinstance(other, sy._FixedPrecisionTensor):
                 result_precision_fractional = max(
                     self.precision_fractional, other.precision_fractional
                 )
@@ -1513,14 +1510,12 @@ class _FixedPrecisionTensor(_SyftTensor):
                         b_masked_low.share(*workers) - mask_low.share(*workers).get()
                     )
 
-                    if(fractional is None):
+                    if fractional is None:
                         fractional = result_precision_fractional
 
                     divisor = base ** fractional
 
-                    c = (a - b_low) * sy.mpc.utils.modinv(
-                        divisor, self.field
-                    )
+                    c = (a - b_low) * sy.mpc.utils.modinv(divisor, self.field)
 
                     if isinstance(torch_tensorvar, sy.Variable):
                         torch_tensorvar = torch_tensorvar * 0
@@ -1564,7 +1559,10 @@ class _FixedPrecisionTensor(_SyftTensor):
         # if other is not a fixed tensor, convert it to a fixed one
         if not hasattr(other, "precision_fractional"):
             if isinstance(other, (float, int)):
-                return self.child, round(other * (self.base ** self.precision_fractional))
+                return (
+                    self.child,
+                    round(other * (self.base ** self.precision_fractional)),
+                )
             else:
                 other = other.fix_precision(
                     precision_fractional=self.precision_fractional
@@ -2222,13 +2220,13 @@ class _TorchObject:
 
     def truncate(self, fractional=1):
         # by default - divides number by 10 (1^10)
-        truncated, precision = self.child.truncate(self.child.child,
-                                                   self.child,
-                                                   fractional=fractional)
+        truncated, precision = self.child.truncate(
+            self.child.child, self.child, fractional=fractional
+        )
         response = truncated.fix_precision(
             already_encoded=True, precision_fractional=precision
         )
-        response.child.torch_type = 'syft.FloatTensor'
+        response.child.torch_type = "syft.FloatTensor"
         return response.child.wrap(True)
 
     def end_get(self):
