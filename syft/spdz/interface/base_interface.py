@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 
 class BaseInterface(ABC):
-
     def __init__(self, party):
         self.party = party
         if party:

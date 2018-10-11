@@ -11,10 +11,10 @@ PRECISION = PRECISION_INTEGRAL + PRECISION_FRACTIONAL
 BOUND = BASE ** PRECISION
 
 # Q field
-Q_BITS = 31#32#62
-field = 2 ** Q_BITS  # < 63 bits
+Q_BITS = 31  # 32#62
+field = (2 ** Q_BITS) - 1  # < 63 bits
 Q_MAXDEGREE = 1
-torch_max_value = torch.LongTensor([round(field/2)])
+torch_max_value = torch.LongTensor([round(field / 2)])
 torch_field = torch.LongTensor([field])
 
 
@@ -31,6 +31,7 @@ def decode(field_element, precision_fractional=PRECISION_FRACTIONAL, mod=field):
     field_element[neg_values] = mod - field_element[neg_values]
     rational = field_element.float() / BASE ** precision_fractional
     return rational
+
 
 # I think decode() above may be wrong... and the correct one is below
 # TODO: explore this
@@ -56,9 +57,9 @@ def share(secret, n_workers, mod=field, random_type=torch.LongTensor):
         if i == 0:
             share = random_shares[i]
         elif i < n_workers - 1:
-            share = random_shares[i] - random_shares[i-1]
+            share = random_shares[i] - random_shares[i - 1]
         else:
-            share = secret - random_shares[i-1]
+            share = secret - random_shares[i - 1]
         shares.append(share)
 
     return shares
@@ -71,24 +72,27 @@ def reconstruct(shares, mod=field):
 def swap_shares(shares):
     ptd = shares.child.pointer_tensor_dict
     alice, bob = list(ptd.keys())
-    new_alice = (ptd[alice]+0)
-    new_bob = (ptd[bob]+0)
+    new_alice = ptd[alice] + 0
+    new_bob = ptd[bob] + 0
     new_alice.send(bob)
     new_bob.send(alice)
 
-    return sy._GeneralizedPointerTensor({alice: new_bob,bob: new_alice}).on(sy.LongTensor([]))
+    return sy._GeneralizedPointerTensor({alice: new_bob, bob: new_alice}).on(
+        sy.LongTensor([])
+    )
 
 
 def truncate(x, interface, amount=PRECISION_FRACTIONAL, mod=field):
-    if (interface.get_party() == 0):
+    print("truncating")
+    if interface.get_party() == 0:
         return (x / BASE ** amount) % mod
     return (mod - ((mod - x) / BASE ** amount)) % mod
 
 
 def public_add(x, y, interface):
-    if (interface.get_party() == 0):
-        return (x + y)
-    elif (interface.get_party() == 1):
+    if interface.get_party() == 0:
+        return x + y
+    elif interface.get_party() == 1:
         return x
 
 
@@ -104,7 +108,7 @@ def spdz_neg(a, mod=field):
 def spdz_mul(x, y, workers, mod=field):
     if x.get_shape() != y.get_shape():
         raise ValueError("Shapes must be identical in order to multiply them")
-    shape = x.shape
+    shape = x.get_shape()
     triple = generate_mul_triple_communication(shape, workers)
     a, b, c = triple
 
@@ -119,10 +123,7 @@ def spdz_mul(x, y, workers, mod=field):
     delta = delta.broadcast(workers)
     epsilon = epsilon.broadcast(workers)
 
-    z = (c
-         + (delta * b) % mod
-         + (epsilon * a) % mod
-         ) % mod
+    z = (c + (delta * b) % mod + (epsilon * a) % mod) % mod
 
     z.child.public_add_(epsilon_delta)
 
@@ -130,17 +131,15 @@ def spdz_mul(x, y, workers, mod=field):
 
 
 def spdz_matmul(x, y, workers, mod=field):
-    shapes = [x.shape, y.shape]
-    if len(x.shape) != 1:
-        x_width = x.shape[1]
+    shapes = [x.get_shape(), y.get_shape()]
+    if len(x.get_shape()) != 1:
+        x_width = x.get_shape()[1]
     else:
         x_width = 1
 
-    y_height = y.shape[0]
+    y_height = y.get_shape()[0]
 
-    assert x_width == y_height, 'dimension mismatch: %r != %r' % (
-        x_width, y_height,
-    )
+    assert x_width == y_height, f"dimension mismatch: {x_width!r} != {y_height!r}"
     a, b, c = generate_matmul_triple_communication(shapes, workers)
 
     r = (x - a) % mod
@@ -180,6 +179,42 @@ def spdz_sigmoid(x, interface):
     return spdz_add(W0, temp531)
 
 
+def get_ptrdict(mpct):
+    child = mpct
+    while (
+        not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor)
+        and child is not None
+    ):
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return child.pointer_tensor_dict
+
+
+def get_workers(mpct):
+    child = mpct
+    while (
+        not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor)
+        and child is not None
+    ):
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return list(child.pointer_tensor_dict.keys())
+
+
+def get_shape(mpct):
+    child = mpct
+    while (
+        not isinstance(child, sy.core.frameworks.torch._GeneralizedPointerTensor)
+        and child is not None
+    ):
+        child = child.child
+    if child is None:
+        raise TypeError("Expected child tree to contain a GeneralizedPointerTensor")
+    return child.shape
+
+
 def generate_mul_triple(shape, mod=field):
     r = torch.LongTensor(shape).random_(mod)
     s = torch.LongTensor(shape).random_(mod)
@@ -201,28 +236,36 @@ def generate_mul_triple_communication(shape, workers):
             var_share.send(worker)
 
     # Build the pointer dict for r, s, t. Note that we remove the head of the pointer (via .child)
-    gp_r = sy._GeneralizedPointerTensor({
-        share.location: share.child for share in r_shares
-    }).on(r)
-    gp_s = sy._GeneralizedPointerTensor({
-        share.location: share.child for share in s_shares
-    }).on(s)
-    gp_t = sy._GeneralizedPointerTensor({
-        share.location: share.child for share in t_shares
-    }).on(t)
+    gp_r = sy._GeneralizedPointerTensor(
+        {share.location: share.child for share in r_shares}
+    ).on(r)
+    gp_s = sy._GeneralizedPointerTensor(
+        {share.location: share.child for share in s_shares}
+    ).on(s)
+    gp_t = sy._GeneralizedPointerTensor(
+        {share.location: share.child for share in t_shares}
+    ).on(t)
     triple = [gp_r, gp_s, gp_t]
     return triple
 
 
-def generate_zero_shares_communication(alice, bob, sizes):
-    return torch.zeros(sizes).long().share(alice, bob)
+def generate_zero_shares_communication(alice, bob, *sizes):
+    return torch.zeros(*sizes).fix_precision().share(alice, bob)
+
+
+def generate_one_shares_communication(alice, bob, sizes):
+    return torch.ones(sizes).long().share(alice, bob)
 
 
 def generate_matmul_triple(shapes, mod=field):
     r = torch.LongTensor(shapes[0]).random_(mod)
     s = torch.LongTensor(shapes[1]).random_(mod)
     t = torch.mm(r, s)
-    assert t.shape == (shapes[0][0], shapes[1][1]), (t.shape, (shapes[0][0], shapes[1][1]), 'mismatch')
+    assert t.shape == (shapes[0][0], shapes[1][1]), (
+        t.shape,
+        (shapes[0][0], shapes[1][1]),
+        "mismatch",
+    )
     return r, s, t
 
 
@@ -240,21 +283,21 @@ def generate_matmul_triple_communication(shapes, workers):
             var_share.send(worker)
 
     # Build the pointer dict for r, s, t. Note that we remove the head of the pointer (via .child)
-    gp_r = sy._GeneralizedPointerTensor({
-        share.location: share.child for share in r_shares
-    }).on(r)
-    gp_s = sy._GeneralizedPointerTensor({
-        share.location: share.child for share in s_shares
-    }).on(s)
-    gp_t = sy._GeneralizedPointerTensor({
-        share.location: share.child for share in t_shares
-    }).on(t)
+    gp_r = sy._GeneralizedPointerTensor(
+        {share.location: share.child for share in r_shares}
+    ).on(r)
+    gp_s = sy._GeneralizedPointerTensor(
+        {share.location: share.child for share in s_shares}
+    ).on(s)
+    gp_t = sy._GeneralizedPointerTensor(
+        {share.location: share.child for share in t_shares}
+    ).on(t)
     triple = [gp_r, gp_s, gp_t]
     return triple
 
 
 def generate_sigmoid_shares_communication(x, interface):
-    if (interface.get_party() == 0):
+    if interface.get_party() == 0:
         W0 = encode(torch.FloatTensor(x.shape).one_() * 1 / 2)
         W1 = encode(torch.FloatTensor(x.shape).one_() * 1 / 4)
         W3 = encode(torch.FloatTensor(x.shape).one_() * -1 / 48)
@@ -272,26 +315,10 @@ def generate_sigmoid_shares_communication(x, interface):
 
         quad_alice = [W0_alice, W1_alice, W3_alice, W5_alice]
         return quad_alice
-    elif (interface.get_party() == 1):
-        W0_bob = swap_shares(
-            torch.LongTensor(
-                x.shape,
-            ).zero_(), interface,
-        )
-        W1_bob = swap_shares(
-            torch.LongTensor(
-                x.shape,
-            ).zero_(), interface,
-        )
-        W3_bob = swap_shares(
-            torch.LongTensor(
-                x.shape,
-            ).zero_(), interface,
-        )
-        W5_bob = swap_shares(
-            torch.LongTensor(
-                x.shape,
-            ).zero_(), interface,
-        )
+    elif interface.get_party() == 1:
+        W0_bob = swap_shares(torch.LongTensor(x.shape).zero_(), interface)
+        W1_bob = swap_shares(torch.LongTensor(x.shape).zero_(), interface)
+        W3_bob = swap_shares(torch.LongTensor(x.shape).zero_(), interface)
+        W5_bob = swap_shares(torch.LongTensor(x.shape).zero_(), interface)
         quad_bob = [W0_bob, W1_bob, W3_bob, W5_bob]
         return quad_bob

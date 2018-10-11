@@ -7,10 +7,8 @@ from .base import BaseWorker
 
 
 class WebSocketWorker(BaseWorker):
-    """
-    A worker capable of performing the functions of a BaseWorker across
-    a websocket connection. This worker essentially can replace Socket
-    Worker.
+    """A worker capable of performing the functions of a BaseWorker across a
+    websocket connection. This worker essentially can replace Socket Worker.
 
     :Parameters:
 
@@ -86,20 +84,33 @@ class WebSocketWorker(BaseWorker):
      12
      14
     [torch.FloatTensor of size 5]
-
-
     """
 
     def __init__(
-        self,  hook=None, hostname='localhost', port=8110, max_connections=5,
-        id=0, is_client_worker=True, objects={}, tmp_objects={},
-        known_workers={}, verbose=True, is_pointer=False, queue_size=0,
+        self,
+        hook=None,
+        hostname="localhost",
+        port=8110,
+        max_connections=5,
+        id=0,
+        is_client_worker=True,
+        objects={},
+        tmp_objects={},
+        known_workers={},
+        verbose=True,
+        is_pointer=False,
+        queue_size=0,
     ):
 
         super().__init__(
-            hook=hook, id=id, is_client_worker=is_client_worker,
-            objects=objects, tmp_objects=tmp_objects,
-            known_workers=known_workers, verbose=verbose, queue_size=queue_size,
+            hook=hook,
+            id=id,
+            is_client_worker=is_client_worker,
+            objects=objects,
+            tmp_objects=tmp_objects,
+            known_workers=known_workers,
+            verbose=verbose,
+            queue_size=queue_size,
         )
 
         self.is_asyncronous = True
@@ -111,23 +122,22 @@ class WebSocketWorker(BaseWorker):
         self.max_connections = max_connections
         self.is_pointer = is_pointer
 
-        if (self.is_pointer):
-            if (self.verbose):
+        if self.is_pointer:
+            if self.verbose:
                 print("Attaching Pointer to WebSocket Worker....")
             self.serversocket = None
             clientsocket = websockets.client.connect(self.uri)
             self.clientsocket = clientsocket
 
         else:
-            if (self.verbose):
+            if self.verbose:
                 print("Starting a Websocket Worker....")
-                if (not is_client_worker or self.is_pointer):
+                if not is_client_worker or self.is_pointer:
                     print("Ready to recieve commands....")
                     self.serversocket = websockets.serve(
-                        self._server_socket_listener,
-                        self.hostname, self.port,
+                        self._server_socket_listener, self.hostname, self.port
                     )
-                    print('Server Socket has been initialized')
+                    print("Server Socket has been initialized")
                     asyncio.get_event_loop().run_until_complete(self.serversocket)
                     asyncio.get_event_loop().run_forever()
 
@@ -135,9 +145,8 @@ class WebSocketWorker(BaseWorker):
                     print("Ready...")
 
     async def _client_socket_connect(self, json_request):
-        """
-        Establishes a connection to the server socket and waits for a response.
-        Then the response is returned.
+        """Establishes a connection to the server socket and waits for a
+        response. Then the response is returned.
 
         :Parameters:
 
@@ -152,9 +161,9 @@ class WebSocketWorker(BaseWorker):
             return recieved_msg
 
     async def _server_socket_listener(self, websocket, path):
-        """
-        A listener for the server socket so whenever a message is sent by a client to the
-        server socket, this method is called and the server responses accordingly.
+        """A listener for the server socket so whenever a message is sent by a
+        client to the server socket, this method is called and the server
+        responses accordingly.
 
         :Parameters:
 
@@ -164,17 +173,18 @@ class WebSocketWorker(BaseWorker):
         """
 
         msg_wrapper_byte = await websocket.recv()
-        msg_wrapper_str = msg_wrapper_byte.decode('utf-8')
-        if (self.verbose):
+        msg_wrapper_str = msg_wrapper_byte.decode("utf-8")
+        if self.verbose:
             print("Recieved Command From:", self.uri)
         decoder = utils.PythonJSONDecoder(self)
         msg_wrapper = decoder.decode(msg_wrapper_str)
         await websocket.send(self.process_message_type(msg_wrapper))
 
     def whoami(self):
-        """
-        Returns metadata information about the worker. This method returns the default
-        which is the id and uri of the worker.
+        """Returns metadata information about the worker.
+
+        This method returns the default which is the id and uri of the
+        worker.
         """
         return json.dumps({"uri": self.uri, "id": self.id})
 
@@ -184,8 +194,8 @@ class WebSocketWorker(BaseWorker):
         return response
 
     def send_msg(self, message, message_type, recipient):
-        """Sends a string message to another worker with message_type information
-        indicating how the message should be processed.
+        """Sends a string message to another worker with message_type
+        information indicating how the message should be processed.
 
         :Parameters:
 
@@ -202,8 +212,8 @@ class WebSocketWorker(BaseWorker):
           local development with :class:`VirtualWorker` workers.
         """
         message_wrapper = {}
-        message_wrapper['message'] = message
-        message_wrapper['type'] = message_type
+        message_wrapper["message"] = message
+        message_wrapper["type"] = message_type
         self.message_queue.append(message_wrapper)
         if self.queue_size:
             if len(self.message_queue) > self.queue_size:
@@ -216,9 +226,7 @@ class WebSocketWorker(BaseWorker):
         message_wrapper_json_binary = message_wrapper_json.encode()
 
         self.message_queue = []
-        response = recipient._client_socket_listener(
-            message_wrapper_json_binary,
-        )
+        response = recipient._client_socket_listener(message_wrapper_json_binary)
         response = self._process_buffer(response=response)
         return response
 
@@ -232,6 +240,6 @@ class WebSocketWorker(BaseWorker):
 
     def _client_socket_listener(cls, message_wrapper_json_binary):
         response = asyncio.get_event_loop().run_until_complete(
-            cls._client_socket_connect(message_wrapper_json_binary),
+            cls._client_socket_connect(message_wrapper_json_binary)
         )
         return response

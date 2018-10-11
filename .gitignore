@@ -13,3 +13,4 @@ syft.egg-info/
 *.ipynb_checkpoints*
 venv/
 **.pytest_cache/
+docs/_modules

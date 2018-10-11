@@ -1,4 +1,4 @@
 from . import securenn
-from . import interface
+from . import utils
 
-__all__ = ['securenn', 'interface']
+__all__ = ["securenn", "utils"]

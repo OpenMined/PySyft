@@ -27,22 +27,25 @@ install:
     - source activate test-environment
     # install TensorFlow from https://storage.googleapis.com/tensorflow/
     - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp27-none-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp34-cp34m-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.10.1-cp36-cp36m-linux_x86_64.whl;
-    fi
-    - pip install -r requirements.txt
+          pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp27-none-linux_x86_64.whl;
+      elif [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
+          pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp34-cp34m-linux_x86_64.whl;
+      elif [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
+          pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.10.1-cp36-cp36m-linux_x86_64.whl;
+      fi
+    - pip install -r requirements.txt >build.log
     - pip install flake8
     - pip install flake8-docstrings
+    - pip install flake8-comprehensions
     - pip install pep8-naming
+    - pip install black
     - pip install torchvision
-    - python setup.py install
+    - python setup.py install >> build.log
 before_script:
     # stop the build if there are Python syntax errors or undefined
     # names
     - flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics
+    - black --check --verbose --exclude /.eggs/ .
     # exit-zero treats all errors as warnings.
     # diverting from the standard 79 character line length in
     # accordance with this:
