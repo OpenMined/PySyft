@@ -190,61 +190,42 @@ def pt_gpt_error(ptr, gptr):
 def enforce_owner(obj, owner):
     """Reassign every elements of the chain to a specified owner (in a Virtual
     worker context)"""
+    if is_syft_tensor(obj):
+        if owner != owner.hook.local_worker:
+            owner.hook.local_worker.de_register(obj)
+        obj.owner = owner
+        # Terminal condition to avoid recursions
+        if not isinstance(obj, sy._LocalTensor):
+            enforce_owner(obj.child, owner)
 
-    if isinstance(obj, (list, tuple, set, bytearray)):
+    elif is_tensor(obj):
+        if owner != owner.hook.local_worker:
+            owner.hook.local_worker.de_register(obj)
+        # tensor has no attr owner, just a prop to obj.child
+        enforce_owner(obj.child, owner)
+
+    elif is_variable(obj):
+        if owner != owner.hook.local_worker:
+            owner.hook.local_worker.de_register(obj)
+        # tensor has no attr owner, just a prop to obj.child
+        enforce_owner(obj.child, owner)
+        enforce_owner(obj.data, owner)
+        if obj.grad is not None:
+            enforce_owner(obj.grad, owner)
+
+    elif isinstance(obj, (list, tuple, set, bytearray)):
         for o in obj:
             enforce_owner(o, owner)
     elif isinstance(obj, dict):
         for k, o in obj.items():
             enforce_owner(o, owner)
-
-    else:
-        if (
-            is_syft_tensor(obj)
-            and not isinstance(obj, sy._LocalTensor)
-            and hasattr(obj, "data")
-        ):
-            enforce_owner(obj.data, owner)
-        if (
-            is_syft_tensor(obj)
-            and not isinstance(obj, sy._LocalTensor)
-            and hasattr(obj, "grad")
-        ):
-            enforce_owner(obj.grad, owner)
-
-        if is_tensor(obj):
-            if owner != owner.hook.local_worker:
-                owner.hook.local_worker.de_register(obj)
-            # tensor has no attr owner, just a prop to obj.child
-            enforce_owner(obj.child, owner)
-
-        elif is_variable(obj):
-            if owner != owner.hook.local_worker:
-                owner.hook.local_worker.de_register(obj)
-            # tensor has no attr owner, just a prop to obj.child
-            enforce_owner(obj.child, owner)
-            enforce_owner(obj.data, owner)
-            if obj.grad is not None:
-                enforce_owner(obj.grad, owner)
-
-        elif is_syft_tensor(obj):
-            if owner != owner.hook.local_worker:
-                owner.hook.local_worker.de_register(obj)
+    elif isinstance(obj, np.ndarray):
+        if owner != owner.hook.local_worker:
+            owner.hook.local_worker.de_register(obj)
+        try:
             obj.owner = owner
-            # Terminal condition to avoid recursions
-            if not isinstance(obj, sy._LocalTensor):
-                enforce_owner(obj.child, owner)
-
-        elif isinstance(obj, np.ndarray):
-            if owner != owner.hook.local_worker:
-                owner.hook.local_worker.de_register(obj)
-            try:
-                obj.owner = owner
-            except:
-                """sometimes this failes."""
-
-            # would normally call enforce_owner(obj.child, owner) here except since
-            # Torch is circular this creates an infinite recursion. TODO: fix after Torch 1.0
+        except:
+            """sometimes this failes."""
 
 
 def bind_var_like_objects(obj, child_obj, grad=False):
@@ -293,6 +274,7 @@ def wrap_command(obj):
             if hasattr(obj, "grad"):
                 wrapper_grad = wrap_command(obj.grad)
                 wrapper.assign_grad_(wrapper_grad)
+        fix_chain_structure(wrapper)
 
         return wrapper
     # List or iterables which could contain tensors
@@ -673,7 +655,9 @@ def fix_chain_structure(var_node, data_node=None, grad_node=None, head_node=None
     """
     Combine link_var_chain_to_data_and_grad_chains and fix_chain_ends
     """
+    middle_var_node = True
     if head_node is None:
+        middle_var_node = False
         head_node = var_node
 
     if var_node is not None:
@@ -683,6 +667,9 @@ def fix_chain_structure(var_node, data_node=None, grad_node=None, head_node=None
                 var_node.data = data_node
             if grad_node is not None:
                 var_node.grad = grad_node
+        elif middle_var_node:
+            if data_node is not None:
+                var_node.data = data_node
 
         # Check terminal cases
         if isinstance(var_node, sy._LocalTensor):
