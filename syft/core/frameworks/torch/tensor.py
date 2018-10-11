@@ -2201,6 +2201,14 @@ class _TorchObject:
 
     __module__ = "syft"
 
+    def truncate(self):
+        truncated, precision = self.child.truncate(self.child.child, self.child)
+        response = truncated.fix_precision(
+            already_encoded=True, precision_fractional=precision
+        )
+        response.child.torch_type = 'syft.FloatTensor'
+        return response.child.wrap(True)
+
     def end_get(self):
         return self.child.end_get()
 
