@@ -1295,7 +1295,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         return self
 
     def decode(self):
-        save = self.child.child * 1
+        save = self.child.child + 0
         self.child.child = None  # <-- This is doing magic things
         value = self.child.long() % self.field
         if len(value.size()) == 0:
@@ -1422,6 +1422,10 @@ class _FixedPrecisionTensor(_SyftTensor):
             response = torch_tensorvar.fix_precision(
                 already_encoded=True, precision_fractional=precision
             )
+
+            # response.child.torch_type = 'syft.FloatTensor'
+            # response = response.child.wrap(True)
+
             return response
         else:
 
@@ -1439,13 +1443,20 @@ class _FixedPrecisionTensor(_SyftTensor):
 
                 return response
 
-    def truncate(self, torch_tensorvar, other):
+    def truncate(self, torch_tensorvar, other, base=None, fractional=None):
 
-        if isinstance(other, sy._FixedPrecisionTensor):
-            # print("is a fixed precision tensor")
-            result_precision_fractional = max(
-                self.precision_fractional, other.precision_fractional
-            )
+        if base is None:
+            base = self.base
+
+        if isinstance(other, (sy._FixedPrecisionTensor, float, int)):
+
+            if isinstance(other, sy._FixedPrecisionTensor):
+                result_precision_fractional = max(
+                    self.precision_fractional, other.precision_fractional
+                )
+            else:
+                result_precision_fractional = self.precision_fractional
+
             result_precision_integral = self.precision_integral
             result_precision = result_precision_fractional + result_precision_integral
             result_kappa = self.kappa
@@ -1490,10 +1501,12 @@ class _FixedPrecisionTensor(_SyftTensor):
                         b_masked_low.share(*workers) - mask_low.share(*workers).get()
                     )
 
-                    # TODO: calculating the inverse every time is stupid slow - but i need to keep moving
-                    c = (a - b_low) * sy.mpc.utils.modinv(
-                        self.base ** result_precision_fractional, self.field
-                    )
+                    if fractional is None:
+                        fractional = result_precision_fractional
+
+                    divisor = base ** fractional
+
+                    c = (a - b_low) * sy.mpc.utils.modinv(divisor, self.field)
 
                     if isinstance(torch_tensorvar, sy.Variable):
                         torch_tensorvar = torch_tensorvar * 0
@@ -1507,7 +1520,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                     )
 
             return torch_tensorvar, result_precision_fractional
-
+        print(asdf)
         return torch_tensorvar, self.precision_fractional
 
     def get(self, *args, **kwargs):
@@ -1537,7 +1550,10 @@ class _FixedPrecisionTensor(_SyftTensor):
         # if other is not a fixed tensor, convert it to a fixed one
         if not hasattr(other, "precision_fractional"):
             if isinstance(other, (float, int)):
-                return self.child, other * (self.base ** self.precision_fractional)
+                return (
+                    self.child,
+                    round(other * (self.base ** self.precision_fractional)),
+                )
             else:
                 other = other.fix_precision(
                     precision_fractional=self.precision_fractional
@@ -1573,7 +1589,8 @@ class _FixedPrecisionTensor(_SyftTensor):
 
     def __mul__(self, other):
         a, b = self.check_and_scale_precision_if_needed(other)
-        return a * b  # % self.field # - modulus performed later
+        result = a * b  # % self.field # - modulus performed later
+        return result
 
     def __gt__(self, other):
 
@@ -2191,6 +2208,17 @@ class _TorchObject:
     """
 
     __module__ = "syft"
+
+    def truncate(self, fractional=1):
+        # by default - divides number by 10 (1^10)
+        truncated, precision = self.child.truncate(
+            self.child.child, self.child, fractional=fractional
+        )
+        response = truncated.fix_precision(
+            already_encoded=True, precision_fractional=precision
+        )
+        response.child.torch_type = "syft.FloatTensor"
+        return response.child.wrap(True)
 
     def end_get(self):
         return self.child.end_get()
