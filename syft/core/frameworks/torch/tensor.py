@@ -1815,6 +1815,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         # else:
         return "[Fixed precision tensor]\n"  # + (self.child*1).__repr__()
 
+
 class _SPDZTensor(_SyftTensor):
     """This tensor wraps a GeneralizedPointerTensor containing shares and knows
     how to manipulate those shares properly so that the resulting methods are
