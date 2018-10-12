@@ -27,30 +27,25 @@ class _SyftTensor:
         id=None,
         skip_register=False,
     ):
-        if torch_utils.is_syft_tensor(child):
+        if child is not None: # not needed: torch_utils.is_syft_tensor(child):
             if torch_type is None:
                 torch_type = child.torch_type
             if owner is None:
                 owner = child.owner
-
-        self.id = id
-        # self.old_ids = None - this will only get initialized if self.set_id() is called, but i'm referencing it
-        # in this comment so that people know it can exist. It's a set()
-
-        self.child = child
-        self.parent = parent
-        self.torch_type = torch_type
-
-        if self.child is not None:
+            self.child = child
             try:
                 self.child.parent = self
             except AttributeError:  # for non-torch tensor child (can occur in __repr__)
                 pass
+        else:
+            self.child = None
 
-        if owner is not None:
-            if isinstance(owner, str):
-                owner = self.child.owner.get_worker(owner)
-        self.owner = owner
+        self.id = id
+        # self.old_ids = None - this will only get initialized if self.set_id() is called, but i'm referencing it
+        # in this comment so that people know it can exist. It's a set()
+        self.parent = parent
+        self.torch_type = torch_type
+        self.owner = owner # should not be a (str, int)
 
     def __str__(self):
         return (
@@ -180,8 +175,7 @@ class _SyftTensor:
 
         if owner is None:
             owner = self.owner
-        if isinstance(owner, (str, int)):
-            owner = self.owner.get_worker(owner)
+        owner = self.owner.get_worker(owner)
 
         local_pointer = False
         if location is None:
@@ -205,9 +199,9 @@ class _SyftTensor:
             else:
                 ptr_id = int(10e10 * random.random())
 
-        if hasattr(self, "torch_type") and self.torch_type is not None:
+        try:
             torch_type = self.torch_type
-        else:
+        except AttributeError:
             torch_type = None
             logging.warning(
                 "The torch tensor's child has no torch_type. Is it well formed?"
@@ -2574,8 +2568,7 @@ class _TorchTensor(_TorchObject):
             sy._GeneralizedPointerTensor(gpt_dict).on(self)
             return self
 
-        if isinstance(worker, (int, str)):
-            worker = self.owner.get_worker(worker)
+        worker = self.owner.get_worker(worker)
 
         if ptr_id is None:
             ptr_id = int(10e10 * random.random())
@@ -2696,8 +2689,7 @@ class _TorchVariable(_TorchObject):
             )
             return self
 
-        if isinstance(worker, (int, str)):
-            worker = self.owner.get_worker(worker)
+        worker = self.owner.get_worker(worker)
 
         # Init new remote ids if needed
         (new_id, new_data_id, new_grad_id, new_grad_data_id) = utils.map_tuple(

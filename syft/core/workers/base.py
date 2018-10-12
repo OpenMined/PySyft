@@ -595,18 +595,18 @@ class BaseWorker(ABC):
         >>> me.get_worker(bob)
         <syft.core.workers.virtual.VirtualWorker id:bob>
         """
-        if id_or_worker in self._known_workers:
-            return self._known_workers[id_or_worker]
-        else:
-            if isinstance(id_or_worker, (str, int)):
+        if isinstance(id_or_worker, (str, int)):
+            if id_or_worker in self._known_workers:
+                return self._known_workers[id_or_worker]
+            else:
                 logging.warning(
                     "Worker", self.id, "couldnt recognize worker", id_or_worker
                 )
                 return id_or_worker
-            else:
-                if id_or_worker.id not in self._known_workers:
-                    self.add_worker(id_or_worker)
-                return self._known_workers[id_or_worker.id]
+        else:
+            if id_or_worker.id not in self._known_workers:
+                self.add_worker(id_or_worker)
+            return id_or_worker
 
     def get_obj(self, remote_key):
         """get_obj(remote_key) -> a torch object This method fetches a tensor
