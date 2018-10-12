@@ -1,5 +1,4 @@
-from . import spdz
-from . import shared_variable
-from . import interface
+from . import securenn
+from . import utils
 
-__all__ = ['spdz', 'shared_variable', 'interface']
+__all__ = ["securenn", "utils"]
