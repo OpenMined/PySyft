@@ -1520,7 +1520,7 @@ class _FixedPrecisionTensor(_SyftTensor):
                     )
 
             return torch_tensorvar, result_precision_fractional
-        print(asdf)
+
         return torch_tensorvar, self.precision_fractional
 
     def get(self, *args, **kwargs):
