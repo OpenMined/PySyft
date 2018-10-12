@@ -184,12 +184,20 @@ class TorchHook:
         if "native___init__" not in dir(tensorvar_type):
             tensorvar_type.native___init__ = tensorvar_type.__init__
 
-        def new___init__(
-            cls, *args, owner=None, id=None, skip_register=False, **kwargs
-        ):
+        def new___init__(cls, *args, **kwargs):
 
-            if owner is None:
+            # FIXME: this doesn't work since putting owner='...' => RuntimeError: torch.FloatTensor constructor doesn't accept any keyword arguments
+            if "owner" in kwargs and kwargs["owner"] is not None:
+                owner = kwargs["owner"]
+                del kwargs["owner"]
+            else:
                 owner = hook_self.local_worker
+
+            if "id" in kwargs:
+                id = kwargs["id"]
+                del kwargs["id"]
+            else:
+                id = None
 
             if register_child_instead:
                 cls.native___init__()
@@ -197,16 +205,14 @@ class TorchHook:
                     child=cls, parent=cls, torch_type=type(cls).__name__
                 )
             else:
-                kwargs["owner"] = owner
-                kwargs["id"] = id
-                kwargs["skip_register"] = skip_register
                 cls.native___init__(*args, **kwargs)
                 if id is None:
-                    id = int(10e10 * random.random())
+                    id = random.randint(0, 1e10)
                 cls.id = id
                 cls.owner = owner
-
-                if not skip_register:
+                if "skip_register" in kwargs and kwargs["skip_register"]:
+                    pass
+                else:
                     owner.register_object(cls, id=id)
 
         tensorvar_type.__init__ = new___init__
@@ -217,10 +223,9 @@ class TorchHook:
         @property
         def child(self):
             try:
-                try:
-                    assert self._child is not None
+                if hasattr(self, "_child") and self._child is not None:
                     return self._child
-                except (AttributeError, AssertionError):
+                else:
                     self._child = _LocalTensor(
                         child=self, parent=self, torch_type=type(self).__name__
                     )
@@ -574,6 +579,10 @@ class TorchHook:
                         var.grad.data.native_set_(computed_grad.data)
                 # Make sure everyone has the right owner
                 torch_utils.enforce_owner(var, worker)
+                # Fix the .data and .grad attributes on the chain
+                torch_utils.link_var_chain_to_data_and_grad_chains(
+                    var, var.data, var.grad
+                )
 
         sy.Variable.native_backward = new_backward
 
