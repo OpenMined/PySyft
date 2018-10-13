@@ -228,7 +228,11 @@ def enforce_owner(obj, owner):
             """sometimes this failes."""
 
 
-def bind_var_like_objects(obj, child_obj, grad=False):
+def bind_var_nodes(obj, child_obj, grad=False):
+    """Wrap a var like object with a var like wrapper, var like obj can be a variable
+    or any object with a .data and optionally a .grad attribute, like some syft obj.
+    In most case, obj would be a variable and child_obj a syft tensor"""
+
     obj.child = child_obj
     child_obj.parent = obj
 
@@ -243,10 +247,11 @@ def bind_var_like_objects(obj, child_obj, grad=False):
         child_obj.grad.data.parent = obj.grad.data
 
 
-def wrap_command_with(obj, wrapper):
-    """Wrap a syft object with a given wrapper."""
-    wrapper.child = obj
-    obj.parent = wrapper
+def bind_tensor_nodes(wrapper, child_obj):
+    """Wrap an object with a wrapper. In most case, obj is a torch tensor
+     and wrapper a syft tensor."""
+    wrapper.child = child_obj
+    child_obj.parent = wrapper
     return wrapper
 
 
@@ -267,7 +272,7 @@ def wrap_command(obj):
         else:
             wrapper = torch.guard[obj.torch_type]()
 
-        wrap_command_with(obj, wrapper)
+        bind_tensor_nodes(wrapper, obj)
         if is_variable(wrapper):
             if hasattr(obj, "data"):
                 wrapper.data = wrap_command(obj.data)
@@ -673,11 +678,11 @@ def fix_chain_structure(var_node, data_node=None, grad_node=None, head_node=None
 
         # Check terminal cases
         if isinstance(var_node, sy._LocalTensor):
-            wrap_command_with(head_node, var_node)
+            bind_tensor_nodes(var_node, head_node)
             if data_node is not None:
-                wrap_command_with(head_node.data, var_node.data)
+                bind_tensor_nodes(var_node.data, head_node.data)
             if grad_node is not None:
-                wrap_command_with(head_node.grad, var_node.grad)
+                bind_tensor_nodes(var_node.grad, head_node.grad)
         elif isinstance(var_node, (sy._PointerTensor, sy._GeneralizedPointerTensor)):
             var_node.child = None
             head_node.parent = None

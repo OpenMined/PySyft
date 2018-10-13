@@ -947,7 +947,7 @@ class BaseWorker(ABC):
         if is_torch_command:
             # Wrap the result
             if has_self and utils.is_in_place_method(attr):
-                result = torch_utils.wrap_command_with(result, raw_command["self"])
+                result = torch_utils.bind_tensor_nodes(raw_command["self"], result)
             else:
                 result = torch_utils.wrap_command(result)
 
@@ -1038,11 +1038,9 @@ class BaseWorker(ABC):
             if has_self and utils.is_in_place_method(attr):
                 # TODO: fix this properly: don't wrap the same way if syft or Variable
                 if torch_utils.is_variable(result) or torch_utils.is_tensor(result):
-                    wrapper = torch_utils.wrap_command_with(
-                        result.child, raw_command["self"]
-                    )
+                    wrapper = torch_utils.bind_tensor_nodes(raw_command["self"], result.child)
                 else:
-                    wrapper = torch_utils.wrap_command_with(result, raw_command["self"])
+                    wrapper = torch_utils.bind_tensor_nodes(raw_command["self"], result)
             else:
                 wrapper = torch_utils.wrap_command(result)
             torch_utils.enforce_owner(wrapper, self)
