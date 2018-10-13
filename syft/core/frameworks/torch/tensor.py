@@ -934,7 +934,7 @@ class _PointerTensor(_SyftTensor):
         # pointers to themselves that get registered should trigger the flat
         # if it's not getting registered the pointer is probably about to be
         # sent over the wire
-        if self.location == self.owner and not skip_register:
+        if self.location == self.owner:
             logging.warning(
                 "Do you really want a pointer pointing to itself? (self.location == self.owner)"
             )
@@ -1101,12 +1101,9 @@ class _PointerTensor(_SyftTensor):
 
         """Get back from a remote worker the chain this pointer is pointing
         at."""
-        # Remove this pointer - TODO: call deregister function instead of doing it by hand
+        # Remove this pointer by default
         if deregister_ptr:
-            if torch_utils.is_variable_name(self.torch_type):
-                if hasattr(self.parent, "data"):
-                    self.owner.rm_obj(self.parent.data.child.id)
-            self.owner.rm_obj(self.id)
+            self.owner.de_register(self)
 
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
@@ -1116,18 +1113,21 @@ class _PointerTensor(_SyftTensor):
         # get SyftTensor (Local or Pointer) from remote machine
         tensorvar = self.owner.request_obj(self.id_at_location, self.location)
 
+        # Optional, use it in a development phase to perform checks
         # torch_utils.assert_has_only_torch_tensorvars(tensorvar)
 
         syft_tensor = tensorvar.child
         syft_tensor.id = self.id
-        if torch_utils.is_variable_name(self.torch_type):
-            if hasattr(self.parent, "data"):
-                tensorvar.data.child.id = self.parent.data.child.id
-
         # Register the result
         self.owner.register(syft_tensor)
-        if torch_utils.is_variable_name(syft_tensor.torch_type):
-            if hasattr(self.parent, "data"):
+
+        if torch_utils.is_variable_name(self.torch_type):
+            # FIXME: this check is only here because when you bring back a GenPtrTensor from remote,
+            # There is a pb at deser which is that the ptrs in the gpt.pointer_dict are not connected
+            # with the .data and .grad attributes, so there is a variable pointer without a .data attr
+            # if which case we cannot perform this. This is an edge case but it should be fixed.
+            if hasattr(self, 'data'):
+                tensorvar.data.child.id = self.data.id
                 self.owner.register(tensorvar.data.child)
 
         return tensorvar
@@ -2879,7 +2879,10 @@ class _TorchVariable(_TorchObject):
     def init_grad_(self):
         """Initialise grad as an empty tensor."""
         if self.grad is None or torch_utils.is_tensor_empty(self.grad):
-            self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
+            var_grad = sy.Variable(sy.zeros(self.size()))
+            if type(var_grad.data) != type(self.data):
+                var_grad.data = var_grad.data.type(type(self.data))
+            self.grad = var_grad
             self.grad.native_set_()
             self.grad.child.owner = self.owner
             self.grad.data.child.owner = self.owner
