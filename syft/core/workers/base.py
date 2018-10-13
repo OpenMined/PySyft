@@ -1086,19 +1086,14 @@ class BaseWorker(ABC):
 
                 if self.get_pointer_to(recipient, new_data_id) is not None:
                     raise MemoryError("You already point at ", recipient, ":", new_id)
-                assert (
-                    new_id != new_data_id
-                ), "You can't have the same id for the variable and its data."
-                assert (
-                    new_id != new_grad_id
-                ), "You can't have the same id for the variable and its grad."
-                assert new_id != new_grad_data_id
 
-                assert new_data_id != new_grad_id
-
-                assert new_data_id != new_grad_data_id
-
-                assert new_grad_id != new_grad_data_id
+                err_msg = "You can't have the same id for {} and {}."
+                assert new_id != new_data_id, err_msg.format('var', 'var.data')
+                assert new_id != new_grad_id, err_msg.format('var', 'var.grad')
+                assert new_id != new_grad_data_id, err_msg.format('var', 'var.grad.data')
+                assert new_data_id != new_grad_id, err_msg.format('var.data', 'var.grad')
+                assert new_data_id != new_grad_data_id, err_msg.format('var.data', 'var.grad.data')
+                assert new_grad_id != new_grad_data_id, err_msg.format('var.grad', 'var.grad.data')
 
                 object.data.child.id = new_data_id
 
@@ -1106,7 +1101,6 @@ class BaseWorker(ABC):
                     object.init_grad_()
 
                 object.grad.child.id = new_grad_id
-
                 object.grad.data.child.id = new_grad_data_id
         else:
             object.id = new_id

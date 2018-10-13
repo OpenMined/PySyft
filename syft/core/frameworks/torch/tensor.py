@@ -2677,20 +2677,19 @@ class _TorchVariable(_TorchObject):
         [worker] => self->worker->alice->obj Because there are Variable
         involved, there are actually 4 chains involved, the variable chain,
         variable.data, variable.grad, variable.grad.data."""
-        assert len(workers) > 0, "Please provide workers to receive the data"
 
         if len(workers) == 1:
             worker = workers[0]
-        else:
+        elif len(workers) == 0:
+            raise TypeError("Please provide workers to receive the data")
+        else: # Multiple workers case
             gpt_dict = {}
             if not hasattr(self, "grad") or self.grad is None:
                 self.init_grad_()
             for worker in workers:
                 gpt_dict[worker] = (self * 1).send(worker).child
+
             sy._GeneralizedPointerTensor(gpt_dict).on(self)
-            torch_utils.link_var_chain_to_data_and_grad_chains(
-                self, self.data, self.grad
-            )
             return self
 
         worker = self.owner.get_worker(worker)
@@ -2708,6 +2707,7 @@ class _TorchVariable(_TorchObject):
         obj_grad_id = self.grad.child.id if self.grad is not None else None
         obj_grad_data_id = self.grad.data.child.id if self.grad is not None else None
 
+        # Send the variable (note that if self.grad was None it will be instanciated here)
         self.owner.send_obj(
             self,
             new_id,
@@ -2717,28 +2717,24 @@ class _TorchVariable(_TorchObject):
             new_grad_data_id=new_grad_data_id,
         )
 
-        # Clear data which could be cached in the wrapper (which is self)
-        utils.map_tuple(
-            None,
-            (self, self.data, self.grad, self.grad.data),
-            lambda x: x.native_set_(),
-        )
-
-        # For all the objects, create a pointer and insert it as a direct child
+        # For each object, clear it, create a pointer and insert it as a direct child
         for id, remote_id, wrapper in zip(
             [obj_id, obj_data_id, obj_grad_id, obj_grad_data_id],
             [new_id, new_data_id, new_grad_id, new_grad_data_id],
             [self, self.data, self.grad, self.grad.data],
         ):
+            # Clear data which could be cached in the wrapper (which is self)
+            if id is not None: # id is None when we had self.grad = None
+                wrapper.native_set_()
             wrapper.child.id = id
             pointer = wrapper.child.create_pointer(
                 location=worker, id_at_location=remote_id, register=True
             )
             torch_utils.bind_tensor_nodes(wrapper, pointer)
-            wrapper.parent = None
 
+        # Ensure that the structure has the proper .data .grad links at each stage
         torch_utils.link_var_chain_to_data_and_grad_chains(self, self.data, self.grad)
-        # todo: fix this in link_var_chain_to_data_and_grad_chains
+        # Todo: This could be included in link_var_chain_to_data_and_grad_chains
         self.child.grad.data = self.grad.data.child
 
         return self
