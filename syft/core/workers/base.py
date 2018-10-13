@@ -731,13 +731,15 @@ class BaseWorker(ABC):
     def de_register(self, obj):
 
         """Un-register an object and its attribute."""
-        if torch_utils.is_syft_tensor(obj):
+        if issubclass(type(obj), sy._SyftTensor):
             self.rm_obj(obj.id)
+            # TODO: rm .data, .grad, .grad.data if any
         elif torch_utils.is_tensor(obj):
             self.de_register(obj.child)
         elif torch_utils.is_variable(obj):
             self.de_register(obj.child)
             self.de_register(obj.data.child)
+            # TODO: rm .grad, .grad.data if any
         # Case of a iter type non json serializable
         elif isinstance(obj, (list, tuple, set, bytearray, range)):
             for o in obj:
@@ -781,7 +783,7 @@ class BaseWorker(ABC):
 
     def register(self, result):
         """Register an object with SyftTensors."""
-        if torch_utils.is_syft_tensor(result):
+        if issubclass(type(result), sy._SyftTensor):
             syft_obj = result
             self.register_object(syft_obj)
         elif torch_utils.is_tensor(result):
@@ -1038,7 +1040,9 @@ class BaseWorker(ABC):
             if has_self and utils.is_in_place_method(attr):
                 # TODO: fix this properly: don't wrap the same way if syft or Variable
                 if torch_utils.is_variable(result) or torch_utils.is_tensor(result):
-                    wrapper = torch_utils.bind_tensor_nodes(raw_command["self"], result.child)
+                    wrapper = torch_utils.bind_tensor_nodes(
+                        raw_command["self"], result.child
+                    )
                 else:
                     wrapper = torch_utils.bind_tensor_nodes(raw_command["self"], result)
             else:
@@ -1088,12 +1092,20 @@ class BaseWorker(ABC):
                     raise MemoryError("You already point at ", recipient, ":", new_id)
 
                 err_msg = "You can't have the same id for {} and {}."
-                assert new_id != new_data_id, err_msg.format('var', 'var.data')
-                assert new_id != new_grad_id, err_msg.format('var', 'var.grad')
-                assert new_id != new_grad_data_id, err_msg.format('var', 'var.grad.data')
-                assert new_data_id != new_grad_id, err_msg.format('var.data', 'var.grad')
-                assert new_data_id != new_grad_data_id, err_msg.format('var.data', 'var.grad.data')
-                assert new_grad_id != new_grad_data_id, err_msg.format('var.grad', 'var.grad.data')
+                assert new_id != new_data_id, err_msg.format("var", "var.data")
+                assert new_id != new_grad_id, err_msg.format("var", "var.grad")
+                assert new_id != new_grad_data_id, err_msg.format(
+                    "var", "var.grad.data"
+                )
+                assert new_data_id != new_grad_id, err_msg.format(
+                    "var.data", "var.grad"
+                )
+                assert new_data_id != new_grad_data_id, err_msg.format(
+                    "var.data", "var.grad.data"
+                )
+                assert new_grad_id != new_grad_data_id, err_msg.format(
+                    "var.grad", "var.grad.data"
+                )
 
                 object.data.child.id = new_data_id
 
