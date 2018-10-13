@@ -2755,28 +2755,22 @@ class _TorchVariable(_TorchObject):
             )
 
         # returns a Variable object wrapping a SyftTensor
-        variable = self.child.get(deregister_ptr=deregister_ptr)
+        variable = self.child.get(deregister_ptr)
 
+        # Optional: use it in development phase
         # torch_utils.assert_has_only_torch_tensorvars(variable)
 
         # this will change the wrapper variable to instead wrap the
-        # SyftTensor object that was returned so that any variable that may
-        # still exist referencing this pointer will simply call local data instead
-        # of sending messages elsewhere, or a closer pointer
+        # SyftTensor object that was returned
         if update_ptr_wrapper:
+            # Transfer the chain from the variable to the wrapper (self)
             self.child = variable.child
             self.data.child = variable.data.child
             if self.grad is not None and variable.grad is not None:
                 self.grad.child = variable.grad.child
                 self.grad.data.child = variable.grad.data.child
 
-            # In case we have a final get() (ie returning a FloatTensor), we have e.g.
-            # x = Float(...)
-            # x.send(...)
-            # x2 = x.get()
-            # We  have x2: [no dim]->[_Local]->[Float()]
-            # Whereas we expect x2: [Float()]
-            # So we use the .set_() method, to change the storage of [no dim]
+            # Update the wrapper itself (self)
             if (
                 not isinstance(variable.child, sy._PointerTensor)
                 and variable.data is not None
@@ -2787,12 +2781,22 @@ class _TorchVariable(_TorchObject):
                     self.grad.data = variable.grad.data
 
             torch_utils.fix_chain_structure(self, self.data, self.grad)
-            # torch_utils.assert_is_chain_well_formed(self)
             return self
 
         return variable
 
     def ser(self, private, as_dict=True, is_head=False):
+        """
+        Serialize a variable and its pertaining chain
+        :param private: If true, don't include the data, just the structure and meta data
+        :param as_dict: is not true, encode the dict
+        :param is_head: this parameter has been included for variable that are in the middle of
+        a chain (then is_head=False): in that case we don't ser the .data and .grad which refer to
+        chains which are already serialized thanks to the head variable which does it.
+            Var ---- node ... node --- Var ---- ...
+            \-data --node ... node --- data --- ...
+             \-grad--node ... node --- grad --- ...
+        """
         key = encode.get_serialized_key(self)
 
         tensor_msg = {
@@ -2829,19 +2833,18 @@ class _TorchVariable(_TorchObject):
 
     @staticmethod
     def deser(obj_type, msg_obj, worker, acquire, is_head=False):
+        # Convert { '__<type>__' : { ...obj... } in ('<type>', { ...obj... })
         child_type, msg_child = torch_utils.extract_type_and_obj(msg_obj["child"])
-        var_syft_obj = sy._SyftTensor.deser_routing(
-            child_type, msg_child, worker, acquire
-        )
 
-        if var_syft_obj.parent is not None and var_syft_obj.child is not None:
+        var_syft_obj = sy._SyftTensor.deser_routing(child_type, msg_child, worker, acquire)
+
+        # If syft_obj has a parent, then it's an already existing object, with a legitimate torch wrapper
+        if var_syft_obj.parent is not None:
             return var_syft_obj.parent
 
         # Deser the var.data
         try:
-            var_data_type, var_data_tensor = torch_utils.extract_type_and_obj(
-                msg_obj["data"]
-            )
+            var_data_type, var_data_tensor = torch_utils.extract_type_and_obj(msg_obj["data"])
             if is_head:
                 var_data = torch.guard[var_data_type].deser(
                     var_data_type, var_data_tensor, worker, acquire
@@ -2850,38 +2853,25 @@ class _TorchVariable(_TorchObject):
                 var_data = torch.guard[var_data_type]()
         except AttributeError:
             var_data = torch.guard["FloatTensor"]()
-        worker.hook.local_worker.de_register(var_data)
 
+        # If not already existing object, build the torch wrapper
         variable = sy.Variable(var_data, requires_grad=msg_obj["requires_grad"])
 
         # Deser the var.grad
         if "grad" in msg_obj:
-            var_grad_type, var_grad_tensor = torch_utils.extract_type_and_obj(
-                msg_obj["grad"]
-            )
+            var_grad_type, var_grad_tensor = torch_utils.extract_type_and_obj(msg_obj["grad"])
             if is_head:
                 var_grad = torch.guard[var_grad_type].deser(
                     var_grad_type, var_grad_tensor, worker, acquire, is_head
                 )
             else:
                 var_grad = torch.guard[var_grad_type]()
-            worker.hook.local_worker.de_register(var_grad)
             variable.assign_grad_(var_grad)
-        else:
-            var_grad = None
 
-        # TODO: Find a smart way to skip register and not leaking the info to the local worker
-        # This would imply overload differently the __init__ to provide an owner for the child attr.
-        worker.hook.local_worker.de_register(variable)
-        worker.hook.local_worker.de_register(variable.data)
-        if variable.grad is not None:
-            worker.hook.local_worker.de_register(variable.grad)
-            worker.hook.local_worker.de_register(variable.grad.data)
+        # And connect it the the child syft_tensor
+        torch_utils.bind_tensor_nodes(variable, var_syft_obj)
 
-        variable.child = var_syft_obj
-        var_syft_obj.parent = variable
-
-        # Fix chain ends and links between chains
+        # Last, ensures that the structure follows our standard
         torch_utils.fix_chain_structure(variable, variable.data, variable.grad)
 
         return variable
