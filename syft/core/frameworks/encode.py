@@ -115,7 +115,7 @@ class PythonEncoder:
         if isinstance(obj, dict):
             return {k: self.python_encode(v, private_local) for k, v in obj.items()}
         # sy._SyftTensor (Pointer, Local)
-        elif torch_utils.is_syft_tensor(obj):
+        elif issubclass(type(obj), sy._SyftTensor):
             tail_object = torch_utils.find_tail_of_chain(obj)
             if self.retrieve_pointers and isinstance(tail_object, sy._PointerTensor):
                 self.found_pointers.append(tail_object)
@@ -312,12 +312,7 @@ class PythonJSONDecoder:
                         obj_type, obj, self.worker, self.acquire
                     )
                 # Case of a iter type non json serializable
-                elif type_code in (
-                    type_codes.tuple,
-                    type_codes.set,
-                    type_codes.bytearray,
-                    type_codes.range,
-                ):
+                elif obj_type in ("tuple", "set", "bytearray", "range"):
                     return eval(obj_type)([self.python_decode(o) for o in obj])
                 # Case of a slice
                 elif type_code == type_codes.slice:

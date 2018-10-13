@@ -27,30 +27,25 @@ class _SyftTensor:
         id=None,
         skip_register=False,
     ):
-        if torch_utils.is_syft_tensor(child):
+        if child is not None:  # not needed: torch_utils.is_syft_tensor(child):
             if torch_type is None:
                 torch_type = child.torch_type
             if owner is None:
                 owner = child.owner
-
-        self.id = id
-        # self.old_ids = None - this will only get initialized if self.set_id() is called, but i'm referencing it
-        # in this comment so that people know it can exist. It's a set()
-
-        self.child = child
-        self.parent = parent
-        self.torch_type = torch_type
-
-        if self.child is not None:
+            self.child = child
             try:
                 self.child.parent = self
             except AttributeError:  # for non-torch tensor child (can occur in __repr__)
                 pass
+        else:
+            self.child = None
 
-        if owner is not None:
-            if isinstance(owner, str):
-                owner = self.child.owner.get_worker(owner)
-        self.owner = owner
+        self.id = id
+        # self.old_ids = None - this will only get initialized if self.set_id() is called, but i'm referencing it
+        # in this comment so that people know it can exist. It's a set()
+        self.parent = parent
+        self.torch_type = torch_type
+        self.owner = owner  # should not be a (str, int)
 
     def __str__(self):
         return (
@@ -180,8 +175,7 @@ class _SyftTensor:
 
         if owner is None:
             owner = self.owner
-        if isinstance(owner, (str, int)):
-            owner = self.owner.get_worker(owner)
+        owner = self.owner.get_worker(owner)
 
         local_pointer = False
         if location is None:
@@ -205,9 +199,9 @@ class _SyftTensor:
             else:
                 ptr_id = int(10e10 * random.random())
 
-        if hasattr(self, "torch_type") and self.torch_type is not None:
+        try:
             torch_type = self.torch_type
-        else:
+        except AttributeError:
             torch_type = None
             logging.warning(
                 "The torch tensor's child has no torch_type. Is it well formed?"
@@ -328,8 +322,8 @@ class _SyftTensor:
         self.owner = wrapper.child.owner
 
         # Insert self between wrapper and wrapper child
-        torch_utils.wrap_command_with(wrapper.child, wrapper=self)
-        torch_utils.wrap_command_with(self, wrapper=wrapper)
+        torch_utils.bind_tensor_nodes(wrapper=self, child_obj=wrapper.child)
+        torch_utils.bind_tensor_nodes(wrapper=wrapper, child_obj=self)
 
         # In case wrapper is a variable, do the same with data and grad (if necessary)
         if torch_utils.is_variable(wrapper):
@@ -496,10 +490,10 @@ class _LocalTensor(_SyftTensor):
         # If the command is an in-place method, wrap self and return
         if has_self and utils.is_in_place_method(attr):
             # wrap the main element
-            torch_utils.wrap_command_with(response, syft_command["self"])
+            torch_utils.bind_tensor_nodes(syft_command["self"], response)
 
             if torch_utils.is_variable(response):
-                # Also wrap the data if it's a variable (don't use wrap_command_with: the chain is not well formed yet)
+                # Also wrap the data if it's a variable (don't use bind_tensor_nodes: the chain is not well formed yet)
                 syft_command["self"].child.data = response.data
                 # And wrap the grad if there is one
                 if response.grad is not None:
@@ -876,8 +870,8 @@ class _GeneralizedPointerTensor(_SyftTensor):
         self.owner = wrapper.child.owner
 
         # Insert self between wrapper and wrapper child
-        torch_utils.wrap_command_with(wrapper.child, wrapper=self)
-        torch_utils.wrap_command_with(self, wrapper=wrapper)
+        torch_utils.bind_tensor_nodes(wrapper=self, child_obj=wrapper.child)
+        torch_utils.bind_tensor_nodes(wrapper=wrapper, child_obj=self)
         self.child = None
 
         # In case wrapper is a variable, do the same with data and grad (if necessary)
@@ -940,7 +934,7 @@ class _PointerTensor(_SyftTensor):
         # pointers to themselves that get registered should trigger the flat
         # if it's not getting registered the pointer is probably about to be
         # sent over the wire
-        if self.location == self.owner and not skip_register:
+        if self.location == self.owner:
             logging.warning(
                 "Do you really want a pointer pointing to itself? (self.location == self.owner)"
             )
@@ -1080,6 +1074,7 @@ class _PointerTensor(_SyftTensor):
                         original_pointer=msg_obj["original_pointer"],
                     )
                 else:
+                    # This existing syft tensor already has a parent, we will reuse it. (see tensorvar.deser)
                     syft_obj = previous_pointer
             else:  # We point at the Pointer (same part as every syft tensors)
                 previous_pointer = worker.get_pointer_to(
@@ -1098,6 +1093,7 @@ class _PointerTensor(_SyftTensor):
                         original_pointer=msg_obj["original_pointer"],
                     )
                 else:
+                    # This existing syft tensor already has a parent, we will reuse it. (see tensorvar.deser)
                     syft_obj = previous_pointer
         return syft_obj
 
@@ -1105,12 +1101,9 @@ class _PointerTensor(_SyftTensor):
 
         """Get back from a remote worker the chain this pointer is pointing
         at."""
-        # Remove this pointer - TODO: call deregister function instead of doing it by hand
+        # Remove this pointer by default
         if deregister_ptr:
-            if torch_utils.is_variable_name(self.torch_type):
-                if hasattr(self.parent, "data"):
-                    self.owner.rm_obj(self.parent.data.child.id)
-            self.owner.rm_obj(self.id)
+            self.owner.de_register(self)
 
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
@@ -1120,18 +1113,21 @@ class _PointerTensor(_SyftTensor):
         # get SyftTensor (Local or Pointer) from remote machine
         tensorvar = self.owner.request_obj(self.id_at_location, self.location)
 
+        # Optional, use it in a development phase to perform checks
         # torch_utils.assert_has_only_torch_tensorvars(tensorvar)
 
         syft_tensor = tensorvar.child
         syft_tensor.id = self.id
-        if torch_utils.is_variable_name(self.torch_type):
-            if hasattr(self.parent, "data"):
-                tensorvar.data.child.id = self.parent.data.child.id
-
         # Register the result
         self.owner.register(syft_tensor)
-        if torch_utils.is_variable_name(syft_tensor.torch_type):
-            if hasattr(self.parent, "data"):
+
+        if torch_utils.is_variable_name(self.torch_type):
+            # FIXME: this check is only here because when you bring back a GenPtrTensor from remote,
+            # There is a pb at deser which is that the ptrs in the gpt.pointer_dict are not connected
+            # with the .data and .grad attributes, so there is a variable pointer without a .data attr
+            # if which case we cannot perform this. This is an edge case but it should be fixed.
+            if hasattr(self, "data"):
+                tensorvar.data.child.id = self.data.id
                 self.owner.register(tensorvar.data.child)
 
         return tensorvar
@@ -1530,7 +1526,7 @@ class _FixedPrecisionTensor(_SyftTensor):
             if self.child.grad is None:
                 self.child.init_grad_()
             child_child_var = self.child.get(*args, **kwargs)
-            torch_utils.bind_var_like_objects(self, child_child_var)
+            torch_utils.bind_var_nodes(self, child_child_var)
 
             if hasattr(var, "grad") and var.grad is not None:
                 self.child.assign_grad_(child_child_var.grad)
@@ -1936,7 +1932,7 @@ class _SPDZTensor(_SyftTensor):
         self.torch_type = wrapper.child.torch_type
         self.owner = wrapper.child.owner
 
-        torch_utils.wrap_command_with(self, wrapper=wrapper)
+        torch_utils.bind_tensor_nodes(wrapper=wrapper, child_obj=self)
 
         # In case wrapper is a variable, do the same with data and grad (if necessary)
         if torch_utils.is_variable(wrapper):
@@ -2081,7 +2077,7 @@ class _SPDZTensor(_SyftTensor):
                 mpc_node.grad = type(self)(gp_response.grad)
                 mpc_node.grad.data = type(self)(gp_response.grad.data)
                 mpc_node.grad.data.child.child = None  # FIXME: is it necessary?
-                torch_utils.bind_var_like_objects(variable, mpc_node, grad=True)
+                torch_utils.bind_var_nodes(variable, mpc_node, grad=True)
                 return variable
             else:
                 response = type(self)(gp_response).wrap(True)
@@ -2162,7 +2158,7 @@ class _SNNTensor(_SPDZTensor, _SyftTensor):
         self.torch_type = wrapper.child.torch_type
         self.owner = wrapper.child.owner
 
-        torch_utils.wrap_command_with(self, wrapper=wrapper)
+        torch_utils.bind_tensor_nodes(wrapper=wrapper, child_obj=self)
 
         # In case wrapper is a variable, do the same with data and grad (if necessary)
         if torch_utils.is_variable(wrapper):
@@ -2391,7 +2387,7 @@ class _TorchObject:
     def fix_precision_(self, *args, **kwargs):
         tensorvar = self.fix_precision(*args, **kwargs)
         if torch_utils.is_variable(self):  # grad are already created
-            torch_utils.bind_var_like_objects(self, tensorvar.child, grad=True)
+            torch_utils.bind_var_nodes(self, tensorvar.child, grad=True)
         else:
             self.child = tensorvar.child
 
@@ -2518,20 +2514,22 @@ class _TorchTensor(_TorchObject):
 
     @staticmethod
     def deser(obj_type, msg_obj, worker, acquire):
+        # Convert { '__<type>__' : { ...obj... } in ('<type>', { ...obj... })
         child_type, child_obj = torch_utils.extract_type_and_obj(msg_obj["child"])
+
         syft_obj = sy._SyftTensor.deser_routing(child_type, child_obj, worker, acquire)
 
-        # If we have retrieved an already existing object (TODO: add checks) then return it
-        if syft_obj.parent is not None and syft_obj.child is not None:
+        # If syft_obj has a parent, then it's an already existing object, with a legitimate torch wrapper
+        if syft_obj.parent is not None:
             return syft_obj.parent
 
+        # If not, build the torch wrapper
         tensorvar = torch.guard[obj_type](msg_obj["data"])
-        torch_utils.wrap_command_with(syft_obj, tensorvar)
 
-        # TODO: Find a smart way to skip register and not leaking the info to the local worker
-        # This would imply overload differently the __init__ to provide an owner for the child attr.
-        worker.hook.local_worker.de_register(tensorvar)
+        # And connect it the the child syft_tensor
+        torch_utils.bind_tensor_nodes(tensorvar, syft_obj)
 
+        # Last, ensures that the structure follows our standard
         torch_utils.fix_chain_structure(tensorvar)
 
         return tensorvar
@@ -2574,8 +2572,7 @@ class _TorchTensor(_TorchObject):
             sy._GeneralizedPointerTensor(gpt_dict).on(self)
             return self
 
-        if isinstance(worker, (int, str)):
-            worker = self.owner.get_worker(worker)
+        worker = self.owner.get_worker(worker)
 
         if ptr_id is None:
             ptr_id = int(10e10 * random.random())
@@ -2600,7 +2597,7 @@ class _TorchTensor(_TorchObject):
             register=True,
             original_pointer=original_pointer,
         )
-        torch_utils.wrap_command_with(syft_pointer, self)
+        torch_utils.bind_tensor_nodes(self, syft_pointer)
         self.parent = None
 
         return self
@@ -2680,24 +2677,22 @@ class _TorchVariable(_TorchObject):
         [worker] => self->worker->alice->obj Because there are Variable
         involved, there are actually 4 chains involved, the variable chain,
         variable.data, variable.grad, variable.grad.data."""
-        assert len(workers) > 0, "Please provide workers to receive the data"
 
         if len(workers) == 1:
             worker = workers[0]
-        else:
+        elif len(workers) == 0:
+            raise TypeError("Please provide workers to receive the data")
+        else:  # Multiple workers case
             gpt_dict = {}
             if not hasattr(self, "grad") or self.grad is None:
                 self.init_grad_()
             for worker in workers:
                 gpt_dict[worker] = (self * 1).send(worker).child
+
             sy._GeneralizedPointerTensor(gpt_dict).on(self)
-            torch_utils.link_var_chain_to_data_and_grad_chains(
-                self, self.data, self.grad
-            )
             return self
 
-        if isinstance(worker, (int, str)):
-            worker = self.owner.get_worker(worker)
+        worker = self.owner.get_worker(worker)
 
         # Init new remote ids if needed
         (new_id, new_data_id, new_grad_id, new_grad_data_id) = utils.map_tuple(
@@ -2712,6 +2707,7 @@ class _TorchVariable(_TorchObject):
         obj_grad_id = self.grad.child.id if self.grad is not None else None
         obj_grad_data_id = self.grad.data.child.id if self.grad is not None else None
 
+        # Send the variable (note that if self.grad was None it will be instanciated here)
         self.owner.send_obj(
             self,
             new_id,
@@ -2721,28 +2717,24 @@ class _TorchVariable(_TorchObject):
             new_grad_data_id=new_grad_data_id,
         )
 
-        # Clear data which could be cached in the wrapper (which is self)
-        utils.map_tuple(
-            None,
-            (self, self.data, self.grad, self.grad.data),
-            lambda x: x.native_set_(),
-        )
-
-        # For all the objects, create a pointer and insert it as a direct child
+        # For each object, clear it, create a pointer and insert it as a direct child
         for id, remote_id, wrapper in zip(
             [obj_id, obj_data_id, obj_grad_id, obj_grad_data_id],
             [new_id, new_data_id, new_grad_id, new_grad_data_id],
             [self, self.data, self.grad, self.grad.data],
         ):
+            # Clear data which could be cached in the wrapper (which is self)
+            if id is not None:  # id is None when we had self.grad = None
+                wrapper.native_set_()
             wrapper.child.id = id
             pointer = wrapper.child.create_pointer(
                 location=worker, id_at_location=remote_id, register=True
             )
-            torch_utils.wrap_command_with(pointer, wrapper)
-            wrapper.parent = None
+            torch_utils.bind_tensor_nodes(wrapper, pointer)
 
+        # Ensure that the structure has the proper .data .grad links at each stage
         torch_utils.link_var_chain_to_data_and_grad_chains(self, self.data, self.grad)
-        # todo: fix this in link_var_chain_to_data_and_grad_chains
+        # Todo: This could be included in link_var_chain_to_data_and_grad_chains
         self.child.grad.data = self.grad.data.child
 
         return self
@@ -2763,28 +2755,22 @@ class _TorchVariable(_TorchObject):
             )
 
         # returns a Variable object wrapping a SyftTensor
-        variable = self.child.get(deregister_ptr=deregister_ptr)
+        variable = self.child.get(deregister_ptr)
 
+        # Optional: use it in development phase
         # torch_utils.assert_has_only_torch_tensorvars(variable)
 
         # this will change the wrapper variable to instead wrap the
-        # SyftTensor object that was returned so that any variable that may
-        # still exist referencing this pointer will simply call local data instead
-        # of sending messages elsewhere, or a closer pointer
+        # SyftTensor object that was returned
         if update_ptr_wrapper:
+            # Transfer the chain from the variable to the wrapper (self)
             self.child = variable.child
             self.data.child = variable.data.child
             if self.grad is not None and variable.grad is not None:
                 self.grad.child = variable.grad.child
                 self.grad.data.child = variable.grad.data.child
 
-            # In case we have a final get() (ie returning a FloatTensor), we have e.g.
-            # x = Float(...)
-            # x.send(...)
-            # x2 = x.get()
-            # We  have x2: [no dim]->[_Local]->[Float()]
-            # Whereas we expect x2: [Float()]
-            # So we use the .set_() method, to change the storage of [no dim]
+            # Update the wrapper itself (self)
             if (
                 not isinstance(variable.child, sy._PointerTensor)
                 and variable.data is not None
@@ -2795,12 +2781,22 @@ class _TorchVariable(_TorchObject):
                     self.grad.data = variable.grad.data
 
             torch_utils.fix_chain_structure(self, self.data, self.grad)
-            # torch_utils.assert_is_chain_well_formed(self)
             return self
 
         return variable
 
     def ser(self, private, as_dict=True, is_head=False):
+        """
+        Serialize a variable and its pertaining chain
+        :param private: If true, don't include the data, just the structure and meta data
+        :param as_dict: is not true, encode the dict
+        :param is_head: this parameter has been included for variable that are in the middle of
+        a chain (then is_head=False): in that case we don't ser the .data and .grad which refer to
+        chains which are already serialized thanks to the head variable which does it.
+            Var ---- node ... node --- Var ---- ...
+            \-data --node ... node --- data --- ...
+             \-grad--node ... node --- grad --- ...
+        """
         key = encode.get_serialized_key(self)
 
         tensor_msg = {
@@ -2837,12 +2833,15 @@ class _TorchVariable(_TorchObject):
 
     @staticmethod
     def deser(obj_type, msg_obj, worker, acquire, is_head=False):
+        # Convert { '__<type>__' : { ...obj... } in ('<type>', { ...obj... })
         child_type, msg_child = torch_utils.extract_type_and_obj(msg_obj["child"])
+
         var_syft_obj = sy._SyftTensor.deser_routing(
             child_type, msg_child, worker, acquire
         )
 
-        if var_syft_obj.parent is not None and var_syft_obj.child is not None:
+        # If syft_obj has a parent, then it's an already existing object, with a legitimate torch wrapper
+        if var_syft_obj.parent is not None:
             return var_syft_obj.parent
 
         # Deser the var.data
@@ -2858,8 +2857,8 @@ class _TorchVariable(_TorchObject):
                 var_data = torch.guard[var_data_type]()
         except AttributeError:
             var_data = torch.guard["FloatTensor"]()
-        worker.hook.local_worker.de_register(var_data)
 
+        # If not already existing object, build the torch wrapper
         variable = sy.Variable(var_data, requires_grad=msg_obj["requires_grad"])
 
         # Deser the var.grad
@@ -2873,23 +2872,12 @@ class _TorchVariable(_TorchObject):
                 )
             else:
                 var_grad = torch.guard[var_grad_type]()
-            worker.hook.local_worker.de_register(var_grad)
             variable.assign_grad_(var_grad)
-        else:
-            var_grad = None
 
-        # TODO: Find a smart way to skip register and not leaking the info to the local worker
-        # This would imply overload differently the __init__ to provide an owner for the child attr.
-        worker.hook.local_worker.de_register(variable)
-        worker.hook.local_worker.de_register(variable.data)
-        if variable.grad is not None:
-            worker.hook.local_worker.de_register(variable.grad)
-            worker.hook.local_worker.de_register(variable.grad.data)
+        # And connect it the the child syft_tensor
+        torch_utils.bind_tensor_nodes(variable, var_syft_obj)
 
-        variable.child = var_syft_obj
-        var_syft_obj.parent = variable
-
-        # Fix chain ends and links between chains
+        # Last, ensures that the structure follows our standard
         torch_utils.fix_chain_structure(variable, variable.data, variable.grad)
 
         return variable
@@ -2897,7 +2885,10 @@ class _TorchVariable(_TorchObject):
     def init_grad_(self):
         """Initialise grad as an empty tensor."""
         if self.grad is None or torch_utils.is_tensor_empty(self.grad):
-            self.grad = sy.Variable(sy.zeros(self.size()).type(type(self.data)))
+            var_grad = sy.Variable(sy.zeros(self.size()))
+            if type(var_grad.data) != type(self.data):
+                var_grad.data = var_grad.data.type(type(self.data))
+            self.grad = var_grad
             self.grad.native_set_()
             self.grad.child.owner = self.owner
             self.grad.data.child.owner = self.owner

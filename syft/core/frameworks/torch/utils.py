@@ -31,25 +31,9 @@ def get_child_command(obj, child_types=[]):
     :param child_types:
     :return:
     """
-    # Torch tensor or variable, or sy._SyftTensor
-    if not isinstance(obj, str) and (
-        is_tensor(obj) or is_variable(obj) or is_syft_tensor(obj)
-    ):
-        obj_type = type(obj.child)
-        # We identify Parameter type with Variable type since they are quite close
-        # TODO: What are the risks due to this assimilation? (see usage @ torch/utils.py l.74)
-        if obj_type is sy.Parameter:
-            obj_type = sy.Variable
-        return obj.child, [obj_type]
-    # List or iterables which could contain tensors
-    elif isinstance(obj, (list, tuple, set, bytearray, range)):
-        children = []
-        types = []
-        for o in obj:
-            c, t = get_child_command(o, child_types)
-            children.append(c)
-            types += t
-        return type(obj)(children), types
+    # Frequent basic types
+    if isinstance(obj, (bool, int, float, str)):
+        return obj, []
     # Dict
     elif isinstance(obj, dict):
         children = {}
@@ -59,6 +43,25 @@ def get_child_command(obj, child_types=[]):
             children[k] = c
             types += t
         return children, types
+    # List or iterables which could contain tensors
+    elif isinstance(obj, (list, tuple, set, bytearray, range)):
+        children = []
+        types = []
+        for o in obj:
+            c, t = get_child_command(o, child_types)
+            children.append(c)
+            types += t
+        return type(obj)(children), types
+    # Torch tensor or variable, or sy._SyftTensor
+    elif not isinstance(obj, str) and (
+        is_syft_tensor(obj) or is_variable(obj) or is_tensor(obj)
+    ):
+        obj_type = type(obj.child)
+        # We identify Parameter type with Variable type since they are quite close
+        # TODO: What are the risks due to this assimilation? (see usage @ torch/utils.py l.74)
+        if obj_type is sy.Parameter:
+            obj_type = sy.Variable
+        return obj.child, [obj_type]
     else:
         return obj, []
 
@@ -190,7 +193,9 @@ def pt_gpt_error(ptr, gptr):
 def enforce_owner(obj, owner):
     """Reassign every elements of the chain to a specified owner (in a Virtual
     worker context)"""
-    if is_syft_tensor(obj):
+    if obj is None:
+        return
+    elif is_syft_tensor(obj):
         if owner != owner.hook.local_worker:
             owner.hook.local_worker.de_register(obj)
         obj.owner = owner
@@ -228,7 +233,11 @@ def enforce_owner(obj, owner):
             """sometimes this failes."""
 
 
-def bind_var_like_objects(obj, child_obj, grad=False):
+def bind_var_nodes(obj, child_obj, grad=False):
+    """Wrap a var like object with a var like wrapper, var like obj can be a variable
+    or any object with a .data and optionally a .grad attribute, like some syft obj.
+    In most case, obj would be a variable and child_obj a syft tensor"""
+
     obj.child = child_obj
     child_obj.parent = obj
 
@@ -243,40 +252,41 @@ def bind_var_like_objects(obj, child_obj, grad=False):
         child_obj.grad.data.parent = obj.grad.data
 
 
-def wrap_command_with(obj, wrapper):
-    """Wrap a syft object with a given wrapper."""
-    wrapper.child = obj
-    obj.parent = wrapper
+def bind_tensor_nodes(wrapper, child_obj):
+    """Wrap an object with a wrapper. In most case, obj is a torch tensor
+     and wrapper a syft tensor."""
+    wrapper.child = child_obj
+    child_obj.parent = wrapper
     return wrapper
 
 
 def wrap_command(obj):
     """To a Syft command, add a torch wrapper Returns the wrapper."""
-    # for numeric values for instance, don't add a wrapper
-    if isinstance(obj, (int, float, bool, str, np.ndarray, slice)) or obj is None:
-        return obj
-    # Torch tensor or variable
-    elif is_tensor(obj) or is_variable(obj):
-        return obj  # the tensor is already wrapped
-        # raise TypeError('Expecting syft tensors but got ' + str(type(obj)))
     # sy._SyftTensor
-    elif is_syft_tensor(obj):
+    if is_syft_tensor(obj):
         _tail = find_tail_of_chain(obj)
         if isinstance(_tail, sy._LocalTensor):
             wrapper = _tail.child
         else:
             wrapper = torch.guard[obj.torch_type]()
 
-        wrap_command_with(obj, wrapper)
+        bind_tensor_nodes(wrapper, obj)
+
         if is_variable(wrapper):
-            if hasattr(obj, "data"):
-                wrapper.data = wrap_command(obj.data)
+            wrapper.data = wrap_command(obj.data)
             if hasattr(obj, "grad"):
                 wrapper_grad = wrap_command(obj.grad)
                 wrapper.assign_grad_(wrapper_grad)
-        fix_chain_structure(wrapper)
 
+        fix_chain_structure(wrapper)
         return wrapper
+    # for numeric values for instance, don't add a wrapper
+    elif isinstance(obj, (int, float, bool, str, np.ndarray, slice)) or obj is None:
+        return obj
+    # Torch tensor or variable
+    elif is_tensor(obj) or is_variable(obj):
+        return obj  # the tensor is already wrapped
+        # raise TypeError('Expecting syft tensors but got ' + str(type(obj)))
     # List or iterables which could contain tensors
     elif isinstance(obj, (list, tuple, set, bytearray, range)):
         return type(obj)([wrap_command(o) for o in obj])
@@ -294,11 +304,11 @@ def wrap_command_pre_ser(obj):
     Returns the wrapper
     """
     # for numeric values for instance, don't add a wrapper
-    if isinstance(obj, (int, float, bool, str, np.ndarray, slice)) or obj is None:
+    if isinstance(obj, (int, float, bool, str)) or obj is None:
         return obj
-    # Torch tensor or variable
-    elif is_tensor(obj) or is_variable(obj):
-        return obj  # the tensor is already wrapped
+    # Dict
+    elif isinstance(obj, dict):
+        return {k: wrap_command_pre_ser(o) for k, o in obj.items()}
     # sy._SyftTensor
     elif is_syft_tensor(obj):
         if not is_variable_name(obj.torch_type):
@@ -309,9 +319,11 @@ def wrap_command_pre_ser(obj):
     # List or iterables which could contain tensors
     elif isinstance(obj, (list, tuple, set, bytearray, range)):
         return type(obj)([wrap_command_pre_ser(o) for o in obj])
-    # Dict
-    elif isinstance(obj, dict):
-        return {k: wrap_command_pre_ser(o) for k, o in obj.items()}
+    # Torch tensor or variable
+    elif is_tensor(obj) or is_variable(obj):
+        return obj  # the tensor is already wrapped
+    elif isinstance(obj, (np.ndarray, slice)):
+        return obj
     else:
         # print('The following type wasnt wrapped:', str(type(obj)))
         return obj
@@ -356,19 +368,23 @@ def compile_command(attr, args, kwargs, has_self=False, self=None):
     command, pointers = encode.encode(command, retrieve_pointers=True)
 
     # Get information about the location and owner of the pointers
-    locations = set()
-    owners = set()
-    for pointer in pointers:
-        locations.add(pointer.location)
-        owners.add(pointer.owner)
+    if len(pointers) > 1:
+        locations = set()
+        owners = set()
+        for pointer in pointers:
+            locations.add(pointer.location)
+            owners.add(pointer.owner)
 
-    locations = list(locations)
-    owners = list(owners)
+        locations = list(locations)
+        owners = list(owners)
 
-    if len(locations) > 1:
-        raise NotImplementedError("All pointers should point to the same worker")
-    if len(owners) > 1:
-        raise NotImplementedError("All pointers should share the same owner.")
+        if len(locations) > 1:
+            raise NotImplementedError("All pointers should point to the same worker")
+        if len(owners) > 1:
+            raise NotImplementedError("All pointers should share the same owner.")
+    else:
+        locations = [pointers[0].location]
+        owners = [pointers[0].owner]
 
     return command, locations, owners
 
@@ -451,45 +467,27 @@ def split_to_pointer_commands(syft_command):
 def assert_has_only_torch_tensorvars(obj):
     """A check function that an object has only torch Tensors or Variable at
     his 'roots', ie head of chain Is useful for development."""
-    if isinstance(obj, (int, float, str, slice, type(...))):
-        return True
-    elif is_tensor(obj):
-        return True
-    elif is_variable(obj):
-        return True
-    elif isinstance(obj, (list, tuple)):
+    if isinstance(obj, (list, tuple)):
         rep = [assert_has_only_torch_tensorvars(o) for o in obj]
         return all(rep)
     elif isinstance(obj, dict):
         rep = [assert_has_only_torch_tensorvars(o) for o in obj.values()]
         return all(rep)
-    elif callable(obj):
-        return True
-    elif obj is None:
-        return True
-    else:
-        assert False, ("Obj is not tensorvar", type(obj))
+    elif is_syft_tensor(obj):
+        raise AssertionError("Found a Syft Tensor")
 
 
 def assert_has_only_syft_tensors(obj):
     """A check function that an object has only syft Tensors at his 'roots', ie
     head of chain Is useful for development."""
-    if isinstance(obj, (int, float, str, slice, type(...))):
-        return True
-    elif issubclass(obj.__class__, sy._SyftTensor):
-        return True
-    elif isinstance(obj, (list, tuple)):
+    if isinstance(obj, (list, tuple)):
         rep = [assert_has_only_syft_tensors(o) for o in obj]
         return all(rep)
     elif isinstance(obj, dict):
         rep = [assert_has_only_syft_tensors(o) for o in obj.values()]
         return all(rep)
-    elif callable(obj):
-        return True
-    elif obj is None:
-        return True
-    else:
-        assert False, ("Obj is not syft tensor", type(obj))
+    elif is_variable(obj) or is_tensor(obj):
+        raise AssertionError("Found a Torch Tensor")
 
 
 def chain_print(obj, display=True, verbose=False):
@@ -662,7 +660,7 @@ def fix_chain_structure(var_node, data_node=None, grad_node=None, head_node=None
 
     if var_node is not None:
         # Don't bind for torch nodes, it's already done
-        if is_syft_tensor(var_node):
+        if issubclass(type(var_node), sy._SyftTensor):
             if data_node is not None:
                 var_node.data = data_node
             if grad_node is not None:
@@ -673,11 +671,11 @@ def fix_chain_structure(var_node, data_node=None, grad_node=None, head_node=None
 
         # Check terminal cases
         if isinstance(var_node, sy._LocalTensor):
-            wrap_command_with(head_node, var_node)
+            bind_tensor_nodes(var_node, head_node)
             if data_node is not None:
-                wrap_command_with(head_node.data, var_node.data)
+                bind_tensor_nodes(var_node.data, head_node.data)
             if grad_node is not None:
-                wrap_command_with(head_node.grad, var_node.grad)
+                bind_tensor_nodes(var_node.grad, head_node.grad)
         elif isinstance(var_node, (sy._PointerTensor, sy._GeneralizedPointerTensor)):
             var_node.child = None
             head_node.parent = None
@@ -816,26 +814,14 @@ def find_tail_of_chain(obj, start_id=None, start_type=None):
     Returns the last element of a chain, and perform basic sanity checks
     on the chain like unexpected loops
     """
-    obj_type = type(obj)
-    if start_id is None:
-        start_id = obj.id
-        start_type = obj_type
-    else:
-        if start_id == obj.id and start_type == obj_type:
-            raise StopIteration(
-                "The chain looped downward on id", obj.child.id, "with obj", obj.child
-            )
-
     if isinstance(
         obj, (sy._LocalTensor, sy._PointerTensor, sy._GeneralizedPointerTensor)
     ):
         return obj
     else:
-        if obj.child is None:
-            raise AttributeError("Chain is broken on", obj)
-        else:
-            obj.child.parent = obj
-            return find_tail_of_chain(obj.child, start_id, start_type)
+        # FIXME: This shouldn't be here
+        obj.child.parent = obj
+        return find_tail_of_chain(obj.child, start_id, start_type)
 
 
 def find_torch_object_in_family_tree(obj):

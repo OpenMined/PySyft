@@ -595,18 +595,18 @@ class BaseWorker(ABC):
         >>> me.get_worker(bob)
         <syft.core.workers.virtual.VirtualWorker id:bob>
         """
-        if id_or_worker in self._known_workers:
-            return self._known_workers[id_or_worker]
-        else:
-            if isinstance(id_or_worker, (str, int)):
+        if isinstance(id_or_worker, (str, int)):
+            if id_or_worker in self._known_workers:
+                return self._known_workers[id_or_worker]
+            else:
                 logging.warning(
                     "Worker", self.id, "couldnt recognize worker", id_or_worker
                 )
                 return id_or_worker
-            else:
-                if id_or_worker.id not in self._known_workers:
-                    self.add_worker(id_or_worker)
-                return self._known_workers[id_or_worker.id]
+        else:
+            if id_or_worker.id not in self._known_workers:
+                self.add_worker(id_or_worker)
+            return id_or_worker
 
     def get_obj(self, remote_key):
         """get_obj(remote_key) -> a torch object This method fetches a tensor
@@ -731,13 +731,15 @@ class BaseWorker(ABC):
     def de_register(self, obj):
 
         """Un-register an object and its attribute."""
-        if torch_utils.is_syft_tensor(obj):
+        if issubclass(type(obj), sy._SyftTensor):
             self.rm_obj(obj.id)
+            # TODO: rm .data, .grad, .grad.data if any
         elif torch_utils.is_tensor(obj):
             self.de_register(obj.child)
         elif torch_utils.is_variable(obj):
             self.de_register(obj.child)
             self.de_register(obj.data.child)
+            # TODO: rm .grad, .grad.data if any
         # Case of a iter type non json serializable
         elif isinstance(obj, (list, tuple, set, bytearray, range)):
             for o in obj:
@@ -781,7 +783,7 @@ class BaseWorker(ABC):
 
     def register(self, result):
         """Register an object with SyftTensors."""
-        if torch_utils.is_syft_tensor(result):
+        if issubclass(type(result), sy._SyftTensor):
             syft_obj = result
             self.register_object(syft_obj)
         elif torch_utils.is_tensor(result):
@@ -947,7 +949,7 @@ class BaseWorker(ABC):
         if is_torch_command:
             # Wrap the result
             if has_self and utils.is_in_place_method(attr):
-                result = torch_utils.wrap_command_with(result, raw_command["self"])
+                result = torch_utils.bind_tensor_nodes(raw_command["self"], result)
             else:
                 result = torch_utils.wrap_command(result)
 
@@ -1038,11 +1040,11 @@ class BaseWorker(ABC):
             if has_self and utils.is_in_place_method(attr):
                 # TODO: fix this properly: don't wrap the same way if syft or Variable
                 if torch_utils.is_variable(result) or torch_utils.is_tensor(result):
-                    wrapper = torch_utils.wrap_command_with(
-                        result.child, raw_command["self"]
+                    wrapper = torch_utils.bind_tensor_nodes(
+                        raw_command["self"], result.child
                     )
                 else:
-                    wrapper = torch_utils.wrap_command_with(result, raw_command["self"])
+                    wrapper = torch_utils.bind_tensor_nodes(raw_command["self"], result)
             else:
                 wrapper = torch_utils.wrap_command(result)
             torch_utils.enforce_owner(wrapper, self)
@@ -1088,19 +1090,22 @@ class BaseWorker(ABC):
 
                 if self.get_pointer_to(recipient, new_data_id) is not None:
                     raise MemoryError("You already point at ", recipient, ":", new_id)
-                assert (
-                    new_id != new_data_id
-                ), "You can't have the same id for the variable and its data."
-                assert (
-                    new_id != new_grad_id
-                ), "You can't have the same id for the variable and its grad."
-                assert new_id != new_grad_data_id
 
-                assert new_data_id != new_grad_id
-
-                assert new_data_id != new_grad_data_id
-
-                assert new_grad_id != new_grad_data_id
+                err_msg = "You can't have the same id for {} and {}."
+                assert new_id != new_data_id, err_msg.format("var", "var.data")
+                assert new_id != new_grad_id, err_msg.format("var", "var.grad")
+                assert new_id != new_grad_data_id, err_msg.format(
+                    "var", "var.grad.data"
+                )
+                assert new_data_id != new_grad_id, err_msg.format(
+                    "var.data", "var.grad"
+                )
+                assert new_data_id != new_grad_data_id, err_msg.format(
+                    "var.data", "var.grad.data"
+                )
+                assert new_grad_id != new_grad_data_id, err_msg.format(
+                    "var.grad", "var.grad.data"
+                )
 
                 object.data.child.id = new_data_id
 
@@ -1108,7 +1113,6 @@ class BaseWorker(ABC):
                     object.init_grad_()
 
                 object.grad.child.id = new_grad_id
-
                 object.grad.data.child.id = new_grad_data_id
         else:
             object.id = new_id
