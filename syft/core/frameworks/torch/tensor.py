@@ -13,6 +13,8 @@ import numpy as np
 from syft.spdz import spdz
 from syft.mpc.securenn import relu, relu_deriv
 
+LOG_NAME = "tensor_commands.txt"
+
 
 class _SyftTensor:
     """Super class for all Syft tensors, that contains all the specific syft
@@ -740,7 +742,9 @@ class _LogTensor(_SyftTensor):
     @classmethod
     def custom_handle(cls, command):
         """Put here all the things you want to do with a non-overloaded command."""
-        print(command)
+        fd = open(LOG_NAME, "w+")
+        fd.writeline(command)
+        fd.close()
 
     class overload_functions:
         """Put here the functions you want to overload Beware of recursion
