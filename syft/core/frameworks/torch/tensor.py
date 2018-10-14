@@ -742,7 +742,7 @@ class _LogTensor(_SyftTensor):
     def custom_handle(cls, command):
         """Put here all the things you want to do with a non-overloaded command."""
         fd = open(LOG_NAME, "w+")
-        fd.write(str(command))
+        fd.write(str(torch_utils.convert_to_js_command(command)))
         fd.close()
 
     class overload_functions:
