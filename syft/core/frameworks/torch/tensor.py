@@ -8,12 +8,11 @@ import syft as sy
 from . import utils as torch_utils
 from .. import encode
 from ... import utils
+from syft.core.frameworks.torch.constants import LOG_NAME
 import logging
 import numpy as np
 from syft.spdz import spdz
 from syft.mpc.securenn import relu, relu_deriv
-
-LOG_NAME = "tensor_commands.txt"
 
 
 class _SyftTensor:
@@ -743,7 +742,7 @@ class _LogTensor(_SyftTensor):
     def custom_handle(cls, command):
         """Put here all the things you want to do with a non-overloaded command."""
         fd = open(LOG_NAME, "w+")
-        fd.writeline(command)
+        fd.write(str(command))
         fd.close()
 
     class overload_functions:
