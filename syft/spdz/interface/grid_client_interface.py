@@ -1,4 +1,4 @@
-from .base_interface import BaseInterface
+from syft.spdz.interface.base_interface import BaseInterface
 
 
 class GridClientInterface(BaseInterface):

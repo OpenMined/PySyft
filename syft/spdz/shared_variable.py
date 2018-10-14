@@ -1,6 +1,6 @@
 import torch
 from torch.autograd import Variable, Function
-from . import spdz
+from syft import spdz
 
 
 class SharedAdd(Function):
