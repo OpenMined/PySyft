@@ -1,1 +1,1 @@
-from . import pandas
+from test.core.frameworks import pandas

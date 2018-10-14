@@ -3,7 +3,7 @@ import syft as sy
 from syft.spdz import spdz
 from syft.mpc.securenn import decompose, private_compare
 from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor, _SPDZTensor
-from .test_utils import _generate_mpc_number_pair
+from test.mpc.test_utils import _generate_mpc_number_pair
 
 import unittest
 import numpy as np

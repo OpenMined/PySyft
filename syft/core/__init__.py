@@ -1,7 +1,7 @@
 """Some core imports..."""
 
-from . import workers
-from . import utils
-from . import frameworks
+from syft.core import workers
+from syft.core import utils
+from syft.core import frameworks
 
 __all__ = ["workers", "utils", "frameworks"]

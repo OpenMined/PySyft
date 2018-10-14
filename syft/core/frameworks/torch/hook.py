@@ -5,10 +5,10 @@ import re
 import logging
 import types
 import syft as sy
-from ... import workers
-from ... import utils
-from . import utils as torch_utils
-from .tensor import (
+from syft.core import workers
+from syft.core import utils
+from syft.core.frameworks.torch import utils as torch_utils
+from syft.core.frameworks.torch.tensor import (
     _SyftTensor,
     _LocalTensor,
     _PointerTensor,
@@ -16,7 +16,7 @@ from .tensor import (
     _FixedPrecisionTensor,
     _TorchTensor,
 )
-from .tensor import _TorchVariable
+from syft.core.frameworks.torch.tensor import _TorchVariable
 
 
 class TorchHook:

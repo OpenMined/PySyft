@@ -3,8 +3,8 @@ import socket
 
 import msgpack
 
-from ..frameworks import encode
-from .base import BaseWorker
+from syft.core.frameworks import encode
+from syft.core.workers.base import BaseWorker
 
 
 class SocketWorker(BaseWorker):

@@ -2,8 +2,8 @@ import websockets
 import asyncio
 import json
 
-from .. import utils
-from .base import BaseWorker
+from syft.core import utils
+from syft.core.workers.base import BaseWorker
 
 
 class WebSocketWorker(BaseWorker):

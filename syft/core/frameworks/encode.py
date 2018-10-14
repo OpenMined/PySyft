@@ -15,7 +15,7 @@ import time
 
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
-from .numpy import array, array_ptr
+from syft.core.frameworks.numpy import array, array_ptr
 
 
 serialized_keys = {}
