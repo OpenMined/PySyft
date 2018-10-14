@@ -1,12 +1,15 @@
-from .hook import TorchHook
-from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
-from .tensor import (
+from syft.core.frameworks.torch.hook import TorchHook
+from syft.core.frameworks.torch.tensor import (
     _FixedPrecisionTensor,
     _TorchTensor,
     _PlusIsMinusTensor,
     _GeneralizedPointerTensor,
+    _SyftTensor,
+    _LocalTensor,
+    _PointerTensor,
+    _SPDZTensor,
+    _SNNTensor
 )
-from .tensor import _SPDZTensor, _SNNTensor
 from enum import Enum, auto
 
 __all__ = [

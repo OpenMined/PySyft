@@ -5,9 +5,9 @@ import re
 import torch
 import random
 import syft as sy
-from . import utils as torch_utils
-from .. import encode
-from ... import utils
+from syft.core.frameworks.torch import utils as torch_utils
+from syft.core.frameworks import encode
+from syft.core import utils
 import logging
 import numpy as np
 from syft.spdz import spdz
