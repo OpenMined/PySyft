@@ -296,6 +296,6 @@ exclude = [
 ]
 
 for attr in dir(np.ndarray):
-    if(attr not in exclude):
+    if attr not in exclude:
         method = get_array_ptr_override_method(attr)
         setattr(array_ptr, str(attr), method)
