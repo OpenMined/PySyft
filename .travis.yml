@@ -38,7 +38,6 @@ install:
     - pip install flake8-docstrings
     - pip install flake8-comprehensions
     - pip install pep8-naming
-    - rm -rf build
     - pip install black
     - pip install torchvision
     - python setup.py install >> build.log
