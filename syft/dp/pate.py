@@ -236,7 +236,14 @@ def ensemble_preds(model, dataset, nb_labels, nb_teachers, stdnt_data_loader):
 
 
 def prepare_student_data(
-    model, dataset, test_data, test_labels, nb_labels, nb_teachers, stdnt_share, lap_scale
+    model,
+    dataset,
+    test_data,
+    test_labels,
+    nb_labels,
+    nb_teachers,
+    stdnt_share,
+    lap_scale,
 ):
     """Takes a dataset name and the size of the teacher ensemble and prepares
     training data for the student model, according to parameters indicated in
@@ -280,7 +287,16 @@ def prepare_student_data(
     return stdnt_data, stdnt_labels, stdnt_test_data, stdnt_test_labels
 
 
-def train_student(model, dataset, test_data, test_labels, nb_labels, nb_teachers, stdnt_share, lap_scale):
+def train_student(
+    model,
+    dataset,
+    test_data,
+    test_labels,
+    nb_labels,
+    nb_teachers,
+    stdnt_share,
+    lap_scale,
+):
     """This function trains a student using predictions made by an ensemble of
     teachers. The student and teacher models are trained using the same neural
     network architecture.
@@ -292,7 +308,14 @@ def train_student(model, dataset, test_data, test_labels, nb_labels, nb_teachers
 
     # Call helper function to prepare student data using teacher predictions
     stdnt_dataset = prepare_student_data(
-        model, dataset, test_data, test_labels, nb_labels, nb_teachers, stdnt_share, lap_scale
+        model,
+        dataset,
+        test_data,
+        test_labels,
+        nb_labels,
+        nb_teachers,
+        stdnt_share,
+        lap_scale,
     )
 
     # Unpack the student dataset
