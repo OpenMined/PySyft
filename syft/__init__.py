@@ -1,6 +1,7 @@
 """Some syft imports..."""
 from . import core
 from . import spdz
+from . import dp
 from .core.frameworks.torch import _SyftTensor
 
 from torch.autograd import Variable
