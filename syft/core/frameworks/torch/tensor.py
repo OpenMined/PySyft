@@ -734,6 +734,13 @@ class _LogTensor(_SyftTensor):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        creation_command = {"type": "add-tensor"}
+        creation_command["data"] = {
+            "id": str(self.id),
+            "values": torch_utils.find_tail_of_chain(self).child.tolist(),
+        }
+        with open(LOG_NAME, "a+") as fd:
+            fd.write(str(creation_command))
 
     # The table of command you want to replace
     substitution_table = {}
@@ -741,9 +748,8 @@ class _LogTensor(_SyftTensor):
     @classmethod
     def custom_handle(cls, command):
         """Put here all the things you want to do with a non-overloaded command."""
-        fd = open(LOG_NAME, "w+")
-        fd.write(str(torch_utils.convert_to_js_command(command)))
-        fd.close()
+        with open(LOG_NAME, "a+") as fd:
+            fd.write(str(torch_utils.convert_to_js_command(command)))
 
     class overload_functions:
         """Put here the functions you want to overload Beware of recursion
@@ -752,7 +758,7 @@ class _LogTensor(_SyftTensor):
         @staticmethod
         def get(attr):
             attr = attr.split(".")[-1]
-            return getattr(sy._PlusIsMinusTensor.overload_functions, attr)
+            return getattr(sy._LogTensor.overload_functions, attr)
 
     # Put here all the methods you want to overload
 

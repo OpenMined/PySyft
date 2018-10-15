@@ -969,11 +969,11 @@ def is_variable_name(obj):
 def convert_to_js_command(command):
     # This is not safe for operations where all args are not tensors
     js_command = {"type": "run-operation"}
-    js_command["func"] = command["command"]
+    js_command["func"] = command["command"].strip("_")
     tensors = []
     if command["has_self"]:
-        tensors.append(command["self"].id)
+        tensors.append(str(command["self"].id))
     for arg in command["args"]:
-        tensors.append(arg.id)
+        tensors.append(str(arg.id))
     js_command["tensors"] = tensors
     return js_command
