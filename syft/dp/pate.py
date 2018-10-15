@@ -18,6 +18,7 @@ import tarfile
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable as Var
 
 from torch.utils.data import DataLoader, Dataset
 
