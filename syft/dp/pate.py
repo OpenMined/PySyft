@@ -78,7 +78,7 @@ def train(model, train_loader, test_loader, ckpt_path, filename):
         train_num = len(train_loader.sampler)
 
         for ix, (img, label) in enumerate(
-                train_loader
+            train_loader
         ):  # iterate over training batches
             # img, label = img.to(device), label.to(device) # get data, send to gpu if needed
             img = Var(img.float())
@@ -94,8 +94,8 @@ def train(model, train_loader, test_loader, ckpt_path, filename):
             optimizer.step()  # take an optimization step to update model's parameters
 
             pred = output.max(1, keepdim=True)[1]  # get the index of the max logit
-            correct += (
-                int(pred.eq(label.view_as(pred)).sum())
+            correct += int(
+                pred.eq(label.view_as(pred)).sum()
             )  # add to running total of hits
 
         # print whole epoch's training accuracy; useful for monitoring overfitting
@@ -122,8 +122,8 @@ def train(model, train_loader, test_loader, ckpt_path, filename):
         )  # calculate network loss
 
         pred = output.max(1, keepdim=True)[1]  # get the index of the max logit
-        test_correct += (
-            int(pred.eq(label.view_as(pred)).sum())
+        test_correct += int(
+            pred.eq(label.view_as(pred)).sum()
         )  # add to running total of hits
 
         # print whole epoch's training accuracy; useful for monitoring overfitting
@@ -140,14 +140,14 @@ def train(model, train_loader, test_loader, ckpt_path, filename):
 
 
 def train_teachers(
-        model,
-        train_data,
-        train_labels,
-        test_data,
-        test_labels,
-        nb_teachers,
-        teacher_id,
-        filename,
+    model,
+    train_data,
+    train_labels,
+    test_data,
+    test_labels,
+    nb_teachers,
+    teacher_id,
+    filename,
 ):
     data, labels = partition_dataset(train_data, train_labels, nb_teachers, teacher_id)
 
@@ -217,12 +217,12 @@ def ensemble_preds(model, dataset, nb_labels, nb_teachers, stdnt_data_loader):
     for teacher_id in xrange(nb_teachers):
         # Compute path of checkpoint file for teacher model with ID teacher_id
         filename = (
-                str(dataset)
-                + "_"
-                + str(nb_teachers)
-                + "_teachers_"
-                + str(teacher_id)
-                + ".pth"
+            str(dataset)
+            + "_"
+            + str(nb_teachers)
+            + "_teachers_"
+            + str(teacher_id)
+            + ".pth"
         )
         # Get predictions on our training data and store in result array
         result[teacher_id] = softmax_preds(
@@ -236,7 +236,7 @@ def ensemble_preds(model, dataset, nb_labels, nb_teachers, stdnt_data_loader):
 
 
 def prepare_student_data(
-        model, dataset, nb_labels, nb_teachers, stdnt_share, lap_scale
+    model, dataset, nb_labels, nb_teachers, stdnt_share, lap_scale
 ):
     """Takes a dataset name and the size of the teacher ensemble and prepares
     training data for the student model, according to parameters indicated in

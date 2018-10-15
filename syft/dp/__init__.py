@@ -1,3 +1,3 @@
 from . import pate
 
-__all__ = ['pate']
+__all__ = ["pate"]
