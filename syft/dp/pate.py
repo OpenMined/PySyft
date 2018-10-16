@@ -5,18 +5,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import gzip
-import math
 import numpy as np
 import os
-from scipy.io import loadmat as loadmat
-from six.moves import urllib
 from six.moves import xrange
-import sys
-import tarfile
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable as Var
 
