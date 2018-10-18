@@ -42,7 +42,7 @@ class Serialiser:
             obj["dtype"] = "DataFrame"
             for _ in range(columns):
                 obj["data"].append(pandas_obj.iloc[:, _].tolist())
-            obj["coloumn_values"] = pandas_obj.columns.values.tolist()
+            obj["column_values"] = pandas_obj.columns.values.tolist()
             obj["index"] = {}
             if isinstance(pandas_obj.index, pandas.core.indexes.range.RangeIndex):
                 obj["index"]["type"] = "RangeIndex"
@@ -64,5 +64,5 @@ class Serialiser:
         if "DataFrame" in raw_obj["dtype"]:
             df = pd.DataFrame(raw_obj["data"])
             df = df.transpose()
-            df.columns = raw_obj["coloumn_values"]
+            df.columns = raw_obj["column_values"]
             return df
