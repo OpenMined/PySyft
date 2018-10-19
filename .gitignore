@@ -14,3 +14,4 @@ syft.egg-info/
 venv/
 **.pytest_cache/
 docs/_modules
+.mypy_cache/
