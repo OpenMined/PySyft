@@ -3,6 +3,7 @@ from .tensor import _SyftTensor, _LocalTensor, _PointerTensor
 from .tensor import (
     _FixedPrecisionTensor,
     _TorchTensor,
+    _LogTensor,
     _PlusIsMinusTensor,
     _GeneralizedPointerTensor,
 )
@@ -16,6 +17,7 @@ __all__ = [
     "_PointerTensor",
     "_FixedPrecisionTensor",
     "_TorchTensor",
+    "_LogTensor",
     "_PlusIsMinusTensor",
     "_GeneralizedPointerTensor",
     "_SPDZTensor",
@@ -83,6 +85,7 @@ torch.tensorvar_methods.append("end_get")
 torch.torch_exclude = ["save", "load", "typename", "is_tensor", "manual_seed"]
 
 torch.guard = {
+    "_LogTensor": _LogTensor,
     "_PlusIsMinusTensor": _PlusIsMinusTensor,
     "_SPDZTensor": _SPDZTensor,
     "_FixedPrecisionTensor": _FixedPrecisionTensor,
