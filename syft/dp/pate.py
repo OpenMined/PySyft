@@ -1,64 +1,21 @@
-# The code is based on the following repo:
+# The code is based on the following Tensorflow version:
 # https://github.com/tensorflow/models/tree/master/research/differential_privacy/multiple_teachers
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import gzip
-import math
 import numpy as np
 import os
-from scipy.io import loadmat as loadmat
-from six.moves import urllib
 from six.moves import xrange
-import sys
-import tarfile
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable as Var
 
 from torch.utils.data import DataLoader, Dataset
-from torchvision import datasets, transforms
 
 ckpt_path = "checkpoint/"
-
-
-def prepare_mnist():
-    kwargs = {"num_workers": 1}
-
-    train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(
-            "./data",
-            train=True,
-            download=True,
-            transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-            ),
-        ),
-        batch_size=60000,
-        shuffle=True,
-        **kwargs,
-    )
-
-    test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(
-            "./data",
-            train=False,
-            transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-            ),
-        ),
-        batch_size=10000,
-        shuffle=False,
-        **kwargs,
-    )
-
-    train_data, train_labels = next(iter(train_loader))
-    test_data, test_labels = next(iter(test_loader))
-
-    return train_data, train_labels, test_data, test_labels
 
 
 def partition_dataset(data, labels, nb_teachers, teacher_id):
@@ -104,7 +61,6 @@ class PrepareData(Dataset):
 
 
 def train(model, train_loader, test_loader, ckpt_path, filename):
-
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     for epoch in range(10):
@@ -118,9 +74,9 @@ def train(model, train_loader, test_loader, ckpt_path, filename):
             train_loader
         ):  # iterate over training batches
             # img, label = img.to(device), label.to(device) # get data, send to gpu if needed
-            img = img.type(torch.float32)
+            img = Var(img.float())
             # label = label.type(torch.float32)
-            label = label.type(torch.LongTensor)
+            label = Var(label.type(torch.LongTensor))
             optimizer.zero_grad()  # clear parameter gradients from previous training update
             output = model(img)  # forward pass
             # output = output.type(torch.float32)
@@ -131,44 +87,44 @@ def train(model, train_loader, test_loader, ckpt_path, filename):
             optimizer.step()  # take an optimization step to update model's parameters
 
             pred = output.max(1, keepdim=True)[1]  # get the index of the max logit
-            correct += (
-                pred.eq(label.view_as(pred)).sum().item()
+            correct += int(
+                pred.eq(label.view_as(pred)).sum()
             )  # add to running total of hits
 
         # print whole epoch's training accuracy; useful for monitoring overfitting
         print(
             "Train Accuracy: {}/{} ({:.0f}%)".format(
-                correct, train_num, 100.0 * correct / train_num
+                correct, int(train_num), 100.0 * float(correct / train_num)
             )
         )
 
     # set up training metrics we want to track
     test_correct = 0
     test_num = len(test_loader.sampler)
-    with torch.no_grad():
-        for ix, (img, label) in enumerate(test_loader):  # iterate over training batches
-            # img, label = img.to(device), label.to(device) # get data, send to gpu if needed
-            img = img.type(torch.float32)
-            # label = label.type(torch.float32)
-            label = label.type(torch.LongTensor)
-            optimizer.zero_grad()  # clear parameter gradients from previous training update
-            output = model(img)  # forward pass
-            # output = output.type(torch.float32)
-            loss = F.cross_entropy(
-                output, label, size_average=False
-            )  # calculate network loss
 
-            pred = output.max(1, keepdim=True)[1]  # get the index of the max logit
-            test_correct += (
-                pred.eq(label.view_as(pred)).sum().item()
-            )  # add to running total of hits
+    for ix, (img, label) in enumerate(test_loader):  # iterate over training batches
+        # img, label = img.to(device), label.to(device) # get data, send to gpu if needed
+        img = Var(img.float())
+        # label = label.type(torch.float32)
+        label = Var(label.type(torch.LongTensor))
+        optimizer.zero_grad()  # clear parameter gradients from previous training update
+        output = model(img)  # forward pass
+        # output = output.type(torch.float32)
+        loss = F.cross_entropy(
+            output, label, size_average=False
+        )  # calculate network loss
 
-            # print whole epoch's training accuracy; useful for monitoring overfitting
-        print(
-            "Test Accuracy: {}/{} ({:.0f}%)".format(
-                test_correct, test_num, 100.0 * test_correct / test_num
-            )
+        pred = output.max(1, keepdim=True)[1]  # get the index of the max logit
+        test_correct += int(
+            pred.eq(label.view_as(pred)).sum()
+        )  # add to running total of hits
+
+        # print whole epoch's training accuracy; useful for monitoring overfitting
+    print(
+        "Test Accuracy: {}/{} ({:.0f}%)".format(
+            test_correct, test_num, 100.0 * test_correct / test_num
         )
+    )
 
     if not os.path.isdir(ckpt_path):
         os.makedirs(ckpt_path)
@@ -186,7 +142,6 @@ def train_teachers(
     teacher_id,
     filename,
 ):
-
     data, labels = partition_dataset(train_data, train_labels, nb_teachers, teacher_id)
 
     train_prep = PrepareData(data, labels)
@@ -218,16 +173,15 @@ def softmax_preds(model, nb_labels, images_loader, ckpt_path, return_logits=Fals
     model.load_state_dict(check)
     model.eval()  # set model to evaluate mode
 
-    with torch.no_grad():
-        for img, label in images_loader:
-            output = model(img)
-            output_softmax = F.softmax(output).data.numpy()
+    for img, label in images_loader:
+        output = model(Var(img))
+        output_softmax = F.softmax(output).data.numpy()
 
-            end = start + len(img)
+        end = start + len(img)
 
-            preds[start:end, :] = output_softmax
+        preds[start:end, :] = output_softmax
 
-            start += len(img)
+        start += len(img)
 
     return preds
 
@@ -275,7 +229,14 @@ def ensemble_preds(model, dataset, nb_labels, nb_teachers, stdnt_data_loader):
 
 
 def prepare_student_data(
-    model, dataset, nb_labels, nb_teachers, stdnt_share, lap_scale
+    model,
+    dataset,
+    test_data,
+    test_labels,
+    nb_labels,
+    nb_teachers,
+    stdnt_share,
+    lap_scale,
 ):
     """Takes a dataset name and the size of the teacher ensemble and prepares
     training data for the student model, according to parameters indicated in
@@ -285,10 +246,9 @@ def prepare_student_data(
     :param nb_teachers: number of teachers (in the ensemble) to learn from
     :return: pairs of (data, labels) to be used for student training and testing
     """
-    _, _, test_data, test_labels = prepare_mnist()
 
     # Transfor tensor to numpy
-    test_labels = test_labels.data.numpy()
+    test_labels = test_labels.numpy()
 
     # Make sure there is data leftover to be used as a test set
     assert stdnt_share < len(test_data)
@@ -320,7 +280,16 @@ def prepare_student_data(
     return stdnt_data, stdnt_labels, stdnt_test_data, stdnt_test_labels
 
 
-def train_student(model, dataset, nb_labels, nb_teachers, stdnt_share, lap_scale):
+def train_student(
+    model,
+    dataset,
+    test_data,
+    test_labels,
+    nb_labels,
+    nb_teachers,
+    stdnt_share,
+    lap_scale,
+):
     """This function trains a student using predictions made by an ensemble of
     teachers. The student and teacher models are trained using the same neural
     network architecture.
@@ -332,7 +301,14 @@ def train_student(model, dataset, nb_labels, nb_teachers, stdnt_share, lap_scale
 
     # Call helper function to prepare student data using teacher predictions
     stdnt_dataset = prepare_student_data(
-        model, dataset, nb_labels, nb_teachers, stdnt_share, lap_scale
+        model,
+        dataset,
+        test_data,
+        test_labels,
+        nb_labels,
+        nb_teachers,
+        stdnt_share,
+        lap_scale,
     )
 
     # Unpack the student dataset

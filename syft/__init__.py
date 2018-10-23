@@ -1,4 +1,6 @@
 """Some syft imports..."""
+
+from . import dp
 from syft import core
 from syft import spdz
 from syft.core.frameworks.torch import _SyftTensor
