@@ -5,44 +5,43 @@ import re
 import logging
 import types
 import syft as sy
-from ... import workers
-from ... import utils
-from . import utils as torch_utils
-from .tensor import (
+from syft.core import workers, utils
+from syft.core.frameworks.torch import utils as torch_utils
+from syft.core.frameworks.torch.tensor import (
     _SyftTensor,
     _LocalTensor,
     _PointerTensor,
     _GeneralizedPointerTensor,
     _FixedPrecisionTensor,
     _TorchTensor,
+    _TorchVariable
 )
-from .tensor import _TorchVariable
 
 
 class TorchHook:
     r""" A Hook which Overrides Methods on PyTorch Variables & Tensors -
      **Currently compatible with PyTorch 0.3.1**
- 
+
      The purpose of this class is to:
- 
+
          * extend torch methods to allow for the moving of tensors
            and variables from one worker to another
          * override torch methods to execute commands on one worker
            that are called on tensors controlled by the local worker.
- 
+
      This class is typically the first thing you will initialize when
      using PySyft with PyTorch because it is responsible for augmenting
      PyTorch with PySyft's added functionality (such as remote execution).
-     
+
      :Parameters:
- 
+
          * **local_worker (**:class:`.workers.BaseWorker` **, optional)**
            you can optionally provide a local worker as a parameter which
            TorchHook will assume to be the worker owned by the local machine.
            If you leave it empty, TorchClient will automatically initialize
            a :class:`.workers.VirtualWorker` under the assumption you're
            looking to do local experimentation/development.
- 
+
          * **is_client (bool, optional)** whether or not the TorchHook is
            being initialized as an end-user client. This can impact whether
            or not variables are deleted when they fall out of scope. If you set
@@ -50,15 +49,15 @@ class TorchHook:
            never be deleted. If you set this incorrectly on a remote machine
            (not a client), tensors will not get saved. It's really only
            important if you're not initializing the local worker yourself. (Default: True)
- 
+
          * **verbose (bool, optional)** whether or not to print operations
            as they occur. (Defalt: True)
 
          * **queue_size (int, optional)** max length of the list storing messages
            to be sent. (Default: 0)
- 
+
      :Example:
- 
+
      >>> import syft as sy
      >>> hook = sy.TorchHook()
      Hooking into Torch...

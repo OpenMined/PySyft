@@ -15,6 +15,7 @@ notebook: venv
 		jupyter notebook;\
 	)
 
+.PHONY: test
 test: venv
 	(. venv/bin/activate; \
 		python setup.py install; \
