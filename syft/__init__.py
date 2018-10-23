@@ -1,15 +1,18 @@
 """Some syft imports..."""
-from . import core
-from . import spdz
-from .core.frameworks.torch import _SyftTensor
+
+from . import dp
+from syft import core
+from syft import spdz
+from syft.core.frameworks.torch import _SyftTensor
 
 from torch.autograd import Variable
 from torch.nn import Parameter
 from torch.autograd import Variable as Var
-from .core.frameworks.torch import TorchHook
-from .core.frameworks.torch import (
+from syft.core.frameworks.torch import TorchHook
+from syft.core.frameworks.torch import (
     _LocalTensor,
     _PointerTensor,
+    _LogTensor,
     _FixedPrecisionTensor,
     _PlusIsMinusTensor,
     _GeneralizedPointerTensor,
@@ -17,7 +20,7 @@ from .core.frameworks.torch import (
     _SNNTensor,
 )
 from syft.core.workers import VirtualWorker, SocketWorker
-from .core.frameworks.numpy import array
+from syft.core.frameworks.numpy import array
 
 __all__ = ["core", "spdz"]
 

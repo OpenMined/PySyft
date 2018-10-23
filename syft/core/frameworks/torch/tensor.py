@@ -5,9 +5,9 @@ import re
 import torch
 import random
 import syft as sy
-from . import utils as torch_utils
-from .. import encode
-from ... import utils
+from syft.core.frameworks.torch import utils as torch_utils
+from syft.core.frameworks import encode
+from syft.core import utils
 import logging
 import numpy as np
 from syft.spdz import spdz
@@ -141,7 +141,7 @@ class _SyftTensor:
                 command["command"] = cls.replaced_functions(attr)
 
             # Or do whatever you want, but be careful not to overwrite the args!
-            # (...)
+            cls.custom_handle(command)
 
             # Get the next node type and update in command tensorvar with tensorvar.child
             next_command, child_type = torch_utils.prepare_child_command(
@@ -423,6 +423,10 @@ class _SyftTensor:
     class overload_functions:
         pass
 
+    @classmethod
+    def custom_handle(cls, *args, **kwargs):
+        pass
+
 
 class _LocalTensor(_SyftTensor):
     def __init__(
@@ -473,17 +477,20 @@ class _LocalTensor(_SyftTensor):
             command = native_func
         response = command(*args, **kwargs)
 
-        # TODO : control registration process
         if response is None:
             return response
 
-        if owner.id != owner.hook.local_worker.id:
+        is_execution_remote = owner.id != owner.hook.local_worker.id
+
+        # If the execution is not local, basic types must be put in a Tensor for pointing etc.
+        if is_execution_remote:
             if isinstance(response, (int, float, bool)):
                 response = torch_type([response])
             elif isinstance(response, (np.ndarray,)):
                 logging.warning("[np.ndarray] Hardcoding FloatTensor")
                 response = sy.FloatTensor(response)
         else:
+            # If not we can directly return
             if isinstance(response, (int, float, bool, np.ndarray)):
                 return response
 
@@ -520,7 +527,7 @@ class _LocalTensor(_SyftTensor):
 
                     if isinstance(resp, (int, float, bool)):
                         # if not final worker, convert into Float Tensor, which comes with a _LocalTensor
-                        if owner.id != owner.hook.local_worker.id:
+                        if is_execution_remote:
                             resp = sy.zeros(1) + resp
                         else:  # Else don't wrap it
                             syft_responses.append(resp)
@@ -710,6 +717,43 @@ class _PlusIsMinusTensor(_SyftTensor):
     def abs(self):
         """Overload the abs() method and execute another function."""
         return torch.abs(self)
+
+
+class _LogTensor(_SyftTensor):
+    """
+    The LogTensor
+    Role: Logs all incoming operations
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        creation_command = {"type": "add-tensor"}
+        creation_command["data"] = {
+            "id": str(self.id),
+            "values": torch_utils.find_tail_of_chain(self).child.tolist(),
+        }
+        with open(LOG_NAME, "a+") as fd:
+            fd.write(str(creation_command))
+
+    # The table of command you want to replace
+    substitution_table = {}
+
+    @classmethod
+    def custom_handle(cls, command):
+        """Put here all the things you want to do with a non-overloaded command."""
+        with open(LOG_NAME, "a+") as fd:
+            fd.write(str(torch_utils.convert_to_js_command(command)))
+
+    class overload_functions:
+        """Put here the functions you want to overload Beware of recursion
+        errors."""
+
+        @staticmethod
+        def get(attr):
+            attr = attr.split(".")[-1]
+            return getattr(sy._LogTensor.overload_functions, attr)
+
+    # Put here all the methods you want to overload
 
 
 class _GeneralizedPointerTensor(_SyftTensor):
