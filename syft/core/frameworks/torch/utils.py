@@ -382,9 +382,12 @@ def compile_command(attr, args, kwargs, has_self=False, self=None):
             raise NotImplementedError("All pointers should point to the same worker")
         if len(owners) > 1:
             raise NotImplementedError("All pointers should share the same owner.")
-    else:
+    elif len(pointers) == 1:
         locations = [pointers[0].location]
         owners = [pointers[0].owner]
+    else:
+        locations = []
+        owners = []
 
     return command, locations, owners
 
