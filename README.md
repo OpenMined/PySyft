@@ -66,7 +66,7 @@ Join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.or
 
 We are very grateful for contributions to PySyft from the following organizations!
 
- ![drawing](https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png)  
+<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" width="200" height="auto" />
   
  [coMind Website](https://comind.org/) & [coMind Github](https://github.com/coMindOrg/federated-averaging-tutorials)
 

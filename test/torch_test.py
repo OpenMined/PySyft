@@ -1121,7 +1121,9 @@ class TestSNNTensor(TestCase):
 
         data = torch.FloatTensor([1, 2, 3]).fix_precision().share(alice, bob)
         assert ((data * 0.1).get().decode() == torch.FloatTensor([0.1, 0.2, 0.3])).all()
-        assert ((data * -0.1).get().decode() == torch.FloatTensor([-0.1, -0.2, -0.3])).all()
+        assert (
+            (data * -0.1).get().decode() == torch.FloatTensor([-0.1, -0.2, -0.3])
+        ).all()
         assert ((data * 1.1).get().decode() == torch.FloatTensor([1.1, 2.2, 3.3])).all()
 
 

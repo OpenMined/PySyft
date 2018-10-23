@@ -10,6 +10,7 @@ from syft.core.frameworks.torch import TorchHook
 from syft.core.frameworks.torch import (
     _LocalTensor,
     _PointerTensor,
+    _LogTensor,
     _FixedPrecisionTensor,
     _PlusIsMinusTensor,
     _GeneralizedPointerTensor,
