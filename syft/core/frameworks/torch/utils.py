@@ -11,8 +11,8 @@ import copy
 import syft
 import syft as sy
 
-from .. import encode
-from ... import utils
+from syft.core.frameworks import encode
+from syft.core import utils
 
 
 def extract_type_and_obj(dct):
@@ -950,3 +950,16 @@ def is_variable_name(obj):
         return type_code in torch.var_codes
     except KeyError:
         return False
+
+
+def convert_to_js_command(command):
+    # This is not safe for operations where all args are not tensors
+    js_command = {"type": "run-operation"}
+    js_command["func"] = command["command"].strip("_")
+    tensors = []
+    if command["has_self"]:
+        tensors.append(str(command["self"].id))
+    for arg in command["args"]:
+        tensors.append(str(arg.id))
+    js_command["tensors"] = tensors
+    return js_command

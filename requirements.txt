@@ -1,6 +1,7 @@
 black
 ipykernel
 msgpack
+pandas
 pre-commit
 sphinx_rtd_theme
 tensorflow
