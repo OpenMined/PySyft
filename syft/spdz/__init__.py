@@ -1,5 +1,3 @@
-from . import spdz
-from . import shared_variable
-from . import interface
+from syft.spdz import spdz, shared_variable, interface
 
 __all__ = ["spdz", "shared_variable", "interface"]

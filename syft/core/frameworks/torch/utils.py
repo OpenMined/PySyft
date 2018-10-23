@@ -11,8 +11,8 @@ import copy
 import syft
 import syft as sy
 
-from .. import encode
-from ... import utils
+from syft.core.frameworks import encode
+from syft.core import utils
 
 
 def extract_type_and_obj(dct):
