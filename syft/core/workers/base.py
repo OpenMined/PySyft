@@ -11,6 +11,7 @@ from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks import encode
 from syft.core.frameworks import encode as syft_encoder_router
+from ..profiling import profile, save_send_msg_stats, PROFILE_MODE
 
 
 class BaseWorker(ABC):
@@ -186,7 +187,7 @@ class BaseWorker(ABC):
 
         return self._search(query)
 
-    def send_msg(self, message, message_type, recipient):
+    def send_msg(self, message, message_type, recipient, profile_mode=PROFILE_MODE):
         """Sends a string message to another worker with message_type
         information indicating how the message should be processed.
 
@@ -199,6 +200,8 @@ class BaseWorker(ABC):
         * **message_type (string)** the type of message being sent. This affects how
           the message is processed by the recipient. The types of message are described
           in :func:`receive_msg`.
+
+        * **profile_mode (bool, optional)** when truthy, sending will be profiled.
 
         * **out (object)** the response from the message being sent. This can be a variety
           of object types. However, the object is typically only used during testing or
@@ -245,7 +248,13 @@ class BaseWorker(ABC):
         # need to call the worker-specific message send function wihch sends
         # the message according to the correct protocol (such as HTTPS, Socket,
         # or other ways of sending messages).
+        if profile_mode:
+            return self._profiled_send_msg(message_wrapper_json, recipient)
         return self._send_msg(message_wrapper_json, recipient)
+
+    @profile(save_send_msg_stats)
+    def _profiled_send_msg(self, *args, **kwargs):
+        return self._send_msg(*args, **kwargs)
 
     def compile_composite_message(self):
         """Returns a composite message in a dictionary from the message queue.

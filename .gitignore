@@ -14,5 +14,6 @@ syft.egg-info/
 venv/
 **.pytest_cache/
 docs/_modules
+*.log
 .mypy_cache/
 torch_commands.txt
