@@ -8,7 +8,7 @@ from typing import Optional, Callable, Tuple
 
 import torch
 
-from ._types import PYTHON_ENCODE_RETURN_TYPE, CUSTOM_OBJECT_HOOK_RETURN_TYPE, Dict, Any
+from syft.core._types import PYTHON_ENCODE_RETURN_TYPE, CUSTOM_OBJECT_HOOK_RETURN_TYPE, Dict, Any
 
 
 is_in_place_method_dict = {}

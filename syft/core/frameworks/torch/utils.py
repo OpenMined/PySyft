@@ -11,8 +11,8 @@ import copy
 import syft
 import syft as sy
 
-from .. import encode
-from ... import utils
+from syft.core.frameworks import encode
+from syft.core import utils
 
 
 def extract_type_and_obj(dct):
@@ -382,9 +382,12 @@ def compile_command(attr, args, kwargs, has_self=False, self=None):
             raise NotImplementedError("All pointers should point to the same worker")
         if len(owners) > 1:
             raise NotImplementedError("All pointers should share the same owner.")
-    else:
+    elif len(pointers) == 1:
         locations = [pointers[0].location]
         owners = [pointers[0].owner]
+    else:
+        locations = []
+        owners = []
 
     return command, locations, owners
 
@@ -950,3 +953,16 @@ def is_variable_name(obj):
         return type_code in torch.var_codes
     except KeyError:
         return False
+
+
+def convert_to_js_command(command):
+    # This is not safe for operations where all args are not tensors
+    js_command = {"type": "run-operation"}
+    js_command["func"] = command["command"].strip("_")
+    tensors = []
+    if command["has_self"]:
+        tensors.append(str(command["self"].id))
+    for arg in command["args"]:
+        tensors.append(str(arg.id))
+    js_command["tensors"] = tensors
+    return js_command

@@ -1,4 +1,4 @@
-from .base import BaseWorker
+from syft.core.workers import BaseWorker
 
 
 class VirtualWorker(BaseWorker):
