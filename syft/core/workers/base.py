@@ -316,7 +316,7 @@ class BaseWorker(ABC):
 
         # route message to appropriate logic and execute the command, returning
         # the "response" which should be sent back to the original worker. "private" (bool)
-        # determines whether we are intentioanlly leaving out the data in the response
+        # determines whether we are intentionally leaving out the data in the response
         # and instead sending pointers to the data which we will actually keep locally
         response, private = self.process_message_type(message_wrapper)
 
@@ -415,6 +415,9 @@ class BaseWorker(ABC):
                     if tensorvar.grad is not None:
                         syft_grad_object = tensorvar.grad.child
                         self.de_register(syft_grad_object)
+                        syft_grad_data_object = tensorvar.grad.data.child
+                        self.de_register(syft_grad_data_object)
+
 
                 # deregister the object
                 self.de_register(object)
@@ -664,7 +667,7 @@ class BaseWorker(ABC):
         will delete all object references contained therein when the cleanup
         method is called (self._clear_tmp_objects).
 
-        The reason we have a temporary registry for clijen workers
+        The reason we have a temporary registry for client workers
         (instead of putting everything in the permanent one) is
         because when the client creates a reference to an object
         (x = torch.zeros(10)), we want to ensure that the client
