@@ -1,6 +1,4 @@
 import torch
-from syft.spdz import spdz
-from syft.core.frameworks.torch import _GeneralizedPointerTensor, _SPDZTensor
 
 
 def _generate_mpc_number_pair(self, n1, n2):

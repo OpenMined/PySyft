@@ -1,8 +1,6 @@
 import unittest
 import torch
 import syft as sy
-from syft.spdz import spdz
-from syft.core.frameworks.torch import _GeneralizedPointerTensor, _SPDZTensor
 from .test_utils import _generate_mpc_number_pair
 
 

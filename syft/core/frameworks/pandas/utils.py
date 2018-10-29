@@ -12,8 +12,10 @@ class Serialiser:
         pass
 
     def serialise(self, pandas_obj):
-        """This function Serielises the pandas dataframe obects namely series and to JSON
-        objects. It first checks that the object is an instance of the pandas DataType"""
+        """
+        This function Serielises the pandas dataframe obects namely series and to JSON
+        objects. It first checks that the object is an instance of the pandas DataType
+        """
         assert isinstance(
             pandas_obj, (pandas.core.series.Series, pandas.core.frame.DataFrame)
         )
@@ -56,7 +58,7 @@ class Serialiser:
             return json.dumps(obj)
 
     def deserialise(self, obj_json):
-        # TODO rangeindex, multiindex, CategoricalIndex, IntervalIndex on return function
+        # TODO rangeindex, multiindex, CategoricalIndex, IntervalIndex on return func
         assert isinstance(obj_json, str)
         raw_obj = json.loads(obj_json)
         if "Series" == raw_obj["dtype"]:

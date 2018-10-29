@@ -4,7 +4,6 @@ from tensorflow import keras
 
 # Helper libraries
 import os
-import numpy as np
 from time import time
 from syft.core.frameworks.tensorflow import federated_averaging_optimizer
 

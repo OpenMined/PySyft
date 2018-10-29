@@ -9,9 +9,8 @@ from syft.core.frameworks.torch.tensor import (
     _LocalTensor,
     _PointerTensor,
     _SPDZTensor,
-    _SNNTensor
+    _SNNTensor,
 )
-from enum import Enum, auto
 
 __all__ = [
     "TorchHook",

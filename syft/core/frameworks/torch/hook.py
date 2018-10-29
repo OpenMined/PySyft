@@ -5,16 +5,15 @@ import re
 import logging
 import types
 import syft as sy
-from syft.core import workers, utils
+from syft.core import workers
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks.torch.tensor import (
     _SyftTensor,
     _LocalTensor,
     _PointerTensor,
     _GeneralizedPointerTensor,
-    _FixedPrecisionTensor,
     _TorchTensor,
-    _TorchVariable
+    _TorchVariable,
 )
 
 

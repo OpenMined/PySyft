@@ -4,7 +4,6 @@ from tensorflow import keras
 
 # Helper libraries
 import os
-import numpy as np
 from time import time
 
 flags = tf.app.flags

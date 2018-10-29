@@ -1,11 +1,10 @@
-import json
 import msgpack
-import time
 import re
 import torch
 import random
 import syft as sy
 from syft.core.frameworks.torch import utils as torch_utils
+from syft.core.frameworks.torch.constants import LOG_NAME
 from syft.core.frameworks import encode
 from syft.core import utils
 import logging
@@ -1796,7 +1795,7 @@ class _FixedPrecisionTensor(_SyftTensor):
             l_gate = left > right
             r_gate = 1 - l_gate
 
-            new_shape = [my_shape[0], int(s / 2)]
+            # new_shape = [my_shape[0], int(s / 2)]
             unfolded = left * l_gate + right * r_gate
 
             if R > 0 and (s + R) % 2 == 0:
