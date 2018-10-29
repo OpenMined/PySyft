@@ -7,16 +7,12 @@ from unittest import TestCase
 import random
 import syft as sy
 import numpy as np
-from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks import encode
-from syft.core.frameworks.torch.tensor import _SPDZTensor
 from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor
-from syft.spdz import spdz
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable as Var
-import json
 import msgpack
 
 bob = None
@@ -301,7 +297,6 @@ class TestChainTensor(TestCase):
 class TestTorchTensor(TestCase):
     def test_set_id(self):
 
-        init_state = hook.local_worker.is_client_worker
         hook.local_worker.is_client_worker = False
 
         x = torch.FloatTensor([-2, -1, 0, 1, 2, 3]).set_id("bobs tensor")
@@ -1417,7 +1412,6 @@ class TestSPDZTensor(TestCase):
 
     def test_fix_precision_sum(self):
         x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
-        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
         x = x.fix_precision(precision_fractional=4)
         z = x.sum(0)
         z = z.decode()
@@ -1425,7 +1419,6 @@ class TestSPDZTensor(TestCase):
 
     def test_fix_precision_cumsum(self):
         x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
-        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
         x = x.fix_precision(precision_fractional=4)
         z = x.cumsum(0)
         z = z.decode()
@@ -1433,7 +1426,6 @@ class TestSPDZTensor(TestCase):
 
     def test_fix_precision_prod(self):
         x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
-        y = torch.FloatTensor([[0.8, 0.4], [1, 3]])
         x = x.fix_precision(precision_fractional=4)
         z = x.prod(0)
         z = z.decode()

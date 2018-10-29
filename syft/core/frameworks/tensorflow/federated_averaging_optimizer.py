@@ -34,6 +34,7 @@ from tensorflow.python.platform import tf_logging as logging
 from tensorflow.python.training import optimizer
 from tensorflow.python.training import session_run_hook
 
+
 # Please note that the parameters from replicas are averaged so you need to
 # increase the learning rate according to the number of replicas. This change is
 # introduced to be consistent with how parameters are aggregated within a batch
@@ -195,7 +196,7 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
         # Generate new global variables dependent on trainable variables.
         with ops.device(self._device_setter):
             for v in variables.trainable_variables():
-                _ = variable_scope.variable(
+                variable_scope.variable(
                     name=f"{self._name}/{v.op.name}",
                     initial_value=v.initialized_value(),
                     trainable=False,
@@ -253,9 +254,10 @@ class FederatedAveragingOptimizer(optimizer.Optimizer):
             with ops.name_scope(None, self._name + "/global"):
                 for var, gvar in zip(local_vars, global_vars):
                     # pylint: disable=protected-access
-                    # Get reference to the tensor, this works with Variable and ResourceVariable
+                    # Get reference to the tensor,
+                    # this works with Variable and ResourceVariable
                     var = ops.convert_to_tensor(var)
-                    # Place the accumulator in the same ps as the corresponding global_var
+                    # Place the accumulator in the same ps as the global_var
                     with ops.device(gvar.device):
                         var_accum = data_flow_ops.ConditionalAccumulator(
                             var.dtype,

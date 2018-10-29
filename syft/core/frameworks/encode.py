@@ -1,19 +1,12 @@
 """Torch utility functions related to encoding and decoding in a JSON-
 serializable fashion."""
-import json
-import msgpack
-
 import re
 import types
-import functools
 import logging
 import torch
-import syft
 import syft as sy
 import numpy as np
-import time
 
-from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks.numpy import array, array_ptr
 
@@ -92,8 +85,8 @@ class PythonEncoder:
         serialized_obj = self.python_encode(obj, private_local)
 
         serialized_msg = {"obj": serialized_obj}
-        # Give instruction to the decoder, should he acquire the tensor or register them
-        # If it's private, you can't access directly the data, so you subscribe to it with a pointer
+        # If it's private, you can't access directly the data, so you subscribe
+        # to it with a pointer
         if private_local:
             serialized_msg["mode"] = "subscribe"
         else:  # If it's public, you can acquire the data directly
@@ -180,13 +173,13 @@ def decode(message, worker, acquire=None, message_is_dict=False):
     :param message: The message to decode
     :param worker: The worker performing the decode operation
     :param acquire: Should we copy the data of point at it
-    :param message_is_dict: Is the message a dictionary already or a JSON string needing decoding?
+    :param message_is_dict: Is the message a dictionary or a JSON string
     :return: The message decoded
     """
 
     decoder = PythonJSONDecoder(worker=worker, acquire=acquire)
 
-    # on the off chance someone forgot to decode the message format into a dict before sending it here
+    # in casesomeone forgot to decode the message format into a dict before sending
     if isinstance(message, dict):
         dict_message = message
     else:
@@ -264,15 +257,16 @@ class PythonJSONDecoder:
 
         if "type" in dct:
             if dct["type"] == "numpy.array":
-
-                # at first glance, the following if statement might seem a bit confusing
-                # since the dct object is identical for both. Basically, the pointer object
-                # is created here (on the receiving end of a message) as opposed to on the sending
-                # side. We decide whether to use the dictionary to construct a pointer or the
-                # actual tensor based on wehther self.acquire is true. Note that this changes
-                # how dct['id'] is used. If creating an actual tensor, the tensor id is set to dct['id]
-                # otherwise, id_at_location is set to be dct['id']. Similarly with dct['owner'].
-
+                """
+                at first glance, the following if statement might seem a bit confusing
+                since the dct object is identical for both. Basically, the pointer
+                object is created here (on the receiving end of a message) as opposed
+                to on the sending side. We decide whether to use the dictionary
+                to construct a pointer or the actual tensor based on whether
+                self.acquire is true. Note that this changes how dct['id'] is used.
+                If creating an actual tensor, the tensor id is set to dct['id']
+                otherwise, id_at_location is set to be dct['id'].
+                """
                 # if we intend to receive the tensor itself, construct an array
                 if self.acquire:
                     return array(dct["data"], id=dct["id"], owner=self.worker)
@@ -289,7 +283,8 @@ class PythonJSONDecoder:
                 return self.worker.get_obj(dct["id_at_location"])
 
         # Plan C: As a last resort, use a Regex to try to find a type somewhere.
-        # TODO: Plan C should never be called - but is used extensively in PySyft's PyTorch integratio
+        # TODO: Plan C should never be called - but is used extensively in PySyft's
+        # PyTorch integration
 
         type_codes = torch.type_codes
         for key, obj in dct.items():

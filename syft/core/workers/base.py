@@ -1,7 +1,5 @@
 import torch
-import json
 import msgpack
-import time
 import logging
 import syft as sy
 import numpy as np
@@ -10,7 +8,6 @@ from abc import ABC, abstractmethod
 from syft.core import utils
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks import encode
-from syft.core.frameworks import encode as syft_encoder_router
 from ..profiling import profile, save_send_msg_stats, PROFILE_MODE
 
 

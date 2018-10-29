@@ -1,18 +1,12 @@
 """Torch static utility functions."""
-import json
-import re
 from enum import IntEnum
-import types
-import functools
 import numpy as np
 import logging
 import torch
 import copy
-import syft
 import syft as sy
 
 from syft.core.frameworks import encode
-from syft.core import utils
 
 
 def extract_type_and_obj(dct):

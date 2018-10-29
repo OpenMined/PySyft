@@ -9,10 +9,10 @@ class TestBaseWorker(TestCase):
 
         hook.local_worker.is_client_worker = False
 
-        x = sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id(
+        sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id(
             "#boston_housing #target #dataset"
         )
-        y = sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id(
+        sy.Var(sy.FloatTensor([-2, -1, 0, 1, 2, 3])).set_id(
             "#boston_housing #input #dataset"
         )
 

@@ -30,7 +30,7 @@ class abstractarray(np.ndarray):
             # cache the local_worker object locally which we will
             # use for all outgoing communications
             if not hasattr(sy, "local_worker"):
-                hook = sy.TorchHook()
+                sy.TorchHook()
             owner = sy.local_worker
 
         self.owner = owner
@@ -70,12 +70,12 @@ class abstractarray(np.ndarray):
     def is_overloaded_method(cls, attr):
         """State if a function name corresponds to a Syft Tensor method which
         overloads a torch method."""
-        # exclude = ['on', '__init__', 'native___init__', '__repr__', '__str__', 'create_pointer',
-        #            'ser', 'deser', 'handle_call']
+        # exclude = ['on', '__init__', 'native___init__', '__repr__', '__str__',
+        # 'create_pointer', 'ser', 'deser', 'handle_call']
         # if attr in exclude:
         #     return False
         # if hasattr(getattr(cls, attr), '__module__') \
-        #         and getattr(cls, attr).__module__ == 'syft.core.frameworks.numpy.array':
+        #   and getattr(cls, attr).__module__ == 'syft.core.frameworks.numpy.array':
         #     return True
         # return False
         return True  # TODO: finish this
@@ -165,7 +165,7 @@ class array_ptr(abstractarray):
         """Get a chain back from a remote worker that its pointer is pointing
         at."""
 
-        # Remove this pointer - TODO: call deregister function instead of doing it by hand
+        # Remove this pointer - TODO: call deregister function instead
         if deregister_ptr:
             self.owner.rm_obj(self.id)
 
