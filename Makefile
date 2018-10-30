@@ -18,7 +18,8 @@ notebook: venv
 test: venv
 	(. venv/bin/activate; \
 		python setup.py install; \
-		python setup.py test;\
+		venv/bin/coverage run python setup.py test;\
+		venv/bin/coverage report --fail-under 100;\
 	)
 
 docs: venv

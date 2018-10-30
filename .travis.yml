@@ -52,7 +52,8 @@ before_script:
     # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
     - flake8 . --count --exit-zero --max-complexity=11 --max-line-length=100 --statistics
 script:
-    - python setup.py test
+    - coverage run python setup.py test
+    - coverage report --fail-under 100
     - bash scripts/execute_notebooks.sh
     - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
 notifications:
