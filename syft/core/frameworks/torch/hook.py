@@ -109,10 +109,12 @@ class TorchHook:
         else:
 
             if self.local_worker is None:
-                # Every TorchHook instance should have a local worker which is responsible for
-                # interfacing with other workers. The worker interface is what allows the Torch
-                # specific code in TorchHook to be agnostic to the means by which workers communicate
-                # (such as peer-to-peer, sockets, through local ports, or all within the same process)
+                """
+                Every TorchHook instance should have a local worker which is responsible for
+                interfacing with other workers. The worker interface is what allows the Torch
+                specific code in TorchHook to be agnostic to the means by which workers communicate
+                (such as peer-to-peer, sockets, through local ports, or all within the same process)
+                """
                 self.local_worker = workers.VirtualWorker(
                     hook=self,
                     is_client_worker=is_client,
@@ -289,7 +291,7 @@ class TorchHook:
             is_func = isinstance(lit, types.FunctionType)
             try:
                 is_service_func = "HookService" in lit.__qualname__
-            except:
+            except Exception:
                 is_service_func = False
             is_old = re.match("native*", attr) is not None
 
@@ -447,7 +449,8 @@ class TorchHook:
 
         for attr in self.to_auto_overload[tensor_type]:
             # # if we haven't already overloaded this method
-            # if attr not in dir(_GeneralizedPointerTensor) or getattr(_GeneralizedPointerTensor, attr) is None:
+            # if attr not in dir(_GeneralizedPointerTensor) or
+            # getattr(_GeneralizedPointerTensor, attr) is None:
 
             setattr(_GeneralizedPointerTensor, attr, self._get_overloaded_method(attr))
 
@@ -561,7 +564,7 @@ class TorchHook:
                 syft_tensor = worker.get_obj(variable_id)
                 # retrieve the var to fix
                 var = syft_tensor.parent
-                # retrieve the old grad, and insert it (to keep the chain) [first the envelope, then the data]
+                # retrieve the old grad, and insert it  [first the envelope, then the data]
                 saved_grad = saved_grads[variable_id]
                 if saved_grad is not None:
                     # store the computed gradient

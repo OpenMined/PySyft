@@ -18,6 +18,7 @@ from syft.core.frameworks.torch import (
 )
 from syft.core.workers import VirtualWorker, SocketWorker
 from syft.core.frameworks.numpy import array
+from torch import Variable
 
 __all__ = [
     "core",
@@ -35,6 +36,7 @@ __all__ = [
     "VirtualWorker",
     "SocketWorker",
     "array",
+    "Variable",
 ]
 
 

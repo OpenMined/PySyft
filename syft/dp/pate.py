@@ -73,11 +73,12 @@ def train(model, train_loader, test_loader, ckpt_path, filename):
         for ix, (img, label) in enumerate(
             train_loader
         ):  # iterate over training batches
-            # img, label = img.to(device), label.to(device) # get data, send to gpu if needed
+            # img, label = img.to(device), label.to(device)
+            # get data, send to gpu if needed
             img = Var(img.float())
             # label = label.type(torch.float32)
             label = Var(label.type(torch.LongTensor))
-            optimizer.zero_grad()  # clear parameter gradients from previous training update
+            optimizer.zero_grad()  # clear parameter gradients from previous update
             output = model(img)  # forward pass
             # output = output.type(torch.float32)
             loss = F.cross_entropy(
@@ -103,7 +104,8 @@ def train(model, train_loader, test_loader, ckpt_path, filename):
     test_num = len(test_loader.sampler)
 
     for ix, (img, label) in enumerate(test_loader):  # iterate over training batches
-        # img, label = img.to(device), label.to(device) # get data, send to gpu if needed
+        # img, label = img.to(device), label.to(device)
+        # get data, send to gpu if needed
         img = Var(img.float())
         # label = label.type(torch.float32)
         label = Var(label.type(torch.LongTensor))

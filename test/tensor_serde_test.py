@@ -80,7 +80,8 @@ class TestTensorPointerSerde(TestCase):
     #     assert x.id == xs['__FloatTensor__']['child']['___LocalTensor__']['id']
     #
     #     # correct owner
-    #     assert x.owner.id == xs['__FloatTensor__']['child']['___LocalTensor__']['owner']
+    #     assert x.owner.id ==\
+    #        xs['__FloatTensor__']['child']['___LocalTensor__']['owner']
     #
     #     # correct type
     #     assert type(x).__name__ == xs['__FloatTensor__']['type'].split(".")[-1]

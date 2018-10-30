@@ -186,7 +186,8 @@ class SocketWorker(BaseWorker):
         local tensors.
 
         :param query: a string or list of strings
-        :return: if self.is_pointer==True, this returns a set of pointer tensors. Otherwise, it returns the tensors.
+        :return: if self.is_pointer==True, this returns a set of pointer tensors.
+        Otherwise, it returns the tensors.
         """
 
         if self.is_pointer:

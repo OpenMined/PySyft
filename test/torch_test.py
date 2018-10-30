@@ -62,7 +62,10 @@ def setUpModule():
         "FloatTensor > _FixedPrecisionTensor > LongTensor > _LocalTensor"
     )
 
-    display_chain.tensor.fixp_mpc_gpt = "FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor"
+    display_chain.tensor.fixp_mpc_gpt = (
+        "FloatTensor > _FixedPrecisionTensor"
+        "> LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor"
+    )
 
     display_chain.var.local = (
         "Variable > _LocalTensor\n"
@@ -86,10 +89,14 @@ def setUpModule():
     )
 
     display_chain.var.fixp_mpc_gpt = (
-        "Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
-        " - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor\n"
-        " - - Variable > _FixedPrecisionTensor > Variable > _SNNTensor > Variable > _GeneralizedPointerTensor\n"
-        "   - FloatTensor > _FixedPrecisionTensor > LongTensor > _SNNTensor > LongTensor > _GeneralizedPointerTensor"
+        "Variable > _FixedPrecisionTensor > Variable > _SNNTensor "
+        "> Variable > _GeneralizedPointerTensor\n"
+        " - FloatTensor > _FixedPrecisionTensor > LongTensor"
+        "> _SNNTensor > LongTensor > _GeneralizedPointerTensor\n"
+        " - - Variable > _FixedPrecisionTensor > Variable > _SNNTensor"
+        "> Variable > _GeneralizedPointerTensor\n"
+        "   - FloatTensor > _FixedPrecisionTensor > LongTensor"
+        "> _SNNTensor > LongTensor > _GeneralizedPointerTensor"
     )
 
 
@@ -228,8 +235,8 @@ class TestChainTensor(TestCase):
 
         # Check chain on remote
         # TODO For now we don't reconstruct the grad chain one non-leaf variable (in our case a leaf
-        # variable is a variable that we sent), because we don't care about their gradient. But if we do,
-        # then this is a TODO!
+        # variable is a variable that we sent), because we don't care about their gradient.
+        # But if we do,then this is a TODO!
         ptr_id = z.child.id_at_location
         display = (
             "Variable > _PlusIsMinusTensor > _LocalTensor\n"
@@ -288,7 +295,7 @@ class TestChainTensor(TestCase):
             target = sy._PlusIsMinusTensor().on(torch.FloatTensor([1, 1]))
             target.child = target.child.child
             assert torch.equal(x.grad.data, target)
-        except:
+        except AttributeError:
             target = sy._PlusIsMinusTensor().on(torch.FloatTensor([1, 1]))
             target.child = target.child
             assert torch.equal(x.grad.data, target)
@@ -662,7 +669,7 @@ class TestTorchVariable(TestCase):
         assert (
             bob._objects[x2.child.id_at_location].child.grad.data == torch.ones(2, 2)
         ).all()
-        # In particular, you can call .grad on a syft tensor, which make .child and .grad commutative
+        # You can call .grad on a syft tensor, which make .child and .grad commutative
         assert (
             bob._objects[x2.child.id_at_location].grad.child.data == torch.ones(2, 2)
         ).all()
