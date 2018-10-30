@@ -2263,25 +2263,25 @@ class _TorchObject:
     def __gt__(self, *args, **kwargs):
         try:
             return self.child > args[0].child
-        except AttributeError:
+        except Exception:
             return self.native___gt__(*args, **kwargs)
 
     def __lt__(self, *args, **kwargs):
         try:
             return self.child < args[0].child
-        except AttributeError:
+        except Exception:
             return self.native___lt__(*args, **kwargs)
 
     def __le__(self, *args, **kwargs):
         try:
             return self.child <= args[0].child
-        except AttributeError:
+        except Exception:
             return self.native___le__(*args, **kwargs)
 
     def __ge__(self, *args, **kwargs):
         try:
             return self.child >= args[0].child
-        except AttributeError:
+        except Exception:
             return self.native___ge__(*args, **kwargs)
 
     def __eq__(self, *args, **kwargs):
@@ -2290,7 +2290,7 @@ class _TorchObject:
         else:
             try:
                 return self.child == args[0].child
-            except AttributeError:
+            except Exception:
                 return self.native___eq__(*args, **kwargs)
 
     def argmax(self):
