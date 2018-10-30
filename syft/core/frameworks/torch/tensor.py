@@ -2942,7 +2942,7 @@ class _TorchVariable(_TorchObject):
         """Initialise grad as an empty tensor."""
         if self.grad is None or torch_utils.is_tensor_empty(self.grad):
             var_grad = sy.Variable(sy.zeros(self.size()))
-            if type(var_grad.data) != type(self.data):
+            if type(var_grad.data) != type(self.data):  # noqa: E721
                 var_grad.data = var_grad.data.type(type(self.data))
             self.grad = var_grad
             self.grad.native_set_()
@@ -2957,7 +2957,7 @@ class _TorchVariable(_TorchObject):
         # Transform var_grad into an envelope compatible with .grad assignment
         if self.size() != var_grad.size():
             var_grad.data = sy.zeros(self.data.size())
-        if type(var_grad.data) != type(self.data):
+        if type(var_grad.data) != type(self.data):  # noqa: E721
             var_grad.data = var_grad.data.type(type(self.data))
 
         self.grad = var_grad
