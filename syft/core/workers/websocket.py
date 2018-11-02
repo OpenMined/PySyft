@@ -2,7 +2,7 @@ import websockets
 import asyncio
 import json
 
-from syft.core import utils
+from syft.core.frameworks.encode import decode
 from syft.core.workers import BaseWorker
 
 
@@ -178,7 +178,7 @@ class WebSocketWorker(BaseWorker):
         msg_wrapper_str = msg_wrapper_byte.decode("utf-8")
         if self.verbose:
             print("Received Command From:", self.uri, flush=True)
-        decoder = utils.PythonJSONDecoder(self)
+        decoder = decode(message=msg_wrapper_str, worker=self)
         msg_wrapper = decoder.decode(msg_wrapper_str)
         await websocket.send(self.process_message_type(msg_wrapper))
 
