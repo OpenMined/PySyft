@@ -30,7 +30,7 @@ class abstractarray(np.ndarray):
             # cache the local_worker object locally which we will
             # use for all outgoing communications
             if not hasattr(sy, "local_worker"):
-                hook = sy.TorchHook()
+                sy.TorchHook()
             owner = sy.local_worker
 
         self.owner = owner
@@ -296,6 +296,6 @@ exclude = [
 ]
 
 for attr in dir(np.ndarray):
-    if(attr not in exclude):
+    if attr not in exclude:
         method = get_array_ptr_override_method(attr)
         setattr(array_ptr, str(attr), method)
