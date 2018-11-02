@@ -44,7 +44,7 @@ class WebSocketWorker(BaseWorker):
 
     :Example Server:
 
-    >>> from syft.core.hooks import TorchHook
+    >>> from syft import TorchHook
     >>> from syft.core.workers import WebSocketWorker
     >>> hook = TorchHook()
     Hooking into Torch...
@@ -62,7 +62,7 @@ class WebSocketWorker(BaseWorker):
     :Example Client:
 
     >>> import torch
-    >>> from syft.core.hooks import TorchHook
+    >>> from syft import TorchHook
     >>> from syft.core.workers import WebSocketWorker
     >>> hook = TorchHook(local_worker=WebSocketWorker(id=0, port=8182))
     Starting Socket Worker...
@@ -85,6 +85,8 @@ class WebSocketWorker(BaseWorker):
      14
     [torch.FloatTensor of size 5]
     """
+
+    SERVER_INITIALIZED_MSG = "Server Socket has been initialized"
 
     def __init__(
         self,
@@ -113,7 +115,7 @@ class WebSocketWorker(BaseWorker):
             queue_size=queue_size,
         )
 
-        self.is_asyncronous = True
+        self.is_asyncronous = True  # TODO: Is this used?
         self.hook = hook
         self.hostname = hostname
         self.port = port
@@ -124,25 +126,25 @@ class WebSocketWorker(BaseWorker):
 
         if self.is_pointer:
             if self.verbose:
-                print("Attaching Pointer to WebSocket Worker....")
+                print("Attaching Pointer to WebSocket Worker....", flush=True)
             self.serversocket = None
             clientsocket = websockets.client.connect(self.uri)
             self.clientsocket = clientsocket
 
         else:
             if self.verbose:
-                print("Starting a Websocket Worker....")
+                print("Starting a Websocket Worker....", flush=True)
                 if not is_client_worker or self.is_pointer:
-                    print("Ready to recieve commands....")
+                    print("Ready to recieve commands....", flush=True)
                     self.serversocket = websockets.serve(
                         self._server_socket_listener, self.hostname, self.port
                     )
-                    print("Server Socket has been initialized")
+                    print(WebSocketWorker.SERVER_INITIALIZED_MSG, flush=True)
                     asyncio.get_event_loop().run_until_complete(self.serversocket)
                     asyncio.get_event_loop().run_forever()
 
                 else:
-                    print("Ready...")
+                    print("Ready...", flush=True)
 
     async def _client_socket_connect(self, json_request):
         """Establishes a connection to the server socket and waits for a
@@ -175,7 +177,7 @@ class WebSocketWorker(BaseWorker):
         msg_wrapper_byte = await websocket.recv()
         msg_wrapper_str = msg_wrapper_byte.decode("utf-8")
         if self.verbose:
-            print("Recieved Command From:", self.uri)
+            print("Received Command From:", self.uri, flush=True)
         decoder = utils.PythonJSONDecoder(self)
         msg_wrapper = decoder.decode(msg_wrapper_str)
         await websocket.send(self.process_message_type(msg_wrapper))
