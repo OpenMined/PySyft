@@ -29,26 +29,27 @@ class TestBaseWorker(TestCase):
 
 
 class TestWebSocketWorker(TestCase):
-
     def test_sending(self):
 
         # We redirect server's stdout and stderr to a pipe
         # to let the client know when the server is ready.
         server_pipe_output_fd, server_pipe_input_fd = os.pipe()
-        server_pipe_output = os.fdopen(server_pipe_output_fd, 'r')
-        server_pipe_input = os.fdopen(server_pipe_input_fd, 'w')
+        server_pipe_output = os.fdopen(server_pipe_output_fd, "r")
+        server_pipe_input = os.fdopen(server_pipe_input_fd, "w")
 
         def __server():
             os.close(server_pipe_output_fd)
             sys.stdout = sys.stderr = server_pipe_input
 
             hook = sy.TorchHook()
-            WebSocketWorker(hook=hook,
-                            id=2,
-                            port=8181,
-                            is_pointer=False,
-                            is_client_worker=False,
-                            verbose=True)
+            WebSocketWorker(
+                hook=hook,
+                id=2,
+                port=8181,
+                is_pointer=False,
+                is_client_worker=False,
+                verbose=True,
+            )
 
         server_process = Process(target=__server, args=())
         server_process.start()
@@ -76,23 +77,19 @@ class TestWebSocketWorker(TestCase):
         server_output_print_thread = Thread(target=__readln_print_server_msg_loop)
         server_output_print_thread.start()
 
-
         print("Waiting for server initialization.")
         while server_status != "initialized":
             time.sleep(0.1)
 
-
         print("Client starts...")
         hook = sy.TorchHook(local_worker=WebSocketWorker(id=111, port=8182))
-        remote_client = WebSocketWorker(hook=hook, id=2, port=8181,
-                                        is_pointer=True)
+        remote_client = WebSocketWorker(hook=hook, id=2, port=8181, is_pointer=True)
         hook.local_worker.add_worker(remote_client)
         x = sy.torch.FloatTensor([1, 2, 3, 4, 5]).send(remote_client)
         x2 = sy.torch.FloatTensor([1, 2, 3, 4, 4]).send(remote_client)
         y = x + x2 + x
 
         assert y.get() == (3, 6, 9, 12, 14)
-
 
         # Cleaning
         server_process.terminate()
