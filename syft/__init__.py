@@ -40,7 +40,7 @@ __all__ = [
     "array",
     "Variable",
     "Var",
-    "Parameter"
+    "Parameter",
 ]
 
 

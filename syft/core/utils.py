@@ -52,13 +52,15 @@ def pass_func_args(func: Callable) -> Callable:
 
     @functools.wraps(func)
     def pass_args(*args: Tuple[Any, ...], **kwargs: Dict[str, Any]):
-        # Return a new partial object which when called will behave like func called with the
-        # positional arguments args and keyword arguments keywords. If more arguments are
-        # supplied to the call, they are appended to args. If additional keyword arguments
-        # are supplied, they extend and override keywords.
-        # The partial() is used for partial function application which "freezes" some
-        # portion of a function's arguments and/or keywords resulting in a new object
-        # with a simplified signature.
+        """
+        Return a new partial object which when called will behave like func called
+        with the positional arguments args and keyword arguments keywords. If more
+        arguments are supplied to the call, they are appended to args. If additional
+        keyword arguments are supplied, they extend and override keywords.
+        The partial() is used for partial function application which "freezes" some
+        portion of a function's arguments and/or keywords resulting in a new object
+        with a simplified signature.
+        """
         return functools.partial(func, *args, **kwargs)
 
     return pass_args

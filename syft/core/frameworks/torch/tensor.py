@@ -40,8 +40,9 @@ class _SyftTensor:
             self.child = None
 
         self.id = id
-        # self.old_ids = None - this will only get initialized if self.set_id() is called, but i'm referencing it
-        # in this comment so that people know it can exist. It's a set()
+        # self.old_ids = None - this will only get initialized if self.set_id()
+        # is called, but i'm referencing it in this comment so that people know
+        # it can exist. It's a set()
         self.parent = parent
         self.torch_type = torch_type
         self.owner = owner  # should not be a (str, int)
@@ -311,8 +312,10 @@ class _SyftTensor:
         tensorvar wrapper.
 
         Example with _PlusIsMinusTensor:
-        x = sy.FloatTensor([1, 2, 3])       # the chain is FloatTensor > _LocalTensor
-        x = sy._PlusIsMinusTensor().on(x)   # the chain is FloatTensor > _PlusIsMinusTensor > _LocalTensor
+        x = sy.FloatTensor([1, 2, 3])
+        # the chain is FloatTensor > _LocalTensor
+        x = sy._PlusIsMinusTensor().on(x)
+        # the chain is FloatTensor > _PlusIsMinusTensor > _LocalTensor
         """
 
         cls = type(self)
@@ -499,7 +502,8 @@ class _LocalTensor(_SyftTensor):
             torch_utils.bind_tensor_nodes(syft_command["self"], response)
 
             if torch_utils.is_variable(response):
-                # Also wrap the data if it's a variable (don't use bind_tensor_nodes: the chain is not well formed yet)
+                # Also wrap the data if it's a variable
+                # (don't use bind_tensor_nodes: the chain is not well formed yet)
                 syft_command["self"].child.data = response.data
                 # And wrap the grad if there is one
                 if response.grad is not None:
@@ -515,7 +519,7 @@ class _LocalTensor(_SyftTensor):
                     response._child, (_SPDZTensor, _SNNTensor, _FixedPrecisionTensor)
                 )
                 return response
-            # Else, the response if not self. Iterate over the response(s) and wrap with a syft tensor
+            # Else, Iterate over the response(s) and wrap with a syft tensor
             except (AttributeError, AssertionError):
                 responses = response if isinstance(response, tuple) else (response,)
                 syft_responses = []
@@ -525,7 +529,8 @@ class _LocalTensor(_SyftTensor):
                         continue
 
                     if isinstance(resp, (int, float, bool)):
-                        # if not final worker, convert into Float Tensor, which comes with a _LocalTensor
+                        # if not final worker, convert into Float Tensor,
+                        # which comes with a _LocalTensor
                         if is_execution_remote:
                             resp = sy.zeros(1) + resp
                         else:  # Else don't wrap it
@@ -940,7 +945,8 @@ class _GeneralizedPointerTensor(_SyftTensor):
                 #     w: p.grad.data
                 #     for w, p in self.pointer_tensor_dict.items()
                 # }
-                # wrapper.grad.data = _GeneralizedPointerTensor(grad_data_pointer_dict).on(wrapper.grad.data)
+                # wrapper.grad.data = _GeneralizedPointerTensor(grad_data_pointer_dict)
+                # .on(wrapper.grad.data)
 
         return wrapper
 
@@ -1117,7 +1123,7 @@ class _PointerTensor(_SyftTensor):
                         original_pointer=msg_obj["original_pointer"],
                     )
                 else:
-                    # This existing syft tensor already has a parent, we will reuse it. (see tensorvar.deser)
+                    # This existing syft tensor already has a parent,  (see tensorvar.deser)
                     syft_obj = previous_pointer
             else:  # We point at the Pointer (same part as every syft tensors)
                 previous_pointer = worker.get_pointer_to(
@@ -1136,7 +1142,7 @@ class _PointerTensor(_SyftTensor):
                         original_pointer=msg_obj["original_pointer"],
                     )
                 else:
-                    # This existing syft tensor already has a parent, we will reuse it. (see tensorvar.deser)
+                    # This existing syft tensor already has a parent (see tensorvar.deser)
                     syft_obj = previous_pointer
         return syft_obj
 
@@ -1165,10 +1171,12 @@ class _PointerTensor(_SyftTensor):
         self.owner.register(syft_tensor)
 
         if torch_utils.is_variable_name(self.torch_type):
-            # FIXME: this check is only here because when you bring back a GenPtrTensor from remote,
-            # There is a pb at deser which is that the ptrs in the gpt.pointer_dict are not connected
-            # with the .data and .grad attributes, so there is a variable pointer without a .data attr
-            # if which case we cannot perform this. This is an edge case but it should be fixed.
+            """
+            FIXME: this check is only here because when you bring back a GenPtrTensor from remote,
+            There is a pb at deser which is that the ptrs in the gpt.pointer_dict are not connected
+            with the .data and .grad attributes, so there is a variable pointer without a .data attr
+            if which case we cannot perform this. This is an edge case but it should be fixed.
+            """
             if hasattr(self, "data"):
                 tensorvar.data.child.id = self.data.id
                 self.owner.register(tensorvar.data.child)
@@ -1830,7 +1838,7 @@ class _FixedPrecisionTensor(_SyftTensor):
 
         max_vals = self[:, 0:1]
         for i in range(1, my_shape[1]):
-            new_vals = self[:, i : i + 1]
+            new_vals = self[:, i : i + 1]  # noqa: 501
             gate = max_vals > new_vals
             left = gate * max_vals
 
@@ -1869,7 +1877,8 @@ class _SPDZTensor(_SyftTensor):
 
     def __init__(self, shares=None, child=None, torch_type=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Fixme: remove the share on init, declaring a SPDZTensor should autmatically create a _GeneralizedPointerTensor
+        # Fixme: remove the share on init,
+        # declaring a SPDZTensor should autmatically create a _GeneralizedPointerTensor
 
         if shares is not None:
             if isinstance(shares, sy._GeneralizedPointerTensor):
@@ -2254,25 +2263,25 @@ class _TorchObject:
     def __gt__(self, *args, **kwargs):
         try:
             return self.child > args[0].child
-        except:
+        except Exception:
             return self.native___gt__(*args, **kwargs)
 
     def __lt__(self, *args, **kwargs):
         try:
             return self.child < args[0].child
-        except:
+        except Exception:
             return self.native___lt__(*args, **kwargs)
 
     def __le__(self, *args, **kwargs):
         try:
             return self.child <= args[0].child
-        except:
+        except Exception:
             return self.native___le__(*args, **kwargs)
 
     def __ge__(self, *args, **kwargs):
         try:
             return self.child >= args[0].child
-        except:
+        except Exception:
             return self.native___ge__(*args, **kwargs)
 
     def __eq__(self, *args, **kwargs):
@@ -2281,7 +2290,7 @@ class _TorchObject:
         else:
             try:
                 return self.child == args[0].child
-            except:
+            except Exception:
                 return self.native___eq__(*args, **kwargs)
 
     def argmax(self):
@@ -2384,15 +2393,8 @@ class _TorchObject:
         precision_fractional=3,
         already_encoded=False,
     ):
-
-        if torch_utils.is_variable(self):
-            if not hasattr(self, "grad") or self.grad is None:
-                self.init_grad_()
-
-        if isinstance(self.child, _PointerTensor):
-            return self.owner._execute_call("fix_precision", self)
-        else:
-            fpt = lambda tensorvar, is_encoded: _FixedPrecisionTensor(
+        def _fix_precison(tensorvar, is_encoded):
+            return _FixedPrecisionTensor(
                 tensorvar,
                 torch_type=tensorvar.child.torch_type,
                 field=field,
@@ -2401,6 +2403,14 @@ class _TorchObject:
                 already_encoded=is_encoded,
             ).wrap(True)
 
+        if torch_utils.is_variable(self):
+            if not hasattr(self, "grad") or self.grad is None:
+                self.init_grad_()
+
+        if isinstance(self.child, _PointerTensor):
+            return self.owner._execute_call("fix_precision", self)
+        else:
+            fpt = _fix_precison
             if torch_utils.is_variable(self):
                 _var = fpt(self, already_encoded)
                 # This 2nc fpt() is just a linking:
@@ -2562,7 +2572,7 @@ class _TorchTensor(_TorchObject):
 
         syft_obj = sy._SyftTensor.deser_routing(child_type, child_obj, worker, acquire)
 
-        # If syft_obj has a parent, then it's an already existing object, with a legitimate torch wrapper
+        # If syft_obj has a parent, then it's an already existing object
         if syft_obj.parent is not None:
             return syft_obj.parent
 
@@ -2794,7 +2804,10 @@ class _TorchVariable(_TorchObject):
         """
         if isinstance(self.child, sy._GeneralizedPointerTensor) and update_ptr_wrapper:
             raise TypeError(
-                "Can't update the wrapper of a _GeneralizedPointerTensor. Set update_ptr_wrapper=False."
+                (
+                    "Can't update the wrapper of a _GeneralizedPointerTensor. "
+                    "Set update_ptr_wrapper=False."
+                )
             )
 
         # returns a Variable object wrapping a SyftTensor
@@ -2852,7 +2865,7 @@ class _TorchVariable(_TorchObject):
             if self.grad is not None:
                 tensor_msg["grad"] = self.grad.ser(private, as_dict, is_head)
             elif self.data.dim() > 0:
-                # Create a .grad just if there is some data in the tensor (to avoid recursion errors)
+                # Create a .grad just if there is data in the tensor (to avoid recursion errors)
                 self.init_grad_()
                 tensor_msg["grad"] = self.grad.ser(private, as_dict, is_head)
 
@@ -2883,7 +2896,7 @@ class _TorchVariable(_TorchObject):
             child_type, msg_child, worker, acquire
         )
 
-        # If syft_obj has a parent, then it's an already existing object, with a legitimate torch wrapper
+        # If syft_obj has a parent, then it's an already existing object
         if var_syft_obj.parent is not None:
             return var_syft_obj.parent
 
@@ -2929,7 +2942,7 @@ class _TorchVariable(_TorchObject):
         """Initialise grad as an empty tensor."""
         if self.grad is None or torch_utils.is_tensor_empty(self.grad):
             var_grad = sy.Variable(sy.zeros(self.size()))
-            if type(var_grad.data) != type(self.data):
+            if type(var_grad.data) != type(self.data):  # noqa: E721
                 var_grad.data = var_grad.data.type(type(self.data))
             self.grad = var_grad
             self.grad.native_set_()
@@ -2944,7 +2957,7 @@ class _TorchVariable(_TorchObject):
         # Transform var_grad into an envelope compatible with .grad assignment
         if self.size() != var_grad.size():
             var_grad.data = sy.zeros(self.data.size())
-        if type(var_grad.data) != type(self.data):
+        if type(var_grad.data) != type(self.data):  # noqa: E721
             var_grad.data = var_grad.data.type(type(self.data))
 
         self.grad = var_grad

@@ -223,7 +223,7 @@ def enforce_owner(obj, owner):
             owner.hook.local_worker.de_register(obj)
         try:
             obj.owner = owner
-        except:
+        except AttributeError:
             """sometimes this failes."""
 
 
@@ -752,7 +752,7 @@ def assert_is_chain_well_formed(
             assert end_chain.child is None, "Pointer shouldnt have a child"
             return True
         elif isinstance(end_chain, sy._LocalTensor):
-            # we allow to have inner tensors in the chain, provided that its parent is a FixedPTensor
+            # we allow inner tensors in the chain, provided that its parent is a FixedPTensor
             if not isinstance(obj.parent, sy._FixedPrecisionTensor):
                 assert obj.parent.id == end_chain.id, (
                     "TensorVar parent should be the tail LocalTensor"

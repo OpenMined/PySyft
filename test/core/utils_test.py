@@ -63,7 +63,9 @@
 #         json_decoder = PythonJSONDecoder(local)
 #         for i in range(len(test_json_dumps)):
 #             if i<= 19:
-#                 self.assertIs(json_decoder.custom_obj_hook(test_json_dumps[i]), objects[i][0])
+#                 self.assertIs(
+#                   json_decoder.custom_obj_hook(test_json_dumps[i]), objects[i][0])
 #             else:
-#                 self.assertEqual(json_decoder.custom_obj_hook(test_json_dumps[i]), objects[i][0])
+#                 self.assertEqual(
+#                   json_decoder.custom_obj_hook(test_json_dumps[i]), objects[i][0])
 #

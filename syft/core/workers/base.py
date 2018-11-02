@@ -415,7 +415,6 @@ class BaseWorker(ABC):
                         syft_grad_data_object = tensorvar.grad.data.child
                         self.de_register(syft_grad_data_object)
 
-
                 # deregister the object
                 self.de_register(object)
 
@@ -632,7 +631,7 @@ class BaseWorker(ABC):
 
         try:
             obj = self._objects[remote_key]
-        except:
+        except KeyError:
             msg = (
                 'Tensor "'
                 + str(remote_key)
@@ -647,12 +646,16 @@ class BaseWorker(ABC):
                 + str(self.id)
                 + " which does not exist!!! "
             )
-            msg += "Use .send() and .get() on all your tensors to make sure they're on the same machines.\n\n"
-            msg += "If you think this tensor does exist, check the ._objects dictionary on the worker and see for"
-            msg += " yourself!!! "
-            msg += "The most common reason this error happens is because someone calls .get() on the object's"
-            msg += " pointer without realizing it (which deletes the remote object and sends it to the pointer)."
-            msg += " Check your code to make sure you haven't already called .get() on this pointer!!!"
+            msg += (
+                "Use .send() and .get() on all your tensors to make sure they're"
+                "on the same machines.\n\n"
+                "If you think this tensor does exist, check the ._objects dictionary"
+                "on the worker and see for yourself!!! "
+                "The most common reason this error happens is because someone calls"
+                ".get() on the object's pointer without realizing it (which deletes "
+                "the remote object and sends it to the pointer). Check your code to "
+                "make sure you haven't already called .get() on this pointer!!!"
+            )
 
             raise Exception(msg)
         return obj
@@ -1093,8 +1096,10 @@ class BaseWorker(ABC):
                     or new_grad_data_id is None
                 ):
                     raise AttributeError(
-                        "Please provide the new_data_id, new_grad_id, and new_grad_data_id args, to be able to point to"
-                        + "Var.data, .grad"
+                        (
+                            "Please provide the new_data_id, new_grad_id, and "
+                            "new_grad_data_id args, to be able to point to Var.data, .grad"
+                        )
                     )
 
                 if self.get_pointer_to(recipient, new_data_id) is not None:
@@ -1131,9 +1136,10 @@ class BaseWorker(ABC):
 
         if self is recipient:
             raise MemoryError(
-                "The recipient {} is the same as the owner {} of the object {} that you are trying to send".format(
-                    recipient, self, object.id
-                )
+                (
+                    "The recipient {} is the same as the owner {} of the object {}"
+                    "that you are trying to send"
+                ).format(recipient, self, object.id)
             )
 
         object = encode.encode(object, retrieve_pointers=False, private_local=False)
@@ -1204,7 +1210,8 @@ class BaseWorker(ABC):
         return object
 
     def get_pointer_to(self, location, id_at_location):
-        # We keep a dict with keys = owners and subkeys id@loc : self._pointers[location][id@loc] = obj_id
+        # We keep a dict with keys = owners
+        # and subkeys id@loc : self._pointers[location][id@loc] = obj_id
         # But it has to be updated every time you add, SEND or de_register a pointer
         if not isinstance(location, (int, str)):
             location = location.id
@@ -1212,7 +1219,8 @@ class BaseWorker(ABC):
         if location in self._pointers.keys():
             if id_at_location in self._pointers[location].keys():
                 object_id = self._pointers[location][id_at_location]
-                # Note that the following condition can be false if you send multiple times a pointer,
-                # Because then we don't de-register the old pointer in self._pointers
+                # Note that the following condition can be false if you send a pointer,
+                # multiple times Because then we don't de-register the old pointer
+                # in self._pointers
                 if object_id in self._objects:
                     return self._objects[object_id]
