@@ -125,7 +125,8 @@ class TorchHook:
                 # if the local_worker already exists, then it MUST not know about the hook which is
                 # just being created. Thus, we must inform it.
                 self.local_worker.hook = self
-
+                
+            #Iterates through torch tensors to add PySyft tensor functionalities
             for typ in torch.tensorvar_types:
                 self._hook_native_tensors_and_variables(typ)
                 self._hook_syft_tensor_types(typ)
