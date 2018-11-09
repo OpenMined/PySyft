@@ -1,8 +1,8 @@
 black
+coverage
 ipykernel
 msgpack
 lz4
 pre-commit
 sphinx_rtd_theme
-torch
 websockets
