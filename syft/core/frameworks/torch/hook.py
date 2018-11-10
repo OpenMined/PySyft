@@ -146,8 +146,6 @@ class TorchHook:
            parameters: tensor_type: A Torch tensor
         """
 
-        # Overload 'special' methods here
-
         # Reinitialize init method of tensor
         self._add_registration_to___init__(tensor_type, register_child_instead=True)
 
@@ -184,13 +182,15 @@ class TorchHook:
     def _add_registration_to___init__(
         hook_self, tensorvar_type, register_child_instead=False
     ):
-        """Overloads tensor_type.__new__ or Variable.__new__"""
+
+        """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors to add PySyft tensor functionality"""
 
         # TODO: This is added because of the following contradiction: instanciate x = FloatTensor()
         # and ask x.__module__, you'll get `sy.core.frameworks.torch.tensor.FloatTensor`
         # but now ask for dir(sy.core.frameworks.torch.tensor) you'll find no FloatTensor attribute
         # and x.float() will raise an exception because of this.
         # Why is x.__module__ == 'sy.core...'? How can we do this with elegance?
+
         if tensorvar_type.__module__ != sy._SyftTensor.__module__:
             setattr(
                 sy.core.frameworks.torch.tensor, tensorvar_type.__name__, tensorvar_type
@@ -202,6 +202,8 @@ class TorchHook:
         def new___init__(
             cls, *args, owner=None, id=None, skip_register=False, **kwargs
         ):
+
+            # By Default assigns Local worker if user has not specified specific tensor type
 
             if owner is None:
                 owner = hook_self.local_worker
@@ -227,7 +229,10 @@ class TorchHook:
         tensorvar_type.__init__ = new___init__
 
     def _hook_properties(hook_self, tensor_type):
-        """Overloads tensor_type properties."""
+
+        """Overloads tensor_type properties.
+           Parameters: tensor_type: Torch tensor
+        """
 
         @property
         def child(self):
@@ -292,7 +297,12 @@ class TorchHook:
         tensor_type.owner = owner
 
     def _which_methods_should_we_auto_overload(self, tensor_type=torch.FloatTensor):
-        """Creates list of methods to auto overload."""
+
+        """Creates list of methods to auto overload
+           Parameters: Torch Tensor type (default: Float Tensor)
+           Return: List of methods to be overloaded
+        """
+
         to_overload = []
 
         for attr in dir(tensor_type):
@@ -320,7 +330,11 @@ class TorchHook:
         return to_overload
 
     def _rename_native_functions(self, tensor_type):
-        """Renames functions that are auto overloaded."""
+
+        """Renames functions that are auto overloaded.
+           Parameters: tensor_type: Torch tensor
+        """
+
         for attr in self.to_auto_overload[tensor_type]:
 
             lit = getattr(tensor_type, attr)
@@ -332,10 +346,17 @@ class TorchHook:
             setattr(tensor_type, attr, None)
 
     def _assign_methods_to_use_child(self, tensor_type):
-        """Assigns methods to use as child for auto overloaded functions."""
+
+        """Assigns methods to use as child for auto overloaded functions.
+           Parameters: tensor_type:Torch Tensor
+        """
+
+        # Iterate through auto overloaded tensor methods
         for attr in self.to_auto_overload[tensor_type]:
 
             def forward_method_to_child(self, *args, **kwargs):
+
+                # Method that accepts auto overloaded methods
 
                 child_args = torch_utils.get_child_in_args(*args, **kwargs)
 
@@ -389,7 +410,11 @@ class TorchHook:
                 setattr(tensor_type, attr, getattr(parent_syft_obj, attr))
 
     def _hook_LocalTensor(self, tensor_type):
-        """Overloads LocalTensor."""
+
+        """Overloads LocalTensor.
+           Parameters: tensor_type:Torch Tensor
+        """
+
         # iterate through all methods and tell them to call the native function
         # on self.child
         for attr in self.to_auto_overload[tensor_type]:
@@ -425,7 +450,11 @@ class TorchHook:
                 setattr(_LocalTensor, attr, new_attr)
 
     def _hook_SyftTensor(hook_self, tensor_type):
-        """Overloads SyftTensor."""
+
+        """Overloads SyftTensor.
+           Parameters: tensor_type:Torch Tensor
+        """
+
         hook_self._add_registration_to___init__(_SyftTensor)
 
         for attr in hook_self.to_auto_overload[tensor_type]:
@@ -453,7 +482,11 @@ class TorchHook:
                 setattr(_SyftTensor, attr, new_attr)
 
     def _hook_PointerTensor(self, tensor_type):
-        """Overloads PointerTensor."""
+
+        """Overloads PointerTensor.
+           Parameters: tensor_type:Torch Tensor
+        """
+
         for attr in self.to_auto_overload[tensor_type]:
             # # if we haven't already overloaded this method
             # if attr not in dir(_PointerTensor) or getattr(_PointerTensor, attr) is None:
@@ -461,6 +494,10 @@ class TorchHook:
             setattr(_PointerTensor, attr, self._get_overloaded_method(attr))
 
     def _hook_GeneralizedPointerTensor(self, tensor_type):
+
+        """Overloads PointerTensor.
+           Parameters: tensor_type:Torch Tensor
+        """
 
         for attr in self.to_auto_overload[tensor_type]:
             # # if we haven't already overloaded this method
@@ -594,7 +631,10 @@ class TorchHook:
         sy.Variable.native_backward = new_backward
 
     def _hook_module(self):
-        """Overloading for torch.nn.Module."""
+
+        """Overloading torch.nn.Module with PySyft functionality, the primary module responsible for core ML functionality such as
+           Neural network layers and loss functions
+        """
 
         def module_is_missing_grad(model):
             """Overloads missing grad parameter in model."""
