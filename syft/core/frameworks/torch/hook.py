@@ -126,7 +126,7 @@ class TorchHook:
                 # just being created. Thus, we must inform it.
                 self.local_worker.hook = self
 
-            #Iterates through torch tensors to add PySyft tensor functionalities
+            # Iterates through torch tensors to add PySyft tensor functionalities
 
             for typ in torch.tensorvar_types:
                 self._hook_native_tensors_and_variables(typ)
@@ -141,25 +141,38 @@ class TorchHook:
             sy.local_worker = self.local_worker
 
     def _hook_native_tensors_and_variables(self, tensor_type):
-        """Overloads given tensor_type (native)"""
+
+        """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality
+           parameters: tensor_type: A Torch tensor
+        """
+
         # Overload 'special' methods here
 
+        # Reinitialize init method of tensor
         self._add_registration_to___init__(tensor_type, register_child_instead=True)
 
+        # Overaload tensor properties
         self._hook_properties(tensor_type)
 
+        # Returns a list of methods to be overloaded  which would be saved in a dictionary variable to_auto_overload with tensor_type being the key
         self.to_auto_overload[
             tensor_type
         ] = self._which_methods_should_we_auto_overload(tensor_type)
 
+        # Rename native functions
         self._rename_native_functions(tensor_type)
 
         self._assign_methods_to_use_child(tensor_type)
 
+        # Overload auto overloaded with Torch methods
         self._add_methods_from__TorchObject(tensor_type)
 
     def _hook_syft_tensor_types(self, tensor_type):
-        """Overloads syft tensor_types."""
+
+        """Overloads Torch Tensors with Syft tensor types
+           parameters: tensor_type: A Torch tensor
+        """
+
         self._hook_LocalTensor(tensor_type)
 
         self._hook_SyftTensor(tensor_type)
