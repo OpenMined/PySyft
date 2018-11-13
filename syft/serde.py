@@ -60,10 +60,21 @@ def deserialize(binary: bin, compressed=True) -> object:
 # Chosen Compression Algorithm
 
 def compress(decompressed_input_bin: bin) -> bin:
+    """This function compresses a binary using LZ4
+
+    Args:
+        bin: binary to be compressed
+
+    Returns:
+        bin: a compressed binary
+
+    """
+
     return lz4.frame.compress(decompressed_input_bin)
 
 
 def decompress(compressed_input_bin: bin) -> bin:
+    """"""
     return lz4.frame.decompress(compressed_input_bin)
 
 
