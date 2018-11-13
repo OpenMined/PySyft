@@ -17,3 +17,13 @@ class TupleSerde(TestCase):
         input = set(["hello", "world"])
         target = set(["hello", "world"])
         assert syft.serde._simplify(input) == target
+
+    def test_float_serialize(self):
+        input = 5.6
+        target = 5.6
+        assert syft.serde._simplify(input) == target
+
+    def test_int_serialize(self):
+        input = 5
+        target = 5
+        assert syft.serde._simplify(input) == target
