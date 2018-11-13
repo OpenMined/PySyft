@@ -334,7 +334,7 @@ class TorchHook:
 
     def _rename_native_functions(self, tensor_type):
 
-        """Renames functions that are auto overloaded.
+        """Renames functions that are that not auto overloaded as native functions
            Parameters: tensor_type: Torch tensor
         """
 
@@ -458,7 +458,7 @@ class TorchHook:
 
     def _hook_SyftTensor(hook_self, tensor_type):
 
-        """Overloads SyftTensor.
+        """Overloads SyftTensor
            Parameters: tensor_type:Torch Tensor
         """
 
@@ -490,7 +490,7 @@ class TorchHook:
 
     def _hook_PointerTensor(self, tensor_type):
 
-        """Overloads PointerTensor.
+        """Overloads PointerTensor
            Parameters: tensor_type:Torch Tensor
         """
 
@@ -502,7 +502,7 @@ class TorchHook:
 
     def _hook_GeneralizedPointerTensor(self, tensor_type):
 
-        """Overloads PointerTensor.
+        """Overloads PointerTensor
            Parameters: tensor_type:Torch Tensor
         """
 
@@ -644,7 +644,7 @@ class TorchHook:
         """
 
         def module_is_missing_grad(model):
-            """Overloads missing grad parameter in model."""
+            """Checks if all the parameters in the model have been assigned a gradient"""
             missing_grad = False
             for p in model.parameters():
                 if p.grad is None:
@@ -652,7 +652,7 @@ class TorchHook:
             return missing_grad
 
         def create_grad_objects(model):
-            """Overloads create grad parameter for model."""
+            """Assigns gradient to model parameters if not assigned"""
             for p in model.parameters():
                 o = p.sum()
                 o.backward()
@@ -671,7 +671,7 @@ class TorchHook:
         torch.nn.Module.send = module_send_
 
         def module_get_(self):
-            """Overload get from remote for torch.nn.Module."""
+            """Get model parameters"""
             for p in self.parameters():
                 p.get()
 
