@@ -97,6 +97,7 @@ simplifiers = {}
 simplifiers[torch.Tensor] = _simplify_torch_tensor
 simplifiers[tuple] = _simplify_collection
 simplifiers[list] = _simplify_collection
+simplifiers[set] = _simplify_collection
 
 
 def _detail(obj):
