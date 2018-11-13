@@ -125,10 +125,6 @@ def _simplify(obj):
     Returns:
         an simple Python object which msgpack can serialize
 
-    Raises:
-        ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
-        characters.
-
     """
 
     try:
