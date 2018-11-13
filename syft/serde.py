@@ -96,7 +96,27 @@ def _detail_collection(my_collection):
 # High Level Simplification Router
 
 def _simplify(obj):
-    """This function is supposed """
+    """This function takes an object as input and returns a simple
+    Python object which is supported by the chosen serialization
+    method (such as JSON or msgpack). The reason we have this function
+    is that some objects are either NOT supported by high level (fast)
+    serializers OR the high level serializers don't support the fastest
+    form of serialization. For example, PyTorch tensors have custom pickle
+    functionality thus its better to pre-serialize PyTorch tensors using
+    pickle and then serialize the binary in with the rest of the message
+    being sent.
+
+    Args:
+        obj: an object which may need to be simplified
+
+    Returns:
+        an simple Python object which msgpack can serialize
+
+    Raises:
+        ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
+        characters.
+
+    """
 
     try:
         # check to see if there is a simplifier
