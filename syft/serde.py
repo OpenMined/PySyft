@@ -21,11 +21,11 @@ def base_deserialize(string):
     return msgpack.loads(string)
 
 
-def serialize_torch_tensor(tensor):
+def simplify_torch_tensor(tensor):
     return pickle.dumps(tensor)
 
 
-def deserialize_torch_tensor(tensor):
+def detail_torch_tensor(tensor):
     return pickle.loads(tensor)
 
 
@@ -61,8 +61,9 @@ def simplify(obj):
 
 
 simplifiers = {}
-simplifiers[torch.Tensor] = serialize_torch_tensor
+simplifiers[torch.Tensor] = simplify_torch_tensor
 simplifiers[tuple] = simplify_collection
+simplifiers[list] = simplify_collection
 
 
 def detail(obj):
@@ -75,4 +76,4 @@ def detail(obj):
 detailers = {}
 detailers[tuple] = detail_collection
 detailers[list] = detail_collection
-detailers[bytes] = deserialize_torch_tensor
+detailers[bytes] = detail_torch_tensor
