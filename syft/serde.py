@@ -156,17 +156,18 @@ def _simplify(obj: object) -> object:
     """
 
     try:
+
         # check to see if there is a simplifier
         # for this type. If there is, run return
         # the simplified object
         return simplifiers[type(obj)](obj)
 
     except KeyError:
+
         # if there is not a simplifier for this
         # object, then the object is already a
         # simple python object and we can just
         # return it
-
         return obj
 
 
@@ -179,10 +180,32 @@ simplifiers[set] = _simplify_collection
 
 
 def _detail(obj: object) -> object:
-    t = type(obj)
-    if t in detailers:
-        return detailers[t](obj)
-    return obj
+    """This function reverses the functionality of _simplify. Where applicable,
+    it converts simple objects into more complex objects such as converting
+    binary objects into torch tensors. Read _simplify for more information on
+    why _simplify and _detail are needed.
+
+    Args:
+        obj: a simple Python object which msgpack deserialized
+
+    Returns:
+        obj: a more complex Python object which msgpack would have had trouble
+            deserializing directly.
+
+    """
+    try:
+        # check to see if there is a detailer
+        # for this type. If there is, run return
+        # the detailed object
+        return detailers[type(obj)](obj)
+
+    except KeyError:
+
+        # if there is not a detailer for this
+        # object, then the object is already a
+        # correct python object and we can just
+        # return it
+        return obj
 
 
 detailers = {}
