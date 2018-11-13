@@ -37,6 +37,7 @@ import lz4
 
 # High Level Public Functions (these are the ones you use)
 
+
 def serialize(obj: object, compress=True) -> bin:
 
     simple_objects = _simplify(obj)
@@ -59,6 +60,7 @@ def deserialize(binary: bin, compressed=True) -> object:
 
 # Chosen Compression Algorithm
 
+
 def compress(decompressed_input_bin: bin) -> bin:
     return lz4.frame.compress(decompressed_input_bin)
 
@@ -68,6 +70,7 @@ def decompress(compressed_input_bin: bin) -> bin:
 
 
 # Simplify/Detail Torch Tensors
+
 
 def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     """
@@ -105,6 +108,7 @@ def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
 
 
 # Simplify/Detail Collections (list, set, tuple, etc.)
+
 
 def _simplify_collection(my_collection: Collection) -> Collection:
     """This function is designed to search a collection for any objects
@@ -215,7 +219,8 @@ def _simplify(obj: object) -> object:
         # check to see if there is a simplifier
         # for this type. If there is, run return
         # the simplified object
-        return simplifiers[type(obj)](obj)
+        current_type = type(obj)
+        return (simplifiers[current_type][0], simplifiers[current_type][1](obj))
 
     except KeyError:
 
@@ -228,10 +233,11 @@ def _simplify(obj: object) -> object:
 
 simplifiers = {}
 
-simplifiers[torch.Tensor] = _simplify_torch_tensor
-simplifiers[tuple] = _simplify_collection
-simplifiers[list] = _simplify_collection
-simplifiers[set] = _simplify_collection
+simplifiers[torch.Tensor] = [0, _simplify_torch_tensor]
+simplifiers[tuple] = [1, _simplify_collection]
+simplifiers[list] = [2, _simplify_collection]
+simplifiers[set] = [3, _simplify_collection]
+simplifiers[dict] = [4, _simplify_dictionary]
 
 
 def _detail(obj: object) -> object:
@@ -248,23 +254,16 @@ def _detail(obj: object) -> object:
             deserializing directly.
 
     """
-    try:
-        # check to see if there is a detailer
-        # for this type. If there is, run return
-        # the detailed object
-        return detailers[type(obj)](obj)
-
-    except KeyError:
-
-        # if there is not a detailer for this
-        # object, then the object is already a
-        # correct python object and we can just
-        # return it
+    if type(obj) == tuple:
+        return detailers[obj[0]](obj[1])
+    else:
         return obj
 
 
-detailers = {}
-detailers[tuple] = _detail_collection
-detailers[list] = _detail_collection
-detailers[set] = _detail_collection
-detailers[bytes] = _detail_torch_tensor
+detailers = [
+    _detail_torch_tensor,
+    _detail_collection,
+    _detail_collection,
+    _detail_collection,
+    _detail_dictionary,
+]
