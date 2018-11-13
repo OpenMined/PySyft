@@ -27,7 +27,7 @@ tuple type. The same is true for all other simplifier/detailer functions.
 
 By default, we serialize using msgpack and compress using lz4.
 """
-
+from typing import Collection
 import pickle
 import torch
 import msgpack
@@ -35,43 +35,53 @@ import lz4
 
 # High Level Public Functions (these are the ones you use)
 
+
 def serialize(obj, compress=True):
 
     simple_objects = _simplify(obj)
     bin = msgpack.dumps(simple_objects)
 
-    if(compress):
+    if compress:
         return compress(bin)
     else:
         return bin
 
+
 def deserialize(bin, compressed=True):
 
-    if(compressed):
+    if compressed:
         bin = decompress(bin)
 
     simple_objects = msgpack.loads(bin)
     return _detail(simple_objects)
 
+
 # Chosen Compression Algorithm
+
 
 def compress(decompressed_input_bin):
     return lz4.frame.compress(decompressed_input_bin)
 
+
 def decompress(compressed_input_bin):
     return lz4.frame.decompress(compressed_input_bin)
 
+
 # Torch Tensor
+
 
 def _simplify_torch_tensor(tensor):
     return pickle.dumps(tensor)
 
+
 def _detail_torch_tensor(tensor):
     return pickle.loads(tensor)
 
+
 # Collections (list, set, tuple, etc.)
 
-def _simplify_collection(my_collection):
+
+def _simplify_collection(my_collection: Collection) -> Collection:
     # Step 0: get collection type for later use and itialize empty list
     my_type = type(my_collection)
     pieces = list()
@@ -83,7 +93,8 @@ def _simplify_collection(my_collection):
     # Step 2: convert back to original type and return serialization
     return my_type(pieces)
 
-def _detail_collection(my_collection):
+
+def _detail_collection(my_collection: Collection) -> Collection:
 
     pieces = list()
 
@@ -93,7 +104,9 @@ def _detail_collection(my_collection):
 
     return pieces
 
+
 # High Level Simplification Router
+
 
 def _simplify(obj):
     """This function takes an object as input and returns a simple
@@ -138,6 +151,7 @@ simplifiers = {}
 simplifiers[torch.Tensor] = _simplify_torch_tensor
 simplifiers[tuple] = _simplify_collection
 simplifiers[list] = _simplify_collection
+simplifiers[set] = _simplify_collection
 
 
 def _detail(obj):
