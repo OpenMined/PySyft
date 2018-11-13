@@ -146,10 +146,10 @@ class TorchHook:
            parameters: tensor_type: A Torch tensor
         """
 
-        # Reinitialize init method of tensor
+        # Reinitialize init method of Torch tensor with Syft init
         self._add_registration_to___init__(tensor_type, register_child_instead=True)
 
-        # Overaload tensor properties
+        # Overaload Torch tensor properties with Syft properties
         self._hook_properties(tensor_type)
 
         # Returns a list of methods to be overloaded  which would be saved in a dictionary variable to_auto_overload with tensor_type being the key
@@ -167,7 +167,7 @@ class TorchHook:
 
     def _hook_syft_tensor_types(self, tensor_type):
 
-        """Overloads Torch Tensors with Syft tensor types
+        """Overloads Torch Tensors with all Syft tensor types
            parameters: tensor_type: A Torch tensor
         """
 
@@ -230,8 +230,10 @@ class TorchHook:
 
     def _hook_properties(hook_self, tensor_type):
 
-        """Overloads tensor_type properties.
+        """Overloads tensor_type properties 
+        
            Parameters: tensor_type: Torch tensor
+           
         """
 
         @property
@@ -271,6 +273,7 @@ class TorchHook:
 
         # TODO: this should not be possible, but it should also be possible to define a FloatTensor
         # with a specific id. This is in theory possible, but it doesnt seem to work in practice
+
         @id.setter
         def id(self, new_id):
             self.child.id = new_id
@@ -298,7 +301,7 @@ class TorchHook:
 
     def _which_methods_should_we_auto_overload(self, tensor_type=torch.FloatTensor):
 
-        """Creates list of methods to auto overload
+        """Creates list of Torch methods to auto overload except methods included in exclusion list  
            Parameters: Torch Tensor type (default: Float Tensor)
            Return: List of methods to be overloaded
         """
@@ -371,7 +374,11 @@ class TorchHook:
                 setattr(tensor_type, attr, new_attr)
 
     def _add_methods_from__TorchObject(self, tensor_type):
-        """Add methods to auto overloaded functions."""
+        """Add methods to auto overloaded functions.
+        
+           Parameters: tensor_type: Torch Tensor
+        
+        """
         exclude = [
             "__class__",
             "__delattr__",
@@ -411,7 +418,7 @@ class TorchHook:
 
     def _hook_LocalTensor(self, tensor_type):
 
-        """Overloads LocalTensor.
+        """Overloads LocalTensor
            Parameters: tensor_type:Torch Tensor
         """
 
