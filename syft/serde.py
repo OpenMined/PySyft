@@ -66,17 +66,44 @@ def decompress(compressed_input_bin: bin) -> bin:
     return lz4.frame.decompress(compressed_input_bin)
 
 
-# Torch Tensor
+# Simplify/Detail Torch Tensors
 
-def _simplify_torch_tensor(tensor):
+def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
+    """
+    This function converts a torch tensor into a serliaized torch tensor
+    using pickle. We choose to use this because PyTorch has a custom and
+    very fast PyTorch pickler.
+
+    TODO: use PyTorch's custom pickler. Example:
+    https://github.com/pytorch/pytorch/blob/master/torch/serialization.py#L212
+    We should be able to use this example to call their custom pickling as
+    mentioned here https://github.com/pytorch/pytorch/issues/9168.
+
+    Args:
+        torch.Tensor: an input tensor to be serialized
+
+    Returns:
+        bin: serialized binary of torch tensor.
+    """
     return pickle.dumps(tensor)
 
 
-def _detail_torch_tensor(tensor):
+def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
+    """
+    This function converts a serialied torch tensor into a torch tensor
+    using pickle. TODO: see todo in _simplify_torch_tensor
+
+    Args:
+        bin: serialized binary of torch tensor
+
+    Returns:
+        torch.Tensor: a torch tensor that was serialized
+    """
+
     return pickle.loads(tensor)
 
 
-# Collections (list, set, tuple, etc.)
+# Simplify/Detail Collections (list, set, tuple, etc.)
 
 def _simplify_collection(my_collection: Collection) -> Collection:
     """This function is designed to search a collection for any objects
@@ -124,13 +151,14 @@ def _detail_collection(my_collection: Collection) -> Collection:
             in the collection have been detailed.
     """
 
+    my_type = type(my_collection)
     pieces = list()
 
     # Step 1: deserialize each part of the collection
     for part in my_collection:
         pieces.append(_detail(part))
 
-    return pieces
+    return my_type(pieces)
 
 
 # High Level Simplification Router
