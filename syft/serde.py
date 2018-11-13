@@ -38,10 +38,21 @@ import lz4
 # High Level Public Functions (these are the ones you use)
 
 def serialize(obj: object, compress=True) -> bin:
+    """This is the high level function for serializing any object or
+    dictionary/collection of objects."""
 
+    # 1) Simplify
+    # simplify difficult-to-serialize objects. See the _simpliy method
+    # for details on how this works. The general purpose is to handle
+    # types which the fast serializer (msgpack) cannot handle
     simple_objects = _simplify(obj)
+
+    # 2) Serialize
+    # serialize into a binary
     binary = msgpack.dumps(simple_objects)
 
+    # 3) Compress
+    # optionally compress the binary and return the result
     if compress:
         return compress(binary)
     else:
@@ -49,11 +60,25 @@ def serialize(obj: object, compress=True) -> bin:
 
 
 def deserialize(binary: bin, compressed=True) -> object:
+    """This is the high level function for deserializing any object
+    or dictionary/collection of objects."""
 
+    # 1)  Decompress
+    # If enabled, this functionality decompresses the binary
     if compressed:
         binary = decompress(binary)
 
+    # 2) Deserialize
+    # This function converts the binary into the appropriate python
+    # object (or nested dict/collection of python objects)
     simple_objects = msgpack.loads(binary)
+
+    # 3) Detail
+    # This function converts typed, simple objects into their more
+    # complex (and difficult to serialize) counterparts which the
+    # serialization library wasn't natively able to serialize (such
+    # as msgpack's inability to serialize torch tensors or ... or
+    # python slice objects
     return _detail(simple_objects)
 
 
