@@ -2,7 +2,30 @@
 This file exists to provide one common place for all serialization to occur
 regardless of framework. As msgpack only supports basic types and binary formats
 every type must be first be converted to one of these types. Thus, we've split our
-functionality into two sections.
+functionality into three steps. When converting from a PySyft object (or collection
+of objects) to an object to be sent over the wire (a message), those three steps
+are (in order):
+
+1. Simplify - converts PyTorch objects to simple Python objects (using pickle)
+2. Serialize - converts Python objects to binary
+3. Compress - compresses the binary (Now we're ready send!)
+
+Inversely, when converting from a message sent over the wire back to a PySyft
+object, the three steps are (in order):
+
+1. Decompress - converts compressed binary back to decompressed binary
+2. Deserialize - converts from binary to basic python objects
+3. Detail - converts some basic python objects back to PyTorch objects (Tensors)
+
+Furthermore, note that there is different simplification/serialization logic
+for objects of different types. Thus, instead of using if/else logic, we have
+global dictionarlies which contain functions and Python types as keys. For
+simplification logic, this dictionary is called "simplifiers". The keys
+are the types and values are the simplification logic. For example,
+simplifiers[tuple] will return the function which knows how to simplify the
+tuple type. The same is true for all other simplifier/detailer functions.
+
+By default, we serialize using msgpack and compress using lz4.
 """
 from typing import Collection
 import pickle
@@ -86,10 +109,21 @@ def _detail_collection(my_collection: Collection) -> Collection:
 
 
 def _simplify(obj):
-    t = type(obj)
-    if t in simplifiers:
-        return simplifiers[t](obj)
-    return obj
+    """This function is supposed """
+
+    try:
+        # check to see if there is a simplifier
+        # for this type. If there is, run return
+        # the simplified object
+        return simplifiers[type(obj)](obj)
+
+    except KeyError:
+        # if there is not a simplifier for this
+        # object, then the object is already a
+        # simple python object and we can just
+        # return it
+
+        return obj
 
 
 simplifiers = {}
