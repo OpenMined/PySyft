@@ -78,13 +78,14 @@ def _detail_torch_tensor(tensor):
 
 # Collections (list, set, tuple, etc.)
 
-
 def _simplify_collection(my_collection: Collection) -> Collection:
     """This function is designed to search a collection for any objects
     which may need to be simplified (i.e., torch tensors). It iterates
     through each object in the collection and calls _simplify on it. Finally,
     it returns the output collection as the same type as the input collection
-    so that the consuming serialization step knows the correct type info.
+    so that the consuming serialization step knows the correct type info. The
+    reverse function to this function is _detail_collection, which undoes
+    the functionality of this function.
 
     Args:
         Collection: a collection of python objects
@@ -94,7 +95,6 @@ def _simplify_collection(my_collection: Collection) -> Collection:
             objects.
 
     """
-
 
     # Step 0: get collection type for later use and itialize empty list
     my_type = type(my_collection)
@@ -109,6 +109,20 @@ def _simplify_collection(my_collection: Collection) -> Collection:
 
 
 def _detail_collection(my_collection: Collection) -> Collection:
+    """
+    This function is designed to operate in the opposite direction of
+    _simplify_collection. It takes a collection of simple python objects
+    and iterates through it to determine whether objects in the collection
+    need to be converted into more advanced types. In particular, it
+    converts binary objects into torch Tensors where appropriate.
+
+    Args:
+        Collection: a collection of simple python objects (including binary).
+
+    Returns:
+        Collection: a collection of the same type as the input where the objects
+            in the collection have been detailed.
+    """
 
     pieces = list()
 
