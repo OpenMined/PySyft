@@ -29,6 +29,7 @@ By default, we serialize using msgpack and compress using lz4.
 """
 
 from typing import Collection
+from typing import Dict
 import pickle
 import torch
 import msgpack
@@ -136,6 +137,7 @@ def _simplify_collection(my_collection: Collection) -> Collection:
 
 
 def _detail_collection(my_collection: Collection) -> Collection:
+
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a collection of simple python objects
@@ -161,6 +163,27 @@ def _detail_collection(my_collection: Collection) -> Collection:
     return my_type(pieces)
 
 
+# Dictionaries
+
+
+def _simplify_dictionary(my_dict: Dict) -> Dict:
+    pieces = {}
+    # for dictionaries we want to simplify both the key and the value
+    for key, value in my_dict.items():
+        pieces[_simplify(key)] = _simplify(value)
+
+    return pieces
+
+
+def _detail_dictionary(my_dict: Dict) -> Dict:
+    pieces = {}
+    # for dictionaries we want to detail both the key and the value
+    for key, value in my_dict.items():
+        pieces[_detail(key)] = _detail(value)
+
+    return pieces
+
+
 # High Level Simplification Router
 
 
@@ -180,6 +203,10 @@ def _simplify(obj: object) -> object:
 
     Returns:
         obj: an simple Python object which msgpack can serialize
+
+    Raises:
+        ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
+        characters.
 
     """
 
@@ -239,4 +266,5 @@ def _detail(obj: object) -> object:
 detailers = {}
 detailers[tuple] = _detail_collection
 detailers[list] = _detail_collection
+detailers[set] = _detail_collection
 detailers[bytes] = _detail_torch_tensor
