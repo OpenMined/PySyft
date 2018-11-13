@@ -74,7 +74,15 @@ def compress(decompressed_input_bin: bin) -> bin:
 
 
 def decompress(compressed_input_bin: bin) -> bin:
-    """"""
+    """This function decompresses a binary using LZ4
+
+    Args:
+        bin: a compressed binary
+
+    Returns:
+        bin: decompressed binary
+
+    """
     return lz4.frame.decompress(compressed_input_bin)
 
 
