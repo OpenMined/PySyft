@@ -1,3 +1,8 @@
+"""
+This file exists to provide one common place for all serialization to occur
+regardless of framework. As msgpack only supports basic types and binary formats
+every type must be first be converted to one of these types.
+"""
 import pickle
 import torch
 import msgpack
