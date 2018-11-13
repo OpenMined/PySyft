@@ -27,6 +27,7 @@ tuple type. The same is true for all other simplifier/detailer functions.
 
 By default, we serialize using msgpack and compress using lz4.
 """
+
 import pickle
 import torch
 import msgpack
@@ -97,10 +98,19 @@ def _detail_collection(my_collection):
 def _simplify(obj):
     """This function is supposed """
 
-    t = type(obj)
-    if t in simplifiers:
-        return simplifiers[t](obj)
-    return obj
+    try:
+        # check to see if there is a simplifier
+        # for this type. If there is, run return
+        # the simplified object
+        return simplifiers[type(obj)](obj)
+
+    except KeyError:
+        # if there is not a simplifier for this
+        # object, then the object is already a
+        # simple python object and we can just
+        # return it
+
+        return obj
 
 
 simplifiers = {}
