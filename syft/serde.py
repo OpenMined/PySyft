@@ -44,7 +44,7 @@ def _detail_collection(my_collection):
 
     return pieces
 
-
+# High Level Simplification Router
 
 def _simplify(obj):
     t = type(obj)
@@ -54,8 +54,10 @@ def _simplify(obj):
 
 
 simplifiers = {}
+
 simplifiers[torch.Tensor] = _simplify_torch_tensor
 simplifiers[tuple] = _simplify_collection
+simplifiers[list] = _simplify_collection
 
 
 def _detail(obj):
@@ -66,6 +68,6 @@ def _detail(obj):
 
 
 detailers = {}
-detailers[tuple] = detail_collection
-detailers[list] = detail_collection
-detailers[bytes] = detail_torch_tensor
+detailers[tuple] = _detail_collection
+detailers[list] = _detail_collection
+detailers[bytes] = _detail_torch_tensor
