@@ -1,21 +1,41 @@
 """
 This file exists to provide one common place for all serialization to occur
 regardless of framework. As msgpack only supports basic types and binary formats
-every type must be first be converted to one of these types.
+every type must be first be converted to one of these types. Thus, we've split our
+functionality into two sections.
 """
 import pickle
 import torch
 import msgpack
+import lz4
 
 # High Level Public Functions (these are the ones you use)
 
-def serialize(obj):
-    simple_objects = _simplify(obj)
-    return msgpack.dumps(simple_objects)
+def serialize(obj, compress=True):
 
-def deserialize(bin):
+    simple_objects = _simplify(obj)
+    bin = msgpack.dumps(simple_objects)
+
+    if(compress):
+        return compress(bin)
+    else:
+        return bin
+
+def deserialize(bin, compressed=True):
+
+    if(compressed):
+        bin = decompress(bin)
+
     simple_objects = msgpack.loads(bin)
     return _detail(simple_objects)
+
+# Chosen Compression Algorithm
+
+def compress(decompressed_input_bin):
+    return lz4.frame.compress(decompressed_input_bin)
+
+def decompress(compressed_input_bin):
+    return lz4.frame.decompress(compressed_input_bin)
 
 # Torch Tensor
 
