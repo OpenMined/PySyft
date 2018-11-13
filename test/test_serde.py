@@ -7,3 +7,4 @@ class TupleSerde(TestCase):
         input = ('hello', 'world')
         target = ['hello', 'world']
         assert syft.serde.simplify(input) == target
+
