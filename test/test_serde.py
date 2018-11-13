@@ -1,6 +1,9 @@
-import unittest
+import syft
 from unittest import TestCase
 
 class TupleSerde(TestCase):
+
     def test_tuple_serialize(self):
-        assert True
+        input = ('hello', 'world')
+        target = ['hello', 'world']
+        assert syft.serde.simplify(input) == target
