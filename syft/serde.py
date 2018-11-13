@@ -3,31 +3,39 @@ This file exists to provide one common place for all serialization to occur
 regardless of framework. As msgpack only supports basic types and binary formats
 every type must be first be converted to one of these types.
 """
+from typing import Collection
 import pickle
 import torch
 import msgpack
 
 # High Level Public Functions (these are the ones you use)
 
+
 def serialize(obj):
     simple_objects = _simplify(obj)
     return msgpack.dumps(simple_objects)
+
 
 def deserialize(bin):
     simple_objects = msgpack.loads(bin)
     return _detail(simple_objects)
 
+
 # Torch Tensor
+
 
 def _simplify_torch_tensor(tensor):
     return pickle.dumps(tensor)
 
+
 def _detail_torch_tensor(tensor):
     return pickle.loads(tensor)
 
+
 # Collections (list, set, tuple, etc.)
 
-def _simplify_collection(my_collection):
+
+def _simplify_collection(my_collection: Collection) -> Collection:
     # Step 0: get collection type for later use and itialize empty list
     my_type = type(my_collection)
     pieces = list()
@@ -39,7 +47,8 @@ def _simplify_collection(my_collection):
     # Step 2: convert back to original type and return serialization
     return my_type(pieces)
 
-def _detail_collection(my_collection):
+
+def _detail_collection(my_collection: Collection) -> Collection:
 
     pieces = list()
 
@@ -49,7 +58,9 @@ def _detail_collection(my_collection):
 
     return pieces
 
+
 # High Level Simplification Router
+
 
 def _simplify(obj):
     t = type(obj)
