@@ -3,11 +3,11 @@ import enum
 
 from .. import serde
 
-class MsgType(enum.Enum):
-    cmd = 1
-    obj = 2
-    obj_req = 3
-    exception = 4
+
+MsgType_cmd = 1
+MsgType_obj = 2
+MsgType_obj_req = 3
+MsgType_exception = 4
 
 class BaseWorker(ABC):
     """This is the class which contains functionality generic to all workers. Other workers will extend this
@@ -29,8 +29,8 @@ class BaseWorker(ABC):
 
         # For performance, we cache each
         self._message_router = {}
-        self._message_router[MsgType.obj.value] = self.set_obj
-        self._message_router[MsgType.obj_req.value] = self.get_obj
+        self._message_router[MsgType_obj] = self.set_obj
+        self._message_router[MsgType_obj_req] = self.get_obj
 
     ## SECTION: Methods which MUST be overridden by subclasses
 
@@ -90,7 +90,7 @@ class BaseWorker(ABC):
     ## SECTION: convenience methods for constructing frequently used messages
 
     def send_obj(self, obj, location):
-        return self.send_msg(MsgType.obj.value, obj, location)
+        return self.send_msg(MsgType_obj, obj, location)
 
     def request_obj(self, obj_id, location):
-        return self.send_msg(MsgType.obj_req.value, obj_id, location)
+        return self.send_msg(MsgType_obj_req, obj_id, location)
