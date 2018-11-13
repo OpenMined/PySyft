@@ -27,6 +27,7 @@ tuple type. The same is true for all other simplifier/detailer functions.
 
 By default, we serialize using msgpack and compress using lz4.
 """
+
 from typing import Collection
 import pickle
 import torch
@@ -35,40 +36,37 @@ import lz4
 
 # High Level Public Functions (these are the ones you use)
 
-
-def serialize(obj, compress=True):
+def serialize(obj: object, compress=True) -> bin:
 
     simple_objects = _simplify(obj)
-    bin = msgpack.dumps(simple_objects)
+    binary = msgpack.dumps(simple_objects)
 
     if compress:
-        return compress(bin)
+        return compress(binary)
     else:
-        return bin
+        return binary
 
 
-def deserialize(bin, compressed=True):
+def deserialize(binary: bin, compressed=True) -> object:
 
     if compressed:
-        bin = decompress(bin)
+        binary = decompress(binary)
 
-    simple_objects = msgpack.loads(bin)
+    simple_objects = msgpack.loads(binary)
     return _detail(simple_objects)
 
 
 # Chosen Compression Algorithm
 
-
-def compress(decompressed_input_bin):
+def compress(decompressed_input_bin: bin) -> bin:
     return lz4.frame.compress(decompressed_input_bin)
 
 
-def decompress(compressed_input_bin):
+def decompress(compressed_input_bin: bin) -> bin:
     return lz4.frame.decompress(compressed_input_bin)
 
 
 # Torch Tensor
-
 
 def _simplify_torch_tensor(tensor):
     return pickle.dumps(tensor)
@@ -82,6 +80,22 @@ def _detail_torch_tensor(tensor):
 
 
 def _simplify_collection(my_collection: Collection) -> Collection:
+    """This function is designed to search a collection for any objects
+    which may need to be simplified (i.e., torch tensors). It iterates
+    through each object in the collection and calls _simplify on it. Finally,
+    it returns the output collection as the same type as the input collection
+    so that the consuming serialization step knows the correct type info.
+
+    Args:
+        Collection: a collection of python objects
+
+    Returns:
+        Collection: a collection of the same type as the input of simplified
+            objects.
+
+    """
+
+
     # Step 0: get collection type for later use and itialize empty list
     my_type = type(my_collection)
     pieces = list()
@@ -108,7 +122,7 @@ def _detail_collection(my_collection: Collection) -> Collection:
 # High Level Simplification Router
 
 
-def _simplify(obj):
+def _simplify(obj: object) -> object:
     """This function takes an object as input and returns a simple
     Python object which is supported by the chosen serialization
     method (such as JSON or msgpack). The reason we have this function
@@ -123,7 +137,7 @@ def _simplify(obj):
         obj: an object which may need to be simplified
 
     Returns:
-        an simple Python object which msgpack can serialize
+        obj: an simple Python object which msgpack can serialize
 
     """
 
@@ -150,7 +164,7 @@ simplifiers[list] = _simplify_collection
 simplifiers[set] = _simplify_collection
 
 
-def _detail(obj):
+def _detail(obj: object) -> object:
     t = type(obj)
     if t in detailers:
         return detailers[t](obj)
