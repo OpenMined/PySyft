@@ -1,4 +1,3 @@
-import json
 import pickle
 import torch
 import msgpack
