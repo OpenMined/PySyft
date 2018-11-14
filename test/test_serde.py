@@ -37,3 +37,8 @@ class TupleSerde(TestCase):
         input = {"hello": "world"}
         target = (4, {"hello": "world"})
         assert _simplify(input) == target
+
+    def test_range_simplify(self):
+        input = range(1, 3, 4)
+        target = (5, (1, 3, 4))
+        assert _simplify(input) == target
