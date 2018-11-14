@@ -1,4 +1,6 @@
-from syft.serde import _simplify, serialize, deserialize
+from syft.serde import _simplify
+from syft.serde import serialize
+from syft.serde import deserialize
 from unittest import TestCase
 from torch import tensor
 import numpy
@@ -47,8 +49,3 @@ class TupleSerde(TestCase):
         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
         assert (t == t_serialized_deserialized).all()
 
-    def test_tuple_serde(self):
-        tuple = (1,2)
-        tuple_serialized = serialize(tuple,compress=False)
-        tuple_deserialized = deserialize(tuple_serialized, compressed=False)
-        assert tuple == tuple_deserialized
