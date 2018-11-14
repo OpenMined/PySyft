@@ -19,7 +19,7 @@ object, the three steps are (in order):
 
 Furthermore, note that there is different simplification/serialization logic
 for objects of different types. Thus, instead of using if/else logic, we have
-global dictionarlies which contain functions and Python types as keys. For
+global dictionaries which contain functions and Python types as keys. For
 simplification logic, this dictionary is called "simplifiers". The keys
 are the types and values are the simplification logic. For example,
 simplifiers[tuple] will return the function which knows how to simplify the
@@ -34,6 +34,8 @@ import pickle
 import torch
 import msgpack
 import lz4
+import io
+
 
 # High Level Public Functions (these are the ones you use)
 
@@ -55,7 +57,7 @@ def serialize(obj: object, compress=True) -> bin:
     # 3) Compress
     # optionally compress the binary and return the result
     if compress:
-        return compress(binary)
+        return _compress(binary)
     else:
         return binary
 
@@ -67,12 +69,13 @@ def deserialize(binary: bin, compressed=True) -> object:
     # 1)  Decompress
     # If enabled, this functionality decompresses the binary
     if compressed:
-        binary = decompress(binary)
+        binary = _decompress(binary)
 
     # 2) Deserialize
     # This function converts the binary into the appropriate python
     # object (or nested dict/collection of python objects)
     simple_objects = msgpack.loads(binary)
+
 
     # 3) Detail
     # This function converts typed, simple objects into their more
@@ -86,7 +89,7 @@ def deserialize(binary: bin, compressed=True) -> object:
 # Chosen Compression Algorithm
 
 
-def compress(decompressed_input_bin: bin) -> bin:
+def _compress(decompressed_input_bin: bin) -> bin:
     """This function compresses a binary using LZ4
 
     Args:
@@ -96,11 +99,10 @@ def compress(decompressed_input_bin: bin) -> bin:
         bin: a compressed binary
 
     """
-
     return lz4.frame.compress(decompressed_input_bin)
 
 
-def decompress(compressed_input_bin: bin) -> bin:
+def _decompress(compressed_input_bin: bin) -> bin:
     """This function decompresses a binary using LZ4
 
     Args:
@@ -122,24 +124,23 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     using pickle. We choose to use this because PyTorch has a custom and
     very fast PyTorch pickler.
 
-    TODO: use PyTorch's custom pickler. Example:
-    https://github.com/pytorch/pytorch/blob/master/torch/serialization.py#L212
-    We should be able to use this example to call their custom pickling as
-    mentioned here https://github.com/pytorch/pytorch/issues/9168.
-
     Args:
         torch.Tensor: an input tensor to be serialized
 
     Returns:
         bin: serialized binary of torch tensor.
     """
-    return pickle.dumps(tensor)
+
+    binary_stream = io.BytesIO()
+    torch.save(tensor, binary_stream)
+    tensor_bin = binary_stream.getvalue()
+    return tensor_bin
 
 
 def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
     """
     This function converts a serialied torch tensor into a torch tensor
-    using pickle. TODO: see todo in _simplify_torch_tensor
+    using pickle.
 
     Args:
         bin: serialized binary of torch tensor
@@ -148,7 +149,8 @@ def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
         torch.Tensor: a torch tensor that was serialized
     """
 
-    return pickle.loads(tensor)
+    bin_tensor_stream = io.BytesIO(tensor)
+    return torch.load(bin_tensor_stream)
 
 
 # Simplify/Detail Collections (list, set, tuple, etc.)
@@ -259,12 +261,11 @@ def _simplify(obj: object) -> object:
     """
 
     try:
-
         # check to see if there is a simplifier
         # for this type. If there is, run return
         # the simplified object
         current_type = type(obj)
-        return (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+        return [simplifiers[current_type][0], simplifiers[current_type][1](obj)]
 
     except KeyError:
 
@@ -298,7 +299,7 @@ def _detail(obj: object) -> object:
             deserializing directly.
 
     """
-    if type(obj) == tuple:
+    if type(obj) == list:
         return detailers[obj[0]](obj[1])
     else:
         return obj
