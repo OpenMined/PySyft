@@ -4,10 +4,9 @@ from syft.serde import deserialize
 from unittest import TestCase
 from torch import tensor
 import numpy
-import msgpack
 
 
-class TupleSerde(TestCase):
+class TestSimplify(TestCase):
     def test_tuple_simplify(self):
         input = ("hello", "world")
         target = [1, ("hello", "world")]
@@ -43,9 +42,16 @@ class TupleSerde(TestCase):
         target = [4, {"hello": "world"}]
         assert _simplify(input) == target
 
+    def test_torch_tensor_simplify(self):
+        input = tensor(numpy.random.random((100, 100)))
+        output = _simplify(input)
+        assert type(output) == list
+        assert type(output[1]) == bytes
+
+
+class TestSerde(TestCase):
     def test_torch_tensor_serde(self):
         t = tensor(numpy.random.random((100, 100)))
         t_serialized = serialize(t, compress=False)
         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
         assert (t == t_serialized_deserialized).all()
-
