@@ -243,6 +243,12 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
     Returns:
         tuple: a tuple (start, stop, step)
 
+    Usage:
+
+        range_parameters = _simplify_range(range(1, 3, 4))
+
+        assert range_parameters == (1, 3, 4)
+
     """
 
     return (my_range.start, my_range.stop, my_range.step)
@@ -256,8 +262,13 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
     Returns:
         range: a range object
 
+    Usage:
+        new_range = _detail_range((1, 3, 4))
+
+        assert new_range == range(1, 3, 4)
+
     """
-    
+
     return range(my_range_params[0], my_range_params[1], my_range_params[2])
 
 
