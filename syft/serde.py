@@ -30,7 +30,7 @@ By default, we serialize using msgpack and compress using lz4.
 
 from typing import Collection
 from typing import Dict
-from typing import List
+from typing import Tuple
 import pickle
 import torch
 import msgpack
@@ -238,7 +238,7 @@ def _detail_dictionary(my_dict: Dict) -> Dict:
 # Range
 
 
-def _simplify_range(my_range: range) -> List[int, int, int]:
+def _simplify_range(my_range: range) -> Tuple[int, int, int]:
     """This function extracts the start, stop and step from the range.
 
     Args:
@@ -255,9 +255,9 @@ def _simplify_range(my_range: range) -> List[int, int, int]:
 
     """
 
-    return (my_range.start, my_range.stop, my_range.step)
+    return [my_range.start, my_range.stop, my_range.step]
 
-def _detail_range(my_range_params: List[int, int, int]) -> range:
+def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
     """This function extracts the start, stop and step from a tuple.
 
     Args:
