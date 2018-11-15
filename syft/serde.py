@@ -28,7 +28,9 @@ tuple type. The same is true for all other simplifier/detailer functions.
 By default, we serialize using msgpack and compress using lz4.
 """
 
-from typing import Collection, Dict, Tuple
+from typing import Collection
+from typing import Dict
+from typing import List
 import pickle
 import torch
 import msgpack
@@ -236,36 +238,36 @@ def _detail_dictionary(my_dict: Dict) -> Dict:
 # Range
 
 
-def _simplify_range(my_range: range) -> Tuple[int, int, int]:
+def _simplify_range(my_range: range) -> List[int, int, int]:
     """This function extracts the start, stop and step from the range.
 
     Args:
         range: a range object
 
     Returns:
-        tuple: a tuple (start, stop, step)
+        list: a list defining the range parameters [start, stop, step]
 
     Usage:
 
         range_parameters = _simplify_range(range(1, 3, 4))
 
-        assert range_parameters == (1, 3, 4)
+        assert range_parameters == [1, 3, 4]
 
     """
 
     return (my_range.start, my_range.stop, my_range.step)
 
-def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
+def _detail_range(my_range_params: List[int, int, int]) -> range:
     """This function extracts the start, stop and step from a tuple.
 
     Args:
-        tuple: a tuple (start, stop, step)
+        list: a list defining the range parameters [start, stop, step]
 
     Returns:
         range: a range object
 
     Usage:
-        new_range = _detail_range((1, 3, 4))
+        new_range = _detail_range([1, 3, 4])
 
         assert new_range == range(1, 3, 4)
 
