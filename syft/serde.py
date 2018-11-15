@@ -76,7 +76,6 @@ def deserialize(binary: bin, compressed=True) -> object:
     # object (or nested dict/collection of python objects)
     simple_objects = msgpack.loads(binary)
 
-
     # 3) Detail
     # This function converts typed, simple objects into their more
     # complex (and difficult to serialize) counterparts which the

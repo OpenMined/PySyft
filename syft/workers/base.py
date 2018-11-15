@@ -9,6 +9,7 @@ MSGTYPE_OBJ = 2
 MSGTYPE_OBJ_REQ = 3
 MSGTYPE_EXCEPTION = 4
 
+
 class BaseWorker(ABC):
     """This is the class which contains functionality generic to all workers. Other workers will extend this
     class to inherit all functionality necessary for PySyft's protocol. Extensions of this class will
@@ -19,7 +20,6 @@ class BaseWorker(ABC):
     a certain machine. Each worker defines how it interacts with objects on other workers as well as how
     other workers interact with objects owned by itself. Objects are most frequently tensors but they
     can be of any type supported by the PySyft protocol."""
-
 
     def __init__(self):
 
@@ -69,14 +69,13 @@ class BaseWorker(ABC):
         response = self._message_router[msg_type](contents)
 
         # Step 2: If response is none, set default
-        if(response is None):
+        if response is None:
             response = 0
 
         # Step 3: Serialize the message to simple python objects
         bin_response = serde.serialize(response)
 
         return bin_response
-
 
     ## SECTION: recv_msg() uses self._message_router to route to these methods
     # Each method corresponds to a MsgType enum.

@@ -1,3 +1,3 @@
 from . import torch
 
-__all__ = ['torch']
+__all__ = ["torch"]
