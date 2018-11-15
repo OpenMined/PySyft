@@ -55,18 +55,20 @@ class TestSimplify(TestCase):
 
 
 class TestSerde(TestCase):
-    def test_torch_tensor_serde(self):
+    def test_torch_tensor(self):
         t = tensor(numpy.random.random((100, 100)))
         t_serialized = serialize(t, compress=False)
         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
         assert (t == t_serialized_deserialized).all()
 
-    def test_tuple_serde(self):
+    def test_tuple(self):
+        # Test with a simple datatype
         tuple = (1, 2)
         tuple_serialized = serialize(tuple, compress=False)
         tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=False)
         assert tuple == tuple_serialized_deserialized
 
+        # Test with a complex data structure
         tensor_one = tensor(numpy.random.random((100, 100)))
         tensor_two = tensor(numpy.random.random((100, 100)))
         tuple = (tensor_one, tensor_two)
@@ -76,3 +78,15 @@ class TestSerde(TestCase):
         assert type(tuple_serialized_deserialized) == type(tuple)
         assert (tuple_serialized_deserialized[0] == tensor_one).all()
         assert (tuple_serialized_deserialized[1] == tensor_two).all()
+
+    def test_bytearray(self):
+        bytearr = bytearray("This is a teststring", 'utf-8')
+        bytearr_serialized = serialize(bytearr, compress=False)
+        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=False)
+        assert bytearr == bytearr_serialized_desirialized
+
+        bytearr = bytearray(numpy.random.random((100, 100)))
+        bytearr_serialized = serialize(bytearr, compress=False)
+        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=False)
+        assert bytearr == bytearr_serialized_desirialized
+
