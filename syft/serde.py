@@ -30,6 +30,7 @@ By default, we serialize using msgpack and compress using lz4.
 
 from typing import Collection
 from typing import Dict
+from typing import Tuple
 import pickle
 import torch
 import msgpack
@@ -234,6 +235,47 @@ def _detail_dictionary(my_dict: Dict) -> Dict:
     return pieces
 
 
+# Range
+
+
+def _simplify_range(my_range: range) -> Tuple[int, int, int]:
+    """This function extracts the start, stop and step from the range.
+
+    Args:
+        range: a range object
+
+    Returns:
+        list: a list defining the range parameters [start, stop, step]
+
+    Usage:
+
+        range_parameters = _simplify_range(range(1, 3, 4))
+
+        assert range_parameters == [1, 3, 4]
+
+    """
+
+    return [my_range.start, my_range.stop, my_range.step]
+
+def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
+    """This function extracts the start, stop and step from a tuple.
+
+    Args:
+        list: a list defining the range parameters [start, stop, step]
+
+    Returns:
+        range: a range object
+
+    Usage:
+        new_range = _detail_range([1, 3, 4])
+
+        assert new_range == range(1, 3, 4)
+
+    """
+
+    return range(my_range_params[0], my_range_params[1], my_range_params[2])
+
+
 # High Level Simplification Router
 
 
@@ -283,6 +325,7 @@ simplifiers[tuple] = [1, _simplify_collection]
 simplifiers[list] = [2, _simplify_collection]
 simplifiers[set] = [3, _simplify_collection]
 simplifiers[dict] = [4, _simplify_dictionary]
+simplifiers[range] = [5, _simplify_range]
 
 
 def _detail(obj: object) -> object:

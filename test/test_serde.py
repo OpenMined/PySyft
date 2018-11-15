@@ -42,6 +42,11 @@ class TestSimplify(TestCase):
         target = [4, {"hello": "world"}]
         assert _simplify(input) == target
 
+    def test_range_simplify(self):
+        input = range(1, 3, 4)
+        target = [5, [1, 3, 4]]
+        assert _simplify(input) == target
+
     def test_torch_tensor_simplify(self):
         input = tensor(numpy.random.random((100, 100)))
         output = _simplify(input)
