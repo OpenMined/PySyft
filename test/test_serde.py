@@ -55,3 +55,21 @@ class TestSerde(TestCase):
         t_serialized = serialize(t, compress=False)
         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
         assert (t == t_serialized_deserialized).all()
+
+    def test_tuple_serde(self):
+        tuple = (1,2)
+        tuple_serialized = serialize(tuple, compress=False)
+        tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=False)
+        assert tuple == tuple_serialized_deserialized
+
+        tensor_one = tensor(numpy.random.random((100, 100)))
+        tensor_two = tensor(numpy.random.random((100, 100)))
+        tuple = (tensor_one, tensor_two)
+        tuple_serialized = serialize(tuple, compress=False)
+        tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=False)
+        #`assert tuple_serialized_deserialized == tuple` does not work, therefore it's split into 3 assertions
+        assert type(tuple_serialized_deserialized) == type(tuple)
+        assert (tuple_serialized_deserialized[0] == tensor_one).all()
+        assert (tuple_serialized_deserialized[1] == tensor_two).all()
+
+
