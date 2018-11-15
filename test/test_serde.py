@@ -80,13 +80,16 @@ class TestSerde(TestCase):
         assert (tuple_serialized_deserialized[1] == tensor_two).all()
 
     def test_bytearray(self):
-        bytearr = bytearray("This is a teststring", 'utf-8')
+        bytearr = bytearray("This is a teststring", "utf-8")
         bytearr_serialized = serialize(bytearr, compress=False)
-        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=False)
+        bytearr_serialized_desirialized = deserialize(
+            bytearr_serialized, compressed=False
+        )
         assert bytearr == bytearr_serialized_desirialized
 
         bytearr = bytearray(numpy.random.random((100, 100)))
         bytearr_serialized = serialize(bytearr, compress=False)
-        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=False)
+        bytearr_serialized_desirialized = deserialize(
+            bytearr_serialized, compressed=False
+        )
         assert bytearr == bytearr_serialized_desirialized
-
