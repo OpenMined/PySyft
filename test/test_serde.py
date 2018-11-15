@@ -53,6 +53,11 @@ class TestSimplify(TestCase):
         assert type(output) == list
         assert type(output[1]) == bytes
 
+    def test_ndarray_simplify(self):
+        input = numpy.random.random((100, 100))
+        output = _simplify(input)
+        assert type(output[1]) == bytes
+
 
 class TestSerde(TestCase):
     def test_torch_tensor(self):
@@ -93,3 +98,11 @@ class TestSerde(TestCase):
             bytearr_serialized, compressed=False
         )
         assert bytearr == bytearr_serialized_desirialized
+
+    def test_ndarray_serde(self):
+        arr = numpy.random.random((100, 100))
+        arr_serialized = serialize(arr, compress=False)
+
+        arr_serialized_deserialized = deserialize(arr_serialized, compressed=False)
+        assert numpy.array_equal(arr,arr_serialized_deserialized)
+

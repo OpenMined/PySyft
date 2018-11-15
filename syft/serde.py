@@ -36,6 +36,7 @@ import torch
 import msgpack
 import lz4
 import io
+import numpy
 
 
 # High Level Public Functions (these are the ones you use)
@@ -304,6 +305,44 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
     return range(my_range_params[0], my_range_params[1], my_range_params[2])
 
 
+#   numpy array
+
+def _simplify_ndarray(my_array: numpy.ndarray) -> bin:
+    """This function pickles a numpy array
+
+    Args:
+        numpy.ndarray: a numpy array
+
+    Returns:
+        bin: binary representation of the numpy array
+
+    Usage:
+
+        binary = _simplify_ndarray(numpy.random.random([1000, 1000])))
+
+    """
+    return pickle.dumps(my_array)
+
+def _detail_ndarray(binary: bin) -> numpy.ndarray:
+    """This function unpickles a binary to a numpy array
+
+    Args:
+        bin: binary representation of the numpy array
+
+    Returns:
+        numpy.ndarray: a numpy array
+
+    Usage:
+
+        arr = _detail_ndarray(pickle.dumps(numpy.random.random([1000, 1000])))
+        
+    """
+    res = pickle.loads(binary)
+
+    assert type(res) == numpy.ndarray
+
+    return res
+
 # High Level Simplification Router
 
 
@@ -354,6 +393,7 @@ simplifiers[list] = [2, _simplify_collection]
 simplifiers[set] = [3, _simplify_collection]
 simplifiers[dict] = [4, _simplify_dictionary]
 simplifiers[range] = [5, _simplify_range]
+simplifiers[numpy.ndarray] = [6, _simplify_ndarray]
 
 
 def _detail(obj: object) -> object:
@@ -382,4 +422,6 @@ detailers = [
     _detail_collection,
     _detail_collection,
     _detail_dictionary,
+    _detail_range,
+    _detail_ndarray
 ]
