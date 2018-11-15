@@ -1,7 +1,7 @@
 from .base import BaseWorker
 
-class VirtualWorker(BaseWorker):
 
+class VirtualWorker(BaseWorker):
     def _send_msg(self, message, location):
         return location._recv_msg(message)
 

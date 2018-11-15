@@ -77,7 +77,6 @@ def deserialize(binary: bin, compressed=True) -> object:
     # object (or nested dict/collection of python objects)
     simple_objects = msgpack.loads(binary)
 
-
     # 3) Detail
     # This function converts typed, simple objects into their more
     # complex (and difficult to serialize) counterparts which the
@@ -212,6 +211,34 @@ def _detail_collection(my_collection: Collection) -> Collection:
         pieces.append(_detail(part))
 
     return my_type(pieces)
+
+
+def _detail_collection_tuple(my_tuple: tuple) -> tuple:
+
+    """
+    This function is designed to operate in the opposite direction of
+    _simplify_collection. It takes a tuple of simple python objects
+    and iterates through it to determine whether objects in the collection
+    need to be converted into more advanced types. In particular, it
+    converts binary objects into torch Tensors where appropriate.
+    This is only applicable to tuples. They need special handling because
+    `msgpack` is encoding a tuple as a list.
+
+    Args:
+        tuple: a collection of simple python objects (including binary).
+
+    Returns:
+        tuple: a collection of the same type as the input where the objects
+            in the collection have been detailed.
+    """
+
+    pieces = list()
+
+    # Step 1: deserialize each part of the collection
+    for part in my_tuple:
+        pieces.append(_detail(part))
+
+    return tuple(pieces)
 
 
 # Dictionaries
@@ -350,7 +377,7 @@ def _detail(obj: object) -> object:
 
 detailers = [
     _detail_torch_tensor,
-    _detail_collection,
+    _detail_collection_tuple,
     _detail_collection,
     _detail_collection,
     _detail_dictionary,

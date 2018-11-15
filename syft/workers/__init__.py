@@ -1,4 +1,3 @@
-
 # Section 1: General Imports
 import enum
 
@@ -6,4 +5,4 @@ import enum
 from . import base
 from . import virtual
 
-__all__ = ['base', 'virtual']
+__all__ = ["base", "virtual"]
