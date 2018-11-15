@@ -284,6 +284,7 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
 
     return [my_range.start, my_range.stop, my_range.step]
 
+
 def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
     """This function extracts the start, stop and step from a tuple.
 
