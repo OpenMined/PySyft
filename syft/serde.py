@@ -31,6 +31,7 @@ By default, we serialize using msgpack and compress using lz4.
 from typing import Collection
 from typing import Dict
 from typing import Tuple
+from typing import List
 import pickle
 import torch
 import msgpack
@@ -307,37 +308,43 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
 
 #   numpy array
 
-def _simplify_ndarray(my_array: numpy.ndarray) -> bin:
-    """This function pickles a numpy array
+def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
+    """This function gets the byte representation of the array
+        and stores the dtype and shape for reconstruction
 
     Args:
         numpy.ndarray: a numpy array
 
     Returns:
-        bin: binary representation of the numpy array
+        list: a list holding the byte representation, shape and dtype of the array
 
     Usage:
 
-        binary = _simplify_ndarray(numpy.random.random([1000, 1000])))
+        arr_representation = _simplify_ndarray(numpy.random.random([1000, 1000])))
 
     """
-    return pickle.dumps(my_array)
+    arr_bytes = my_array.tobytes()
+    arr_shape = my_array.shape
+    arr_dtype = my_array.dtype.name
+    
+    return [arr_bytes, arr_shape, arr_dtype]
 
-def _detail_ndarray(binary: bin) -> numpy.ndarray:
-    """This function unpickles a binary to a numpy array
+def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.ndarray:
+    """This function reconstruct a numpy array from it's byte data, the shape and the dtype
+        by first loading the byte data with the appropiate dtype and then reshaping it into the original shape
 
     Args:
-        bin: binary representation of the numpy array
+        ist: a list holding the byte representation, shape and dtype of the array
 
     Returns:
         numpy.ndarray: a numpy array
 
     Usage:
 
-        arr = _detail_ndarray(pickle.dumps(numpy.random.random([1000, 1000])))
+        arr = _detail_ndarray(arr_representation)
         
     """
-    res = pickle.loads(binary)
+    res = numpy.frombuffer(arr_representation[0], dtype = arr_representation[2]).reshape(arr_representation[1])
 
     assert type(res) == numpy.ndarray
 
