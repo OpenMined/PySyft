@@ -56,7 +56,9 @@ class TestSimplify(TestCase):
     def test_ndarray_simplify(self):
         input = numpy.random.random((100, 100))
         output = _simplify(input)
-        assert type(output[1]) == bytes
+        assert type(output[1][0]) == bytes
+        assert output[1][1] == input.shape
+        assert output[1][2] == input.dtype.name
 
 
 class TestSerde(TestCase):
@@ -104,5 +106,6 @@ class TestSerde(TestCase):
         arr_serialized = serialize(arr, compress=False)
 
         arr_serialized_deserialized = deserialize(arr_serialized, compressed=False)
+
         assert numpy.array_equal(arr,arr_serialized_deserialized)
 
