@@ -654,6 +654,20 @@ class TestTorchTensor(TestCase):
         y = x.child + x.child
         assert (y.get() == x.get() * 2).all()
 
+    def test_end_get_tensor(self):
+
+        bob_id = random.randint(0, 10e10)
+        alice_id = random.randint(0, 10e10)
+        x = sy.FloatTensor([1, 2, 3, 4, 5]).send(bob, ptr_id=bob_id).send(alice, ptr_id=alice_id)
+
+        x2 = x.end_get()
+        # Now alice will own the tensor that was in bob and bob won't have it anymore
+        assert bob_id not in bob._objects
+        assert alice_id in alice._objects
+        assert isinstance(alice._objects[alice_id], sy._LocalTensor)
+
+        assert torch.equal(x2.get(), torch.FloatTensor([1, 2, 3, 4, 5]))
+
 
 class TestTorchVariable(TestCase):
     def test_remote_backprop(self):
@@ -1943,7 +1957,6 @@ class TestGPCTensor(TestCase):
         results = x_gp.workers()
 
         assert results == [k.id for k in x_pointer_tensor_dict.keys()]
-
 
 if __name__ == "__main__":
     unittest.main()
