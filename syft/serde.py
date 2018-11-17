@@ -32,7 +32,6 @@ from typing import Collection
 from typing import Dict
 from typing import Tuple
 from typing import List
-import pickle
 import torch
 import msgpack
 import lz4
@@ -66,8 +65,10 @@ def serialize(obj: object, compress=True) -> bin:
 
 
 def deserialize(binary: bin, compressed=True) -> object:
-    """This is the high level function for deserializing any object
-    or dictionary/collection of objects."""
+    """
+    This is the high level function for deserializing any object
+    or dictionary/collection of objects.
+    """
 
     # 1)  Decompress
     # If enabled, this functionality decompresses the binary
@@ -92,7 +93,8 @@ def deserialize(binary: bin, compressed=True) -> object:
 
 
 def _compress(decompressed_input_bin: bin) -> bin:
-    """This function compresses a binary using LZ4
+    """
+    This function compresses a binary using LZ4
 
     Args:
         bin: binary to be compressed
@@ -105,7 +107,8 @@ def _compress(decompressed_input_bin: bin) -> bin:
 
 
 def _decompress(compressed_input_bin: bin) -> bin:
-    """This function decompresses a binary using LZ4
+    """
+    This function decompresses a binary using LZ4
 
     Args:
         bin: a compressed binary
@@ -159,7 +162,8 @@ def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
 
 
 def _simplify_collection(my_collection: Collection) -> Collection:
-    """This function is designed to search a collection for any objects
+    """
+    This function is designed to search a collection for any objects
     which may need to be simplified (i.e., torch tensors). It iterates
     through each object in the collection and calls _simplify on it. Finally,
     it returns the output collection as the same type as the input collection
@@ -189,7 +193,6 @@ def _simplify_collection(my_collection: Collection) -> Collection:
 
 
 def _detail_collection(my_collection: Collection) -> Collection:
-
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a collection of simple python objects
@@ -216,7 +219,6 @@ def _detail_collection(my_collection: Collection) -> Collection:
 
 
 def _detail_collection_tuple(my_tuple: tuple) -> tuple:
-
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a tuple of simple python objects
@@ -268,7 +270,8 @@ def _detail_dictionary(my_dict: Dict) -> Dict:
 
 
 def _simplify_range(my_range: range) -> Tuple[int, int, int]:
-    """This function extracts the start, stop and step from the range.
+    """
+    This function extracts the start, stop and step from the range.
 
     Args:
         range: a range object
@@ -288,7 +291,8 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
 
 
 def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
-    """This function extracts the start, stop and step from a tuple.
+    """
+    This function extracts the start, stop and step from a tuple.
 
     Args:
         list: a list defining the range parameters [start, stop, step]
@@ -308,8 +312,10 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
 
 #   numpy array
 
+
 def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
-    """This function gets the byte representation of the array
+    """
+    This function gets the byte representation of the array
         and stores the dtype and shape for reconstruction
 
     Args:
@@ -326,12 +332,15 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
     arr_bytes = my_array.tobytes()
     arr_shape = my_array.shape
     arr_dtype = my_array.dtype.name
-    
+
     return [arr_bytes, arr_shape, arr_dtype]
 
+
 def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.ndarray:
-    """This function reconstruct a numpy array from it's byte data, the shape and the dtype
-        by first loading the byte data with the appropiate dtype and then reshaping it into the original shape
+    """
+    This function reconstruct a numpy array from it's byte data, the shape and the dtype
+        by first loading the byte data with the appropiate dtype and then reshaping it into the
+        original shape
 
     Args:
         ist: a list holding the byte representation, shape and dtype of the array
@@ -340,21 +349,24 @@ def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.nda
         numpy.ndarray: a numpy array
 
     Usage:
-
         arr = _detail_ndarray(arr_representation)
-        
+
     """
-    res = numpy.frombuffer(arr_representation[0], dtype = arr_representation[2]).reshape(arr_representation[1])
+    res = numpy.frombuffer(arr_representation[0], dtype=arr_representation[2]).reshape(
+        arr_representation[1]
+    )
 
     assert type(res) == numpy.ndarray
 
     return res
 
+
 # High Level Simplification Router
 
 
 def _simplify(obj: object) -> object:
-    """This function takes an object as input and returns a simple
+    """
+    This function takes an object as input and returns a simple
     Python object which is supported by the chosen serialization
     method (such as JSON or msgpack). The reason we have this function
     is that some objects are either NOT supported by high level (fast)
@@ -404,7 +416,8 @@ simplifiers[numpy.ndarray] = [6, _simplify_ndarray]
 
 
 def _detail(obj: object) -> object:
-    """This function reverses the functionality of _simplify. Where applicable,
+    """
+    This function reverses the functionality of _simplify. Where applicable,
     it converts simple objects into more complex objects such as converting
     binary objects into torch tensors. Read _simplify for more information on
     why _simplify and _detail are needed.
@@ -430,5 +443,5 @@ detailers = [
     _detail_collection,
     _detail_dictionary,
     _detail_range,
-    _detail_ndarray
+    _detail_ndarray,
 ]

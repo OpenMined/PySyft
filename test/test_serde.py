@@ -81,7 +81,8 @@ class TestSerde(TestCase):
         tuple = (tensor_one, tensor_two)
         tuple_serialized = serialize(tuple, compress=False)
         tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=False)
-        # `assert tuple_serialized_deserialized == tuple` does not work, therefore it's split into 3 assertions
+        # `assert tuple_serialized_deserialized == tuple` does not work, therefore it's split
+        # into 3 assertions
         assert type(tuple_serialized_deserialized) == type(tuple)
         assert (tuple_serialized_deserialized[0] == tensor_one).all()
         assert (tuple_serialized_deserialized[1] == tensor_two).all()
@@ -89,16 +90,12 @@ class TestSerde(TestCase):
     def test_bytearray(self):
         bytearr = bytearray("This is a teststring", "utf-8")
         bytearr_serialized = serialize(bytearr, compress=False)
-        bytearr_serialized_desirialized = deserialize(
-            bytearr_serialized, compressed=False
-        )
+        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=False)
         assert bytearr == bytearr_serialized_desirialized
 
         bytearr = bytearray(numpy.random.random((100, 100)))
         bytearr_serialized = serialize(bytearr, compress=False)
-        bytearr_serialized_desirialized = deserialize(
-            bytearr_serialized, compressed=False
-        )
+        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=False)
         assert bytearr == bytearr_serialized_desirialized
 
     def test_ndarray_serde(self):
@@ -107,5 +104,4 @@ class TestSerde(TestCase):
 
         arr_serialized_deserialized = deserialize(arr_serialized, compressed=False)
 
-        assert numpy.array_equal(arr,arr_serialized_deserialized)
-
+        assert numpy.array_equal(arr, arr_serialized_deserialized)
