@@ -37,11 +37,11 @@ class BaseWorker(ABC):
 
     @abstractmethod
     def _send_msg(self, message, location):
-        NotImplementedError
+        NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def _recv_msg(self, message):
-        NotImplementedError
+        NotImplementedError  # pragma: no cover
 
     # SECTION: Generic Message Sending/Receiving Logic
     # EVery message uses these methods.
