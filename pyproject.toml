@@ -1,5 +1,6 @@
 [tool.black]
 py36 = true
+line-length = 100
 exclude = '''
 (
     | \.git
@@ -7,5 +8,7 @@ exclude = '''
     | \.tox
     | \.venv
     | \.eggs
+    | build
+    | dist
 )
 '''
