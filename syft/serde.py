@@ -35,6 +35,9 @@ from typing import List
 import torch
 import msgpack
 import lz4
+from lz4 import (  # noqa: F401
+    frame,
+)  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
 import io
 import numpy
 
