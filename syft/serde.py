@@ -147,7 +147,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
 
 def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
     """
-    This function converts a serialied torch tensor into a torch tensor
+    This function converts a serialized torch tensor into a torch tensor
     using pickle.
 
     Args:
@@ -332,7 +332,7 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
 
     """
 
-    return [my_range.start, my_range.stop, my_range.step]
+    return my_range.start, my_range.stop, my_range.step
 
 
 def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
@@ -378,7 +378,7 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
     arr_shape = my_array.shape
     arr_dtype = my_array.dtype.name
 
-    return [arr_bytes, arr_shape, arr_dtype]
+    return arr_bytes, arr_shape, arr_dtype
 
 
 def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.ndarray:
@@ -449,15 +449,15 @@ def _simplify(obj: object) -> object:
         return obj
 
 
-simplifiers = {}
-
-simplifiers[torch.Tensor] = [0, _simplify_torch_tensor]
-simplifiers[tuple] = [1, _simplify_collection]
-simplifiers[list] = [2, _simplify_collection]
-simplifiers[set] = [3, _simplify_collection]
-simplifiers[dict] = [4, _simplify_dictionary]
-simplifiers[range] = [5, _simplify_range]
-simplifiers[numpy.ndarray] = [6, _simplify_ndarray]
+simplifiers = {
+    torch.Tensor: [0, _simplify_torch_tensor],
+    tuple: [1, _simplify_collection],
+    list: [2, _simplify_collection],
+    set: [3, _simplify_collection],
+    dict: [4, _simplify_dictionary],
+    range: [5, _simplify_range],
+    numpy.ndarray: [6, _simplify_ndarray],
+}
 
 
 def _detail(obj: object) -> object:
