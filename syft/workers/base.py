@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import enum
 
 from .. import serde
 
@@ -11,15 +10,17 @@ MSGTYPE_EXCEPTION = 4
 
 
 class BaseWorker(ABC):
-    """This is the class which contains functionality generic to all workers. Other workers will extend this
-    class to inherit all functionality necessary for PySyft's protocol. Extensions of this class will
-    override two key methods _send_msg() and _recv_msg() which are responsible for defining the procedure
-    for sending a binary message to another worker.
+    """
+    This is the class which contains functionality generic to all workers. Other workers will
+    extend this class to inherit all functionality necessary for PySyft's protocol. Extensions
+    of this class will override two key methods _send_msg() and _recv_msg() which are responsible
+    for defining the procedure for sending a binary message to another worker.
 
-    At it's core, you can think of BaseWorker (and thus all workers) as simply a collection of objects owned by
-    a certain machine. Each worker defines how it interacts with objects on other workers as well as how
-    other workers interact with objects owned by itself. Objects are most frequently tensors but they
-    can be of any type supported by the PySyft protocol."""
+    At it's core, you can think of BaseWorker (and thus all workers) as simply a collection of
+    objects owned by a certain machine. Each worker defines how it interacts with objects on other
+    workers as well as how other workers interact with objects owned by itself. Objects are most
+    frequently tensors but they can be of any type supported by the PySyft protocol.
+    """
 
     def __init__(self):
 
@@ -32,17 +33,17 @@ class BaseWorker(ABC):
         self._message_router[MSGTYPE_OBJ] = self.set_obj
         self._message_router[MSGTYPE_OBJ_REQ] = self.get_obj
 
-    ## SECTION: Methods which MUST be overridden by subclasses
+    # SECTION: Methods which MUST be overridden by subclasses
 
     @abstractmethod
     def _send_msg(self, message, location):
-        NotImplementedError
+        NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def _recv_msg(self, message):
-        NotImplementedError
+        NotImplementedError  # pragma: no cover
 
-    ## SECTION: Generic Message Sending/Receiving Logic
+    # SECTION: Generic Message Sending/Receiving Logic
     # EVery message uses these methods.
 
     def send_msg(self, msg_type, message, location):
@@ -77,16 +78,16 @@ class BaseWorker(ABC):
 
         return bin_response
 
-    ## SECTION: recv_msg() uses self._message_router to route to these methods
+    # SECTION: recv_msg() uses self._message_router to route to these methods
     # Each method corresponds to a MsgType enum.
 
     def set_obj(self, obj):
-        self._objects[obj.id] = obj
+        self._objects[obj["id"]] = obj
 
     def get_obj(self, obj_id):
         return self._objects[obj_id]
 
-    ## SECTION: convenience methods for constructing frequently used messages
+    # SECTION: convenience methods for constructing frequently used messages
 
     def send_obj(self, obj, location):
         return self.send_msg(MSGTYPE_OBJ, obj, location)

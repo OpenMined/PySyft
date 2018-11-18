@@ -1,5 +1,5 @@
 # Section 1: General Imports
-import enum
+# import enum
 
 # Section 2: Directory Imports
 from . import base
