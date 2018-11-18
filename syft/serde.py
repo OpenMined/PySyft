@@ -192,10 +192,12 @@ def _simplify_collection(my_collection: Collection) -> Collection:
         pieces.append(_simplify(part))
 
     # Step 2: convert back to original type and return serialization
+    if my_type == set:
+        return pieces
     return my_type(pieces)
 
 
-def _detail_collection(my_collection: Collection) -> Collection:
+def _detail_collection_list(my_collection: Collection) -> Collection:
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a collection of simple python objects
@@ -211,14 +213,43 @@ def _detail_collection(my_collection: Collection) -> Collection:
             in the collection have been detailed.
     """
 
-    my_type = type(my_collection)
     pieces = list()
 
     # Step 1: deserialize each part of the collection
     for part in my_collection:
-        pieces.append(_detail(part))
+        try:
+            pieces.append(_detail(part).decode("utf-8"))  # transform bytes back to string
+        except AttributeError:
+            pieces.append(_detail(part))
 
-    return my_type(pieces)
+    return pieces
+
+
+def _detail_collection_set(my_collection: Collection) -> Collection:
+    """
+    This function is designed to operate in the opposite direction of
+    _simplify_collection. It takes a collection of simple python objects
+    and iterates through it to determine whether objects in the collection
+    need to be converted into more advanced types. In particular, it
+    converts binary objects into torch Tensors where appropriate.
+
+    Args:
+        Collection: a collection of simple python objects (including binary).
+
+    Returns:
+        Collection: a collection of the same type as the input where the objects
+            in the collection have been detailed.
+    """
+
+    pieces = list()
+
+    # Step 1: deserialize each part of the collection
+    for part in my_collection:
+        try:
+            pieces.append(_detail(part).decode("utf-8"))  # transform bytes back to string
+        except AttributeError:
+            pieces.append(_detail(part))
+    return set(pieces)
 
 
 def _detail_collection_tuple(my_tuple: tuple) -> tuple:
@@ -264,7 +295,18 @@ def _detail_dictionary(my_dict: Dict) -> Dict:
     pieces = {}
     # for dictionaries we want to detail both the key and the value
     for key, value in my_dict.items():
-        pieces[_detail(key)] = _detail(value)
+
+        try:
+            detailed_key = _detail(key).decode("utf-8")
+        except AttributeError:
+            detailed_key = _detail(key)
+
+        try:
+            detailed_value = _detail(value).decode("utf-8")
+        except AttributeError:
+            detailed_value = _detail(value)
+
+        pieces[detailed_key] = detailed_value
 
     return pieces
 
@@ -442,8 +484,8 @@ def _detail(obj: object) -> object:
 detailers = [
     _detail_torch_tensor,
     _detail_collection_tuple,
-    _detail_collection,
-    _detail_collection,
+    _detail_collection_list,
+    _detail_collection_set,
     _detail_dictionary,
     _detail_range,
     _detail_ndarray,
