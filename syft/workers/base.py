@@ -82,7 +82,7 @@ class BaseWorker(ABC):
     # Each method corresponds to a MsgType enum.
 
     def set_obj(self, obj):
-        self._objects[obj.id] = obj
+        self._objects[obj["id"]] = obj
 
     def get_obj(self, obj_id):
         return self._objects[obj_id]
