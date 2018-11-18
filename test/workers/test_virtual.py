@@ -45,4 +45,25 @@ class TestVirtualWorker(TestCase):
         bob.send_obj(obj, alice)
 
         # Get data from alice
-        bob.request_obj(1, alice)
+        resp_alice = bob.request_obj(1, alice)
+
+        assert resp_alice.keys() == obj.keys()
+        assert resp_alice["id"] == obj["id"]
+        assert (resp_alice["data"] == obj["data"]).all()
+
+        # Set data on self
+        bob.set_obj(obj)
+
+        # Get data from self
+        resp_bob_self = bob.get_obj(1)
+
+        assert resp_bob_self.keys() == obj.keys()
+        assert resp_bob_self["id"] == obj["id"]
+        assert (resp_bob_self["data"] == obj["data"]).all()
+
+        # Get data from bob as alice
+        resp_bob_alice = alice.request_obj(1, bob)
+
+        assert resp_bob_alice.keys() == obj.keys()
+        assert resp_bob_alice["id"] == obj["id"]
+        assert (resp_bob_alice["data"] == obj["data"]).all()
