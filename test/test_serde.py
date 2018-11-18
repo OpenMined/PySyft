@@ -22,8 +22,9 @@ class TestSimplify(TestCase):
 
     def test_set_simplify(self):
         input = set(["hello", "world"])
-        target = [3, set(["hello", "world"])]
-        assert _simplify(input) == target
+        target = [3, ["hello", "world"]]
+        assert _simplify(input)[0] == target[0]
+        assert set(_simplify(input)[1]) == set(target[1])
 
     def test_float_simplify(self):
         input = 5.6
