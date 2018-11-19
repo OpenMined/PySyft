@@ -789,6 +789,10 @@ class _GeneralizedPointerTensor(_SyftTensor):
         self.pointer_tensor_dict = pointer_dict
         self.torch_type = torch_type
 
+    def pointers(self):
+        """Returns the list of the pointers which this tensor contains"""
+        return list(self.pointer_tensor_dict.values())
+
     def get_shape(self):
         return list(self.pointer_tensor_dict.values())[0].get_shape()
 
@@ -1022,7 +1026,10 @@ class _PointerTensor(_SyftTensor):
         self_ = tensor_command["self"] if has_self else None
 
         if attr == "end_get":
-            response = self_.get()
+            if(isinstance(self_, dict)):
+                response = self_[list(self_.keys())[0]]['child'].get()
+            else:
+                response = self_.get()
         else:
             command, locations, owners = torch_utils.compile_command(
                 attr, args, kwargs, has_self=has_self, self=self_
@@ -2248,6 +2255,9 @@ class _TorchObject:
 
     __module__ = "syft"
 
+    def pointers(self):
+        return self.child.pointers()
+
     def end_get(self):
         return self.child.end_get()
 
@@ -2589,7 +2599,7 @@ class _TorchTensor(_TorchObject):
             pointers_dict[worker] = self.clone().send(worker).child
         return _GeneralizedPointerTensor(pointers_dict).on(self)
 
-    def send(self, *workers, ptr_id=None):
+    def send(self, *workers, ptr_id=None, as_list=False):
         """Give the root of the chain held by self to worker self->alice->obj
         [worker] => self->worker->alice->obj.
 
@@ -2613,7 +2623,10 @@ class _TorchTensor(_TorchObject):
             for worker in workers:
                 gpt_dict[worker] = (self * 1).send(worker).child
             sy._GeneralizedPointerTensor(gpt_dict).on(self)
-            return self
+            if(as_list):
+                return self.pointers()
+            else:
+                return self
 
         worker = self.owner.get_worker(worker)
 
@@ -2715,6 +2728,7 @@ class _TorchVariable(_TorchObject):
         new_data_id=None,
         new_grad_id=None,
         new_grad_data_id=None,
+        as_list=False
     ):
         """Give the root of the chain held by self to worker self->alice->obj
         [worker] => self->worker->alice->obj Because there are Variable
@@ -2733,6 +2747,8 @@ class _TorchVariable(_TorchObject):
                 gpt_dict[worker] = (self * 1).send(worker).child
 
             sy._GeneralizedPointerTensor(gpt_dict).on(self)
+            if(as_list):
+                return self.child.pointers()
             return self
 
         worker = self.owner.get_worker(worker)
