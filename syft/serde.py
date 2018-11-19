@@ -32,6 +32,7 @@ from typing import Collection
 from typing import Dict
 from typing import Tuple
 from typing import List
+from typing import Union
 import torch
 import msgpack
 import lz4
@@ -314,7 +315,7 @@ def _detail_dictionary(my_dict: Dict) -> Dict:
 # Range
 
 
-def _simplify_range(my_range: range) -> Tuple[int, int, int]:
+def _simplify_range(my_range: range) -> List[int]:
     """
     This function extracts the start, stop and step from the range.
 
@@ -332,7 +333,7 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
 
     """
 
-    return my_range.start, my_range.stop, my_range.step
+    return [my_range.start, my_range.stop, my_range.step]
 
 
 def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
@@ -358,7 +359,7 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
 #   numpy array
 
 
-def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
+def _simplify_ndarray(my_array: numpy.ndarray) -> List[Union[bin, List, str]]:
     """
     This function gets the byte representation of the array
         and stores the dtype and shape for reconstruction
@@ -378,7 +379,7 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
     arr_shape = my_array.shape
     arr_dtype = my_array.dtype.name
 
-    return arr_bytes, arr_shape, arr_dtype
+    return [arr_bytes, arr_shape, arr_dtype]
 
 
 def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.ndarray:
