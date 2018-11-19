@@ -1028,7 +1028,8 @@ class _PointerTensor(_SyftTensor):
         self_ = tensor_command["self"] if has_self else None
 
         if attr == "end_get":
-            response = self_.get()
+            # For end_get use the tensor in the original Syft command
+            response = syft_command["self"].get()
         else:
             command, locations, owners = torch_utils.compile_command(
                 attr, args, kwargs, has_self=has_self, self=self_
