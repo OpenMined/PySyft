@@ -140,10 +140,11 @@ class TorchHook:
         # Overload Torch tensor properties with Syft properties
         self._hook_properties(tensor_type)
 
-        # Returns a list of methods to be overloaded, stored in the dict to_auto_overload with tensor_type as a key
-        self.to_auto_overload[
+        # Returns a list of methods to be overloaded, stored in the dict to_auto_overload
+        # with tensor_type as a key
+        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
             tensor_type
-        ] = self._which_methods_should_we_auto_overload(tensor_type)
+        )
 
         # Rename native functions
         self._rename_native_functions(tensor_type)
@@ -165,7 +166,9 @@ class TorchHook:
 
     def _add_registration_to___init__(hook_self, tensor_type, torch_tensor=False):
 
-        """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors to add PySyft tensor functionality"""
+        """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors
+           to add PySyft tensor functionality
+        """
 
         if "native___init__" not in dir(tensor_type):
             tensor_type.native___init__ = tensor_type.__init__
@@ -235,11 +238,7 @@ class TorchHook:
                 is_service_func = False
             is_overloaded = re.match("native*", attr) is not None
 
-            if (
-                (is_desc or (is_func and not is_service_func))
-                and not is_base
-                and not is_overloaded
-            ):
+            if (is_desc or (is_func and not is_service_func)) and not is_base and not is_overloaded:
                 to_overload.append(attr)
 
         return to_overload
@@ -299,9 +298,7 @@ class TorchHook:
 
         for attr in dir(parent_syft_obj):
             if attr not in exclude:
-                if attr in dir(tensor_type) and f"native_{attr}" not in dir(
-                    tensor_type
-                ):
+                if attr in dir(tensor_type) and f"native_{attr}" not in dir(tensor_type):
                     setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
                 setattr(tensor_type, attr, getattr(parent_syft_obj, attr))
 

@@ -61,10 +61,7 @@ class BaseWorker(ABC):
         # self.add_worker(sy.local_worker)
 
         # For performance, we cache each
-        self._message_router = {
-            MSGTYPE_OBJ: self.set_obj,
-            MSGTYPE_OBJ_REQ: self.get_obj,
-        }
+        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.get_obj}
 
     # SECTION: Methods which MUST be overridden by subclasses
 
@@ -128,7 +125,7 @@ class BaseWorker(ABC):
     def request_obj(self, obj_id, location):
         return self.send_msg(MSGTYPE_OBJ_REQ, obj_id, location)
 
-    ## SECTION: Manage the workers network
+    # SECTION: Manage the workers network
 
     def get_worker(self, id_or_worker):
         """get_worker(self, id_or_worker) -> BaseWorker
@@ -163,9 +160,7 @@ class BaseWorker(ABC):
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
             else:
-                logging.warning(
-                    "Worker", self.id, "couldnt recognize worker", id_or_worker
-                )
+                logging.warning("Worker", self.id, "couldnt recognize worker", id_or_worker)
                 return id_or_worker
         else:
             if id_or_worker.id not in self._known_workers:
