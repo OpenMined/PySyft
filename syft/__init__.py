@@ -1,4 +1,5 @@
 """Some syft imports..."""
+<<<<<<< HEAD
 
 from syft import dp
 from syft import core
@@ -59,3 +60,10 @@ setattr(syft, "deser", _SyftTensor.deser)
 # hook again or if you need to hook it with a special local_worker
 # (such as SocketWorker)
 # hook = TorchHook(verbose=False)
+=======
+from . import frameworks
+from . import workers
+from . import serde
+
+__all__ = ["frameworks", "workers", "serde"]
+>>>>>>> 4db7aa6dae5d324e372ab1ec49a1e30a21a3b579
