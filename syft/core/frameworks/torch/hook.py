@@ -640,7 +640,7 @@ class TorchHook:
 
     def _hook_module(self):
 
-        """Overloading torch.nn.Module with PySyft functionality, the primary module responsible for core ML functionality such as
+        """Overloads torch.nn.Module with PySyft functionality, the primary module responsible for core ML functionality such as
            Neural network layers and loss functions
         """
 
@@ -653,14 +653,18 @@ class TorchHook:
             return missing_grad
 
         def create_grad_objects(model):
-            """Assigns gradient to model parameters if not assigned"""
+            """Assigns gradient to model parameters if not assigned
+               Parameters: model: Torch model
+            """
             for p in model.parameters():
                 o = p.sum()
                 o.backward()
                 p.grad -= p.grad
 
         def module_send_(self, dest):
-            """Overloads send to remote for torch.nn.Module."""
+            """Overloads send to remote for torch.nn.Module.
+               Parameters: dest: 
+            """
             if module_is_missing_grad(self):
                 create_grad_objects(self)
 
@@ -698,7 +702,7 @@ class TorchHook:
         torch.nn.Module.get = module_get_
 
         def module_fix_precision_(self):
-            """Overloads fix_precision for torch.nn.Module."""
+            """Translates floating point to fixed precision"""
             if module_is_missing_grad(self):
                 create_grad_objects(self)
 
