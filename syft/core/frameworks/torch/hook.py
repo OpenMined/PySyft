@@ -4,6 +4,7 @@ import inspect
 import re
 import logging
 import types
+import copy
 import syft as sy
 from syft.core import workers
 from syft.core.frameworks.torch import utils as torch_utils
@@ -670,10 +671,29 @@ class TorchHook:
 
         torch.nn.Module.send = module_send_
 
+        def module_end_get_(self):
+            """Overloads send to remote for torch.nn.Module."""
+            if module_is_missing_grad(self):
+                create_grad_objects(self)
+
+            for p in self.parameters():
+                p.end_get()
+
+            return self
+
+        torch.nn.Module.end_get = module_end_get_
+
+        def module_move_(self, dest):
+            return self.send(dest).end_get()
+
+        torch.nn.Module.move =  module_move_
+
         def module_get_(self):
             """Get model parameters"""
             for p in self.parameters():
                 p.get()
+
+            return self
 
         torch.nn.Module.get = module_get_
 
@@ -688,3 +708,8 @@ class TorchHook:
             return self
 
         torch.nn.Module.fix_precision = module_fix_precision_
+
+        def module_copy_(self):
+            return copy.deepcopy(self)
+
+        torch.nn.Module.copy = module_copy_

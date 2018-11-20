@@ -2743,6 +2743,11 @@ class _TorchVariable(_TorchObject):
         involved, there are actually 4 chains involved, the variable chain,
         variable.data, variable.grad, variable.grad.data."""
 
+        if isinstance(self.data.child, _LocalTensor):
+            original_pointer = True
+        else:
+            original_pointer = False
+
         if len(workers) == 1:
             worker = workers[0]
         elif len(workers) == 0:
@@ -2795,7 +2800,8 @@ class _TorchVariable(_TorchObject):
                 wrapper.native_set_()
             wrapper.child.id = id
             pointer = wrapper.child.create_pointer(
-                location=worker, id_at_location=remote_id, register=True
+                location=worker, id_at_location=remote_id, register=True,
+                original_pointer=original_pointer
             )
             torch_utils.bind_tensor_nodes(wrapper, pointer)
 
