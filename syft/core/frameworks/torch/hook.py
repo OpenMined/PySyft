@@ -618,6 +618,11 @@ class TorchHook:
 
         torch.nn.Module.end_get = module_end_get_
 
+        def module_move_(self, dest):
+            return self.send(dest).end_get()
+
+        torch.nn.Module.move =  module_move_
+
         def module_get_(self):
             """Overload get from remote for torch.nn.Module."""
             for p in self.parameters():
