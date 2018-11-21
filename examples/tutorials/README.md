@@ -24,4 +24,4 @@ You'll Learn:
 - [Part 5: Intro to Encrypted Programs](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%205%20-%20Intro%20to%20Encrypted%20Programs.ipynb)
 - [Part 6: Build an Encrypted, Decentralized Database](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%206%20-%20Build%20an%20Encrypted%2C%20Decentralized%20Database.ipynb)
 - [Part 7: Build an Encrypted, Decentralized Ledger](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%207%20-%20Build%20an%20Encrypted%2C%20Decentralized%20Ledger.ipynb)
-- [Part 8: Encrypted Deep Model on Encrypted Data](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%208%20-%20Train%20an%20Encrypted%20Neural%20Network%20on%20Encrypted%20Data.ipynb)
+- [Part 8: Train an Encrypted Neural Network on Encrypted Data](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%208%20-%20Train%20an%20Encrypted%20Neural%20Network%20on%20Encrypted%20Data.ipynb)
