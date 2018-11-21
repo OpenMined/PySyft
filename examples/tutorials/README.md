@@ -15,7 +15,7 @@ In this step-by-step tutorial series, you'll learn about all the ways PySyft can
 - Star PySyft on Github! - [https://github.com/OpenMined/PySyft](https://github.com/OpenMined/PySyft)
 - Make a Youtube video teaching these notebooks!
 
-You'll Learn:
+# You'll Learn:
 
 - [Part 1: The Basic Tools of Private, Decentralized Data Science](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%201%20-%20The%20Basic%20Tools%20of%20Private%2C%20Decentralized%20Data%20Science.ipynb)
 - [Part 2: Intro to Federated Learning](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%202%20-%20Intro%20to%20Federated%20Learning.ipynb)
