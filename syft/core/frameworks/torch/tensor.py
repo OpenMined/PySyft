@@ -2062,6 +2062,7 @@ class _SPDZTensor(_SyftTensor):
                 # TODO: and the grad ?
             else:
                 gp_response = spdz.spdz_mul(self.shares, other.shares, workers)
+
         else:
             gp_response = self.shares * other
         return gp_response
