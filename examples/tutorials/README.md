@@ -4,7 +4,7 @@ In this step-by-step tutorial series, you'll learn about all the ways PySyft can
 
 ## Why Take This Tutorial?
 
-**1) A Competitive Career Advantage** - For the past 20 years, the digital revolution has made data more and more accessible in ever larger quantities as analog processes have become digitized. However, with new regulation such as [GDPR](https://eugdpr.org/), enterprises are under pressure to have less freedom with how they use - and more importantly how they analyze - personal information. **Bottom Line:** Data Scientists aren't going to have access to as much data with "old school" tools, but by learning the tools of Private Deep Learning, YOU can be ahead of this curve and have a competitive advantage in your career. 
+**1) A Competitive Career Advantage** - For the past 20 years, the digital revolution has made data more and more accessible in ever larger quantities as analog processes have become digitized. However, with new regulation such as [GDPR](https://eugdpr.org/), enterprises are under pressure to have less freedom with how they use - and more importantly how they analyze - personal information. **Bottom Line:** Data Scientists aren't going to have access to as much data with "old school" tools, but by learning the tools for privacy preserving Deep Learning, YOU can be ahead of this curve and have a competitive advantage in your career. 
 
 **2) Entrepreneurial Opportunities** - There are a whole host of problems in society that Deep Learning can solve, but many of the most important haven't been explored because it would require access to incredibly sensitive information about people (consider using Deep Learning to help people with mental or relationship issues!). Thus, learning Private Deep Learning unlocks a whole host of new startup opportunities for you which were not previously available to others without these toolsets.
 
@@ -13,7 +13,7 @@ In this step-by-step tutorial series, you'll learn about all the ways PySyft can
 ## How do I get extra credit?
 
 - Star PySyft on Github! - [https://github.com/OpenMined/PySyft](https://github.com/OpenMined/PySyft)
-- Make a Youtube video teaching this notebook!
+- Make a Youtube video teaching these notebooks!
 
 You'll Learn:
 
