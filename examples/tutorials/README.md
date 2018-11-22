@@ -24,4 +24,5 @@ In this step-by-step tutorial series, you'll learn about all the ways PySyft can
 - [Part 5: Intro to Encrypted Programs](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%205%20-%20Intro%20to%20Encrypted%20Programs.ipynb)
 - [Part 6: Build an Encrypted, Decentralized Database](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%206%20-%20Build%20an%20Encrypted%2C%20Decentralized%20Database.ipynb)
 - [Part 7: Build an Encrypted, Decentralized Ledger](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%207%20-%20Build%20an%20Encrypted%2C%20Decentralized%20Ledger.ipynb)
-- [Part 8: Train an Encrypted Neural Network on Encrypted Data](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%208%20-%20Train%20an%20Encrypted%20Neural%20Network%20on%20Encrypted%20Data.ipynb)
+- [Part 8: Federated Learning - Encrypted Gradient Aggregation](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%208%20-%20Federated%20Learning%20-%20Encrypted%20Gradient%20Aggregation.ipynb)
+- [Part 9: Train an Encrypted Neural Network on Encrypted Data](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%209%20-%20Train%20an%20Encrypted%20Neural%20Network%20on%20Encrypted%20Data.ipynb)
