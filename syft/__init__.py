@@ -6,6 +6,7 @@ from . import serde
 from syft.frameworks.torch import TorchHook
 from syft.workers import VirtualWorker
 
-from torch import Tensor
+__all__ = ["frameworks", "workers", "serde", "TorchHook", "VirtualWorker"]
 
-__all__ = ["frameworks", "workers", "serde"]
+local_worker = None
+torch = None

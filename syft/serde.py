@@ -32,7 +32,6 @@ from typing import Collection
 from typing import Dict
 from typing import Tuple
 from typing import List
-from typing import Union
 import torch
 import msgpack
 import lz4
@@ -315,7 +314,7 @@ def _detail_dictionary(my_dict: Dict) -> Dict:
 # Range
 
 
-def _simplify_range(my_range: range) -> List[int]:
+def _simplify_range(my_range: range) -> Tuple[int, int, int]:
     """
     This function extracts the start, stop and step from the range.
 
@@ -359,7 +358,7 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
 #   numpy array
 
 
-def _simplify_ndarray(my_array: numpy.ndarray) -> List[Union[bin, List, str]]:
+def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
     """
     This function gets the byte representation of the array
         and stores the dtype and shape for reconstruction
