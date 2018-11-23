@@ -3,13 +3,7 @@ from .abstract import AbstractTensor
 
 class PointerTensor(AbstractTensor):
     def __init__(
-        self,
-        parent=None,
-        location=None,
-        id_at_location=None,
-        register=None,
-        owner=None,
-        id=None,
+        self, parent=None, location=None, id_at_location=None, register=None, owner=None, id=None
     ):
         self.location = location
         self.id_at_location = id_at_location
