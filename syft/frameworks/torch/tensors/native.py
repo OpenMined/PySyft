@@ -2,6 +2,8 @@ import random
 
 from syft.frameworks.torch.tensors import PointerTensor
 
+import syft
+
 
 class TorchTensor:
     """
@@ -11,7 +13,7 @@ class TorchTensor:
 
     def __init__(self):
         self.id = None
-        self.owner = None
+        self.owner = syft.local_worker
 
     def create_pointer(
         self, location=None, id_at_location=None, register=False, owner=None, ptr_id=None
