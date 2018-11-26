@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 import logging
+import syft
+import importlib
 
 from .. import serde
-
 
 MSGTYPE_CMD = 1
 MSGTYPE_OBJ = 2
@@ -124,6 +125,34 @@ class BaseWorker(ABC):
 
     def request_obj(self, obj_id, location):
         return self.send_msg(MSGTYPE_OBJ_REQ, obj_id, location)
+
+    # SECTION: Execute operations
+
+    def _execute_call(self, attr, self_, *args, **kwargs):
+        """
+        Receive, analyse and optionally forward a call to perform a command
+        """
+        has_self = self_ is not None
+
+        # if has_self:
+        #     command = torch._command_guard(attr, "tensorvar_methods")
+        # else:
+        #     command = torch._command_guard(attr, "torch_modules")
+
+        if has_self:
+            native_attr = syft.torch.command_guard(attr, "tensorvar_methods", get_native=True)
+            command = getattr(self_, native_attr)
+        else:
+            native_func = syft.torch.command_guard(attr, "torch_modules", get_native=True)
+            command = native_func
+        if type(command) == str:
+            mod_name, func_name = command.split(".")
+            mod = importlib.import_module(mod_name)
+            command_to_execute = getattr(mod, func_name)
+            response = command_to_execute(*args, **kwargs)
+        else:
+            response = command(*args, **kwargs)
+        return response
 
     # SECTION: Manage the workers network
 

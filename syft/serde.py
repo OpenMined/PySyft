@@ -332,7 +332,7 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
 
     """
 
-    return my_range.start, my_range.stop, my_range.step
+    return [my_range.start, my_range.stop, my_range.step]
 
 
 def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
@@ -378,7 +378,7 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
     arr_shape = my_array.shape
     arr_dtype = my_array.dtype.name
 
-    return arr_bytes, arr_shape, arr_dtype
+    return [arr_bytes, arr_shape, arr_dtype]
 
 
 def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.ndarray:

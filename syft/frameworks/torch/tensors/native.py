@@ -14,12 +14,7 @@ class TorchTensor:
         self.owner = None
 
     def create_pointer(
-        self,
-        location=None,
-        id_at_location=None,
-        register=False,
-        owner=None,
-        ptr_id=None,
+        self, location=None, id_at_location=None, register=False, owner=None, ptr_id=None
     ):
 
         if owner is None:
