@@ -405,6 +405,46 @@ def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.nda
 
     return res
 
+#   slice
+
+
+def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
+    """
+    This function creates a list that represents a slice.
+
+    Args:
+        slice: a python slice
+
+    Returns:
+        list: a list holding the start, stop and step values
+
+    Usage:
+
+        slice_representation = _simplify_slice(slice(1,2,3))
+
+    """
+    return [my_slice.start, my_slice.stop, my_slice.step]
+
+
+def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
+    """
+    This function extracts the start, stop and step from a list.
+
+    Args:
+        list: a list defining the slice parameters [start, stop, step]
+
+    Returns:
+        range: a range object
+
+    Usage:
+        new_range = _detail_range([1, 3, 4])
+
+        assert new_range == range(1, 3, 4)
+
+    """
+
+    return slice(my_slice[0], my_slice[1], my_slice[2])
+
 
 # High Level Simplification Router
 
@@ -458,6 +498,7 @@ simplifiers[set] = [3, _simplify_collection]
 simplifiers[dict] = [4, _simplify_dictionary]
 simplifiers[range] = [5, _simplify_range]
 simplifiers[numpy.ndarray] = [6, _simplify_ndarray]
+simplifiers[slice] = [7, _simplify_slice]
 
 
 def _detail(obj: object) -> object:
@@ -489,4 +530,5 @@ detailers = [
     _detail_dictionary,
     _detail_range,
     _detail_ndarray,
+    _detail_slice,
 ]
