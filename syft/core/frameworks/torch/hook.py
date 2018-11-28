@@ -686,7 +686,7 @@ class TorchHook:
         def module_move_(self, dest):
             return self.send(dest).end_get()
 
-        torch.nn.Module.move =  module_move_
+        torch.nn.Module.move = module_move_
 
         def module_get_(self):
             """Get model parameters"""
