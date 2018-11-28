@@ -110,19 +110,31 @@ class TestSerde(TestCase):
 
         assert numpy.array_equal(arr, arr_serialized_deserialized)
 
-    def test_compress_decompress(self):
+    def test_compress_decompress_lz4(self):
         original = msgpack.dumps([1, 2, 3])
         compressed = _compress(original)
         decompressed = _decompress(compressed)
         assert type(compressed) == bytes
         assert original == decompressed
 
-    def test_compressed_serde(self):
+    def test_compress_decompress_zstd(self):
+        original = msgpack.dumps([1, 2, 3])
+        compressed = _compress(original, 'zstd')
+        decompressed = _decompress(compressed, 'zstd')
+        assert type(compressed) == bytes
+        assert original == decompressed
+
+    def test_compressed_serde_lz4(self):
         arr = numpy.random.random((100, 100))
         arr_serialized = serialize(arr, compress=True)
 
         arr_serialized_deserialized = deserialize(arr_serialized, compressed=True)
+        assert numpy.array_equal(arr, arr_serialized_deserialized)
 
+    def test_compressed_serde_zstd(self):
+        arr = numpy.random.random((100, 100))
+        arr_serialized = serialize(arr, compress=True, compressScheme='zstd')
+        arr_serialized_deserialized = deserialize(arr_serialized, compressed=True, compressScheme='zstd')
         assert numpy.array_equal(arr, arr_serialized_deserialized)
 
     def test_dict(self):
