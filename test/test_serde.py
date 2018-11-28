@@ -48,7 +48,7 @@ class TestSimplify(TestCase):
 
     def test_range_simplify(self):
         input = range(1, 3, 4)
-        target = [5, [1, 3, 4]]
+        target = [5, (1, 3, 4)]
         assert _simplify(input) == target
 
     def test_torch_tensor_simplify(self):
@@ -110,7 +110,6 @@ class TestSerde(TestCase):
         assert (tuple_serialized_deserialized[0] == tensor_one).all()
         assert (tuple_serialized_deserialized[1] == tensor_two).all()
 
-
     def test_bytearray(self):
         bytearr = bytearray("This is a teststring", "utf-8")
         bytearr_serialized = serialize(bytearr, compress=False)
@@ -141,14 +140,13 @@ class TestSerde(TestCase):
 
         assert numpy.array_equal(arr, arr_serialized_deserialized)
 
-    def test_ndarray_serde(self):
+    def test_compressed_ndarray_serde(self):
         arr = numpy.random.random((100, 100))
         arr_serialized = serialize(arr, compress=True)
 
         arr_serialized_deserialized = deserialize(arr_serialized, compressed=True)
 
         assert numpy.array_equal(arr, arr_serialized_deserialized)
-
 
     def test_compress_decompress(self):
         original = msgpack.dumps([1, 2, 3])
@@ -215,7 +213,6 @@ class TestSerde(TestCase):
         assert (dict_serialized_deserialized[0] == tensor_one).all()
         assert (dict_serialized_deserialized[1] == tensor_two).all()
 
-
     def test_range_serde(self):
         _range = range(1, 2, 3)
 
@@ -233,7 +230,6 @@ class TestSerde(TestCase):
         range_serialized_deserialized = deserialize(range_serialized, compressed=True)
 
         assert _range == range_serialized_deserialized
-
 
     def test_list(self):
         # Test with integers
@@ -285,7 +281,6 @@ class TestSerde(TestCase):
         assert (list_serialized_deserialized[0] == tensor_one).all()
         assert (list_serialized_deserialized[1] == tensor_two).all()
 
-
     def test_set(self):
         # Test with integers
         _set = set([1, 2])
@@ -336,9 +331,8 @@ class TestSerde(TestCase):
         assert (set_serialized_deserialized[0] == tensor_one).all()
         assert (set_serialized_deserialized[1] == tensor_two).all()
 
-
     def test_slice(self):
-        s = slice(0,100,2)
+        s = slice(0, 100, 2)
         x = numpy.random.rand(100)
         s_serialized = serialize(s, compress=False)
         s_serialized_deserialized = deserialize(s_serialized, compressed=False)
@@ -346,17 +340,16 @@ class TestSerde(TestCase):
         assert type(s) == type(s_serialized_deserialized)
         assert (x[s] == x[s_serialized_deserialized]).all()
 
-        s = slice(40,50)
+        s = slice(40, 50)
         x = numpy.random.rand(100)
         s_serialized = serialize(s, compress=False)
         s_serialized_deserialized = deserialize(s_serialized, compressed=False)
 
         assert type(s) == type(s_serialized_deserialized)
         assert (x[s] == x[s_serialized_deserialized]).all()
-
 
     def test_compressed_slice(self):
-        s = slice(0,100,2)
+        s = slice(0, 100, 2)
         x = numpy.random.rand(100)
         s_serialized = serialize(s, compress=True)
         s_serialized_deserialized = deserialize(s_serialized, compressed=True)
@@ -364,7 +357,7 @@ class TestSerde(TestCase):
         assert type(s) == type(s_serialized_deserialized)
         assert (x[s] == x[s_serialized_deserialized]).all()
 
-        s = slice(40,50)
+        s = slice(40, 50)
         x = numpy.random.rand(100)
         s_serialized = serialize(s, compress=True)
         s_serialized_deserialized = deserialize(s_serialized, compressed=True)
