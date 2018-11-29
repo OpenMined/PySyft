@@ -153,7 +153,8 @@ class TorchHook:
         # Overaload Torch tensor properties with Syft properties
         self._hook_properties(tensor_type)
 
-        # Returns a list of methods to be overloaded  which would be saved in a dictionary variable to_auto_overload with tensor_type being the key
+        # Returns a list of methods to be overloaded  which would be saved in a
+        # dictionary variable to_auto_overload with tensor_type being the key
         self.to_auto_overload[
             tensor_type
         ] = self._which_methods_should_we_auto_overload(tensor_type)
@@ -184,7 +185,8 @@ class TorchHook:
         hook_self, tensorvar_type, register_child_instead=False
     ):
 
-        """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors to add PySyft tensor functionality"""
+        """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors
+        to add PySyft tensor functionality"""
 
         # TODO: This is added because of the following contradiction: instanciate x = FloatTensor()
         # and ask x.__module__, you'll get `sy.core.frameworks.torch.tensor.FloatTensor`
@@ -231,10 +233,10 @@ class TorchHook:
 
     def _hook_properties(hook_self, tensor_type):
 
-        """Overloads tensor_type properties 
-        
+        """Overloads tensor_type properties
+
            Parameters: tensor_type: Torch tensor
-           
+
         """
 
         @property
@@ -302,7 +304,7 @@ class TorchHook:
 
     def _which_methods_should_we_auto_overload(self, tensor_type=torch.FloatTensor):
 
-        """Creates list of Torch methods to auto overload except methods included in exclusion list  
+        """Creates list of Torch methods to auto overload except methods included in exclusion list
            Parameters: Torch Tensor type (default: Float Tensor)
            Return: List of methods to be overloaded
         """
@@ -376,9 +378,9 @@ class TorchHook:
 
     def _add_methods_from__TorchObject(self, tensor_type):
         """Add methods to auto overloaded functions.
-        
+
            Parameters: tensor_type: Torch Tensor
-        
+
         """
         exclude = [
             "__class__",
@@ -640,8 +642,9 @@ class TorchHook:
 
     def _hook_module(self):
 
-        """Overloading torch.nn.Module with PySyft functionality, the primary module responsible for core ML functionality such as
-           Neural network layers and loss functions
+        """Overloading torch.nn.Module with PySyft functionality, the primary module
+           responsible for core ML functionality such as Neural network layers and
+           loss functions
         """
 
         def module_is_missing_grad(model):
@@ -686,7 +689,7 @@ class TorchHook:
         def module_move_(self, dest):
             return self.send(dest).end_get()
 
-        torch.nn.Module.move =  module_move_
+        torch.nn.Module.move = module_move_
 
         def module_get_(self):
             """Get model parameters"""

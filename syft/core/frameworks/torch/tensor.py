@@ -1576,7 +1576,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         return torch_tensorvar, self.precision_fractional
 
     def get(self, *args, **kwargs):
-        """/!\ Return a tensorvar."""
+        """Return a tensorvar."""
         if torch_utils.is_variable(self.child):
             var = self.parent
             if self.child.grad is None:
@@ -2632,7 +2632,7 @@ class _TorchTensor(_TorchObject):
             for worker in workers:
                 gpt_dict[worker] = (self * 1).send(worker).child
             sy._GeneralizedPointerTensor(gpt_dict).on(self)
-            if(as_list):
+            if as_list:
                 return self.pointers()
             else:
                 return self
@@ -2737,7 +2737,7 @@ class _TorchVariable(_TorchObject):
         new_data_id=None,
         new_grad_id=None,
         new_grad_data_id=None,
-        as_list=False
+        as_list=False,
     ):
         """Give the root of the chain held by self to worker self->alice->obj
         [worker] => self->worker->alice->obj Because there are Variable
@@ -2761,7 +2761,7 @@ class _TorchVariable(_TorchObject):
                 gpt_dict[worker] = (self * 1).send(worker).child
 
             sy._GeneralizedPointerTensor(gpt_dict).on(self)
-            if(as_list):
+            if as_list:
                 return self.child.pointers()
             return self
 
@@ -2801,8 +2801,10 @@ class _TorchVariable(_TorchObject):
                 wrapper.native_set_()
             wrapper.child.id = id
             pointer = wrapper.child.create_pointer(
-                location=worker, id_at_location=remote_id, register=True,
-                original_pointer=original_pointer
+                location=worker,
+                id_at_location=remote_id,
+                register=True,
+                original_pointer=original_pointer,
             )
             torch_utils.bind_tensor_nodes(wrapper, pointer)
 
@@ -2871,8 +2873,8 @@ class _TorchVariable(_TorchObject):
         a chain (then is_head=False): in that case we don't ser the .data and .grad which refer to
         chains which are already serialized thanks to the head variable which does it.
             Var ---- node ... node --- Var ---- ...
-            \-data --node ... node --- data --- ...
-             \-grad--node ... node --- grad --- ...
+            |-data --node ... node --- data --- ...
+             |-grad--node ... node --- grad --- ...
         """
         key = encode.get_serialized_key(self)
 
