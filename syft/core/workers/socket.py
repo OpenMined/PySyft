@@ -197,21 +197,13 @@ class SocketWorker(BaseWorker):
 
             response = self.decode_msg(raw_response)
 
-            ps = []
-            for p in response["obj"]:
-                ps.append(
-                    encode.decode(
-                        p["__tuple__"][0],
-                        worker=self.hook.local_worker,
-                        message_is_dict=True,
-                    )
-                )
-            return ps
+            tensors = encode.decode(
+                response, worker=self.hook.local_worker, message_is_dict=True
+            )
+
+            return list(tensors)
         else:
-            ids = self._search(query)
-            tensors = []
-            for id in ids:
-                tensors.append(self.get_obj(id))
+            tensors = self._search(query)
             return tensors
 
     def _send_msg(self, message_wrapper_json_binary, recipient):

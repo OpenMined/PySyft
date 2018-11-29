@@ -169,7 +169,9 @@ class BaseWorker(ABC):
                     if constraint not in id:
                         failed = True
                 if not failed:
-                    results.add(id)
+                    syft_tensor = self._objects[id]
+                    tensorvar = syft_tensor.parent
+                    results.add(tensorvar)
         return results
 
     def search(self, query="#boston"):
@@ -466,23 +468,8 @@ class BaseWorker(ABC):
             # perform the search over all tensors on the worker
             tensors = self.search(message)
 
-            # convert the resulting tensors to pointers
-            pointers = []
-
-            for tensor in tensors:
-
-                # initialize a pointer to the tensor.
-                ptr = tensor.parent.create_pointer()
-
-                # serialize the pointer recursively
-                encoding = encode.encode(
-                    ptr, private_local=False, retrieve_pointers=True
-                )
-
-                pointers.append(encoding)
-
             # return the list of pointers.
-            return pointers, True
+            return tensors, True
 
         # Hopefully we don't reach this point.
         return "Unrecognized message type:" + message_wrapper["type"]
