@@ -27,6 +27,7 @@ class TorchAttributes(object):
         self.torch_exclude = ["save", "load", "typename", "is_tensor", "manual_seed"]
 
         # SECTION: List all torch tensor methods we want to overload
+
         self.tensor_types = [torch.Tensor]
 
         self.tensorvar_methods = list(
