@@ -658,7 +658,11 @@ class TestTorchTensor(TestCase):
 
         bob_id = random.randint(0, 10e10)
         alice_id = random.randint(0, 10e10)
-        x = sy.FloatTensor([1, 2, 3, 4, 5]).send(bob, ptr_id=bob_id).send(alice, ptr_id=alice_id)
+        x = (
+            sy.FloatTensor([1, 2, 3, 4, 5])
+            .send(bob, ptr_id=bob_id)
+            .send(alice, ptr_id=alice_id)
+        )
 
         x2 = x.end_get()
         # Now alice will own the tensor that was in bob and bob won't have it anymore
@@ -1957,6 +1961,7 @@ class TestGPCTensor(TestCase):
         results = x_gp.workers()
 
         assert results == [k.id for k in x_pointer_tensor_dict.keys()]
+
 
 if __name__ == "__main__":
     unittest.main()
