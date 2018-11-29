@@ -31,7 +31,6 @@ By default, we serialize using msgpack and compress using lz4.
 from typing import Collection
 from typing import Dict
 from typing import Tuple
-from typing import List
 import torch
 import msgpack
 import lz4
@@ -271,7 +270,7 @@ def _detail_collection_set(my_collection: Collection) -> Collection:
     return set(pieces)
 
 
-def _detail_collection_tuple(my_tuple: tuple) -> tuple:
+def _detail_collection_tuple(my_tuple: Tuple) -> Tuple:
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a tuple of simple python objects
@@ -351,7 +350,7 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
 
     """
 
-    return [my_range.start, my_range.stop, my_range.step]
+    return (my_range.start, my_range.stop, my_range.step)
 
 
 def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
@@ -377,7 +376,7 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
 #   numpy array
 
 
-def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
+def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
     """
     This function gets the byte representation of the array
         and stores the dtype and shape for reconstruction
@@ -397,10 +396,10 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
     arr_shape = my_array.shape
     arr_dtype = my_array.dtype.name
 
-    return [arr_bytes, arr_shape, arr_dtype]
+    return (arr_bytes, arr_shape, arr_dtype)
 
 
-def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.ndarray:
+def _detail_ndarray(arr_representation: Tuple[bin, Tuple, str]) -> numpy.ndarray:
     """
     This function reconstruct a numpy array from it's byte data, the shape and the dtype
         by first loading the byte data with the appropiate dtype and then reshaping it into the
@@ -423,6 +422,47 @@ def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.nda
     assert type(res) == numpy.ndarray
 
     return res
+
+
+#   slice
+
+
+def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
+    """
+    This function creates a list that represents a slice.
+
+    Args:
+        slice: a python slice
+
+    Returns:
+        list: a list holding the start, stop and step values
+
+    Usage:
+
+        slice_representation = _simplify_slice(slice(1,2,3))
+
+    """
+    return (my_slice.start, my_slice.stop, my_slice.step)
+
+
+def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
+    """
+    This function extracts the start, stop and step from a list.
+
+    Args:
+        list: a list defining the slice parameters [start, stop, step]
+
+    Returns:
+        range: a range object
+
+    Usage:
+        new_range = _detail_range([1, 3, 4])
+
+        assert new_range == range(1, 3, 4)
+
+    """
+
+    return slice(my_slice[0], my_slice[1], my_slice[2])
 
 
 # High Level Simplification Router
@@ -477,6 +517,7 @@ simplifiers[set] = [3, _simplify_collection]
 simplifiers[dict] = [4, _simplify_dictionary]
 simplifiers[range] = [5, _simplify_range]
 simplifiers[numpy.ndarray] = [6, _simplify_ndarray]
+simplifiers[slice] = [7, _simplify_slice]
 
 
 def _detail(obj: object) -> object:
@@ -508,4 +549,5 @@ detailers = [
     _detail_dictionary,
     _detail_range,
     _detail_ndarray,
+    _detail_slice,
 ]
