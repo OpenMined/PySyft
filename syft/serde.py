@@ -44,7 +44,7 @@ import zstd
 # High Level Public Functions (these are the ones you use)
 
 
-def serialize(obj: object, compress=True, compressScheme='lz4') -> bin:
+def serialize(obj: object, compress=True, compressScheme="lz4") -> bin:
     """This is the high level function for serializing any object or
     dictionary/collection of objects."""
 
@@ -65,25 +65,26 @@ def serialize(obj: object, compress=True, compressScheme='lz4') -> bin:
     # if compressed stream length is greater than input stream
     # we output the input stream as it is with header set to '0'
     # otherwise we output the compressed stream with header set to '1'
-    # even if compressed flag is set to false by the caller we 
-    # output the input stream as it is with header set to '0' 
+    # even if compressed flag is set to false by the caller we
+    # output the input stream as it is with header set to '0'
     if compress:
         compress_stream = _compress(binary, compressScheme)
         if len(compress_stream) < len(binary):
-           return b'\x31' + compress_stream
+            return b"\x31" + compress_stream
 
-    return b'\x30' + binary
+    return b"\x30" + binary
 
-def deserialize(binary: bin, compressed=True, compressScheme='lz4') -> object:
+
+def deserialize(binary: bin, compressed=True, compressScheme="lz4") -> object:
     """
     This is the high level function for deserializing any object
     or dictionary/collection of objects.
     """
-    #check the 1-byte header to see if input stream was compressed or not
+    # check the 1-byte header to see if input stream was compressed or not
     if binary[0] == 48:
-       compressed = False
-    
-    #remove the 1-byte header from the input stream
+        compressed = False
+
+    # remove the 1-byte header from the input stream
     binary = binary[1:]
     # 1)  Decompress
     # If enabled, this functionality decompresses the binary
@@ -107,7 +108,7 @@ def deserialize(binary: bin, compressed=True, compressScheme='lz4') -> object:
 # Chosen Compression Algorithm
 
 
-def _compress(decompressed_input_bin: bin, compressScheme='lz4') -> bin:
+def _compress(decompressed_input_bin: bin, compressScheme="lz4") -> bin:
     """
     This function compresses a binary using LZ4
 
@@ -118,13 +119,13 @@ def _compress(decompressed_input_bin: bin, compressScheme='lz4') -> bin:
         bin: a compressed binary
 
     """
-    if compressScheme == 'lz4':
-       return lz4.frame.compress(decompressed_input_bin)
+    if compressScheme == "lz4":
+        return lz4.frame.compress(decompressed_input_bin)
     else:
-       return zstd.compress(decompressed_input_bin)
+        return zstd.compress(decompressed_input_bin)
 
 
-def _decompress(compressed_input_bin: bin, compressScheme='lz4') -> bin:
+def _decompress(compressed_input_bin: bin, compressScheme="lz4") -> bin:
     """
     This function decompresses a binary using LZ4
 
@@ -135,10 +136,10 @@ def _decompress(compressed_input_bin: bin, compressScheme='lz4') -> bin:
         bin: decompressed binary
 
     """
-    if compressScheme == 'lz4':
-       return lz4.frame.decompress(compressed_input_bin)
+    if compressScheme == "lz4":
+        return lz4.frame.decompress(compressed_input_bin)
     else:
-       return zstd.decompress(compressed_input_bin)
+        return zstd.decompress(compressed_input_bin)
 
 
 # Simplify/Detail Torch Tensors
