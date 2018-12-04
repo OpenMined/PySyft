@@ -166,7 +166,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
 
 def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
     """
-    This function converts a serialied torch tensor into a torch tensor
+    This function converts a serialized torch tensor into a torch tensor
     using pickle.
 
     Args:
@@ -509,16 +509,16 @@ def _simplify(obj: object) -> object:
         return obj
 
 
-simplifiers = {}
-
-simplifiers[torch.Tensor] = [0, _simplify_torch_tensor]
-simplifiers[tuple] = [1, _simplify_collection]
-simplifiers[list] = [2, _simplify_collection]
-simplifiers[set] = [3, _simplify_collection]
-simplifiers[dict] = [4, _simplify_dictionary]
-simplifiers[range] = [5, _simplify_range]
-simplifiers[numpy.ndarray] = [6, _simplify_ndarray]
-simplifiers[slice] = [7, _simplify_slice]
+simplifiers = {
+    torch.Tensor: [0, _simplify_torch_tensor],
+    tuple: [1, _simplify_collection],
+    list: [2, _simplify_collection],
+    set: [3, _simplify_collection],
+    dict: [4, _simplify_dictionary],
+    range: [5, _simplify_range],
+    numpy.ndarray: [6, _simplify_ndarray],
+    slice: [7, _simplify_slice],
+}
 
 
 def _detail(obj: object) -> object:
