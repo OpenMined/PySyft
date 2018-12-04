@@ -1,4 +1,4 @@
-# PySyft Step-By-Step Tutorial
+# Privacy Preserving Deep Learning with PyTorch and PySyft
 
 In this step-by-step tutorial series, you'll learn about all the ways PySyft can be used to bring Privacy and Decentralization to the Deep Learning ecosystem. This tutorial series is continually updated with new features as they are implemented, and is designed for complete beginners. 
 
