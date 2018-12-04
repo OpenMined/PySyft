@@ -118,7 +118,6 @@ class TorchHook:
         syft.local_worker = self.local_worker
 
     def _hook_native_tensors(self, tensor_type):
-
         """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality
            parameters: tensor_type: A Torch tensor
         """
@@ -144,7 +143,6 @@ class TorchHook:
         self._add_methods_from__torch_tensor(tensor_type)
 
     def _hook_syft_tensors(self, tensor_type):
-
         """Overloads Torch Tensors with all Syft tensor types
            parameters: tensor_type: A Torch tensor
         """
@@ -154,7 +152,6 @@ class TorchHook:
         self._hook_pointer_tensor(tensor_type)
 
     def _add_registration_to___init__(hook_self, tensor_type, torch_tensor=False):
-
         """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors
            to add PySyft tensor functionality
         """

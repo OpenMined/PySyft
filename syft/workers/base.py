@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 import logging
 import syft
+import importlib
 
 from .. import serde
-
 
 MSGTYPE_CMD = 1
 MSGTYPE_OBJ = 2
@@ -130,7 +130,7 @@ class BaseWorker(ABC):
 
     def _execute_call(self, attr, self_, *args, **kwargs):
         """
-        Receive, analyse and optionally forwar a call to perform a command
+        Receive, analyse and optionally forward a call to perform a command
         """
         has_self = self_ is not None
 
@@ -145,8 +145,14 @@ class BaseWorker(ABC):
         else:
             native_func = syft.torch.command_guard(attr, "torch_modules", get_native=True)
             command = native_func
-        # print("command", command, type(command))
-        response = command(*args, **kwargs)
+
+        if type(command) == str:
+            mod_name, func_name = command.split(".")
+            mod = importlib.import_module(mod_name)
+            command_to_execute = getattr(mod, func_name)
+            response = command_to_execute(*args, **kwargs)
+        else:
+            response = command(*args, **kwargs)
 
         return response
 
