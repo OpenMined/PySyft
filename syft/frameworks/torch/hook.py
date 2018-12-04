@@ -106,12 +106,12 @@ class TorchHook:
 
         self.to_auto_overload = {}
 
-        self._hook_native_tensors(torch.Tensor)
+        self._hook_native_tensor(torch.Tensor)
 
         # Add the local_worker to syft so that it can be found if the hook is called several times
         syft.local_worker = self.local_worker
 
-    def _hook_native_tensors(self, tensor_type):
+    def _hook_native_tensor(self, tensor_type):
         """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality
            parameters: tensor_type: A Torch tensor
         """
@@ -286,6 +286,10 @@ class TorchHook:
 
         def _execute_method_call(self, *args, **kwargs):
             worker = hook_self.local_worker
-            return worker._execute_call(attr, self, *args, **kwargs)
+
+            # TODO: finish - note that this functionality should not cause
+            # a performance penalty if the tensor is local
+
+            # return worker._execute_call(attr, self, *args, **kwargs)
 
         return _execute_method_call

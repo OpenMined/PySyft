@@ -28,7 +28,7 @@ class TorchAttributes(object):
 
         # SECTION: List all torch tensor methods we want to overload
 
-        # self.tensor_types = [torch.Tensor]
+        self.tensor_types = [torch.Tensor]
 
         self.tensorvar_methods = list(
             {method for tensorvar in self.tensor_types for method in dir(tensorvar)}
