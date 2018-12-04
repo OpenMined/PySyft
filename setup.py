@@ -1,5 +1,4 @@
 import os
-import unittest
 
 from setuptools import find_packages
 from setuptools import setup
@@ -13,13 +12,8 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-def my_test_suite():
-    test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover("test", pattern="test_*.py")
-    return test_suite
-
-
 requirements = read("requirements.txt").split()
+
 
 setup(
     name="syft",

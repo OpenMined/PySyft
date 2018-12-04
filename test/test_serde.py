@@ -4,7 +4,7 @@ from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
 from unittest import TestCase
-from torch import tensor
+from torch import Tensor
 import numpy
 import msgpack
 
@@ -52,7 +52,7 @@ class TestSimplify(TestCase):
         assert _simplify(input) == target
 
     def test_torch_tensor_simplify(self):
-        input = tensor(numpy.random.random((100, 100)))
+        input = Tensor(numpy.random.random((100, 100)))
         output = _simplify(input)
         assert type(output) == list
         assert type(output[1]) == bytes
@@ -66,8 +66,8 @@ class TestSimplify(TestCase):
 
 
 class TestSerde(TestCase):
-    def test_torch_tensor(self):
-        t = tensor(numpy.random.random((100, 100)))
+    def test_torch_Tensor(self):
+        t = Tensor(numpy.random.random((100, 100)))
         t_serialized = serialize(t, compress=False)
         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
         assert (t == t_serialized_deserialized).all()
@@ -80,8 +80,8 @@ class TestSerde(TestCase):
         assert tuple == tuple_serialized_deserialized
 
         # Test with a complex data structure
-        tensor_one = tensor(numpy.random.random((100, 100)))
-        tensor_two = tensor(numpy.random.random((100, 100)))
+        tensor_one = Tensor(numpy.random.random((100, 100)))
+        tensor_two = Tensor(numpy.random.random((100, 100)))
         tuple = (tensor_one, tensor_two)
         tuple_serialized = serialize(tuple, compress=False)
         tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=False)
@@ -139,8 +139,8 @@ class TestSerde(TestCase):
         assert _dict == dict_serialized_deserialized
 
         # Test with a complex data structure
-        tensor_one = tensor(numpy.random.random((100, 100)))
-        tensor_two = tensor(numpy.random.random((100, 100)))
+        tensor_one = Tensor(numpy.random.random((100, 100)))
+        tensor_two = Tensor(numpy.random.random((100, 100)))
         _dict = {0: tensor_one, 1: tensor_two}
         dict_serialized = serialize(_dict, compress=False)
         dict_serialized_deserialized = deserialize(dict_serialized, compressed=False)
@@ -173,8 +173,8 @@ class TestSerde(TestCase):
         assert _list == list_serialized_deserialized
 
         # Test with a complex data structure
-        tensor_one = tensor(numpy.random.random((100, 100)))
-        tensor_two = tensor(numpy.random.random((100, 100)))
+        tensor_one = Tensor(numpy.random.random((100, 100)))
+        tensor_two = Tensor(numpy.random.random((100, 100)))
         _list = (tensor_one, tensor_two)
         list_serialized = serialize(_list, compress=False)
         list_serialized_deserialized = deserialize(list_serialized, compressed=False)
@@ -198,8 +198,8 @@ class TestSerde(TestCase):
         assert _set == set_serialized_deserialized
 
         # Test with a complex data structure
-        tensor_one = tensor(numpy.random.random((100, 100)))
-        tensor_two = tensor(numpy.random.random((100, 100)))
+        tensor_one = Tensor(numpy.random.random((100, 100)))
+        tensor_two = Tensor(numpy.random.random((100, 100)))
         _set = (tensor_one, tensor_two)
         set_serialized = serialize(_set, compress=False)
         set_serialized_deserialized = deserialize(set_serialized, compressed=False)

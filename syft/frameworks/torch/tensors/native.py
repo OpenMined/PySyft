@@ -30,7 +30,7 @@ class TorchTensor:
             id_at_location = self.id
 
         if ptr_id is None:
-            if location != self.owner.id:
+            if location.id != self.owner.id:
                 ptr_id = self.id
             else:
                 ptr_id = int(10e10 * random.random())
@@ -47,7 +47,5 @@ class TorchTensor:
                 owner=owner,
                 id=ptr_id,
             )
-        else:
-            ptr = previous_pointer
 
         return ptr

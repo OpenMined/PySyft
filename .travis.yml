@@ -53,7 +53,7 @@ before_script:
   - flake8 . --count --exit-zero --statistics
 script:
   - coverage run --omit=*/venv/*,setup.py setup.py test
-  - coverage report --fail-under 100
+  - coverage report --fail-under 95 -m
   # - bash scripts/execute_notebooks.sh
   # - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
 notifications:

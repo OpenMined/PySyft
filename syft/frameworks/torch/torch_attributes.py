@@ -122,18 +122,9 @@ class TorchAttributes(object):
         """
         for cmd_name, native_cmd_name in self.native_commands["torch_modules"].items():
             if cmd_name not in self.torch_exclude:
-                try:
-                    self.native_commands["torch_modules"][
-                        cmd_name
-                    ] = self.eval_torch_modules_functions[
-                        cmd_name
-                    ]  # eval(native_cmd_name)
-                except AttributeError:
-                    self.native_commands["torch_modules"][cmd_name] = None  # eval(cmd_name)
-            else:
                 self.native_commands["torch_modules"][cmd_name] = self.eval_torch_modules_functions[
                     cmd_name
-                ]  # eval(cmd_name)
+                ]
 
     @staticmethod
     def get_native_torch_name(attr):

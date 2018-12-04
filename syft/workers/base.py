@@ -145,7 +145,7 @@ class BaseWorker(ABC):
         else:
             native_func = syft.torch.command_guard(attr, "torch_modules", get_native=True)
             command = native_func
-        print("command", command, type(command))
+        # print("command", command, type(command))
         response = command(*args, **kwargs)
 
         return response
@@ -236,3 +236,11 @@ class BaseWorker(ABC):
         # Add worker to the list of known workers
         # it's just a mapping from ID->object
         self._known_workers[worker.id] = worker
+
+    def add_workers(self, workers):
+        """
+        Convenient function to add several workers in a single call
+        :param workers: list of workers
+        """
+        for worker in workers:
+            self.add_worker(worker)

@@ -81,18 +81,15 @@ class TorchHook:
         # Save the local worker as an attribute
         self.local_worker = local_worker
 
-        # Add all the torch attributes in the syft.torch attr
-        syft.torch = TorchAttributes(torch)
-
-        if not hasattr(torch, "torch_hooked"):
-            torch.torch_hooked = 0
-        else:
-            torch.torch_hooked = 1
-
-        if torch.torch_hooked > 0:
+        if hasattr(torch, "torch_hooked"):
             logging.warning("Torch was already hooked... skipping hooking process")
             self.local_worker = syft.local_worker
             return
+        else:
+            torch.torch_hooked = True
+
+        # Add all the torch attributes in the syft.torch attr
+        syft.torch = TorchAttributes(torch)
 
         if self.local_worker is None:
             """
@@ -174,7 +171,6 @@ class TorchHook:
             if id is None:
                 id = int(10e10 * random.random())
 
-            print(cls)
             cls.id = id
             cls.owner = owner
 
@@ -287,6 +283,13 @@ class TorchHook:
             "__sizeof__",
             "__subclasshook__",
             "_get_type",
+            "__str__",
+            "__repr__",
+            "__eq__",
+            "__gt__",
+            "__ge__",
+            "__lt__",
+            "__le__",
         ]
         # For all methods defined in TorchTensor which are not internal methods (like __class__etc)
         for attr in dir(TorchTensor):
