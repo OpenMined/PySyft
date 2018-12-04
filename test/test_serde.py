@@ -99,8 +99,8 @@ class TestSerde(TestCase):
         assert tuple == tuple_serialized_deserialized
 
         # Test with a complex data structure
-        tensor_one = tensor(numpy.random.random((100, 100)))
-        tensor_two = tensor(numpy.random.random((100, 100)))
+        tensor_one = Tensor(numpy.random.random((100, 100)))
+        tensor_two = Tensor(numpy.random.random((100, 100)))
         tuple = (tensor_one, tensor_two)
         tuple_serialized = serialize(tuple, compress=True)
         tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=True)
@@ -208,8 +208,8 @@ class TestSerde(TestCase):
         assert _dict == dict_serialized_deserialized
 
         # Test with a complex data structure
-        tensor_one = tensor(numpy.random.random((100, 100)))
-        tensor_two = tensor(numpy.random.random((100, 100)))
+        tensor_one = Tensor(numpy.random.random((100, 100)))
+        tensor_two = Tensor(numpy.random.random((100, 100)))
         _dict = {0: tensor_one, 1: tensor_two}
         dict_serialized = serialize(_dict, compress=True)
         dict_serialized_deserialized = deserialize(dict_serialized, compressed=True)
@@ -276,8 +276,8 @@ class TestSerde(TestCase):
         assert _list == list_serialized_deserialized
 
         # Test with a complex data structure
-        tensor_one = tensor(numpy.random.random((100, 100)))
-        tensor_two = tensor(numpy.random.random((100, 100)))
+        tensor_one = Tensor(numpy.random.random((100, 100)))
+        tensor_two = Tensor(numpy.random.random((100, 100)))
         _list = (tensor_one, tensor_two)
         list_serialized = serialize(_list, compress=True)
         list_serialized_deserialized = deserialize(list_serialized, compressed=True)
@@ -326,8 +326,8 @@ class TestSerde(TestCase):
         assert _set == set_serialized_deserialized
 
         # Test with a complex data structure
-        tensor_one = tensor(numpy.random.random((100, 100)))
-        tensor_two = tensor(numpy.random.random((100, 100)))
+        tensor_one = Tensor(numpy.random.random((100, 100)))
+        tensor_two = Tensor(numpy.random.random((100, 100)))
         _set = (tensor_one, tensor_two)
         set_serialized = serialize(_set, compress=True)
         set_serialized_deserialized = deserialize(set_serialized, compressed=True)
