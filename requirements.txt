@@ -3,6 +3,7 @@ coverage
 ipykernel
 msgpack
 lz4
+zstd
 pre-commit
 sphinx_rtd_theme
 websockets

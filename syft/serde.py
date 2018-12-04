@@ -31,7 +31,6 @@ By default, we serialize using msgpack and compress using lz4.
 from typing import Collection
 from typing import Dict
 from typing import Tuple
-from typing import List
 import torch
 import msgpack
 import lz4
@@ -40,12 +39,12 @@ from lz4 import (  # noqa: F401
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
 import io
 import numpy
-
+import zstd
 
 # High Level Public Functions (these are the ones you use)
 
 
-def serialize(obj: object, compress=True) -> bin:
+def serialize(obj: object, compress=True, compressScheme="lz4") -> bin:
     """This is the high level function for serializing any object or
     dictionary/collection of objects."""
 
@@ -61,22 +60,36 @@ def serialize(obj: object, compress=True) -> bin:
 
     # 3) Compress
     # optionally compress the binary and return the result
+    # prepend a 1-byte header '0' or '1' to the output stream
+    # to denote whether output stream is compressed or not
+    # if compressed stream length is greater than input stream
+    # we output the input stream as it is with header set to '0'
+    # otherwise we output the compressed stream with header set to '1'
+    # even if compressed flag is set to false by the caller we
+    # output the input stream as it is with header set to '0'
     if compress:
-        return _compress(binary)
-    else:
-        return binary
+        compress_stream = _compress(binary, compressScheme)
+        if len(compress_stream) < len(binary):
+            return b"\x31" + compress_stream
+
+    return b"\x30" + binary
 
 
-def deserialize(binary: bin, compressed=True) -> object:
+def deserialize(binary: bin, compressed=True, compressScheme="lz4") -> object:
     """
     This is the high level function for deserializing any object
     or dictionary/collection of objects.
     """
+    # check the 1-byte header to see if input stream was compressed or not
+    if binary[0] == 48:
+        compressed = False
 
+    # remove the 1-byte header from the input stream
+    binary = binary[1:]
     # 1)  Decompress
     # If enabled, this functionality decompresses the binary
     if compressed:
-        binary = _decompress(binary)
+        binary = _decompress(binary, compressScheme)
 
     # 2) Deserialize
     # This function converts the binary into the appropriate python
@@ -95,7 +108,7 @@ def deserialize(binary: bin, compressed=True) -> object:
 # Chosen Compression Algorithm
 
 
-def _compress(decompressed_input_bin: bin) -> bin:
+def _compress(decompressed_input_bin: bin, compressScheme="lz4") -> bin:
     """
     This function compresses a binary using LZ4
 
@@ -106,10 +119,13 @@ def _compress(decompressed_input_bin: bin) -> bin:
         bin: a compressed binary
 
     """
-    return lz4.frame.compress(decompressed_input_bin)
+    if compressScheme == "lz4":
+        return lz4.frame.compress(decompressed_input_bin)
+    else:
+        return zstd.compress(decompressed_input_bin)
 
 
-def _decompress(compressed_input_bin: bin) -> bin:
+def _decompress(compressed_input_bin: bin, compressScheme="lz4") -> bin:
     """
     This function decompresses a binary using LZ4
 
@@ -120,7 +136,10 @@ def _decompress(compressed_input_bin: bin) -> bin:
         bin: decompressed binary
 
     """
-    return lz4.frame.decompress(compressed_input_bin)
+    if compressScheme == "lz4":
+        return lz4.frame.decompress(compressed_input_bin)
+    else:
+        return zstd.decompress(compressed_input_bin)
 
 
 # Simplify/Detail Torch Tensors
@@ -252,7 +271,7 @@ def _detail_collection_set(my_collection: Collection) -> Collection:
     return set(pieces)
 
 
-def _detail_collection_tuple(my_tuple: tuple) -> tuple:
+def _detail_collection_tuple(my_tuple: Tuple) -> Tuple:
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a tuple of simple python objects
@@ -332,7 +351,7 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
 
     """
 
-    return [my_range.start, my_range.stop, my_range.step]
+    return (my_range.start, my_range.stop, my_range.step)
 
 
 def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
@@ -358,7 +377,7 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
 #   numpy array
 
 
-def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
+def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
     """
     This function gets the byte representation of the array
         and stores the dtype and shape for reconstruction
@@ -378,10 +397,10 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, List, str]:
     arr_shape = my_array.shape
     arr_dtype = my_array.dtype.name
 
-    return [arr_bytes, arr_shape, arr_dtype]
+    return (arr_bytes, arr_shape, arr_dtype)
 
 
-def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.ndarray:
+def _detail_ndarray(arr_representation: Tuple[bin, Tuple, str]) -> numpy.ndarray:
     """
     This function reconstruct a numpy array from it's byte data, the shape and the dtype
         by first loading the byte data with the appropiate dtype and then reshaping it into the
@@ -404,6 +423,47 @@ def _detail_ndarray(arr_representation: Tuple[bin, List[int], str]) -> numpy.nda
     assert type(res) == numpy.ndarray
 
     return res
+
+
+#   slice
+
+
+def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
+    """
+    This function creates a list that represents a slice.
+
+    Args:
+        slice: a python slice
+
+    Returns:
+        list: a list holding the start, stop and step values
+
+    Usage:
+
+        slice_representation = _simplify_slice(slice(1,2,3))
+
+    """
+    return (my_slice.start, my_slice.stop, my_slice.step)
+
+
+def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
+    """
+    This function extracts the start, stop and step from a list.
+
+    Args:
+        list: a list defining the slice parameters [start, stop, step]
+
+    Returns:
+        range: a range object
+
+    Usage:
+        new_range = _detail_range([1, 3, 4])
+
+        assert new_range == range(1, 3, 4)
+
+    """
+
+    return slice(my_slice[0], my_slice[1], my_slice[2])
 
 
 # High Level Simplification Router
@@ -457,6 +517,7 @@ simplifiers = {
     dict: [4, _simplify_dictionary],
     range: [5, _simplify_range],
     numpy.ndarray: [6, _simplify_ndarray],
+    slice: [7, _simplify_slice],
 }
 
 
@@ -489,4 +550,5 @@ detailers = [
     _detail_dictionary,
     _detail_range,
     _detail_ndarray,
+    _detail_slice,
 ]
