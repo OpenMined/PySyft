@@ -136,7 +136,6 @@ class TorchHook:
         # Overload auto overloaded with Torch methods
         self._add_methods_from__torch_tensor(tensor_type)
 
-
     def _add_registration_to___init__(hook_self, tensor_type, torch_tensor=False):
         """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors
            to add PySyft tensor functionality
@@ -179,7 +178,6 @@ class TorchHook:
             return self.child.id_at_location
 
         tensor_type.id_at_location = id_at_location
-
 
     def _which_methods_should_we_auto_overload(self, tensor_type):
         """Creates list of Torch methods to auto overload except methods included in exclusion list
