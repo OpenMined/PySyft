@@ -81,18 +81,15 @@ class TorchHook:
         # Save the local worker as an attribute
         self.local_worker = local_worker
 
-        # Add all the torch attributes in the syft.torch attr
-        syft.torch = TorchAttributes(torch)
-
-        if not hasattr(torch, "torch_hooked"):
-            torch.torch_hooked = 0
-        else:
-            torch.torch_hooked = 1
-
-        if torch.torch_hooked > 0:
+        if hasattr(torch, "torch_hooked"):
             logging.warning("Torch was already hooked... skipping hooking process")
             self.local_worker = syft.local_worker
             return
+        else:
+            torch.torch_hooked = True
+
+        # Add all the torch attributes in the syft.torch attr
+        syft.torch = TorchAttributes(torch)
 
         if self.local_worker is None:
             """
@@ -143,7 +140,7 @@ class TorchHook:
         self._assign_methods_to_use_child(tensor_type)
 
         # Overload auto overloaded with Torch methods
-        self._add_methods_from__TorchTensor(tensor_type)
+        self._add_methods_from__torch_tensor(tensor_type)
 
     def _hook_syft_tensors(self, tensor_type):
         """Overloads Torch Tensors with all Syft tensor types
@@ -256,8 +253,11 @@ class TorchHook:
             new_attr = self._get_overloaded_method(attr)
             setattr(tensor_type, attr, new_attr)
 
-    def _add_methods_from__TorchTensor(self, tensor_type):
-        """Add methods to auto overloaded functions.
+    @staticmethod
+    def _add_methods_from__torch_tensor(tensor_type):
+        """Add methods from the TorchTensor class to the native torch tensor.
+           The class TorchTensor is a proxy to avoid extending directly the
+           torch tensor class.
            Parameters: tensor_type: Torch Tensor
         """
         exclude = [
@@ -280,15 +280,19 @@ class TorchHook:
             "__sizeof__",
             "__subclasshook__",
             "_get_type",
+            "__str__",
+            "__repr__",
+            "__eq__",
+            "__gt__",
+            "__ge__",
+            "__lt__",
+            "__le__",
         ]
-
-        parent_syft_obj = TorchTensor
-
-        for attr in dir(parent_syft_obj):
+        # For all methods defined in TorchTensor which are not internal methods (like __class__etc)
+        for attr in dir(TorchTensor):
             if attr not in exclude:
-                if attr in dir(tensor_type) and f"native_{attr}" not in dir(tensor_type):
-                    setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
-                setattr(tensor_type, attr, getattr(parent_syft_obj, attr))
+                # Add to the native tensor this method
+                setattr(tensor_type, attr, getattr(TorchTensor, attr))
 
     def _hook_abstract_tensor(hook_self, tensor_type):
         """Overloads AbstractTensor
@@ -304,9 +308,10 @@ class TorchHook:
         """Overloads PointerTensor
            Parameters: tensor_type:Torch Tensor
         """
-
+        # TODO: isn't it redundant iwth the upper one ?
         for attr in self.to_auto_overload[tensor_type]:
-            setattr(PointerTensor, attr, self._get_overloaded_method(attr))
+            new_attr = self._get_overloaded_method(attr)
+            setattr(PointerTensor, attr, new_attr)
 
     def _hook_torch_module(self):
         """Overloads functions in the main torch module.
