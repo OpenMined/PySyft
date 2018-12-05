@@ -1,9 +1,10 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import logging
 import syft
 import importlib
 
 from .. import serde
+from . import AbstractWorker
 
 MSGTYPE_CMD = 1
 MSGTYPE_OBJ = 2
@@ -11,7 +12,7 @@ MSGTYPE_OBJ_REQ = 3
 MSGTYPE_EXCEPTION = 4
 
 
-class BaseWorker(ABC):
+class BaseWorker(AbstractWorker):
     """
     This is the class which contains functionality generic to all workers. Other workers will
     extend this class to inherit all functionality necessary for PySyft's protocol. Extensions
