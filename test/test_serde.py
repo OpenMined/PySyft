@@ -4,6 +4,7 @@ from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
 from syft.frameworks.torch.tensors import PointerTensor
+import torch
 import syft
 from unittest import TestCase
 from torch import Tensor
@@ -77,6 +78,26 @@ class TestSimplify(TestCase):
 
 
 class TestSerde(TestCase):
+    def setUp(self):
+        hook = syft.TorchHook(torch, verbose=True)
+
+        me = hook.local_worker
+        me.is_client_worker = False
+
+        bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
+        alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
+        james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
+
+        me.add_workers([bob, alice, james])
+        bob.add_workers([alice, james])
+        alice.add_workers([bob, james])
+        james.add_workers([bob, alice])
+
+        self.hook = hook
+        self.bob = bob
+        self.alice = alice
+        self.james = james
+
     def test_torch_Tensor(self):
         t = Tensor(numpy.random.random((100, 100)))
         t_serialized = serialize(t, compress=False)
@@ -383,8 +404,11 @@ class TestSerde(TestCase):
         assert (x[s] == x[s_serialized_deserialized]).all()
 
     def test_PointerTensor(self):
-        alice = syft.VirtualWorker(id="alice")
-        t = PointerTensor(id=1000, location=alice, owner=alice)
+        t = PointerTensor(id=1000, location=self.alice, owner=self.alice)
         t_serialized = serialize(t, compress=False)
         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
-        assert t == t_serialized_deserialized
+
+        assert t.id == t_serialized_deserialized.id
+        assert t.location == t_serialized_deserialized.location
+        assert t.owner == t_serialized_deserialized.owner
+        assert t.id_at_location == t_serialized_deserialized.id_at_location
