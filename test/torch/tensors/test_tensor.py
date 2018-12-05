@@ -3,7 +3,6 @@ import torch
 
 
 import syft
-from syft.workers import VirtualWorker
 from syft.frameworks.torch.tensors import TorchTensor, PointerTensor
 
 
@@ -35,7 +34,7 @@ class TestPointer(TestCase):
         self.james = james
 
     def test_init(self):
-        alice = VirtualWorker(id="alice")
+        alice = syft.VirtualWorker(id="alice")
         pointer = PointerTensor(id=1000, location=alice, owner=alice)
         pointer.__str__()
 
