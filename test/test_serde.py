@@ -3,6 +3,8 @@ from syft.serde import serialize
 from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
+from syft.frameworks.torch.tensors import PointerTensor
+import syft
 from unittest import TestCase
 from torch import Tensor
 import numpy
@@ -63,6 +65,15 @@ class TestSimplify(TestCase):
         assert type(output[1][0]) == bytes
         assert output[1][1] == input.shape
         assert output[1][2] == input.dtype.name
+
+    def test_pointer_tensor_simplify(self):
+        alice = syft.VirtualWorker(id="alice")
+        input = PointerTensor(id=1000, location=alice, owner=alice)
+        output = _simplify(input)
+        assert output[1]["id"] == input.id
+        assert output[1]["owner"] == input.owner.id
+        assert output[1]["location"] == input.location.id
+        assert output[1]["id_at_location"] == input.id_at_location
 
 
 class TestSerde(TestCase):
@@ -370,3 +381,10 @@ class TestSerde(TestCase):
 
         assert type(s) == type(s_serialized_deserialized)
         assert (x[s] == x[s_serialized_deserialized]).all()
+
+    def test_PointerTensor(self):
+        alice = syft.VirtualWorker(id="alice")
+        t = PointerTensor(id=1000, location=alice, owner=alice)
+        t_serialized = serialize(t, compress=False)
+        t_serialized_deserialized = deserialize(t_serialized, compressed=False)
+        assert t == t_serialized_deserialized
