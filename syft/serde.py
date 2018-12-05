@@ -40,6 +40,8 @@ from lz4 import (  # noqa: F401
 import io
 import numpy
 import zstd
+from syft.frameworks.torch.tensors import PointerTensor
+from syft.workers import AbstractWorker
 
 # High Level Public Functions (these are the ones you use)
 
@@ -466,6 +468,52 @@ def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
     return slice(my_slice[0], my_slice[1], my_slice[2])
 
 
+# PointerTensor
+
+
+def _simplify_pointer_tensor(ptr: PointerTensor) -> Dict:
+    """
+    This function takes the attributes of a PointerTensor and saves them in a dictionary
+
+    Args:
+        PointerTensor: a PointerTensor
+
+    Returns:
+        Dict: a dictionary holding the attributes of the PointerTensor
+
+    Usage:
+        data = _simplify_pointer_tensor(ptr)
+
+    """
+
+    data = vars(ptr).copy()
+    for k, v in data.items():
+
+        if isinstance(v, AbstractWorker):
+            data[k] = v.id
+
+    return _simplify_dictionary(data)
+
+
+def _detail_pointer_tensor(data: Dict) -> PointerTensor:
+    """
+    This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
+    We use the spread operator to pass the dict data as arguments
+    to the init method of PointerTensor
+
+    Args:
+        Dict: a dictionary holding the attributes of the PointerTensor
+
+    Returns:
+        PointerTensor: a PointerTensor
+
+    Usage:
+        ptr = _detail_pointer_tensor(data)
+
+    """
+    return PointerTensor(**data)
+
+
 # High Level Simplification Router
 
 
@@ -518,6 +566,7 @@ simplifiers = {
     range: [5, _simplify_range],
     numpy.ndarray: [6, _simplify_ndarray],
     slice: [7, _simplify_slice],
+    PointerTensor: [8, _simplify_pointer_tensor],
 }
 
 
@@ -551,4 +600,5 @@ detailers = [
     _detail_range,
     _detail_ndarray,
     _detail_slice,
+    _detail_pointer_tensor,
 ]
