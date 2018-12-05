@@ -1,0 +1,2 @@
+class WorkerNotFoundException(Exception):
+    pass

@@ -3,6 +3,7 @@ import logging
 import syft
 import importlib
 
+from syft.util import WorkerNotFoundException
 from .. import serde
 from . import AbstractWorker
 
@@ -159,7 +160,7 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: Manage the workers network
 
-    def get_worker(self, id_or_worker):
+    def get_worker(self, id_or_worker, fail_hard=False):
         """get_worker(self, id_or_worker) -> BaseWorker
         If you pass in an ID, it will try to find the worker object reference
         within self._known_workers. If you instead pass in a reference, it will
@@ -192,6 +193,8 @@ class BaseWorker(AbstractWorker):
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
             else:
+                if fail_hard:
+                    raise WorkerNotFoundException
                 logging.warning("Worker", self.id, "couldnt recognize worker", id_or_worker)
                 return id_or_worker
         else:

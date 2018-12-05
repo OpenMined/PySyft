@@ -40,8 +40,10 @@ from lz4 import (  # noqa: F401
 import io
 import numpy
 import zstd
+import syft
 from syft.frameworks.torch.tensors import PointerTensor
 from syft.workers import AbstractWorker
+from syft.util import WorkerNotFoundException
 
 # High Level Public Functions (these are the ones you use)
 
@@ -511,7 +513,21 @@ def _detail_pointer_tensor(data: Dict) -> PointerTensor:
         ptr = _detail_pointer_tensor(data)
 
     """
-    return PointerTensor(**data)
+    new_data = {}
+    for k, v in data.items():
+
+        key = k.decode()
+        if type(v) is bytes:
+            val_str = v.decode()
+            try:
+                val = syft.local_worker.get_worker(val_str, fail_hard=True)
+            except WorkerNotFoundException:
+                val = val_str
+        else:
+            val = v
+        new_data[key] = val
+
+    return PointerTensor(**new_data)
 
 
 # High Level Simplification Router
