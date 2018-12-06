@@ -66,6 +66,9 @@ class TestSimplify(TestCase):
         assert output[1][1] == input.shape
         assert output[1][2] == input.dtype.name
 
+    def test_ellipsis_simplify(self):
+        assert _simplify(Ellipsis)[1] == b""
+
 
 class TestSerde(TestCase):
     def test_torch_Tensor(self):
@@ -392,3 +395,30 @@ class TestHooked(TestCase):
         for compress in compress_vals:
             for compressScheme in compressScheme_vals:
                 test(compress, compressScheme)
+
+    def test_float(self):
+        x = 0.5
+        y = 1.5
+
+        x_serialized = serialize(x, compress=False)
+        x_serialized_deserialized = deserialize(x_serialized, compressed=False)
+
+        y_serialized = serialize(y, compress=False)
+        y_serialized_deserialized = deserialize(y_serialized, compressed=False)
+
+        assert x_serialized_deserialized == x
+        assert y_serialized_deserialized == y
+
+    def test_compressed_float(self):
+        x = 0.5
+        y = 1.5
+
+        x_serialized = serialize(x, compress=True)
+        x_serialized_deserialized = deserialize(x_serialized, compressed=True)
+
+        y_serialized = serialize(y, compress=True)
+        y_serialized_deserialized = deserialize(y_serialized, compressed=True)
+
+        assert x_serialized_deserialized == x
+        assert y_serialized_deserialized == y
+
