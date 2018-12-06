@@ -5,7 +5,7 @@ import logging
 import types
 import syft
 from syft import workers
-from syft.frameworks.torch.tensors import PointerTensor, AbstractTensor, TorchTensor
+from syft.frameworks.torch.tensors import TorchTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 
 
@@ -187,11 +187,14 @@ class TorchHook:
 
         to_overload = []
 
-        for attr in dir(tensor_type):
+        for attr in dir(TorchTensor):
 
             # Conditions for overloading the method
             if attr in syft.torch.exclude:
                 continue
+            if not hasattr(tensor_type, attr):
+                continue
+
             lit = getattr(tensor_type, attr)
             is_base = attr in dir(object)
             is_desc = inspect.ismethoddescriptor(lit)
@@ -211,7 +214,6 @@ class TorchHook:
         """Renames functions that are that not auto overloaded as native functions
            Parameters: tensor_type: Torch tensor
         """
-
         for attr in self.to_auto_overload[tensor_type]:
 
             lit = getattr(tensor_type, attr)
@@ -229,8 +231,7 @@ class TorchHook:
 
         # Iterate through auto overloaded tensor methods
         for attr in self.to_auto_overload[tensor_type]:
-            new_attr = self._get_overloaded_method(attr)
-            setattr(tensor_type, attr, new_attr)
+            setattr(tensor_type, attr, getattr(tensor_type, f"native_{attr}"))
 
     @staticmethod
     def _add_methods_from__torch_tensor(tensor_type):
@@ -272,22 +273,3 @@ class TorchHook:
             if attr not in exclude:
                 # Add to the native tensor this method
                 setattr(tensor_type, attr, getattr(TorchTensor, attr))
-
-    def _get_overloaded_method(hook_self, attr):
-        """Wrapper overloading partial objects of methods in the torch module.
-
-        Compiles command, checks for Tensors and Variables in the
-        args/kwargs, determines locations of all Tensors and Variables
-        involved in computation, and handles the computation
-        accordingly.
-        """
-
-        def _execute_method_call(self, *args, **kwargs):
-            worker = hook_self.local_worker
-
-            # TODO: finish - note that this functionality should not cause
-            # a performance penalty if the tensor is local
-
-            # return worker._execute_call(attr, self, *args, **kwargs)
-
-        return _execute_method_call
