@@ -131,8 +131,6 @@ class TorchHook:
         # Rename native functions
         self._rename_native_functions(tensor_type)
 
-        self._assign_methods_to_use_child(tensor_type)
-
         # Overload auto overloaded with Torch methods
         self._add_methods_from__torch_tensor(tensor_type)
 
@@ -223,15 +221,6 @@ class TorchHook:
                 setattr(tensor_type, f"native_{attr}", lit)
 
             setattr(tensor_type, attr, None)
-
-    def _assign_methods_to_use_child(self, tensor_type):
-        """Assigns methods to use as child for auto overloaded functions.
-           Parameters: tensor_type:Torch Tensor
-        """
-
-        # Iterate through auto overloaded tensor methods
-        for attr in self.to_auto_overload[tensor_type]:
-            setattr(tensor_type, attr, getattr(tensor_type, f"native_{attr}"))
 
     @staticmethod
     def _add_methods_from__torch_tensor(tensor_type):
