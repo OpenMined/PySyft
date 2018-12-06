@@ -16,3 +16,4 @@ venv/
 **.pytest_cache/
 docs/_modules
 .coverage
+.vscode/
