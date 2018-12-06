@@ -3,10 +3,12 @@ from syft.serde import serialize
 from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
+from syft import TorchHook
 from unittest import TestCase
 from torch import Tensor
 import numpy
 import msgpack
+import torch
 
 
 class TestSimplify(TestCase):
@@ -370,3 +372,18 @@ class TestSerde(TestCase):
 
         assert type(s) == type(s_serialized_deserialized)
         assert (x[s] == x[s_serialized_deserialized]).all()
+
+
+class TestHooked(TestCase):
+    def test_hooked_tensor(self):
+        TorchHook(torch)
+
+        def test(compress):
+            t = Tensor(numpy.random.random((100, 100)))
+            t_serialized = serialize(t, compress=compress)
+            t_serialized_deserialized = deserialize(t_serialized, compressed=compress)
+            assert (t == t_serialized_deserialized).all()
+
+        arguments = [True, False]
+        for arg in arguments:
+            test(arg)
