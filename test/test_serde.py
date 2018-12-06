@@ -64,6 +64,9 @@ class TestSimplify(TestCase):
         assert output[1][1] == input.shape
         assert output[1][2] == input.dtype.name
 
+    def test_ellipsis_simplify(self):
+        assert _simplify(Ellipsis)[1] == b""
+
 
 class TestSerde(TestCase):
     def test_torch_Tensor(self):
