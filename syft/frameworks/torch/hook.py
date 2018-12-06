@@ -106,12 +106,12 @@ class TorchHook:
 
         self.to_auto_overload = {}
 
-        self._hook_native_tensor(torch.Tensor)
+        self._hook_native_tensor(torch.Tensor, TorchTensor)
 
         # Add the local_worker to syft so that it can be found if the hook is called several times
         syft.local_worker = self.local_worker
 
-    def _hook_native_tensor(self, tensor_type):
+    def _hook_native_tensor(self, tensor_type, syft_type):
         """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality
            parameters: tensor_type: A Torch tensor
         """
@@ -125,14 +125,14 @@ class TorchHook:
         # Returns a list of methods to be overloaded, stored in the dict to_auto_overload
         # with tensor_type as a key
         self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
-            tensor_type
+            tensor_type, syft_type
         )
 
         # Rename native functions
         self._rename_native_functions(tensor_type)
 
         # Overload auto overloaded with Torch methods
-        self._add_methods_from__torch_tensor(tensor_type)
+        self._add_methods_from__torch_tensor(tensor_type, syft_type)
 
     def _add_registration_to___init__(hook_self, tensor_type, torch_tensor=False):
         """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors
@@ -177,7 +177,7 @@ class TorchHook:
 
         tensor_type.id_at_location = id_at_location
 
-    def _which_methods_should_we_auto_overload(self, tensor_type):
+    def _which_methods_should_we_auto_overload(self, tensor_type, syft_type):
         """Creates list of Torch methods to auto overload except methods included in exclusion list
            Parameters: Torch Tensor type
            Return: List of methods to be overloaded
@@ -185,7 +185,7 @@ class TorchHook:
 
         to_overload = []
 
-        for attr in dir(TorchTensor):
+        for attr in dir(syft_type):
 
             # Conditions for overloading the method
             if attr in syft.torch.exclude:
@@ -223,7 +223,7 @@ class TorchHook:
             setattr(tensor_type, attr, None)
 
     @staticmethod
-    def _add_methods_from__torch_tensor(tensor_type):
+    def _add_methods_from__torch_tensor(tensor_type, syft_type):
         """Add methods from the TorchTensor class to the native torch tensor.
            The class TorchTensor is a proxy to avoid extending directly the
            torch tensor class.
@@ -258,7 +258,7 @@ class TorchHook:
             "__le__",
         ]
         # For all methods defined in TorchTensor which are not internal methods (like __class__etc)
-        for attr in dir(TorchTensor):
+        for attr in dir(syft_type):
             if attr not in exclude:
                 # Add to the native tensor this method
                 setattr(tensor_type, attr, getattr(TorchTensor, attr))
