@@ -470,7 +470,6 @@ def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
 
 
 def _simplify_ellipsis(e: Ellipsis) -> bytes:
-    print("simplifying ellipsis")
     return b""
 
 
