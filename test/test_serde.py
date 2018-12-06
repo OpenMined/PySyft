@@ -378,12 +378,17 @@ class TestHooked(TestCase):
     def test_hooked_tensor(self):
         TorchHook(torch)
 
-        def test(compress):
+        def test(compress, compressScheme):
             t = Tensor(numpy.random.random((100, 100)))
-            t_serialized = serialize(t, compress=compress)
-            t_serialized_deserialized = deserialize(t_serialized, compressed=compress)
+            t_serialized = serialize(t, compress=compress, compressScheme=compressScheme)
+            t_serialized_deserialized = deserialize(
+                t_serialized, compressed=compress, compressScheme=compressScheme
+            )
             assert (t == t_serialized_deserialized).all()
 
-        arguments = [True, False]
-        for arg in arguments:
-            test(arg)
+        compress_vals = [True, False]
+        compressScheme_vals = ["zstd", "lz4"]
+
+        for compress in compress_vals:
+            for compressScheme in compressScheme_vals:
+                test(compress, compressScheme)
