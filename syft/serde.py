@@ -466,7 +466,18 @@ def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
     return slice(my_slice[0], my_slice[1], my_slice[2])
 
 
-# High Level Simplification Router
+# ellipsis
+
+
+def _simplify_ellipsis(e: Ellipsis) -> bytes:
+    print("simplifying ellipsis")
+    return b""
+
+
+def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
+    return ...
+
+    # High Level Simplification Router
 
 
 def _simplify(obj: object) -> object:
@@ -518,6 +529,7 @@ simplifiers = {
     range: [5, _simplify_range],
     numpy.ndarray: [6, _simplify_ndarray],
     slice: [7, _simplify_slice],
+    type(Ellipsis): [8, _simplify_ellipsis],
 }
 
 
@@ -551,4 +563,5 @@ detailers = [
     _detail_range,
     _detail_ndarray,
     _detail_slice,
+    _detail_ellipsis,
 ]
