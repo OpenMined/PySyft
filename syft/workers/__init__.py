@@ -2,6 +2,7 @@
 # import enum
 
 # Section 2: Directory Imports
+from .abstract import AbstractWorker
 from .base import BaseWorker
 from .virtual import VirtualWorker
 
