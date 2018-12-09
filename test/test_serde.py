@@ -421,4 +421,3 @@ class TestHooked(TestCase):
 
         assert x_serialized_deserialized == x
         assert y_serialized_deserialized == y
-
