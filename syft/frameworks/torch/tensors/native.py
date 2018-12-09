@@ -9,10 +9,6 @@ class TorchTensor:
     all Torch tensor types.
     """
 
-    def __init__(self):
-        self.id = None
-        self.owner = None
-
     def create_pointer(
         self, location=None, id_at_location=None, register=False, owner=None, ptr_id=None
     ):

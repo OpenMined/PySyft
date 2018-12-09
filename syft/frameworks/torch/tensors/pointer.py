@@ -21,3 +21,6 @@ class PointerTensor(AbstractTensor):
             f"id@loc:{self.id_at_location}"
             f"]"
         )
+
+    def __repr__(self):
+        return self.__str__()

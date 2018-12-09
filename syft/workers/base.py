@@ -112,6 +112,45 @@ class BaseWorker(AbstractWorker):
     # SECTION: recv_msg() uses self._message_router to route to these methods
     # Each method corresponds to a MsgType enum.
 
+    def send(self, tensor, workers, ptr_id=None):
+        """Send a syft or torch tensor and his child, sub-child, etc (ie all the
+        syft chain of children) to a worker, or a list of workers, with a given
+        remote storage address.
+        Args:
+            tensor: the syft or torch tensor to send
+            workers: the workers which will receive the object
+            ptr_id: the remote id of the object on the remote worker(s).
+                Example:
+                x.send(bob, 1000)
+                will result in bob having the tensor x with id 1000
+        """
+        if not isinstance(workers, list):
+            workers = [workers]
+
+        assert len(workers) > 0, "Please provide workers to receive the data"
+
+        if len(workers) == 1:
+            worker = workers[0]
+        else:
+            # If multiple workers, you want to send the same tensor to multiple workers
+            # Assumingly you'll get multiple pointers, or a pointer with different locations
+            raise NotImplementedError("Sending to multiple workers is not supported at the moment")
+
+        worker = self.get_worker(worker)
+
+        # Define a remote id if not specified
+        if ptr_id is None:
+            ptr_id = int(10e10 * random.random())
+
+        # Send the object
+        self.send_obj({"id": ptr_id, "data": tensor}, worker)
+
+        pointer = tensor.create_pointer(
+            owner=self, location=worker, id_at_location=ptr_id, register=True
+        )
+
+        return pointer
+
     def set_obj(self, obj):
         self._objects[obj["id"]] = obj
 

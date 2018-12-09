@@ -30,6 +30,10 @@ class TestTorchTensor(TestCase):
         assert ptr.id_at_location == 1
         assert ptr.id == 2
 
+        ptr2 = tensor.create_pointer(owner=self.hook.local_worker)
+        assert isinstance(ptr2.__str__(), str)
+        assert isinstance(ptr2.__repr__(), str)
+
     def test_create_pointer_defaults(self):
         tensor = torch.Tensor([1, 2, 3, 4, 5])
 
@@ -37,15 +41,6 @@ class TestTorchTensor(TestCase):
 
         assert ptr.owner == tensor.owner
         assert ptr.location == self.bob
-
-    # def test_send(self):
-    #     tensor = torch.rand(5, 3)
-    #     tensor.id = 1
-
-    #     pointer = tensor.send(self.bob)
-
-    #     assert type(pointer) == PointerTensor
-    #     assert self.bob.get_obj(1) == tensor
 
     # def test_get(self):
     #     tensor = torch.rand(5, 3)
