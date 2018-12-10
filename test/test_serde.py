@@ -4,14 +4,14 @@ from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
 from syft import TorchHook
-from unittest import TestCase
 from torch import Tensor
+import torch
 import numpy
 import msgpack
-import torch
+import pytest
 
 
-class TestSimplify(TestCase):
+class TestSimplify(object):
     def test_tuple_simplify(self):
         input = ("hello", "world")
         target = [1, ("hello", "world")]
@@ -70,55 +70,39 @@ class TestSimplify(TestCase):
         assert _simplify(Ellipsis)[1] == b""
 
 
-class TestSerde(TestCase):
-    def test_torch_Tensor(self):
+class TestSerde(object):
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_torch_Tensor(self, compress):
         t = Tensor(numpy.random.random((100, 100)))
-        t_serialized = serialize(t, compress=False)
-        t_serialized_deserialized = deserialize(t_serialized, compressed=False)
+        t_serialized = serialize(t, compress=compress)
+        t_serialized_deserialized = deserialize(t_serialized, compressed=compress)
         assert (t == t_serialized_deserialized).all()
 
-    def test_tuple(self):
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_tuple(self, compress):
         # Test with a simple datatype
         tuple = (1, 2)
-        tuple_serialized = serialize(tuple, compress=False)
-        tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=False)
+        tuple_serialized = serialize(tuple, compress=compress)
+        tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=compress)
         assert tuple == tuple_serialized_deserialized
 
         # Test with a complex data structure
         tensor_one = Tensor(numpy.random.random((100, 100)))
         tensor_two = Tensor(numpy.random.random((100, 100)))
         tuple = (tensor_one, tensor_two)
-        tuple_serialized = serialize(tuple, compress=False)
-        tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=False)
+        tuple_serialized = serialize(tuple, compress=compress)
+        tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=compress)
         # `assert tuple_serialized_deserialized == tuple` does not work, therefore it's split
         # into 3 assertions
         assert type(tuple_serialized_deserialized) == type(tuple)
         assert (tuple_serialized_deserialized[0] == tensor_one).all()
         assert (tuple_serialized_deserialized[1] == tensor_two).all()
 
-    def test_compressed_tuple(self):
-        # Test with a simple datatype
-        tuple = (1, 2)
-        tuple_serialized = serialize(tuple, compress=True)
-        tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=True)
-        assert tuple == tuple_serialized_deserialized
-
-        # Test with a complex data structure
-        tensor_one = Tensor(numpy.random.random((100, 100)))
-        tensor_two = Tensor(numpy.random.random((100, 100)))
-        tuple = (tensor_one, tensor_two)
-        tuple_serialized = serialize(tuple, compress=True)
-        tuple_serialized_deserialized = deserialize(tuple_serialized, compressed=True)
-        # `assert tuple_serialized_deserialized == tuple` does not work, therefore it's split
-        # into 3 assertions
-        assert type(tuple_serialized_deserialized) == type(tuple)
-        assert (tuple_serialized_deserialized[0] == tensor_one).all()
-        assert (tuple_serialized_deserialized[1] == tensor_two).all()
-
-    def test_bytearray(self):
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_bytearray(self, compress):
         bytearr = bytearray("This is a teststring", "utf-8")
-        bytearr_serialized = serialize(bytearr, compress=False)
-        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=False)
+        bytearr_serialized = serialize(bytearr, compress=compress)
+        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=compress)
         assert bytearr == bytearr_serialized_desirialized
 
         bytearr = bytearray(numpy.random.random((100, 100)))
@@ -126,227 +110,127 @@ class TestSerde(TestCase):
         bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=False)
         assert bytearr == bytearr_serialized_desirialized
 
-    def test_compressed_bytearray(self):
-        bytearr = bytearray("This is a teststring", "utf-8")
-        bytearr_serialized = serialize(bytearr, compress=True)
-        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=True)
-        assert bytearr == bytearr_serialized_desirialized
-
-        bytearr = bytearray(numpy.random.random((100, 100)))
-        bytearr_serialized = serialize(bytearr, compress=True)
-        bytearr_serialized_desirialized = deserialize(bytearr_serialized, compressed=True)
-        assert bytearr == bytearr_serialized_desirialized
-
-    def test_ndarray_serde(self):
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_ndarray_serde(self, compress):
         arr = numpy.random.random((100, 100))
-        arr_serialized = serialize(arr, compress=False)
+        arr_serialized = serialize(arr, compress=compress)
 
-        arr_serialized_deserialized = deserialize(arr_serialized, compressed=False)
+        arr_serialized_deserialized = deserialize(arr_serialized, compressed=compress)
 
         assert numpy.array_equal(arr, arr_serialized_deserialized)
 
-    def test_compress_decompress_lz4(self):
+    @pytest.mark.parametrize("compressScheme", ["lz4", "zstd"])
+    def test_compress_decompress(self, compressScheme):
         original = msgpack.dumps([1, 2, 3])
-        compressed = _compress(original)
-        decompressed = _decompress(compressed)
+        compressed = _compress(original, compressScheme=compressScheme)
+        decompressed = _decompress(compressed, compressScheme=compressScheme)
         assert type(compressed) == bytes
         assert original == decompressed
 
-    def test_compress_decompress_zstd(self):
-        original = msgpack.dumps([1, 2, 3])
-        compressed = _compress(original, "zstd")
-        decompressed = _decompress(compressed, "zstd")
-        assert type(compressed) == bytes
-        assert original == decompressed
-
-    def test_compressed_serde_lz4(self):
+    @pytest.mark.parametrize("compressScheme", ["lz4", "zstd"])
+    def test_compressed_serde(self, compressScheme):
         arr = numpy.random.random((100, 100))
-        arr_serialized = serialize(arr, compress=True)
+        arr_serialized = serialize(arr, compress=True, compressScheme=compressScheme)
 
-        arr_serialized_deserialized = deserialize(arr_serialized, compressed=True)
-        assert numpy.array_equal(arr, arr_serialized_deserialized)
-
-    def test_compressed_serde_zstd(self):
-        arr = numpy.random.random((100, 100))
-        arr_serialized = serialize(arr, compress=True, compressScheme="zstd")
         arr_serialized_deserialized = deserialize(
-            arr_serialized, compressed=True, compressScheme="zstd"
+            arr_serialized, compressed=True, compressScheme=compressScheme
         )
         assert numpy.array_equal(arr, arr_serialized_deserialized)
 
-    def test_dict(self):
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_dict(self, compress):
         # Test with integers
         _dict = {1: 1, 2: 2, 3: 3}
-        dict_serialized = serialize(_dict, compress=False)
-        dict_serialized_deserialized = deserialize(dict_serialized, compressed=False)
+        dict_serialized = serialize(_dict, compress=compress)
+        dict_serialized_deserialized = deserialize(dict_serialized, compressed=compress)
         assert _dict == dict_serialized_deserialized
 
         # Test with strings
         _dict = {"one": 1, "two": 2, "three": 3}
-        dict_serialized = serialize(_dict, compress=False)
-        dict_serialized_deserialized = deserialize(dict_serialized, compressed=False)
+        dict_serialized = serialize(_dict, compress=compress)
+        dict_serialized_deserialized = deserialize(dict_serialized, compressed=compress)
         assert _dict == dict_serialized_deserialized
 
         # Test with a complex data structure
         tensor_one = Tensor(numpy.random.random((100, 100)))
         tensor_two = Tensor(numpy.random.random((100, 100)))
         _dict = {0: tensor_one, 1: tensor_two}
-        dict_serialized = serialize(_dict, compress=False)
-        dict_serialized_deserialized = deserialize(dict_serialized, compressed=False)
+        dict_serialized = serialize(_dict, compress=compress)
+        dict_serialized_deserialized = deserialize(dict_serialized, compressed=compress)
         # `assert dict_serialized_deserialized == _dict` does not work, therefore it's split
         # into 3 assertions
         assert type(dict_serialized_deserialized) == type(_dict)
         assert (dict_serialized_deserialized[0] == tensor_one).all()
         assert (dict_serialized_deserialized[1] == tensor_two).all()
 
-    def test_compressed_dict(self):
-        # Test with integers
-        _dict = {1: 1, 2: 2, 3: 3}
-        dict_serialized = serialize(_dict, compress=True)
-        dict_serialized_deserialized = deserialize(dict_serialized, compressed=True)
-        assert _dict == dict_serialized_deserialized
-
-        # Test with strings
-        _dict = {"one": 1, "two": 2, "three": 3}
-        dict_serialized = serialize(_dict, compress=True)
-        dict_serialized_deserialized = deserialize(dict_serialized, compressed=True)
-        assert _dict == dict_serialized_deserialized
-
-        # Test with a complex data structure
-        tensor_one = Tensor(numpy.random.random((100, 100)))
-        tensor_two = Tensor(numpy.random.random((100, 100)))
-        _dict = {0: tensor_one, 1: tensor_two}
-        dict_serialized = serialize(_dict, compress=True)
-        dict_serialized_deserialized = deserialize(dict_serialized, compressed=True)
-        # `assert dict_serialized_deserialized == _dict` does not work, therefore it's split
-        # into 3 assertions
-        assert type(dict_serialized_deserialized) == type(_dict)
-        assert (dict_serialized_deserialized[0] == tensor_one).all()
-        assert (dict_serialized_deserialized[1] == tensor_two).all()
-
-    def test_range_serde(self):
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_range_serde(self, compress):
         _range = range(1, 2, 3)
 
-        range_serialized = serialize(_range, compress=False)
+        range_serialized = serialize(_range, compress=compress)
 
-        range_serialized_deserialized = deserialize(range_serialized, compressed=False)
+        range_serialized_deserialized = deserialize(range_serialized, compressed=compress)
 
         assert _range == range_serialized_deserialized
 
-    def test_compressed_range_serde(self):
-        _range = range(1, 2, 3)
-
-        range_serialized = serialize(_range, compress=True)
-
-        range_serialized_deserialized = deserialize(range_serialized, compressed=True)
-
-        assert _range == range_serialized_deserialized
-
-    def test_list(self):
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_list(self, compress):
         # Test with integers
         _list = [1, 2]
-        list_serialized = serialize(_list, compress=False)
-        list_serialized_deserialized = deserialize(list_serialized, compressed=False)
+        list_serialized = serialize(_list, compress=compress)
+        list_serialized_deserialized = deserialize(list_serialized, compressed=compress)
         assert _list == list_serialized_deserialized
 
         # Test with strings
         _list = ["hello", "world"]
-        list_serialized = serialize(_list, compress=False)
-        list_serialized_deserialized = deserialize(list_serialized, compressed=False)
+        list_serialized = serialize(_list, compress=compress)
+        list_serialized_deserialized = deserialize(list_serialized, compressed=compress)
         assert _list == list_serialized_deserialized
 
         # Test with a complex data structure
         tensor_one = Tensor(numpy.random.random((100, 100)))
         tensor_two = Tensor(numpy.random.random((100, 100)))
         _list = (tensor_one, tensor_two)
-        list_serialized = serialize(_list, compress=False)
-        list_serialized_deserialized = deserialize(list_serialized, compressed=False)
+        list_serialized = serialize(_list, compress=compress)
+        list_serialized_deserialized = deserialize(list_serialized, compressed=compress)
         # `assert list_serialized_deserialized == _list` does not work, therefore it's split
         # into 3 assertions
         assert type(list_serialized_deserialized) == type(_list)
         assert (list_serialized_deserialized[0] == tensor_one).all()
         assert (list_serialized_deserialized[1] == tensor_two).all()
 
-    def test_compressed_list(self):
-        # Test with integers
-        _list = [1, 2]
-        list_serialized = serialize(_list, compress=True)
-        list_serialized_deserialized = deserialize(list_serialized, compressed=True)
-        assert _list == list_serialized_deserialized
-
-        # Test with strings
-        _list = ["hello", "world"]
-        list_serialized = serialize(_list, compress=True)
-        list_serialized_deserialized = deserialize(list_serialized, compressed=True)
-        assert _list == list_serialized_deserialized
-
-        # Test with a complex data structure
-        tensor_one = Tensor(numpy.random.random((100, 100)))
-        tensor_two = Tensor(numpy.random.random((100, 100)))
-        _list = (tensor_one, tensor_two)
-        list_serialized = serialize(_list, compress=True)
-        list_serialized_deserialized = deserialize(list_serialized, compressed=True)
-        # `assert list_serialized_deserialized == _list` does not work, therefore it's split
-        # into 3 assertions
-        assert type(list_serialized_deserialized) == type(_list)
-        assert (list_serialized_deserialized[0] == tensor_one).all()
-        assert (list_serialized_deserialized[1] == tensor_two).all()
-
-    def test_set(self):
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_set(self, compress):
         # Test with integers
         _set = set([1, 2])
-        set_serialized = serialize(_set, compress=False)
-        set_serialized_deserialized = deserialize(set_serialized, compressed=False)
+        set_serialized = serialize(_set, compress=compress)
+        set_serialized_deserialized = deserialize(set_serialized, compressed=compress)
         assert _set == set_serialized_deserialized
 
         # Test with strings
         _set = set(["hello", "world"])
-        set_serialized = serialize(_set, compress=False)
-        set_serialized_deserialized = deserialize(set_serialized, compressed=False)
+        set_serialized = serialize(_set, compress=compress)
+        set_serialized_deserialized = deserialize(set_serialized, compressed=compress)
         assert _set == set_serialized_deserialized
 
         # Test with a complex data structure
         tensor_one = Tensor(numpy.random.random((100, 100)))
         tensor_two = Tensor(numpy.random.random((100, 100)))
         _set = (tensor_one, tensor_two)
-        set_serialized = serialize(_set, compress=False)
-        set_serialized_deserialized = deserialize(set_serialized, compressed=False)
+        set_serialized = serialize(_set, compress=compress)
+        set_serialized_deserialized = deserialize(set_serialized, compressed=compress)
         # `assert set_serialized_deserialized == _set` does not work, therefore it's split
         # into 3 assertions
         assert type(set_serialized_deserialized) == type(_set)
         assert (set_serialized_deserialized[0] == tensor_one).all()
         assert (set_serialized_deserialized[1] == tensor_two).all()
 
-    def test_compressed_set(self):
-        # Test with integers
-        _set = set([1, 2])
-        set_serialized = serialize(_set, compress=True)
-        set_serialized_deserialized = deserialize(set_serialized, compressed=True)
-        assert _set == set_serialized_deserialized
-
-        # Test with strings
-        _set = set(["hello", "world"])
-        set_serialized = serialize(_set, compress=True)
-        set_serialized_deserialized = deserialize(set_serialized, compressed=True)
-        assert _set == set_serialized_deserialized
-
-        # Test with a complex data structure
-        tensor_one = Tensor(numpy.random.random((100, 100)))
-        tensor_two = Tensor(numpy.random.random((100, 100)))
-        _set = (tensor_one, tensor_two)
-        set_serialized = serialize(_set, compress=True)
-        set_serialized_deserialized = deserialize(set_serialized, compressed=True)
-        # `assert set_serialized_deserialized == _set` does not work, therefore it's split
-        # into 3 assertions
-        assert type(set_serialized_deserialized) == type(_set)
-        assert (set_serialized_deserialized[0] == tensor_one).all()
-        assert (set_serialized_deserialized[1] == tensor_two).all()
-
-    def test_slice(self):
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_slice(self, compress):
         s = slice(0, 100, 2)
         x = numpy.random.rand(100)
-        s_serialized = serialize(s, compress=False)
-        s_serialized_deserialized = deserialize(s_serialized, compressed=False)
+        s_serialized = serialize(s, compress=compress)
+        s_serialized_deserialized = deserialize(s_serialized, compressed=compress)
 
         assert type(s) == type(s_serialized_deserialized)
         assert (x[s] == x[s_serialized_deserialized]).all()
@@ -359,65 +243,31 @@ class TestSerde(TestCase):
         assert type(s) == type(s_serialized_deserialized)
         assert (x[s] == x[s_serialized_deserialized]).all()
 
-    def test_compressed_slice(self):
-        s = slice(0, 100, 2)
-        x = numpy.random.rand(100)
-        s_serialized = serialize(s, compress=True)
-        s_serialized_deserialized = deserialize(s_serialized, compressed=True)
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_float(self, compress):
+        x = 0.5
+        y = 1.5
 
-        assert type(s) == type(s_serialized_deserialized)
-        assert (x[s] == x[s_serialized_deserialized]).all()
+        x_serialized = serialize(x, compress=compress)
+        x_serialized_deserialized = deserialize(x_serialized, compressed=compress)
 
-        s = slice(40, 50)
-        x = numpy.random.rand(100)
-        s_serialized = serialize(s, compress=True)
-        s_serialized_deserialized = deserialize(s_serialized, compressed=True)
+        y_serialized = serialize(y, compress=compress)
+        y_serialized_deserialized = deserialize(y_serialized, compressed=compress)
 
-        assert type(s) == type(s_serialized_deserialized)
-        assert (x[s] == x[s_serialized_deserialized]).all()
+        assert x_serialized_deserialized == x
+        assert y_serialized_deserialized == y
 
 
-class TestHooked(TestCase):
-    def test_hooked_tensor(self):
+class TestHooked(object):
+    @pytest.mark.parametrize(
+        "compress, compressScheme", [(True, "lz4"), (False, "lz4"), (True, "zstd"), (False, "zstd")]
+    )
+    def test_hooked_tensor(self, compress, compressScheme):
         TorchHook(torch)
 
-        def test(compress, compressScheme):
-            t = Tensor(numpy.random.random((100, 100)))
-            t_serialized = serialize(t, compress=compress, compressScheme=compressScheme)
-            t_serialized_deserialized = deserialize(
-                t_serialized, compressed=compress, compressScheme=compressScheme
-            )
-            assert (t == t_serialized_deserialized).all()
-
-        compress_vals = [True, False]
-        compressScheme_vals = ["zstd", "lz4"]
-
-        for compress in compress_vals:
-            for compressScheme in compressScheme_vals:
-                test(compress, compressScheme)
-
-    def test_float(self):
-        x = 0.5
-        y = 1.5
-
-        x_serialized = serialize(x, compress=False)
-        x_serialized_deserialized = deserialize(x_serialized, compressed=False)
-
-        y_serialized = serialize(y, compress=False)
-        y_serialized_deserialized = deserialize(y_serialized, compressed=False)
-
-        assert x_serialized_deserialized == x
-        assert y_serialized_deserialized == y
-
-    def test_compressed_float(self):
-        x = 0.5
-        y = 1.5
-
-        x_serialized = serialize(x, compress=True)
-        x_serialized_deserialized = deserialize(x_serialized, compressed=True)
-
-        y_serialized = serialize(y, compress=True)
-        y_serialized_deserialized = deserialize(y_serialized, compressed=True)
-
-        assert x_serialized_deserialized == x
-        assert y_serialized_deserialized == y
+        t = Tensor(numpy.random.random((100, 100)))
+        t_serialized = serialize(t, compress=compress, compressScheme=compressScheme)
+        t_serialized_deserialized = deserialize(
+            t_serialized, compressed=compress, compressScheme=compressScheme
+        )
+        assert (t == t_serialized_deserialized).all()
