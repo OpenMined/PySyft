@@ -3,7 +3,9 @@ from syft.serde import serialize
 from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
+from syft import TorchHook
 from torch import Tensor
+import torch
 import numpy
 import msgpack
 import pytest
@@ -254,3 +256,18 @@ class TestSerde(object):
 
         assert x_serialized_deserialized == x
         assert y_serialized_deserialized == y
+
+
+class TestHooked(object):
+    @pytest.mark.parametrize(
+        "compress, compressScheme", [(True, "lz4"), (False, "lz4"), (True, "zstd"), (False, "zstd")]
+    )
+    def test_hooked_tensor(self, compress, compressScheme):
+        TorchHook(torch)
+
+        t = Tensor(numpy.random.random((100, 100)))
+        t_serialized = serialize(t, compress=compress, compressScheme=compressScheme)
+        t_serialized_deserialized = deserialize(
+            t_serialized, compressed=compress, compressScheme=compressScheme
+        )
+        assert (t == t_serialized_deserialized).all()
