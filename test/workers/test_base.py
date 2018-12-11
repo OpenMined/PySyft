@@ -21,6 +21,6 @@ class TestTorchTensor(TestCase):
         assert isinstance(x_ptr, PointerTensor)
         assert x_ptr.location.id == self.bob.id
         assert x_ptr.id_at_location == ptr_id
-        remote_x = self.bob.get_obj(ptr_id)["data"]
+        remote_x = self.bob.get_obj(ptr_id)
         assert remote_x is not None
         assert isinstance(remote_x, torch.Tensor)

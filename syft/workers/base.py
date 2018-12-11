@@ -143,7 +143,7 @@ class BaseWorker(AbstractWorker):
             ptr_id = int(10e10 * random.random())
 
         # Send the object
-        self.send_obj({"id": ptr_id, "data": tensor}, worker)
+        self.send_obj((ptr_id, tensor), worker)
 
         pointer = tensor.create_pointer(
             owner=self, location=worker, id_at_location=ptr_id, register=True
@@ -151,8 +151,9 @@ class BaseWorker(AbstractWorker):
 
         return pointer
 
-    def set_obj(self, obj):
-        self._objects[obj["id"]] = obj
+    def set_obj(self, obj_data):
+        obj_id, obj = obj_data
+        self._objects[obj_id] = obj
 
     def get_obj(self, obj_id):
         return self._objects[obj_id]
