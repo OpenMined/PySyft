@@ -11,6 +11,7 @@ import logging
 import numpy as np
 from syft.spdz import spdz
 from syft.mpc.securenn import relu, relu_deriv
+from typing import Union
 
 
 class _SyftTensor:
@@ -23,8 +24,8 @@ class _SyftTensor:
         parent=None,
         torch_type=None,
         owner=None,
-        id=None,
-        skip_register=False,
+        id: Union[int, str] = None,
+        skip_register: bool = False,
     ):
         if child is not None:  # not needed: torch_utils.is_syft_tensor(child):
             if torch_type is None:
@@ -47,7 +48,7 @@ class _SyftTensor:
         self.torch_type = torch_type
         self.owner = owner  # should not be a (str, int)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             "["
             + type(self).__name__
@@ -58,10 +59,10 @@ class _SyftTensor:
             + "]"
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def get_shape(self):
+    def get_shape(self) -> Union[tuple, list]:
         if torch_utils.is_tensor(self.child) or torch_utils.is_variable(self.child):
             return self.child.shape
         else:
@@ -83,7 +84,7 @@ class _SyftTensor:
         else:
             return self.wrap(True).share(*workers)
 
-    def set_id(self, new_id):
+    def set_id(self, new_id: Union[str, int]):
         """This changes the id of a tensor.
 
         :param new_id: a string or integer id
@@ -165,12 +166,12 @@ class _SyftTensor:
     def create_pointer(
         self,
         parent=None,
-        ptr_id=None,
+        ptr_id: Union[str, int] = None,
         owner=None,
-        location=None,
-        id_at_location=None,
-        register=False,
-        original_pointer=False,
+        location: Union[str, int] = None,
+        id_at_location: Union[str, int] = None,
+        register: bool = False,
+        original_pointer: bool = False,
     ):
 
         if owner is None:
@@ -227,7 +228,7 @@ class _SyftTensor:
 
         return ptr
 
-    def ser(self, private, as_dict=True):
+    def ser(self, private, as_dict: bool = True):
         """General method for serializing a Syft object.
 
         Specific tensors like _PointerTensor should overload this
@@ -342,7 +343,7 @@ class _SyftTensor:
 
         return wrapper
 
-    def wrap(self, skip_fix_chain_end=False):
+    def wrap(self, skip_fix_chain_end: bool = False):
         """Wrap a syft node with a torch wrapper."""
         wrapper = torch.guard[self.torch_type]()
         self.owner.rm_obj(wrapper.child.id)
@@ -437,8 +438,8 @@ class _LocalTensor(_SyftTensor):
         parent=None,
         torch_type=None,
         owner=None,
-        id=None,
-        skip_register=False,
+        id: Union[str, int] = None,
+        skip_register: bool = False,
     ):
         super().__init__(
             child=child,
@@ -570,7 +571,7 @@ class _LocalTensor(_SyftTensor):
 
         return return_response
 
-    def ser(self, private, as_dict=True):
+    def ser(self, private, as_dict: bool = True) -> Union[dict, bytes]:
 
         data = {"owner": self.owner.id, "id": self.id, "torch_type": self.torch_type}
 
@@ -616,7 +617,7 @@ class _LocalTensor(_SyftTensor):
                 syft_obj = previous_pointer
         return syft_obj
 
-    def get(self, parent, deregister_ptr=None):
+    def get(self, parent, deregister_ptr: bool = None):
         raise TypeError("Cannot call .get() on a tensor you already have.")
 
     def relu(self):
@@ -644,7 +645,8 @@ class _WrapTorchObjectPlusIsMinusTensor(_SyftTensor):
     A production example of this tensor is _SPDZTensor
     """
 
-    def __init__(self, child=None, owner=None, torch_type=None):
+    def __init__(self, child=None, owner=None, torch_type: torch.tensor = None):
+
         super().__init__(child=child, owner=owner)
 
         self.child = child
@@ -677,7 +679,7 @@ class _WrapTorchObjectPlusIsMinusTensor(_SyftTensor):
             return _WrapTorchObjectPlusIsMinusTensor(result_child).wrap(True)
 
     def __add__(self, other):
-        # gp_ stands for GeneralizedPointer
+        # gp_ stands for GeneralizedPointer'
         gp_response = self.child - other.child
         response = _WrapTorchObjectPlusIsMinusTensor(gp_response).wrap(True)
         return response
@@ -763,12 +765,12 @@ class _LogTensor(_SyftTensor):
 class _GeneralizedPointerTensor(_SyftTensor):
     def __init__(
         self,
-        pointer_tensor_dict,
+        pointer_tensor_dict: dict,
         parent=None,
         torch_type=None,
-        id=None,
+        id: Union[str, int] = None,
         owner=None,
-        skip_register=False,
+        skip_register: bool = False,
     ):
         super().__init__(
             child=None,
@@ -794,14 +796,14 @@ class _GeneralizedPointerTensor(_SyftTensor):
         self.pointer_tensor_dict = pointer_dict
         self.torch_type = torch_type
 
-    def pointers(self):
+    def pointers(self) -> list:
         """Returns the list of the pointers which this tensor contains"""
         return list(self.pointer_tensor_dict.values())
 
-    def get_shape(self):
+    def get_shape(self) -> list:
         return list(self.pointer_tensor_dict.values())[0].get_shape()
 
-    def ser(self, private, as_dict=True):
+    def ser(self, private, as_dict: bool = True):
         pointer_dict = {}
 
         for owner, pointer in self.pointer_tensor_dict.items():
@@ -883,6 +885,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
         return gpt
 
     def public_add_(self, value):
+
         for worker, pointer in self.pointer_tensor_dict.items():
             location = pointer.location
             value.send(location)
@@ -891,7 +894,7 @@ class _GeneralizedPointerTensor(_SyftTensor):
             break
         return self
 
-    def get(self, deregister_ptr=False):
+    def get(self, deregister_ptr: bool = False):
 
         # TODO: deregister_ptr doesn't work
 
@@ -962,10 +965,10 @@ class _PointerTensor(_SyftTensor):
         parent,
         torch_type,
         location=None,
-        id_at_location=None,
-        id=None,
+        id_at_location: Union[str, int] = None,
+        id: Union[str, int] = None,
         owner=None,
-        skip_register=False,
+        skip_register: bool = False,
         original_pointer=False,
     ):
         super().__init__(
@@ -1075,7 +1078,7 @@ class _PointerTensor(_SyftTensor):
 
         return response
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             "["
             + type(self).__name__
@@ -1090,7 +1093,7 @@ class _PointerTensor(_SyftTensor):
             + "]"
         )
 
-    def ser(self, private, as_dict=True):
+    def ser(self, private, as_dict: bool = True):
         data = {
             "owner": self.owner.id,
             "id": self.id,
@@ -1151,7 +1154,7 @@ class _PointerTensor(_SyftTensor):
                     syft_obj = previous_pointer
         return syft_obj
 
-    def get(self, deregister_ptr=True):
+    def get(self, deregister_ptr: bool = True):
 
         """Get back from a remote worker the chain this pointer is pointing
         at."""
@@ -1233,13 +1236,13 @@ class _FixedPrecisionTensor(_SyftTensor):
         self,
         child=None,
         owner=None,
-        torch_type=None,
-        field=(2 ** 31) - 1,
-        base=10,
-        precision_fractional=3,
-        precision_integral=1,
-        already_encoded=False,
-        kappa=1,
+        torch_type: torch.tensor = None,
+        field: int = (2 ** 31) - 1,
+        base: int = 10,
+        precision_fractional: int = 3,
+        precision_integral: int = 1,
+        already_encoded: bool = False,
+        kappa: int = 1,
     ):
 
         if torch_type is None:
@@ -1290,7 +1293,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def get_shape(self):
         return self.child.get_shape()
 
-    def ser(self, private, as_dict=True):
+    def ser(self, private, as_dict: bool = True):
 
         data = {
             "owner": self.owner.id,
@@ -1626,20 +1629,20 @@ class _FixedPrecisionTensor(_SyftTensor):
             )
             return self.child * scaling, other.child
 
-    def __add__(self, other):
+    def __add__(self, other) -> int:
 
         a, b = self.check_and_scale_precision_if_needed(other)
         return (a + b) % self.field
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> int:
         a, b = self.check_and_scale_precision_if_needed(other)
         return (a - b) % self.field
 
-    def __rsub__(self, other):
+    def __rsub__(self, other) -> int:
         a, b = self.check_and_scale_precision_if_needed(other)
         return (b - a) % self.field
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> int:
         a, b = self.check_and_scale_precision_if_needed(other)
         result = a * b  # % self.field # - modulus performed later
         return result
@@ -1880,7 +1883,9 @@ class _SPDZTensor(_SyftTensor):
     to occur within each single operation within __add__ and __mul__.
     """
 
-    def __init__(self, shares=None, child=None, torch_type=None, *args, **kwargs):
+    def __init__(
+        self, shares=None, child=None, torch_type: torch.tensor = None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         # Fixme: remove the share on init,
         # declaring a SPDZTensor should autmatically create a _GeneralizedPointerTensor
@@ -1916,7 +1921,7 @@ class _SPDZTensor(_SyftTensor):
         # skip .child since it's a wrapper
         return self.child.child.get_shape()
 
-    def ser(self, private, as_dict=True):
+    def ser(self, private, as_dict: bool = True):
 
         data = {
             "owner": self.owner.id,
@@ -1999,7 +2004,7 @@ class _SPDZTensor(_SyftTensor):
 
         return wrapper
 
-    def share_scalar(self, scalar):
+    def share_scalar(self, scalar: int):
         other = torch.zeros(list(self.get_shape())).long() + scalar
 
         # if the parent is a Variable type then we need to cast this to
@@ -2156,7 +2161,7 @@ class _SPDZTensor(_SyftTensor):
         for share, worker in zip(self.shares, self.workers):
             share.send(worker)
 
-    def get(self, deregister_ptr=False):
+    def get(self, deregister_ptr: bool = False):
         if torch_utils.is_variable(self.child):
             var = sy.Variable(self.data.get())
             var.child = None
@@ -2397,10 +2402,10 @@ class _TorchObject:
 
     def fix_precision(
         self,
-        field=(2 ** 31) - 1,
-        base=10,
-        precision_fractional=3,
-        already_encoded=False,
+        field: int = (2 ** 31) - 1,
+        base: int = 10,
+        precision_fractional: int = 3,
+        already_encoded: bool = False,
     ):
         def _fix_precison(tensorvar, is_encoded):
             return _FixedPrecisionTensor(
@@ -2492,13 +2497,15 @@ class _TorchObject:
 
         return self.native___repr__()
 
-    def create_pointer(self, register=False, location=None, ptr_id=None):
+    def create_pointer(
+        self, register: bool = False, location=None, ptr_id: Union[int, str] = None
+    ):
 
         return self.child.create_pointer(
             parent=self, register=register, location=location, ptr_id=ptr_id
         ).wrap()
 
-    def move(self, worker, new_id=None):
+    def move(self, worker, new_id: Union[str, int] = None):
 
         if isinstance(self.child, _PointerTensor):
             if self.child.original_pointer:
@@ -2550,7 +2557,7 @@ class _TorchTensor(_TorchObject):
 
         return getattr(self, attr)(*args, **kwargs)
 
-    def ser(self, private, as_dict=True):
+    def ser(self, private, as_dict: bool = True):
         key = encode.get_serialized_key(self)
 
         data = (
@@ -2608,7 +2615,7 @@ class _TorchTensor(_TorchObject):
             pointers_dict[worker] = self.clone().send(worker).child
         return _GeneralizedPointerTensor(pointers_dict).on(self)
 
-    def send(self, *workers, ptr_id=None, as_list=False):
+    def send(self, *workers, ptr_id: Union[int, str] = None, as_list: int = False):
         """Give the root of the chain held by self to worker self->alice->obj
         [worker] => self->worker->alice->obj.
 
@@ -2667,7 +2674,7 @@ class _TorchTensor(_TorchObject):
 
         return self
 
-    def get(self, deregister_ptr=True, update_ptr_wrapper=True):
+    def get(self, deregister_ptr: bool = True, update_ptr_wrapper: bool = True):
         """Get a remote tensor back to the local worker.
 
         :param deregister_ptr: should we de-register from the remote. Default to True
@@ -2733,11 +2740,11 @@ class _TorchVariable(_TorchObject):
     def send(
         self,
         *workers,
-        new_id=None,
+        new_id: Union[int, str] = None,
         new_data_id=None,
         new_grad_id=None,
         new_grad_data_id=None,
-        as_list=False,
+        as_list: bool = False,
     ):
         """Give the root of the chain held by self to worker self->alice->obj
         [worker] => self->worker->alice->obj Because there are Variable
@@ -2815,7 +2822,7 @@ class _TorchVariable(_TorchObject):
 
         return self
 
-    def get(self, deregister_ptr=True, update_ptr_wrapper=True):
+    def get(self, deregister_ptr: bool = True, update_ptr_wrapper: bool = True):
         """Get a remote variable back to the local worker.
 
         :param deregister_ptr: should we de-register from the remote. Default to True
@@ -2864,7 +2871,7 @@ class _TorchVariable(_TorchObject):
 
         return variable
 
-    def ser(self, private, as_dict=True, is_head=False):
+    def ser(self, private, as_dict: bool = True, is_head: bool = False):
         """
         Serialize a variable and its pertaining chain
         :param private: If true, don't include the data, just the structure and meta data
@@ -2911,7 +2918,7 @@ class _TorchVariable(_TorchObject):
         return {key: var_msg}
 
     @staticmethod
-    def deser(obj_type, msg_obj, worker, acquire, is_head=False):
+    def deser(obj_type, msg_obj, worker, acquire, is_head: bool = False):
         # Convert { '__<type>__' : { ...obj... } in ('<type>', { ...obj... })
         child_type, msg_child = torch_utils.extract_type_and_obj(msg_obj["child"])
 
