@@ -24,3 +24,25 @@ class PointerTensor(AbstractTensor):
 
     def __repr__(self):
         return self.__str__()
+
+    def get(self, deregister_ptr=True):
+        """Get back from a remote worker the chain this pointer
+        is pointing at."""
+
+        # if the pointer happens to be pointing to a local object,
+        # just return that object (this is an edge case)
+        if self.location == self.owner:
+            tensor = self.owner.get_obj(self.id_at_location).child
+        else:
+            # get tensor from remote machine
+            tensor = self.owner.request_obj(self.id_at_location, self.location)
+
+        # Register the result
+        assigned_id = self.id_at_location
+        self.owner.register_obj(tensor, assigned_id)
+
+        # Remove this pointer by default
+        if deregister_ptr:
+            self.owner.de_register_obj(self)
+
+        return tensor

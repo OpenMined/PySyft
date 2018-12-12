@@ -24,3 +24,7 @@ class TestTorchTensor(TestCase):
         remote_x = self.bob.get_obj(ptr_id)
         assert remote_x is not None
         assert isinstance(remote_x, torch.Tensor)
+
+        x_back = x_ptr.get()
+
+        assert (x == x_back).all()

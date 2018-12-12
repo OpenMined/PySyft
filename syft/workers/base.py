@@ -156,7 +156,67 @@ class BaseWorker(AbstractWorker):
         self._objects[obj_id] = obj
 
     def get_obj(self, obj_id):
-        return self._objects[obj_id]
+        obj = self._objects[obj_id]
+        # obj.id = obj_id
+        # obj.owner = self
+        return obj
+
+    def register_obj(self, obj, obj_id=None):
+        """Registers an object with the current worker node. Selects an id for
+        the object, assigns a list of owners, and establishes whether it's a
+        pointer or not. This method is generally not used by the client and is
+        instead used by internal processes (hooks and workers).
+        :Parameters:
+        * **obj (a torch.Tensor or torch.autograd.Variable)** a Torch
+          instance, e.g. Tensor or Variable to be registered
+        * **force_attach_to_worker (bool)** if set to True, it will
+          force the object to be stored in the worker's permanent registry
+        * **temporary (bool)** If set to True, it will store the object
+          in the worker's temporary registry.
+        :kwargs:
+        * **id (int or string)** random integer between 0 and 1e10 or
+          string uniquely identifying the object.
+        * **owners (list of ** :class:`BaseWorker` objects ** or ids)**
+          owner(s) of the object
+        * **is_pointer (bool, optional)** Whether or not the tensor being
+          registered contains the data locally or is instead a pointer to
+          a tensor that lives on a different worker.
+        """
+
+        if obj_id is None:
+            obj_id = obj.id
+        else:
+            obj.id = obj_id
+
+        self.set_obj((obj_id, obj))
+
+    def de_register_obj(self, obj, _recurse_torch_objs=True):
+        """Unregister an object and removes attributes which are indicative of
+        registration.
+        """
+
+        if hasattr(obj, "id"):
+            self.rm_obj(obj.id)
+            del obj.id
+        if hasattr(obj, "owner"):
+            del obj.owner
+
+        # TODO: Not useful for the moment
+        # if hasattr(obj, "child"):
+        #     if obj.child is not None:
+        #         self.de_register_object(
+        #             obj.child, _recurse_torch_objs=_recurse_torch_objs
+        #         )
+        #     delattr(obj, "child")
+
+    def rm_obj(self, remote_key):
+        """This method removes an object from the permanent object registry if
+        it exists.
+        :parameters:
+        * **remote_key(int or string)** the id of the object to be removed
+        """
+        if remote_key in self._objects:
+            del self._objects[remote_key]
 
     # SECTION: convenience methods for constructing frequently used messages
 
@@ -164,7 +224,10 @@ class BaseWorker(AbstractWorker):
         return self.send_msg(MSGTYPE_OBJ, obj, location)
 
     def request_obj(self, obj_id, location):
-        return self.send_msg(MSGTYPE_OBJ_REQ, obj_id, location)
+        obj = self.send_msg(MSGTYPE_OBJ_REQ, obj_id, location)
+        # obj.id = obj_id
+        # obj.owner = self
+        return obj
 
     # SECTION: Manage the workers network
 

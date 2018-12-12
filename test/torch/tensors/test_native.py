@@ -9,6 +9,12 @@ class TestTorchTensor(TestCase):
         self.hook = TorchHook(torch)
         self.bob = VirtualWorker()
 
+    def test_overload_reshape(self):
+        tensor = torch.Tensor([1, 2, 3, 4])
+        tensor_reshaped = tensor.reshape((2, 2))
+        tensor_matrix = torch.Tensor([[1.0, 2.0], [3.0, 4.0]])
+        assert (tensor_reshaped == tensor_matrix).all()
+
     def test_owner_default(self):
         tensor = torch.Tensor([1, 2, 3, 4, 5])
 
