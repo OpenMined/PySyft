@@ -3,7 +3,7 @@ import random
 from syft.frameworks.torch.tensors import PointerTensor
 
 
-class TorchTensor:
+class SyftTensor:
     """
     This tensor is simply a more convenient way to add custom functions to
     all Torch tensor types.
@@ -51,5 +51,8 @@ class TorchTensor:
         return ptr
 
     def reshape(self, *args, **kwargs):
-        print("Overloading torch.Tensor.reshape")
+        # executing custom syft code
+        print("Executing overloaded torch.Tensor.reshape")
+
+        # calling the native torch methoc
         return getattr(self, "native_reshape")(*args, **kwargs)

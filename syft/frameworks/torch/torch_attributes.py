@@ -35,21 +35,6 @@ class TorchAttributes(object):
         )
         self.tensorvar_methods += ["get_shape", "share", "fix_precision", "decode", "end_get"]
 
-        # Methods that caused infinite recursion during testing
-        self.exclude = [
-            "ndimension",
-            "nelement",
-            "size",
-            "numel",
-            "type",
-            "tolist",
-            "dim",
-            "__iter__",
-            "select",
-            "__getattr__",
-            "_get_type",
-        ]
-
         # SECTION: Build the guard, that define which functions or methods can be safely called by
         # external or local workers
 
