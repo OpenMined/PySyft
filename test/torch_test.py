@@ -359,6 +359,16 @@ class TestTorchTensor(TestCase):
         # because .get_() was called, x should no longer be in the remote worker's objects dict
         assert ptr_id not in bob._objects
 
+    def test_send_pointer_to_unknow_worker(self):
+        """Tests that sending a pointer to a unknow worker results on a
+        TypeError exception."""
+        # Create worker that doesn't know any other worker
+        carl = sy.VirtualWorker(id="carl", hook=hook, is_client_worker=False)
+        try:
+            sy.FloatTensor([1, 2, 3, 4, 5]).send(bob).send(carl)
+        except TypeError:
+            assert True
+
     def test_multiple_pointers_to_same_target(self):
         # There are two cases:
         #   - You're sending a var on a loc:id you're already pointing at -> should abort
@@ -658,7 +668,11 @@ class TestTorchTensor(TestCase):
 
         bob_id = random.randint(0, 10e10)
         alice_id = random.randint(0, 10e10)
-        x = sy.FloatTensor([1, 2, 3, 4, 5]).send(bob, ptr_id=bob_id).send(alice, ptr_id=alice_id)
+        x = (
+            sy.FloatTensor([1, 2, 3, 4, 5])
+            .send(bob, ptr_id=bob_id)
+            .send(alice, ptr_id=alice_id)
+        )
 
         x2 = x.end_get()
         # Now alice will own the tensor that was in bob and bob won't have it anymore
@@ -1957,6 +1971,7 @@ class TestGPCTensor(TestCase):
         results = x_gp.workers()
 
         assert results == [k.id for k in x_pointer_tensor_dict.keys()]
+
 
 if __name__ == "__main__":
     unittest.main()
