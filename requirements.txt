@@ -1,4 +1,5 @@
 black
+coverage
 ipykernel
 msgpack
 pandas

@@ -594,10 +594,11 @@ class BaseWorker(ABC):
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
             else:
-                logging.warning(
-                    "Worker", self.id, "couldnt recognize worker", id_or_worker
+                raise RuntimeWarning(
+                    "Worker {} couldnt recognize worker {}".format(
+                        self.id, id_or_worker
+                    )
                 )
-                return id_or_worker
         else:
             if id_or_worker.id not in self._known_workers:
                 self.add_worker(id_or_worker)

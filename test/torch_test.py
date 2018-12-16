@@ -359,6 +359,17 @@ class TestTorchTensor(TestCase):
         # because .get_() was called, x should no longer be in the remote worker's objects dict
         assert ptr_id not in bob._objects
 
+    def test_send_pointer_to_unknown_worker(self):
+        """Tests that sending a pointer to a unknown worker results on a
+        RuntimeWarning exception."""
+        # Create worker that doesn't know any other worker
+        carl = sy.VirtualWorker(id="carl", hook=hook, is_client_worker=False)
+        try:
+            sy.FloatTensor([1, 2, 3, 4, 5]).send(bob).send(carl)
+            assert False
+        except RuntimeWarning:
+            assert True
+
     def test_multiple_pointers_to_same_target(self):
         # There are two cases:
         #   - You're sending a var on a loc:id you're already pointing at -> should abort
