@@ -607,7 +607,7 @@ class BaseWorker(ABC):
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
             else:
-                raise TypeError(
+                raise RuntimeWarning(
                     "Worker {} couldnt recognize worker {}".format(
                         self.id, id_or_worker
                     )
