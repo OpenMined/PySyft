@@ -1,9 +1,10 @@
 black
 coverage
 ipykernel
-msgpack
 lz4
-zstd
+msgpack
 pre-commit
 sphinx_rtd_theme
+torch==1.0.0
 websockets
+zstd
