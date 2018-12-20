@@ -297,7 +297,7 @@ class BaseWorker(AbstractWorker):
         >>> # or we can get the worker by passing in the worker
         >>> me.get_worker(bob)
         <syft.core.workers.virtual.VirtualWorker id:bob>
-        
+
         """
         if isinstance(id_or_worker, (str, int)):
             if id_or_worker in self._known_workers:
@@ -318,10 +318,14 @@ class BaseWorker(AbstractWorker):
         the ability to communicate with the remote worker being added, such as
         sending and receiving objects, commands, or information about the
         network.
+
         :Parameters:
+
         * **worker (**:class:`BaseWorker` **)** This is an object
           pointer to a remote worker, which must have a unique id.
+
         :Example:
+
         >>> import syft as sy
         >>> hook = sy.TorchHook(verbose=False)
         >>> me = hook.local_worker
@@ -359,7 +363,10 @@ class BaseWorker(AbstractWorker):
     def add_workers(self, workers):
         """
         Convenient function to add several workers in a single call
-        :param workers: list of workers
+
+        :Parameters:
+
+        * **workers (list)** the workers to add.
         """
         for worker in workers:
             self.add_worker(worker)
