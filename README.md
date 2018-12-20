@@ -28,15 +28,8 @@ The container mount the examples folder on a volume so every change on the noteb
 ## Installation
 
 > PySyft supports Python &gt;= 3.6 and PyTorch 1.0.0
-for installation with gpu
+
 ```bash
-pip3 install torch_nightly -f https://download.pytorch.org/whl/nightly/cu92/torch_nightly.html
-pip3 install -r requirements.txt
-python3 setup.py install
-```
-or for installation without gpu
-```bash
-pip3 install torch_nightly -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html
 pip3 install -r requirements.txt
 python3 setup.py install
 ```
