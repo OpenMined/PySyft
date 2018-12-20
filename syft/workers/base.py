@@ -182,7 +182,6 @@ class BaseWorker(AbstractWorker):
         
         """
 
-
         obj = self._objects[obj_id]
         # obj.id = obj_id
         # obj.owner = self
