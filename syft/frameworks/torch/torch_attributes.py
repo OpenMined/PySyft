@@ -1,10 +1,24 @@
+from typing import Union
+from typing import Callable
+from typing import Any
+from types import ModuleType
+
+
 class TorchAttributes(object):
     """
     TorchAttributes is a special class where all custom attributes related
     to the torch module can be added.
     """
 
-    def __init__(self, torch):
+    def __init__(self, torch: ModuleType) -> None:
+        """
+        Initialization of the TorchAttributes class. This will hold all necessary
+        attributes PySyft needs.
+
+        Args:
+            torch: torch module
+        """
+
         # SECTION: List all functions in torch module that we want to overload
 
         # List modules that we will hook
@@ -17,6 +31,7 @@ class TorchAttributes(object):
             for func_name in dir(torch_module)
         }
 
+        # Store reference to all torch functions by string name stored in torch_modules_functions
         self.eval_torch_modules_functions = {
             f"{module_name}.{func_name}": getattr(torch_module, func_name)
             for module_name, torch_module in self.torch_modules.items()
@@ -27,7 +42,6 @@ class TorchAttributes(object):
         self.torch_exclude = ["save", "load", "typename", "is_tensor", "manual_seed"]
 
         # SECTION: List all torch tensor methods we want to overload
-
         self.tensor_types = [torch.Tensor]
 
         self.tensorvar_methods = list(
@@ -70,14 +84,21 @@ class TorchAttributes(object):
 
         self.command_guard = self._command_guard
 
-    def _command_guard(self, command, torch_domain, get_native=False):
+    def _command_guard(
+        self, command: str, torch_domain: str, get_native: bool = False
+    ) -> Union[Callable[..., Any], str]:
         """
         Check that a command is in a given torch_domain and can be safely used
-        :param command: the command name
-        :param torch_domain: the torch domain or module in which the command is supposed to be
-        :param get_native: if False (default), return the command name. If True,
-               return the native command function
-        :return: The command name or a native torch function
+
+        Args:
+            command (str): the command name
+            torch_domain (str): name of the torch domain or module in which the command is
+                supposed to be
+            get_native (boolean): if False (default), return the command name. If True, return
+                the native command function
+
+        Returns:
+            The command name or a native torch function
         """
         if command not in self.allowed_commands[torch_domain]:
             raise RuntimeError(f'Command "{command}" is not a supported Torch operation.')
@@ -85,12 +106,16 @@ class TorchAttributes(object):
             return self.native_commands[torch_domain][command]
         return command
 
-    def _is_command_valid_guard(self, command, torch_domain):
+    def _is_command_valid_guard(self, command: str, torch_domain: str) -> bool:
         """
         Indicates whether a command is valid with respect to the torch guard
-        :param command: the command to test
-        :param torch_domain: the torch domain or module in which the command is supposed to be
-        :return: A boolean for validation
+
+        Args:
+            command (str): the command to test
+            torch_domain (str): the torch domain or module in which the command is supposed to be
+
+        Returns:
+            A boolean
         """
         try:
             self._command_guard(command, torch_domain)
@@ -98,7 +123,7 @@ class TorchAttributes(object):
             return False
         return True
 
-    def eval_torch_modules(self):
+    def eval_torch_modules(self) -> None:
         """
         For each torch command functions in native_commands, transform the dictionary so
         that to each key, which is the name of the hooked command, now corresponds a value
@@ -112,11 +137,15 @@ class TorchAttributes(object):
                 ]
 
     @staticmethod
-    def get_native_torch_name(attr):
+    def get_native_torch_name(attr: str) -> str:
         """
-        Return the name of the native command given the name of the hooked command
-        :param attr: the name of the hooked command (ex: torch.add)
-        :return: the name of the native command (ex: torch.native_add)
+        Return the name of the native command given the name of the hooked command.
+
+        Args:
+            attr (str): the name of the hooked command (ex: torch.add)
+
+        Returns:
+            the name of the native command (ex: torch.native_add)
         """
         parts = attr.split(".")
         parts[-1] = "native_" + parts[-1]

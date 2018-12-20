@@ -4,9 +4,15 @@ import re
 import logging
 import types
 import syft
+from torch import Tensor as TorchTensor
 from syft import workers
 from syft.frameworks.torch.tensors import SyftTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
+from syft.workers.base import BaseWorker
+from typing import Optional
+from typing import List
+from typing import Type
+from types import ModuleType
 
 
 class TorchHook:
@@ -29,19 +35,24 @@ class TorchHook:
     add this to the hook below.
     """
 
-    def __init__(self, torch, local_worker=None, is_client=True):
+    def __init__(
+        self,
+        torch: ModuleType,
+        local_worker: Optional[BaseWorker] = None,
+        is_client: Optional[bool] = True,
+    ) -> None:
         """
         Init the hook and define all the attribute pertaining to the torch hook in a
         special TorchAttibute class, that will be added in the syft.torch attributes.
         Hence, this parameters are now conveyed by the syft module.
 
         Args:
-             torch: represents torch module provided by the user,
+             torch (module): represents torch module provided by the user,
                which will be hooked. The hook will add an torch_hooked variable
                to the module, which is needed to check whether the module is already
                hooked or not.
 
-             local_worker (workers.BaseWorker):
+             local_worker (BaseWorker):
                you can optionally provide a local worker as a parameter which
                TorchHook will assume to be the worker owned by the local machine.
                If you leave it empty, TorchClient will automatically initialize
@@ -94,7 +105,9 @@ class TorchHook:
         # local_worker.
         syft.local_worker = self.local_worker
 
-    def _hook_native_tensor(self, tensor_type, syft_type):
+    def _hook_native_tensor(
+        self, tensor_type: Type[TorchTensor], syft_type: Type[SyftTensor]
+    ) -> None:
         """
         Overloads given native tensor type (torch Tensor) with given syft tensor type
         (e.g. syft.SyftTensor) to add PySyft Tensor Functionality. The idea is to only
@@ -112,8 +125,8 @@ class TorchHook:
                 return getattr(self, "native_reshape")(*args, **kwargs)
 
         Args:
-            tensor_type: a torch tensor to be hooked
-            syft_type: a syft tensor which provides methods to be overloaded
+            tensor_type (TorchTensor): a torch tensor to be hooked
+            syft_type (SyftTensor): a syft tensor which provides methods to be overloaded
         """
 
         # Reinitialize init method of Torch tensor with Syft init
@@ -126,13 +139,15 @@ class TorchHook:
         self._rename_native_methods(tensor_type)
         self._add_methods_to_tensor(tensor_type, syft_type)
 
-    def _add_registration_to___init__(hook_self, tensor_type, torch_tensor=False):
+    def _add_registration_to___init__(
+        self, tensor_type: Type[TorchTensor], torch_tensor: bool = False
+    ) -> None:
         """
         Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors
         to add PySyft tensor functionality.
 
         Args:
-            tensor_type: a torch tensor
+            tensor_type (TorchTensor): a torch tensor
             torch_tensor (boolean): currently unsure for what it's used
         """
 
@@ -144,7 +159,7 @@ class TorchHook:
                 cls.native___init__(*args, **kwargs)
 
             if owner is None:
-                owner = hook_self.local_worker
+                owner = self.local_worker
             if id is None:
                 id = int(10e10 * random.random())
 
@@ -153,15 +168,17 @@ class TorchHook:
 
         tensor_type.__init__ = new___init__
 
-    def _identify_methods_to_overload(self, tensor_type, syft_type):
+    def _identify_methods_to_overload(
+        self, tensor_type: Type[TorchTensor], syft_type: Type[SyftTensor]
+    ) -> List[str]:
         """
         This identifies methods within the syft_type tensor which hold the same name as
         the native torch method. Those methods are added to the list of methods
         to be overloaded. Methods within the exclude list are exlcuded.
 
         Args:
-            tensor_type: torch tensor
-            syft_type: syft tensor
+            tensor_type (TorchTensor): torch tensor
+            syft_type (SyftTensor): syft tensor
 
         Returns:
             List of method names to be overloaded
@@ -189,13 +206,13 @@ class TorchHook:
 
         return to_overload
 
-    def _rename_native_methods(self, tensor_type):
+    def _rename_native_methods(self, tensor_type: Type[TorchTensor]) -> None:
         """
         This method will rename methods of tensor_type that will be
         overloaded. The new name will we f"native_{method_name}".
 
         Args:
-            tensor_type: Torch tensor
+            tensor_type (TorchTensor): Torch tensor
         """
 
         for attr in self.to_overload[tensor_type]:
@@ -208,15 +225,17 @@ class TorchHook:
 
             setattr(tensor_type, attr, None)
 
-    def _add_methods_to_tensor(self, tensor_type, syft_type):
+    def _add_methods_to_tensor(
+        self, tensor_type: Type[TorchTensor], syft_type: Type[SyftTensor]
+    ) -> None:
         """
         Add methods from the syft_type class to the torch tensor_type.
         This adds all methods except the excluded ones defined in the
         syft_type.
 
             Args:
-                tensor_type: Torch tensor
-                syft_type: syft tensor
+                tensor_type (TorchTensor): Torch tensor
+                syft_type (SyftTensor): inherited class of SyftTensor
         """
 
         exclude = [
