@@ -1,6 +1,7 @@
 from .abstract import AbstractTensor
 from ....workers import BaseWorker
 
+
 class PointerTensor(AbstractTensor):
     """PointerTensor objects point to tensors (as their name implies). They exist to mimic
     the entire API of a normal tensor, but instead of computing a tensor function locally
@@ -32,15 +33,14 @@ class PointerTensor(AbstractTensor):
 
     """
 
-
     def __init__(
-            self,
-            parent: AbstractTensor=None,
-            location: BaseWorker=None,
-            id_at_location=None,
-            register=False,
-            owner=None,
-            id=None
+        self,
+        parent: AbstractTensor = None,
+        location: BaseWorker = None,
+        id_at_location=None,
+        register=False,
+        owner=None,
+        id=None,
     ):
         """Initializes a PointerTensor
 
@@ -101,7 +101,7 @@ class PointerTensor(AbstractTensor):
         commonly seen when returned as cells in Jupyter noteoboks."""
         return self.__str__()
 
-    def get(self, deregister_ptr:bool=True):
+    def get(self, deregister_ptr: bool = True):
         """Since PointerTensor objects always point to a remote tensor (or chain
         of tensors, where a chain is simply a linked-list of tensors linked via
         their .child attributes), this method will request that the tensor/chain

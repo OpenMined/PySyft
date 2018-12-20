@@ -106,7 +106,9 @@ class TorchHook:
         syft.local_worker = self.local_worker
 
     def _hook_native_tensor(self, tensor_type, syft_type):
-        """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality
+        """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality.
+        Overloading involves modifying the tensor type with PySyft's added functionality. You may
+        read about what kind of modifications are made in the methods that this method calls.
 
         :Parameters:
 
@@ -139,8 +141,20 @@ class TorchHook:
         self._add_methods_from__torch_tensor(tensor_type, syft_type)
 
     def _add_registration_to___init__(hook_self, tensor_type, torch_tensor=False):
-        """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors
-           to add PySyft tensor functionality
+        """Overloads tensor_type.__init__ to add several attributes to the tensor
+        as well as (optionally) registering the tensor automatically.
+
+        TODO: auto-registration is disabled at the moment, this might be bad.
+
+        :Parameters:
+
+            * **tensor_type (type)** the type of tensor being hooked (in this refactor this is
+            only ever torch.Tensor, but in previous versions of PySyft this iterated over all
+            tensor types.
+
+            * **torch_tensor (bool, optional)**  if set to true, skip running the native
+            initialization logic. TODO: this flag might never get used.
+
         """
 
         if "native___init__" not in dir(tensor_type):
@@ -165,8 +179,14 @@ class TorchHook:
 
     @staticmethod
     def _hook_properties(tensor_type):
-        """Overloads tensor_type properties
-           Parameters: tensor_type: Torch tensor
+        """Overloads tensor_type properties. This method gets called only on torch.Tensor. If
+        you're not sure how properties work, read:
+        https://www.programiz.com/python-programming/property
+
+        :Parameters:
+
+            * **tensor_type (type)** the tensor type which is having properties added to it,
+            typically just torch.Tensor
         """
 
         @property
@@ -182,9 +202,18 @@ class TorchHook:
         tensor_type.id_at_location = id_at_location
 
     def _which_methods_should_we_auto_overload(self, tensor_type, syft_type):
-        """Creates list of Torch methods to auto overload except methods included in exclusion list
-           Parameters: Torch Tensor type
-           Return: List of methods to be overloaded
+        """Creates list of Torch methods to auto overload except methods included
+        in exclusion list. By default, it looks for the intersection between
+        the methods of tensor_type and torch_type minus those in the exception list
+        (syft.torch.exclude).
+
+           :Parameters:
+
+            * **tensor_type (type)** iterating through a tensor type's properties
+
+            * **syft_type (type)** iterate through all attributes in this type
+
+            * **return (list)** List of methods to be overloaded
         """
 
         to_overload = []

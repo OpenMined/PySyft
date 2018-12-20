@@ -13,13 +13,13 @@ class TorchTensor(AbstractTensor):
     """
 
     def create_pointer(
-            self,
-            location: BaseWorker=None,
-            id_at_location: (str or int)=None,
-            register:bool=False,
-            owner:BaseWorker=None,
-            ptr_id:(str or int)=None
-    )  -> PointerTensor:
+        self,
+        location: BaseWorker = None,
+        id_at_location: (str or int) = None,
+        register: bool = False,
+        owner: BaseWorker = None,
+        ptr_id: (str or int) = None,
+    ) -> PointerTensor:
 
         """This method is called on a torch.Tensor object, returning a pointer
         to that object. This method is the CORRECT way to create a pointer, and
@@ -68,7 +68,6 @@ class TorchTensor(AbstractTensor):
             randomly.
 
         """
-
 
         if owner is None:
             owner = self.owner
