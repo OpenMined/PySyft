@@ -192,18 +192,26 @@ class BaseWorker(AbstractWorker):
         the object, assigns a list of owners, and establishes whether it's a
         pointer or not. This method is generally not used by the client and is
         instead used by internal processes (hooks and workers).
+
         :Parameters:
+
         * **obj (a torch.Tensor or torch.autograd.Variable)** a Torch
           instance, e.g. Tensor or Variable to be registered
+
         * **force_attach_to_worker (bool)** if set to True, it will
           force the object to be stored in the worker's permanent registry
+
         * **temporary (bool)** If set to True, it will store the object
           in the worker's temporary registry.
+
         :kwargs:
+
         * **id (int or string)** random integer between 0 and 1e10 or
           string uniquely identifying the object.
+
         * **owners (list of ** :class:`BaseWorker` objects ** or ids)**
           owner(s) of the object
+          
         * **is_pointer (bool, optional)** Whether or not the tensor being
           registered contains the data locally or is instead a pointer to
           a tensor that lives on a different worker.
