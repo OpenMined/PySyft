@@ -100,7 +100,7 @@ class TorchTensor(AbstractTensor):
                 id=ptr_id,
             )
 
-        return ptr
+        return ptr.wrap()
 
     def reshape(self, *args, **kwargs):
         print("Overloading torch.Tensor.reshape")

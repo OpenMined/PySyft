@@ -1,7 +1,6 @@
 import torch
-
-
 import syft
+
 from syft.frameworks.torch.tensors import TorchTensor, PointerTensor
 
 
@@ -16,8 +15,8 @@ class TestPointer(object):
     def setUp(self):
         hook = syft.TorchHook(torch, verbose=True)
 
-        me = hook.local_worker
-        me.is_client_worker = False
+        self.me = hook.local_worker
+        self.me.is_client_worker = False
 
         bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
         alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
@@ -33,8 +32,8 @@ class TestPointer(object):
         self.james = james
 
     def test_init(self):
-        alice = syft.VirtualWorker(id="alice")
-        pointer = PointerTensor(id=1000, location=alice, owner=alice)
+        self.setUp()
+        pointer = PointerTensor(id=1000, location=self.alice, owner=self.me)
         pointer.__str__()
 
     def test_create_pointer(self):

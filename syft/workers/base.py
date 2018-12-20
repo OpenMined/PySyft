@@ -418,3 +418,22 @@ class BaseWorker(AbstractWorker):
         """
         for worker in workers:
             self.add_worker(worker)
+
+    def __str__(self):
+        """This is a simple to-string for all classes that extend BaseWorker
+        which just returns the type and ID of the worker. For example, a
+        VirtualWorker instance with id 'bob' would return a string value of.
+
+        <syft.core.workers.virtual.VirtualWorker id:bob>
+
+        Note that __repr__ calls this method by default.
+        """
+
+        out = "<"
+        out += str(type(self)).split("'")[1]
+        out += " id:" + str(self.id)
+        out += ">"
+        return out
+
+    def __repr__(self):
+        return self.__str__()
