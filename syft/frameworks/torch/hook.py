@@ -65,7 +65,7 @@ class TorchHook:
 
     def __init__(self, torch, local_worker=None, is_client=True, verbose=True):
         """
-        Init the hook and define all the attribute pertaining to the torch hook in a
+        Init the hook and define all the attributes pertaining to the torch hook in a
         special TorchAttibute class, that will be added in the syft.torch attributes.
         Hence, this parameters are now conveyed by the syft module.
 

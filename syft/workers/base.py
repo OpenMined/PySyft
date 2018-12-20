@@ -273,7 +273,8 @@ class BaseWorker(AbstractWorker):
         return id_or_worker
 
     def add_worker(self, worker):
-        """add_worker(worker) -> None This method adds a worker to the list of
+        """add_worker(worker) -> None
+        This method adds a worker to the list of
         _known_workers internal to the BaseWorker. It endows this class with
         the ability to communicate with the remote worker being added, such as
         sending and receiving objects, commands, or information about the

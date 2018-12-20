@@ -410,7 +410,7 @@ def _detail_ndarray(arr_representation: Tuple[bin, Tuple, str]) -> numpy.ndarray
         original shape
 
     Args:
-        ist: a list holding the byte representation, shape and dtype of the array
+        list: a list holding the byte representation, shape and dtype of the array
 
     Returns:
         numpy.ndarray: a numpy array
