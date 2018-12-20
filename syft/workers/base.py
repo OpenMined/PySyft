@@ -22,6 +22,23 @@ class BaseWorker(AbstractWorker):
     objects owned by a certain machine. Each worker defines how it interacts with objects on other
     workers as well as how other workers interact with objects owned by itself. Objects are most
     frequently tensors but they can be of any type supported by the PySyft protocol.
+
+    :Parameters:
+
+        * **hook (**:class:`.hook.TorchHook` **, optional)** a reference to the hook object which
+        was used to modify PyTorch with PySyft's functionality.
+
+        * **hook (int or str, optional)** the unique id of the worker.
+
+        * **known_workers (dict, optional)** a dictionary of workers which this worker may
+        need to communicate with in the future. The key of each should be each worker's
+        unique ID and the value should be a worker class which extends BaseWorker (yes...
+        this BaseWorker)
+
+        * **is_client_worker (bool, optional)** set to true if this object is not actually
+        where the objects will be stored, but is instead a pointer to a worker that exists
+        elsewhere.
+
     """
 
     def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False):
@@ -68,10 +85,34 @@ class BaseWorker(AbstractWorker):
 
     @abstractmethod
     def _send_msg(self, message, location):
+        """As BaseWorker implies, you should never instantiate this class by itself. Instead,
+        you should extend BaseWorker in a new class which instantiates _send_msg and _recv_msg,
+        each of which should specify the exact way in which two workers communicate with each
+        other. The easiest example to study is probably VirtualWorker.
+
+        :Parameters:
+
+            * **message (str)** the message being sent from one worker to another.
+
+            * **location (**:class:`.workers.BaseWorker` **)** the destination to send the
+                message.
+
+        """
+
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def _recv_msg(self, message):
+        """As BaseWorker implies, you should never instantiate this class by itself. Instead,
+        you should extend BaseWorker in a new class which instantiates _send_msg and _recv_msg,
+        each of which should specify the exact way in which two workers communicate with each
+        other. The easiest example to study is probably VirtualWorker.
+
+        :Parameters:
+
+            * **message (str)** the message being received.
+
+        """
         raise NotImplementedError  # pragma: no cover
 
     # SECTION: Generic Message Sending/Receiving Logic
