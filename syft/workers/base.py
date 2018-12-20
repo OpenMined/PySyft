@@ -211,7 +211,7 @@ class BaseWorker(AbstractWorker):
 
         * **owners (list of ** :class:`BaseWorker` objects ** or ids)**
           owner(s) of the object
-          
+
         * **is_pointer (bool, optional)** Whether or not the tensor being
           registered contains the data locally or is instead a pointer to
           a tensor that lives on a different worker.
@@ -276,10 +276,14 @@ class BaseWorker(AbstractWorker):
         resolution of worker ids to workers to happen automatically while also
         making the current worker aware of new ones when discovered through
         other processes.
+
         :Parameters:
+
         * **id_or_worker (string or int or** :class:`BaseWorker` **)**
           This is either the id of the object to be returned or the object itself.
+
         :Example:
+
         >>> import syft as sy
         >>> hook = sy.TorchHook(verbose=False)
         >>> me = hook.local_worker
@@ -293,6 +297,7 @@ class BaseWorker(AbstractWorker):
         >>> # or we can get the worker by passing in the worker
         >>> me.get_worker(bob)
         <syft.core.workers.virtual.VirtualWorker id:bob>
+        
         """
         if isinstance(id_or_worker, (str, int)):
             if id_or_worker in self._known_workers:
