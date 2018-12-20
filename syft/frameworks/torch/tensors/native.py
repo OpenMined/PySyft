@@ -26,22 +26,25 @@ class TorchTensor(AbstractTensor):
         the parameters of this method give all possible attributes that a pointer
         can be created with.
 
-        Args:
-            location:BaseWorker - the BaseWorker object which points to the worker
+        :Parameters:
+
+         * **location (**:class:`....workers.BaseWorker` **, optional)**
+            the BaseWorker object which points to the worker
             on which this pointer's object can be found. In nearly all cases, this
             is self.owner and so this attribute can usually be left blank. Very
             rarely you may know that you're about to move the Tensor to another
             worker so you can pre-initialize the .location attribute of the pointer
             to some other worker, but this is a rare exception.
 
-            id_at_location: (str or int) - the id of the tensor being pointed to.
+          * **id_at_location ((str or int), optional)**
+            the id of the tensor being pointed to.
             Similar to location, this parameter is almost always self.id and so
             you can leave this parameter to None. The only exception is if you
             happen to know that the ID is going to be something different than
             self.id, but again this is very rare and most of the time, setting
             this means that you're probably doing something you shouldn't.
 
-            register: bool - this parameter determines whether to automatically
+          * **register (bool, optional)**this parameter determines whether to
             register the new pointer that gets created. By default, this is set
             to false because (most of the time) a pointer is initialized in this
             way so that it can be sent to someone else. (i.e., "oh you need to
@@ -53,12 +56,14 @@ class TorchTensor(AbstractTensor):
             if there's any chance that someone else will initialize a pointer to
             your pointer.
 
-            owner: BaseWorker - while "location" specifies where the pointer
+          * **owner (**:class:`....workers.BaseWorker` **, optional)**
+            while "location" specifies where the pointer
             points to, this parameter specifies the worker on which the pointer
             is located. It is also where the pointer is registered if register
             is set to True.
 
-            ptr_id: (str or int) - if you want to set the id of the pointer for
+          * **id: ((str or int), optional)**
+            if you want to set the id of the pointer for
             any special reason, you can set it here. Otherwise, it will be set
             randomly.
 

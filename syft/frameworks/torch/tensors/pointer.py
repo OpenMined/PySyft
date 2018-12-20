@@ -14,20 +14,21 @@ class PointerTensor(AbstractTensor):
     or some other protocol) as that functionality is abstracted in the BaseWorker object in
     self.location.
 
-    Example Usage:
+    :Example:
 
-    import syft as sy
+     >>> import syft as sy
+     >>> hook = sy.TorchHook()
 
-    bob = sy.VirtualWorker(id="bob")
+     >>> bob = sy.VirtualWorker(id="bob")
 
-    x = sy.Tensor([1,2,3,4,5])
-    y = sy.Tensor([1,1,1,1,1])
+     >>> x = sy.Tensor([1,2,3,4,5])
+     >>> y = sy.Tensor([1,1,1,1,1])
 
-    x_ptr = x.send(bob) # returns a PointerTensor, sends tensor to Bob (which is pointed to)
-    y_ptr = y.send(bob) # returns a PointerTensor, sends tensor to Bob (which is pointed to)
+     >>> x_ptr = x.send(bob) # returns a PointerTensor, sends tensor to Bob
+     >>> y_ptr = y.send(bob) # returns a PointerTensor, sends tensor to Bob
 
-    # executes command on Bob's machine
-    z_ptr = x_ptr + y_ptr
+     >>> # executes command on Bob's machine
+     >>> z_ptr = x_ptr + y_ptr
 
     """
 
@@ -43,29 +44,31 @@ class PointerTensor(AbstractTensor):
     ):
         """Initializes a PointerTensor
 
-        Args:
+        :Parameters:
 
-            parent:AbstractTensor - this is typically just the wrapper around the
-            PointerTensor which makes it so that you can pass this PointerTensor
-            to all the other methods/functions that PyTorch likes to use, although
-            it can also be other tensors which extend AbstractTensor, such as
-            custom tensors for Secure Multi-Party Computation or Federated Learning
+         * **parent (**:class:`.abstract.AbstractTensor` **, optional)** this is
+            typically just the wrapper around the PointerTensor which makes it
+            so that you can pass this PointerTensor to all the other methods/
+            functions that PyTorch likes to use, although it can also be other
+            tensors which extend AbstractTensor, such as custom tensors for
+            Secure Multi-Party Computation or Federated Learning
 
-            location:BaseWorker - the BaseWorker object which points to the worker
-            on which this pointer's object can be found.
+         * **location (**:class:`....workers.BaseWorker` **, optional)** the
+            BaseWorker object which points to the worker on which this
+            pointer's object can be found.
 
-            id_at_location: (str or int) - the id of the tensor being pointed to.
-            Similar to location.
+         * **id_at_location ((str or int), optional)** - the id of the tensor
+            being pointed to.
 
-            register: bool - this parameter determines whether to automatically
-            register the new pointer that gets created.
+         * **register (bool, optional)** this parameter determines whether
+            to automatically register the new pointer that gets created.
 
-            owner: BaseWorker - while "location" specifies where the pointer
-            points to, this parameter specifies the worker on which the pointer
-            is located. It is also where the pointer is registered if register
-            is set to True.
+         * **owner (**:class:`....workers.BaseWorker` **, optional)** while
+            "location" specifies where the pointer points to, this parameter
+            specifies the worker on which the pointer is located. It is also
+            where the pointer is registered if register is set to True.
 
-            id: (str or int) - this is the id of the PointerTensor
+         * **id: ((str or int), optional)** - this is the id of the PointerTensor
 
         """
         # TODO: finish AbstractTensor which should handle register/parent/id stuff
@@ -109,17 +112,16 @@ class PointerTensor(AbstractTensor):
         true.
 
 
-        Args:
+        :Parameters:
 
-            deregister_ptr:bool - this determines whether to deregister this pointer
-            from the pointer's owner during this method. This defaults to True because
-            the main reason people use this method is to move the tensor from the remote
-            machine to the local one, at which time the pointer has no use.
+         * **deregister_ptr (bool, optional)** this determines whether to deregister
+            this pointer from the pointer's owner during this method. This defaults
+            to True because the main reason people use this method is to move the
+            tensor from the remote machine to the local one, at which time the
+            pointer has no use.
 
-        Returns:
-
-            tensor:AbstractTensor - this is the tensor (or chain) which this
-            object used to point to on a remote machine.
+         * **out (**:class:`.abstract.AbstractTensor` **)** this is the tensor
+            (or chain) which this object used to point to on a remote machine.
 
         """
 

@@ -68,12 +68,6 @@ class TorchHook:
         Init the hook and define all the attributes pertaining to the torch hook in a
         special TorchAttibute class, that will be added in the syft.torch attributes.
         Hence, this parameters are now conveyed by the syft module.
-
-        :param torch: the torch module provided by the user, which will be hooked
-        :param local_worker: the local_worker that will handle the computation. Can be created
-        if not provided.
-        :param is_client: defines if the node/worker is the client that control computations.
-        :param verbose:
         """
         # Save the provided torch module as an attribute of the hook
         self.torch = torch
@@ -113,7 +107,17 @@ class TorchHook:
 
     def _hook_native_tensor(self, tensor_type, syft_type):
         """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality
-           parameters: tensor_type: A Torch tensor
+
+        :Parameters:
+
+            * **tensor_type (type)** the type of tensor being hooked (in this refactor this is
+            only ever torch.Tensor, but in previous versions of PySyft this iterated over all
+            tensor types.
+
+            * **syft_type (type)** the abstract type whose methods should all be added to the
+            tensor_type class. In practice this is only ever TorchTensor. Read more about it
+            there.
+
         """
 
         # Reinitialize init method of Torch tensor with Syft init
