@@ -116,13 +116,21 @@ class BaseWorker(AbstractWorker):
         """Send a syft or torch tensor and his child, sub-child, etc (ie all the
         syft chain of children) to a worker, or a list of workers, with a given
         remote storage address.
-        Args:
-            tensor: the syft or torch tensor to send
-            workers: the workers which will receive the object
-            ptr_id: the remote id of the object on the remote worker(s).
-                Example:
-                x.send(bob, 1000)
-                will result in bob having the tensor x with id 1000
+        :Parameters:
+
+            * **tensor (a torch.Tensor)** the syft or torch tensor to send
+
+            * **workers (**:class:`....workers.BaseWorker` **)** the workers
+            which will receive the object
+
+            * **id: ((str or int), optional)** the remote id of the object
+            on the remote worker(s).
+
+        :Example:
+
+        >>> x.send(bob, 1000)
+        >>> #will result in bob having the tensor x with id 1000
+
         """
         if not isinstance(workers, list):
             workers = [workers]
@@ -152,10 +160,29 @@ class BaseWorker(AbstractWorker):
         return pointer
 
     def set_obj(self, obj_data):
+        """This adds an object to the registry of objects.
+
+        :Parameters:
+
+        * **obj_data (tuple(object, object))** an id, object tuple.
+
+        """
+
         obj_id, obj = obj_data
         self._objects[obj_id] = obj
 
     def get_obj(self, obj_id):
+        """Look up an object from the registry using its ID.
+
+        :Parameters:
+
+        * **obj_id (str or int)** the id of an object to look up
+
+        * **out (object)** the object being returned
+        
+        """
+
+
         obj = self._objects[obj_id]
         # obj.id = obj_id
         # obj.owner = self
