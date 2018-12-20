@@ -4,9 +4,11 @@ import re
 import logging
 import types
 import syft
-from syft import workers
-from syft.frameworks.torch.tensors import PointerTensor, AbstractTensor, TorchTensor
-from syft.frameworks.torch.torch_attributes import TorchAttributes
+from ... import workers
+
+from ...workers import BaseWorker
+from .tensors import TorchTensor
+from .torch_attributes import TorchAttributes
 
 
 class TorchHook:
@@ -63,17 +65,15 @@ class TorchHook:
      [syft.core.frameworks.torch.tensor.FloatTensor of size 6]
      """
 
-    def __init__(self, torch, local_worker=None, is_client=True, verbose=True):
+    def __init__(self,
+                 torch,
+                 local_worker:BaseWorker=None,
+                 is_client:bool=True,
+                 verbose:bool=True):
         """
-        Init the hook and define all the attribute pertaining to the torch hook in a
+        Init the hook and define all the attributes pertaining to the torch hook in a
         special TorchAttibute class, that will be added in the syft.torch attributes.
         Hence, this parameters are now conveyed by the syft module.
-
-        :param torch: the torch module provided by the user, which will be hooked
-        :param local_worker: the local_worker that will handle the computation. Can be created
-        if not provided.
-        :param is_client: defines if the node/worker is the client that control computations.
-        :param verbose:
         """
         # Save the provided torch module as an attribute of the hook
         self.torch = torch
@@ -106,20 +106,26 @@ class TorchHook:
 
         self.to_auto_overload = {}
 
-        self._hook_native_tensors(torch.Tensor)
-
-        self._hook_syft_tensors(torch.Tensor)
-
-        self._hook_torch_module()
-
-        syft.torch.eval_torch_modules()
+        self._hook_native_tensor(torch.Tensor, TorchTensor)
 
         # Add the local_worker to syft so that it can be found if the hook is called several times
         syft.local_worker = self.local_worker
 
-    def _hook_native_tensors(self, tensor_type):
-        """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality
-           parameters: tensor_type: A Torch tensor
+    def _hook_native_tensor(self, tensor_type:type, syft_type:type):
+        """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality.
+        Overloading involves modifying the tensor type with PySyft's added functionality. You may
+        read about what kind of modifications are made in the methods that this method calls.
+
+        :Parameters:
+
+            * **tensor_type (type)** the type of tensor being hooked (in this refactor this is
+            only ever torch.Tensor, but in previous versions of PySyft this iterated over all
+            tensor types.
+
+            * **syft_type (type)** the abstract type whose methods should all be added to the
+            tensor_type class. In practice this is only ever TorchTensor. Read more about it
+            there.
+
         """
 
         # Reinitialize init method of Torch tensor with Syft init
@@ -131,29 +137,32 @@ class TorchHook:
         # Returns a list of methods to be overloaded, stored in the dict to_auto_overload
         # with tensor_type as a key
         self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
-            tensor_type
+            tensor_type, syft_type
         )
 
         # Rename native functions
         self._rename_native_functions(tensor_type)
 
-        self._assign_methods_to_use_child(tensor_type)
-
         # Overload auto overloaded with Torch methods
-        self._add_methods_from__torch_tensor(tensor_type)
+        self._add_methods_from__torch_tensor(tensor_type, syft_type)
 
-    def _hook_syft_tensors(self, tensor_type):
-        """Overloads Torch Tensors with all Syft tensor types
-           parameters: tensor_type: A Torch tensor
-        """
+    def _add_registration_to___init__(hook_self,
+                                      tensor_type:type,
+                                      torch_tensor:bool=False):
+        """Overloads tensor_type.__init__ to add several attributes to the tensor
+        as well as (optionally) registering the tensor automatically.
 
-        self._hook_abstract_tensor(tensor_type)
+        TODO: auto-registration is disabled at the moment, this might be bad.
 
-        self._hook_pointer_tensor(tensor_type)
+        :Parameters:
 
-    def _add_registration_to___init__(hook_self, tensor_type, torch_tensor=False):
-        """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors
-           to add PySyft tensor functionality
+            * **tensor_type (type)** the type of tensor being hooked (in this refactor this is
+            only ever torch.Tensor, but in previous versions of PySyft this iterated over all
+            tensor types.
+
+            * **torch_tensor (bool, optional)**  if set to true, skip running the native
+            initialization logic. TODO: this flag might never get used.
+
         """
 
         if "native___init__" not in dir(tensor_type):
@@ -177,9 +186,15 @@ class TorchHook:
         tensor_type.__init__ = new___init__
 
     @staticmethod
-    def _hook_properties(tensor_type):
-        """Overloads tensor_type properties
-           Parameters: tensor_type: Torch tensor
+    def _hook_properties(tensor_type:type):
+        """Overloads tensor_type properties. This method gets called only on torch.Tensor. If
+        you're not sure how properties work, read:
+        https://www.programiz.com/python-programming/property
+
+        :Parameters:
+
+            * **tensor_type (type)** the tensor type which is having properties added to it,
+            typically just torch.Tensor
         """
 
         @property
@@ -194,25 +209,33 @@ class TorchHook:
 
         tensor_type.id_at_location = id_at_location
 
-        # @property
-        # def owner(self):
-        #     return self.child.owner
-        #
-        # tensor_type.owner = owner
+    def _which_methods_should_we_auto_overload(self,
+                                               tensor_type:type,
+                                               syft_type:type):
+        """Creates list of Torch methods to auto overload except methods included
+        in exclusion list. By default, it looks for the intersection between
+        the methods of tensor_type and torch_type minus those in the exception list
+        (syft.torch.exclude).
 
-    def _which_methods_should_we_auto_overload(self, tensor_type):
-        """Creates list of Torch methods to auto overload except methods included in exclusion list
-           Parameters: Torch Tensor type
-           Return: List of methods to be overloaded
+        :Parameters:
+
+            * **tensor_type (type)** iterating through a tensor type's properties
+
+            * **syft_type (type)** iterate through all attributes in this type
+
+            * **return (list)** List of methods to be overloaded
         """
 
         to_overload = []
 
-        for attr in dir(tensor_type):
+        for attr in dir(syft_type):
 
             # Conditions for overloading the method
             if attr in syft.torch.exclude:
                 continue
+            if not hasattr(tensor_type, attr):
+                continue
+
             lit = getattr(tensor_type, attr)
             is_base = attr in dir(object)
             is_desc = inspect.ismethoddescriptor(lit)
@@ -228,11 +251,15 @@ class TorchHook:
 
         return to_overload
 
-    def _rename_native_functions(self, tensor_type):
+    def _rename_native_functions(self, tensor_type:type):
         """Renames functions that are that not auto overloaded as native functions
-           Parameters: tensor_type: Torch tensor
-        """
 
+        :Parameters:
+
+            * **tensor_type (type)** the tensor whose native methods are getting
+            renamed. Typically just torch.Tensor.
+
+        """
         for attr in self.to_auto_overload[tensor_type]:
 
             lit = getattr(tensor_type, attr)
@@ -243,22 +270,17 @@ class TorchHook:
 
             setattr(tensor_type, attr, None)
 
-    def _assign_methods_to_use_child(self, tensor_type):
-        """Assigns methods to use as child for auto overloaded functions.
-           Parameters: tensor_type:Torch Tensor
-        """
-
-        # Iterate through auto overloaded tensor methods
-        for attr in self.to_auto_overload[tensor_type]:
-            new_attr = self._get_overloaded_method(attr)
-            setattr(tensor_type, attr, new_attr)
-
     @staticmethod
-    def _add_methods_from__torch_tensor(tensor_type):
+    def _add_methods_from__torch_tensor(tensor_type:type, syft_type:type):
         """Add methods from the TorchTensor class to the native torch tensor.
            The class TorchTensor is a proxy to avoid extending directly the
            torch tensor class.
-           Parameters: tensor_type: Torch Tensor
+
+        :Parameters:
+
+            * **tensor_type (type)** the tensor type to which we are adding
+            methods from TorchTensor class.
+
         """
         exclude = [
             "__class__",
@@ -289,89 +311,7 @@ class TorchHook:
             "__le__",
         ]
         # For all methods defined in TorchTensor which are not internal methods (like __class__etc)
-        for attr in dir(TorchTensor):
+        for attr in dir(syft_type):
             if attr not in exclude:
                 # Add to the native tensor this method
                 setattr(tensor_type, attr, getattr(TorchTensor, attr))
-
-    def _hook_abstract_tensor(hook_self, tensor_type):
-        """Overloads AbstractTensor
-           Parameters: tensor_type:Torch Tensor
-        """
-        hook_self._add_registration_to___init__(AbstractTensor)
-
-        for attr in hook_self.to_auto_overload[tensor_type]:
-            new_attr = hook_self._get_overloaded_method(attr)
-            setattr(AbstractTensor, attr, new_attr)
-
-    def _hook_pointer_tensor(self, tensor_type):
-        """Overloads PointerTensor
-           Parameters: tensor_type:Torch Tensor
-        """
-        # TODO: isn't it redundant iwth the upper one ?
-        for attr in self.to_auto_overload[tensor_type]:
-            new_attr = self._get_overloaded_method(attr)
-            setattr(PointerTensor, attr, new_attr)
-
-    def _hook_torch_module(self):
-        """Overloads functions in the main torch module.
-
-        The way this is accomplished is by first moving all existing module functions in the torch
-        module to native_<function_name_here>. Thus, the real :func:`torch.cat` will become
-        :func:`torch.native_cat` and :func:`torch.cat` will have our hooking code.
-        """
-
-        for module_name, torch_module in syft.torch.torch_modules.items():
-            module_funcs = dir(torch_module)
-            torch_module = syft.torch.torch_modules[module_name]
-            for attr in module_funcs:
-                # Some functions we want to ignore (not override). Such functions have been hard
-                # coded into the attribute self.torch_exclude
-                if attr in syft.torch.torch_exclude:
-                    continue
-
-                # if we haven't already overloaded this function
-                if f"native_{attr}" in dir(torch_module):
-                    continue
-
-                # if we haven't already overloaded this function (redundancy allowed)
-                if "native_" in attr:
-                    continue
-
-                # Where the overloading happens
-                lit = getattr(torch_module, attr)
-                if type(lit) in [types.FunctionType, types.BuiltinFunctionType]:
-                    new_attr = self._get_overloaded_function(f"{module_name}.{attr}")
-                    setattr(torch_module, f"native_{attr}", lit)
-                    setattr(torch_module, attr, new_attr)
-
-    def _get_overloaded_method(hook_self, attr):
-        """Wrapper overloading partial objects of methods in the torch module.
-
-        Compiles command, checks for Tensors and Variables in the
-        args/kwargs, determines locations of all Tensors and Variables
-        involved in computation, and handles the computation
-        accordingly.
-        """
-
-        def _execute_method_call(self, *args, **kwargs):
-            worker = hook_self.local_worker
-            return worker._execute_call(attr, self, *args, **kwargs)
-
-        return _execute_method_call
-
-    def _get_overloaded_function(hook_self, attr):
-        """Wrapper overloading partial objects of functions in the torch
-        module.
-
-        Compiles command, checks for Tensors and Variables in the
-        args/kwargs, determines locations of all Tensors and Variables
-        involved in computation, and handles the computation
-        accordingly.
-        """
-
-        def _execute_function_call(*args, **kwargs):
-            worker = hook_self.local_worker
-            return worker._execute_call(attr, None, *args, **kwargs)
-
-        return _execute_function_call

@@ -3,6 +3,9 @@ from syft.serde import serialize
 from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
+from syft.frameworks.torch.tensors import PointerTensor
+import torch
+import syft
 from unittest import TestCase
 from torch import Tensor
 import numpy
@@ -64,8 +67,40 @@ class TestSimplify(TestCase):
         assert output[1][1] == input.shape
         assert output[1][2] == input.dtype.name
 
+    def test_ellipsis_simplify(self):
+        assert _simplify(Ellipsis)[1] == b""
+
+    def test_pointer_tensor_simplify(self):
+        alice = syft.VirtualWorker(id="alice")
+        input = PointerTensor(id=1000, location=alice, owner=alice)
+        output = _simplify(input)
+        assert output[1]["id"] == input.id
+        assert output[1]["owner"] == input.owner.id
+        assert output[1]["location"] == input.location.id
+        assert output[1]["id_at_location"] == input.id_at_location
+
 
 class TestSerde(TestCase):
+    def setUp(self):
+        hook = syft.TorchHook(torch, verbose=True)
+
+        me = hook.local_worker
+        me.is_client_worker = False
+
+        bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
+        alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
+        james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
+
+        me.add_workers([bob, alice, james])
+        bob.add_workers([alice, james])
+        alice.add_workers([bob, james])
+        james.add_workers([bob, alice])
+
+        self.hook = hook
+        self.bob = bob
+        self.alice = alice
+        self.james = james
+
     def test_torch_Tensor(self):
         t = Tensor(numpy.random.random((100, 100)))
         t_serialized = serialize(t, compress=False)
@@ -370,3 +405,39 @@ class TestSerde(TestCase):
 
         assert type(s) == type(s_serialized_deserialized)
         assert (x[s] == x[s_serialized_deserialized]).all()
+
+    def test_float(self):
+        x = 0.5
+        y = 1.5
+
+        x_serialized = serialize(x, compress=False)
+        x_serialized_deserialized = deserialize(x_serialized, compressed=False)
+
+        y_serialized = serialize(y, compress=False)
+        y_serialized_deserialized = deserialize(y_serialized, compressed=False)
+
+        assert x_serialized_deserialized == x
+        assert y_serialized_deserialized == y
+
+    def test_compressed_float(self):
+        x = 0.5
+        y = 1.5
+
+        x_serialized = serialize(x, compress=True)
+        x_serialized_deserialized = deserialize(x_serialized, compressed=True)
+
+        y_serialized = serialize(y, compress=True)
+        y_serialized_deserialized = deserialize(y_serialized, compressed=True)
+
+        assert x_serialized_deserialized == x
+        assert y_serialized_deserialized == y
+
+    def test_PointerTensor(self):
+        t = PointerTensor(id=1000, location=self.alice, owner=self.alice)
+        t_serialized = serialize(t, compress=False)
+        t_serialized_deserialized = deserialize(t_serialized, compressed=False)
+
+        assert t.id == t_serialized_deserialized.id
+        assert t.location == t_serialized_deserialized.location
+        assert t.owner == t_serialized_deserialized.owner
+        assert t.id_at_location == t_serialized_deserialized.id_at_location

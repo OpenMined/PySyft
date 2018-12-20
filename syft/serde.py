@@ -40,6 +40,9 @@ from lz4 import (  # noqa: F401
 import io
 import numpy
 import zstd
+import syft
+from syft.frameworks.torch.tensors import PointerTensor
+from syft.workers import AbstractWorker
 
 # High Level Public Functions (these are the ones you use)
 
@@ -407,7 +410,7 @@ def _detail_ndarray(arr_representation: Tuple[bin, Tuple, str]) -> numpy.ndarray
         original shape
 
     Args:
-        ist: a list holding the byte representation, shape and dtype of the array
+        list: a list holding the byte representation, shape and dtype of the array
 
     Returns:
         numpy.ndarray: a numpy array
@@ -466,6 +469,63 @@ def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
     return slice(my_slice[0], my_slice[1], my_slice[2])
 
 
+# ellipsis
+
+
+def _simplify_ellipsis(e: Ellipsis) -> bytes:
+    return b""
+
+
+def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
+    return ...
+
+    # High Level Simplification Router
+
+
+# PointerTensor
+
+
+def _simplify_pointer_tensor(ptr: PointerTensor) -> Dict:
+    """
+    This function takes the attributes of a PointerTensor and saves them in a dictionary
+    Args:
+        PointerTensor: a PointerTensor
+    Returns:
+        Dict: a dictionary holding the attributes of the PointerTensor
+    Usage:
+        data = _simplify_pointer_tensor(ptr)
+    """
+    data = vars(ptr).copy()
+    for k, v in data.items():
+        if isinstance(v, AbstractWorker):
+            data[k] = v.id
+    return _simplify_dictionary(data)
+
+
+def _detail_pointer_tensor(data: Dict) -> PointerTensor:
+    """
+    This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
+    We use the spread operator to pass the dict data as arguments
+    to the init method of PointerTensor
+    Args:
+        Dict: a dictionary holding the attributes of the PointerTensor
+    Returns:
+        PointerTensor: a PointerTensor
+    Usage:
+        ptr = _detail_pointer_tensor(data)
+    """
+    new_data = {}
+    for k, v in data.items():
+        key = k.decode()
+        if type(v) is bytes:
+            val_str = v.decode()
+            val = syft.local_worker.get_worker(val_str)
+        else:
+            val = v
+        new_data[key] = val
+    return PointerTensor(**new_data)
+
+
 # High Level Simplification Router
 
 
@@ -518,6 +578,8 @@ simplifiers = {
     range: [5, _simplify_range],
     numpy.ndarray: [6, _simplify_ndarray],
     slice: [7, _simplify_slice],
+    type(Ellipsis): [8, _simplify_ellipsis],
+    PointerTensor: [9, _simplify_pointer_tensor],
 }
 
 
@@ -551,4 +613,6 @@ detailers = [
     _detail_range,
     _detail_ndarray,
     _detail_slice,
+    _detail_ellipsis,
+    _detail_pointer_tensor,
 ]

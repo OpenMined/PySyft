@@ -1,7 +1,13 @@
 class TorchAttributes(object):
     """
     TorchAttributes is a special class where all custom attributes related
-    to the torch module can be added.
+    to the torch module can be added. Any global parameter, configuration,
+    or reference relating to PyTorch should be stored here instead of
+    attaching it directly to some other part of the global namespace.
+
+    The main reason we need this is because the hooking process occasionally
+    needs to save global objects, notably including what methods to hook and
+    what methods to NOT hook.
     """
 
     def __init__(self, torch):
