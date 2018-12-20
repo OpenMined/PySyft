@@ -1,4 +1,3 @@
-from unittest import TestCase
 import torch
 
 
@@ -6,14 +5,14 @@ import syft
 from syft.frameworks.torch.tensors import TorchTensor, PointerTensor
 
 
-class TestNative(TestCase):
+class TestNative(object):
     def test_init(self):
         tensor_extension = TorchTensor()
         assert tensor_extension.id is None
         assert tensor_extension.owner is None
 
 
-class TestPointer(TestCase):
+class TestPointer(object):
     def setUp(self):
         hook = syft.TorchHook(torch, verbose=True)
 
@@ -39,6 +38,7 @@ class TestPointer(TestCase):
         pointer.__str__()
 
     def test_create_pointer(self):
+        self.setUp()
         x = torch.Tensor([1, 2])
         x.create_pointer()
         x.create_pointer(location=self.james)
