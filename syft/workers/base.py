@@ -142,6 +142,10 @@ class BaseWorker(AbstractWorker):
         :Parameters:
         * **id_or_worker (string or int or** :class:`BaseWorker` **)**
           This is either the id of the object to be returned or the object itself.
+
+        * **fail_hard (bool) **
+            Wether we want to throw an exception when a worker is not registered at this worker or
+            we just want to log it
         :Example:
         >>> import syft as sy
         >>> hook = sy.TorchHook(verbose=False)
