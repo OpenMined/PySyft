@@ -207,7 +207,7 @@ class TorchHook:
         the methods of tensor_type and torch_type minus those in the exception list
         (syft.torch.exclude).
 
-           :Parameters:
+        :Parameters:
 
             * **tensor_type (type)** iterating through a tensor type's properties
 
@@ -243,7 +243,12 @@ class TorchHook:
 
     def _rename_native_functions(self, tensor_type):
         """Renames functions that are that not auto overloaded as native functions
-           Parameters: tensor_type: Torch tensor
+
+        :Parameters:
+
+            * **tensor_type (type)** the tensor whose native methods are getting
+            renamed. Typically just torch.Tensor.
+
         """
         for attr in self.to_auto_overload[tensor_type]:
 
@@ -260,7 +265,12 @@ class TorchHook:
         """Add methods from the TorchTensor class to the native torch tensor.
            The class TorchTensor is a proxy to avoid extending directly the
            torch tensor class.
-           Parameters: tensor_type: Torch Tensor
+
+        :Parameters:
+
+            * **tensor_type (type)** the tensor type to which we are adding
+            methods from TorchTensor class.
+
         """
         exclude = [
             "__class__",
