@@ -73,7 +73,13 @@ class TorchHook:
      [syft.core.frameworks.torch.tensor.FloatTensor of size 6]
      """
 
-    def __init__(self, local_worker=None, is_client=True, verbose=True, queue_size=0):
+    def __init__(
+        self,
+        local_worker=None,
+        is_client: bool = True,
+        verbose: bool = True,
+        queue_size: int = 0,
+    ):
 
         self.local_worker = local_worker
 
@@ -141,7 +147,7 @@ class TorchHook:
 
             sy.local_worker = self.local_worker
 
-    def _hook_native_tensors_and_variables(self, tensor_type):
+    def _hook_native_tensors_and_variables(self, tensor_type: torch.tensor):
 
         """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality
            parameters: tensor_type: A Torch tensor
@@ -167,9 +173,9 @@ class TorchHook:
         # Overload auto overloaded with Torch methods
         self._add_methods_from__TorchObject(tensor_type)
 
-    def _hook_syft_tensor_types(self, tensor_type):
+    def _hook_syft_tensor_types(self, tensor_type: torch.tensor):
 
-        """Overloads Torch Tensors with all Syft tensor types
+        """Overloads Torch Tensors with all Syft tensor types since every Torch tensor should be able to act as Syft tensor
            parameters: tensor_type: A Torch tensor
         """
 
@@ -182,7 +188,7 @@ class TorchHook:
         self._hook_GeneralizedPointerTensor(tensor_type)
 
     def _add_registration_to___init__(
-        hook_self, tensorvar_type, register_child_instead=False
+        hook_self, tensorvar_type: torch.tensor, register_child_instead: bool = False
     ):
 
         """Overloads tensor_type.__init__ or Variable.__init__ of Torch tensors
@@ -231,7 +237,7 @@ class TorchHook:
 
         tensorvar_type.__init__ = new___init__
 
-    def _hook_properties(hook_self, tensor_type):
+    def _hook_properties(hook_self, tensor_type: torch.tensor):
 
         """Overloads tensor_type properties
 
@@ -302,7 +308,9 @@ class TorchHook:
 
         tensor_type.owner = owner
 
-    def _which_methods_should_we_auto_overload(self, tensor_type=torch.FloatTensor):
+    def _which_methods_should_we_auto_overload(
+        self, tensor_type: torch.tensor = torch.FloatTensor
+    ) -> list:
 
         """Creates list of Torch methods to auto overload except methods included in exclusion list
            Parameters: Torch Tensor type (default: Float Tensor)
@@ -335,7 +343,7 @@ class TorchHook:
 
         return to_overload
 
-    def _rename_native_functions(self, tensor_type):
+    def _rename_native_functions(self, tensor_type: torch.tensor):
 
         """Renames functions that are that not auto overloaded as native functions
            Parameters: tensor_type: Torch tensor
@@ -351,7 +359,7 @@ class TorchHook:
 
             setattr(tensor_type, attr, None)
 
-    def _assign_methods_to_use_child(self, tensor_type):
+    def _assign_methods_to_use_child(self, tensor_type: torch.tensor):
 
         """Assigns methods to use as child for auto overloaded functions.
            Parameters: tensor_type:Torch Tensor
@@ -376,7 +384,7 @@ class TorchHook:
             if attr not in dir(tensor_type) or getattr(tensor_type, attr) is None:
                 setattr(tensor_type, attr, new_attr)
 
-    def _add_methods_from__TorchObject(self, tensor_type):
+    def _add_methods_from__TorchObject(self, tensor_type: torch.tensor):
         """Add methods to auto overloaded functions.
 
            Parameters: tensor_type: Torch Tensor
@@ -419,7 +427,7 @@ class TorchHook:
                     )
                 setattr(tensor_type, attr, getattr(parent_syft_obj, attr))
 
-    def _hook_LocalTensor(self, tensor_type):
+    def _hook_LocalTensor(self, tensor_type: torch.tensor):
 
         """Overloads LocalTensor
            Parameters: tensor_type:Torch Tensor
@@ -459,7 +467,7 @@ class TorchHook:
             if attr not in dir(_LocalTensor) or getattr(_LocalTensor, attr) is None:
                 setattr(_LocalTensor, attr, new_attr)
 
-    def _hook_SyftTensor(hook_self, tensor_type):
+    def _hook_SyftTensor(hook_self, tensor_type: torch.tensor):
 
         """Overloads SyftTensor
            Parameters: tensor_type:Torch Tensor
@@ -491,7 +499,7 @@ class TorchHook:
                 # call child method
                 setattr(_SyftTensor, attr, new_attr)
 
-    def _hook_PointerTensor(self, tensor_type):
+    def _hook_PointerTensor(self, tensor_type: torch.tensor):
 
         """Overloads PointerTensor
            Parameters: tensor_type:Torch Tensor
@@ -503,7 +511,7 @@ class TorchHook:
 
             setattr(_PointerTensor, attr, self._get_overloaded_method(attr))
 
-    def _hook_GeneralizedPointerTensor(self, tensor_type):
+    def _hook_GeneralizedPointerTensor(self, tensor_type: torch.tensor):
 
         """Overloads PointerTensor
            Parameters: tensor_type:Torch Tensor
@@ -663,7 +671,7 @@ class TorchHook:
                 p.grad -= p.grad
 
         def module_send_(self, dest):
-            """Overloads send to remote for torch.nn.Module."""
+            """Overloads torch.nn instances so that they could be sent to other workers"""
             if module_is_missing_grad(self):
                 create_grad_objects(self)
 
@@ -692,7 +700,7 @@ class TorchHook:
         torch.nn.Module.move = module_move_
 
         def module_get_(self):
-            """Get model parameters"""
+            """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
             for p in self.parameters():
                 p.get()
 
