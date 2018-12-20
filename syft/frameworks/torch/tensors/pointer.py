@@ -1,5 +1,4 @@
 from .abstract import AbstractTensor
-from ....workers import BaseWorker
 
 
 class PointerTensor(AbstractTensor):
@@ -36,7 +35,7 @@ class PointerTensor(AbstractTensor):
     def __init__(
         self,
         parent: AbstractTensor = None,
-        location: BaseWorker = None,
+        location = None,
         id_at_location=None,
         register=False,
         owner=None,

@@ -41,6 +41,7 @@ import io
 import numpy
 import zstd
 import syft
+
 from syft.frameworks.torch.tensors import PointerTensor
 from syft.workers import AbstractWorker
 
