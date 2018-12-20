@@ -1,9 +1,9 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import logging
-import syft
-import importlib
 
+from syft.util import WorkerNotFoundException
 from .. import serde
+from . import AbstractWorker
 
 MSGTYPE_CMD = 1
 MSGTYPE_OBJ = 2
@@ -11,7 +11,7 @@ MSGTYPE_OBJ_REQ = 3
 MSGTYPE_EXCEPTION = 4
 
 
-class BaseWorker(ABC):
+class BaseWorker(AbstractWorker):
     """
     This is the class which contains functionality generic to all workers. Other workers will
     extend this class to inherit all functionality necessary for PySyft's protocol. Extensions
@@ -128,7 +128,7 @@ class BaseWorker(ABC):
 
     # SECTION: Manage the workers network
 
-    def get_worker(self, id_or_worker):
+    def get_worker(self, id_or_worker, fail_hard=False):
         """get_worker(self, id_or_worker) -> BaseWorker
         If you pass in an ID, it will try to find the worker object reference
         within self._known_workers. If you instead pass in a reference, it will
@@ -161,6 +161,8 @@ class BaseWorker(ABC):
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
             else:
+                if fail_hard:
+                    raise WorkerNotFoundException
                 logging.warning("Worker", self.id, "couldnt recognize worker", id_or_worker)
                 return id_or_worker
         else:

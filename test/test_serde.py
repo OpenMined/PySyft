@@ -4,8 +4,10 @@ from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
 from syft import TorchHook
-from torch import Tensor
+from syft.frameworks.torch.tensors import PointerTensor
 import torch
+import syft
+from torch import Tensor
 import numpy
 import msgpack
 import pytest
@@ -68,6 +70,15 @@ class TestSimplify(object):
 
     def test_ellipsis_simplify(self):
         assert _simplify(Ellipsis)[1] == b""
+
+    def test_pointer_tensor_simplify(self):
+        alice = syft.VirtualWorker(id="alice")
+        input = PointerTensor(id=1000, location=alice, owner=alice)
+        output = _simplify(input)
+        assert output[1]["id"] == input.id
+        assert output[1]["owner"] == input.owner.id
+        assert output[1]["location"] == input.location.id
+        assert output[1]["id_at_location"] == input.id_at_location
 
 
 class TestSerde(object):
@@ -259,6 +270,25 @@ class TestSerde(object):
 
 
 class TestHooked(object):
+    def setUp(self):
+        hook = syft.TorchHook(torch, verbose=True)
+
+        me = hook.local_worker
+        me.is_client_worker = False
+
+        bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
+        alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
+        james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
+
+        bob.add_workers([alice, james])
+        alice.add_workers([bob, james])
+        james.add_workers([bob, alice])
+
+        self.hook = hook
+        self.bob = bob
+        self.alice = alice
+        self.james = james
+
     @pytest.mark.parametrize(
         "compress, compressScheme", [(True, "lz4"), (False, "lz4"), (True, "zstd"), (False, "zstd")]
     )
@@ -271,3 +301,16 @@ class TestHooked(object):
             t_serialized, compressed=compress, compressScheme=compressScheme
         )
         assert (t == t_serialized_deserialized).all()
+
+    def test_PointerTensor(self):
+
+        self.setUp()
+
+        t = PointerTensor(id=1000, location=self.alice, owner=self.alice)
+        t_serialized = serialize(t, compress=False)
+        t_serialized_deserialized = deserialize(t_serialized, compressed=False)
+
+        assert t.id == t_serialized_deserialized.id
+        assert t.location.id == t_serialized_deserialized.location
+        assert t.owner.id == t_serialized_deserialized.owner
+        assert t.id_at_location == t_serialized_deserialized.id_at_location

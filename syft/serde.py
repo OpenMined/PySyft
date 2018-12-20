@@ -40,6 +40,10 @@ from lz4 import (  # noqa: F401
 import io
 import numpy
 import zstd
+import syft
+from syft.frameworks.torch.tensors import PointerTensor
+from syft.workers import AbstractWorker
+from syft.util import WorkerNotFoundException
 
 # High Level Public Functions (these are the ones you use)
 
@@ -476,7 +480,68 @@ def _simplify_ellipsis(e: Ellipsis) -> bytes:
 def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
     return ...
 
-    # High Level Simplification Router
+
+# PointerTensor
+
+
+def _simplify_pointer_tensor(ptr: PointerTensor) -> Dict:
+    """
+    This function takes the attributes of a PointerTensor and saves them in a dictionary
+
+    Args:
+        PointerTensor: a PointerTensor
+
+    Returns:
+        Dict: a dictionary holding the attributes of the PointerTensor
+
+    Usage:
+        data = _simplify_pointer_tensor(ptr)
+
+    """
+
+    data = vars(ptr).copy()
+    for k, v in data.items():
+
+        if isinstance(v, AbstractWorker):
+            data[k] = v.id
+
+    return _simplify_dictionary(data)
+
+
+def _detail_pointer_tensor(data: Dict) -> PointerTensor:
+    """
+    This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
+    We use the spread operator to pass the dict data as arguments
+    to the init method of PointerTensor
+
+    Args:
+        Dict: a dictionary holding the attributes of the PointerTensor
+
+    Returns:
+        PointerTensor: a PointerTensor
+
+    Usage:
+        ptr = _detail_pointer_tensor(data)
+
+    """
+    new_data = {}
+    for k, v in data.items():
+
+        key = k.decode()
+        if type(v) is bytes:
+            val_str = v.decode()
+            try:
+                val = syft.local_worker.get_worker(val_str, fail_hard=True)
+            except WorkerNotFoundException:
+                val = val_str
+        else:
+            val = v
+        new_data[key] = val
+
+    return PointerTensor(**new_data)
+
+
+# High Level Simplification Router
 
 
 def _simplify(obj: object) -> object:
@@ -529,6 +594,7 @@ simplifiers = {
     numpy.ndarray: [6, _simplify_ndarray],
     slice: [7, _simplify_slice],
     type(Ellipsis): [8, _simplify_ellipsis],
+    PointerTensor: [9, _simplify_pointer_tensor],
 }
 
 
@@ -563,4 +629,5 @@ detailers = [
     _detail_ndarray,
     _detail_slice,
     _detail_ellipsis,
+    _detail_pointer_tensor,
 ]

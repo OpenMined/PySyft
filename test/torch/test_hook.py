@@ -23,3 +23,17 @@ class TestHook(TestCase):
         assert not syft.torch._is_command_valid_guard("false_command", "torch_modules")
 
         syft.torch._command_guard("torch.add", "torch_modules", get_native=False)
+
+    def test_worker_registration(self):
+        hook = syft.TorchHook(torch, verbose=True)
+
+        me = hook.local_worker
+        me.is_client_worker = False
+
+        bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
+
+        me.add_workers([bob])
+
+        worker = me.get_worker(bob)
+
+        assert bob == worker
