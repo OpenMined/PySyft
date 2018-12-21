@@ -80,7 +80,7 @@ class BaseWorker(AbstractWorker):
         # self.add_worker(sy.local_worker)
 
         # For performance, we cache each
-        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.get_obj}
+        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
 
     # SECTION: Methods which MUST be overridden by subclasses
 
@@ -225,8 +225,13 @@ class BaseWorker(AbstractWorker):
         """
 
         obj = self._objects[obj_id]
-        # obj.id = obj_id
-        # obj.owner = self
+
+        return obj
+
+    def respond_to_obj_req(self, obj_id):
+
+        obj = self.get_obj(obj_id)
+        self.de_register_obj(obj)
         return obj
 
     def register_obj(self, obj, obj_id=None):
@@ -258,13 +263,8 @@ class BaseWorker(AbstractWorker):
           registered contains the data locally or is instead a pointer to
           a tensor that lives on a different worker.
         """
-
-        if obj_id is None:
-            obj_id = obj.id
-        else:
-            obj.id = obj_id
-
-        self.set_obj((obj_id, obj))
+        if not self.is_client_worker:
+            self.set_obj((obj_id, obj))
 
     def de_register_obj(self, obj, _recurse_torch_objs=True):
         """Unregister an object and removes attributes which are indicative of
@@ -272,18 +272,11 @@ class BaseWorker(AbstractWorker):
         """
 
         if hasattr(obj, "id"):
+            print("removing object")
             self.rm_obj(obj.id)
-            del obj.id
+            del obj._id
         if hasattr(obj, "owner"):
             del obj.owner
-
-        # TODO: Not useful for the moment
-        # if hasattr(obj, "child"):
-        #     if obj.child is not None:
-        #         self.de_register_object(
-        #             obj.child, _recurse_torch_objs=_recurse_torch_objs
-        #         )
-        #     delattr(obj, "child")
 
     def rm_obj(self, remote_key):
         """This method removes an object from the permanent object registry if

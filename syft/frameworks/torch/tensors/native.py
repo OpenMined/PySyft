@@ -12,6 +12,12 @@ class TorchTensor(AbstractTensor):
     by the TorchHook (which is in frameworks/torch/hook.py)
     """
 
+    def get(self):
+        return self.child.get()
+
+    def send(self, location):
+        return self.owner.send(self, location)
+
     def create_pointer(
         self,
         location: BaseWorker = None,
@@ -103,5 +109,4 @@ class TorchTensor(AbstractTensor):
         return ptr.wrap()
 
     def reshape(self, *args, **kwargs):
-        print("Overloading torch.Tensor.reshape")
         return getattr(self, "native_reshape")(*args, **kwargs)

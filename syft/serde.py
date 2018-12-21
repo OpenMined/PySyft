@@ -46,6 +46,8 @@ from syft.frameworks.torch.tensors import PointerTensor
 from syft.workers import AbstractWorker
 from syft.util import WorkerNotFoundException
 
+from .frameworks.torch.tensors.abstract import initialize_tensor
+
 # High Level Public Functions (these are the ones you use)
 
 
@@ -182,7 +184,19 @@ def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
     """
 
     bin_tensor_stream = io.BytesIO(tensor)
-    return torch.load(bin_tensor_stream)
+    tensor = torch.load(bin_tensor_stream)
+
+    initialize_tensor(
+        hook_self=syft.torch.hook,
+        cls=tensor,
+        torch_tensor=True,
+        owner=None,
+        id=None,
+        init_args=[],
+        kwargs={},
+    )
+
+    return tensor
 
 
 # Simplify/Detail Collections (list, set, tuple, etc.)

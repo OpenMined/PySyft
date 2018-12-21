@@ -35,7 +35,7 @@ class PointerTensor(AbstractTensor):
     def __init__(
         self,
         parent: AbstractTensor = None,
-        location = None,
+        location=None,
         id_at_location=None,
         register=False,
         owner=None,
