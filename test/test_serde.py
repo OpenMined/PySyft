@@ -87,7 +87,6 @@ class TestSimplify(object):
 
 
 class TestSerde(object):
-
     @pytest.mark.parametrize("compress", [True, False])
     def test_torch_Tensor(self, compress):
         t = Tensor(numpy.random.random((100, 100)))
