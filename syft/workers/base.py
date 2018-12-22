@@ -2,6 +2,7 @@ from abc import abstractmethod
 import logging
 import random
 
+from syft.util import WorkerNotFoundException
 from .. import serde
 from . import AbstractWorker
 
@@ -79,7 +80,7 @@ class BaseWorker(AbstractWorker):
         # self.add_worker(sy.local_worker)
 
         # For performance, we cache each
-        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.get_obj}
+        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
 
     # SECTION: Methods which MUST be overridden by subclasses
 
@@ -224,8 +225,13 @@ class BaseWorker(AbstractWorker):
         """
 
         obj = self._objects[obj_id]
-        # obj.id = obj_id
-        # obj.owner = self
+
+        return obj
+
+    def respond_to_obj_req(self, obj_id):
+
+        obj = self.get_obj(obj_id)
+        self.de_register_obj(obj)
         return obj
 
     def register_obj(self, obj, obj_id=None):
@@ -257,13 +263,8 @@ class BaseWorker(AbstractWorker):
           registered contains the data locally or is instead a pointer to
           a tensor that lives on a different worker.
         """
-
-        if obj_id is None:
-            obj_id = obj.id
-        else:
-            obj.id = obj_id
-
-        self.set_obj((obj_id, obj))
+        if not self.is_client_worker:
+            self.set_obj((obj_id, obj))
 
     def de_register_obj(self, obj, _recurse_torch_objs=True):
         """Unregister an object and removes attributes which are indicative of
@@ -271,18 +272,10 @@ class BaseWorker(AbstractWorker):
         """
 
         if hasattr(obj, "id"):
+            print("removing object")
             self.rm_obj(obj.id)
-            del obj.id
         if hasattr(obj, "owner"):
             del obj.owner
-
-        # TODO: Not useful for the moment
-        # if hasattr(obj, "child"):
-        #     if obj.child is not None:
-        #         self.de_register_object(
-        #             obj.child, _recurse_torch_objs=_recurse_torch_objs
-        #         )
-        #     delattr(obj, "child")
 
     def rm_obj(self, remote_key):
         """This method removes an object from the permanent object registry if
@@ -306,7 +299,7 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: Manage the workers network
 
-    def get_worker(self, id_or_worker):
+    def get_worker(self, id_or_worker, fail_hard=False):
         """get_worker(self, id_or_worker) -> BaseWorker
         If you pass in an ID, it will try to find the worker object reference
         within self._known_workers. If you instead pass in a reference, it will
@@ -322,6 +315,10 @@ class BaseWorker(AbstractWorker):
 
         * **id_or_worker (string or int or** :class:`BaseWorker` **)**
           This is either the id of the object to be returned or the object itself.
+
+        * **fail_hard (bool) **
+            Wether we want to throw an exception when a worker is not registered at this worker or
+            we just want to log it
 
         :Example:
 
@@ -344,6 +341,8 @@ class BaseWorker(AbstractWorker):
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
             else:
+                if fail_hard:
+                    raise WorkerNotFoundException
                 logging.warning("Worker", self.id, "couldnt recognize worker", id_or_worker)
                 return id_or_worker
         else:
@@ -411,3 +410,22 @@ class BaseWorker(AbstractWorker):
         """
         for worker in workers:
             self.add_worker(worker)
+
+    def __str__(self):
+        """This is a simple to-string for all classes that extend BaseWorker
+        which just returns the type and ID of the worker. For example, a
+        VirtualWorker instance with id 'bob' would return a string value of.
+
+        <syft.core.workers.virtual.VirtualWorker id:bob>
+
+        Note that __repr__ calls this method by default.
+        """
+
+        out = "<"
+        out += str(type(self)).split("'")[1]
+        out += " id:" + str(self.id)
+        out += ">"
+        return out
+
+    def __repr__(self):
+        return self.__str__()

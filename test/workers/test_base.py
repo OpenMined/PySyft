@@ -18,7 +18,7 @@ class TestTorchTensor(TestCase):
         ptr_id = int(10e10 * random.random())
         x_ptr = self.me.send(x, self.bob, ptr_id)
 
-        assert isinstance(x_ptr, PointerTensor)
+        assert isinstance(x_ptr.child, PointerTensor)
         assert x_ptr.location.id == self.bob.id
         assert x_ptr.id_at_location == ptr_id
         remote_x = self.bob.get_obj(ptr_id)

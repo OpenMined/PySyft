@@ -4,13 +4,11 @@ from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
 
+from syft import TorchHook
 from syft.frameworks.torch.tensors import PointerTensor
 import torch
 import syft
-from unittest import TestCase
-from syft import TorchHook
 from torch import Tensor
-import torch
 import numpy
 import msgpack
 import pytest
@@ -84,33 +82,12 @@ class TestSimplify(object):
         assert output[1]["id_at_location"] == input.id_at_location
 
 
-
-class TestSerde(TestCase):
-    def setUp(self):
-        hook = syft.TorchHook(torch, verbose=True)
-
-        me = hook.local_worker
-        me.is_client_worker = False
-
-        bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
-        alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
-        james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
-
-        me.add_workers([bob, alice, james])
-        bob.add_workers([alice, james])
-        alice.add_workers([bob, james])
-        james.add_workers([bob, alice])
-
-        self.hook = hook
-        self.bob = bob
-        self.alice = alice
-        self.james = james
-
-
 class TestSerde(object):
-
     @pytest.mark.parametrize("compress", [True, False])
     def test_torch_Tensor(self, compress):
+
+        hook = TorchHook(torch)
+
         t = Tensor(numpy.random.random((100, 100)))
         t_serialized = serialize(t, compress=compress)
         t_serialized_deserialized = deserialize(t_serialized, compressed=compress)
@@ -118,6 +95,9 @@ class TestSerde(object):
 
     @pytest.mark.parametrize("compress", [True, False])
     def test_tuple(self, compress):
+
+        hook = TorchHook(torch)
+
         # Test with a simple datatype
         tuple = (1, 2)
         tuple_serialized = serialize(tuple, compress=compress)
@@ -177,6 +157,9 @@ class TestSerde(object):
 
     @pytest.mark.parametrize("compress", [True, False])
     def test_dict(self, compress):
+
+        hook = TorchHook(torch)
+
         # Test with integers
         _dict = {1: 1, 2: 2, 3: 3}
         dict_serialized = serialize(_dict, compress=compress)
@@ -213,6 +196,9 @@ class TestSerde(object):
 
     @pytest.mark.parametrize("compress", [True, False])
     def test_list(self, compress):
+
+        hook = TorchHook(torch)
+
         # Test with integers
         _list = [1, 2]
         list_serialized = serialize(_list, compress=compress)
@@ -239,6 +225,9 @@ class TestSerde(object):
 
     @pytest.mark.parametrize("compress", [True, False])
     def test_set(self, compress):
+
+        hook = TorchHook(torch)
+
         # Test with integers
         _set = set([1, 2])
         set_serialized = serialize(_set, compress=compress)
@@ -309,35 +298,48 @@ class TestSerde(object):
         assert y_serialized_deserialized == y
 
 
-#
-# class TestHooked(object):
-#     @pytest.mark.parametrize(
-#         "compress, compressScheme", [(True, "lz4"), (False, "lz4"), (True, "zstd"), (False, "zstd")]
-#     )
-#     def test_hooked_tensor(self, compress, compressScheme):
-#         TorchHook(torch)
-#
-# <<<<<<< HEAD
-#         y_serialized = serialize(y, compress=True)
-#         y_serialized_deserialized = deserialize(y_serialized, compressed=True)
-#
-#         assert x_serialized_deserialized == x
-#         assert y_serialized_deserialized == y
-#
-#     def test_PointerTensor(self):
-#         t = PointerTensor(id=1000, location=self.alice, owner=self.alice)
-#         t_serialized = serialize(t, compress=False)
-#         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
-#
-#         assert t.id == t_serialized_deserialized.id
-#         assert t.location == t_serialized_deserialized.location
-#         assert t.owner == t_serialized_deserialized.owner
-#         assert t.id_at_location == t_serialized_deserialized.id_at_location
-# =======
-#         t = Tensor(numpy.random.random((100, 100)))
-#         t_serialized = serialize(t, compress=compress, compressScheme=compressScheme)
-#         t_serialized_deserialized = deserialize(
-#             t_serialized, compressed=compress, compressScheme=compressScheme
-#         )
-#         assert (t == t_serialized_deserialized).all()
-# >>>>>>> 7ca824775262633b5887f048d089754660d11c59
+class TestHooked(object):
+    def setUp(self):
+        hook = syft.TorchHook(torch, verbose=True)
+
+        me = hook.local_worker
+        me.is_client_worker = False
+
+        bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
+        alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
+        james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
+
+        bob.add_workers([alice, james])
+        alice.add_workers([bob, james])
+        james.add_workers([bob, alice])
+
+        self.hook = hook
+        self.bob = bob
+        self.alice = alice
+        self.james = james
+
+    @pytest.mark.parametrize(
+        "compress, compressScheme", [(True, "lz4"), (False, "lz4"), (True, "zstd"), (False, "zstd")]
+    )
+    def test_hooked_tensor(self, compress, compressScheme):
+        TorchHook(torch)
+
+        t = Tensor(numpy.random.random((100, 100)))
+        t_serialized = serialize(t, compress=compress, compressScheme=compressScheme)
+        t_serialized_deserialized = deserialize(
+            t_serialized, compressed=compress, compressScheme=compressScheme
+        )
+        assert (t == t_serialized_deserialized).all()
+
+    def test_PointerTensor(self):
+
+        self.setUp()
+
+        t = PointerTensor(id=1000, location=self.alice, owner=self.alice)
+        t_serialized = serialize(t, compress=False)
+        t_serialized_deserialized = deserialize(t_serialized, compressed=False)
+
+        assert t.id == t_serialized_deserialized.id
+        assert t.location.id == t_serialized_deserialized.location
+        assert t.owner.id == t_serialized_deserialized.owner
+        assert t.id_at_location == t_serialized_deserialized.id_at_location

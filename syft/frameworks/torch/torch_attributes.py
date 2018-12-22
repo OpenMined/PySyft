@@ -16,7 +16,7 @@ class TorchAttributes(object):
     what methods to NOT hook.
     """
 
-    def __init__(self, torch: ModuleType) -> None:
+    def __init__(self, torch: ModuleType, hook: ModuleType) -> None:
         """
         Initialization of the TorchAttributes class. This will hold all necessary
         attributes PySyft needs.
@@ -26,6 +26,8 @@ class TorchAttributes(object):
         """
 
         # SECTION: List all functions in torch module that we want to overload
+
+        self.hook = hook
 
         # List modules that we will hook
         self.torch_modules = {"torch": torch, "torch.nn.functional": torch.nn.functional}
