@@ -2,7 +2,9 @@ from .abstract import AbstractTensor
 
 
 class PointerTensor(AbstractTensor):
-    """PointerTensor objects point to tensors (as their name implies). They exist to mimic
+    """A pointer to another tensor. A PointerTensor forwards all API calls to the remote.
+
+    PointerTensor objects point to tensors (as their name implies). They exist to mimic
     the entire API of a normal tensor, but instead of computing a tensor function locally
     (such as addition, subtraction, etc.) they forward the computation to a remote machine
     as specified by self.location. Specifically, every PointerTensor has a tensor
