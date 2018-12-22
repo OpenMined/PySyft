@@ -5,7 +5,9 @@ from ....workers import BaseWorker
 
 
 class TorchTensor(AbstractTensor):
-    """
+    """ Add methods to this tensor to have them added to every torch.Tensor obj
+
+
     This tensor is simply a more convenient way to add custom functions to
     all Torch tensor types. When you add a function to this tensor, it will
     be added to EVERY native torch tensor type (i.e. torch.Torch) automatically
@@ -13,9 +15,45 @@ class TorchTensor(AbstractTensor):
     """
 
     def get(self):
+        """Get remote data from remove places and send it here to the client.
+
+        Many tensor types point to data which exists at another location, including
+        PointerTensor and various Secure Multi-Party Computation tensors. All of these
+        tensor types have a .get() method which requests that the data on the remote
+        machine be set back to the client (to the machine upon which .get() is called).
+
+        Returns:
+            AbstractTensor: Typically, this method will return a single tensor, although
+                that tensor might be a combination of several remote tensors which
+                exist on several different machines. If the method you're trying to
+                call/implement needs to return multiple tensors or has some very special
+                way in which those tensors should be combined, consider creating a
+                special method specifically for that functionality.
+
+        """
         return self.child.get()
 
     def send(self, location):
+        """Send self to a remote worker and return a pointer to the new remote object
+
+        One of the most commonly used methods in PySyft, this method serializes the
+        object upon which it is called (self), sends the object to a remote worker,
+        creates a pointer to that worker, and then returns that pointer from this
+        function.
+
+        Args:
+            location (....workers.BaseWorker): the BaseWorker object which you want
+                to send this object to. Note that this is never actually
+                BaseWorker but instead a class which instantiates the BaseWorker
+                abstraction.
+
+        Returns:
+            torch.Tensor[PointerTensor]: This method returns the pointer to self.
+                Note that this object will likely be wrapped by a torch.Tensor
+                wrapper.
+
+        """
+
         return self.owner.send(self, location)
 
     def create_pointer(
@@ -26,8 +64,7 @@ class TorchTensor(AbstractTensor):
         owner: BaseWorker = None,
         ptr_id: (str or int) = None,
     ) -> PointerTensor:
-
-        """ This method creates a pointer to the "self" torch.Tensor object
+        """This method creates a pointer to the "self" torch.Tensor object
 
         This method is called on a torch.Tensor object, returning a pointer
         to that object. This method is the CORRECT way to create a pointer, and
@@ -50,7 +87,7 @@ class TorchTensor(AbstractTensor):
                 self.id, but again this is very rare and most of the time, setting
                 this means that you're probably doing something you shouldn't.
 
-            register (bool) this parameter determines whether to
+            register (bool): this parameter determines whether to
                 register the new pointer that gets created. By default, this is set
                 to false because (most of the time) a pointer is initialized in this
                 way so that it can be sent to someone else. (i.e., "oh you need to
@@ -62,14 +99,19 @@ class TorchTensor(AbstractTensor):
                 if there's any chance that someone else will initialize a pointer to
                 your pointer.
 
-            owner (....workers.BaseWorker) while "location" specifies where the
+            owner (....workers.BaseWorker): while "location" specifies where the
                 pointer points to, this parameter specifies the worker on which the
                 pointer is located. It is also where the pointer is registered if
                 register is set to True.
 
-            id: (str or int) if you want to set the id of the pointer for
+            id (str or int): if you want to set the id of the pointer for
                 any special reason, you can set it here. Otherwise, it will be set
                 randomly.
+
+        Returns:
+            torch.Tensor[PointerTensor]: This method returns the pointer to self.
+                Note that this object will likely be wrapped by a torch.Tensor
+                wrapper.
 
         """
 
@@ -107,4 +149,11 @@ class TorchTensor(AbstractTensor):
         return ptr.wrap()
 
     def reshape(self, *args, **kwargs):
+        """This method reshapes a tensor to have new dimensions
+
+        This method is the same functionality as the default reshape function which
+        ships with PyTorch. See the PyTorch documentation for the correct args and
+        kwargs. TODO: add link to documentation (i'm on a plane and don't have wifi)
+        """
+
         return getattr(self, "native_reshape")(*args, **kwargs)
