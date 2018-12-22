@@ -13,66 +13,67 @@ MSGTYPE_EXCEPTION = 4
 
 
 class BaseWorker(AbstractWorker):
-    """
-    This is the class which contains functionality generic to all workers. Other workers will
-    extend this class to inherit all functionality necessary for PySyft's protocol. Extensions
-    of this class will override two key methods _send_msg() and _recv_msg() which are responsible
-    for defining the procedure for sending a binary message to another worker.
+    """A class containing functionality to all workers.
 
-    At it's core, you can think of BaseWorker (and thus all workers) as simply a collection of
-    objects owned by a certain machine. Each worker defines how it interacts with objects on other
-    workers as well as how other workers interact with objects owned by itself. Objects are most
-    frequently tensors but they can be of any type supported by the PySyft protocol.
+    Other workers will extend this class to inherit all functionality necessary 
+    for PySyft's protocol. Extensions of this class will override two key 
+    methods _send_msg() and _recv_msg() which are responsible for defining the 
+    procedure for sending a binary message to another worker.
+
+    At it's core, you can think of BaseWorker (and thus all workers) as simply 
+    a collection of objects owned by a certain machine. Each worker defines how 
+    it interacts with objects on other workers as well as how other workers 
+    interact with objects owned by itself. Objects are most frequently tensors 
+    but they can be of any type supported by the PySyft protocol.
     
     """
 
-    def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False):
-    	""" Initializes a BaseWorker
+    def __init__(
+    	self, 
+    	hook=None, 
+    	id=0, 
+    	known_workers={}, 
+    	is_client_worker=False
+    ):
+    	"""Initializes a BaseWorker
 
     	:Parameters:
 
-        * **hook (**:class:`.hook.TorchHook` **, optional)** this is a reference to the hook object which
-        was used to modify PyTorch with PySyft's functionality.
+        * **hook (**:class:`.hook.TorchHook` **, optional)** this is a reference
+        to the hook object which was used to modify PyTorch with PySyft's 
+        functionality(overloading the underlying deep learning framework).
 
-        * **hook (int or str, optional)** the unique id of the worker.
+        * **hook (int or str, optional)** the unique id of the worker(an integer 
+        or string identifier for this node)
 
-        * **known_workers (dict, optional)** a dictionary of workers which this worker may
-        need to communicate with in the future. The key of each should be each worker's
-        unique ID and the value should be a worker class which extends BaseWorker (yes...
-        this BaseWorker)
+        * **known_workers (dict, optional)** this dictionary includes all known 
+        workers on a network. A dictionary of workers which this worker may need 
+        to communicate with in the future. The key of each should be each 
+        worker's unique ID and the value should be a worker class which extends 
+        BaseWorker. Extensions of BaseWorker will include advanced functionality
+        for adding to this dictionary(node discovery). In some cases, one can 
+        initialize this with known workers to help bootstrap the network.
 
-        * **is_client_worker (bool, optional)** set to true if this object is not actually
-        where the objects will be stored, but is instead a pointer to a worker that exists
-        elsewhere.
-
+        * **is_client_worker (bool, optional)** this determines whether this 
+        worker is associated with an end user client. If so, it assumes that the 
+        client will maintain control over when variables are instantiated or 
+        deleted as opposed to handling tensor/variable/model lifecycle 
+        internally. It is set to True if this object is not actually
+        where the objects will be stored, but is instead a pointer to a worker 
+        that exists elsewhere.
 
     	"""
 
         # if hook is None and hasattr(syft, "local_worker"):
         #    hook = syft.local_worker.hook
 
-        # This is a reference to the hook object which overloaded
-        # the underlying deep learning framework
         self.hook = hook
-
-        # the integer or string identifier for this node
         self.id = id
-
-        # is_client_worker determines whether this worker is
-        # associated with an end user client. If so, it assumes
-        # that the client will maintain control over when variables
-        # are instantiated or deleted as opposed to
-        # handling tensor/variable/model lifecycle internally.
         self.is_client_worker = is_client_worker
 
-        # This is the core object in every BaseWorker instantiation, a collection of
-        # objects. All objects are stored using their IDs as keys.
+        # This is the core object in every BaseWorker instantiation, a 
+        #collection of objects. All objects are stored using their IDs as keys.
         self._objects = {}
-
-        # This dictionary includes all known workers on a network. Extensions of
-        # BaseWorker will include advanced functionality for adding to this dictionary
-        # (node discovery). In some cases, one can initialize this with known workers to
-        # help bootstrap the network.
         self._known_workers = {}
         for k, v in known_workers.items():
             self._known_workers[k] = v
@@ -84,7 +85,8 @@ class BaseWorker(AbstractWorker):
         # self.add_worker(sy.local_worker)
 
         # For performance, we cache each
-        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
+        self._message_router = {MSGTYPE_OBJ: self.set_obj, 
+        MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
 
     # SECTION: Methods which MUST be overridden by subclasses
 
