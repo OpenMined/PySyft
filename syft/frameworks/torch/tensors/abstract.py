@@ -16,13 +16,7 @@ class AbstractTensor(ABC):
 
 
 def initialize_tensor(
-        hook_self,
-        cls,
-        torch_tensor: bool = False,
-        owner=None,
-        id=None,
-        *init_args,
-        **init_kwargs
+    hook_self, cls, torch_tensor: bool = False, owner=None, id=None, *init_args, **init_kwargs
 ):
 
     cls.is_wrapper = False
