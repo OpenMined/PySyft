@@ -4,10 +4,6 @@ from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
 
-from syft.frameworks.torch.tensors import PointerTensor
-import torch
-import syft
-from unittest import TestCase
 from syft import TorchHook
 from syft.frameworks.torch.tensors import PointerTensor
 import torch
