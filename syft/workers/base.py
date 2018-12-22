@@ -1,7 +1,7 @@
-from abc import abstractmethod
 import logging
 import random
 
+from abc import abstractmethod
 from syft.util import WorkerNotFoundException
 from .. import serde
 from . import AbstractWorker
@@ -23,10 +23,15 @@ class BaseWorker(AbstractWorker):
     objects owned by a certain machine. Each worker defines how it interacts with objects on other
     workers as well as how other workers interact with objects owned by itself. Objects are most
     frequently tensors but they can be of any type supported by the PySyft protocol.
+    
+    """
 
-    :Parameters:
+    def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False):
+    	""" Initializes a BaseWorker
 
-        * **hook (**:class:`.hook.TorchHook` **, optional)** a reference to the hook object which
+    	:Parameters:
+
+        * **hook (**:class:`.hook.TorchHook` **, optional)** this is a reference to the hook object which
         was used to modify PyTorch with PySyft's functionality.
 
         * **hook (int or str, optional)** the unique id of the worker.
@@ -40,9 +45,8 @@ class BaseWorker(AbstractWorker):
         where the objects will be stored, but is instead a pointer to a worker that exists
         elsewhere.
 
-    """
 
-    def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False):
+    	"""
 
         # if hook is None and hasattr(syft, "local_worker"):
         #    hook = syft.local_worker.hook
