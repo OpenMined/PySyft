@@ -186,15 +186,13 @@ def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
     bin_tensor_stream = io.BytesIO(tensor)
     tensor = torch.load(bin_tensor_stream)
 
-    initialize_tensor(
-        hook_self=syft.torch.hook,
-        cls=tensor,
-        torch_tensor=True,
-        owner=None,
-        id=None,
-        init_args=[],
-        kwargs={},
-    )
+    initialize_tensor(hook_self=syft.torch.hook,
+                      cls=tensor,
+                      torch_tensor=True,
+                      owner=None,
+                      id=None,
+                      init_args=[],
+                      kwargs={})
 
     return tensor
 
