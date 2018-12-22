@@ -89,6 +89,9 @@ class TestSimplify(object):
 class TestSerde(object):
     @pytest.mark.parametrize("compress", [True, False])
     def test_torch_Tensor(self, compress):
+
+        hook = TorchHook(torch)
+
         t = Tensor(numpy.random.random((100, 100)))
         t_serialized = serialize(t, compress=compress)
         t_serialized_deserialized = deserialize(t_serialized, compressed=compress)
@@ -96,6 +99,9 @@ class TestSerde(object):
 
     @pytest.mark.parametrize("compress", [True, False])
     def test_tuple(self, compress):
+
+        hook = TorchHook(torch)
+
         # Test with a simple datatype
         tuple = (1, 2)
         tuple_serialized = serialize(tuple, compress=compress)
@@ -155,6 +161,9 @@ class TestSerde(object):
 
     @pytest.mark.parametrize("compress", [True, False])
     def test_dict(self, compress):
+
+        hook = TorchHook(torch)
+
         # Test with integers
         _dict = {1: 1, 2: 2, 3: 3}
         dict_serialized = serialize(_dict, compress=compress)
@@ -191,6 +200,9 @@ class TestSerde(object):
 
     @pytest.mark.parametrize("compress", [True, False])
     def test_list(self, compress):
+
+        hook = TorchHook(torch)
+
         # Test with integers
         _list = [1, 2]
         list_serialized = serialize(_list, compress=compress)
@@ -217,6 +229,9 @@ class TestSerde(object):
 
     @pytest.mark.parametrize("compress", [True, False])
     def test_set(self, compress):
+
+        hook = TorchHook(torch)
+
         # Test with integers
         _set = set([1, 2])
         set_serialized = serialize(_set, compress=compress)
