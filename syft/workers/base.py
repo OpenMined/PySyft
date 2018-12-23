@@ -61,28 +61,29 @@ class BaseWorker(AbstractWorker):
         self._objects = {}  # A core object in every BaseWorker instantiation
         # Collection of objects where all objects are stored using their IDs as
         # keys.
+
         self._known_workers = {}
         for k, v in known_workers.items():
             self._known_workers[k] = v
         self.add_worker(self)
-        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
-
         # For performance, we cache each
+        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
 
     # SECTION: Methods which MUST be overridden by subclasses
 
     @abstractmethod
     def _send_msg(self, message, location):
-        """As BaseWorker implies, you should never instantiate this class by itself. Instead,
-        you should extend BaseWorker in a new class which instantiates _send_msg and _recv_msg,
-        each of which should specify the exact way in which two workers communicate with each
-        other. The easiest example to study is probably VirtualWorker.
+        """As BaseWorker implies, you should never instantiate this class by 
+        itself. Instead, you should extend BaseWorker in a new class which 
+        instantiates _send_msg and _recv_msg, each of which should specify the 
+        exact way in which two workers communicate with each other. The easiest 
+        example to study is probably VirtualWorker.
 
-        :Parameters:
+        Args:
 
-            * **message (str)** the message being sent from one worker to another.
+            message (str): the message being sent from one worker to another.
 
-            * **location (**:class:`.workers.BaseWorker` **)** the destination to send the
+            location (:class:`.workers.BaseWorker`) the destination to send the
                 message.
 
         """
@@ -91,14 +92,15 @@ class BaseWorker(AbstractWorker):
 
     @abstractmethod
     def _recv_msg(self, message):
-        """As BaseWorker implies, you should never instantiate this class by itself. Instead,
-        you should extend BaseWorker in a new class which instantiates _send_msg and _recv_msg,
-        each of which should specify the exact way in which two workers communicate with each
-        other. The easiest example to study is probably VirtualWorker.
+        """As BaseWorker implies, you should never instantiate this class by 
+        itself. Instead, you should extend BaseWorker in a new class which 
+        instantiates _send_msg and _recv_msg, each of which should specify the 
+        exact way in which two workers communicate with each other. The easiest 
+        example to study is probably VirtualWorker.
 
-        :Parameters:
+        Args:
 
-            * **message (str)** the message being received.
+            message (str): the message being received.
 
         """
         raise NotImplementedError  # pragma: no cover
