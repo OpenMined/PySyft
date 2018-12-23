@@ -128,6 +128,10 @@ class TestSimplify(object):
         # make sure outer type is correct
         assert type(output) == tuple
 
+        # make sure the object type ID is correct
+        # (0 for torch.Tensor)
+        assert output[0] == 0
+
         # make sure inner type is correct
         assert type(output[1]) == tuple
 
@@ -138,8 +142,20 @@ class TestSimplify(object):
         assert type(output[1][1]) == bytes
 
     def test_ndarray_simplify(self):
+        """This tests our ability to simplify numpy.array objects
+
+        At the time of writing, arrays simplify to an object inside
+        of a tuple which specifies the ID for the np.array type (6) so
+        that the detailer knows to turn the simplifed form to a np.array
+        """
+
         input = numpy.random.random((100, 100))
         output = _simplify(input)
+
+        # make sure simplified type ID is correct
+        assert output[0] == 6
+
+        # make sure serialized form is correct
         assert type(output[1][0]) == bytes
         assert output[1][1] == input.shape
         assert output[1][2] == input.dtype.name
