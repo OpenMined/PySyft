@@ -44,17 +44,33 @@ class TestSimplify(object):
         assert _simplify(input) == target
 
     def test_set_simplify(self):
+        """This tests our ability to simplify set objects.
+
+        This test is pretty simple since sets just serialize to
+        lists, with a tuple wrapper with the correct ID (3)
+        for sets so that the detailer knows how to interpret it."""
+
         input = set(["hello", "world"])
         target = (3, ["hello", "world"])
         assert _simplify(input)[0] == target[0]
         assert set(_simplify(input)[1]) == set(target[1])
 
     def test_float_simplify(self):
+        """This tests our ability to simplify float objects.
+
+        This test is pretty simple since floats just serialize to
+        themselves, with no tuple/id necessary."""
+
         input = 5.6
         target = 5.6
         assert _simplify(input) == target
 
     def test_int_simplify(self):
+        """This tests our ability to simplify int objects.
+
+        This test is pretty simple since ints just serialize to
+        themselves, with no tuple/id necessary."""
+        
         input = 5
         target = 5
         assert _simplify(input) == target
