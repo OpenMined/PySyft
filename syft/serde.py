@@ -501,61 +501,61 @@ def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
 # PointerTensor
 
 
-def _simplify_pointer_tensor(ptr: PointerTensor) -> Dict:
-    """
-    This function takes the attributes of a PointerTensor and saves them in a dictionary
+# def _simplify_pointer_tensor(ptr: PointerTensor) -> Dict:
+#     """
+#     This function takes the attributes of a PointerTensor and saves them in a dictionary
+#
+#     Args:
+#         PointerTensor: a PointerTensor
+#
+#     Returns:
+#         Dict: a dictionary holding the attributes of the PointerTensor
+#
+#     Usage:
+#         data = _simplify_pointer_tensor(ptr)
+#
+#     """
+#
+#     data = vars(ptr).copy()
+#     for k, v in data.items():
+#
+#         if isinstance(v, AbstractWorker):
+#             data[k] = v.id
+#
+#     return _simplify_dictionary(data)
 
-    Args:
-        PointerTensor: a PointerTensor
 
-    Returns:
-        Dict: a dictionary holding the attributes of the PointerTensor
-
-    Usage:
-        data = _simplify_pointer_tensor(ptr)
-
-    """
-
-    data = vars(ptr).copy()
-    for k, v in data.items():
-
-        if isinstance(v, AbstractWorker):
-            data[k] = v.id
-
-    return _simplify_dictionary(data)
-
-
-def _detail_pointer_tensor(data: Dict) -> PointerTensor:
-    """
-    This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
-    We use the spread operator to pass the dict data as arguments
-    to the init method of PointerTensor
-
-    Args:
-        Dict: a dictionary holding the attributes of the PointerTensor
-
-    Returns:
-        PointerTensor: a PointerTensor
-
-    Usage:
-        ptr = _detail_pointer_tensor(data)
-
-    """
-    new_data = {}
-    for k, v in data.items():
-
-        key = k.decode()
-        if type(v) is bytes:
-            val_str = v.decode()
-            try:
-                val = syft.local_worker.get_worker(val_str, fail_hard=True)
-            except WorkerNotFoundException:
-                val = val_str
-        else:
-            val = v
-        new_data[key] = val
-
-    return PointerTensor(**new_data)
+# def _detail_pointer_tensor(data: Dict) -> PointerTensor:
+#     """
+#     This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
+#     We use the spread operator to pass the dict data as arguments
+#     to the init method of PointerTensor
+#
+#     Args:
+#         Dict: a dictionary holding the attributes of the PointerTensor
+#
+#     Returns:
+#         PointerTensor: a PointerTensor
+#
+#     Usage:
+#         ptr = _detail_pointer_tensor(data)
+#
+#     """
+#     new_data = {}
+#     for k, v in data.items():
+#
+#         key = k.decode()
+#         if type(v) is bytes:
+#             val_str = v.decode()
+#             try:
+#                 val = syft.local_worker.get_worker(val_str, fail_hard=True)
+#             except WorkerNotFoundException:
+#                 val = val_str
+#         else:
+#             val = v
+#         new_data[key] = val
+#
+#     return PointerTensor(**new_data)
 
 
 # High Level Simplification Router
@@ -564,7 +564,7 @@ def _detail_pointer_tensor(data: Dict) -> PointerTensor:
 # PointerTensor
 
 
-def _simplify_pointer_tensor(ptr: PointerTensor) -> Dict:
+def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     """
     This function takes the attributes of a PointerTensor and saves them in a dictionary
     Args:
@@ -574,14 +574,20 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> Dict:
     Usage:
         data = _simplify_pointer_tensor(ptr)
     """
-    data = vars(ptr).copy()
-    for k, v in data.items():
-        if isinstance(v, AbstractWorker):
-            data[k] = v.id
-    return _simplify_dictionary(data)
+
+    return (ptr.id, ptr.id_at_location, ptr.location.id)
 
 
-def _detail_pointer_tensor(data: Dict) -> PointerTensor:
+    # a more general but slower/more verbose option
+
+    # data = vars(ptr).copy()
+    # for k, v in data.items():
+    #     if isinstance(v, AbstractWorker):
+    #         data[k] = v.id
+    # return _simplify_dictionary(data)
+
+
+def _detail_pointer_tensor(data: tuple) -> PointerTensor:
     """
     This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
     We use the spread operator to pass the dict data as arguments
@@ -593,16 +599,25 @@ def _detail_pointer_tensor(data: Dict) -> PointerTensor:
     Usage:
         ptr = _detail_pointer_tensor(data)
     """
-    new_data = {}
-    for k, v in data.items():
-        key = k.decode()
-        if type(v) is bytes:
-            val_str = v.decode()
-            val = syft.local_worker.get_worker(val_str)
-        else:
-            val = v
-        new_data[key] = val
-    return PointerTensor(**new_data)
+
+    print(data)
+
+    return PointerTensor(id=data[0],
+                         id_at_location=data[1],
+                         location=syft.torch.hook.local_worker.get_worker(data[2]))
+
+    # a more general but slower/more verbose option
+
+    # new_data = {}
+    # for k, v in data.items():
+    #     key = k.decode()
+    #     if type(v) is bytes:
+    #         val_str = v.decode()
+    #         val = syft.local_worker.get_worker(val_str)
+    #     else:
+    #         val = v
+    #     new_data[key] = val
+    # return PointerTensor(**new_data)
 
 
 # High Level Simplification Router

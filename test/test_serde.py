@@ -161,16 +161,28 @@ class TestSimplify(object):
         assert output[1][2] == input.dtype.name
 
     def test_ellipsis_simplify(self):
+        """Make sure ellipsis simplifies correctly."""
+
+        # the id indicating an ellipsis is here
+        assert _simplify(Ellipsis)[0] == 8
+
+        # the simplified ellipsis (empty object)
         assert _simplify(Ellipsis)[1] == b""
 
     def test_pointer_tensor_simplify(self):
+        """Test the simplification of PointerTensor"""
+
         alice = syft.VirtualWorker(id="alice")
         input = PointerTensor(id=1000, location=alice, owner=alice)
+
         output = _simplify(input)
-        assert output[1]["id"] == input.id
-        assert output[1]["owner"] == input.owner.id
-        assert output[1]["location"] == input.location.id
-        assert output[1]["id_at_location"] == input.id_at_location
+
+        print(output)
+
+        assert output[1][0] == input.id
+        assert output[1][1] == input.id_at_location
+        assert output[1][2] == input.owner.id
+
 
 
 class TestSerde(object):
@@ -403,6 +415,7 @@ class TestHooked(object):
         bob.add_workers([alice, james])
         alice.add_workers([bob, james])
         james.add_workers([bob, alice])
+        me.add_workers([bob, alice, james])
 
         self.hook = hook
         self.bob = bob
@@ -426,11 +439,13 @@ class TestHooked(object):
 
         self.setUp()
 
-        t = PointerTensor(id=1000, location=self.alice, owner=self.alice)
+        t = PointerTensor(id=1000,
+                          location=self.alice,
+                          owner=self.alice,
+                          id_at_location=12345)
         t_serialized = serialize(t, compress=False)
         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
 
         assert t.id == t_serialized_deserialized.id
-        assert t.location.id == t_serialized_deserialized.location
-        assert t.owner.id == t_serialized_deserialized.owner
+        assert t.location.id == t_serialized_deserialized.location.id
         assert t.id_at_location == t_serialized_deserialized.id_at_location
