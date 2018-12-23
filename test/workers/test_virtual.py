@@ -101,8 +101,8 @@ class TestVirtualWorker(TestCase):
         # ensure that the object we receive is correct
         assert obj_2.id == obj.id
 
-    def test_worker_convenience_methods(self):
-        """Test send and get object methods on BaseWorker
+    def tests_worker_convenience_methods(self):
+        """Tests send and get object methods on BaseWorker
 
         This test comes in two parts. The first uses the simple
         BaseWorker.send_obj and BaseWorker.request_obj to send a
