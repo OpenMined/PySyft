@@ -13,80 +13,61 @@ MSGTYPE_EXCEPTION = 4
 
 
 class BaseWorker(AbstractWorker):
-    """A class containing functionality to all workers.
+    """Contains functionality to all workers.
 
     Other workers will extend this class to inherit all functionality necessary 
-    for PySyft's protocol. Extensions of this class will override two key 
-    methods _send_msg() and _recv_msg() which are responsible for defining the 
+    for PySyft's protocol. Extensions of this class overrides two key methods 
+    _send_msg() and _recv_msg() which are responsible for defining the 
     procedure for sending a binary message to another worker.
 
-    At it's core, you can think of BaseWorker (and thus all workers) as simply 
-    a collection of objects owned by a certain machine. Each worker defines how 
-    it interacts with objects on other workers as well as how other workers 
-    interact with objects owned by itself. Objects are most frequently tensors 
-    but they can be of any type supported by the PySyft protocol.
+    At it's core, BaseWorker (and all workers) is a collection of objects owned 
+    by a certain machine. Each worker defines how it interacts with objects on 
+    other workers as well as how other workers interact with objects owned by 
+    itself. Objects are either tensors or of any type supported by the PySyft 
+    protocol.
     
     """
 
-    def __init__(
-    	self, 
-    	hook=None, 
-    	id=0, 
-    	known_workers={}, 
-    	is_client_worker=False
-    ):
-    	"""Initializes a BaseWorker
+    def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False):
+        """Initializes a BaseWorker
 
-    	:Parameters:
+    	Args:
+    		hook (.hook.TorchHook, optional): A reference to the hook object
+    			which is used to modify PyTorch with PySyft's functionality.
 
-        * **hook (**:class:`.hook.TorchHook` **, optional)** this is a reference
-        to the hook object which was used to modify PyTorch with PySyft's 
-        functionality(overloading the underlying deep learning framework).
+    		id (str or int, optional): Unique id of the worker
 
-        * **hook (int or str, optional)** the unique id of the worker(an integer 
-        or string identifier for this node)
+    		known_workers (dict, optional): A dictionary of all known workers on 
+    			a network which this worker may need to communicate with in the
+    			future. The key of each should be each worker's unique ID and 
+    			the value should be a worker class which extends BaseWorker.
+    			Extensions of BaseWorker will include advanced functionality
+        		for adding to this dictionary(node discovery). In some cases, 
+        		one can initialize this with known workers to help bootstrap the
+        		network.
 
-        * **known_workers (dict, optional)** this dictionary includes all known 
-        workers on a network. A dictionary of workers which this worker may need 
-        to communicate with in the future. The key of each should be each 
-        worker's unique ID and the value should be a worker class which extends 
-        BaseWorker. Extensions of BaseWorker will include advanced functionality
-        for adding to this dictionary(node discovery). In some cases, one can 
-        initialize this with known workers to help bootstrap the network.
 
-        * **is_client_worker (bool, optional)** this determines whether this 
-        worker is associated with an end user client. If so, it assumes that the 
-        client will maintain control over when variables are instantiated or 
-        deleted as opposed to handling tensor/variable/model lifecycle 
-        internally. It is set to True if this object is not actually
-        where the objects will be stored, but is instead a pointer to a worker 
-        that exists elsewhere.
-
+    		is_client_worker (bool, optional): True or False based on whether 
+    			this worker is associated with an end user client. If so, it 
+    			assumes that the client will maintain control over when 
+    			variables are instantiated or deleted as opposed to handling 
+    			tensor/variable/model lifecycle internally. Set to True if this 
+    			object is not where the objects will be stored, but is instead 
+    			a pointer to a worker that eists elsewhere. 
     	"""
-
-        # if hook is None and hasattr(syft, "local_worker"):
-        #    hook = syft.local_worker.hook
-
         self.hook = hook
         self.id = id
         self.is_client_worker = is_client_worker
-
-        # This is the core object in every BaseWorker instantiation, a 
-        #collection of objects. All objects are stored using their IDs as keys.
-        self._objects = {}
+        self._objects = {}  # A core object in every BaseWorker instantiation
+        # Collection of objects where all objects are stored using their IDs as
+        # keys.
         self._known_workers = {}
         for k, v in known_workers.items():
             self._known_workers[k] = v
         self.add_worker(self)
-
-        # if hasattr(sy, "local_worker"):
-        #     sy.local_worker.add_worker(self)
-        #
-        # self.add_worker(sy.local_worker)
+        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
 
         # For performance, we cache each
-        self._message_router = {MSGTYPE_OBJ: self.set_obj, 
-        MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
 
     # SECTION: Methods which MUST be overridden by subclasses
 
@@ -126,6 +107,7 @@ class BaseWorker(AbstractWorker):
     # Every message uses these methods.
 
     def send_msg(self, msg_type, message, location):
+
         # Step 0: combine type and message
         message = (msg_type, message)
 
@@ -284,10 +266,11 @@ class BaseWorker(AbstractWorker):
             del obj.owner
 
     def rm_obj(self, remote_key):
-        """This method removes an object from the permanent object registry if
-        it exists.
-        :parameters:
-        * **remote_key(int or string)** the id of the object to be removed
+        """Removes an object from the permanent object registry if it exists.
+        
+        Args:
+        	remote_key(int or string): the id of the object to be removed
+        
         """
         if remote_key in self._objects:
             del self._objects[remote_key]
@@ -317,16 +300,17 @@ class BaseWorker(AbstractWorker):
         making the current worker aware of new ones when discovered through
         other processes.
 
-        :Parameters:
+        Args:
+        	id_or_worker (string or int or :class:`BaseWorker`): This is 
+        	either the id of the object to be returned or the object itself.
 
-        * **id_or_worker (string or int or** :class:`BaseWorker` **)**
-          This is either the id of the object to be returned or the object itself.
+        	fail_hard (bool): Whether we want to throw an exception when a 
+        	worker is not registered at this worker or we just want to log it.
 
-        * **fail_hard (bool) **
-            Wether we want to throw an exception when a worker is not registered at this worker or
-            we just want to log it
+		Returns:
+			id_or_worker (string or int or :class:'BaseWorker')
 
-        :Example:
+        Example:
 
         >>> import syft as sy
         >>> hook = sy.TorchHook(verbose=False)
@@ -365,12 +349,11 @@ class BaseWorker(AbstractWorker):
         sending and receiving objects, commands, or information about the
         network.
 
-        :Parameters:
+        Args:
+			worker (:class:`BaseWorker`): This is an object pointer to a remote 
+			worker, which must have a unique id.
 
-        * **worker (**:class:`BaseWorker` **)** This is an object
-          pointer to a remote worker, which must have a unique id.
-
-        :Example:
+        Example:
 
         >>> import syft as sy
         >>> hook = sy.TorchHook(verbose=False)
@@ -410,9 +393,8 @@ class BaseWorker(AbstractWorker):
         """
         Convenient function to add several workers in a single call
 
-        :Parameters:
-
-        * **workers (list)** the workers to add.
+        Args:
+			workers (list): Workers to add.
         """
         for worker in workers:
             self.add_worker(worker)
