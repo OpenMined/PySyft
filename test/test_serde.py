@@ -184,7 +184,6 @@ class TestSimplify(object):
         assert output[1][2] == input.owner.id
 
 
-
 class TestSerde(object):
     @pytest.mark.parametrize("compress", [True, False])
     def test_torch_Tensor(self, compress):
@@ -439,10 +438,7 @@ class TestHooked(object):
 
         self.setUp()
 
-        t = PointerTensor(id=1000,
-                          location=self.alice,
-                          owner=self.alice,
-                          id_at_location=12345)
+        t = PointerTensor(id=1000, location=self.alice, owner=self.alice, id_at_location=12345)
         t_serialized = serialize(t, compress=False)
         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
 

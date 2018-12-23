@@ -338,7 +338,7 @@ class BaseWorker(AbstractWorker):
         """
 
         if isinstance(id_or_worker, bytes):
-            id_or_worker = str(id_or_worker, 'utf-8')
+            id_or_worker = str(id_or_worker, "utf-8")
 
         if isinstance(id_or_worker, (str, int)):
             if id_or_worker in self._known_workers:

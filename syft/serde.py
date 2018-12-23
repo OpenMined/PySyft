@@ -511,7 +511,6 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
 
     return (ptr.id, ptr.id_at_location, ptr.location.id)
 
-
     # a more general but slower/more verbose option
 
     # data = vars(ptr).copy()
@@ -533,12 +532,14 @@ def _detail_pointer_tensor(data: tuple) -> PointerTensor:
     Usage:
         ptr = _detail_pointer_tensor(data)
     """
-    #TODO: fix comment for this and simplifier
+    # TODO: fix comment for this and simplifier
     print(data)
 
-    return PointerTensor(id=data[0],
-                         id_at_location=data[1],
-                         location=syft.torch.hook.local_worker.get_worker(data[2]))
+    return PointerTensor(
+        id=data[0],
+        id_at_location=data[1],
+        location=syft.torch.hook.local_worker.get_worker(data[2]),
+    )
 
     # a more general but slower/more verbose option
 
