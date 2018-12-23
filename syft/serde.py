@@ -456,7 +456,7 @@ def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
     This function creates a list that represents a slice.
 
     Args:
-        my_slice (tuple): a python slice
+        my_slice (slice): a python slice
 
     Returns:
         tuple : a list holding the start, stop and step values
