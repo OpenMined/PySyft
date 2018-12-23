@@ -25,14 +25,20 @@ class TestSimplify(object):
         """This tests our ability to simplify tuple types.
 
         This test is pretty simple since tuples just serialize to
-        themselves, with a simple wrapper with the correct ID (1)
-        for tuples."""
+        themselves, with a tuple wrapper with the correct ID (1)
+        for tuples so that the detailer knows how to interpret it."""
 
         input = ("hello", "world")
         target = (1, ("hello", "world"))
         assert _simplify(input) == target
 
     def test_list_simplify(self):
+        """This tests our ability to simplify list types.
+
+        This test is pretty simple since lists just serialize to
+        themselves, with a tuple wrapper with the correct ID (2)
+        for lists so that the detailer knows how to interpret it."""
+
         input = ["hello", "world"]
         target = (2, ["hello", "world"])
         assert _simplify(input) == target
