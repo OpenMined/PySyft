@@ -12,7 +12,7 @@ import torch
 
 class TestVirtualWorker(TestCase):
     def test_send_msg(self):
-        """Test sending a message with a specific ID
+        """Tests sending a message with a specific ID
 
         This is a simple test to ensure that the BaseWorker interface
         can properly send/receive a message containing a tensor.
@@ -35,7 +35,7 @@ class TestVirtualWorker(TestCase):
         assert obj_id in bob._objects
 
     def test_send_msg_using_tensor_api(self):
-        """Test sending a message with a specific ID
+        """Tests sending a message with a specific ID
 
         This is a simple test to ensure that the high level tensor .send()
         method correctly sends a message to another worker.
@@ -57,7 +57,7 @@ class TestVirtualWorker(TestCase):
         assert obj_id in bob._objects
 
     def test_recv_msg(self):
-        """Test the recv_msg command with 2 tests
+        """Tests the recv_msg command with 2 tests
 
         The first test uses recv_msg to send an object to alice.
 
