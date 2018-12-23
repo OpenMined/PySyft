@@ -43,8 +43,6 @@ import zstd
 import syft
 
 from syft.frameworks.torch.tensors import PointerTensor
-from syft.workers import AbstractWorker
-from syft.util import WorkerNotFoundException
 
 from .frameworks.torch.tensors.abstract import initialize_tensor
 
