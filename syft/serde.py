@@ -162,7 +162,9 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         torch.Tensor: an input tensor to be serialized
 
     Returns:
-        bin: serialized binary of torch tensor.
+        tuple: serialized tuple of torch tensor. The first value is the
+        id of the tensor and the second is the binary for the PyTorch
+        object.
     """
 
     binary_stream = io.BytesIO()
