@@ -171,19 +171,21 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     return (tensor.id, tensor_bin)
 
 
-def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
+def _detail_torch_tensor(tensor_tuple: tuple) -> torch.Tensor:
     """
     This function converts a serialized torch tensor into a torch tensor
     using pickle.
 
     Args:
-        bin: serialized binary of torch tensor
+        tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
+        the first value is the ID and the second vlaue is the binary for the
+        PyTorch object.
 
     Returns:
         torch.Tensor: a torch tensor that was serialized
     """
 
-    id, tensor = tensor
+    id, tensor = tensor_tuple
 
     bin_tensor_stream = io.BytesIO(tensor)
     tensor = torch.load(bin_tensor_stream)
@@ -533,7 +535,6 @@ def _detail_pointer_tensor(data: tuple) -> PointerTensor:
         ptr = _detail_pointer_tensor(data)
     """
     # TODO: fix comment for this and simplifier
-    print(data)
 
     return PointerTensor(
         id=data[0],
