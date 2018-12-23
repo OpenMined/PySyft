@@ -87,6 +87,11 @@ from syft.serde import serialize
 from syft.serde import deserialize
 ```
 
+#### Generating Documentaion
+```
+sphinx-apidoc -f -o docs/modules/ syft/
+```
+
 ## Keep it DRY (Don't repeat yourself)
 As with any software project it's important to keep the amount of code to a minimum, so keep code duplication to a minimum!
 
