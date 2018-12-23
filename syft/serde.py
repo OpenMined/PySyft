@@ -533,7 +533,7 @@ def _detail_pointer_tensor(data: tuple) -> PointerTensor:
     Usage:
         ptr = _detail_pointer_tensor(data)
     """
-
+    #TODO: fix comment for this and simplifier
     print(data)
 
     return PointerTensor(id=data[0],
