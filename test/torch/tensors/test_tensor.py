@@ -1,7 +1,7 @@
 import torch
 import syft
 
-from syft.frameworks.torch.tensors import TorchTensor, PointerTensor
+from syft.frameworks.torch.tensors import PointerTensor
 
 
 class TestNative(object):

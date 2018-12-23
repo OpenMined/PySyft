@@ -15,19 +15,31 @@ import pytest
 
 
 class TestSimplify(object):
+    """ This class tests the serde process for converting complex->simple types
+
+    This class tests the ability for serde.py to convert complex types into
+    simple python types which are serializable by standard serialization tools.
+    For more on how/why this works, see serde.py directly."""
+
     def test_tuple_simplify(self):
+        """This tests our ability to simplify tuple types.
+
+        This test is pretty simple since tuples just serialize to
+        themselves, with a simple wrapper with the correct ID (1)
+        for tuples."""
+
         input = ("hello", "world")
-        target = [1, ("hello", "world")]
+        target = (1, ("hello", "world"))
         assert _simplify(input) == target
 
     def test_list_simplify(self):
         input = ["hello", "world"]
-        target = [2, ["hello", "world"]]
+        target = (2, ["hello", "world"])
         assert _simplify(input) == target
 
     def test_set_simplify(self):
         input = set(["hello", "world"])
-        target = [3, ["hello", "world"]]
+        target = (3, ["hello", "world"])
         assert _simplify(input)[0] == target[0]
         assert set(_simplify(input)[1]) == set(target[1])
 
@@ -48,19 +60,21 @@ class TestSimplify(object):
 
     def test_dict_simplify(self):
         input = {"hello": "world"}
-        target = [4, {"hello": "world"}]
+        target = (4, {"hello": "world"})
         assert _simplify(input) == target
 
     def test_range_simplify(self):
         input = range(1, 3, 4)
-        target = [5, (1, 3, 4)]
+        target = (5, (1, 3, 4))
         assert _simplify(input) == target
 
     def test_torch_tensor_simplify(self):
+        hook = TorchHook(torch)
         input = Tensor(numpy.random.random((100, 100)))
         output = _simplify(input)
-        assert type(output) == list
-        assert type(output[1]) == bytes
+        assert type(output) == tuple
+        assert type(output[1]) == tuple
+        assert type(output[1][1] == bytes)
 
     def test_ndarray_simplify(self):
         input = numpy.random.random((100, 100))

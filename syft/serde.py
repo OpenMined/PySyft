@@ -168,7 +168,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
     tensor_bin = binary_stream.getvalue()
-    return tensor_bin
+    return (tensor.id, tensor_bin)
 
 
 def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
@@ -183,16 +183,20 @@ def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
         torch.Tensor: a torch tensor that was serialized
     """
 
+    id, tensor = tensor
+
     bin_tensor_stream = io.BytesIO(tensor)
     tensor = torch.load(bin_tensor_stream)
 
-    initialize_tensor(hook_self=syft.torch.hook,
-                      cls=tensor,
-                      torch_tensor=True,
-                      owner=None,
-                      id=None,
-                      init_args=[],
-                      kwargs={})
+    initialize_tensor(
+        hook_self=syft.torch.hook,
+        cls=tensor,
+        torch_tensor=True,
+        owner=None,
+        id=id,
+        init_args=[],
+        kwargs={},
+    )
 
     return tensor
 
@@ -633,7 +637,7 @@ def _simplify(obj: object) -> object:
         # for this type. If there is, run return
         # the simplified object
         current_type = type(obj)
-        return [simplifiers[current_type][0], simplifiers[current_type][1](obj)]
+        return (simplifiers[current_type][0], simplifiers[current_type][1](obj))
 
     except KeyError:
 

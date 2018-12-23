@@ -26,6 +26,7 @@ def initialize_tensor(
 
     if owner is None:
         owner = hook_self.local_worker
+
     if id is None:
         id = int(10e10 * random.random())
 
