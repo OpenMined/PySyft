@@ -368,7 +368,7 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
     Returns:
         list: a list defining the range parameters [start, stop, step]
 
-    Usage:
+    Examples:
 
         range_parameters = _simplify_range(range(1, 3, 4))
 
@@ -389,7 +389,7 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
     Returns:
         range: a range object
 
-    Usage:
+    Examples:
         new_range = _detail_range([1, 3, 4])
 
         assert new_range == range(1, 3, 4)
@@ -413,7 +413,7 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
     Returns:
         list: a list holding the byte representation, shape and dtype of the array
 
-    Usage:
+    Examples:
 
         arr_representation = _simplify_ndarray(numpy.random.random([1000, 1000])))
 
@@ -437,7 +437,7 @@ def _detail_ndarray(arr_representation: Tuple[bin, Tuple, str]) -> numpy.ndarray
     Returns:
         numpy.ndarray: a numpy array
 
-    Usage:
+    Examples:
         arr = _detail_ndarray(arr_representation)
 
     """
@@ -463,7 +463,7 @@ def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
     Returns:
         list: a list holding the start, stop and step values
 
-    Usage:
+    Examples:
 
         slice_representation = _simplify_slice(slice(1,2,3))
 
@@ -481,7 +481,7 @@ def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
     Returns:
         range: a range object
 
-    Usage:
+    Examples:
         new_range = _detail_range([1, 3, 4])
 
         assert new_range == range(1, 3, 4)
@@ -506,7 +506,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
         PointerTensor: a PointerTensor
     Returns:
         tuple: a tuple holding the unique attributes of the pointer
-    Usage:
+    Examples:
         data = _simplify_pointer_tensor(ptr)
     """
 
@@ -530,7 +530,7 @@ def _detail_pointer_tensor(tensor_tuple: tuple) -> PointerTensor:
         tuple: a tuple holding the attributes of the PointerTensor
     Returns:
         PointerTensor: a PointerTensor
-    Usage:
+    Examples:
         ptr = _detail_pointer_tensor(data)
     """
     # TODO: fix comment for this and simplifier
