@@ -524,13 +524,13 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     # return _simplify_dictionary(data)
 
 
-def _detail_pointer_tensor(data: tuple) -> PointerTensor:
+def _detail_pointer_tensor(tensor_tuple: tuple) -> PointerTensor:
     """
     This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
     We use the spread operator to pass the dict data as arguments
     to the init method of PointerTensor
     Args:
-        Dict: a dictionary holding the attributes of the PointerTensor
+        tuple: a tuple holding the attributes of the PointerTensor
     Returns:
         PointerTensor: a PointerTensor
     Usage:
@@ -539,9 +539,9 @@ def _detail_pointer_tensor(data: tuple) -> PointerTensor:
     # TODO: fix comment for this and simplifier
 
     return PointerTensor(
-        id=data[0],
-        id_at_location=data[1],
-        location=syft.torch.hook.local_worker.get_worker(data[2]),
+        id=tensor_tuple[0],
+        id_at_location=tensor_tuple[1],
+        location=syft.torch.hook.local_worker.get_worker(tensor_tuple[2]),
     )
 
     # a more general but slower/more verbose option
