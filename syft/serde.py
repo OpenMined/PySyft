@@ -508,7 +508,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     Args:
         PointerTensor: a PointerTensor
     Returns:
-        Dict: a dictionary holding the attributes of the PointerTensor
+        tuple: a tuple holding the unique attributes of the pointer
     Usage:
         data = _simplify_pointer_tensor(ptr)
     """
