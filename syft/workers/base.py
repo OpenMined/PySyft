@@ -196,7 +196,11 @@ class BaseWorker(AbstractWorker):
         self.send_obj(tensor, worker)
 
         pointer = tensor.create_pointer(
-            owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
+            owner=self,
+            location=worker,
+            id_at_location=tensor.id,
+            register=True,
+            ptr_id=ptr_id
         )
 
         return pointer

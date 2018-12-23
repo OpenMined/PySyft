@@ -456,10 +456,10 @@ def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
     This function creates a list that represents a slice.
 
     Args:
-        slice: a python slice
+        my_slice (tuple): a python slice
 
     Returns:
-        list: a list holding the start, stop and step values
+        tuple : a list holding the start, stop and step values
 
     Examples:
 
@@ -474,7 +474,7 @@ def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
     This function extracts the start, stop and step from a list.
 
     Args:
-        list: a list defining the slice parameters [start, stop, step]
+        my_slice (tuple): a list defining the slice parameters [start, stop, step]
 
     Returns:
         range: a range object
@@ -525,7 +525,7 @@ def _detail_pointer_tensor(tensor_tuple: tuple) -> PointerTensor:
     We use the spread operator to pass the dict data as arguments
     to the init method of PointerTensor
     Args:
-        tuple: a tuple holding the attributes of the PointerTensor
+        tensor_tuple: a tuple holding the attributes of the PointerTensor
     Returns:
         PointerTensor: a PointerTensor
     Examples:
