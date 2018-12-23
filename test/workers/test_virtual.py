@@ -34,7 +34,7 @@ class TestVirtualWorker(TestCase):
         # ensure that object is now on bob's machine
         assert obj_id in bob._objects
 
-    def test_send_msg2(self):
+    def test_send_msg_using_tensor_api(self):
         """Test sending a message with a specific ID
 
         This is a simple test to ensure that the high level tensor .send()
