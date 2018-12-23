@@ -70,33 +70,72 @@ class TestSimplify(object):
 
         This test is pretty simple since ints just serialize to
         themselves, with no tuple/id necessary."""
-        
+
         input = 5
         target = 5
         assert _simplify(input) == target
 
     def test_string_simplify(self):
+        """This tests our ability to simplify string objects.
+
+        This test is pretty simple since strings just serialize to
+        themselves, with no tuple/id necessary."""
+
         input = "hello"
         target = "hello"
         assert _simplify(input) == target
 
     def test_dict_simplify(self):
+        """This tests our ability to simplify dict objects.
+
+        This test is pretty simple since dicts just serialize to
+        themselves, with a tuple wrapper with the correct ID (4)
+        for dicts so that the detailer knows how to interpret it."""
+
         input = {"hello": "world"}
         target = (4, {"hello": "world"})
         assert _simplify(input) == target
 
     def test_range_simplify(self):
+        """This tests our ability to simplify range objects.
+
+        This test is pretty simple since range objs just serialize to
+        themselves, with a tuple wrapper with the correct ID (5)
+        for dicts so that the detailer knows how to interpret it."""
+
         input = range(1, 3, 4)
         target = (5, (1, 3, 4))
         assert _simplify(input) == target
 
     def test_torch_tensor_simplify(self):
+        """This tests our ability to simplify torch.Tensor objects
+
+        At the time of writing, tensors simplify to a tuple where the
+        first value in the tuple is the tensor's ID and the second
+        value is a serialized version of the Tensor (serialized
+        by PyTorch's torch.save method)
+        """
+
+        # hook (TODO: look into why this is needed here)
         hook = TorchHook(torch)
+
+        # create a tensor
         input = Tensor(numpy.random.random((100, 100)))
+
+        # simplify the tnesor
         output = _simplify(input)
+
+        # make sure outer type is correct
         assert type(output) == tuple
+
+        # make sure inner type is correct
         assert type(output[1]) == tuple
-        assert type(output[1][1] == bytes)
+
+        # make sure ID is correctly encoded
+        assert output[1][0] == input.id
+
+        # make sure tensor data type is correct
+        assert type(output[1][1]) == bytes
 
     def test_ndarray_simplify(self):
         input = numpy.random.random((100, 100))
