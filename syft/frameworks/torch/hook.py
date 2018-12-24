@@ -51,19 +51,19 @@ class TorchHook:
 
         Args:
             torch: torch module that is going to be stored as an attribute of the hook
-            local_worker: an instance of BaseWorker class. You can optionally provide a local worker as a parameter which
+            local_worker (BaseWorker, optional): An instance of :class:`BaseWorker` class. You can optionally provide a local worker as a parameter which
                 TorchHook will assume to be the worker owned by the local machine.
                 If you leave it empty, TorchClient will automatically initialize
                 a :class:`.workers.VirtualWorker` under the assumption you're
                 looking to do local experimentation/development. 
-            is_client: whether or not the TorchHook is
+            is_client (bool, optional): whether or not the TorchHook is
                 being initialized as an end-user client. This can impact whether
                 or not variables are deleted when they fall out of scope. If you set
                 this incorrectly on a end user client, Tensors and Variables will
                 never be deleted. If you set this incorrectly on a remote machine
                 (not a client), tensors will not get saved. It's really only
                 important if you're not initializing the local worker yourself. (Default: True)
-            verbose: whether or not to print operations as they occur. (Default: True)
+            verbose (bool, optional): whether or not to print operations as they occur. (Default: True)
         """
 
         # Save the provided torch module as an attribute of the hook
@@ -108,10 +108,10 @@ class TorchHook:
         read about what kind of modifications are made in the methods that this method calls.
 
         Args:
-            tensor_type: the type of tensor being hooked (in this refactor this is
+            tensor_type (type): the type of tensor being hooked (in this refactor this is
                 only ever torch.Tensor, but in previous versions of PySyft this iterated over all
                 tensor types.
-            syft_type: the abstract type whose methods should all be added to the
+            syft_type (type): the abstract type whose methods should all be added to the
                 tensor_type class. In practice this is only ever TorchTensor. Read more about it
                 there.
         """
@@ -141,11 +141,11 @@ class TorchHook:
         TODO: auto-registration is disabled at the moment, this might be bad.
 
         Args:
-            tensor_type: the type of tensor being hooked (in this refactor this is
+            tensor_type (type): the type of tensor being hooked (in this refactor this is
                 only ever torch.Tensor, but in previous versions of PySyft this iterated over all
                 tensor types.
 
-            torch_tensor: if set to true, skip running the native
+            torch_tensor (bool, optional): if set to true, skip running the native
                 initialization logic. TODO: this flag might never get used.
         """
 
@@ -177,8 +177,8 @@ class TorchHook:
         https://www.programiz.com/python-programming/property
 
         Args:
-            tensor_type: the tensor type which is having properties added to it,
-            typically just torch.Tensor
+            tensor_type (type): the tensor type which is having properties added to it,
+                typically just torch.Tensor
         """
 
         @property
@@ -232,8 +232,8 @@ class TorchHook:
         (syft.torch.exclude).
 
         Args:
-            tensor_type: iterating through a tensor type's properties
-            syft_type: iterate through all attributes in this type
+            tensor_type (type): iterating through a tensor type's properties
+            syft_type (type): iterate through all attributes in this type
         
         Returns:
             A list of methods to be overloaded
@@ -268,7 +268,7 @@ class TorchHook:
         """Renames functions that are that not auto overloaded as native functions.
 
         Args:
-            tensor_type: the tensor whose native methods are getting
+            tensor_type (type): the tensor whose native methods are getting
                 renamed. Typically just torch.Tensor.
         """
         for attr in self.to_auto_overload[tensor_type]:
@@ -289,8 +289,8 @@ class TorchHook:
         torch tensor class.
 
         Args:
-            tensor_type: the tensor type to which we are adding
-            methods from TorchTensor class.
+            tensor_type (type): the tensor type to which we are adding
+                methods from TorchTensor class.
         """
         exclude = [
             "__class__",
