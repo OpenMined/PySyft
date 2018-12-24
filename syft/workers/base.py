@@ -193,15 +193,15 @@ class BaseWorker(AbstractWorker):
             ptr_id = int(10e10 * random.random())
 
         # Send the object
-        self.send_obj((ptr_id, tensor), worker)
+        self.send_obj(tensor, worker)
 
         pointer = tensor.create_pointer(
-            owner=self, location=worker, id_at_location=ptr_id, register=True
+            owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
         )
 
         return pointer
 
-    def set_obj(self, obj_data):
+    def set_obj(self, obj):
         """This adds an object to the registry of objects.
 
         :Parameters:
@@ -210,8 +210,7 @@ class BaseWorker(AbstractWorker):
 
         """
 
-        obj_id, obj = obj_data
-        self._objects[obj_id] = obj
+        self._objects[obj.id] = obj
 
     def get_obj(self, obj_id):
         """Look up an object from the registry using its ID.
@@ -337,6 +336,10 @@ class BaseWorker(AbstractWorker):
         <syft.core.workers.virtual.VirtualWorker id:bob>
 
         """
+
+        if isinstance(id_or_worker, bytes):
+            id_or_worker = str(id_or_worker, "utf-8")
+
         if isinstance(id_or_worker, (str, int)):
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
