@@ -86,3 +86,19 @@ class TestPointer(object):
 
         # ensure bob has tensor
         assert x.id in self.bob._objects
+
+    def test_repeated_send_reuses_objects(self):
+        """Tests that pointers get re-used when .send() called twice"""
+
+        self.setUp()
+
+        # create tensor
+        x = torch.Tensor([1, 2])
+
+        # send tensor to bob
+        x_ptr = x.send(self.bob)
+
+        # send tensor again
+        x_ptr2 = x.send(self.bob)
+
+        assert x_ptr.child == x_ptr2.child
