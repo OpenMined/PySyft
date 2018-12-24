@@ -189,11 +189,19 @@ class TestSimplify(object):
 class TestSerde(object):
     @pytest.mark.parametrize("compress", [True, False])
     def test_torch_Tensor(self, compress):
-
         hook = TorchHook(torch)
 
         t = Tensor(numpy.random.random((100, 100)))
         t_serialized = serialize(t, compress=compress)
+        t_serialized_deserialized = deserialize(t_serialized, compressed=compress)
+        assert (t == t_serialized_deserialized).all()
+
+    @pytest.mark.parametrize("compress", [True, False])
+    def test_torch_Tensor_convenience(self, compress):
+        hook = TorchHook(torch)
+
+        t = Tensor(numpy.random.random((100, 100)))
+        t_serialized = t.serialize(compress=compress)
         t_serialized_deserialized = deserialize(t_serialized, compressed=compress)
         assert (t == t_serialized_deserialized).all()
 
