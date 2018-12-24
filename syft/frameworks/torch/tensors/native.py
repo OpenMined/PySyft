@@ -62,7 +62,12 @@ class TorchTensor(AbstractTensor):
         """
 
         ptr = self.owner.send(self, location)
+
+        # we need to cache this weak reference to the pointer so that
+        # if this method gets called multiple times we can simply re-use
+        # the same pointer which was previously created
         self.ptr = weakref.ref(ptr)
+
         return ptr
 
     def create_pointer(
