@@ -192,6 +192,20 @@ class BaseWorker(AbstractWorker):
             ptr_id = int(10e10 * random.random())
 
         # Send the object
+
+        # obj_is_new_to_recipient is a boolean value which is TRUE if
+        # and only if the object was not already on the remote worker.
+        # the reason we need it is to prevent accidentally deleting
+        # the object we just sent when a previous reference to that
+        # object gets deleted... aka
+
+        # x_ptr = x.send(bob) #this works fine
+        # x_ptr = x.send(bob) #this would result in bob having NO obj
+
+        # however, by using this boolean value we can tell whether or
+        # not to create a new pointer or to re-use the old one
+        # which keeps the old one from sending a rm_obj command
+        # to the remote worker when it gets garbage collected
         obj_is_new_to_recipient = self.send_obj(tensor, worker)
 
         if(obj_is_new_to_recipient):
