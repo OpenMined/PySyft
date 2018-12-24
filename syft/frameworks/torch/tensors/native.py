@@ -56,6 +56,13 @@ class TorchTensor(AbstractTensor):
 
         return self.owner.send(self, location)
 
+    def serialize(self,
+                  compress=True,
+                  compress_scheme="lz4"):
+
+        return self.child.serialize(compress=compress,
+                                    compress_sheme=compress_scheme)
+
     def create_pointer(
         self,
         location: BaseWorker = None,

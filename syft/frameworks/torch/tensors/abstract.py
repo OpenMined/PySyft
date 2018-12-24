@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import torch
 import random
+import syft as sy
 
 
 class AbstractTensor(ABC):
@@ -13,6 +14,15 @@ class AbstractTensor(ABC):
         wrapper.child = self
         wrapper.is_wrapper = True
         return wrapper
+
+    def serialize(self,
+                  compress=True,
+                  compress_scheme="lz4"):
+
+        return sy.serde.serialize(self,
+                                  compress=compress,
+                                  compress_scheme=compress_scheme)
+
 
 
 def initialize_tensor(
