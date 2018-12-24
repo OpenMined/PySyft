@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import torch
 import random
 import syft as sy
