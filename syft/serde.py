@@ -45,7 +45,7 @@ import syft
 from syft.frameworks.torch.tensors import PointerTensor
 
 from .frameworks.torch.tensors.abstract import initialize_tensor
-
+from .util import CompressionNotFoundException
 
 # COMPRESSION SCHEME INT CODES
 LZ4 = 0
@@ -168,7 +168,9 @@ def _compress(decompressed_input_bin: bin, compress_scheme=LZ4) -> bin:
     elif compress_scheme == ZSTD:
         return zstd.compress(decompressed_input_bin)
     else:
-        NotImplementedError("compression scheme note found!")
+        CompressionNotFoundException(
+            "compression scheme note found for" " compression code:" + str(compress_scheme)
+        )
 
 
 def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
@@ -187,7 +189,9 @@ def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
     elif compress_scheme == ZSTD:
         return zstd.decompress(compressed_input_bin)
     else:
-        NotImplementedError("compression scheme not found")
+        CompressionNotFoundException(
+            "compression scheme note found for" " compression code:" + str(compress_scheme)
+        )
 
 
 # Simplify/Detail Torch Tensors
