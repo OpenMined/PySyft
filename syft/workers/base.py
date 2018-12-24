@@ -191,7 +191,7 @@ class BaseWorker(AbstractWorker):
         if ptr_id is None:  # Define a remote id if not specified
             ptr_id = int(10e10 * random.random())
 
-        self.send_obj((ptr_id, tensor), worker)  # Send the object
+        self.send_obj(tensor, worker)  # Send the object
 
         pointer = tensor.create_pointer(
             owner=self, location=worker, id_at_location=ptr_id, register=True
@@ -348,6 +348,10 @@ class BaseWorker(AbstractWorker):
 		<syft.core.workers.virtual.VirtualWorker id:bob>
 
 		"""
+
+        if isinstance(id_or_worker, bytes):
+            id_or_worker = str(id_or_worker, "utf-8")
+
         if isinstance(id_or_worker, (str, int)):
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
