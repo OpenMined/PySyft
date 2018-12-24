@@ -43,8 +43,6 @@ import zstd
 import syft
 
 from syft.frameworks.torch.tensors import PointerTensor
-from syft.workers import AbstractWorker
-from syft.util import WorkerNotFoundException
 
 from .frameworks.torch.tensors.abstract import initialize_tensor
 
@@ -162,26 +160,32 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         torch.Tensor: an input tensor to be serialized
 
     Returns:
-        bin: serialized binary of torch tensor.
+        tuple: serialized tuple of torch tensor. The first value is the
+        id of the tensor and the second is the binary for the PyTorch
+        object.
     """
 
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
     tensor_bin = binary_stream.getvalue()
-    return tensor_bin
+    return (tensor.id, tensor_bin)
 
 
-def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
+def _detail_torch_tensor(tensor_tuple: tuple) -> torch.Tensor:
     """
     This function converts a serialized torch tensor into a torch tensor
     using pickle.
 
     Args:
-        bin: serialized binary of torch tensor
+        tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
+        the first value is the ID and the second vlaue is the binary for the
+        PyTorch object.
 
     Returns:
         torch.Tensor: a torch tensor that was serialized
     """
+
+    id, tensor = tensor_tuple
 
     bin_tensor_stream = io.BytesIO(tensor)
     tensor = torch.load(bin_tensor_stream)
@@ -191,7 +195,7 @@ def _detail_torch_tensor(tensor: bin) -> torch.Tensor:
         cls=tensor,
         torch_tensor=True,
         owner=None,
-        id=None,
+        id=id,
         init_args=[],
         kwargs={},
     )
@@ -362,7 +366,7 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
     Returns:
         list: a list defining the range parameters [start, stop, step]
 
-    Usage:
+    Examples:
 
         range_parameters = _simplify_range(range(1, 3, 4))
 
@@ -383,7 +387,7 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
     Returns:
         range: a range object
 
-    Usage:
+    Examples:
         new_range = _detail_range([1, 3, 4])
 
         assert new_range == range(1, 3, 4)
@@ -407,7 +411,7 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
     Returns:
         list: a list holding the byte representation, shape and dtype of the array
 
-    Usage:
+    Examples:
 
         arr_representation = _simplify_ndarray(numpy.random.random([1000, 1000])))
 
@@ -431,7 +435,7 @@ def _detail_ndarray(arr_representation: Tuple[bin, Tuple, str]) -> numpy.ndarray
     Returns:
         numpy.ndarray: a numpy array
 
-    Usage:
+    Examples:
         arr = _detail_ndarray(arr_representation)
 
     """
@@ -452,12 +456,12 @@ def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
     This function creates a list that represents a slice.
 
     Args:
-        slice: a python slice
+        my_slice (slice): a python slice
 
     Returns:
-        list: a list holding the start, stop and step values
+        tuple : a list holding the start, stop and step values
 
-    Usage:
+    Examples:
 
         slice_representation = _simplify_slice(slice(1,2,3))
 
@@ -470,12 +474,12 @@ def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
     This function extracts the start, stop and step from a list.
 
     Args:
-        list: a list defining the slice parameters [start, stop, step]
+        my_slice (tuple): a list defining the slice parameters [start, stop, step]
 
     Returns:
         range: a range object
 
-    Usage:
+    Examples:
         new_range = _detail_range([1, 3, 4])
 
         assert new_range == range(1, 3, 4)
@@ -483,9 +487,6 @@ def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
     """
 
     return slice(my_slice[0], my_slice[1], my_slice[2])
-
-
-# ellipsis
 
 
 def _simplify_ellipsis(e: Ellipsis) -> bytes:
@@ -496,111 +497,60 @@ def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
     return ...
 
 
-# PointerTensor
-
-
-def _simplify_pointer_tensor(ptr: PointerTensor) -> Dict:
-    """
-    This function takes the attributes of a PointerTensor and saves them in a dictionary
-
-    Args:
-        PointerTensor: a PointerTensor
-
-    Returns:
-        Dict: a dictionary holding the attributes of the PointerTensor
-
-    Usage:
-        data = _simplify_pointer_tensor(ptr)
-
-    """
-
-    data = vars(ptr).copy()
-    for k, v in data.items():
-
-        if isinstance(v, AbstractWorker):
-            data[k] = v.id
-
-    return _simplify_dictionary(data)
-
-
-def _detail_pointer_tensor(data: Dict) -> PointerTensor:
-    """
-    This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
-    We use the spread operator to pass the dict data as arguments
-    to the init method of PointerTensor
-
-    Args:
-        Dict: a dictionary holding the attributes of the PointerTensor
-
-    Returns:
-        PointerTensor: a PointerTensor
-
-    Usage:
-        ptr = _detail_pointer_tensor(data)
-
-    """
-    new_data = {}
-    for k, v in data.items():
-
-        key = k.decode()
-        if type(v) is bytes:
-            val_str = v.decode()
-            try:
-                val = syft.local_worker.get_worker(val_str, fail_hard=True)
-            except WorkerNotFoundException:
-                val = val_str
-        else:
-            val = v
-        new_data[key] = val
-
-    return PointerTensor(**new_data)
-
-
-# High Level Simplification Router
-
-
-# PointerTensor
-
-
-def _simplify_pointer_tensor(ptr: PointerTensor) -> Dict:
+def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     """
     This function takes the attributes of a PointerTensor and saves them in a dictionary
     Args:
         PointerTensor: a PointerTensor
     Returns:
-        Dict: a dictionary holding the attributes of the PointerTensor
-    Usage:
+        tuple: a tuple holding the unique attributes of the pointer
+    Examples:
         data = _simplify_pointer_tensor(ptr)
     """
-    data = vars(ptr).copy()
-    for k, v in data.items():
-        if isinstance(v, AbstractWorker):
-            data[k] = v.id
-    return _simplify_dictionary(data)
+
+    return (ptr.id, ptr.id_at_location, ptr.location.id)
+
+    # a more general but slower/more verbose option
+
+    # data = vars(ptr).copy()
+    # for k, v in data.items():
+    #     if isinstance(v, AbstractWorker):
+    #         data[k] = v.id
+    # return _simplify_dictionary(data)
 
 
-def _detail_pointer_tensor(data: Dict) -> PointerTensor:
+def _detail_pointer_tensor(tensor_tuple: tuple) -> PointerTensor:
     """
     This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
     We use the spread operator to pass the dict data as arguments
     to the init method of PointerTensor
     Args:
-        Dict: a dictionary holding the attributes of the PointerTensor
+        tensor_tuple: a tuple holding the attributes of the PointerTensor
     Returns:
         PointerTensor: a PointerTensor
-    Usage:
+    Examples:
         ptr = _detail_pointer_tensor(data)
     """
-    new_data = {}
-    for k, v in data.items():
-        key = k.decode()
-        if type(v) is bytes:
-            val_str = v.decode()
-            val = syft.local_worker.get_worker(val_str)
-        else:
-            val = v
-        new_data[key] = val
-    return PointerTensor(**new_data)
+    # TODO: fix comment for this and simplifier
+
+    return PointerTensor(
+        id=tensor_tuple[0],
+        id_at_location=tensor_tuple[1],
+        location=syft.torch.hook.local_worker.get_worker(tensor_tuple[2]),
+    )
+
+    # a more general but slower/more verbose option
+
+    # new_data = {}
+    # for k, v in data.items():
+    #     key = k.decode()
+    #     if type(v) is bytes:
+    #         val_str = v.decode()
+    #         val = syft.local_worker.get_worker(val_str)
+    #     else:
+    #         val = v
+    #     new_data[key] = val
+    # return PointerTensor(**new_data)
 
 
 # High Level Simplification Router
@@ -635,7 +585,7 @@ def _simplify(obj: object) -> object:
         # for this type. If there is, run return
         # the simplified object
         current_type = type(obj)
-        return [simplifiers[current_type][0], simplifiers[current_type][1](obj)]
+        return (simplifiers[current_type][0], simplifiers[current_type][1](obj))
 
     except KeyError:
 

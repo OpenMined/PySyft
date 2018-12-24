@@ -191,15 +191,16 @@ class BaseWorker(AbstractWorker):
         if ptr_id is None:  # Define a remote id if not specified
             ptr_id = int(10e10 * random.random())
 
-        self.send_obj(tensor, worker)  # Send the object
+        # Send the object
+        self.send_obj(tensor, worker)
 
         pointer = tensor.create_pointer(
-            owner=self, location=worker, id_at_location=ptr_id, register=True
+            owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
         )
 
         return pointer
 
-    def set_obj(self, obj_data):
+    def set_obj(self, obj):
         """This adds an object to the registry of objects.
 
 		Args:
@@ -207,8 +208,7 @@ class BaseWorker(AbstractWorker):
 
 		"""
 
-        obj_id, obj = obj_data
-        self._objects[obj_id] = obj
+        self._objects[obj.id] = obj
 
     def get_obj(self, obj_id):
         """Look up an object from the registry using its ID.

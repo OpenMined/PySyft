@@ -15,71 +15,173 @@ import pytest
 
 
 class TestSimplify(object):
+    """ This class tests the serde process for converting complex->simple types
+
+    This class tests the ability for serde.py to convert complex types into
+    simple python types which are serializable by standard serialization tools.
+    For more on how/why this works, see serde.py directly."""
+
     def test_tuple_simplify(self):
+        """This tests our ability to simplify tuple types.
+
+        This test is pretty simple since tuples just serialize to
+        themselves, with a tuple wrapper with the correct ID (1)
+        for tuples so that the detailer knows how to interpret it."""
+
         input = ("hello", "world")
-        target = [1, ("hello", "world")]
+        target = (1, ("hello", "world"))
         assert _simplify(input) == target
 
     def test_list_simplify(self):
+        """This tests our ability to simplify list types.
+
+        This test is pretty simple since lists just serialize to
+        themselves, with a tuple wrapper with the correct ID (2)
+        for lists so that the detailer knows how to interpret it."""
+
         input = ["hello", "world"]
-        target = [2, ["hello", "world"]]
+        target = (2, ["hello", "world"])
         assert _simplify(input) == target
 
     def test_set_simplify(self):
+        """This tests our ability to simplify set objects.
+
+        This test is pretty simple since sets just serialize to
+        lists, with a tuple wrapper with the correct ID (3)
+        for sets so that the detailer knows how to interpret it."""
+
         input = set(["hello", "world"])
-        target = [3, ["hello", "world"]]
+        target = (3, ["hello", "world"])
         assert _simplify(input)[0] == target[0]
         assert set(_simplify(input)[1]) == set(target[1])
 
     def test_float_simplify(self):
+        """This tests our ability to simplify float objects.
+
+        This test is pretty simple since floats just serialize to
+        themselves, with no tuple/id necessary."""
+
         input = 5.6
         target = 5.6
         assert _simplify(input) == target
 
     def test_int_simplify(self):
+        """This tests our ability to simplify int objects.
+
+        This test is pretty simple since ints just serialize to
+        themselves, with no tuple/id necessary."""
+
         input = 5
         target = 5
         assert _simplify(input) == target
 
     def test_string_simplify(self):
+        """This tests our ability to simplify string objects.
+
+        This test is pretty simple since strings just serialize to
+        themselves, with no tuple/id necessary."""
+
         input = "hello"
         target = "hello"
         assert _simplify(input) == target
 
     def test_dict_simplify(self):
+        """This tests our ability to simplify dict objects.
+
+        This test is pretty simple since dicts just serialize to
+        themselves, with a tuple wrapper with the correct ID (4)
+        for dicts so that the detailer knows how to interpret it."""
+
         input = {"hello": "world"}
-        target = [4, {"hello": "world"}]
+        target = (4, {"hello": "world"})
         assert _simplify(input) == target
 
     def test_range_simplify(self):
+        """This tests our ability to simplify range objects.
+
+        This test is pretty simple since range objs just serialize to
+        themselves, with a tuple wrapper with the correct ID (5)
+        for dicts so that the detailer knows how to interpret it."""
+
         input = range(1, 3, 4)
-        target = [5, (1, 3, 4)]
+        target = (5, (1, 3, 4))
         assert _simplify(input) == target
 
     def test_torch_tensor_simplify(self):
+        """This tests our ability to simplify torch.Tensor objects
+
+        At the time of writing, tensors simplify to a tuple where the
+        first value in the tuple is the tensor's ID and the second
+        value is a serialized version of the Tensor (serialized
+        by PyTorch's torch.save method)
+        """
+
+        # hook (TODO: look into why this is needed here)
+        hook = TorchHook(torch)
+
+        # create a tensor
         input = Tensor(numpy.random.random((100, 100)))
+
+        # simplify the tnesor
         output = _simplify(input)
-        assert type(output) == list
-        assert type(output[1]) == bytes
+
+        # make sure outer type is correct
+        assert type(output) == tuple
+
+        # make sure the object type ID is correct
+        # (0 for torch.Tensor)
+        assert output[0] == 0
+
+        # make sure inner type is correct
+        assert type(output[1]) == tuple
+
+        # make sure ID is correctly encoded
+        assert output[1][0] == input.id
+
+        # make sure tensor data type is correct
+        assert type(output[1][1]) == bytes
 
     def test_ndarray_simplify(self):
+        """This tests our ability to simplify numpy.array objects
+
+        At the time of writing, arrays simplify to an object inside
+        of a tuple which specifies the ID for the np.array type (6) so
+        that the detailer knows to turn the simplifed form to a np.array
+        """
+
         input = numpy.random.random((100, 100))
         output = _simplify(input)
+
+        # make sure simplified type ID is correct
+        assert output[0] == 6
+
+        # make sure serialized form is correct
         assert type(output[1][0]) == bytes
         assert output[1][1] == input.shape
         assert output[1][2] == input.dtype.name
 
     def test_ellipsis_simplify(self):
+        """Make sure ellipsis simplifies correctly."""
+
+        # the id indicating an ellipsis is here
+        assert _simplify(Ellipsis)[0] == 8
+
+        # the simplified ellipsis (empty object)
         assert _simplify(Ellipsis)[1] == b""
 
     def test_pointer_tensor_simplify(self):
+        """Test the simplification of PointerTensor"""
+
         alice = syft.VirtualWorker(id="alice")
         input = PointerTensor(id=1000, location=alice, owner=alice)
+
         output = _simplify(input)
-        assert output[1]["id"] == input.id
-        assert output[1]["owner"] == input.owner.id
-        assert output[1]["location"] == input.location.id
-        assert output[1]["id_at_location"] == input.id_at_location
+
+        print(output)
+
+        assert output[1][0] == input.id
+        assert output[1][1] == input.id_at_location
+        assert output[1][2] == input.owner.id
 
 
 class TestSerde(object):
@@ -312,6 +414,7 @@ class TestHooked(object):
         bob.add_workers([alice, james])
         alice.add_workers([bob, james])
         james.add_workers([bob, alice])
+        me.add_workers([bob, alice, james])
 
         self.hook = hook
         self.bob = bob
@@ -335,11 +438,10 @@ class TestHooked(object):
 
         self.setUp()
 
-        t = PointerTensor(id=1000, location=self.alice, owner=self.alice)
+        t = PointerTensor(id=1000, location=self.alice, owner=self.alice, id_at_location=12345)
         t_serialized = serialize(t, compress=False)
         t_serialized_deserialized = deserialize(t_serialized, compressed=False)
 
         assert t.id == t_serialized_deserialized.id
-        assert t.location.id == t_serialized_deserialized.location
-        assert t.owner.id == t_serialized_deserialized.owner
+        assert t.location.id == t_serialized_deserialized.location.id
         assert t.id_at_location == t_serialized_deserialized.id_at_location
