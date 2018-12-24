@@ -111,14 +111,12 @@ def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
     steps, Decompress, Deserialize, and Detail as described inline below.
 
     Args:
-        bin (binary): the serialized object to be deserialized
-
+        bin (binary): the serialized object to be deserialized.
         compressed (bool): whether or not the serialized object is compressed
-            (and thus whether or not it needs to be decompressed)
-
+            (and thus whether or not it needs to be decompressed).
         compress_scheme (int): the integer code specifying which compression
             scheme was used if decompression is needed (see above this method
-            for scheme codes)
+            for scheme codes).
 
     Returns:
         binary: the serialized form of the object.

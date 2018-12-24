@@ -198,6 +198,13 @@ class TestSerde(object):
 
     @pytest.mark.parametrize("compress", [True, False])
     def test_torch_Tensor_convenience(self, compress):
+        """This test evaluates torch.Tensor.serialize()
+
+        As opposed to using syft.serde.serialize(), torch objects
+        have a convenience function which lets you call .serialize()
+        directly on the tensor itself. This tests to makes sure it
+        works correctly."""
+
         hook = TorchHook(torch)
 
         t = Tensor(numpy.random.random((100, 100)))

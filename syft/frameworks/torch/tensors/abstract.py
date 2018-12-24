@@ -22,13 +22,11 @@ class AbstractTensor(ABC):
 
             This is the high level convenience function for serializing torch tensors.
             It includes three steps, Simplify, Serialize, and Compress as described
-            in serde.py
+            in serde.py.
 
             Args:
                 self (AbstractTensor): the tensor to be serialized
-
                 compress (bool): whether or not to compress the object
-
                 compress_scheme (int): the integer code specifying which compression
                     scheme to use (see serde.py for scheme codes) if compress == True.
                     The compression scheme is set to LZ4 by default (code 0).
