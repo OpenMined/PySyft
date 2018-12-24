@@ -45,6 +45,8 @@ class TestPointer(object):
         x.create_pointer(location=self.james)
 
     def test_garbage_collect_pointer(self):
+        """Tests whether pointer garbage collection GCs the remote object too"""
+
         self.setUp()
 
         # create tensor
@@ -63,3 +65,24 @@ class TestPointer(object):
 
         # ensure bob's object was garbage collected
         assert x.id not in self.bob._objects
+
+    def test_repeated_send(self):
+        """Tests that repeated calls to .send(bob) works gracefully
+
+        Previously garbage collection deleted the remote object
+        when .send() was called twice. This test ensures the fix still
+        works."""
+
+        self.setUp()
+
+        # create tensor
+        x = torch.Tensor([1, 2])
+
+        # send tensor to bob
+        x_ptr = x.send(self.bob)
+
+        # send tensor again
+        x_ptr = x.send(self.bob)
+
+        # ensure bob has tensor
+        assert x.id in self.bob._objects
