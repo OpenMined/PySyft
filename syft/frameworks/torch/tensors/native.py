@@ -1,7 +1,9 @@
 import random
+import syft as sy
 
 from . import AbstractTensor, PointerTensor
 from ....workers import BaseWorker
+
 
 
 class TorchTensor(AbstractTensor):
@@ -58,7 +60,7 @@ class TorchTensor(AbstractTensor):
 
     def serialize(self,
                   compress=True,
-                  compress_scheme="lz4"):
+                  compress_scheme=sy.serde.LZ4):
 
         return self.child.serialize(compress=compress,
                                     compress_sheme=compress_scheme)

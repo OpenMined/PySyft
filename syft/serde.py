@@ -123,7 +123,7 @@ def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
     Returns:
         binary: the serialized form of the object.
     """
-    
+
     # check the 1-byte header to see if input stream was compressed or not
     if binary[0] == 48:
         compressed = False

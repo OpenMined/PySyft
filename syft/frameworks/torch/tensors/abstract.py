@@ -17,7 +17,7 @@ class AbstractTensor(ABC):
 
     def serialize(self,
                   compress=True,
-                  compress_scheme="lz4"):
+                  compress_scheme=sy.serde.LZ4):
 
         return sy.serde.serialize(self,
                                   compress=compress,
