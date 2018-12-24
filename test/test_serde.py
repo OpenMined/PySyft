@@ -3,6 +3,8 @@ from syft.serde import serialize
 from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
+from syft.serde import LZ4
+from syft.serde import ZSTD
 
 from syft import TorchHook
 from syft.frameworks.torch.tensors import PointerTensor
@@ -239,21 +241,21 @@ class TestSerde(object):
 
         assert numpy.array_equal(arr, arr_serialized_deserialized)
 
-    @pytest.mark.parametrize("compressScheme", ["lz4", "zstd"])
-    def test_compress_decompress(self, compressScheme):
+    @pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD])
+    def test_compress_decompress(self, compress_scheme):
         original = msgpack.dumps([1, 2, 3])
-        compressed = _compress(original, compressScheme=compressScheme)
-        decompressed = _decompress(compressed, compressScheme=compressScheme)
+        compressed = _compress(original, compress_scheme=compress_scheme)
+        decompressed = _decompress(compressed, compress_scheme=compress_scheme)
         assert type(compressed) == bytes
         assert original == decompressed
 
-    @pytest.mark.parametrize("compressScheme", ["lz4", "zstd"])
-    def test_compressed_serde(self, compressScheme):
+    @pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD])
+    def test_compressed_serde(self, compress_scheme):
         arr = numpy.random.random((100, 100))
-        arr_serialized = serialize(arr, compress=True, compressScheme=compressScheme)
+        arr_serialized = serialize(arr, compress=True, compress_scheme=compress_scheme)
 
         arr_serialized_deserialized = deserialize(
-            arr_serialized, compressed=True, compressScheme=compressScheme
+            arr_serialized, compressed=True, compress_scheme=compress_scheme
         )
         assert numpy.array_equal(arr, arr_serialized_deserialized)
 
@@ -422,15 +424,18 @@ class TestHooked(object):
         self.james = james
 
     @pytest.mark.parametrize(
-        "compress, compressScheme", [(True, "lz4"), (False, "lz4"), (True, "zstd"), (False, "zstd")]
+        "compress, compress_scheme", [(True, LZ4),
+                                     (False, LZ4),
+                                     (True, ZSTD),
+                                     (False, ZSTD)]
     )
-    def test_hooked_tensor(self, compress, compressScheme):
+    def test_hooked_tensor(self, compress, compress_scheme):
         TorchHook(torch)
 
         t = Tensor(numpy.random.random((100, 100)))
-        t_serialized = serialize(t, compress=compress, compressScheme=compressScheme)
+        t_serialized = serialize(t, compress=compress, compress_scheme=compress_scheme)
         t_serialized_deserialized = deserialize(
-            t_serialized, compressed=compress, compressScheme=compressScheme
+            t_serialized, compressed=compress, compress_scheme=compress_scheme
         )
         assert (t == t_serialized_deserialized).all()
 
