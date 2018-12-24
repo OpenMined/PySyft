@@ -222,7 +222,7 @@ class BaseWorker(AbstractWorker):
     def set_obj(self, obj):
         """This adds an object to the registry of objects.
 
-        :Parameters:
+        :Arg:
 
         * **obj_data (tuple(object, object))** an id, object tuple.
 
