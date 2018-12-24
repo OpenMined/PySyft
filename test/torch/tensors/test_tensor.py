@@ -44,8 +44,8 @@ class TestPointer(object):
         x.create_pointer()
         x.create_pointer(location=self.james)
 
-    def test_garbage_collect_pointer(self):
-        """Tests whether pointer garbage collection GCs the remote object too"""
+    def test_explicit_garbage_collect_pointer(self):
+        """Tests whether deleting a PointerTensor garbage collects the remote object too"""
 
         self.setUp()
 
@@ -62,6 +62,28 @@ class TestPointer(object):
         # automatically garbage collect the remote
         # object on Bob's machine
         del x_ptr
+
+        # ensure bob's object was garbage collected
+        assert x.id not in self.bob._objects
+
+    def test_implicit_garbage_collection_pointer(self):
+        """Tests whether GCing a PointerTEnsor GCs the remote object too."""
+
+        self.setUp()
+
+        # create tensor
+        x = torch.Tensor([1, 2])
+
+        # send tensor to bob
+        x_ptr = x.send(self.bob)
+
+        # ensure bob has tensor
+        assert x.id in self.bob._objects
+
+        # delete pointer to tensor, which should
+        # automatically garbage collect the remote
+        # object on Bob's machine
+        x_ptr = "asdf"
 
         # ensure bob's object was garbage collected
         assert x.id not in self.bob._objects
