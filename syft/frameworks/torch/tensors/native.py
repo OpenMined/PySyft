@@ -1,5 +1,4 @@
 import random
-import syft as sy
 
 from . import AbstractTensor, PointerTensor
 from ....workers import BaseWorker
@@ -14,6 +13,11 @@ class TorchTensor(AbstractTensor):
     all Torch tensor types. When you add a function to this tensor, it will
     be added to EVERY native torch tensor type (i.e. torch.Torch) automatically
     by the TorchHook (which is in frameworks/torch/hook.py)
+
+    Note: all methods from AbstractTensor will also be included because this
+    tensor extends AbstractTensor. So, if you're looking for a method on
+    the native torch tensor API but it's not listed here, you might try
+    checking AbstractTensor.
     """
 
     def get(self):
@@ -57,13 +61,6 @@ class TorchTensor(AbstractTensor):
         """
 
         return self.owner.send(self, location)
-
-    def serialize(self,
-                  compress=True,
-                  compress_scheme=sy.serde.LZ4):
-
-        return self.child.serialize(compress=compress,
-                                    compress_sheme=compress_scheme)
 
     def create_pointer(
         self,

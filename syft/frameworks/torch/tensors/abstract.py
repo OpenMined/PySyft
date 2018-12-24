@@ -6,7 +6,7 @@ import syft as sy
 
 class AbstractTensor(ABC):
     """
-    This is the tensor abstraction
+    This is the tensor abstraction.
     """
 
     def wrap(self):
@@ -17,7 +17,30 @@ class AbstractTensor(ABC):
 
     def serialize(self,
                   compress=True,
-                  compress_scheme=sy.serde.LZ4):
+                  compress_scheme=0):
+        """This convenience method serializes the tensor on which it's called.
+
+            This is the high level convenience function for serializing torch tensors.
+            It includes three steps, Simplify, Serialize, and Compress as described
+            in serde.py
+
+            Args:
+                self (AbstractTensor): the tensor to be serialized
+
+                compress (bool): whether or not to compress the object
+
+                compress_scheme (int): the integer code specifying which compression
+                    scheme to use (see serde.py for scheme codes) if compress == True.
+                    The compression scheme is set to LZ4 by default (code 0).
+
+            Returns:
+                binary: the serialized form of the tensor.
+
+            Examples:
+
+                x = torch.Tensor([1,2,3,4,5])
+                x.serialize() # returns a serialized object
+        """
 
         return sy.serde.serialize(self,
                                   compress=compress,
