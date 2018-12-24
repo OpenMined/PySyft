@@ -432,10 +432,7 @@ class TestHooked(object):
         self.james = james
 
     @pytest.mark.parametrize(
-        "compress, compress_scheme", [(True, LZ4),
-                                     (False, LZ4),
-                                     (True, ZSTD),
-                                     (False, ZSTD)]
+        "compress, compress_scheme", [(True, LZ4), (False, LZ4), (True, ZSTD), (False, ZSTD)]
     )
     def test_hooked_tensor(self, compress, compress_scheme):
         TorchHook(torch)

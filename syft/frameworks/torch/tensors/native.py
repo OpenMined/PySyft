@@ -4,7 +4,6 @@ from . import AbstractTensor, PointerTensor
 from ....workers import BaseWorker
 
 
-
 class TorchTensor(AbstractTensor):
     """ Add methods to this tensor to have them added to every torch.Tensor obj
 

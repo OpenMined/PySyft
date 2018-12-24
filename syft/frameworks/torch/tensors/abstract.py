@@ -15,9 +15,9 @@ class AbstractTensor(ABC):
         wrapper.is_wrapper = True
         return wrapper
 
-    def serialize(self,
-                  compress=True,
-                  compress_scheme=0): # Code 0 is LZ4 - check serde.py to see others
+    def serialize(
+        self, compress=True, compress_scheme=0
+    ):  # Code 0 is LZ4 - check serde.py to see others
         """This convenience method serializes the tensor on which it's called.
 
             This is the high level convenience function for serializing torch tensors.
@@ -42,10 +42,7 @@ class AbstractTensor(ABC):
                 x.serialize() # returns a serialized object
         """
 
-        return sy.serde.serialize(self,
-                                  compress=compress,
-                                  compress_scheme=compress_scheme)
-
+        return sy.serde.serialize(self, compress=compress, compress_scheme=compress_scheme)
 
 
 def initialize_tensor(
