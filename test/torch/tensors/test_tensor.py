@@ -17,7 +17,7 @@ class TestPointer(object):
         hook = syft.TorchHook(torch, verbose=True)
 
         self.me = hook.local_worker
-        self.me.is_client_worker = False
+        self.me.is_client_worker = True
 
         bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
         alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
@@ -28,6 +28,7 @@ class TestPointer(object):
         james.add_workers([bob, alice])
 
         self.hook = hook
+
         self.bob = bob
         self.alice = alice
         self.james = james
@@ -42,3 +43,23 @@ class TestPointer(object):
         x = torch.Tensor([1, 2])
         x.create_pointer()
         x.create_pointer(location=self.james)
+
+    def test_garbage_collect_pointer(self):
+        self.setUp()
+
+        # create tensor
+        x = torch.Tensor([1, 2])
+
+        # send tensor to bob
+        x_ptr = x.send(self.bob)
+
+        # ensure bob has tensor
+        assert x.id in self.bob._objects
+
+        # delete pointer to tensor, which should
+        # automatically garbage collect the remote
+        # object on Bob's machine
+        del x_ptr
+
+        # ensure bob's object was garbage collected
+        assert x.id not in self.bob._objects

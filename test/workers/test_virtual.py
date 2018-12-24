@@ -1,8 +1,7 @@
 import syft as sy
 
 from syft.workers.virtual import VirtualWorker
-from syft.workers.base import MSGTYPE_OBJ
-from syft.workers.base import MSGTYPE_OBJ_REQ
+from syft.codes import MSGTYPE
 from syft import serde
 
 from unittest import TestCase
@@ -29,7 +28,7 @@ class TestVirtualWorker(TestCase):
         obj_id = obj.id
 
         # Send data to bob
-        me.send_msg(MSGTYPE_OBJ, obj, bob)
+        me.send_msg(MSGTYPE.OBJ, obj, bob)
 
         # ensure that object is now on bob's machine
         assert obj_id in bob._objects
@@ -73,7 +72,7 @@ class TestVirtualWorker(TestCase):
         obj = torch.Tensor([100, 100])
 
         # create/serialize message
-        msg = (MSGTYPE_OBJ, obj)
+        msg = (MSGTYPE.OBJ, obj)
         bin_msg = serde.serialize(msg)
 
         # have alice receive message
@@ -85,7 +84,7 @@ class TestVirtualWorker(TestCase):
         # Test 2: get tensor back from alice
 
         # Create message: Get tensor from alice
-        msg = (MSGTYPE_OBJ_REQ, obj.id)
+        msg = (MSGTYPE.OBJ_REQ, obj.id)
 
         # serialize message
         bin_msg = serde.serialize(msg)
