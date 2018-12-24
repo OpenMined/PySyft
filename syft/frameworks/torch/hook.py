@@ -171,12 +171,10 @@ class TorchHook:
                 cls=cls,
                 id=id,
                 torch_tensor=torch_tensor,
+                register=register,
                 init_args=args,
                 init_kwargs=kwargs,
             )
-
-            # if register:
-            #     owner.register_object(cls, id=id)
 
         tensor_type.__init__ = new___init__
 

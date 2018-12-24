@@ -1,5 +1,5 @@
 from .abstract import AbstractTensor
-
+from syft.codes import MSGTYPE
 
 class PointerTensor(AbstractTensor):
     """A pointer to another tensor. A PointerTensor forwards all API calls to the remote.
@@ -143,3 +143,7 @@ class PointerTensor(AbstractTensor):
             self.owner.de_register_obj(self)
 
         return tensor
+
+    def __del__(self):
+        if(hasattr(self, 'owner')):
+            self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)

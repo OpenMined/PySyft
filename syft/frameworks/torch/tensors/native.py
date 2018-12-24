@@ -1,4 +1,5 @@
 import random
+import weakref
 
 from syft.frameworks.torch.tensors import AbstractTensor
 from syft.frameworks.torch.tensors import PointerTensor
@@ -60,7 +61,9 @@ class TorchTensor(AbstractTensor):
 
         """
 
-        return self.owner.send(self, location)
+        ptr = self.owner.send(self, location)
+        self.ptr = weakref.ref(ptr)
+        return ptr
 
     def create_pointer(
         self,

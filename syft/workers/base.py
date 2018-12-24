@@ -3,13 +3,10 @@ import logging
 import random
 
 from syft.util import WorkerNotFoundException
-from .. import serde
-from . import AbstractWorker
+from syft import serde
+from syft.workers import AbstractWorker
 
-MSGTYPE_CMD = 1
-MSGTYPE_OBJ = 2
-MSGTYPE_OBJ_REQ = 3
-MSGTYPE_EXCEPTION = 4
+from syft.codes import MSGTYPE
 
 
 class BaseWorker(AbstractWorker):
@@ -80,7 +77,9 @@ class BaseWorker(AbstractWorker):
         # self.add_worker(sy.local_worker)
 
         # For performance, we cache each
-        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
+        self._message_router = {MSGTYPE.OBJ: self.set_obj,
+                                MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
+                                MSGTYPE.OBJ_DEL: self.rm_obj}
 
     # SECTION: Methods which MUST be overridden by subclasses
 
@@ -193,13 +192,16 @@ class BaseWorker(AbstractWorker):
             ptr_id = int(10e10 * random.random())
 
         # Send the object
-        self.send_obj(tensor, worker)
+        obj_is_new_to_recipient = self.send_obj(tensor, worker)
 
-        pointer = tensor.create_pointer(
-            owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
-        )
+        if(obj_is_new_to_recipient):
+            pointer = tensor.create_pointer(
+                owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
+            )
 
-        return pointer
+            return pointer
+        else:
+            return tensor.ptr()
 
     def set_obj(self, obj):
         """This adds an object to the registry of objects.
@@ -209,8 +211,11 @@ class BaseWorker(AbstractWorker):
         * **obj_data (tuple(object, object))** an id, object tuple.
 
         """
-
-        self._objects[obj.id] = obj
+        if(obj.id not in self._objects):
+            self._objects[obj.id] = obj
+            return True
+        else:
+            return False
 
     def get_obj(self, obj_id):
         """Look up an object from the registry using its ID.
@@ -232,6 +237,7 @@ class BaseWorker(AbstractWorker):
         obj = self.get_obj(obj_id)
         self.de_register_obj(obj)
         return obj
+
 
     def register_obj(self, obj, obj_id=None):
         """Registers an object with the current worker node. Selects an id for
@@ -263,7 +269,7 @@ class BaseWorker(AbstractWorker):
           a tensor that lives on a different worker.
         """
         if not self.is_client_worker:
-            self.set_obj((obj_id, obj))
+            self.set_obj(obj)
 
     def de_register_obj(self, obj, _recurse_torch_objs=True):
         """Unregister an object and removes attributes which are indicative of
@@ -288,10 +294,10 @@ class BaseWorker(AbstractWorker):
     # SECTION: convenience methods for constructing frequently used messages
 
     def send_obj(self, obj, location):
-        return self.send_msg(MSGTYPE_OBJ, obj, location)
+        return self.send_msg(MSGTYPE.OBJ, obj, location)
 
     def request_obj(self, obj_id, location):
-        obj = self.send_msg(MSGTYPE_OBJ_REQ, obj_id, location)
+        obj = self.send_msg(MSGTYPE.OBJ_REQ, obj_id, location)
         # obj.id = obj_id
         # obj.owner = self
         return obj
