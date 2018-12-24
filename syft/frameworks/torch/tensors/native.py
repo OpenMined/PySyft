@@ -1,6 +1,7 @@
 import random
 
-from . import AbstractTensor, PointerTensor
+from . import AbstractTensor
+from . import PointerTensor
 from ....workers import BaseWorker
 
 
