@@ -17,7 +17,7 @@ class AbstractTensor(ABC):
 
     def serialize(self,
                   compress=True,
-                  compress_scheme=0):
+                  compress_scheme=0): # Code 0 is LZ4 - check serde.py to see others
         """This convenience method serializes the tensor on which it's called.
 
             This is the high level convenience function for serializing torch tensors.
