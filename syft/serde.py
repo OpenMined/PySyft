@@ -47,7 +47,7 @@ from syft.frameworks.torch.tensors import PointerTensor
 from .frameworks.torch.tensors.abstract import initialize_tensor
 
 
-# COMPRESSION SCHEMES
+# COMPRESSION SCHEME INT CODES
 LZ4 = 0
 ZSTD = 1
 
@@ -67,7 +67,12 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
 
         compress (bool): whether or not to compress the object
 
-        compress_scheme (str):
+        compress_scheme (int): the integer code specifying which compression
+            scheme to use (see above this method for scheme codes) if
+            compress == True.
+
+    Returns:
+        binary: the serialized form of the object.
 
     """
 
@@ -99,10 +104,26 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
 
 
 def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
+    """ This method can deserialize any object PySyft needs to send or store.
+
+    This is the high level function for deserializing any object or collection
+    of objects which PySyft has sent over the wire or stored. It includes three
+    steps, Decompress, Deserialize, and Detail as described inline below.
+
+    Args:
+        bin (binary): the serialized object to be deserialized
+
+        compressed (bool): whether or not the serialized object is compressed
+            (and thus whether or not it needs to be decompressed)
+
+        compress_scheme (int): the integer code specifying which compression
+            scheme was used if decompression is needed (see above this method
+            for scheme codes)
+
+    Returns:
+        binary: the serialized form of the object.
     """
-    This is the high level function for deserializing any object
-    or dictionary/collection of objects.
-    """
+    
     # check the 1-byte header to see if input stream was compressed or not
     if binary[0] == 48:
         compressed = False
