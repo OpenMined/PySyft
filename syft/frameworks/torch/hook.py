@@ -13,67 +13,59 @@ from .tensors.abstract import initialize_tensor
 
 
 class TorchHook:
-    r""" A Hook which Overrides Methods on PyTorch Tensors -
+    """A Hook which Overrides Methods on PyTorch Tensors.
 
-     The purpose of this class is to:
+    The purpose of this class is to:
 
-         * extend torch methods to allow for the moving of tensors
-           from one worker to another
-         * override torch methods to execute commands on one worker
-           that are called on tensors controlled by the local worker.
+        * extend torch methods to allow for the moving of tensors
+        from one worker to another
+        * override torch methods to execute commands on one worker
+        that are called on tensors controlled by the local worker.
 
-     This class is typically the first thing you will initialize when
-     using PySyft with PyTorch because it is responsible for augmenting
-     PyTorch with PySyft's added functionality (such as remote execution).
+    This class is typically the first thing you will initialize when
+    using PySyft with PyTorch because it is responsible for augmenting
+    PyTorch with PySyft's added functionality (such as remote execution).
+    """
 
-     :Parameters:
+    def __init__(self, torch, local_worker: BaseWorker = None, is_client: bool = True, verbose: bool = True):
+        """Hook Constructor.
 
-         * **local_worker (**:class:`.workers.BaseWorker` **, optional)**
-           you can optionally provide a local worker as a parameter which
-           TorchHook will assume to be the worker owned by the local machine.
-           If you leave it empty, TorchClient will automatically initialize
-           a :class:`.workers.VirtualWorker` under the assumption you're
-           looking to do local experimentation/development.
-
-         * **is_client (bool, optional)** whether or not the TorchHook is
-           being initialized as an end-user client. This can impact whether
-           or not variables are deleted when they fall out of scope. If you set
-           this incorrectly on a end user client, Tensors and Variables will
-           never be deleted. If you set this incorrectly on a remote machine
-           (not a client), tensors will not get saved. It's really only
-           important if you're not initializing the local worker yourself. (Default: True)
-
-         * **verbose (bool, optional)** whether or not to print operations
-           as they occur. (Default: True)
-
-         * **queue_size (int, optional)** max length of the list storing messages
-           to be sent. (Default: 0)
-
-     :Example:
-
-     >>> import syft as sy
-     >>> hook = sy.TorchHook()
-     Hooking into Torch...
-     Overloading Complete.
-     >>> x = sy.Tensor([-2,-1,0,1,2,3])
-     >>> x
-      -2
-      -1
-      0
-      1
-      2
-      3
-     [syft.core.frameworks.torch.tensor.FloatTensor of size 6]
-     """
-
-    def __init__(
-        self, torch, local_worker: BaseWorker = None, is_client: bool = True, verbose: bool = True
-    ):
-        """
         Init the hook and define all the attributes pertaining to the torch hook in a
         special TorchAttibute class, that will be added in the syft.torch attributes.
         Hence, this parameters are now conveyed by the syft module.
+
+        Example:
+            >>> import syft as sy
+            >>> hook = sy.TorchHook()
+            Hooking into Torch...
+            Overloading Complete.
+            >>> x = sy.Tensor([-2,-1,0,1,2,3])
+            >>> x
+            -2
+            -1
+            0
+            1
+            2
+            3
+            [syft.core.frameworks.torch.tensor.FloatTensor of size 6]
+
+        Args:
+            torch: torch module that is going to be stored as an attribute of the hook
+            local_worker: an instance of BaseWorker class. You can optionally provide a local worker as a parameter which
+                TorchHook will assume to be the worker owned by the local machine.
+                If you leave it empty, TorchClient will automatically initialize
+                a :class:`.workers.VirtualWorker` under the assumption you're
+                looking to do local experimentation/development. 
+            is_client: whether or not the TorchHook is
+                being initialized as an end-user client. This can impact whether
+                or not variables are deleted when they fall out of scope. If you set
+                this incorrectly on a end user client, Tensors and Variables will
+                never be deleted. If you set this incorrectly on a remote machine
+                (not a client), tensors will not get saved. It's really only
+                important if you're not initializing the local worker yourself. (Default: True)
+            verbose: whether or not to print operations as they occur. (Default: True)
         """
+
         # Save the provided torch module as an attribute of the hook
         self.torch = torch
 
@@ -91,12 +83,11 @@ class TorchHook:
         syft.torch = TorchAttributes(torch, self)
 
         if self.local_worker is None:
-            """
-            Every TorchHook instance should have a local worker which is responsible for
-            interfacing with other workers. The worker interface is what allows the Torch
-            specific code in TorchHook to be agnostic to the means by which workers communicate
-            (such as peer-to-peer, sockets, through local ports, or all within the same process)
-            """
+            #Every TorchHook instance should have a local worker which is responsible for
+            #interfacing with other workers. The worker interface is what allows the Torch
+            #specific code in TorchHook to be agnostic to the means by which workers communicate
+            #(such as peer-to-peer, sockets, through local ports, or all within the same process)
+
             self.local_worker = workers.VirtualWorker(
                 hook=self, is_client_worker=is_client, id="me"
             )
@@ -112,19 +103,17 @@ class TorchHook:
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Overloads given native tensor type (Torch Tensor) to add PySyft Tensor Functionality.
+
         Overloading involves modifying the tensor type with PySyft's added functionality. You may
         read about what kind of modifications are made in the methods that this method calls.
 
-        :Parameters:
-
-            * **tensor_type (type)** the type of tensor being hooked (in this refactor this is
-            only ever torch.Tensor, but in previous versions of PySyft this iterated over all
-            tensor types.
-
-            * **syft_type (type)** the abstract type whose methods should all be added to the
-            tensor_type class. In practice this is only ever TorchTensor. Read more about it
-            there.
-
+        Args:
+            tensor_type: the type of tensor being hooked (in this refactor this is
+                only ever torch.Tensor, but in previous versions of PySyft this iterated over all
+                tensor types.
+            syft_type: the abstract type whose methods should all be added to the
+                tensor_type class. In practice this is only ever TorchTensor. Read more about it
+                there.
         """
 
         # Reinitialize init method of Torch tensor with Syft init
@@ -151,15 +140,13 @@ class TorchHook:
 
         TODO: auto-registration is disabled at the moment, this might be bad.
 
-        :Parameters:
+        Args:
+            tensor_type: the type of tensor being hooked (in this refactor this is
+                only ever torch.Tensor, but in previous versions of PySyft this iterated over all
+                tensor types.
 
-            * **tensor_type (type)** the type of tensor being hooked (in this refactor this is
-            only ever torch.Tensor, but in previous versions of PySyft this iterated over all
-            tensor types.
-
-            * **torch_tensor (bool, optional)**  if set to true, skip running the native
-            initialization logic. TODO: this flag might never get used.
-
+            torch_tensor: if set to true, skip running the native
+                initialization logic. TODO: this flag might never get used.
         """
 
         if "native___init__" not in dir(tensor_type):
@@ -183,13 +170,14 @@ class TorchHook:
 
     @staticmethod
     def _hook_properties(tensor_type: type):
-        """Overloads tensor_type properties. This method gets called only on torch.Tensor. If
+        """Overloads tensor_type properties. 
+        
+        This method gets called only on torch.Tensor. If
         you're not sure how properties work, read:
         https://www.programiz.com/python-programming/property
 
-        :Parameters:
-
-            * **tensor_type (type)** the tensor type which is having properties added to it,
+        Args:
+            tensor_type: the tensor type which is having properties added to it,
             typically just torch.Tensor
         """
 
@@ -236,18 +224,19 @@ class TorchHook:
         tensor_type.is_wrapper = is_wrapper
 
     def _which_methods_should_we_auto_overload(self, tensor_type: type, syft_type: type):
-        """Creates list of Torch methods to auto overload except methods included
+        """Select Torch methds to auto overload.
+
+        Creates list of Torch methods to auto overload except methods included
         in exclusion list. By default, it looks for the intersection between
         the methods of tensor_type and torch_type minus those in the exception list
         (syft.torch.exclude).
 
-        :Parameters:
-
-            * **tensor_type (type)** iterating through a tensor type's properties
-
-            * **syft_type (type)** iterate through all attributes in this type
-
-            * **return (list)** List of methods to be overloaded
+        Args:
+            tensor_type: iterating through a tensor type's properties
+            syft_type: iterate through all attributes in this type
+        
+        Returns:
+            A list of methods to be overloaded
         """
 
         to_overload = []
@@ -276,13 +265,11 @@ class TorchHook:
         return to_overload
 
     def _rename_native_functions(self, tensor_type: type):
-        """Renames functions that are that not auto overloaded as native functions
+        """Renames functions that are that not auto overloaded as native functions.
 
-        :Parameters:
-
-            * **tensor_type (type)** the tensor whose native methods are getting
-            renamed. Typically just torch.Tensor.
-
+        Args:
+            tensor_type: the tensor whose native methods are getting
+                renamed. Typically just torch.Tensor.
         """
         for attr in self.to_auto_overload[tensor_type]:
 
@@ -297,14 +284,13 @@ class TorchHook:
     @staticmethod
     def _add_methods_from__torch_tensor(tensor_type: type, syft_type: type):
         """Add methods from the TorchTensor class to the native torch tensor.
-           The class TorchTensor is a proxy to avoid extending directly the
-           torch tensor class.
 
-        :Parameters:
+        The class TorchTensor is a proxy to avoid extending directly the
+        torch tensor class.
 
-            * **tensor_type (type)** the tensor type to which we are adding
+        Args:
+            tensor_type: the tensor type to which we are adding
             methods from TorchTensor class.
-
         """
         exclude = [
             "__class__",
