@@ -42,14 +42,16 @@ class AbstractTensor(ABC):
 
         return sy.serde.serialize(self, compress=compress, compress_scheme=compress_scheme)
 
-def initialize_tensor(hook_self,
-                      cls,
-                      torch_tensor: bool = False,
-                      owner=None,
-                      id=None,
-                      register=True,
-                      *init_args,
-                      **init_kwargs
+
+def initialize_tensor(
+    hook_self,
+    cls,
+    torch_tensor: bool = False,
+    owner=None,
+    id=None,
+    register=True,
+    *init_args,
+    **init_kwargs,
 ):
 
     cls.is_wrapper = False

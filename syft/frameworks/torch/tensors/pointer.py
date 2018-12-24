@@ -1,6 +1,7 @@
 from .abstract import AbstractTensor
 from syft.codes import MSGTYPE
 
+
 class PointerTensor(AbstractTensor):
     """A pointer to another tensor. A PointerTensor forwards all API calls to the remote.
 
@@ -157,5 +158,5 @@ class PointerTensor(AbstractTensor):
         # this next line because self no longer has .owner. Thus, we need to check
         # first here and not try to call self.owner.anything if self doesn't have
         # .owner anymore.
-        if(hasattr(self, 'owner')):
+        if hasattr(self, "owner"):
             self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)

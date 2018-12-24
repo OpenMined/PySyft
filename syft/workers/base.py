@@ -77,9 +77,11 @@ class BaseWorker(AbstractWorker):
         # self.add_worker(sy.local_worker)
 
         # For performance, we cache each
-        self._message_router = {MSGTYPE.OBJ: self.set_obj,
-                                MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
-                                MSGTYPE.OBJ_DEL: self.rm_obj}
+        self._message_router = {
+            MSGTYPE.OBJ: self.set_obj,
+            MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
+            MSGTYPE.OBJ_DEL: self.rm_obj,
+        }
 
     # SECTION: Methods which MUST be overridden by subclasses
 
@@ -208,7 +210,7 @@ class BaseWorker(AbstractWorker):
         # to the remote worker when it gets garbage collected
         obj_is_new_to_recipient = self.send_obj(tensor, worker)
 
-        if(obj_is_new_to_recipient):
+        if obj_is_new_to_recipient:
             pointer = tensor.create_pointer(
                 owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
             )
@@ -225,7 +227,7 @@ class BaseWorker(AbstractWorker):
         * **obj_data (tuple(object, object))** an id, object tuple.
 
         """
-        if(obj.id not in self._objects):
+        if obj.id not in self._objects:
             self._objects[obj.id] = obj
             return True
         else:
@@ -251,7 +253,6 @@ class BaseWorker(AbstractWorker):
         obj = self.get_obj(obj_id)
         self.de_register_obj(obj)
         return obj
-
 
     def register_obj(self, obj, obj_id=None):
         """Registers an object with the current worker node. Selects an id for
