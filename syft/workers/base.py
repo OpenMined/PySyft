@@ -58,10 +58,9 @@ class BaseWorker(AbstractWorker):
         self.hook = hook
         self.id = id
         self.is_client_worker = is_client_worker
-        self._objects = {}  # A core object in every BaseWorker instantiation
-        # Collection of objects where all objects are stored using their IDs as
-        # keys.
-
+        # A core object in every BaseWorker instantiation. A Collection of
+        # objects where all objects are stored using their IDs as keys.
+        self._objects = {}
         self._known_workers = {}
         for k, v in known_workers.items():
             self._known_workers[k] = v
@@ -69,21 +68,23 @@ class BaseWorker(AbstractWorker):
         # For performance, we cache each
         self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
 
-        # SECTION: Methods which MUST be overridden by subclasses
-
+    # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
     def _send_msg(self, message, location):
         """As BaseWorker implies, you should never instantiate this class by 
 		itself. Instead, you should extend BaseWorker in a new class which 
 		instantiates _send_msg and _recv_msg, each of which should specify the 
 		exact way in which two workers communicate with each other. The easiest 
-		example to study is probably VirtualWorker.
+		example to study is VirtualWorker.
 
 		Args:
 			message (str): the message being sent from one worker to another.
 
 			location (:class:`.workers.BaseWorker`) the destination to send the
 				message.
+
+		Raises:
+			NotImplementedError: 
 
 		"""
 
@@ -95,19 +96,23 @@ class BaseWorker(AbstractWorker):
 		itself. Instead, you should extend BaseWorker in a new class which 
 		instantiates _send_msg and _recv_msg, each of which should specify the 
 		exact way in which two workers communicate with each other. The easiest 
-		example to study is probably VirtualWorker.
+		example to study is VirtualWorker.
 
 		Args:
-
 			message (str): the message being received.
+
+		Raises:
+			NotImplementedError:
 
 		"""
         raise NotImplementedError  # pragma: no cover
 
-        # SECTION: Generic Message Sending/Receiving Logic
-        # Every message uses these methods.
-
     def send_msg(self, msg_type, message, location):
+        """Message Sending Logic. Every message uses this method.
+
+    	Returns:
+    		response:
+		"""
 
         # Step 0: combine type and message
         message = (msg_type, message)
@@ -124,14 +129,18 @@ class BaseWorker(AbstractWorker):
         return response
 
     def recv_msg(self, bin_message):
-
+        """Message receiving Logic. Every message uses this method.
+    	
+    	Returns:
+    		bin_response:
+    	"""
         # Step 0: deserialize message
         (msg_type, contents) = serde.deserialize(bin_message)
 
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
-        # Step 2: If response is none, set default
+        # Step 2: If response in none, set default
         if response is None:
             response = 0
 
@@ -140,29 +149,26 @@ class BaseWorker(AbstractWorker):
 
         return bin_response
 
-        # SECTION: recv_msg() uses self._message_router to route to these methods
+        # SECTION:recv_msg() uses self._message_router to route to these methods
         # Each method corresponds to a MsgType enum.
 
     def send(self, tensor, workers, ptr_id=None):
-        """Send a syft or torch tensor and his child, sub-child, etc (ie all the
+        """Send a syft or torch tensor and his child, sub-child, etc (all the
 		syft chain of children) to a worker, or a list of workers, with a given
 		remote storage address.
 
 		Args:
-
 			tensor (torch.Tensor): the syft or torch tensor to send
 
-			workers (:class:`....workers.BaseWorker`): the workers
-			which will receive the object
+			workers (:class:`....workers.BaseWorker`): the workers which will 
+			receive the object
 
-			id ((str or int), optional): the remote id of the object
-			on the remote worker(s).
+			id ((str or int), optional): the remote id of the object on the 
+			remote worker(s).
 
 		Example:
-
-		>>> x.send(bob, 1000)
-		>>> #will result in bob having the tensor x with id 1000
-
+			>>> x.send(bob, 1000)
+			>>> #will result in bob having the tensor x with id 1000
 		"""
         if not isinstance(workers, list):
             workers = [workers]
@@ -172,14 +178,17 @@ class BaseWorker(AbstractWorker):
         if len(workers) == 1:
             worker = workers[0]
         else:
-            # If multiple workers, you want to send the same tensor to multiple workers
-            # Assumingly you'll get multiple pointers, or a pointer with different locations
-            raise NotImplementedError("Sending to multiple workers is not supported at the moment")
+            # If multiple workers, you want to send the same tensor to multiple
+            # workers. Assumingly you'll get multiple pointers, or a pointer
+            # with different locations
+            raise NotImplementedError(
+                "Sending to multiple workers is not \
+            							supported at the moment"
+            )
 
         worker = self.get_worker(worker)
 
-        # Define a remote id if not specified
-        if ptr_id is None:
+        if ptr_id is None:  # Define a remote id if not specified
             ptr_id = int(10e10 * random.random())
 
         self.send_obj((ptr_id, tensor), worker)  # Send the object
@@ -194,7 +203,6 @@ class BaseWorker(AbstractWorker):
         """This adds an object to the registry of objects.
 
 		Args:
-
 			obj_data (tuple(object, object)): an id, object tuple.
 
 		"""
@@ -206,7 +214,6 @@ class BaseWorker(AbstractWorker):
         """Look up an object from the registry using its ID.
 
 		Args:
-
 			obj_id (str or int): the id of an object to look up
 
 			out (object): the object being returned
@@ -230,7 +237,6 @@ class BaseWorker(AbstractWorker):
 		instead used by internal processes (hooks and workers).
 
 		Args:
-
 			obj (a torch.Tensor or torch.autograd.Variable): A Torch instance, 
 			e.g. Tensor or Variable to be registered
 
@@ -240,17 +246,16 @@ class BaseWorker(AbstractWorker):
 			temporary (bool): If set to True, it will store the object in the 
 			worker's temporary registry.
 
-		:kwargs:
+		Keyword Args:
+			id (int or string): random integer between 0 and 1e10 or
+			string uniquely identifying the object.
 
-		* **id (int or string)** random integer between 0 and 1e10 or
-		  string uniquely identifying the object.
+			owners (list of :class:`BaseWorker` objects ** or ids):
+			owner(s) of the object
 
-		* **owners (list of ** :class:`BaseWorker` objects ** or ids)**
-		  owner(s) of the object
-
-		* **is_pointer (bool, optional)** Whether or not the tensor being
-		  registered contains the data locally or is instead a pointer to
-		  a tensor that lives on a different worker.
+			is_pointer (bool, optional): Whether or not the tensor being
+			registered contains the data locally or is instead a pointer to 
+			a tensor that lives on a different worker.
 		"""
         if not self.is_client_worker:
             self.set_obj((obj_id, obj))
@@ -258,6 +263,10 @@ class BaseWorker(AbstractWorker):
     def de_register_obj(self, obj, _recurse_torch_objs=True):
         """Unregister an object and removes attributes which are indicative of
 		registration.
+
+		Args:
+			obj (a torch.Tensor or torch.autograd.Variable): A Torch instance, 
+			e.g. Tensor or Variable to be de-registered
 
 		"""
 
@@ -277,12 +286,21 @@ class BaseWorker(AbstractWorker):
         if remote_key in self._objects:
             del self._objects[remote_key]
 
-            # SECTION: convenience methods for constructing frequently used messages
-
+    # SECTION: convenience methods for constructing frequently used messages
     def send_obj(self, obj, location):
+        """
+		Args:
+			obj (a torch.Tensor or torch.autograd.Variable): A Torch instance, 
+			e.g. Tensor or Variable to be sent
+    	"""
         return self.send_msg(MSGTYPE_OBJ, obj, location)
 
     def request_obj(self, obj_id, location):
+        """
+		Returns:
+			obj (a torch.Tensor or torch.autograd.Variable): A Torch instance, 
+			e.g. Tensor or Variable requested
+    	"""
         obj = self.send_msg(MSGTYPE_OBJ_REQ, obj_id, location)
         return obj
 
