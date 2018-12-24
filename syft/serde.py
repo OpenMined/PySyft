@@ -44,8 +44,8 @@ import syft
 
 from syft.frameworks.torch.tensors import PointerTensor
 
-from .frameworks.torch.tensors.abstract import initialize_tensor
-from .util import CompressionNotFoundException
+from syft.frameworks.torch.tensors.abstract import initialize_tensor
+from syft.util import CompressionNotFoundException
 
 # COMPRESSION SCHEME INT CODES
 LZ4 = 0

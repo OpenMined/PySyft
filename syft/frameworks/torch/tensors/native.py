@@ -1,8 +1,8 @@
 import random
 
-from . import AbstractTensor
-from . import PointerTensor
-from ....workers import BaseWorker
+from syft.frameworks.torch.tensors import AbstractTensor
+from syft.frameworks.torch.tensors import PointerTensor
+from syft.workers import BaseWorker
 
 
 class TorchTensor(AbstractTensor):

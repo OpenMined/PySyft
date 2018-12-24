@@ -1,9 +1,6 @@
 from typing import Union
 from typing import Callable
 from typing import Any
-
-
-# @trask - my IDE can't find this - does anyone else's see it
 from types import ModuleType
 
 
