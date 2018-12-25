@@ -51,7 +51,17 @@ from .frameworks.torch.tensors.abstract import initialize_tensor
 
 def serialize(obj: object, compress=True, compressScheme="lz4") -> bin:
     """This is the high level function for serializing any object or
-    dictionary/collection of objects."""
+    dictionary/collection of objects.
+    
+    Args:
+        obj (object): The object to be serialized
+
+        compress (bool, optional): If true the input is compressed
+
+        compressScheme (str, optional): the compress scheme used  
+    Returns:
+        The binary format (compressed or not) of the object passed as input
+    """
 
     # 1) Simplify
     # simplify difficult-to-serialize objects. See the _simpliy method
@@ -84,6 +94,17 @@ def deserialize(binary: bin, compressed=True, compressScheme="lz4") -> object:
     """
     This is the high level function for deserializing any object
     or dictionary/collection of objects.
+
+    Args:
+        binary (bin): The object in binary form to be deserialized
+
+        compressed (bool, optional): If true the input is first decompressed
+
+        compressScheme (str, optional): the compress scheme used    
+    Returns:
+        A more complex object which msgpack would have had trouble
+                    deserializing directly.
+
     """
     # check the 1-byte header to see if input stream was compressed or not
     if binary[0] == 48:
@@ -118,11 +139,9 @@ def _compress(decompressed_input_bin: bin, compressScheme="lz4") -> bin:
     This function compresses a binary using LZ4
 
     Args:
-        bin: binary to be compressed
-
+        decompressed_input_bin (bin): binary to be compressed
     Returns:
-        bin: a compressed binary
-
+        A compressed binary
     """
     if compressScheme == "lz4":
         return lz4.frame.compress(decompressed_input_bin)
@@ -135,11 +154,9 @@ def _decompress(compressed_input_bin: bin, compressScheme="lz4") -> bin:
     This function decompresses a binary using LZ4
 
     Args:
-        bin: a compressed binary
-
+        compressed_input_bin (bin): a compressed binary
     Returns:
-        bin: decompressed binary
-
+        A decompressed binary
     """
     if compressScheme == "lz4":
         return lz4.frame.decompress(compressed_input_bin)
@@ -157,10 +174,9 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     very fast PyTorch pickler.
 
     Args:
-        torch.Tensor: an input tensor to be serialized
-
+        tensor (Tensor): an input tensor to be serialized
     Returns:
-        tuple: serialized tuple of torch tensor. The first value is the
+        A serialized tuple of torch tensor. The first value is the
         id of the tensor and the second is the binary for the PyTorch
         object.
     """
@@ -178,11 +194,10 @@ def _detail_torch_tensor(tensor_tuple: tuple) -> torch.Tensor:
 
     Args:
         tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
-        the first value is the ID and the second vlaue is the binary for the
-        PyTorch object.
-
+            the first value is the ID and the second vlaue is the binary for the
+            PyTorch object.
     Returns:
-        torch.Tensor: a torch tensor that was serialized
+        A torch tensor that was serialized
     """
 
     id, tensor = tensor_tuple
@@ -217,12 +232,9 @@ def _simplify_collection(my_collection: Collection) -> Collection:
     the functionality of this function.
 
     Args:
-        Collection: a collection of python objects
-
+        my_collection (Collection): a collection of python objects
     Returns:
-        Collection: a collection of the same type as the input of simplified
-            objects.
-
+        A collection of the same type as the input of simplified objects.
     """
 
     # Step 0: get collection type for later use and itialize empty list
@@ -248,11 +260,9 @@ def _detail_collection_list(my_collection: Collection) -> Collection:
     converts binary objects into torch Tensors where appropriate.
 
     Args:
-        Collection: a collection of simple python objects (including binary).
-
+        my_collection (Collection): a collection of simple python objects (including binary).
     Returns:
-        Collection: a collection of the same type as the input where the objects
-            in the collection have been detailed.
+        A collection of the same type as the input where the objects in the collection have been detailed.
     """
 
     pieces = list()
@@ -276,11 +286,9 @@ def _detail_collection_set(my_collection: Collection) -> Collection:
     converts binary objects into torch Tensors where appropriate.
 
     Args:
-        Collection: a collection of simple python objects (including binary).
-
+        my_collection (Collection): a collection of simple python objects (including binary).
     Returns:
-        Collection: a collection of the same type as the input where the objects
-            in the collection have been detailed.
+        A collection of the same type as the input where the objects in the collection have been detailed.
     """
 
     pieces = list()
@@ -305,11 +313,9 @@ def _detail_collection_tuple(my_tuple: Tuple) -> Tuple:
     `msgpack` is encoding a tuple as a list.
 
     Args:
-        tuple: a collection of simple python objects (including binary).
-
+        my_tuple (tuple): a collection of simple python objects (including binary).
     Returns:
-        tuple: a collection of the same type as the input where the objects
-            in the collection have been detailed.
+        A collection of the same type as the input where the objects in the collection have been detailed.
     """
 
     pieces = list()
@@ -325,6 +331,13 @@ def _detail_collection_tuple(my_tuple: Tuple) -> Tuple:
 
 
 def _simplify_dictionary(my_dict: Dict) -> Dict:
+    """This function deconstruct the dictionary.
+
+    Args:
+        my_dict (dict): The dictonary that is going to be deconstruct
+    Returns:
+        A simplified dictionary
+    """
     pieces = {}
     # for dictionaries we want to simplify both the key and the value
     for key, value in my_dict.items():
@@ -334,6 +347,13 @@ def _simplify_dictionary(my_dict: Dict) -> Dict:
 
 
 def _detail_dictionary(my_dict: Dict) -> Dict:
+    """This function construct the dictionary.
+
+    Args:
+        my_dict (dict): The dictonary that is going to be reconstruct
+    Returns:
+        A dictionary
+    """
     pieces = {}
     # for dictionaries we want to detail both the key and the value
     for key, value in my_dict.items():
@@ -360,18 +380,15 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
     """
     This function extracts the start, stop and step from the range.
 
-    Args:
-        range: a range object
-
-    Returns:
-        list: a list defining the range parameters [start, stop, step]
-
     Examples:
-
         range_parameters = _simplify_range(range(1, 3, 4))
 
         assert range_parameters == [1, 3, 4]
 
+    Args:
+        my_range (range): a range object
+    Returns:
+        A list defining the range parameters [start, stop, step]
     """
 
     return (my_range.start, my_range.stop, my_range.step)
@@ -381,17 +398,15 @@ def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
     """
     This function extracts the start, stop and step from a tuple.
 
-    Args:
-        list: a list defining the range parameters [start, stop, step]
-
-    Returns:
-        range: a range object
-
     Examples:
         new_range = _detail_range([1, 3, 4])
 
         assert new_range == range(1, 3, 4)
 
+    Args:
+        my_range_params (Tuple): a tuple defining the range parameters [start, stop, step]
+    Returns:
+        A range object
     """
 
     return range(my_range_params[0], my_range_params[1], my_range_params[2])
@@ -405,17 +420,15 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
     This function gets the byte representation of the array
         and stores the dtype and shape for reconstruction
 
-    Args:
-        numpy.ndarray: a numpy array
-
-    Returns:
-        list: a list holding the byte representation, shape and dtype of the array
-
     Examples:
-
         arr_representation = _simplify_ndarray(numpy.random.random([1000, 1000])))
 
+    Args:
+        my_array (numpy.ndarray): a numpy array
+    Returns:
+        A list holding the byte representation, shape and dtype of the array
     """
+
     arr_bytes = my_array.tobytes()
     arr_shape = my_array.shape
     arr_dtype = my_array.dtype.name
@@ -429,15 +442,13 @@ def _detail_ndarray(arr_representation: Tuple[bin, Tuple, str]) -> numpy.ndarray
         by first loading the byte data with the appropiate dtype and then reshaping it into the
         original shape
 
-    Args:
-        list: a list holding the byte representation, shape and dtype of the array
-
-    Returns:
-        numpy.ndarray: a numpy array
-
     Examples:
         arr = _detail_ndarray(arr_representation)
 
+    Args:
+        arr_representation (Tuple): a list holding the byte representation, shape and dtype of the array
+    Returns:
+        A numpy array
     """
     res = numpy.frombuffer(arr_representation[0], dtype=arr_representation[2]).reshape(
         arr_representation[1]
@@ -455,16 +466,13 @@ def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
     """
     This function creates a list that represents a slice.
 
-    Args:
-        my_slice (slice): a python slice
-
-    Returns:
-        tuple : a list holding the start, stop and step values
-
     Examples:
-
         slice_representation = _simplify_slice(slice(1,2,3))
 
+    Args:
+        my_slice (slice): a python slice
+    Returns:
+        A list holding the start, stop and step values
     """
     return (my_slice.start, my_slice.stop, my_slice.step)
 
@@ -473,17 +481,15 @@ def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
     """
     This function extracts the start, stop and step from a list.
 
-    Args:
-        my_slice (tuple): a list defining the slice parameters [start, stop, step]
-
-    Returns:
-        range: a range object
-
     Examples:
         new_range = _detail_range([1, 3, 4])
 
         assert new_range == range(1, 3, 4)
 
+    Args:
+        my_slice (tuple): a list defining the slice parameters [start, stop, step]
+    Returns:
+        A range object
     """
 
     return slice(my_slice[0], my_slice[1], my_slice[2])
@@ -500,12 +506,14 @@ def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
 def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     """
     This function takes the attributes of a PointerTensor and saves them in a dictionary
-    Args:
-        PointerTensor: a PointerTensor
-    Returns:
-        tuple: a tuple holding the unique attributes of the pointer
+
     Examples:
         data = _simplify_pointer_tensor(ptr)
+
+    Args:
+        ptr (PointerTensor): An instance of :class:`PointerTensor` class.
+    Returns:
+        A tuple holding the unique attributes of the pointer
     """
 
     return (ptr.id, ptr.id_at_location, ptr.location.id)
@@ -524,14 +532,17 @@ def _detail_pointer_tensor(tensor_tuple: tuple) -> PointerTensor:
     This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
     We use the spread operator to pass the dict data as arguments
     to the init method of PointerTensor
-    Args:
-        tensor_tuple: a tuple holding the attributes of the PointerTensor
-    Returns:
-        PointerTensor: a PointerTensor
+
+    TODO: fix comment for this and simplifier
+
     Examples:
         ptr = _detail_pointer_tensor(data)
+
+    Args:
+        tensor_tuple (tuple): a tuple holding the attributes of the PointerTensor
+    Returns:
+        A PointerTensor
     """
-    # TODO: fix comment for this and simplifier
 
     return PointerTensor(
         id=tensor_tuple[0],
@@ -569,15 +580,12 @@ def _simplify(obj: object) -> object:
     being sent.
 
     Args:
-        obj: an object which may need to be simplified
-
+        obj (Tensor or Variable): an object which may need to be simplified
     Returns:
-        obj: an simple Python object which msgpack can serialize
-
+        A simple Python object which msgpack can serialize
     Raises:
         ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
         characters.
-
     """
 
     try:
@@ -618,12 +626,10 @@ def _detail(obj: object) -> object:
     why _simplify and _detail are needed.
 
     Args:
-        obj: a simple Python object which msgpack deserialized
-
+        obj (object): A simple Python object which msgpack deserialized
     Returns:
-        obj: a more complex Python object which msgpack would have had trouble
+        A more complex Python object which msgpack would have had trouble
             deserializing directly.
-
     """
     if type(obj) == list:
         return detailers[obj[0]](obj[1])
