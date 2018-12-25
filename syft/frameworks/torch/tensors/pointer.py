@@ -16,7 +16,7 @@ class PointerTensor(AbstractTensor):
     or some other protocol) as that functionality is abstracted in the BaseWorker object in
     self.location.
 
-    :Example:
+    Example:
 
      >>> import syft as sy
      >>> hook = sy.TorchHook()
@@ -31,7 +31,6 @@ class PointerTensor(AbstractTensor):
 
      >>> # executes command on Bob's machine
      >>> z_ptr = x_ptr + y_ptr
-
     """
 
     def __init__(
@@ -45,31 +44,31 @@ class PointerTensor(AbstractTensor):
     ):
         """Initializes a PointerTensor
 
-        :Parameters:
+        Args:
+            parent (AbstractTensor, optional): An instance 
+                of :class:`AbstractTensor` class this is
+                typically just the wrapper around the PointerTensor which makes it
+                so that you can pass this PointerTensor to all the other methods/
+                functions that PyTorch likes to use, although it can also be other
+                tensors which extend AbstractTensor, such as custom tensors for
+                Secure Multi-Party Computation or Federated Learning
 
-         * **parent (**:class:`.abstract.AbstractTensor` **, optional)** this is
-            typically just the wrapper around the PointerTensor which makes it
-            so that you can pass this PointerTensor to all the other methods/
-            functions that PyTorch likes to use, although it can also be other
-            tensors which extend AbstractTensor, such as custom tensors for
-            Secure Multi-Party Computation or Federated Learning
+            location (BaseWorker, optional): An instance of :class:`BaseWorker` class the
+                BaseWorker object which points to the worker on which this
+                pointer's object can be found.
 
-         * **location (**:class:`....workers.BaseWorker` **, optional)** the
-            BaseWorker object which points to the worker on which this
-            pointer's object can be found.
+            id_at_location ((str or int), optional): the id of the tensor
+                being pointed to.
 
-         * **id_at_location ((str or int), optional)** - the id of the tensor
-            being pointed to.
+            register (bool, optional): this parameter determines whether
+                to automatically register the new pointer that gets created.
 
-         * **register (bool, optional)** this parameter determines whether
-            to automatically register the new pointer that gets created.
+            owner (BaseWorker, optional): An instance of :class:`BaseWorker` class while
+                "location" specifies where the pointer points to, this parameter
+                specifies the worker on which the pointer is located. It is also
+                where the pointer is registered if register is set to True.
 
-         * **owner (**:class:`....workers.BaseWorker` **, optional)** while
-            "location" specifies where the pointer points to, this parameter
-            specifies the worker on which the pointer is located. It is also
-            where the pointer is registered if register is set to True.
-
-         * **id: ((str or int), optional)** - this is the id of the PointerTensor
+            id ((str or int), optional): this is the id of the PointerTensor
 
         """
         # TODO: finish AbstractTensor which should handle register/parent/id stuff
@@ -80,11 +79,14 @@ class PointerTensor(AbstractTensor):
         self.id = id
 
     def __str__(self):
-        """This returns a string version of this pointer, which is primarily for
-        end users to quickly see things about the tensor. This tostring shouldn't
+        """This tostring shouldn't
         be used for anything else though as it's likely to change. (aka, don't try
         to parse it to extract information. Read the attribute you need directly).
-        Also, don't use this to-string as a serialized form of the pointer."""
+        Also, don't use this to-string as a serialized form of the pointer.
+        
+        Returns:
+            A string version of this pointer, which is primarily for end users to quickly see things about the tensor.
+        """
 
         type_name = type(self).__name__
         return (
@@ -109,21 +111,22 @@ class PointerTensor(AbstractTensor):
         being pointed to be serialized and returned from this function. This will
         typically mean that the remote object will be removed/destroyed. If you
         merely wish to bring a copy back to the local worker, call .copy() before
-        calling .get(). TODO: add param get_copy which doesn't destroy remote if
-        true.
+        calling .get(). 
+        
+        TODO: add param get_copy which doesn't destroy remote if true.
 
+        Args:
+            deregister_ptr (bool, optional): this determines whether to deregister
+                this pointer from the pointer's owner during this method. This defaults
+                to True because the main reason people use this method is to move the
+                tensor from the remote machine to the local one, at which time the
+                pointer has no use.
 
-        :Parameters:
-
-         * **deregister_ptr (bool, optional)** this determines whether to deregister
-            this pointer from the pointer's owner during this method. This defaults
-            to True because the main reason people use this method is to move the
-            tensor from the remote machine to the local one, at which time the
-            pointer has no use.
-
-         * **out (**:class:`.abstract.AbstractTensor` **)** this is the tensor
-            (or chain) which this object used to point to on a remote machine.
-
+            out (AbstractTensor): an instance of :class:`AbstractTensor` class this is the tensor
+                (or chain) which this object used to point to on a remote machine.
+        
+        Returns:
+            The tensor requested
         """
 
         # if the pointer happens to be pointing to a local object,
