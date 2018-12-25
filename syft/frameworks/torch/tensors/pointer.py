@@ -46,26 +46,27 @@ class PointerTensor(AbstractTensor):
         Args:
 
             parent (class:`.abstract.AbstractTensor`, optional): this is
-            typically just the wrapper around the PointerTensor which makes it
-            so that you can pass this PointerTensor to all the other methods/
-            functions that PyTorch likes to use, although it can also be other
-            tensors which extend AbstractTensor, such as custom tensors for
-            Secure Multi-Party Computation or Federated Learning
+                typically just the wrapper around the PointerTensor which makes 
+                it so that you can pass this PointerTensor to all the other 
+                methods/functions that PyTorch likes to use, although it can 
+                also be other tensors which extend AbstractTensor, such as 
+                custom tensors for Secure Multi-Party Computation or Federated 
+                Learning
 
             location (class:`....workers.BaseWorker`, optional): the
-            BaseWorker object which points to the worker on which this
-            pointer's object can be found.
+                BaseWorker object which points to the worker on which this
+                pointer's object can be found.
 
             id_at_location ((str or int), optional): the id of the tensor
-            being pointed to.
+                being pointed to.
 
             register (bool, optional): this parameter determines whether
-            to automatically register the new pointer that gets created.
+                to automatically register the new pointer that gets created.
 
             owner (class:`....workers.BaseWorker`, optional): while "location" 
-            specifies where the pointer points to, this parameter specifies the 
-            worker on which the pointer is located. It is also where the pointer 
-            is registered if register is set to True.
+                specifies where the pointer points to, this parameter specifies 
+                the worker on which the pointer is located. It is also where the 
+                pointer is registered if register is set to True.
 
             id: ((str or int), optional): this is the id of the PointerTensor
 
@@ -119,13 +120,13 @@ class PointerTensor(AbstractTensor):
         Args:
 
             deregister_ptr (bool, optional): this determines whether to 
-            deregister this pointer from the pointer's owner during this method. 
-            This defaults to True because the main reason people use this method 
-            is to move the tensor from the remote machine to the local one, at 
-            which time the pointer has no use.
+                deregister this pointer from the pointer's owner during this 
+                method. This defaults to True because the main reason people use 
+                this method is to move the tensor from the remote machine to the 
+                local one, at which time the pointer has no use.
 
             out (class:`.abstract.AbstractTensor`): this is the tensor (or 
-            chain) which this object used to point to on a remote machine.
+                chain) which this object used to point to on a remote machine.
         
         Returns:
             tensor: 
