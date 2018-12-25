@@ -11,17 +11,6 @@ MSGTYPE_OBJ = 2
 MSGTYPE_OBJ_REQ = 3
 MSGTYPE_EXCEPTION = 4
 
-"""
-an object is a Tensor or Variable to be registered
-TO COMMENT:
-
-send_msg()
-    ALL
-
-receive msg()
-    ALL
-"""
-
 
 class BaseWorker(AbstractWorker):
     """
@@ -44,13 +33,10 @@ class BaseWorker(AbstractWorker):
         Args:
             hook (TorchHook, optional): An instance of :class:`TorchHook` class. A reference to the hook object which
                 was used to modify PyTorch with PySyft's functionality. It overload the underlying deep learning framework
-
             id ((int or str), optional): the unique id of the worker (node).
-
             known_workers (dict, optional): This dictionary includes all known workers on a network. 
                 The key of each element should be each worker's unique ID and the value should be a worker class which extends BaseWorker (this class).
                 It can be initialized with known workers to help bootstrap the network.
-            
             is_client_worker (bool, optional): If true, this object is not actually
                 where the objects will be stored, but it is instead a pointer to a worker that exists
                 elsewhere. This client mantains control over variables created by itself.
@@ -100,7 +86,6 @@ class BaseWorker(AbstractWorker):
 
         Args:
             message (str): the message being sent from one worker to another.
-
             location (BaseWorker): An instance of :class:`.workers.BaseWorker` class. It is the destination to send the
                 message.
         Raises:
@@ -132,13 +117,11 @@ class BaseWorker(AbstractWorker):
         DESCRIPTION
 
         Args:
-            msg_type ():
-
-            message ():
-
-            location ():
+            msg_type (str): The type of message
+            message (Tensor): the syft or torch tensor to send
+            location (BaseWorker): An instance of :class:`.workers.BaseWorker` class. It is the destination to send the message.
         Returns:
-
+            The response deserialized
         """
         # Step 0: combine type and message
         message = (msg_type, message)
@@ -160,9 +143,9 @@ class BaseWorker(AbstractWorker):
         DESCRIPTION
 
         Args:
-            bin_message ():
+            bin_message (bin): The object received in binary
         Returns:
-
+            A simpley python object 
         """
         # Step 0: deserialize message
         (msg_type, contents) = serde.deserialize(bin_message)
@@ -193,10 +176,8 @@ class BaseWorker(AbstractWorker):
 
         Args:
             tensor (Tensor): the syft or torch tensor to send
-
             workers (BaseWorker): Instances of :class:`workers.BaseWorker` class. The worker or list of Workers
                 which will receive the object
-
             ptr_id ((str or int), optional): The remote id of the object on the remote worker(s).
         Returns:
             The pointer object that points to the tensor sent
@@ -337,7 +318,6 @@ class BaseWorker(AbstractWorker):
 
         Args:
             id_or_worker (string or int or BaseWorker): This is either the id of the object to be returned or an instance of :class:`BaseWorker` class.
-
             fail_hard (bool): Wether we want to throw an exception when a worker is not registered at this worker or
                 we just want to log it
         Returns:
