@@ -27,7 +27,9 @@ class TorchHook:
     PyTorch with PySyft's added functionality (such as remote execution).
     """
 
-    def __init__(self, torch, local_worker: BaseWorker = None, is_client: bool = True, verbose: bool = True):
+    def __init__(
+        self, torch, local_worker: BaseWorker = None, is_client: bool = True, verbose: bool = True
+    ):
         """Hook Constructor.
 
         Init the hook and define all the attributes pertaining to the torch hook in a
@@ -83,10 +85,10 @@ class TorchHook:
         syft.torch = TorchAttributes(torch, self)
 
         if self.local_worker is None:
-            #Every TorchHook instance should have a local worker which is responsible for
-            #interfacing with other workers. The worker interface is what allows the Torch
-            #specific code in TorchHook to be agnostic to the means by which workers communicate
-            #(such as peer-to-peer, sockets, through local ports, or all within the same process)
+            # Every TorchHook instance should have a local worker which is responsible for
+            # interfacing with other workers. The worker interface is what allows the Torch
+            # specific code in TorchHook to be agnostic to the means by which workers communicate
+            # (such as peer-to-peer, sockets, through local ports, or all within the same process)
 
             self.local_worker = workers.VirtualWorker(
                 hook=self, is_client_worker=is_client, id="me"
