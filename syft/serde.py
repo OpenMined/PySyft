@@ -55,7 +55,7 @@ ZSTD = 1
 # High Level Public Functions (these are the ones you use)
 
 
-def serialize(obj: object, compress=True, compress_scheme="lz4") -> bin:
+def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     """This method can serialize any object PySyft needs to send or store.
     
     This is the high level function for serializing any object or collection
@@ -99,7 +99,7 @@ def serialize(obj: object, compress=True, compress_scheme="lz4") -> bin:
     return b"\x30" + binary
 
 
-def deserialize(binary: bin, compressed=True, compress_scheme="lz4") -> object:
+def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 
     This is the high level function for deserializing any object or collection
@@ -161,7 +161,7 @@ def _compress(decompressed_input_bin: bin, compress_scheme=LZ4) -> bin:
         return zstd.compress(decompressed_input_bin)
     else:
         CompressionNotFoundException(
-            "compression scheme note found for" " compression code:" + str(compress_scheme)
+            "compression scheme not found for compression code:" + str(compress_scheme)
         )
 
 
@@ -180,7 +180,7 @@ def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
         return zstd.decompress(compressed_input_bin)
     else:
         CompressionNotFoundException(
-            "compression scheme note found for" " compression code:" + str(compress_scheme)
+            "compression scheme not found for compression code:" + str(compress_scheme)
         )
 
 
@@ -519,8 +519,8 @@ def _simplify_ellipsis(e: Ellipsis) -> bytes:
     return b""
 
 
-def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
-    return ...
+#def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
+#    return ...
 
 
 def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
