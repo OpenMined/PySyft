@@ -14,6 +14,7 @@ MSGTYPE_EXCEPTION = 4
 
 class BaseWorker(AbstractWorker):
 <<<<<<< HEAD
+<<<<<<< HEAD
     """
     This is the class which contains functionality generic to all workers. Other workers will
     extend this class to inherit all functionality necessary for PySyft's protocol. Extensions
@@ -24,6 +25,20 @@ class BaseWorker(AbstractWorker):
     objects owned by a certain machine. Each worker defines how it interacts with objects on other
     workers as well as how other workers interact with objects owned by itself. Objects are most
     frequently tensors but they can be of any type supported by the PySyft protocol.
+=======
+    """Contains functionality to all workers.
+
+    Other workers will extend this class to inherit all functionality necessary 
+    for PySyft's protocol. Extensions of this class overrides two key methods 
+    _send_msg() and _recv_msg() which are responsible for defining the 
+    procedure for sending a binary message to another worker.
+
+    At it's core, BaseWorker (and all workers) is a collection of objects owned 
+    by a certain machine. Each worker defines how it interacts with objects on 
+    other workers as well as how other workers interact with objects owned by 
+    itself. Objects are either tensors or of any type supported by the PySyft 
+    protocol.
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
     """
 
     def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False):
@@ -46,6 +61,7 @@ class BaseWorker(AbstractWorker):
         # if hook is None and hasattr(syft, "local_worker"):
         #    hook = syft.local_worker.hook
 
+<<<<<<< HEAD
 =======
     """Contains functionality to all workers.
 
@@ -90,6 +106,8 @@ class BaseWorker(AbstractWorker):
                 a pointer to a worker that eists elsewhere. 
         """
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         self.hook = hook
         self.id = id
         self.is_client_worker = is_client_worker
@@ -97,10 +115,14 @@ class BaseWorker(AbstractWorker):
         # objects where all objects are stored using their IDs as keys.
         self._objects = {}
 <<<<<<< HEAD
+<<<<<<< HEAD
 
         # This dictionary includes all known workers on a network.
 =======
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+        # This dictionary includes all known workers on a network.
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         self._known_workers = {}
         for k, v in known_workers.items():
             self._known_workers[k] = v
@@ -112,6 +134,9 @@ class BaseWorker(AbstractWorker):
     @abstractmethod
     def _send_msg(self, message, location):
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """Abstract method to send message.
 
         It specifies the exact way in which two workers communicate with each
@@ -123,6 +148,7 @@ class BaseWorker(AbstractWorker):
                 message.
         Raises:
             NotImplementedError: An error occurred when instantiating a child of BaseWorker without specify _send_msg method.
+<<<<<<< HEAD
 =======
         """As BaseWorker implies, you should never instantiate this class by 
         itself. Instead, you should extend BaseWorker in a new class which 
@@ -140,6 +166,8 @@ class BaseWorker(AbstractWorker):
             NotImplementedError: 
 
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
 
         raise NotImplementedError  # pragma: no cover
@@ -147,10 +175,14 @@ class BaseWorker(AbstractWorker):
     @abstractmethod
     def _recv_msg(self, message):
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """Abstract method to receive message.
 
         It specifies the exact way in which two workers communicate with each
         other. The easiest example to study is probably VirtualWorker.
+<<<<<<< HEAD
 =======
         """As BaseWorker implies, you should never instantiate this class by 
         itself. Instead, you should extend BaseWorker in a new class which 
@@ -164,19 +196,23 @@ class BaseWorker(AbstractWorker):
         Raises:
             NotImplementedError:
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
 
         Args:
             message (str): the message being received.
         Raises:
             NotImplementedError: An error occurred when instantiating a child of BaseWorker without specify _recv_msg method.
         """
+
         raise NotImplementedError  # pragma: no cover
 
     def send_msg(self, msg_type, message, location):
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """Method called to send the message.
-
-        DESCRIPTION
 
         Args:
             msg_type (str): The type of message
@@ -185,14 +221,15 @@ class BaseWorker(AbstractWorker):
         Returns:
             The response deserialized
         """
-=======
-        """Message Sending Logic. Every message uses this method.
 
+<<<<<<< HEAD
         Returns:
             response:
         """
 
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         # Step 0: combine type and message
         message = (msg_type, message)
 
@@ -209,21 +246,26 @@ class BaseWorker(AbstractWorker):
 
     def recv_msg(self, bin_message):
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """Method called to receive the message.
-
-        DESCRIPTION
 
         Args:
             bin_message (bin): The object received in binary
         Returns:
             A simpley python object 
+<<<<<<< HEAD
 =======
         """Message receiving Logic. Every message uses this method.
 
         Returns:
             bin_response:
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
+
         # Step 0: deserialize message
         (msg_type, contents) = serde.deserialize(bin_message)
 
@@ -243,10 +285,13 @@ class BaseWorker(AbstractWorker):
         # Each method corresponds to a MsgType enum.
 
     def send(self, tensor, workers, ptr_id=None):
-        """Send a syft or torch tensor and his child, sub-child, etc (all the
+        """Send a syft or torch tensor and his child, sub-child, etc (ie all the
         syft chain of children) to a worker, or a list of workers, with a given
         remote storage address.
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
 
         Example:
             >>> x.send(bob, 1000)
@@ -259,6 +304,7 @@ class BaseWorker(AbstractWorker):
             ptr_id ((str or int), optional): The remote id of the object on the remote worker(s).
         Returns:
             The pointer object that points to the tensor sent
+<<<<<<< HEAD
 =======
 
         Args:
@@ -279,6 +325,8 @@ class BaseWorker(AbstractWorker):
             >>> x.send(bob, 1000)
             Will result in bob having the tensor x with id 1000
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
         if not isinstance(workers, list):
             workers = [workers]
@@ -315,11 +363,15 @@ class BaseWorker(AbstractWorker):
 
         Args:
 <<<<<<< HEAD
+<<<<<<< HEAD
             obj (tuple(object, object)): an id, object tuple.
 =======
             obj (torch or syft tensor): a torch or syft tensor with an id
 
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+            obj (torch or syft tensor): a torch or syft tensor with an id
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
 
         self._objects[obj.id] = obj
@@ -330,6 +382,7 @@ class BaseWorker(AbstractWorker):
         Args:
             obj_id (str or int): the id of an object to look up
 <<<<<<< HEAD
+<<<<<<< HEAD
         Returns:
             The object that match with the obj_id        
 =======
@@ -338,7 +391,12 @@ class BaseWorker(AbstractWorker):
             The object being returned
 
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+        Returns:
+            The object that match with the obj_id        
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
+
 
         obj = self._objects[obj_id]
 
@@ -351,6 +409,9 @@ class BaseWorker(AbstractWorker):
 
     def register_obj(self, obj, obj_id=None):
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """Registers an object with the current worker node. 
         
         This method is used by internal processes (hooks and workers). 
@@ -360,6 +421,7 @@ class BaseWorker(AbstractWorker):
         Args:
             obj (Tensor or Variable): a Torch instance, e.g. Tensor or Variable to be registered
             obj_id ((str or int),optional): The id associated to the object to be registered
+<<<<<<< HEAD
 =======
         """Registers an object with the current worker node. Selects an id for
         the object, assigns a list of owners, and establishes whether it's a
@@ -387,7 +449,10 @@ class BaseWorker(AbstractWorker):
             registered contains the data locally or is instead a pointer to 
             a tensor that lives on a different worker.
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
+
         if not self.is_client_worker:
             obj.id = obj_id
             self.set_obj(obj)
@@ -397,8 +462,11 @@ class BaseWorker(AbstractWorker):
         registration.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         TODO: _recurse_torch_objs is not implemented
 =======
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         Args:
             obj (a torch.Tensor or torch.autograd.Variable): A Torch instance, 
             e.g. Tensor or Variable to be de-registered
@@ -406,7 +474,10 @@ class BaseWorker(AbstractWorker):
             _recurse_torch_objs (bool): is used if the object is more complex
             and needs to be explored. Is not supported at the moment
 
+<<<<<<< HEAD
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
 
         if hasattr(obj, "id"):
@@ -417,11 +488,15 @@ class BaseWorker(AbstractWorker):
 
     def rm_obj(self, remote_key):
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """This method removes an object from the permanent object registry if
         it exists.
         
         Args:
             remote_key(int or string): the id of the object to be removed
+<<<<<<< HEAD
 =======
         """Removes an object from the permanent object registry if it exists.
 
@@ -429,6 +504,8 @@ class BaseWorker(AbstractWorker):
             remote_key(int or string): id of the object to be removed
 
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
         if remote_key in self._objects:
             del self._objects[remote_key]
@@ -458,19 +535,28 @@ class BaseWorker(AbstractWorker):
 
     def get_worker(self, id_or_worker, fail_hard=False):
 <<<<<<< HEAD
+<<<<<<< HEAD
         """This method returns the worker object or 
 
         If you pass in an ID:
             it will try to find the worker object reference within self._known_workers. 
         If you pass in a reference(worker object):
             it will save that as a known_worker if it does not exist as one. 
+=======
+        """Allows for resolution of worker ids to workers to happen
+        automatically while also making the current worker aware of new ones
+        when discovered through other processes.
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         
-        This method is primarily useful because often tensors have to store only the ID to a
-        foreign worker which may or may not be known by the worker that is
-        deserializing it at the time of deserialization. This method allows for
-        resolution of worker ids to workers to happen automatically while also
-        making the current worker aware of new ones when discovered through
-        other processes.
+        If you pass in an ID, it will try to find the worker object reference
+        within self._known_workers. 
+
+        If you instead pass in a reference, it will save that as a known_worker 
+        if it does not exist as one. 
+
+        This method is useful because often tensors have to store only the ID to
+        a foreign worker which may or may not be known by the worker that is 
+        deserializing it at the time of deserialization.
 
         Example:
             >>> import syft as sy
@@ -492,6 +578,7 @@ class BaseWorker(AbstractWorker):
             fail_hard (bool): Wether we want to throw an exception when a worker is not registered at this worker or
                 we just want to log it
         Returns:
+<<<<<<< HEAD
             The type and ID of the worker
 =======
         """ Allows for resolution of worker ids to workers to happen
@@ -535,6 +622,9 @@ class BaseWorker(AbstractWorker):
         <syft.core.workers.virtual.VirtualWorker id:bob>
 
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+            The type and ID of the worker (string or int or :class:'BaseWorker')
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
 
         if isinstance(id_or_worker, bytes):
@@ -556,12 +646,20 @@ class BaseWorker(AbstractWorker):
 
     def add_worker(self, worker):
 <<<<<<< HEAD
+<<<<<<< HEAD
         """Add a new worker.
         This method adds a worker to the list of
         _known_workers internal to the BaseWorker. It endows this class with
         the ability to communicate with the remote worker being added, such as
         sending and receiving objects, commands, or information about the
         network.
+=======
+        """Adds a worker to the list of _known_workers internal to the BaseWorker. 
+    
+        Endows this class with the ability to communicate with the remote worker 
+        being added, such as sending and receiving objects, commands, or 
+        information about the network.
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
 
         Example:
             >>> import syft as sy
@@ -590,6 +688,7 @@ class BaseWorker(AbstractWorker):
         Args:
             worker (BaseWorker): An instance of :class:`BaseWorker` class. This is an object
                 pointer to a remote worker, which must have a unique id.
+<<<<<<< HEAD
 =======
         """Adds a worker to the list of _known_workers internal to the 
         BaseWorker. 
@@ -629,7 +728,10 @@ class BaseWorker(AbstractWorker):
          5
         [syft.core.frameworks.torch.tensor.FloatTensor of size 5]
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
+
         if worker.id in self._known_workers:
             logging.warning(
                 "Worker "
@@ -641,19 +743,26 @@ class BaseWorker(AbstractWorker):
 
     def add_workers(self, workers):
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """Add workers.
         
         Convenient function to add several workers in a single call
 
         Args:
             workers (list): the workers to add.
+<<<<<<< HEAD
 =======
         """Function to add several workers in a single call
 
         Args:
             workers (list): Workers to add.
 >>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+=======
+>>>>>>> 9d6170528924073edf8e0c1b3757f0c7f3cefb33
         """
+
         for worker in workers:
             self.add_worker(worker)
 

@@ -55,40 +55,21 @@ ZSTD = 1
 # High Level Public Functions (these are the ones you use)
 
 
-<<<<<<< HEAD
 def serialize(obj: object, compress=True, compressScheme="lz4") -> bin:
-    """This is the high level function for serializing any object or
-    dictionary/collection of objects.
-    
-    Args:
-        obj (object): The object to be serialized
-
-        compress (bool, optional): If true the input is compressed
-
-        compressScheme (str, optional): the compress scheme used  
-    Returns:
-        The binary format (compressed or not) of the object passed as input
-=======
-def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     """This method can serialize any object PySyft needs to send or store.
-
+    
     This is the high level function for serializing any object or collection
     of objects which PySyft needs to send over the wire. It includes three
     steps, Simplify, Serialize, and Compress as described inline below.
-
+    
     Args:
-        obj (object): the object to be serialized
-
-        compress (bool): whether or not to compress the object
-
-        compress_scheme (int): the integer code specifying which compression
+        obj (object): The object to be serialized
+        compress (bool, optional): If true the input is compressed
+        compressScheme (int, optional): the integer code specifying which compression
             scheme to use (see above this method for scheme codes) if
-            compress == True.
-
+            compress == True. 
     Returns:
-        binary: the serialized form of the object.
-
->>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+        The binary format (compressed or not) of the object passed as input
     """
 
     # 1) Simplify
@@ -111,31 +92,14 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     # even if compressed flag is set to false by the caller we
     # output the input stream as it is with header set to '0'
     if compress:
-        compress_stream = _compress(binary, compress_scheme)
+        compress_stream = _compress(binary, compressScheme)
         if len(compress_stream) < len(binary):
             return b"\x31" + compress_stream
 
     return b"\x30" + binary
 
 
-<<<<<<< HEAD
 def deserialize(binary: bin, compressed=True, compressScheme="lz4") -> object:
-    """
-    This is the high level function for deserializing any object
-    or dictionary/collection of objects.
-
-    Args:
-        binary (bin): The object in binary form to be deserialized
-
-        compressed (bool, optional): If true the input is first decompressed
-
-        compressScheme (str, optional): the compress scheme used    
-    Returns:
-        A more complex object which msgpack would have had trouble
-                    deserializing directly.
-
-=======
-def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 
     This is the high level function for deserializing any object or collection
@@ -146,13 +110,12 @@ def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
         bin (binary): the serialized object to be deserialized.
         compressed (bool): whether or not the serialized object is compressed
             (and thus whether or not it needs to be decompressed).
-        compress_scheme (int): the integer code specifying which compression
+        compressScheme (int): the integer code specifying which compression
             scheme was used if decompression is needed (see above this method
             for scheme codes).
 
     Returns:
-        binary: the serialized form of the object.
->>>>>>> 4f657f613c4e8908d0f65ac1e08dc3c1c209289f
+        A more complex object which msgpack would have had trouble deserializing directly.
     """
 
     # check the 1-byte header to see if input stream was compressed or not
@@ -164,7 +127,7 @@ def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
     # 1)  Decompress
     # If enabled, this functionality decompresses the binary
     if compressed:
-        binary = _decompress(binary, compress_scheme)
+        binary = _decompress(binary, compressScheme)
 
     # 2) Deserialize
     # This function converts the binary into the appropriate python
