@@ -92,7 +92,7 @@ def serialize(obj: object, compress=True, compressScheme="lz4") -> bin:
     # even if compressed flag is set to false by the caller we
     # output the input stream as it is with header set to '0'
     if compress:
-        compress_stream = _compress(binary, compress_scheme)
+        compress_stream = _compress(binary, compressScheme)
         if len(compress_stream) < len(binary):
             return b"\x31" + compress_stream
 
