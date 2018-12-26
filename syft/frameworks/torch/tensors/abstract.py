@@ -5,7 +5,8 @@ import syft as sy
 
 
 class AbstractTensor(ABC):
-    """This is the tensor abstraction.
+    """
+    This is the tensor abstraction.
     """
 
     def wrap(self):
@@ -19,7 +20,9 @@ class AbstractTensor(ABC):
         wrapper.is_wrapper = True
         return wrapper
 
-    def serialize(self, compress=True, compress_scheme=0):
+    def serialize(
+        self, compress=True, compress_scheme=0
+    ):  # Code 0 is LZ4 - check serde.py to see others
         """Serializes the tensor on which it's called.
 
         This is the high level convenience function for serializing torch
@@ -38,14 +41,11 @@ class AbstractTensor(ABC):
                 x = torch.Tensor([1,2,3,4,5])
                 x.serialize() # returns a serialized object
         """
-        # Code 0 is LZ4 - check serde.py to see others
-        return sy.serde.serialize(
-            self, compress=compress, compress_scheme=compress_scheme)
+        return sy.serde.serialize(self, compress=compress, compress_scheme=compress_scheme)
 
 
 def initialize_tensor(
-    hook_self, cls, torch_tensor: bool = False,
-    owner=None, id=None, *init_args, **init_kwargs
+    hook_self, cls, torch_tensor: bool = False, owner=None, id=None, *init_args, **init_kwargs
 ):
     """Initializes the tensor.
 
@@ -60,11 +60,15 @@ def initialize_tensor(
             specified.
     """
     cls.is_wrapper = False
+
     if not torch_tensor:
         cls.native___init__(*init_args, **init_kwargs)
+
     if owner is None:
         owner = hook_self.local_worker
+
     if id is None:
         id = int(10e10 * random.random())
+
     cls.id = id
     cls.owner = owner
