@@ -127,7 +127,7 @@ def deserialize(binary: bin, compressed=True, compress_scheme="lz4") -> object:
     # 1)  Decompress
     # If enabled, this functionality decompresses the binary
     if compressed:
-        binary = _decompress(binary, compressScheme)
+        binary = _decompress(binary, compress_scheme)
 
     # 2) Deserialize
     # This function converts the binary into the appropriate python
