@@ -55,7 +55,7 @@ ZSTD = 1
 # High Level Public Functions (these are the ones you use)
 
 
-def serialize(obj: object, compress=True, compressScheme="lz4") -> bin:
+def serialize(obj: object, compress=True, compress_scheme="lz4") -> bin:
     """This method can serialize any object PySyft needs to send or store.
     
     This is the high level function for serializing any object or collection
@@ -65,7 +65,7 @@ def serialize(obj: object, compress=True, compressScheme="lz4") -> bin:
     Args:
         obj (object): The object to be serialized
         compress (bool, optional): If true the input is compressed
-        compressScheme (int, optional): the integer code specifying which compression
+        compress_scheme (int, optional): the integer code specifying which compression
             scheme to use (see above this method for scheme codes) if
             compress == True. 
     Returns:
@@ -92,14 +92,14 @@ def serialize(obj: object, compress=True, compressScheme="lz4") -> bin:
     # even if compressed flag is set to false by the caller we
     # output the input stream as it is with header set to '0'
     if compress:
-        compress_stream = _compress(binary, compressScheme)
+        compress_stream = _compress(binary, compress_scheme)
         if len(compress_stream) < len(binary):
             return b"\x31" + compress_stream
 
     return b"\x30" + binary
 
 
-def deserialize(binary: bin, compressed=True, compressScheme="lz4") -> object:
+def deserialize(binary: bin, compressed=True, compress_scheme="lz4") -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 
     This is the high level function for deserializing any object or collection
@@ -110,7 +110,7 @@ def deserialize(binary: bin, compressed=True, compressScheme="lz4") -> object:
         bin (binary): the serialized object to be deserialized.
         compressed (bool): whether or not the serialized object is compressed
             (and thus whether or not it needs to be decompressed).
-        compressScheme (int): the integer code specifying which compression
+        compress_scheme (int): the integer code specifying which compression
             scheme was used if decompression is needed (see above this method
             for scheme codes).
 
