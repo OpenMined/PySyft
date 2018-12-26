@@ -519,8 +519,8 @@ def _simplify_ellipsis(e: Ellipsis) -> bytes:
     return b""
 
 
-#def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
-#    return ...
+def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
+    return ...
 
 
 def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
