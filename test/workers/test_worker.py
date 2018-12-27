@@ -16,3 +16,6 @@ class TestHook(TestCase):
         bob.get_worker("the_unknown_worker")
 
         bob.add_worker(alice)
+
+        print(str(bob))
+        print(repr(bob))

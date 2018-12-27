@@ -159,7 +159,7 @@ def _compress(decompressed_input_bin: bin, compress_scheme=LZ4) -> bin:
         return lz4.frame.compress(decompressed_input_bin)
     elif compress_scheme == ZSTD:
         return zstd.compress(decompressed_input_bin)
-    else:
+    else: # pragma: no cover
         CompressionNotFoundException(
             "compression scheme not found for compression code:" + str(compress_scheme)
         )
@@ -178,7 +178,7 @@ def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
         return lz4.frame.decompress(compressed_input_bin)
     elif compress_scheme == ZSTD:
         return zstd.decompress(compressed_input_bin)
-    else:
+    else: # pragma: no cover
         CompressionNotFoundException(
             "compression scheme not found for compression code:" + str(compress_scheme)
         )

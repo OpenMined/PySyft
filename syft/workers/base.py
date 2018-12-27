@@ -171,7 +171,7 @@ class BaseWorker(AbstractWorker):
 
         if len(workers) == 1:
             worker = workers[0]
-        else:
+        else: # pragma: no cover
             # If multiple workers are provided , you want to send the same tensor
             # to all the workers. You'll get multiple pointers, or a pointer
             # with different locations
@@ -333,8 +333,8 @@ class BaseWorker(AbstractWorker):
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
             else:
-                if fail_hard:
-                    raise WorkerNotFoundException
+                if fail_hard: # pragma: no cover
+                    raise WorkerNotFoundException ("The worker has not been found")
                 logging.warning("Worker", self.id, "couldn't recognize worker", id_or_worker)
                 return id_or_worker
         else:

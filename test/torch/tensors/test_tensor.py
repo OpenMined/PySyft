@@ -36,6 +36,7 @@ class TestPointer(object):
         self.setUp()
         pointer = PointerTensor(id=1000, location=self.alice, owner=self.me)
         pointer.__str__()
+        pointer.__repr__()
 
     def test_create_pointer(self):
         self.setUp()
