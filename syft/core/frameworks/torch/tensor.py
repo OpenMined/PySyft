@@ -2288,7 +2288,7 @@ class PolynomialTensor(_SyftTensor):
                
            approximation of the exponential function as a float"""
 
-        return (1 + x + (x ** 2 / 2) + (x ** 3 / 6) + (x ** 4 / 24))
+        return 1 + x + (x ** 2 / 2) + (x ** 3 / 6) + (x ** 4 / 24)
 
     def tanh(self, x: float) -> float:
 
@@ -2300,10 +2300,10 @@ class PolynomialTensor(_SyftTensor):
                
             approximation of the tanh function as a float"""
 
-        return ((x) + ((x ** 3) / 3) + (((x ** 5) / 120)) + ((x ** 7) / 5040))
-    
-    def log(self,x:float)->float:
-        
+        return (x) + ((x ** 3) / 3) + (((x ** 5) / 120)) + ((x ** 7) / 5040)
+
+    def log(self, x: float) -> float:
+
         """Parameters:
             
             x: A float value
@@ -2311,8 +2311,8 @@ class PolynomialTensor(_SyftTensor):
             return: 
                
             approximation of the log function as a float"""
-            
-        return ((x)-((x**2)/2)+((x**3)/6)-((x**4)/24))
+
+        return (x) - ((x ** 2) / 2) + ((x ** 3) / 6) - ((x ** 4) / 24)
 
 
 class _TorchObject:
