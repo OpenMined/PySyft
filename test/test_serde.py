@@ -6,14 +6,17 @@ from syft.serde import _decompress
 from syft.serde import LZ4
 from syft.serde import ZSTD
 
-from syft import TorchHook
-from syft.frameworks.torch.tensors import PointerTensor
-import torch
+
 import syft
-from torch import Tensor
-import numpy
+from syft import TorchHook
+from syft.exceptions import CompressionNotFoundException
+from syft.frameworks.torch.tensors import PointerTensor
+
 import msgpack
+import numpy
 import pytest
+import torch
+from torch import Tensor
 
 
 class TestSimplify(object):
@@ -176,10 +179,7 @@ class TestSimplify(object):
 
         alice = syft.VirtualWorker(id="alice")
         input = PointerTensor(id=1000, location=alice, owner=alice)
-
         output = _simplify(input)
-
-        print(output)
 
         assert output[1][0] == input.id
         assert output[1][1] == input.id_at_location
@@ -274,9 +274,30 @@ class TestSerde(object):
         )
         assert numpy.array_equal(arr, arr_serialized_deserialized)
 
+    @pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
+    def test_invalid_compression_scheme(self, compress_scheme):
+        arr = numpy.random.random((100, 100))
+        try:
+            arr_serialized = serialize(arr, compress=True, compress_scheme=compress_scheme)
+            assert False
+        except CompressionNotFoundException:
+            assert True
+
+    @pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
+    def test_invalid_decompression_scheme(self, compress_scheme):
+        # using numpy.ones because numpy.random.random is not compressed.
+        arr = numpy.ones((100, 100))
+        arr_serialized = serialize(arr, compress=True, compress_scheme=LZ4)
+        try:
+            arr_serialized_deserialized = deserialize(
+                arr_serialized, compressed=True, compress_scheme=compress_scheme
+            )
+            assert False
+        except CompressionNotFoundException:
+            assert True
+
     @pytest.mark.parametrize("compress", [True, False])
     def test_dict(self, compress):
-
         hook = TorchHook(torch)
 
         # Test with integers

@@ -2,7 +2,7 @@ import logging
 import random
 
 from abc import abstractmethod
-from syft.util import WorkerNotFoundException
+from syft.exceptions import WorkerNotFoundException
 from syft import serde
 from syft.workers import AbstractWorker
 
@@ -42,7 +42,6 @@ class BaseWorker(AbstractWorker):
                 for adding to this dictionary(node discovery). In some cases,
                 one can initialize this with known workers to help bootstrap the
                 network.
-
 
             is_client_worker (bool, optional): True or False based on whether
                 this worker is associated with an end user client. If so, it
@@ -145,7 +144,7 @@ class BaseWorker(AbstractWorker):
         if response is None:
             response = 0
 
-            # Step 3: Serialize the message to simple python objects
+        # Step 3: Serialize the message to simple python objects
         bin_response = serde.serialize(response)
 
         return bin_response
@@ -161,15 +160,20 @@ class BaseWorker(AbstractWorker):
         Args:
             tensor (torch.Tensor): the syft or torch tensor to send
 
-            workers (:class:`....workers.BaseWorker`): the workers which will
+            workers (:class:`....workers.BaseWorker`): the workers which will 
             receive the object
 
-            id ((str or int), optional): the remote id of the object on the
+            ptr_id ((str or int), optional): the remote id of the object on the
             remote worker(s).
 
         Example:
+            >>> import torch
+            >>> import syft as sy
+            >>> hook = sy.TorchHook(torch)
+            >>> bob = sy.VirtualWorker(hook)
+            >>> x = torch.Tensor([1, 2, 3, 4])
             >>> x.send(bob, 1000)
-            >>> #will result in bob having the tensor x with id 1000
+            Will result in bob having the tensor x with id 1000
         """
         if not isinstance(workers, list):
             workers = [workers]
@@ -179,8 +183,8 @@ class BaseWorker(AbstractWorker):
         if len(workers) == 1:
             worker = workers[0]
         else:
-            # If multiple workers, you want to send the same tensor to multiple
-            # workers. Assumingly you'll get multiple pointers, or a pointer
+            # If multiple workers are provided , you want to send the same tensor
+            # to all the workers. You'll get multiple pointers, or a pointer
             # with different locations
             raise NotImplementedError(
                 "Sending to multiple workers is not \
@@ -235,6 +239,7 @@ class BaseWorker(AbstractWorker):
         """Look up an object from the registry using its ID.
 
         Args:
+
           obj_id (str or int): the id of an object to look up
 
           out (object): the object being returned
@@ -258,27 +263,28 @@ class BaseWorker(AbstractWorker):
         instead used by internal processes (hooks and workers).
 
         Args:
-          obj (a torch.Tensor or torch.autograd.Variable): A Torch instance,
-          e.g. Tensor or Variable to be registered
+            obj (a torch.Tensor or torch.autograd.Variable): A Torch instance, 
+            e.g. Tensor or Variable to be registered
 
-          force_attach_to_worker (bool): if set to True, it will force the
-          object to be stored in the worker's permanent registry
+            obj_id (int or string): random integer between 0 and 1e10 or
+            string uniquely identifying the object.
 
-          temporary (bool): If set to True, it will store the object in the
-          worker's temporary registry.
+        Obsolete args:
+            force_attach_to_worker (bool): if set to True, it will force the 
+            object to be stored in the worker's permanent registry
 
-        Keyword Args:
-          id (int or string): random integer between 0 and 1e10 or
-          string uniquely identifying the object.
+            temporary (bool): If set to True, it will store the object in the 
+            worker's temporary registry.
 
-          owners (list of :class:`BaseWorker` objects ** or ids):
-          owner(s) of the object
+            owners (list of :class:`BaseWorker` objects ** or ids): owner(s)
+            of the object
 
-          is_pointer (bool, optional): Whether or not the tensor being
-          registered contains the data locally or is instead a pointer to
-          a tensor that lives on a different worker.
+            is_pointer (bool, optional): Whether or not the tensor being
+            registered contains the data locally or is instead a pointer to 
+            a tensor that lives on a different worker.
         """
         if not self.is_client_worker:
+            obj.id = obj_id
             self.set_obj(obj)
 
     def de_register_obj(self, obj, _recurse_torch_objs=True):
@@ -286,8 +292,12 @@ class BaseWorker(AbstractWorker):
         registration.
 
         Args:
-          obj (a torch.Tensor or torch.autograd.Variable): A Torch instance,
-          e.g. Tensor or Variable to be de-registered
+
+            obj (a torch.Tensor or torch.autograd.Variable): A Torch instance, 
+            e.g. Tensor or Variable to be de-registered
+
+            _recurse_torch_objs (bool): is used if the object is more complex
+            and needs to be explored. Is not supported at the moment
 
         """
 
@@ -308,14 +318,16 @@ class BaseWorker(AbstractWorker):
             del self._objects[remote_key]
 
     # SECTION: convenience methods for constructing frequently used messages
-    def send_obj(self, obj, location):
 
-        """
+    def send_obj(self, obj, location):
+        """Send a torch object to a worker
+
         Args:
-          obj (a torch.Tensor or torch.autograd.Variable): A Torch instance,
-          e.g. Tensor or Variable to be sent
+            obj (a torch.Tensor or torch.autograd.Variable): A Torch instance, 
+            e.g. Tensor or Variable to be sent
+            location (worker): a worker which should receive the object
         """
-        return self.send_msg(MSGTYPE.OBJ, obj, location)
+        return self.send_msg(MSGTYPE_OBJ, obj, location)
 
     def request_obj(self, obj_id, location):
         """
@@ -327,7 +339,7 @@ class BaseWorker(AbstractWorker):
 
         return obj
 
-        # SECTION: Manage the workers network
+    # SECTION: Manage the workers network
 
     def get_worker(self, id_or_worker, fail_hard=False):
         """ Allows for resolution of worker ids to workers to happen
@@ -335,17 +347,17 @@ class BaseWorker(AbstractWorker):
         when discovered through other processes.
 
         If you pass in an ID, it will try to find the worker object reference
-        within self._known_workers.
+        within self._known_workers. 
 
-        If you instead pass in a reference, it will save that as a known_worker
-        if it does not exist as one.
+        If you instead pass in a reference, it will save that as a known_worker 
+        if it does not exist as one. 
 
         This method is useful because often tensors have to store only the ID to
-        a foreign worker which may or may not be known by the worker that is
-        deserializing it at the time of deserialization.
+        a foreign worker which may or may not be known by the worker that is 
+        de-serializing it at the time of deserialization.
 
         Args:
-            id_or_worker (string or int or :class:`BaseWorker`): id of the
+            id_or_worker (string or int or :class:`BaseWorker`): id of the 
             object to be returned or the object itself.
 
             fail_hard (bool): Whether we want to throw an exception when a
@@ -381,7 +393,7 @@ class BaseWorker(AbstractWorker):
             else:
                 if fail_hard:
                     raise WorkerNotFoundException
-                logging.warning("Worker", self.id, "couldnt recognize worker", id_or_worker)
+                logging.warning("Worker", self.id, "couldn't recognize worker", id_or_worker)
                 return id_or_worker
         else:
             if id_or_worker.id not in self._known_workers:
@@ -390,6 +402,7 @@ class BaseWorker(AbstractWorker):
         return id_or_worker
 
     def add_worker(self, worker):
+
         """Adds a worker to the list of _known_workers internal to the
         BaseWorker.
 
@@ -403,12 +416,13 @@ class BaseWorker(AbstractWorker):
 
         Example:
 
+        >>> import torch
         >>> import syft as sy
         >>> hook = sy.TorchHook(verbose=False)
         >>> me = hook.local_worker
         >>> bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
         >>> me.add_worker([bob])
-        >>> x = sy.Tensor([1,2,3,4,5])
+        >>> x = torch.Tensor([1,2,3,4,5])
         >>> x
          1
          2
@@ -451,10 +465,12 @@ class BaseWorker(AbstractWorker):
         Returns:
             Type and ID of the worker
 
-        Example:
-        A VirtualWorker instance with id 'bob' would return a string value of.
-        >>> bob
-        <syft.core.workers.virtual.VirtualWorker id:bob>
+        Example: 
+            A VirtualWorker instance with id 'bob' would return a string value of.
+            >>> import syft
+            >>> bob = syft.VirtualWorker(id="bob")
+            >>> bob
+            <syft.workers.virtual.VirtualWorker id:bob>
 
         Note:
             __repr__ calls this method by default.
