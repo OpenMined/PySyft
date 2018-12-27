@@ -11,14 +11,17 @@ from syft.serde import _decompress
 from syft.serde import LZ4
 from syft.serde import ZSTD
 
-from syft import TorchHook
-from syft.frameworks.torch.tensors import PointerTensor
-import torch
+
 import syft
-from torch import Tensor
-import numpy
+from syft import TorchHook
+from syft.exceptions import CompressionNotFoundException
+from syft.frameworks.torch.tensors import PointerTensor
+
 import msgpack
+import numpy
 import pytest
+import torch
+from torch import Tensor
 
 
 def test_tuple_simplify():
@@ -157,6 +160,14 @@ def test_ndarray_simplify():
 
     input = numpy.random.random((100, 100))
     output = _simplify(input)
+    
+    alice = syft.VirtualWorker(id="alice")
+    input = PointerTensor(id=1000, location=alice, owner=alice)
+    output = _simplify(input)
+
+    assert output[1][0] == input.id
+    assert output[1][1] == input.id_at_location
+    assert output[1][2] == input.owner.id
 
     # make sure simplified type ID is correct
     assert output[0] == 6
@@ -276,6 +287,29 @@ def test_compressed_serde(compress_scheme):
     )
     assert numpy.array_equal(arr, arr_serialized_deserialized)
 
+
+@pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
+    def test_invalid_compression_scheme(self, compress_scheme):
+        arr = numpy.random.random((100, 100))
+        try:
+            arr_serialized = serialize(arr, compress=True, compress_scheme=compress_scheme)
+            assert False
+        except CompressionNotFoundException:
+            assert True
+
+
+@pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
+def test_invalid_decompression_scheme(self, compress_scheme):
+    # using numpy.ones because numpy.random.random is not compressed.
+    arr = numpy.ones((100, 100))
+    arr_serialized = serialize(arr, compress=True, compress_scheme=LZ4)
+    try:
+        arr_serialized_deserialized = deserialize(
+            arr_serialized, compressed=True, compress_scheme=compress_scheme
+        )
+        assert False
+    except CompressionNotFoundException:
+        assert True
 
 @pytest.mark.parametrize("compress", [True, False])
 def test_dict(compress):
