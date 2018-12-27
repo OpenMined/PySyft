@@ -18,7 +18,6 @@ def test___init__():
     bob.add_worker(alice)
 
 
-
 class TestWorker(TestCase):
     def test_get_unknown_worker(self):
         bob = VirtualWorker(id="bob")
@@ -40,4 +39,3 @@ class TestWorker(TestCase):
         # if an instance of virtual worker is given it doesn't fail
         assert bob.get_worker(charlie).id == charlie.id
         assert charlie.id in bob._known_workers
-

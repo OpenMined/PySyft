@@ -289,13 +289,13 @@ def test_compressed_serde(compress_scheme):
 
 
 @pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
-    def test_invalid_compression_scheme(self, compress_scheme):
-        arr = numpy.random.random((100, 100))
-        try:
-            arr_serialized = serialize(arr, compress=True, compress_scheme=compress_scheme)
-            assert False
-        except CompressionNotFoundException:
-            assert True
+def test_invalid_compression_scheme(self, compress_scheme):
+    arr = numpy.random.random((100, 100))
+    try:
+        arr_serialized = serialize(arr, compress=True, compress_scheme=compress_scheme)
+        assert False
+    except CompressionNotFoundException:
+        assert True
 
 
 @pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
