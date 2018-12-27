@@ -160,7 +160,7 @@ def test_ndarray_simplify():
 
     input = numpy.random.random((100, 100))
     output = _simplify(input)
-    
+
     alice = syft.VirtualWorker(id="alice")
     input = PointerTensor(id=1000, location=alice, owner=alice)
     output = _simplify(input)
@@ -310,6 +310,7 @@ def test_invalid_decompression_scheme(self, compress_scheme):
         assert False
     except CompressionNotFoundException:
         assert True
+
 
 @pytest.mark.parametrize("compress", [True, False])
 def test_dict(compress):
