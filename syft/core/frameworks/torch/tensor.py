@@ -1334,7 +1334,7 @@ class _FixedPrecisionTensor(_SyftTensor):
     def on(self, shares):
         return self.wrap(True)
 
-    def encode(self, rational):
+    def encode(self, rational: int):
         owner = rational.owner
         upscaled = (rational * self.base ** self.precision_fractional).long()
         field_element = upscaled % self.field
@@ -1498,7 +1498,9 @@ class _FixedPrecisionTensor(_SyftTensor):
 
                 return response
 
-    def truncate(self, torch_tensorvar, other, base=None, fractional=None):
+    def truncate(
+        self, torch_tensorvar, other, base: int = None, fractional: int = None
+    ):
 
         if base is None:
             base = self.base
@@ -2258,6 +2260,61 @@ class _SNNTensor(_SPDZTensor, _SyftTensor):
         return negdiff2.positive()
 
 
+class PolynomialTensor(_SyftTensor):
+
+    """Tensor type which provides polynomial approximation functionalities using Taylor Series expansion
+       since computing exact functions could impose a overhead on computation
+    """
+
+    def sigmoid(self, x: float) -> float:
+
+        """Parameters:
+            
+           x: A float value
+           
+           return: 
+               
+           approximation of the sigmoid function as a float"""
+
+        return (1 / 2) + (x / 4) - (x ** 3 / 48) + (x ** 5 / 480)
+
+    def exp(self, x: float) -> float:
+
+        """Parameters:
+            
+           x: A float value
+
+           return: 
+               
+           approximation of the exponential function as a float"""
+
+        return (1 + x + (x ** 2 / 2) + (x ** 3 / 6) + (x ** 4 / 24))
+
+    def tanh(self, x: float) -> float:
+
+        """Parameters:
+            
+            x: A float value
+           
+            return: 
+               
+            approximation of the tanh function as a float"""
+
+        return ((x) + ((x ** 3) / 3) + (((x ** 5) / 120)) + ((x ** 7) / 5040))
+    
+    def log(self,x:float)->float:
+        
+        """Parameters:
+            
+            x: A float value
+           
+            return: 
+               
+            approximation of the log function as a float"""
+            
+        return ((x)-((x**2)/2)+((x**3)/6)-((x**4)/24))
+
+
 class _TorchObject:
     """This tensor is simply a more convenient way to add custom functions to
     all Torch tensor types, including Torch Variable.
@@ -2470,11 +2527,11 @@ class _TorchObject:
     def sum_get(self, *args, **kwargs):
         return self.child.sum_get(*args, **kwargs)
 
-    def set_id(self, new_id):
+    def set_id(self, new_id: Union[int, str]):
         self.child.set_id(new_id)
         return self
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.native___str__()
 
     def __repr__(self):
@@ -2911,7 +2968,7 @@ class _TorchVariable(_TorchObject):
             return msgpack.packb({key: tensor_msg}, use_bin_type=True)
 
     @staticmethod
-    def ser_wrap(torch_type, child, data=None, grad=None):
+    def ser_wrap(torch_type, child, data=None, grad=None) -> dict:
         key = "__" + torch_type + "__"
         var_msg = {"torch_type": torch_type, "child": child}
         if data is not None:
