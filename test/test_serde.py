@@ -161,14 +161,6 @@ def test_ndarray_simplify():
     input = numpy.random.random((100, 100))
     output = _simplify(input)
 
-    alice = syft.VirtualWorker(id="alice")
-    input = PointerTensor(id=1000, location=alice, owner=alice)
-    output = _simplify(input)
-
-    assert output[1][0] == input.id
-    assert output[1][1] == input.id_at_location
-    assert output[1][2] == input.owner.id
-
     # make sure simplified type ID is correct
     assert output[0] == 6
 
@@ -289,7 +281,7 @@ def test_compressed_serde(compress_scheme):
 
 
 @pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
-def test_invalid_compression_scheme(self, compress_scheme):
+def test_invalid_compression_scheme(compress_scheme):
     arr = numpy.random.random((100, 100))
     try:
         arr_serialized = serialize(arr, compress=True, compress_scheme=compress_scheme)
@@ -299,7 +291,7 @@ def test_invalid_compression_scheme(self, compress_scheme):
 
 
 @pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
-def test_invalid_decompression_scheme(self, compress_scheme):
+def test_invalid_decompression_scheme(compress_scheme):
     # using numpy.ones because numpy.random.random is not compressed.
     arr = numpy.ones((100, 100))
     arr_serialized = serialize(arr, compress=True, compress_scheme=LZ4)
