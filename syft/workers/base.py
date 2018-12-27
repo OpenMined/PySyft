@@ -2,7 +2,7 @@ import logging
 import random
 
 from abc import abstractmethod
-from syft.util import WorkerNotFoundException
+from syft.exceptions import WorkerNotFoundException
 from syft import serde
 from syft.workers import AbstractWorker
 

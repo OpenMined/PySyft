@@ -45,16 +45,19 @@ import syft
 from syft.frameworks.torch.tensors import PointerTensor
 
 from syft.frameworks.torch.tensors.abstract import initialize_tensor
-from syft.util import CompressionNotFoundException
+from syft.exceptions import CompressionNotFoundException
+
 
 # COMPRESSION SCHEME INT CODES
 LZ4 = 0
 ZSTD = 1
 
 
+# Indicator on binary header that compression was not used.
+UNUSED_COMPRESSION_INDICATOR = 48
+
+
 # High Level Public Functions (these are the ones you use)
-
-
 def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
@@ -75,11 +78,10 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
         binary: the serialized form of the object.
 
     """
-
     # 1) Simplify
     # simplify difficult-to-serialize objects. See the _simpliy method
-    # for details on how this works. The general purpose is to handle
-    # types which the fast serializer (msgpack) cannot handle
+    # for details on how this works. The general purpose is to handle types
+    # which the fast serializer cannot handle
     simple_objects = _simplify(obj)
 
     # 2) Serialize
@@ -123,7 +125,7 @@ def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
     """
 
     # check the 1-byte header to see if input stream was compressed or not
-    if binary[0] == 48:
+    if binary[0] == UNUSED_COMPRESSION_INDICATOR:
         compressed = False
 
     # remove the 1-byte header from the input stream
@@ -166,7 +168,7 @@ def _compress(decompressed_input_bin: bin, compress_scheme=LZ4) -> bin:
     elif compress_scheme == ZSTD:
         return zstd.compress(decompressed_input_bin)
     else:
-        CompressionNotFoundException(
+        raise CompressionNotFoundException(
             "compression scheme note found for" " compression code:" + str(compress_scheme)
         )
 
@@ -187,7 +189,7 @@ def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
     elif compress_scheme == ZSTD:
         return zstd.decompress(compressed_input_bin)
     else:
-        CompressionNotFoundException(
+        raise CompressionNotFoundException(
             "compression scheme note found for" " compression code:" + str(compress_scheme)
         )
 
