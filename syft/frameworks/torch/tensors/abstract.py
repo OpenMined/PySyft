@@ -30,10 +30,11 @@ class AbstractTensor(ABC):
         described in serde.py.
 
         Args:
-            compress (bool): Whether or not to compress the object
-            compress_scheme (int): Integer code specifying the compression
-                scheme to use (see serde.py for scheme codes) if compress is
-                True. The compression scheme is set to LZ4 by default (code 0).
+            compress: A boolean indicating whether to compress the object or
+                not.
+            compress_scheme: An integer code specifying the compression scheme
+                to use (see serde.py for scheme codes) if compress is True. The
+                compression scheme is set to LZ4 by default (code 0).
 
         Returns:
             The serialized form of the tensor.
@@ -53,7 +54,8 @@ def initialize_tensor(
         hook_self: A reference to TorchHook class.
         cls: An object to keep track of id, owner and whether it is a native
             tensor or a wrapper over pytorch.
-        torch_tensor (bool): Whether or not it is torch tensor.
+        torch_tensor: A boolean parameter (default False) to indicate whether
+            it is torch tensor or not.
         owner: The owner of the tensor being initialised, leave it blank
             to if you have already provided a reference to TorchHook class.
         id: The id of tensor, a random id will be generated if there is no id

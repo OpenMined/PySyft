@@ -25,24 +25,24 @@ class TorchHook:
     PySyft's added functionality (such as remote execution).
 
     Args:
-        local_worker (workers.BaseWorker): Optional, you can optionally provide
-            a local worker as a parameter which TorchHook will assume to be the
+        local_worker: An optional BaseWorker instance that lets you provide a
+            local worker as a parameter which TorchHook will assume to be the
             worker owned by the local machine. If you leave it empty,
             TorchClient will automatically initialize a
             :class:`.workers.VirtualWorker` under the assumption you're looking
             to do local experimentation or development.
-        is_client (bool): Optional, defaults to True. Whether or not the
-            TorchHook is being initialized as an end-user client. This can
-            impact whether or not variables are deleted when they fall out of
-            scope. If you set this incorrectly on a end user client, Tensors
-            and Variables will never be deleted. If you set this incorrectly
-            on a remote machine (not a client), tensors will not get saved.
-            It's really only important if you're not initializing the local
-            worker yourself.
-        verbose (bool): Optional, defaults to True. Whether or not to print
-            operations as they occur.
-        queue_size (int): optional, defaults to 0. The max length of the list
-            storing messages to be sent.
+        is_client: An optional boolean parameter (default True), indicating
+            whether TorchHook is being initialized as an end-user client.This
+            can impact whether or not variables are deleted when they fall out
+            of scope. If you set this incorrectly on a end user client, Tensors
+            and Variables will never be deleted. If you set this incorrectly on
+            a remote machine (not a client), tensors will not get saved. It's
+            really only important if you're not initializing the local worker
+            yourself.
+        verbose: An optional boolean parameter (default True) to indicate
+            whether or not to print the operations as they occur.
+        queue_size: An integer optional parameter (default 0) to specify the
+            max length of the list that stores the messages to be sent.
 
     Example:
         >>> import syft as sy
@@ -116,12 +116,12 @@ class TorchHook:
         modifications are made in the methods that this method calls.
 
         Args:
-            tensor_type (type): The type of tensor being hooked (in this
-                refactor this is only ever torch.Tensor, but in previous
-                versions of PySyft this iterated over all tensor types.
-            syft_type (type): The abstract type whose methods should all be
-                added to the tensor_type class. In practice this is only ever
-                TorchTensor. Read more about it there.
+            tensor_type: The type of tensor being hooked (in this refactor
+                this is only ever torch.Tensor, but in previous versions of
+                PySyft this iterated over all tensor types.
+            syft_type: The abstract type whose methods should all be added to
+                the tensor_type class. In practice this is always TorchTensor.
+                Read more about it there.
         """
         # Reinitialize init method of Torch tensor with Syft init
         self._add_registration_to___init__(tensor_type, torch_tensor=True)
@@ -149,12 +149,12 @@ class TorchHook:
         TODO: auto-registration is disabled at the moment, this might be bad.
 
         Args:
-            tensor_type (type): The type of tensor being hooked (in this
-                refactor this is only ever torch.Tensor, but in previous
-                versions of PySyft this iterated over all tensor types.
-            torch_tensor (bool): Optional, If set to true, skip running the
-                native initialization logic. TODO: this flag might never
-                get used.
+            tensor_type: The type of tensor being hooked (in this refactor this
+                is only ever torch.Tensor, but in previous versions of PySyft
+                this iterated over all tensor types.
+            torch_tensor: An optional boolean parameter (default False) to
+                specify whether to skip running the native initialization
+                logic. TODO: this flag might never get used.
         """
         if "native___init__" not in dir(tensor_type):
             tensor_type.native___init__ = tensor_type.__init__
@@ -184,7 +184,7 @@ class TorchHook:
         https://www.programiz.com/python-programming/property
 
         Args:
-            tensor_type (type): The tensor type which is having properties
+            tensor_type: The tensor type which is having properties
                 added to it, typically just torch.Tensor.
         """
 
@@ -231,15 +231,15 @@ class TorchHook:
         tensor_type.is_wrapper = is_wrapper
 
     def _which_methods_should_we_auto_overload(self, tensor_type: type, syft_type: type):
-        """Creates list of Torch methods to auto overload.
+        """Creates a list of Torch methods to auto overload.
 
         By default, it looks for the intersection between the methods of
         tensor_type and torch_type minus those in the exception list
         (syft.torch.exclude).
 
         Args:
-            tensor_type (type): Iterating through a tensor type's properties
-            syft_type (type): iterate through all attributes in this type.
+            tensor_type: Iterate through the properties of this tensor type.
+            syft_type: Iterate through all attributes in this type.
 
         Returns:
             A list of methods to be overloaded.
@@ -274,7 +274,7 @@ class TorchHook:
         """Renames functions that are not auto overloaded as native functions.
 
         Args:
-            tensor_type (type): The tensor whose native methods are getting
+            tensor_type: The type of tensor whose native methods are getting
                 renamed. Typically just torch.Tensor.
         """
         for attr in self.to_auto_overload[tensor_type]:
@@ -295,7 +295,7 @@ class TorchHook:
         tensor class.
 
         Args:
-            tensor_type (type): The tensor type to which we are adding methods
+            tensor_type: The tensor type to which we are adding methods
                 from TorchTensor class.
         """
         exclude = [
