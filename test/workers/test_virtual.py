@@ -5,137 +5,138 @@ from syft.workers.base import MSGTYPE_OBJ
 from syft.workers.base import MSGTYPE_OBJ_REQ
 from syft import serde
 
-from unittest import TestCase
 import numpy
 import torch
 
 
-class TestVirtualWorker(TestCase):
-    def test_send_msg(self):
-        """Tests sending a message with a specific ID
+def test_send_msg():
+    """Tests sending a message with a specific ID
 
-        This is a simple test to ensure that the BaseWorker interface
-        can properly send/receive a message containing a tensor.
-        """
+    This is a simple test to ensure that the BaseWorker interface
+    can properly send/receive a message containing a tensor.
+    """
 
-        # get pointer to local worker
-        me = sy.torch.hook.local_worker
+    # get pointer to local worker
+    me = sy.torch.hook.local_worker
 
-        # create a new worker (to send the object to)
-        bob = VirtualWorker()
+    # create a new worker (to send the object to)
+    bob = VirtualWorker()
 
-        # initialize the object and save it's id
-        obj = torch.Tensor([100, 100])
-        obj_id = obj.id
+    # initialize the object and save it's id
+    obj = torch.Tensor([100, 100])
+    obj_id = obj.id
 
-        # Send data to bob
-        me.send_msg(MSGTYPE_OBJ, obj, bob)
+    # Send data to bob
+    me.send_msg(MSGTYPE_OBJ, obj, bob)
 
-        # ensure that object is now on bob's machine
-        assert obj_id in bob._objects
+    # ensure that object is now on bob's machine
+    assert obj_id in bob._objects
 
-    def test_send_msg_using_tensor_api(self):
-        """Tests sending a message with a specific ID
 
-        This is a simple test to ensure that the high level tensor .send()
-        method correctly sends a message to another worker.
-        """
+def test_send_msg_using_tensor_api():
+    """Tests sending a message with a specific ID
 
-        # create worker to send object to
-        bob = VirtualWorker()
+    This is a simple test to ensure that the high level tensor .send()
+    method correctly sends a message to another worker.
+    """
 
-        # create a tensor to send (default on local_worker)
-        obj = torch.Tensor([100, 100])
+    # create worker to send object to
+    bob = VirtualWorker()
 
-        # save the object's id
-        obj_id = obj.id
+    # create a tensor to send (default on local_worker)
+    obj = torch.Tensor([100, 100])
 
-        # send the object to Bob (from local_worker)
-        obj_ptr = obj.send(bob)
+    # save the object's id
+    obj_id = obj.id
 
-        # ensure tensor made it to Bob
-        assert obj_id in bob._objects
+    # send the object to Bob (from local_worker)
+    obj_ptr = obj.send(bob)
 
-    def test_recv_msg(self):
-        """Tests the recv_msg command with 2 tests
+    # ensure tensor made it to Bob
+    assert obj_id in bob._objects
 
-        The first test uses recv_msg to send an object to alice.
 
-        The second test uses recv_msg to request the object
-        previously sent to alice."""
+def test_recv_msg():
+    """Tests the recv_msg command with 2 tests
 
-        # TEST 1: send tensor to alice
+    The first test uses recv_msg to send an object to alice.
 
-        # create a worker to send data to
-        alice = VirtualWorker()
+    The second test uses recv_msg to request the object
+    previously sent to alice."""
 
-        # create object to send
-        obj = torch.Tensor([100, 100])
+    # TEST 1: send tensor to alice
 
-        # create/serialize message
-        msg = (MSGTYPE_OBJ, obj)
-        bin_msg = serde.serialize(msg)
+    # create a worker to send data to
+    alice = VirtualWorker()
 
-        # have alice receive message
-        alice.recv_msg(bin_msg)
+    # create object to send
+    obj = torch.Tensor([100, 100])
 
-        # ensure that object is now in alice's registry
-        assert obj.id in alice._objects
+    # create/serialize message
+    msg = (MSGTYPE_OBJ, obj)
+    bin_msg = serde.serialize(msg)
 
-        # Test 2: get tensor back from alice
+    # have alice receive message
+    alice.recv_msg(bin_msg)
 
-        # Create message: Get tensor from alice
-        msg = (MSGTYPE_OBJ_REQ, obj.id)
+    # ensure that object is now in alice's registry
+    assert obj.id in alice._objects
 
-        # serialize message
-        bin_msg = serde.serialize(msg)
+    # Test 2: get tensor back from alice
 
-        # call receive message on alice
-        resp = alice.recv_msg(bin_msg)
+    # Create message: Get tensor from alice
+    msg = (MSGTYPE_OBJ_REQ, obj.id)
 
-        obj_2 = serde.deserialize(resp)
+    # serialize message
+    bin_msg = serde.serialize(msg)
 
-        # assert that response is correct type
-        assert type(resp) == bytes
+    # call receive message on alice
+    resp = alice.recv_msg(bin_msg)
 
-        # ensure that the object we receive is correct
-        assert obj_2.id == obj.id
+    obj_2 = serde.deserialize(resp)
 
-    def tests_worker_convenience_methods(self):
-        """Tests send and get object methods on BaseWorker
+    # assert that response is correct type
+    assert type(resp) == bytes
 
-        This test comes in two parts. The first uses the simple
-        BaseWorker.send_obj and BaseWorker.request_obj to send a
-        tensor to Alice and to get the worker back from Alice.
+    # ensure that the object we receive is correct
+    assert obj_2.id == obj.id
 
-        The second part shows that the same methods work between
-        bob and alice directly.
-        """
 
-        me = sy.torch.hook.local_worker
-        bob = VirtualWorker()
-        alice = VirtualWorker()
-        obj = torch.Tensor([100, 100])
+def tests_worker_convenience_methods():
+    """Tests send and get object methods on BaseWorker
 
-        # Send data to alice
-        me.send_obj(obj, alice)
+    This test comes in two parts. The first uses the simple
+    BaseWorker.send_obj and BaseWorker.request_obj to send a
+    tensor to Alice and to get the worker back from Alice.
 
-        # Get data from alice
-        resp_alice = me.request_obj(obj.id, alice)
+    The second part shows that the same methods work between
+    bob and alice directly.
+    """
 
-        assert (resp_alice == obj).all()
+    me = sy.torch.hook.local_worker
+    bob = VirtualWorker()
+    alice = VirtualWorker()
+    obj = torch.Tensor([100, 100])
 
-        obj2 = torch.Tensor([200, 200])
+    # Send data to alice
+    me.send_obj(obj, alice)
 
-        # Set data on self
-        bob.set_obj(obj2)
+    # Get data from alice
+    resp_alice = me.request_obj(obj.id, alice)
 
-        # Get data from self
-        resp_bob_self = bob.get_obj(obj2.id)
+    assert (resp_alice == obj).all()
 
-        assert (resp_bob_self == obj2).all()
+    obj2 = torch.Tensor([200, 200])
 
-        # Get data from bob as alice
-        resp_bob_alice = alice.request_obj(obj2.id, bob)
+    # Set data on self
+    bob.set_obj(obj2)
 
-        assert (resp_bob_alice == obj2).all()
+    # Get data from self
+    resp_bob_self = bob.get_obj(obj2.id)
+
+    assert (resp_bob_self == obj2).all()
+
+    # Get data from bob as alice
+    resp_bob_alice = alice.request_obj(obj2.id, bob)
+
+    assert (resp_bob_alice == obj2).all()
