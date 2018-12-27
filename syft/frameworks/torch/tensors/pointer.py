@@ -18,7 +18,7 @@ class PointerTensor(AbstractTensor):
     socket, http, or some other protocol) as that functionality is abstracted
     in the BaseWorker object in self.location.
 
-    :Example:
+    Example:
 
      >>> import syft as sy
      >>> hook = sy.TorchHook()
