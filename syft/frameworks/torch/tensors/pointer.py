@@ -22,15 +22,11 @@ class PointerTensor(AbstractTensor):
 
      >>> import syft as sy
      >>> hook = sy.TorchHook()
-
      >>> bob = sy.VirtualWorker(id="bob")
-
      >>> x = sy.Tensor([1,2,3,4,5])
      >>> y = sy.Tensor([1,1,1,1,1])
-
      >>> x_ptr = x.send(bob) # returns a PointerTensor, sends tensor to Bob
      >>> y_ptr = y.send(bob) # returns a PointerTensor, sends tensor to Bob
-
      >>> # executes command on Bob's machine
      >>> z_ptr = x_ptr + y_ptr
     """
@@ -66,7 +62,6 @@ class PointerTensor(AbstractTensor):
                 pointer points to.
             id: An optional string or integer id of the PointerTensor.
         """
-        # TODO: finish AbstractTensor which should handle register/parent/id stuff
 
         self.location = location
         self.id_at_location = id_at_location
@@ -103,7 +98,34 @@ class PointerTensor(AbstractTensor):
         return self.__str__()
 
     def get(self, deregister_ptr: bool = True):
-        """Returns the serialized tensor/chain being pointed.
+        """Requests the tensor/chain being pointed to, be serialized and return
+
+        Since PointerTensor objects always point to a remote tensor (or chain
+        of tensors, where a chain is simply a linked-list of tensors linked via
+        their .child attributes), this method will request that the tensor/chain
+        being pointed to be serialized and returned from this function. 
+
+        Note:
+            This will typically mean that the remote object will be 
+            removed/destroyed. To just bring a copy back to the local worker, 
+            call .copy() before calling .get(). 
+
+
+        Args:
+
+            deregister_ptr (bool, optional): this determines whether to 
+                deregister this pointer from the pointer's owner during this 
+                method. This defaults to True because the main reason people use 
+                this method is to move the tensor from the remote machine to the 
+                local one, at which time the pointer has no use.
+
+            out (class:`.abstract.AbstractTensor`): this is the tensor (or 
+                chain) which this object used to point to on a remote machine.
+        
+        Returns:
+            tensor: 
+
+        #TODO: add param get_copy which doesn't destroy remote if true.
 
         Since PointerTensor objects always point to a remote tensor (or chain
         of tensors, where a chain is simply a linked-list of tensors linked via
