@@ -5,7 +5,8 @@ from types import ModuleType
 
 
 class TorchAttributes(object):
-    """
+    """Adds torch module related custom attributes.
+
     TorchAttributes is a special class where all custom attributes related
     to the torch module can be added. Any global parameter, configuration,
     or reference relating to PyTorch should be stored here instead of
@@ -14,16 +15,16 @@ class TorchAttributes(object):
     The main reason we need this is because the hooking process occasionally
     needs to save global objects, notably including what methods to hook and
     what methods to NOT hook.
+
+    This will hold all necessary attributes PySyft needs.
+
+    Args:
+        torch: A ModuleType indicating the torch module
+        hook: A ModuleType indicating the modules to hook
     """
 
     def __init__(self, torch: ModuleType, hook: ModuleType) -> None:
-        """
-        Initialization of the TorchAttributes class. This will hold all necessary
-        attributes PySyft needs.
-
-        Args:
-            torch: torch module
-        """
+        """Initialization of the TorchAttributes class."""
 
         # SECTION: List all functions in torch module that we want to overload
 
@@ -95,15 +96,16 @@ class TorchAttributes(object):
     def _command_guard(
         self, command: str, torch_domain: str, get_native: bool = False
     ) -> Union[Callable[..., Any], str]:
-        """
-        Check that a command is in a given torch_domain and can be safely used
+        """Checks command is in a given torch_domain and can be safely used.
 
         Args:
-            command (str): the command name
-            torch_domain (str): name of the torch domain or module in which the command is
-                supposed to be
-            get_native (boolean): if False (default), return the command name. If True, return
-                the native command function
+            command: A string indicating command name.
+            torch_domain: A string indicating torch domain name or module in
+                which the command is supposed to be.
+            get_native: A boolean parameter (default False) to indicate whether
+                to return the command name or the native torch function. If
+                False, return command name else return the native torch
+                function.
 
         Returns:
             The command name or a native torch function
@@ -115,15 +117,17 @@ class TorchAttributes(object):
         return command
 
     def _is_command_valid_guard(self, command: str, torch_domain: str) -> bool:
-        """
+        """Validates the command.
+
         Indicates whether a command is valid with respect to the torch guard
 
         Args:
-            command (str): the command to test
-            torch_domain (str): the torch domain or module in which the command is supposed to be
+            command: A string indicating command to test.
+            torch_domain: A string indicating the torch domain or module in
+                which the command is supposed to be.
 
         Returns:
-            A boolean
+            A boolean indicating whether the command is valid.
         """
         try:
             self._command_guard(command, torch_domain)
@@ -132,10 +136,13 @@ class TorchAttributes(object):
         return True
 
     def eval_torch_modules(self) -> None:
-        """
-        For each torch command functions in native_commands, transform the dictionary so
-        that to each key, which is the name of the hooked command, now corresponds a value
-        which is the evaluated native name of the command, namely the native command.
+        """Builds a mapping between the hooked and native commands.
+
+        For each torch command functions in native_commands, transform the
+        dictionary so that to each key, which is the name of the hooked
+        command, now corresponds a value which is the evaluated native name of
+        the command, namely the native command.
+
         Note that we don't do this for methods.
         """
         for cmd_name, native_cmd_name in self.native_commands["torch_modules"].items():
@@ -146,14 +153,13 @@ class TorchAttributes(object):
 
     @staticmethod
     def get_native_torch_name(attr: str) -> str:
-        """
-        Return the name of the native command given the name of the hooked command.
+        """Returns the name of the native command for the given hooked command.
 
         Args:
-            attr (str): the name of the hooked command (ex: torch.add)
+            attr: A string indicating the hooked command name (ex: torch.add)
 
         Returns:
-            the name of the native command (ex: torch.native_add)
+            The name of the native command (ex: torch.native_add)
         """
         parts = attr.split(".")
         parts[-1] = "native_" + parts[-1]

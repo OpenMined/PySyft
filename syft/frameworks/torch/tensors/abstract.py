@@ -10,6 +10,22 @@ class AbstractTensor(ABC):
     """
 
     def wrap(self):
+        """Wraps the class inside torch tensor.
+
+        Because PyTorch does not (yet) support functionality for creating
+        arbitrary Tensor types (via subclassing torch.Tensor), in order for our
+        new tensor types (such as PointerTensor) to be usable by the rest of
+        PyTorch (such as PyTorch's layers and loss functions), we need to wrap
+        all of our new tensor types inside of a native PyTorch type.
+
+        This function adds a .wrap() function to all of our tensor types (by
+        adding it to AbstractTensor), such that (on any custom tensor
+        my_tensor), my_tensor.wrap() will return a tensor that is compatible
+        with the rest of the PyTorch API.
+
+        Returns:
+            A pytorch tensor.
+        """
         wrapper = torch.Tensor()
         wrapper.child = self
         wrapper.is_wrapper = True
@@ -18,35 +34,44 @@ class AbstractTensor(ABC):
     def serialize(
         self, compress=True, compress_scheme=0
     ):  # Code 0 is LZ4 - check serde.py to see others
-        """This convenience method serializes the tensor on which it's called.
+        """Serializes the tensor on which it's called.
 
-            This is the high level convenience function for serializing torch tensors.
-            It includes three steps, Simplify, Serialize, and Compress as described
-            in serde.py.
+        This is the high level convenience function for serializing torch
+        tensors. It includes three steps, Simplify, Serialize, and Compress as
+        described in serde.py.
 
-            Args:
-                self (AbstractTensor): the tensor to be serialized
-                compress (bool): whether or not to compress the object
-                compress_scheme (int): the integer code specifying which compression
-                    scheme to use (see serde.py for scheme codes) if compress == True.
-                    The compression scheme is set to LZ4 by default (code 0).
+        Args:
+            compress: A boolean indicating whether to compress the object or
+                not.
+            compress_scheme: An integer code specifying the compression scheme
+                to use (see serde.py for scheme codes) if compress is True. The
+                compression scheme is set to LZ4 by default (code 0).
 
-            Returns:
-                binary: the serialized form of the tensor.
-
-            Examples:
-
+        Returns:
+            The serialized form of the tensor.
+            For example:
                 x = torch.Tensor([1,2,3,4,5])
                 x.serialize() # returns a serialized object
         """
-
         return sy.serde.serialize(self, compress=compress, compress_scheme=compress_scheme)
 
 
 def initialize_tensor(
     hook_self, cls, torch_tensor: bool = False, owner=None, id=None, *init_args, **init_kwargs
 ):
+    """Initializes the tensor.
 
+    Args:
+        hook_self: A reference to TorchHook class.
+        cls: An object to keep track of id, owner and whether it is a native
+            tensor or a wrapper over pytorch.
+        torch_tensor: A boolean parameter (default False) to indicate whether
+            it is torch tensor or not.
+        owner: The owner of the tensor being initialised, leave it blank
+            to if you have already provided a reference to TorchHook class.
+        id: The id of tensor, a random id will be generated if there is no id
+            specified.
+    """
     cls.is_wrapper = False
 
     if not torch_tensor:
