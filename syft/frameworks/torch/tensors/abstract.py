@@ -12,6 +12,17 @@ class AbstractTensor(ABC):
     def wrap(self):
         """Wraps the class inside torch tensor.
 
+        Because PyTorch does not (yet) support functionality for creating
+        arbitrary Tensor types (via subclassing torch.Tensor), in order for our
+        new tensor types (such as PointerTensor) to be usable by the rest of
+        PyTorch (such as PyTorch's layers and loss functions), we need to wrap
+        all of our new tensor types inside of a native PyTorch type.
+
+        This function adds a .wrap() function to all of our tensor types (by
+        adding it to AbstractTensor), such that (on any custom tensor
+        my_tensor), my_tensor.wrap() will return a tensor that is compatible
+        with the rest of the PyTorch API.
+
         Returns:
             A pytorch tensor.
         """
