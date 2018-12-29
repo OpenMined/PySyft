@@ -19,26 +19,6 @@ class TorchTensor(AbstractTensor):
     checking AbstractTensor.
     """
 
-    def get(self):
-        """Gets remote data from remote places to the client.
-
-        Many tensor types point to data which exists at another location,
-        including PointerTensor and various Secure Multi-Party Computation
-        tensors. All of these tensor types have a .get() method which requests
-        that the data on the remote machine be set back to the client
-        (to the machine upon which .get() is called).
-
-        Returns:
-            An AbstractTensor, typically this method will return a single
-            tensor, although that tensor might be a combination of several
-            remote tensors which exist on several different machines. If the
-            method you're trying to call/implement needs to return multiple
-            tensors or has some very special way in which those tensors should
-            be combined, consider creating a special method specifically for
-            that functionality.
-        """
-        return self.child.get()
-
     def send(self, location):
         """Gets the pointer to a new remote object.
 
@@ -103,7 +83,7 @@ class TorchTensor(AbstractTensor):
             owner: A BaseWorker parameter to specify the worker on which the
                 pointer is located. It is also where the pointer is registered
                 if register is set to True.
-            id: A string or integer parameter to specify the id of the pointer
+            ptr_id: A string or integer parameter to specify the id of the pointer
                 in case you wish to set it manually for any special reason.
                 Otherwise, it will be set randomly.
 
@@ -142,7 +122,7 @@ class TorchTensor(AbstractTensor):
                 id=ptr_id,
             )
 
-        return ptr.wrap()
+        return ptr
 
     def reshape(self, *args, **kwargs):
         """Reshapes a tensor to have new dimensions.

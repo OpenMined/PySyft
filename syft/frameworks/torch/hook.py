@@ -6,7 +6,7 @@ import syft
 from ... import workers
 
 from ...workers import BaseWorker
-from .tensors import TorchTensor
+from .tensors import TorchTensor, PointerTensor
 from .torch_attributes import TorchAttributes
 from .tensors.abstract import initialize_tensor
 
@@ -102,6 +102,9 @@ class TorchHook:
         self.to_auto_overload = {}
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
+
+        # Overload auto overloaded with Torch methods
+        self._add_methods_from__torch_tensor(PointerTensor, TorchTensor)
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
