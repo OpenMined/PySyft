@@ -134,7 +134,7 @@ class BaseWorker(AbstractWorker):
         bin_response = self._send_msg(bin_message, location)
 
         # Step 3: deserialize the response
-        response = serde.deserialize(bin_response)
+        response = serde.deserialize(bin_response, worker=self)
 
         return response
 
@@ -153,7 +153,7 @@ class BaseWorker(AbstractWorker):
             A binary message response.
         """
         # Step 0: deserialize message
-        (msg_type, contents) = serde.deserialize(bin_message)
+        (msg_type, contents) = serde.deserialize(bin_message, worker=self)
 
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)

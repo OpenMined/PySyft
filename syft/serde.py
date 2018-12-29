@@ -42,6 +42,7 @@ import numpy
 import zstd
 import syft
 
+from syft.workers import AbstractWorker
 from syft.frameworks.torch.tensors import PointerTensor
 
 from syft.frameworks.torch.tensors.abstract import initialize_tensor
@@ -67,9 +68,7 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
 
     Args:
         obj (object): the object to be serialized
-
         compress (bool): whether or not to compress the object
-
         compress_scheme (int): the integer code specifying which compression
             scheme to use (see above this method for scheme codes) if
             compress == True.
@@ -105,7 +104,9 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     return b"\x30" + binary
 
 
-def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
+def deserialize(
+    binary: bin, worker: AbstractWorker = None, compressed=True, compress_scheme=LZ4
+) -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 
     This is the high level function for deserializing any object or collection
@@ -113,7 +114,10 @@ def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
     steps, Decompress, Deserialize, and Detail as described inline below.
 
     Args:
-        bin (binary): the serialized object to be deserialized.
+        binary (bin): the serialized object to be deserialized.
+        worker (AbstractWorker): the worker which is acquiring the message content, for example
+            used to specify the owner of a tensor received(not obvious for
+            virtual workers)
         compressed (bool): whether or not the serialized object is compressed
             (and thus whether or not it needs to be decompressed).
         compress_scheme (int): the integer code specifying which compression
@@ -123,6 +127,8 @@ def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
     Returns:
         binary: the serialized form of the object.
     """
+    if worker is None:
+        worker = syft.torch.hook.local_worker
 
     # check the 1-byte header to see if input stream was compressed or not
     if binary[0] == UNUSED_COMPRESSION_INDICATOR:
@@ -146,7 +152,7 @@ def deserialize(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
     # serialization library wasn't natively able to serialize (such
     # as msgpack's inability to serialize torch tensors or ... or
     # python slice objects
-    return _detail(simple_objects)
+    return _detail(worker, simple_objects)
 
 
 # Chosen Compression Algorithm
@@ -157,7 +163,8 @@ def _compress(decompressed_input_bin: bin, compress_scheme=LZ4) -> bin:
     This function compresses a binary using LZ4
 
     Args:
-        bin: binary to be compressed
+        decompressed_input_bin (bin): binary to be compressed
+        compress_scheme: the compression method to use
 
     Returns:
         bin: a compressed binary
@@ -178,7 +185,8 @@ def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
     This function decompresses a binary using LZ4
 
     Args:
-        bin: a compressed binary
+        compressed_input_bin (bin): a compressed binary
+        compress_scheme: the compression method to use
 
     Returns:
         bin: decompressed binary
@@ -204,7 +212,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     very fast PyTorch pickler.
 
     Args:
-        torch.Tensor: an input tensor to be serialized
+        tensor (torch.Tensor): an input tensor to be serialized
 
     Returns:
         tuple: serialized tuple of torch tensor. The first value is the
@@ -218,21 +226,21 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     return (tensor.id, tensor_bin)
 
 
-def _detail_torch_tensor(tensor_tuple: tuple) -> torch.Tensor:
+def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
     """
     This function converts a serialized torch tensor into a torch tensor
     using pickle.
 
     Args:
         tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
-        the first value is the ID and the second vlaue is the binary for the
-        PyTorch object.
+            the first value is the ID and the second vlaue is the binary for the
+            PyTorch object.
 
     Returns:
         torch.Tensor: a torch tensor that was serialized
     """
 
-    id, tensor = tensor_tuple
+    tensor_id, tensor = tensor_tuple
 
     bin_tensor_stream = io.BytesIO(tensor)
     tensor = torch.load(bin_tensor_stream)
@@ -241,8 +249,8 @@ def _detail_torch_tensor(tensor_tuple: tuple) -> torch.Tensor:
         hook_self=syft.torch.hook,
         cls=tensor,
         torch_tensor=True,
-        owner=None,
-        id=id,
+        owner=worker,
+        id=tensor_id,
         init_args=[],
         kwargs={},
     )
@@ -264,7 +272,7 @@ def _simplify_collection(my_collection: Collection) -> Collection:
     the functionality of this function.
 
     Args:
-        Collection: a collection of python objects
+        my_collection (Collection): a collection of python objects
 
     Returns:
         Collection: a collection of the same type as the input of simplified
@@ -286,7 +294,7 @@ def _simplify_collection(my_collection: Collection) -> Collection:
     return my_type(pieces)
 
 
-def _detail_collection_list(my_collection: Collection) -> Collection:
+def _detail_collection_list(worker: AbstractWorker, my_collection: Collection) -> Collection:
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a collection of simple python objects
@@ -295,7 +303,8 @@ def _detail_collection_list(my_collection: Collection) -> Collection:
     converts binary objects into torch Tensors where appropriate.
 
     Args:
-        Collection: a collection of simple python objects (including binary).
+        worker: the worker doing the deserialization
+        my_collection (Collection): a collection of simple python objects (including binary).
 
     Returns:
         Collection: a collection of the same type as the input where the objects
@@ -307,14 +316,14 @@ def _detail_collection_list(my_collection: Collection) -> Collection:
     # Step 1: deserialize each part of the collection
     for part in my_collection:
         try:
-            pieces.append(_detail(part).decode("utf-8"))  # transform bytes back to string
+            pieces.append(_detail(worker, part).decode("utf-8"))  # transform bytes back to string
         except AttributeError:
-            pieces.append(_detail(part))
+            pieces.append(_detail(worker, part))
 
     return pieces
 
 
-def _detail_collection_set(my_collection: Collection) -> Collection:
+def _detail_collection_set(worker: AbstractWorker, my_collection: Collection) -> Collection:
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a collection of simple python objects
@@ -323,7 +332,8 @@ def _detail_collection_set(my_collection: Collection) -> Collection:
     converts binary objects into torch Tensors where appropriate.
 
     Args:
-        Collection: a collection of simple python objects (including binary).
+        worker: the worker doing the deserialization
+        my_collection (Collection): a collection of simple python objects (including binary).
 
     Returns:
         Collection: a collection of the same type as the input where the objects
@@ -335,13 +345,13 @@ def _detail_collection_set(my_collection: Collection) -> Collection:
     # Step 1: deserialize each part of the collection
     for part in my_collection:
         try:
-            pieces.append(_detail(part).decode("utf-8"))  # transform bytes back to string
+            pieces.append(_detail(worker, part).decode("utf-8"))  # transform bytes back to string
         except AttributeError:
-            pieces.append(_detail(part))
+            pieces.append(_detail(worker, part))
     return set(pieces)
 
 
-def _detail_collection_tuple(my_tuple: Tuple) -> Tuple:
+def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a tuple of simple python objects
@@ -352,7 +362,8 @@ def _detail_collection_tuple(my_tuple: Tuple) -> Tuple:
     `msgpack` is encoding a tuple as a list.
 
     Args:
-        tuple: a collection of simple python objects (including binary).
+        worker: the worker doing the deserialization
+        my_tuple (Tuple): a collection of simple python objects (including binary).
 
     Returns:
         tuple: a collection of the same type as the input where the objects
@@ -363,7 +374,7 @@ def _detail_collection_tuple(my_tuple: Tuple) -> Tuple:
 
     # Step 1: deserialize each part of the collection
     for part in my_tuple:
-        pieces.append(_detail(part))
+        pieces.append(_detail(worker, part))
 
     return tuple(pieces)
 
@@ -372,6 +383,23 @@ def _detail_collection_tuple(my_tuple: Tuple) -> Tuple:
 
 
 def _simplify_dictionary(my_dict: Dict) -> Dict:
+    """
+    This function is designed to search a dict for any objects
+    which may need to be simplified (i.e., torch tensors). It iterates
+    through each key, value in the dict and calls _simplify on it. Finally,
+    it returns the output dict as the same type as the input dict
+    so that the consuming serialization step knows the correct type info. The
+    reverse function to this function is _detail_dictionary, which undoes
+    the functionality of this function.
+
+    Args:
+        my_dict (Dict): a dictionary of python objects
+
+    Returns:
+        Dict: a dictionary of the same type as the input of simplified
+            objects.
+
+    """
     pieces = {}
     # for dictionaries we want to simplify both the key and the value
     for key, value in my_dict.items():
@@ -380,20 +408,35 @@ def _simplify_dictionary(my_dict: Dict) -> Dict:
     return pieces
 
 
-def _detail_dictionary(my_dict: Dict) -> Dict:
+def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
+    """
+    This function is designed to operate in the opposite direction of
+    _simplify_dictionary. It takes a dictionary of simple python objects
+    and iterates through it to determine whether objects in the collection
+    need to be converted into more advanced types. In particular, it
+    converts binary objects into torch Tensors where appropriate.
+
+    Args:
+        worker: the worker doing the deserialization
+        my_dict (Dict): a dictionary of simple python objects (including binary).
+
+    Returns:
+        tuple: a collection of the same type as the input where the objects
+            in the collection have been detailed.
+    """
     pieces = {}
     # for dictionaries we want to detail both the key and the value
     for key, value in my_dict.items():
 
         try:
-            detailed_key = _detail(key).decode("utf-8")
+            detailed_key = _detail(worker, key).decode("utf-8")
         except AttributeError:
-            detailed_key = _detail(key)
+            detailed_key = _detail(worker, key)
 
         try:
-            detailed_value = _detail(value).decode("utf-8")
+            detailed_value = _detail(worker, value).decode("utf-8")
         except AttributeError:
-            detailed_value = _detail(value)
+            detailed_value = _detail(worker, value)
 
         pieces[detailed_key] = detailed_value
 
@@ -408,7 +451,7 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
     This function extracts the start, stop and step from the range.
 
     Args:
-        range: a range object
+        my_range (range): a range object
 
     Returns:
         list: a list defining the range parameters [start, stop, step]
@@ -424,12 +467,14 @@ def _simplify_range(my_range: range) -> Tuple[int, int, int]:
     return (my_range.start, my_range.stop, my_range.step)
 
 
-def _detail_range(my_range_params: Tuple[int, int, int]) -> range:
+def _detail_range(worker: AbstractWorker, my_range_params: Tuple[int, int, int]) -> range:
     """
     This function extracts the start, stop and step from a tuple.
 
     Args:
-        list: a list defining the range parameters [start, stop, step]
+        worker: the worker doing the deserialization (only here to standardise signature
+            with other _detail functions)
+        my_range_params (tuple): a tuple defining the range parameters [start, stop, step]
 
     Returns:
         range: a range object
@@ -453,7 +498,7 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
         and stores the dtype and shape for reconstruction
 
     Args:
-        numpy.ndarray: a numpy array
+        my_array (numpy.ndarray): a numpy array
 
     Returns:
         list: a list holding the byte representation, shape and dtype of the array
@@ -470,14 +515,17 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
     return (arr_bytes, arr_shape, arr_dtype)
 
 
-def _detail_ndarray(arr_representation: Tuple[bin, Tuple, str]) -> numpy.ndarray:
+def _detail_ndarray(
+    worker: AbstractWorker, arr_representation: Tuple[bin, Tuple, str]
+) -> numpy.ndarray:
     """
     This function reconstruct a numpy array from it's byte data, the shape and the dtype
         by first loading the byte data with the appropiate dtype and then reshaping it into the
         original shape
 
     Args:
-        list: a list holding the byte representation, shape and dtype of the array
+        worker: the worker doing the deserialization
+        arr_representation (tuple): a tuple holding the byte representation, shape and dtype of the array
 
     Returns:
         numpy.ndarray: a numpy array
@@ -516,7 +564,7 @@ def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
     return (my_slice.start, my_slice.stop, my_slice.step)
 
 
-def _detail_slice(my_slice: Tuple[int, int, int]) -> slice:
+def _detail_slice(worker: AbstractWorker, my_slice: Tuple[int, int, int]) -> slice:
     """
     This function extracts the start, stop and step from a list.
 
@@ -540,7 +588,7 @@ def _simplify_ellipsis(e: Ellipsis) -> bytes:
     return b""
 
 
-def _detail_ellipsis(ellipsis: bytes) -> Ellipsis:
+def _detail_ellipsis(worker: AbstractWorker, ellipsis: bytes) -> Ellipsis:
     return ...
 
 
@@ -548,7 +596,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     """
     This function takes the attributes of a PointerTensor and saves them in a dictionary
     Args:
-        PointerTensor: a PointerTensor
+        ptr (PointerTensor): a PointerTensor
     Returns:
         tuple: a tuple holding the unique attributes of the pointer
     Examples:
@@ -566,12 +614,13 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     # return _simplify_dictionary(data)
 
 
-def _detail_pointer_tensor(tensor_tuple: tuple) -> PointerTensor:
+def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> PointerTensor:
     """
     This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
     We use the spread operator to pass the dict data as arguments
     to the init method of PointerTensor
     Args:
+        worker: the worker doing the deserialization
         tensor_tuple: a tuple holding the attributes of the PointerTensor
     Returns:
         PointerTensor: a PointerTensor
@@ -581,9 +630,10 @@ def _detail_pointer_tensor(tensor_tuple: tuple) -> PointerTensor:
     # TODO: fix comment for this and simplifier
 
     return PointerTensor(
-        id=tensor_tuple[0],
-        id_at_location=tensor_tuple[1],
         location=syft.torch.hook.local_worker.get_worker(tensor_tuple[2]),
+        id_at_location=tensor_tuple[1],
+        owner=worker,
+        id=tensor_tuple[0],
     )
 
     # a more general but slower/more verbose option
@@ -657,7 +707,7 @@ simplifiers = {
 }
 
 
-def _detail(obj: object) -> object:
+def _detail(worker: AbstractWorker, obj: object) -> object:
     """
     This function reverses the functionality of _simplify. Where applicable,
     it converts simple objects into more complex objects such as converting
@@ -665,6 +715,9 @@ def _detail(obj: object) -> object:
     why _simplify and _detail are needed.
 
     Args:
+        worker: the worker which is acquiring the message content, for example
+        used to specify the owner of a tensor received(not obvious for
+        virtual workers)
         obj: a simple Python object which msgpack deserialized
 
     Returns:
@@ -673,7 +726,7 @@ def _detail(obj: object) -> object:
 
     """
     if type(obj) == list:
-        return detailers[obj[0]](obj[1])
+        return detailers[obj[0]](worker, obj[1])
     else:
         return obj
 
