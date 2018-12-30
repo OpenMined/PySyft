@@ -100,6 +100,8 @@ class TorchHook:
             self.local_worker.hook = self
 
         self.to_auto_overload = {}
+        
+        self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
@@ -143,6 +145,70 @@ class TorchHook:
 
         # Overload auto overloaded with Torch methods
         self._add_methods_from__torch_tensor(tensor_type, syft_type)
+
+
+    def _hook_syft_tensor(self, tensor_type: type, syft_type: type):
+        """
+        Add hooked version of all methods of the tensor_type to the syft tensor:
+        instead of performing the native tensor method, it will replace each
+        tensor of type syft_type occurring in self / args / kwargs with its child.
+        :param tensor_type: the tensor_type which holds the methods
+        :param syft_type: the syft type to hook
+        """
+        # Overload auto overloaded with Torch methods
+        self._add_methods_from__torch_tensor(syft_type, TorchTensor)
+
+        # for attr in self.to_auto_overload[tensor_type]:
+        #    setattr(syft_type, attr, self.get_overloaded_method(attr))
+
+    def get_overloaded_method(hook_self, attr):
+
+        print("get overloaded", attr)
+
+        def build_rule(args):
+            if isinstance(args, list):
+                return [build_rule(a) for a in args]
+            elif isinstance(args, tuple):
+                return tuple([build_rule(a) for a in args])
+            elif isinstance(args, PointerTensor) or args.__class__.__name__ == "LogTensor":
+                return 1
+            else:
+                return 0
+
+        def one_fold(lambdas, args):
+            return lambdas[0](args[0])
+
+        def two_fold(lambdas, args):
+            return lambdas[0](args[0]), lambdas[1](args[1])
+
+        def three_fold(lambdas, args):
+            return lambdas[0](args[0]), lambdas[1](args[1]), lambdas[2](args[2])
+
+        def build_args_hook(args, rules):
+            lambdas = [
+                (lambda i: i)
+                if not r
+                else build_args_hook(a, r)
+                if isinstance(r, (list, tuple))
+                else (lambda i: i.child)
+                for a, r in zip(args, rules)
+            ]
+            folds = {1: one_fold, 2: two_fold, 3: three_fold}
+            f = folds[len(lambdas)]
+            return lambda x: f(lambdas, x)
+
+        def overloaded_attr(*args, **kwargs):
+            if attr not in hook_self.args_hook_for_overloaded_attr:
+                rule = build_rule(args)
+                print(rule)
+                args_hook_function = build_args_hook(args, rule)
+                hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
+
+            hook_args = hook_self.args_hook_for_overloaded_attr[attr]
+            new_args = hook_args(args)
+            return attr(*new_args)
+
+        return overloaded_attr
 
     def _add_registration_to___init__(hook_self, tensor_type: type, torch_tensor: bool = False):
         """Adds several attributes to the tensor.
