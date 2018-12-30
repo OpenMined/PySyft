@@ -628,13 +628,22 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
         ptr = _detail_pointer_tensor(data)
     """
     # TODO: fix comment for this and simplifier
+    obj_id = tensor_tuple[0]
+    id_at_location = tensor_tuple[1]
+    worker_id = tensor_tuple[2].decode("utf-8")
 
-    return PointerTensor(
-        location=syft.torch.hook.local_worker.get_worker(tensor_tuple[2]),
-        id_at_location=tensor_tuple[1],
-        owner=worker,
-        id=tensor_tuple[0],
-    )
+    print(worker.id, "detailing pointer", worker_id, "at", id_at_location)
+
+    # If the pointer received is pointing at the current worker, we load the tensor instead
+    if worker_id == worker.id:
+        tensor = worker.get_obj(id_at_location)
+        return tensor
+    # Else we keep the same Pointer
+    else:
+        location = syft.torch.hook.local_worker.get_worker(worker_id)
+        return PointerTensor(
+            location=location, id_at_location=id_at_location, owner=worker, id=obj_id
+        )
 
     # a more general but slower/more verbose option
 

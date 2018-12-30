@@ -60,7 +60,11 @@ class BaseWorker(AbstractWorker):
             self._known_workers[k] = v
         self.add_worker(self)
         # For performance, we cache each
-        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
+        self._message_router = {
+            MSGTYPE_CMD: self.execute_command,
+            MSGTYPE_OBJ: self.set_obj,
+            MSGTYPE_OBJ_REQ: self.respond_to_obj_req,
+        }
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -226,6 +230,37 @@ class BaseWorker(AbstractWorker):
 
         return pointer
 
+    def execute_command(self, message):
+        command, _self, args, kwargs = message
+        command = command.decode("utf-8")
+        if _self is not None:
+            print(_self)
+            print(command)
+            tensor = getattr(_self, command)(*args, **kwargs)
+            # FIXME: should be added automatically
+            tensor.owner = self
+            # tensor.id ??
+
+            self.register_obj(tensor)
+
+            pointer = tensor.create_pointer(
+                owner=self, location=self, id_at_location=tensor.id, register=True, ptr_id=tensor.id
+            )
+            return pointer
+        # TODO: case for functions (self_ is None)
+
+    def send_command(self, recipient, message):
+        """
+        Send a command through a message to a recipient worker
+        :param recipient:
+        :param message:
+        :return:
+        """
+
+        response = self.send_msg(MSGTYPE_CMD, message, location=recipient)
+
+        return response
+
     def set_obj(self, obj):
         """Adds an object to the registry of objects.
 
@@ -272,7 +307,8 @@ class BaseWorker(AbstractWorker):
             string uniquely identifying the object.
         """
         if not self.is_client_worker:
-            obj.id = obj_id
+            if obj_id is not None:
+                obj.id = obj_id
             self.set_obj(obj)
 
     def de_register_obj(self, obj, _recurse_torch_objs=True):

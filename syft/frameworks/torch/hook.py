@@ -1,5 +1,6 @@
 import inspect
 import re
+import random
 import logging
 import types
 import syft
@@ -100,13 +101,12 @@ class TorchHook:
             self.local_worker.hook = self
 
         self.to_auto_overload = {}
-        
+
         self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
-        # Overload auto overloaded with Torch methods
-        self._add_methods_from__torch_tensor(PointerTensor, TorchTensor)
+        self._hook_pointer_tensor(torch.Tensor, PointerTensor)
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
@@ -146,6 +146,41 @@ class TorchHook:
         # Overload auto overloaded with Torch methods
         self._add_methods_from__torch_tensor(tensor_type, syft_type)
 
+    def _hook_pointer_tensor(self, tensor_type: type):
+        """
+        Add hooked version of all methods of the tensor_type to the
+        Pointer tensor: instead of performing the native tensor
+        method, it will be sent remotely to the location the pointer
+        is pointing at.
+        :param tensor_type: the tensor_type which holds the methods
+        """
+        # Add methods defined in the TorchTensor class to the Pointer class
+        self._add_methods_from__torch_tensor(PointerTensor, TorchTensor)
+
+        # Use a pre-defined list to select the methods to overload
+        for attr in self.to_auto_overload[tensor_type] + ["add"]:
+            setattr(PointerTensor, f"new_{attr}", self.get_pointer_method(attr))
+
+    @staticmethod
+    def get_pointer_method(attr):
+        """
+        Return a overloaded method which doesn't perform the initial method
+        but send it to the appropriate worker, using the self attribute
+        which is a pointer with a location
+        :param attr: the method to overload
+        :return: the overloaded method
+        """
+
+        def overloaded_attr(self, *args, **kwargs):
+            owner = self.owner
+            # Identify the location using self which is a pointer
+            location = self.location
+            # Build the message to send
+            message = (attr, self, args, kwargs)
+            response = owner.send_command(location, message)
+            return response
+
+        return overloaded_attr
 
     def _hook_syft_tensor(self, tensor_type: type, syft_type: type):
         """
@@ -271,17 +306,13 @@ class TorchHook:
 
         @property
         def id(self):
-            if self.is_wrapper:
-                return self.child.id
-            else:
-                return self._id
+            if not hasattr(self, "_id"):
+                self._id = int(10e10 * random.random())
+            return self._id
 
         @id.setter
         def id(self, new_id):
-            if self.is_wrapper:
-                self.child.id = new_id
-            else:
-                self._id = new_id
+            self._id = new_id
             return self
 
         tensor_type.id = id
