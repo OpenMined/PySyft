@@ -454,7 +454,7 @@ class BaseWorker(AbstractWorker):
             5
             [syft.core.frameworks.torch.tensor.FloatTensor of size 5]
             >>> x.send(bob)
-            FloatTensor[_PointerTensor - id:9121428371 owner:0 loc:bob 
+            FloatTensor[_PointerTensor - id:9121428371 owner:0 loc:bob
                         id@loc:47416674672]
             >>> x.get()
             1

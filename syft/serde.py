@@ -525,7 +525,8 @@ def _detail_ndarray(
 
     Args:
         worker: the worker doing the deserialization
-        arr_representation (tuple): a tuple holding the byte representation, shape and dtype of the array
+        arr_representation (tuple): a tuple holding the byte representation, shape
+        and dtype of the array
 
     Returns:
         numpy.ndarray: a numpy array
