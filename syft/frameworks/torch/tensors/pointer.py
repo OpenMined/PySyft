@@ -1,4 +1,5 @@
-from .abstract import AbstractTensor
+from syft.frameworks.torch.tensors.abstract import AbstractTensor
+from syft.codes import MSGTYPE
 
 
 class PointerTensor(AbstractTensor):
@@ -166,3 +167,18 @@ class PointerTensor(AbstractTensor):
             self.owner.de_register_obj(self)
 
         return tensor
+
+    def __del__(self):
+        """This method garbage collects the object this pointer is pointing to.
+        By default, PySyft assumes that every object only has one pointer to it.
+        Thus, if the pointer gets garbage collected, we want to automatically
+        garbage collect the object being pointed to.
+        """
+
+        # if .get() gets called on the pointer before this method is called, then
+        # the remote object has already been removed. This results in an error on
+        # this next line because self no longer has .owner. Thus, we need to check
+        # first here and not try to call self.owner.anything if self doesn't have
+        # .owner anymore.
+        if hasattr(self, "owner"):
+            self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)

@@ -6,10 +6,7 @@ from syft.exceptions import WorkerNotFoundException
 from syft import serde
 from syft.workers import AbstractWorker
 
-MSGTYPE_CMD = 1
-MSGTYPE_OBJ = 2
-MSGTYPE_OBJ_REQ = 3
-MSGTYPE_EXCEPTION = 4
+from syft.codes import MSGTYPE
 
 
 class BaseWorker(AbstractWorker):
@@ -61,9 +58,9 @@ class BaseWorker(AbstractWorker):
         self.add_worker(self)
         # For performance, we cache each
         self._message_router = {
-            MSGTYPE_CMD: self.execute_command,
-            MSGTYPE_OBJ: self.set_obj,
-            MSGTYPE_OBJ_REQ: self.respond_to_obj_req,
+            MSGTYPE.OBJ: self.set_obj,
+            MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
+            MSGTYPE.OBJ_DEL: self.rm_obj,
         }
 
     # SECTION: Methods which MUST be overridden by subclasses
@@ -255,7 +252,7 @@ class BaseWorker(AbstractWorker):
         :return:
         """
 
-        response = self.send_msg(MSGTYPE_CMD, message, location=recipient)
+        response = self.send_msg(MSGTYPE.CMD, message, location=recipient)
 
         return response
 
@@ -265,7 +262,6 @@ class BaseWorker(AbstractWorker):
         Args:
             obj: A torch or syft tensor with an id
         """
-
         self._objects[obj.id] = obj
 
     def get_obj(self, obj_id):
@@ -349,7 +345,7 @@ class BaseWorker(AbstractWorker):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
-        return self.send_msg(MSGTYPE_OBJ, obj, location)
+        return self.send_msg(MSGTYPE.OBJ, obj, location)
 
     def request_obj(self, obj_id, location):
         """Returns the requested object from specified location.
@@ -362,7 +358,7 @@ class BaseWorker(AbstractWorker):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(MSGTYPE_OBJ_REQ, obj_id, location)
+        obj = self.send_msg(MSGTYPE.OBJ_REQ, obj_id, location)
         return obj
 
     # SECTION: Manage the workers network
