@@ -106,7 +106,7 @@ class TorchHook:
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
-        self._hook_pointer_tensor(torch.Tensor, PointerTensor)
+        self._hook_pointer_tensor(torch.Tensor)
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
@@ -137,11 +137,11 @@ class TorchHook:
         # Returns a list of methods to be overloaded, stored in the dict to_auto_overload
         # with tensor_type as a key
         self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
-            tensor_type, syft_type
+            tensor_type
         )
 
-        # Rename native functions
-        self._rename_native_functions(tensor_type)
+        # [We don't rename native methods as torch tensors are not hooked] Rename native functions
+        # #self._rename_native_functions(tensor_type)
 
         # Overload auto overloaded with Torch methods
         self._add_methods_from__torch_tensor(tensor_type, syft_type)
@@ -158,8 +158,12 @@ class TorchHook:
         self._add_methods_from__torch_tensor(PointerTensor, TorchTensor)
 
         # Use a pre-defined list to select the methods to overload
-        for attr in self.to_auto_overload[tensor_type] + ["add"]:
-            setattr(PointerTensor, f"new_{attr}", self.get_pointer_method(attr))
+        for attr in self.to_auto_overload[tensor_type]:
+            # if we haven't already overloaded this function
+            if f"native_{attr}" not in dir(tensor_type):
+                native_method = getattr(tensor_type, attr)
+                setattr(PointerTensor, f"native_{attr}", native_method)
+                setattr(PointerTensor, attr, self.get_pointer_method(attr))
 
     @staticmethod
     def get_pointer_method(attr):
@@ -330,7 +334,7 @@ class TorchHook:
 
         tensor_type.is_wrapper = is_wrapper
 
-    def _which_methods_should_we_auto_overload(self, tensor_type: type, syft_type: type):
+    def _which_methods_should_we_auto_overload(self, tensor_type: type):
         """Creates a list of Torch methods to auto overload.
 
         By default, it looks for the intersection between the methods of
@@ -347,7 +351,7 @@ class TorchHook:
 
         to_overload = []
 
-        for attr in dir(syft_type):
+        for attr in dir(tensor_type):
 
             # Conditions for overloading the method
             if attr in syft.torch.exclude:

@@ -632,8 +632,6 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     id_at_location = tensor_tuple[1]
     worker_id = tensor_tuple[2].decode("utf-8")
 
-    print(worker.id, "detailing pointer", worker_id, "at", id_at_location)
-
     # If the pointer received is pointing at the current worker, we load the tensor instead
     if worker_id == worker.id:
         tensor = worker.get_obj(id_at_location)

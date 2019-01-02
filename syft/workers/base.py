@@ -234,8 +234,6 @@ class BaseWorker(AbstractWorker):
         command, _self, args, kwargs = message
         command = command.decode("utf-8")
         if _self is not None:
-            print(_self)
-            print(command)
             tensor = getattr(_self, command)(*args, **kwargs)
             # FIXME: should be added automatically
             tensor.owner = self

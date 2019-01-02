@@ -123,13 +123,3 @@ class TorchTensor(AbstractTensor):
             )
 
         return ptr
-
-    def reshape(self, *args, **kwargs):
-        """Reshapes a tensor to have new dimensions.
-
-        This method is the same functionality as the default reshape function
-        which ships with PyTorch. See the PyTorch documentation for the correct
-        args and kwargs.
-        https://pytorch.org/docs/stable/torch.html#torch.reshape
-        """
-        return getattr(self, "native_reshape")(*args, **kwargs)
