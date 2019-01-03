@@ -13,14 +13,12 @@ from syft.serde import ZSTD
 
 
 import syft
-from syft import TorchHook
 from syft.exceptions import CompressionNotFoundException
 from syft.frameworks.torch.tensors import PointerTensor
 
 import msgpack
 import numpy
 import pytest
-import torch
 from torch import Tensor
 
 
@@ -284,7 +282,7 @@ def test_compressed_serde(compress_scheme):
 def test_invalid_compression_scheme(compress_scheme):
     arr = numpy.random.random((100, 100))
     try:
-        arr_serialized = serialize(arr, compress=True, compress_scheme=compress_scheme)
+        _ = serialize(arr, compress=True, compress_scheme=compress_scheme)
         assert False
     except CompressionNotFoundException:
         assert True
@@ -296,9 +294,7 @@ def test_invalid_decompression_scheme(compress_scheme):
     arr = numpy.ones((100, 100))
     arr_serialized = serialize(arr, compress=True, compress_scheme=LZ4)
     try:
-        arr_serialized_deserialized = deserialize(
-            arr_serialized, compressed=True, compress_scheme=compress_scheme
-        )
+        _ = deserialize(arr_serialized, compressed=True, compress_scheme=compress_scheme)
         assert False
     except CompressionNotFoundException:
         assert True

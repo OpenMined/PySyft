@@ -290,7 +290,6 @@ class BaseWorker(AbstractWorker):
         Args:
             obj_id: A string or integer id of an object to look up.
         """
-
         obj = self._objects[obj_id]
 
         return obj

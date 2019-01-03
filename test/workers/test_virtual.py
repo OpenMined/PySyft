@@ -4,7 +4,6 @@ from syft.workers.virtual import VirtualWorker
 from syft.codes import MSGTYPE
 from syft import serde
 
-import numpy
 import torch
 
 
@@ -49,7 +48,7 @@ def test_send_msg_using_tensor_api():
     obj_id = obj.id
 
     # send the object to Bob (from local_worker)
-    obj_ptr = obj.send(bob)
+    _ = obj.send(bob)
 
     # ensure tensor made it to Bob
     assert obj_id in bob._objects

@@ -252,8 +252,8 @@ class TorchHook:
                 # structure is the same as the args object, with 1 where there was
                 # (torch or syft) tensors and 0 when not (ex: number, str, ...)
                 rule = build_rule(args)
-                # Build a function with this rule to efficiently replace syft tensors (but not pointer)
-                # with their child in the args objects
+                # Build a function with this rule to efficiently replace syft tensors
+                # (but not pointer) with their child in the args objects
                 args_hook_function = build_args_hook(args, rule)
                 # Store this utility function in the registry
                 hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
@@ -463,17 +463,18 @@ class TorchHook:
                 added to it, typically just torch.Tensor.
         """
 
-        @property
-        def location(self):
-            return self.child.location
-
-        tensor_type.location = location
-
-        @property
-        def id_at_location(self):
-            return self.child.id_at_location
-
-        tensor_type.id_at_location = id_at_location
+        # Not needed in the headless setting
+        # @property
+        # def location(self):
+        #     return self.child.location
+        #
+        # tensor_type.location = location
+        #
+        # @property
+        # def id_at_location(self):
+        #     return self.child.id_at_location
+        #
+        # tensor_type.id_at_location = id_at_location
 
         @property
         def id(self):
@@ -541,22 +542,23 @@ class TorchHook:
 
         return to_overload
 
-    def _rename_native_functions(self, tensor_type: type):
-        """Renames functions that are not auto overloaded as native functions.
-
-        Args:
-            tensor_type: The type of tensor whose native methods are getting
-                renamed. Typically just torch.Tensor.
-        """
-        for attr in self.to_auto_overload[tensor_type]:
-
-            lit = getattr(tensor_type, attr)
-
-            # if we haven't already overloaded this function
-            if f"native_{attr}" not in dir(tensor_type):
-                setattr(tensor_type, f"native_{attr}", lit)
-
-            setattr(tensor_type, attr, None)
+    # Not needed at the moment
+    # def _rename_native_functions(self, tensor_type: type):
+    #     """Renames functions that are not auto overloaded as native functions.
+    #
+    #     Args:
+    #         tensor_type: The type of tensor whose native methods are getting
+    #             renamed. Typically just torch.Tensor.
+    #     """
+    #     for attr in self.to_auto_overload[tensor_type]:
+    #
+    #         lit = getattr(tensor_type, attr)
+    #
+    #         # if we haven't already overloaded this function
+    #         if f"native_{attr}" not in dir(tensor_type):
+    #             setattr(tensor_type, f"native_{attr}", lit)
+    #
+    #         setattr(tensor_type, attr, None)
 
     @staticmethod
     def _add_methods_from__torch_tensor(tensor_type: type, syft_type: type):
