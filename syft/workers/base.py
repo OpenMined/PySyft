@@ -2,10 +2,10 @@ import logging
 import random
 
 from abc import abstractmethod
+import syft
 from syft.exceptions import WorkerNotFoundException
 from syft import serde
 from syft.workers import AbstractWorker
-
 from syft.codes import MSGTYPE
 
 
@@ -58,6 +58,7 @@ class BaseWorker(AbstractWorker):
         self.add_worker(self)
         # For performance, we cache each
         self._message_router = {
+            MSGTYPE.CMD: self.execute_command,
             MSGTYPE.OBJ: self.set_obj,
             MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
             MSGTYPE.OBJ_DEL: self.rm_obj,
@@ -228,21 +229,39 @@ class BaseWorker(AbstractWorker):
         return pointer
 
     def execute_command(self, message):
+        """
+        Execute commands received from other workers
+        :param message: the message specifying the command and the args
+        :return: a pointer to the result
+        """
         command, _self, args, kwargs = message
         command = command.decode("utf-8")
+        # Handle methods
         if _self is not None:
             tensor = getattr(_self, command)(*args, **kwargs)
-            # FIXME: should be added automatically
-            tensor.owner = self
-            # tensor.id ??
+        # Handle functions
+        else:
+            syft.torch.command_guard(command, "torch_modules")
+            command = syft.torch.eval_torch_modules_functions[command]
+            tensor = command(*args, **kwargs)
 
-            self.register_obj(tensor)
+        # FIXME: should be added automatically
+        tensor.owner = self
+        # tensor.id ??
 
-            pointer = tensor.create_pointer(
-                owner=self, location=self, id_at_location=tensor.id, register=True, ptr_id=tensor.id
-            )
-            return pointer
-        # TODO: case for functions (self_ is None)
+        # TODO: Handle when the reponse is not simply a tensor
+
+        self.register_obj(tensor)
+
+        pointer = tensor.create_pointer(
+            location=self,
+            id_at_location=tensor.id,
+            register=True,
+            owner=self,
+            ptr_id=tensor.id,
+            garbage_location=False,
+        )
+        return pointer
 
     def send_command(self, recipient, message):
         """
@@ -253,7 +272,6 @@ class BaseWorker(AbstractWorker):
         """
 
         response = self.send_msg(MSGTYPE.CMD, message, location=recipient)
-
         return response
 
     def set_obj(self, obj):
@@ -318,7 +336,6 @@ class BaseWorker(AbstractWorker):
         """
 
         if hasattr(obj, "id"):
-            print("removing object")
             self.rm_obj(obj.id)
         if hasattr(obj, "owner"):
             del obj.owner

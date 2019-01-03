@@ -3,10 +3,13 @@ import re
 import random
 import logging
 import types
-import syft
-from ... import workers
+from functools import wraps
 
-from ...workers import BaseWorker
+
+import syft
+from syft.exceptions import PointerFoundError
+from syft import workers
+from syft.workers import BaseWorker
 from .tensors import TorchTensor, PointerTensor
 from .torch_attributes import TorchAttributes
 from .tensors.abstract import initialize_tensor
@@ -108,6 +111,8 @@ class TorchHook:
 
         self._hook_pointer_tensor(torch.Tensor)
 
+        self._hook_torch_module()
+
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
         syft.local_worker = self.local_worker
@@ -186,33 +191,157 @@ class TorchHook:
 
         return overloaded_attr
 
-    def _hook_syft_tensor(self, tensor_type: type, syft_type: type):
+    def _hook_torch_module(self):
+        """Overloads functions in the main torch modules.
+        The way this is accomplished is by first moving all existing module
+        functions in the torch module to native_<function_name_here>.
+
+        Example:
+            the real :func:`torch.cat` will become :func:`torch.native_cat`
+            and :func:`torch.cat` will have our hooking code.
         """
-        Add hooked version of all methods of the tensor_type to the syft tensor:
-        instead of performing the native tensor method, it will replace each
-        tensor of type syft_type occurring in self / args / kwargs with its child.
-        :param tensor_type: the tensor_type which holds the methods
-        :param syft_type: the syft type to hook
+
+        torch_modules = {"torch.nn.functional": self.torch.nn.functional}
+        # TODO Replace with syft.torch.torch_modules when hooking 'torch' will not break msgpack
+
+        for module_name, torch_module in torch_modules.items():
+            for func in dir(torch_module):
+                # Some functions we want to ignore (not override). Such functions have been hard
+                # coded into the torch_attribute exclude (see TorchAttribute class)
+                if func in syft.torch.exclude:
+                    continue
+
+                # If we haven't already overloaded this function
+                if "native_" in func or f"native_{func}" in dir(torch_module):
+                    continue
+
+                # Where the overloading happens
+                # 1. Get native function
+                native_func = getattr(torch_module, func)
+                # 2. Check it is a proper function
+                if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
+                    # 3. Build the hooked function
+                    new_func = self.get_hooked_func(native_func)
+                    # 4. Move the native function
+                    setattr(torch_module, f"native_{func}", native_func)
+                    # 5. Put instead the hooked one
+                    setattr(torch_module, func, new_func)
+
+    def get_hooked_func(hook_self, attr):
         """
-        # Overload auto overloaded with Torch methods
-        self._add_methods_from__torch_tensor(syft_type, TorchTensor)
+        Hook a function in order to inspect its args and search for pointer
+        or other syft tensors.
+        - Calls to this function with normal tensors or numbers / string trigger
+          usual behaviour
+        - Calls with pointers send the command to the location of the pointer(s)
+        - Calls with syft tensor will in the future trigger specific behaviour
 
-        # for attr in self.to_auto_overload[tensor_type]:
-        #    setattr(syft_type, attr, self.get_overloaded_method(attr))
+        :param attr: the function to hook
+        :return: the hooked function
+        """
 
-    def get_overloaded_method(hook_self, attr):
+        @wraps(attr)
+        def overloaded_attr(*args, **kwargs):
+            """
+            Operate the hooking
+            """
+            # If the function is not hooked we hook it, to do so
+            # We search in the registry of "functions for hooking attr args"
+            if attr not in hook_self.args_hook_for_overloaded_attr:
+                # Inspect the call to find tensor arguments and return a rule whose
+                # structure is the same as the args object, with 1 where there was
+                # (torch or syft) tensors and 0 when not (ex: number, str, ...)
+                rule = build_rule(args)
+                # Build a function with this rule to efficiently replace syft tensors (but not pointer)
+                # with their child in the args objects
+                args_hook_function = build_args_hook(args, rule)
+                # Store this utility function in the registry
+                hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
 
-        print("get overloaded", attr)
+            # Load the utility function to transform the args
+            hook_args = hook_self.args_hook_for_overloaded_attr[attr]
+            try:
+                # Transform the args
+                new_args = hook_args(args)
+                # Run the native function with the new args
+                if isinstance(new_args, tuple):
+                    return attr(*new_args)
+                else:
+                    return attr(new_args)
+            except PointerFoundError as err:  # if a pointer as been detected
+                # Extract the pointer with the error
+                pointer = err.pointer
+                # Get info where to send the command
+                owner = pointer.owner
+                location = pointer.location
+                # Build the message to send
+                cmd_name = f"{attr.__module__}.{attr.__name__}"
+                message = (cmd_name, None, args, kwargs)
+                # Send the command
+                response = owner.send_command(location, message)
+                return response
 
         def build_rule(args):
-            if isinstance(args, list):
-                return [build_rule(a) for a in args]
-            elif isinstance(args, tuple):
-                return tuple([build_rule(a) for a in args])
-            elif isinstance(args, PointerTensor) or args.__class__.__name__ == "LogTensor":
-                return 1
+            """
+            Inspect the args object to find torch or syft tensor arguments and
+            return a rule whose structure is the same as the args object,
+            with 1 where there was (torch or syft) tensors and 0 when
+            not (ex: number, str, ...)
+
+            Example:
+                in: ([tensor(1, 2), Pointer@bob], 42)
+                out: ([1, 1], 0)
+            """
+            one = lambda _args: 1
+            # dict to specify the action depending of the type found
+            type_rule = {
+                list: lambda _args: [build_rule(a) for a in _args],
+                tuple: lambda _args: tuple([build_rule(a) for a in _args]),
+                PointerTensor: one,
+                hook_self.torch.Tensor: one,
+            }
+            type_args = type(args)
+            if type_args in type_rule:
+                return type_rule[type_args](args)
             else:
                 return 0
+
+        def build_args_hook(args, rules):
+            """
+            Build a function given some rules to efficiently replace in the args object
+            syft tensors (but not pointer) with their child, and do nothing for other
+            type of object including torch tensors, str, numbers, bool, etc
+            Pointers trigger an error which is catched to get the location for forwarding
+            the call
+            :param args:
+            :param rules:
+            :return:
+            """
+            # Dict to return the proper lambda function for the right torch or syft tensor type
+            forward_func = {
+                PointerTensor: lambda p: (_ for _ in ()).throw(PointerFoundError(p)),
+                hook_self.torch.Tensor: lambda i: i,
+                "my_syft_tensor_type": lambda i: i.child,
+            }
+            # get the transformation lambda for each args
+            lambdas = [
+                (lambda i: i)  # return the same object
+                if not r  # if the rule is a number == 0.
+                else build_args_hook(a, r)  # If not, call recursively build_args_hook
+                if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
+                # Last if not, rule is probably == 1 so use type to return the right transformation.
+                else lambda i: forward_func[type(i)](i)
+                for a, r in zip(args, rules)  # And do this for all the args / rules provided
+            ]
+
+            # Instead of iterating which is slow, we use trick to efficiently
+            # apply each lambda to each arg
+            folds = {0: zero_fold, 1: one_fold, 2: two_fold, 3: three_fold}
+            f = folds[len(lambdas)]
+            return lambda x: f(lambdas, x)
+
+        def zero_fold(*a):
+            return tuple()
 
         def one_fold(lambdas, args):
             return lambdas[0](args[0])
@@ -223,31 +352,69 @@ class TorchHook:
         def three_fold(lambdas, args):
             return lambdas[0](args[0]), lambdas[1](args[1]), lambdas[2](args[2])
 
-        def build_args_hook(args, rules):
-            lambdas = [
-                (lambda i: i)
-                if not r
-                else build_args_hook(a, r)
-                if isinstance(r, (list, tuple))
-                else (lambda i: i.child)
-                for a, r in zip(args, rules)
-            ]
-            folds = {1: one_fold, 2: two_fold, 3: three_fold}
-            f = folds[len(lambdas)]
-            return lambda x: f(lambdas, x)
-
-        def overloaded_attr(*args, **kwargs):
-            if attr not in hook_self.args_hook_for_overloaded_attr:
-                rule = build_rule(args)
-                print(rule)
-                args_hook_function = build_args_hook(args, rule)
-                hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
-
-            hook_args = hook_self.args_hook_for_overloaded_attr[attr]
-            new_args = hook_args(args)
-            return attr(*new_args)
-
         return overloaded_attr
+
+    # def _hook_syft_tensor(self, tensor_type: type, syft_type: type):
+    #     """
+    #     Add hooked version of all methods of the tensor_type to the syft tensor:
+    #     instead of performing the native tensor method, it will replace each
+    #     tensor of type syft_type occurring in self / args / kwargs with its child.
+    #     :param tensor_type: the tensor_type which holds the methods
+    #     :param syft_type: the syft type to hook
+    #     """
+    #     # Overload auto overloaded with Torch methods
+    #     self._add_methods_from__torch_tensor(syft_type, TorchTensor)
+    #
+    #     # for attr in self.to_auto_overload[tensor_type]:
+    #     #    setattr(syft_type, attr, self.get_overloaded_method(attr))
+
+    # def get_overloaded_method(hook_self, attr):
+    #
+    #     print("get overloaded", attr)
+    #
+    #     def build_rule(args):
+    #         if isinstance(args, list):
+    #             return [build_rule(a) for a in args]
+    #         elif isinstance(args, tuple):
+    #             return tuple([build_rule(a) for a in args])
+    #         elif isinstance(args, PointerTensor) or args.__class__.__name__ == "LogTensor":
+    #             return 1
+    #         else:
+    #             return 0
+    #
+    #     def one_fold(lambdas, args):
+    #         return lambdas[0](args[0])
+    #
+    #     def two_fold(lambdas, args):
+    #         return lambdas[0](args[0]), lambdas[1](args[1])
+    #
+    #     def three_fold(lambdas, args):
+    #         return lambdas[0](args[0]), lambdas[1](args[1]), lambdas[2](args[2])
+    #
+    #     def build_args_hook(args, rules):
+    #         lambdas = [
+    #             (lambda i: i)
+    #             if not r
+    #             else build_args_hook(a, r)
+    #             if isinstance(r, (list, tuple))
+    #             else (lambda i: i.child)
+    #             for a, r in zip(args, rules)
+    #         ]
+    #         folds = {1: one_fold, 2: two_fold, 3: three_fold}
+    #         f = folds[len(lambdas)]
+    #         return lambda x: f(lambdas, x)
+    #
+    #     def overloaded_attr(*args, **kwargs):
+    #         if attr not in hook_self.args_hook_for_overloaded_attr:
+    #             rule = build_rule(args)
+    #             args_hook_function = build_args_hook(args, rule)
+    #             hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
+    #
+    #         hook_args = hook_self.args_hook_for_overloaded_attr[attr]
+    #         new_args = hook_args(args)
+    #         return attr(*new_args)
+    #
+    #     return overloaded_attr
 
     def _add_registration_to___init__(hook_self, tensor_type: type, torch_tensor: bool = False):
         """Adds several attributes to the tensor.
