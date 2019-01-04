@@ -2,9 +2,9 @@ import logging
 import random
 
 from abc import abstractmethod
-import syft
-from syft.exceptions import WorkerNotFoundException
+import syft as sy
 from syft import serde
+from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
 from syft.codes import MSGTYPE
 
@@ -241,8 +241,8 @@ class BaseWorker(AbstractWorker):
             tensor = getattr(_self, command)(*args, **kwargs)
         # Handle functions
         else:
-            syft.torch.command_guard(command, "torch_modules")
-            command = syft.torch.eval_torch_modules_functions[command]
+            sy.torch.command_guard(command, "torch_modules")
+            command = sy.torch.eval_torch_modules_functions[command]
             tensor = command(*args, **kwargs)
 
         # FIXME: should be added automatically
@@ -259,7 +259,7 @@ class BaseWorker(AbstractWorker):
             register=True,
             owner=self,
             ptr_id=tensor.id,
-            garbage_location=False,
+            garbage_collect_data=False,
         )
         return pointer
 
@@ -504,8 +504,8 @@ class BaseWorker(AbstractWorker):
 
         Example:
             A VirtualWorker instance with id 'bob' would return a string value of.
-            >>> import syft
-            >>> bob = syft.VirtualWorker(id="bob")
+            >>> import syft as sy
+            >>> bob = sy.VirtualWorker(id="bob")
             >>> bob
             <syft.workers.virtual.VirtualWorker id:bob>
 

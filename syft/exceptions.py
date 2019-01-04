@@ -1,7 +1,7 @@
 """Specific Pysyft exceptions."""
 
 
-class PointerFoundError(BaseException):
+class RemoteTensorFoundError(BaseException):
     """Exception raised for errors in the input.
 
     Attributes:

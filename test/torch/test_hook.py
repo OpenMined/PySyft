@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import random
 
 import syft
-from syft.exceptions import PointerFoundError
+from syft.exceptions import RemoteTensorFoundError
 from syft.frameworks.torch.tensors import PointerTensor
 
 
@@ -59,8 +59,8 @@ class TestHook(object):
         ptr_id = int(10e10 * random.random())
         pointer = PointerTensor(id=ptr_id, location=self.alice, owner=self.me)
         try:
-            raise PointerFoundError(pointer)
-        except PointerFoundError as err:
+            raise RemoteTensorFoundError(pointer)
+        except RemoteTensorFoundError as err:
             err_pointer = err.pointer
             assert isinstance(err_pointer, PointerTensor)
             assert err_pointer.id == ptr_id
@@ -79,7 +79,7 @@ class TestHook(object):
     @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
     def test_hook_module_functional(self, attr):
         self.setUp()
-        attr = eval(f"F.{attr}")
+        attr = getattr(F, attr)
         x = torch.Tensor([1, -1, 3, 4])
         expected = attr(x)
         x_ptr = x.send(self.bob)

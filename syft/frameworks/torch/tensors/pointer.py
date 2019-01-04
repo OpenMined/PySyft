@@ -40,7 +40,7 @@ class PointerTensor(AbstractTensor):
         register=False,
         owner=None,
         id=None,
-        garbage_location=True,
+        garbage_collect_data=True,
     ):
         """Initializes a PointerTensor.
 
@@ -63,7 +63,7 @@ class PointerTensor(AbstractTensor):
                 different from the location parameter that specifies where the
                 pointer points to.
             id: An optional string or integer id of the PointerTensor.
-            garbage_location: If true (default), delete the remote tensor when the
+            garbage_collect_data: If true (default), delete the remote tensor when the
                 pointer is deleted.
         """
 
@@ -71,7 +71,7 @@ class PointerTensor(AbstractTensor):
         self.id_at_location = id_at_location
         self.owner = owner
         self.id = id
-        self.garbage_location = garbage_location
+        self.garbage_collect_data = garbage_collect_data
 
     def __str__(self):
         """Returns a string version of this pointer.
@@ -184,5 +184,5 @@ class PointerTensor(AbstractTensor):
         # this next line because self no longer has .owner. Thus, we need to check
         # first here and not try to call self.owner.anything if self doesn't have
         # .owner anymore.
-        if hasattr(self, "owner") and self.garbage_location:
+        if hasattr(self, "owner") and self.garbage_collect_data:
             self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)

@@ -52,7 +52,7 @@ class TorchTensor(AbstractTensor):
         register: bool = False,
         owner: BaseWorker = None,
         ptr_id: (str or int) = None,
-        garbage_location: bool = True,
+        garbage_collect_data: bool = True,
     ) -> PointerTensor:
         """Creates a pointer to the "self" torch.Tensor object.
 
@@ -94,7 +94,7 @@ class TorchTensor(AbstractTensor):
             ptr_id: A string or integer parameter to specify the id of the pointer
                 in case you wish to set it manually for any special reason.
                 Otherwise, it will be set randomly.
-            garbage_location: If true (default), delete the remote tensor when the
+            garbage_collect_data: If true (default), delete the remote tensor when the
                 pointer is deleted.
 
         Returns:
@@ -130,7 +130,7 @@ class TorchTensor(AbstractTensor):
                 register=register,
                 owner=owner,
                 id=ptr_id,
-                garbage_location=garbage_location,
+                garbage_collect_data=garbage_collect_data,
             )
 
         return ptr
