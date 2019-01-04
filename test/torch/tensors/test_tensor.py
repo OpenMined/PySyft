@@ -1,3 +1,5 @@
+import random
+
 import torch
 import syft
 
@@ -19,9 +21,10 @@ class TestPointer(object):
         self.me = hook.local_worker
         self.me.is_client_worker = True
 
-        bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
-        alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
-        james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
+        instance_id = str(int(10e10 * random.random()))
+        bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
+        alice = syft.VirtualWorker(id=f"alice{instance_id}", hook=hook, is_client_worker=False)
+        james = syft.VirtualWorker(id=f"james{instance_id}", hook=hook, is_client_worker=False)
 
         bob.add_workers([alice, james])
         alice.add_workers([bob, james])
@@ -43,6 +46,44 @@ class TestPointer(object):
         x = torch.Tensor([1, 2])
         x.create_pointer()
         x.create_pointer(location=self.james)
+
+    def test_send_get(self):
+        """Test several send get usages"""
+        self.setUp()
+
+        # simple send
+        x = torch.Tensor([1, 2])
+        x_ptr = x.send(self.bob)
+        x_back = x_ptr.get()
+        assert (x == x_back).all()
+
+        # send with variable overwriting
+        x = torch.Tensor([1, 2])
+        x = x.send(self.bob)
+        x_back = x.get()
+        assert (torch.Tensor([1, 2]) == x_back).all()
+
+        # double send
+        x = torch.Tensor([1, 2])
+        x_ptr = x.send(self.bob)
+        x_ptr_ptr = x_ptr.send(self.alice)
+        x_ptr_back = x_ptr_ptr.get()
+        x_back_back = x_ptr_back.get()
+        assert (x == x_back_back).all()
+
+        # double send with variable overwriting
+        x = torch.Tensor([1, 2])
+        x = x.send(self.bob)
+        x = x.send(self.alice)
+        x = x.get()
+        x_back = x.get()
+        assert (torch.Tensor([1, 2]) == x_back).all()
+
+        # chained double send
+        x = torch.Tensor([1, 2])
+        x = x.send(self.bob).send(self.alice)
+        x_back = x.get().get()
+        assert (torch.Tensor([1, 2]) == x_back).all()
 
     def test_explicit_garbage_collect_pointer(self):
         """Tests whether deleting a PointerTensor garbage collects the remote object too"""

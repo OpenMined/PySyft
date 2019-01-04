@@ -37,6 +37,14 @@ class TorchTensor(AbstractTensor):
             A torch.Tensor[PointerTensor] pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
         """
+        # If you send a pointer p1, you want the pointer to pointer p2 to control
+        # the garbage collection and not the remaining old p1 (here self). Because if
+        # p2 is not GCed, GCing p1 shouldn't delete the remote tensor, but if you
+        # want to do so, as p2 is not GCed, you can still do `del p2`.
+        # This allows to chain multiple .send().send() calls.
+        if isinstance(self, PointerTensor):
+            self.garbage_collect_data = False
+
         ptr = self.owner.send(self, location)
 
         # we need to cache this weak reference to the pointer so that
