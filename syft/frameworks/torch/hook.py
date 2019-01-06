@@ -46,18 +46,11 @@ class TorchHook:
 
     Example:
         >>> import syft as sy
-        >>> hook = sy.TorchHook()
-        Hooking into Torch...
-        Overloading Complete.
-        >>> x = sy.Tensor([-2,-1,0,1,2,3])
+        >>> import torch
+        >>> hook = sy.TorchHook(torch)
+        >>> x = torch.Tensor([-2,-1,0,1,2,3])
         >>> x
-        -2
-        -1
-        0
-        1
-        2
-        3
-        [syft.core.frameworks.torch.tensor.FloatTensor of size 6]
+        tensor([1., 2., 3.])
     """
 
     def __init__(

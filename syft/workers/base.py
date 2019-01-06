@@ -185,12 +185,13 @@ class BaseWorker(AbstractWorker):
                 the object on the remote worker(s).
 
         Example:
-            >>> import torch
             >>> import syft as sy
+            >>> import torch
             >>> hook = sy.TorchHook(torch)
             >>> bob = sy.VirtualWorker(hook)
+            >>> me = hook.local_worker
             >>> x = torch.Tensor([1, 2, 3, 4])
-            >>> x.send(bob, 1000)
+            >>> me.send(x, bob, 1000)
             Will result in bob having the tensor x with id 1000
 
         Returns:
@@ -361,7 +362,8 @@ class BaseWorker(AbstractWorker):
 
         Example:
             >>> import syft as sy
-            >>> hook = sy.TorchHook(verbose=False)
+            >>> import torch
+            >>> hook = sy.TorchHook(hook, verbose=False)
             >>> me = hook.local_worker
             >>> bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
             >>> me.add_worker([bob])
@@ -405,9 +407,9 @@ class BaseWorker(AbstractWorker):
                 pointer to a remote worker, which must have a unique id.
 
         Example:
-            >>> import torch
             >>> import syft as sy
-            >>> hook = sy.TorchHook(verbose=False)
+            >>> import torch
+            >>> hook = sy.TorchHook(torch, verbose=False)
             >>> me = hook.local_worker
             >>> bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
             >>> me.add_worker([bob])
