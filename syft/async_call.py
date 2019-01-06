@@ -6,7 +6,7 @@ from .exceptions import AsyncOperationNotFinalizedError
 from .exceptions import ThreadTimeOutError
 
 
-class AsyncCall(object):
+class AsyncCallWrapper(object):
     """Asynchronous call definition.
 
     Runs `self.fnc` asynchronously using `threading`.
@@ -53,20 +53,11 @@ class AsyncCall(object):
             self.callback(self._result)
 
 
-class AsyncCallWrapper(object):
-    def __init__(self, fnc, callback=None):
-        self.fnc = fnc
-        self.callback = callback
-
-    def __call__(self, *args, **kwargs):
-        return AsyncCall(self.fnc, self.callback)(*args, **kwargs)
-
-
 def Async(fnc=None, callback=None):
     def async_wrapper(fnc):
-        return AsyncCall(fnc, callback)
+        return AsyncCallWrapper(fnc, callback)
 
     if fnc:
-        return AsyncCall(fnc, callback)
+        return AsyncCallWrapper(fnc, callback)
     else:
         return async_wrapper

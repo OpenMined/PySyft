@@ -10,12 +10,12 @@ def test_async():
 
     @Async
     def custom_append(obj):
-        """Sleeps for 1 second and then adds object to array."""
-        time.sleep(1)
+        """Sleeps for 0.1 seconds and then adds object to array."""
+        time.sleep(0.1)
         array.append(obj)
 
     custom_append(1)
     array.append(2)
     assert array == [2]
-    time.sleep(1)
+    time.sleep(0.3)  # waits a little longer to make sure the async operation was finalized
     assert array == [2, 1]
