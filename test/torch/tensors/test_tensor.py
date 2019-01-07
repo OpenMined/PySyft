@@ -199,29 +199,29 @@ class TestPointer(object):
         # ensure bob's object was garbage collected
         assert x_id not in self.bob._objects
 
-    # def test_repeated_send(self):
-    #     """Tests that repeated calls to .send(bob) works gracefully
-    #     Previously garbage collection deleted the remote object
-    #     when .send() was called twice. This test ensures the fix still
-    #     works."""
-    #
-    #     self.setUp()
-    #
-    #     # create tensor
-    #     x = torch.Tensor([1, 2])
-    #     print(x.id)
-    #
-    #     # send tensor to bob
-    #     x_ptr = x.send(self.bob)
-    #     print(self.bob._objects)
-    #     print(x_ptr.id_at_location)
-    #
-    #     # send tensor again
-    #     x_ptr = x.send(self.bob)
-    #     print(self.bob._objects)
-    #     print(x_ptr.id_at_location)
-    #
-    #     # ensure bob has tensor
-    #     print(self.bob._objects)
-    #     print(list(self.bob._objects.keys()))
-    #     assert x.id in self.bob._objects
+    def test_repeated_send(self):
+        """Tests that repeated calls to .send(bob) works gracefully
+        Previously garbage collection deleted the remote object
+        when .send() was called twice. This test ensures the fix still
+        works."""
+
+        self.setUp()
+
+        # create tensor
+        x = torch.Tensor([1, 2])
+        print(x.id)
+
+        # send tensor to bob
+        x_ptr = x.send(self.bob)
+        print(self.bob._objects)
+        print(x_ptr.id_at_location)
+
+        # send tensor again
+        x_ptr = x.send(self.bob)
+        print(self.bob._objects)
+        print(x_ptr.id_at_location)
+
+        # ensure bob has tensor
+        print(self.bob._objects)
+        print(list(self.bob._objects.keys()))
+        assert x.id in self.bob._objects

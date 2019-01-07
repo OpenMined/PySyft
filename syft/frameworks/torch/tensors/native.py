@@ -37,6 +37,7 @@ class TorchTensor(AbstractTensor):
             A torch.Tensor[PointerTensor] pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
         """
+
         # If you send a pointer p1, you want the pointer to pointer p2 to control
         # the garbage collection and not the remaining old p1 (here self). Because if
         # p2 is not GCed, GCing p1 shouldn't delete the remote tensor, but if you
@@ -46,6 +47,10 @@ class TorchTensor(AbstractTensor):
             self.garbage_collect_data = False
 
         ptr = self.owner.send(self, location)
+
+        # The last pointer should control remote GC, not the previous self.ptr
+        if hasattr(self, "ptr"):
+            self.ptr().garbage_collect_data = False
 
         # we need to cache this weak reference to the pointer so that
         # if this method gets called multiple times we can simply re-use
