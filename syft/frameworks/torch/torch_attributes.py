@@ -48,7 +48,18 @@ class TorchAttributes(object):
         }
 
         # Add special functions to exclude from the hook
-        self.exclude = ["save", "load", "typename", "is_tensor", "manual_seed"]
+        self.exclude = [
+            "save",
+            "load",
+            "typename",
+            "is_tensor",
+            "manual_seed",
+            "storage",
+            "storage_offset",
+            "size",
+            "stride",
+            "set_",
+        ]
 
         # SECTION: List all torch tensor methods we want to overload
         self.tensor_types = [torch.Tensor]

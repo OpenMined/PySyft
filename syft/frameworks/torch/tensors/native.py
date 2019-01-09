@@ -1,4 +1,5 @@
 import random
+import weakref
 
 from syft.frameworks.torch.tensors import AbstractTensor
 from syft.frameworks.torch.tensors import PointerTensor
@@ -19,25 +20,17 @@ class TorchTensor(AbstractTensor):
     checking AbstractTensor.
     """
 
-    def get(self):
-        """Gets remote data from remote places to the client.
+    def __str__(self) -> str:
+        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+            return type(self).__name__ + self.child.__str__()
+        else:
+            return self.native___str__()
 
-        Many tensor types point to data which exists at another location,
-        including PointerTensor and various Secure Multi-Party Computation
-        tensors. All of these tensor types have a .get() method which requests
-        that the data on the remote machine be set back to the client
-        (to the machine upon which .get() is called).
-
-        Returns:
-            An AbstractTensor, typically this method will return a single
-            tensor, although that tensor might be a combination of several
-            remote tensors which exist on several different machines. If the
-            method you're trying to call/implement needs to return multiple
-            tensors or has some very special way in which those tensors should
-            be combined, consider creating a special method specifically for
-            that functionality.
-        """
-        return self.child.get()
+    def __repr__(self) -> str:
+        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+            return type(self).__name__ + self.child.__repr__()
+        else:
+            return self.native___repr__()
 
     def send(self, location):
         """Gets the pointer to a new remote object.
@@ -56,7 +49,27 @@ class TorchTensor(AbstractTensor):
             A torch.Tensor[PointerTensor] pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
         """
-        return self.owner.send(self, location)
+
+        # If you send a pointer p1, you want the pointer to pointer p2 to control
+        # the garbage collection and not the remaining old p1 (here self). Because if
+        # p2 is not GCed, GCing p1 shouldn't delete the remote tensor, but if you
+        # want to do so, as p2 is not GCed, you can still do `del p2`.
+        # This allows to chain multiple .send().send() calls.
+        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+            self.child.garbage_collect_data = False
+
+        ptr = self.owner.send(self, location)
+
+        # The last pointer should control remote GC, not the previous self.ptr
+        if hasattr(self, "ptr"):
+            self.ptr().garbage_collect_data = False
+
+        # we need to cache this weak reference to the pointer so that
+        # if this method gets called multiple times we can simply re-use
+        # the same pointer which was previously created
+        self.ptr = weakref.ref(ptr)
+
+        return ptr.wrap()
 
     def create_pointer(
         self,
@@ -65,6 +78,7 @@ class TorchTensor(AbstractTensor):
         register: bool = False,
         owner: BaseWorker = None,
         ptr_id: (str or int) = None,
+        garbage_collect_data: bool = True,
     ) -> PointerTensor:
         """Creates a pointer to the "self" torch.Tensor object.
 
@@ -103,9 +117,11 @@ class TorchTensor(AbstractTensor):
             owner: A BaseWorker parameter to specify the worker on which the
                 pointer is located. It is also where the pointer is registered
                 if register is set to True.
-            id: A string or integer parameter to specify the id of the pointer
+            ptr_id: A string or integer parameter to specify the id of the pointer
                 in case you wish to set it manually for any special reason.
                 Otherwise, it will be set randomly.
+            garbage_collect_data: If true (default), delete the remote tensor when the
+                pointer is deleted.
 
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
@@ -140,16 +156,18 @@ class TorchTensor(AbstractTensor):
                 register=register,
                 owner=owner,
                 id=ptr_id,
+                garbage_collect_data=garbage_collect_data,
             )
 
-        return ptr.wrap()
+        return ptr
 
-    def reshape(self, *args, **kwargs):
-        """Reshapes a tensor to have new dimensions.
-
-        This method is the same functionality as the default reshape function
-        which ships with PyTorch. See the PyTorch documentation for the correct
-        args and kwargs.
-        https://pytorch.org/docs/stable/torch.html#torch.reshape
+    def get(self, deregister_ptr: bool = True):
+        """Requests the tensor/chain being pointed to, be serialized and return
         """
-        return getattr(self, "native_reshape")(*args, **kwargs)
+        # Transfer the get() to the child attribute which is a pointer
+        tensor = self.child.get()
+
+        # Clean the wrapper
+        delattr(self, "child")
+
+        return tensor

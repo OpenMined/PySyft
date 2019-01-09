@@ -1,7 +1,6 @@
-from syft.frameworks.torch.hook import TorchHook
-from syft.workers.virtual import VirtualWorker
-from unittest import TestCase
 import torch
+
+from syft.frameworks.torch.tensors import PointerTensor
 
 
 def test_overload_reshape():
@@ -43,11 +42,14 @@ def test_create_pointer_defaults(workers):
     assert ptr.location == workers["bob"]
 
 
-# def test_get():
-#     tensor = torch.rand(5, 3)
-#     tensor.id = 1
+def test_get(workers):
+    bob = workers["bob"]
+    me = workers["me"]
+    tensor = torch.rand(5, 3)
+    tensor.owner = me
+    tensor.id = 1
 
-#     pointer = tensor.send(workers['bob'])
+    pointer = tensor.send(bob)
 
-#     assert type(pointer) == PointerTensor
-#     assert pointer.get() == tensor
+    assert type(pointer.child) == PointerTensor
+    assert (pointer.get() == tensor).all()
