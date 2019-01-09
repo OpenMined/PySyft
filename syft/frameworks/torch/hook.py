@@ -275,7 +275,7 @@ class TorchHook:
                 # Store this utility function in the registry
                 hook_self.args_hook_for_overloaded_attr[attr] = hook_args_function
 
-            try:
+            if(not isinstance(_self, syft.frameworks.torch.tensors.PointerTensor)):
                 # Transform the args
                 try:
                     # Load the utility function to transform the args
@@ -297,9 +297,10 @@ class TorchHook:
                         return overloaded_attr(new_self, *new_args)
                 else:
                     return attr(new_self, new_args)
-            except RemoteTensorFoundError as err:  # if a pointer as been detected
-                # Extract the pointer with the error
-                pointer = err.pointer
+
+            else:
+
+                pointer = _self
                 # Get info where to send the command
                 owner = pointer.owner
                 location = pointer.location
