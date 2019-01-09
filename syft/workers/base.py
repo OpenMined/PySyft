@@ -2,14 +2,12 @@ import logging
 import random
 
 from abc import abstractmethod
-from syft.exceptions import WorkerNotFoundException
+import syft as sy
 from syft import serde
+from syft.frameworks.torch.tensors import PointerTensor
+from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
-
-MSGTYPE_CMD = 1
-MSGTYPE_OBJ = 2
-MSGTYPE_OBJ_REQ = 3
-MSGTYPE_EXCEPTION = 4
+from syft.codes import MSGTYPE
 
 
 class BaseWorker(AbstractWorker):
@@ -60,7 +58,12 @@ class BaseWorker(AbstractWorker):
             self._known_workers[k] = v
         self.add_worker(self)
         # For performance, we cache each
-        self._message_router = {MSGTYPE_OBJ: self.set_obj, MSGTYPE_OBJ_REQ: self.respond_to_obj_req}
+        self._message_router = {
+            MSGTYPE.CMD: self.execute_command,
+            MSGTYPE.OBJ: self.set_obj,
+            MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
+            MSGTYPE.OBJ_DEL: self.rm_obj,
+        }
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -134,7 +137,7 @@ class BaseWorker(AbstractWorker):
         bin_response = self._send_msg(bin_message, location)
 
         # Step 3: deserialize the response
-        response = serde.deserialize(bin_response)
+        response = serde.deserialize(bin_response, worker=self)
 
         return response
 
@@ -153,7 +156,7 @@ class BaseWorker(AbstractWorker):
             A binary message response.
         """
         # Step 0: deserialize message
-        (msg_type, contents) = serde.deserialize(bin_message)
+        (msg_type, contents) = serde.deserialize(bin_message, worker=self)
 
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
@@ -227,13 +230,58 @@ class BaseWorker(AbstractWorker):
 
         return pointer
 
+    def execute_command(self, message):
+        """
+        Execute commands received from other workers
+        :param message: the message specifying the command and the args
+        :return: a pointer to the result
+        """
+        command, _self, args, kwargs = message
+        command = command.decode("utf-8")
+        # Handle methods
+        if _self is not None:
+            tensor = getattr(_self, command)(*args, **kwargs)
+        # Handle functions
+        else:
+            sy.torch.command_guard(command, "torch_modules")
+            command = sy.torch.eval_torch_modules_functions[command]
+            tensor = command(*args, **kwargs)
+
+        # FIXME: should be added automatically
+        tensor.owner = self
+        # tensor.id ??
+
+        # TODO: Handle when the reponse is not simply a tensor
+
+        self.register_obj(tensor)
+
+        pointer = tensor.create_pointer(
+            location=self,
+            id_at_location=tensor.id,
+            register=True,
+            owner=self,
+            ptr_id=tensor.id,
+            garbage_collect_data=False,
+        )
+        return pointer
+
+    def send_command(self, recipient, message):
+        """
+        Send a command through a message to a recipient worker
+        :param recipient:
+        :param message:
+        :return:
+        """
+
+        response = self.send_msg(MSGTYPE.CMD, message, location=recipient)
+        return response
+
     def set_obj(self, obj):
         """Adds an object to the registry of objects.
 
         Args:
             obj: A torch or syft tensor with an id
         """
-
         self._objects[obj.id] = obj
 
     def get_obj(self, obj_id):
@@ -244,8 +292,13 @@ class BaseWorker(AbstractWorker):
         Args:
             obj_id: A string or integer id of an object to look up.
         """
-
         obj = self._objects[obj_id]
+
+        # An object called with get_obj will be "with high probability" serialized
+        # and sent back, so it will be GCed but remote data is any shouldn't be
+        # deleted
+        if hasattr(obj, "child") and isinstance(obj.child, PointerTensor):
+            obj.child.garbage_collect_data = False
 
         return obj
 
@@ -273,7 +326,8 @@ class BaseWorker(AbstractWorker):
             string uniquely identifying the object.
         """
         if not self.is_client_worker:
-            obj.id = obj_id
+            if obj_id is not None:
+                obj.id = obj_id
             self.set_obj(obj)
 
     def de_register_obj(self, obj, _recurse_torch_objs=True):
@@ -289,7 +343,6 @@ class BaseWorker(AbstractWorker):
         """
 
         if hasattr(obj, "id"):
-            print("removing object")
             self.rm_obj(obj.id)
         if hasattr(obj, "owner"):
             del obj.owner
@@ -316,7 +369,7 @@ class BaseWorker(AbstractWorker):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
-        return self.send_msg(MSGTYPE_OBJ, obj, location)
+        return self.send_msg(MSGTYPE.OBJ, obj, location)
 
     def request_obj(self, obj_id, location):
         """Returns the requested object from specified location.
@@ -329,7 +382,7 @@ class BaseWorker(AbstractWorker):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(MSGTYPE_OBJ_REQ, obj_id, location)
+        obj = self.send_msg(MSGTYPE.OBJ_REQ, obj_id, location)
         return obj
 
     # SECTION: Manage the workers network
@@ -422,7 +475,7 @@ class BaseWorker(AbstractWorker):
             5
             [syft.core.frameworks.torch.tensor.FloatTensor of size 5]
             >>> x.send(bob)
-            FloatTensor[_PointerTensor - id:9121428371 owner:0 loc:bob 
+            FloatTensor[_PointerTensor - id:9121428371 owner:0 loc:bob
                         id@loc:47416674672]
             >>> x.get()
             1
@@ -460,8 +513,8 @@ class BaseWorker(AbstractWorker):
 
         Example:
             A VirtualWorker instance with id 'bob' would return a string value of.
-            >>> import syft
-            >>> bob = syft.VirtualWorker(id="bob")
+            >>> import syft as sy
+            >>> bob = sy.VirtualWorker(id="bob")
             >>> bob
             <syft.workers.virtual.VirtualWorker id:bob>
 

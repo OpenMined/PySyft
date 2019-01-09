@@ -1,4 +1,5 @@
-from .abstract import AbstractTensor
+from syft.frameworks.torch.tensors.abstract import AbstractTensor
+from syft.codes import MSGTYPE
 
 
 class PointerTensor(AbstractTensor):
@@ -39,6 +40,7 @@ class PointerTensor(AbstractTensor):
         register=False,
         owner=None,
         id=None,
+        garbage_collect_data=True,
     ):
         """Initializes a PointerTensor.
 
@@ -61,12 +63,15 @@ class PointerTensor(AbstractTensor):
                 different from the location parameter that specifies where the
                 pointer points to.
             id: An optional string or integer id of the PointerTensor.
+            garbage_collect_data: If true (default), delete the remote tensor when the
+                pointer is deleted.
         """
 
         self.location = location
         self.id_at_location = id_at_location
         self.owner = owner
         self.id = id
+        self.garbage_collect_data = garbage_collect_data
 
     def __str__(self):
         """Returns a string version of this pointer.
@@ -103,27 +108,27 @@ class PointerTensor(AbstractTensor):
         Since PointerTensor objects always point to a remote tensor (or chain
         of tensors, where a chain is simply a linked-list of tensors linked via
         their .child attributes), this method will request that the tensor/chain
-        being pointed to be serialized and returned from this function. 
+        being pointed to be serialized and returned from this function.
 
         Note:
-            This will typically mean that the remote object will be 
-            removed/destroyed. To just bring a copy back to the local worker, 
-            call .copy() before calling .get(). 
+            This will typically mean that the remote object will be
+            removed/destroyed. To just bring a copy back to the local worker,
+            call .copy() before calling .get().
 
 
         Args:
 
-            deregister_ptr (bool, optional): this determines whether to 
-                deregister this pointer from the pointer's owner during this 
-                method. This defaults to True because the main reason people use 
-                this method is to move the tensor from the remote machine to the 
+            deregister_ptr (bool, optional): this determines whether to
+                deregister this pointer from the pointer's owner during this
+                method. This defaults to True because the main reason people use
+                this method is to move the tensor from the remote machine to the
                 local one, at which time the pointer has no use.
 
-            out (class:`.abstract.AbstractTensor`): this is the tensor (or 
+            out (class:`.abstract.AbstractTensor`): this is the tensor (or
                 chain) which this object used to point to on a remote machine.
-        
+
         Returns:
-            tensor: 
+            tensor:
 
         #TODO: add param get_copy which doesn't destroy remote if true.
 
@@ -166,3 +171,18 @@ class PointerTensor(AbstractTensor):
             self.owner.de_register_obj(self)
 
         return tensor
+
+    def __del__(self):
+        """This method garbage collects the object this pointer is pointing to.
+        By default, PySyft assumes that every object only has one pointer to it.
+        Thus, if the pointer gets garbage collected, we want to automatically
+        garbage collect the object being pointed to.
+        """
+
+        # if .get() gets called on the pointer before this method is called, then
+        # the remote object has already been removed. This results in an error on
+        # this next line because self no longer has .owner. Thus, we need to check
+        # first here and not try to call self.owner.anything if self doesn't have
+        # .owner anymore.
+        if hasattr(self, "owner") and self.garbage_collect_data:
+            self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)
