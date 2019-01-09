@@ -4,6 +4,7 @@ import random
 from abc import abstractmethod
 import syft as sy
 from syft import serde
+from syft.frameworks.torch.tensors import PointerTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
 from syft.codes import MSGTYPE
@@ -291,6 +292,13 @@ class BaseWorker(AbstractWorker):
             obj_id: A string or integer id of an object to look up.
         """
         obj = self._objects[obj_id]
+
+        # An object called with get_obj will be "with high probability" serialized
+        # and sent back, so it will be GCed but remote data is any shouldn't be
+        # deleted
+        if obj.is_wrapper:
+            if isinstance(obj.child, PointerTensor):
+                obj.child.garbage_collect_data = False
 
         return obj
 

@@ -50,38 +50,40 @@ class TestPointer(object):
     def test_send_get(self):
         """Test several send get usages"""
         self.setUp()
+        bob = self.bob
+        alice = self.alice
 
         # simple send
         x = torch.Tensor([1, 2])
-        x_ptr = x.send(self.bob)
+        x_ptr = x.send(bob)
         x_back = x_ptr.get()
         assert (x == x_back).all()
 
         # send with variable overwriting
         x = torch.Tensor([1, 2])
-        x = x.send(self.bob)
+        x = x.send(bob)
         x_back = x.get()
         assert (torch.Tensor([1, 2]) == x_back).all()
 
         # double send
         x = torch.Tensor([1, 2])
-        x_ptr = x.send(self.bob)
-        x_ptr_ptr = x_ptr.send(self.alice)
+        x_ptr = x.send(bob)
+        x_ptr_ptr = x_ptr.send(alice)
         x_ptr_back = x_ptr_ptr.get()
         x_back_back = x_ptr_back.get()
         assert (x == x_back_back).all()
 
         # double send with variable overwriting
         x = torch.Tensor([1, 2])
-        x = x.send(self.bob)
-        x = x.send(self.alice)
+        x = x.send(bob)
+        x = x.send(alice)
         x = x.get()
         x_back = x.get()
         assert (torch.Tensor([1, 2]) == x_back).all()
 
         # chained double send
         x = torch.Tensor([1, 2])
-        x = x.send(self.bob).send(self.alice)
+        x = x.send(bob).send(alice)
         x_back = x.get().get()
         assert (torch.Tensor([1, 2]) == x_back).all()
 
