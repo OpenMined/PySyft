@@ -2,6 +2,22 @@ import torch
 from syft.exceptions import RemoteTensorFoundError
 from .tensors import PointerTensor
 
+one = lambda _args: 1
+# dict to specify the action depending of the type found
+
+type_rule = {
+        list: lambda _args: [build_rule(a) for a in _args],
+        tuple: lambda _args: tuple([build_rule(a) for a in _args]),
+        PointerTensor: one,
+        torch.Tensor: one,
+    }
+
+# Dict to return the proper lambda function for the right torch or syft tensor type
+forward_func = {
+    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
+    torch.Tensor: lambda i: i.child if hasattr(i, "child") else i,
+    "my_syft_tensor_type": lambda i: i.child,
+}
 
 def build_hook_args_function(args):
     # Inspect the call to find tensor arguments and return a rule whose
@@ -25,14 +41,7 @@ def build_rule(args):
         in: ([tensor(1, 2), Pointer@bob], 42)
         out: ([1, 1], 0)
     """
-    one = lambda _args: 1
-    # dict to specify the action depending of the type found
-    type_rule = {
-        list: lambda _args: [build_rule(a) for a in _args],
-        tuple: lambda _args: tuple([build_rule(a) for a in _args]),
-        PointerTensor: one,
-        torch.Tensor: one,
-    }
+
     type_args = type(args)
     if type_args in type_rule:
         return type_rule[type_args](args)
@@ -52,12 +61,7 @@ def build_args_hook(args, rules, return_tuple=False):
     :param return_tuple: force to return a tuple even with a single element
     :return:
     """
-    # Dict to return the proper lambda function for the right torch or syft tensor type
-    forward_func = {
-        PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
-        torch.Tensor: lambda i: i.child if hasattr(i, "child") else i,
-        "my_syft_tensor_type": lambda i: i.child,
-    }
+
     # get the transformation lambda for each args
     lambdas = [
         (lambda i: i)  # return the same object
