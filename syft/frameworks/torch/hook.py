@@ -13,7 +13,9 @@ from syft.workers import BaseWorker
 from .tensors import TorchTensor, PointerTensor
 from .torch_attributes import TorchAttributes
 from .tensors.abstract import initialize_tensor
-from .hook_args import *
+from .hook_args import build_hook_args_function
+from .hook_args import build_rule
+from .hook_args import build_args_hook
 
 
 class TorchHook:
