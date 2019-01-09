@@ -291,7 +291,7 @@ class TorchHook:
                 hook_args = hook_self.args_hook_for_overloaded_attr[attr]
                 # Try running it
                 new_self, new_args = hook_args((_self, args))
-            
+
                 # Run the native function with the new args
                 if isinstance(new_args, tuple):
                     try:

@@ -219,7 +219,6 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         id of the tensor and the second is the binary for the PyTorch
         object.
     """
-
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
     tensor_bin = binary_stream.getvalue()
