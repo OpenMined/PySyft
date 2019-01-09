@@ -20,6 +20,18 @@ class TorchTensor(AbstractTensor):
     checking AbstractTensor.
     """
 
+    def __str__(self) -> str:
+        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+            return type(self).__name__ + self.child.__str__()
+        else:
+            return self.native___str__()
+
+    def __repr__(self) -> str:
+        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+            return type(self).__name__ + self.child.__repr__()
+        else:
+            return self.native___repr__()
+
     def send(self, location):
         """Gets the pointer to a new remote object.
 
@@ -43,7 +55,7 @@ class TorchTensor(AbstractTensor):
         # p2 is not GCed, GCing p1 shouldn't delete the remote tensor, but if you
         # want to do so, as p2 is not GCed, you can still do `del p2`.
         # This allows to chain multiple .send().send() calls.
-        if isinstance(self, PointerTensor):
+        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
             self.garbage_collect_data = False
 
         ptr = self.owner.send(self, location)
@@ -56,7 +68,10 @@ class TorchTensor(AbstractTensor):
         # if this method gets called multiple times we can simply re-use
         # the same pointer which was previously created
         self.ptr = weakref.ref(ptr)
-        return ptr
+
+        self.set_()
+        self.child = ptr
+        return self
 
     def create_pointer(
         self,
@@ -147,3 +162,16 @@ class TorchTensor(AbstractTensor):
             )
 
         return ptr
+
+    def get(self, deregister_ptr: bool = True):
+        """Requests the tensor/chain being pointed to, be serialized and return
+        """
+        tensor = self.child.get()
+
+        if hasattr(tensor, "child"):
+            self.child = tensor.child
+        else:
+            delattr(self, "child")
+
+        self.native_set_(tensor)
+        return self

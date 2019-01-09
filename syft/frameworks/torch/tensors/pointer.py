@@ -172,6 +172,9 @@ class PointerTensor(AbstractTensor):
 
         return tensor
 
+    def set_(self):
+        return self
+
     def __del__(self):
         """This method garbage collects the object this pointer is pointing to.
         By default, PySyft assumes that every object only has one pointer to it.

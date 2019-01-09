@@ -159,8 +159,6 @@ class TorchHook:
         is pointing at.
         :param tensor_type: the tensor_type which holds the methods
         """
-        # Add methods defined in the TorchTensor class to the Pointer class
-        self._add_methods_from__torch_tensor(PointerTensor, TorchTensor)
 
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
@@ -498,8 +496,6 @@ class TorchHook:
             "__sizeof__",
             "__subclasshook__",
             "_get_type",
-            "__str__",
-            "__repr__",
             "__eq__",
             "__gt__",
             "__ge__",
@@ -509,5 +505,7 @@ class TorchHook:
         # For all methods defined in TorchTensor which are not internal methods (like __class__etc)
         for attr in dir(syft_type):
             if attr not in exclude:
+                if hasattr(tensor_type, attr):
+                    setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
                 # Add to the native tensor this method
                 setattr(tensor_type, attr, getattr(TorchTensor, attr))
