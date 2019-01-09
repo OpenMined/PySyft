@@ -275,14 +275,28 @@ class TorchHook:
                 # Store this utility function in the registry
                 hook_self.args_hook_for_overloaded_attr[attr] = hook_args_function
 
-            if(not isinstance(_self, syft.frameworks.torch.tensors.PointerTensor)):
 
+            # has_child = hasattr(_self, "child")
+            # if(has_child):
+            #     has_pointer_child = isinstance(_self.child, syft.frameworks.torch.tensors.PointerTensor)
+            # else:
+            #     has_pointer_child = False
+
+            # TODO: change if statement to "if has_pointer_child"
+
+            if(not isinstance(_self, syft.frameworks.torch.tensors.PointerTensor)):
                 # Transform the args
-                
-                # Load the utility function to transform the args
-                hook_args = hook_self.args_hook_for_overloaded_attr[attr]
-                # Try running it
-                new_self, new_args = hook_args((_self, args))
+                try:
+                    # Load the utility function to transform the args
+                    hook_args = hook_self.args_hook_for_overloaded_attr[attr]
+                    # Try running it
+                    new_self, new_args = hook_args((_self, args))
+                except IndexError:  # Update the function in cas of an error
+                    args_hook_function = build_hook_args_function((_self, args))
+                    # Store this utility function in the registry
+                    hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
+                    # Run it
+                    new_self, new_args = args_hook_function((_self, args))
 
                 # Run the native function with the new args
                 if isinstance(new_args, tuple):
@@ -294,7 +308,10 @@ class TorchHook:
                     return attr(new_self, new_args)
 
             else:
+            # except RemoteTensorFoundError as err:  # if a pointer as been detected
 
+                # Extract the pointer with the error
+                # pointer = err.pointer
                 pointer = _self
                 # Get info where to send the command
                 owner = pointer.owner
