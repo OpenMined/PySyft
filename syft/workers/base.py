@@ -296,9 +296,8 @@ class BaseWorker(AbstractWorker):
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
-        if obj.is_wrapper:
-            if isinstance(obj.child, PointerTensor):
-                obj.child.garbage_collect_data = False
+        if hasattr(obj, "child") and isinstance(obj.child, PointerTensor):
+            obj.child.garbage_collect_data = False
 
         return obj
 

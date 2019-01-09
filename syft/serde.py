@@ -224,7 +224,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     tensor_bin = binary_stream.getvalue()
 
     chain = None
-    if tensor.is_wrapper:
+    if hasattr(tensor, "child"):
         chain = _simplify(tensor.child)
     return (tensor.id, tensor_bin, chain)
 

@@ -151,6 +151,28 @@ class TorchHook:
         # Overload auto overloaded with Torch methods
         self._add_methods_from__torch_tensor(tensor_type, syft_type)
 
+        self._hook_native_methods(tensor_type)
+
+    def _hook_native_methods(self, tensor_type: type):
+        """
+        Add hooked version of all methods of the tensor_type to the
+        Pointer tensor: instead of performing the native tensor
+        method, it will be sent remotely to the location the pointer
+        is pointing at.
+        :param tensor_type: the tensor_type which holds the methods
+        """
+        # # Add methods defined in the TorchTensor class to the Pointer class
+        # self._add_methods_from__torch_tensor(PointerTensor, TorchTensor)
+
+        # Use a pre-defined list to select the methods to overload
+        for attr in self.to_auto_overload[tensor_type]:
+            # if we haven't already overloaded this function
+            if f"native_{attr}" not in dir(tensor_type):
+                native_method = getattr(tensor_type, attr)
+                setattr(tensor_type, f"native_{attr}", native_method)
+                new_method = self.get_hooked_method(native_method)
+                setattr(tensor_type, attr, new_method)
+
     def _hook_pointer_tensor(self, tensor_type: type):
         """
         Add hooked version of all methods of the tensor_type to the
@@ -224,6 +246,174 @@ class TorchHook:
                     setattr(torch_module, f"native_{func}", native_func)
                     # 5. Put instead the hooked one
                     setattr(torch_module, func, new_func)
+
+    def get_hooked_method(hook_self, attr):
+        """
+        Hook a function in order to inspect its args and search for pointer
+        or other syft tensors.
+        - Calls to this function with normal tensors or numbers / string trigger
+          usual behaviour
+        - Calls with pointers send the command to the location of the pointer(s)
+        - Calls with syft tensor will in the future trigger specific behaviour
+
+        :param attr: the function to hook
+        :return: the hooked function
+        """
+
+        @wraps(attr)
+        def overloaded_attr(_self, *args, **kwargs):
+            """
+            Operate the hooking
+            """
+            # If the function is not hooked we hook it, to do so
+            # We search in the registry of "functions for hooking attr args"
+            if attr not in hook_self.args_hook_for_overloaded_attr:
+                hook_args_function = build_hook_args_function((_self, args))
+                # Store this utility function in the registry
+                hook_self.args_hook_for_overloaded_attr[attr] = hook_args_function
+
+            try:
+                # Transform the args
+                try:
+                    # Load the utility function to transform the args
+                    hook_args = hook_self.args_hook_for_overloaded_attr[attr]
+                    # Try running it
+                    new_self, new_args = hook_args((_self, args))
+                except IndexError:  # Update the function in cas of an error
+                    args_hook_function = build_hook_args_function((_self, args))
+                    # Store this utility function in the registry
+                    hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
+                    # Run it
+                    new_self, new_args = args_hook_function((_self, args))
+
+                # Run the native function with the new args
+                if isinstance(new_args, tuple):
+                    try:
+                        return attr(new_self, *new_args)
+                    except TypeError:
+                        return overloaded_attr(new_self, *new_args)
+                    # return getattr(new_self, attr.__name__)(*new_args)
+                else:
+                    return attr(new_self, new_args)
+                    # return getattr(new_self, attr.__name__)(new_args)
+            except RemoteTensorFoundError as err:  # if a pointer as been detected
+                # Extract the pointer with the error
+                pointer = err.pointer
+                # Get info where to send the command
+                owner = pointer.owner
+                location = pointer.location
+                # Build the message to send
+                cmd_name = f"{attr.__name__}"
+                message = (cmd_name, _self, args, kwargs)
+                # Send the command
+                response = owner.send_command(location, message)
+                tensor = hook_self.torch.Tensor()
+                tensor.child = response
+                return tensor
+
+        def build_hook_args_function(args):
+            # Inspect the call to find tensor arguments and return a rule whose
+            # structure is the same as the args object, with 1 where there was
+            # (torch or syft) tensors and 0 when not (ex: number, str, ...)
+            rule = build_rule(args)
+            # Build a function with this rule to efficiently replace syft tensors
+            # (but not pointer) with their child in the args objects
+            args_hook_function = build_args_hook(args, rule)
+            return args_hook_function
+
+        def build_rule(args):
+            """
+            Inspect the args object to find torch or syft tensor arguments and
+            return a rule whose structure is the same as the args object,
+            with 1 where there was (torch or syft) tensors and 0 when
+            not (ex: number, str, ...)
+
+            Example:
+                in: ([tensor(1, 2), Pointer@bob], 42)
+                out: ([1, 1], 0)
+            """
+            one = lambda _args: 1
+            # dict to specify the action depending of the type found
+            type_rule = {
+                list: lambda _args: [build_rule(a) for a in _args],
+                tuple: lambda _args: tuple([build_rule(a) for a in _args]),
+                PointerTensor: one,
+                hook_self.torch.Tensor: one,
+            }
+            type_args = type(args)
+            if type_args in type_rule:
+                return type_rule[type_args](args)
+            else:
+                return 0
+
+        def build_args_hook(args, rules, return_tuple=False):
+            """
+            Build a function given some rules to efficiently replace in the args object
+            syft tensors (but not pointer) with their child, and do nothing for other
+            type of object including torch tensors, str, numbers, bool, etc
+            Pointers trigger an error which is catched to get the location for forwarding
+            the call
+            :param args:
+            :param rules:
+            :param return_tuple: force to return a tuple even with a single element
+            :return:
+            """
+            # Dict to return the proper lambda function for the right torch or syft tensor type
+            forward_func = {
+                PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
+                hook_self.torch.Tensor: lambda i: i.child if hasattr(i, "child") else i,
+                "my_syft_tensor_type": lambda i: i.child,
+            }
+            # get the transformation lambda for each args
+            lambdas = [
+                (lambda i: i)  # return the same object
+                if not r  # if the rule is a number == 0.
+                else build_args_hook(a, r, True)  # If not, call recursively build_args_hook
+                if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
+                # Last if not, rule is probably == 1 so use type to return the right transformation.
+                else lambda i: forward_func[type(i)](i)
+                for a, r in zip(args, rules)  # And do this for all the args / rules provided
+            ]
+
+            # Instead of iterating which is slow, we use trick to efficiently
+            # apply each lambda to each arg
+            folds = {
+                0: zero_fold,
+                1: one_fold(return_tuple),
+                2: two_fold,
+                3: three_fold,
+                4: four_fold,
+            }
+            f = folds[len(lambdas)]
+            return lambda x: f(lambdas, x)
+
+        def zero_fold(*a):
+            return tuple()
+
+        def one_fold(return_tuple):
+            def _one_fold(lambdas, args):
+                return lambdas[0](args[0])
+
+            def tuple_one_fold(lambdas, args):
+                return (lambdas[0](args[0]),)
+
+            return {False: _one_fold, True: tuple_one_fold}[return_tuple]
+
+        def two_fold(lambdas, args):
+            return lambdas[0](args[0]), lambdas[1](args[1])
+
+        def three_fold(lambdas, args):
+            return lambdas[0](args[0]), lambdas[1](args[1]), lambdas[2](args[2])
+
+        def four_fold(lambdas, args):
+            return (
+                lambdas[0](args[0]),
+                lambdas[1](args[1]),
+                lambdas[2](args[2]),
+                lambdas[3](args[3]),
+            )
+
+        return overloaded_attr
 
     def get_hooked_func(hook_self, attr):
         """
@@ -318,7 +508,7 @@ class TorchHook:
             # Dict to return the proper lambda function for the right torch or syft tensor type
             forward_func = {
                 PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
-                hook_self.torch.Tensor: lambda i: i,
+                hook_self.torch.Tensor: lambda i: i.child if hasattr(i, "child") else i,
                 "my_syft_tensor_type": lambda i: i.child,
             }
             # get the transformation lambda for each args

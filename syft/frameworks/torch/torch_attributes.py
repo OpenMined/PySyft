@@ -58,6 +58,7 @@ class TorchAttributes(object):
             "storage_offset",
             "size",
             "stride",
+            "set_",
         ]
 
         # SECTION: List all torch tensor methods we want to overload

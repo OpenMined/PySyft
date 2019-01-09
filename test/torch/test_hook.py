@@ -68,23 +68,25 @@ class TestHook(object):
     @pytest.mark.parametrize("attr", ["add", "mul"])
     def test_get_pointer_method(self, attr):
         self.setUp()
-        new_attr = self.hook.get_pointer_method(attr)
         x = torch.Tensor([1, 2, 3])
-        expected = getattr(x, attr)(x)
+        method = getattr(x, attr)
+        native_method = getattr(x, f"native_{attr}")
+        expected = native_method(x)
         x_ptr = x.send(self.bob)
-        res_ptr = new_attr(x_ptr, x_ptr)
+        res_ptr = method(x_ptr)
         res = res_ptr.get()
         assert (res == expected).all()
 
-    @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
-    def test_hook_module_functional(self, attr):
+    @pytest.mark.parametrize("attr", ["add", "mul"])
+    def test_get_pointer_to_pointer_method(self, attr):
         self.setUp()
-        attr = getattr(F, attr)
-        x = torch.Tensor([1, -1, 3, 4])
-        expected = attr(x)
-        x_ptr = x.send(self.bob)
-        res_ptr = attr(x_ptr)
-        res = res_ptr.get()
+        x = torch.Tensor([1, 2, 3])
+        method = getattr(x, attr)
+        native_method = getattr(x, f"native_{attr}")
+        expected = native_method(x)
+        x_ptr = x.send(self.bob).send(self.alice)
+        res_ptr = method(x_ptr)
+        res = res_ptr.get().get()
         assert (res == expected).all()
 
     def test_properties(self):
