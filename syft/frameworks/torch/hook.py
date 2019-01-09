@@ -292,7 +292,6 @@ class TorchHook:
                 # Try running it
                 new_self, new_args = hook_args((_self, args))
             
-
                 # Run the native function with the new args
                 if isinstance(new_args, tuple):
                     try:
