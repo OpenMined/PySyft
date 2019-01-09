@@ -162,7 +162,7 @@ class BaseWorker(AbstractWorker):
         """
 
         # Step -1: save message if log_msgs ==  True
-        if (self.log_msgs):
+        if self.log_msgs:
             self.msg_history.append(bin_message)
 
         # Step 0: deserialize message

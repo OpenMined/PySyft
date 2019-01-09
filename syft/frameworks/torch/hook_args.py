@@ -6,11 +6,11 @@ one = lambda _args: 1
 # dict to specify the action depending of the type found
 
 type_rule = {
-        list: lambda _args: [build_rule(a) for a in _args],
-        tuple: lambda _args: tuple([build_rule(a) for a in _args]),
-        PointerTensor: one,
-        torch.Tensor: one,
-    }
+    list: lambda _args: [build_rule(a) for a in _args],
+    tuple: lambda _args: tuple([build_rule(a) for a in _args]),
+    PointerTensor: one,
+    torch.Tensor: one,
+}
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
 forward_func = {
@@ -18,6 +18,7 @@ forward_func = {
     torch.Tensor: lambda i: i.child if hasattr(i, "child") else i,
     "my_syft_tensor_type": lambda i: i.child,
 }
+
 
 def build_hook_args_function(args):
     # Inspect the call to find tensor arguments and return a rule whose

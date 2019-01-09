@@ -275,7 +275,6 @@ class TorchHook:
                 # Store this utility function in the registry
                 hook_self.args_hook_for_overloaded_attr[attr] = hook_args_function
 
-
             # has_child = hasattr(_self, "child")
             # if(has_child):
             #     has_pointer_child = isinstance(_self.child, syft.frameworks.torch.tensors.PointerTensor)
@@ -284,7 +283,7 @@ class TorchHook:
 
             # TODO: change if statement to "if has_pointer_child"
 
-            if(not isinstance(_self, syft.frameworks.torch.tensors.PointerTensor)):
+            if not isinstance(_self, syft.frameworks.torch.tensors.PointerTensor):
                 # Transform the args
 
                 # Load the utility function to transform the args
@@ -302,7 +301,7 @@ class TorchHook:
                     return attr(new_self, new_args)
 
             else:
-            # except RemoteTensorFoundError as err:  # if a pointer as been detected
+                # except RemoteTensorFoundError as err:  # if a pointer as been detected
 
                 # Extract the pointer with the error
                 # pointer = err.pointer
