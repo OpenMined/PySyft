@@ -69,9 +69,7 @@ class TorchTensor(AbstractTensor):
         # the same pointer which was previously created
         self.ptr = weakref.ref(ptr)
 
-        self.set_()
-        self.child = ptr
-        return self
+        return ptr.wrap()
 
     def create_pointer(
         self,
@@ -166,12 +164,10 @@ class TorchTensor(AbstractTensor):
     def get(self, deregister_ptr: bool = True):
         """Requests the tensor/chain being pointed to, be serialized and return
         """
+        # Transfer the get() to the child attribute which is a pointer
         tensor = self.child.get()
 
-        if hasattr(tensor, "child"):
-            self.child = tensor.child
-        else:
-            delattr(self, "child")
+        # Clean the wrapper
+        delattr(self, "child")
 
-        self.native_set_(tensor)
-        return self
+        return tensor

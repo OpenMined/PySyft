@@ -213,15 +213,9 @@ class TestPointer(object):
 
         # send tensor to bob
         x_ptr = x.send(self.bob)
-        print(self.bob._objects)
-        print(x_ptr.id_at_location)
 
         # send tensor again
         x_ptr = x.send(self.bob)
-        print(self.bob._objects)
-        print(x_ptr.id_at_location)
 
         # ensure bob has tensor
-        print(self.bob._objects)
-        print(list(self.bob._objects.keys()))
         assert x.id in self.bob._objects

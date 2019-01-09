@@ -219,11 +219,14 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         id of the tensor and the second is the binary for the PyTorch
         object.
     """
-
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
     tensor_bin = binary_stream.getvalue()
-    return (tensor.id, tensor_bin)
+
+    chain = None
+    if tensor.is_wrapper:
+        chain = _simplify(tensor.child)
+    return (tensor.id, tensor_bin, chain)
 
 
 def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
@@ -240,9 +243,9 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor = tensor_tuple
+    tensor_id, tensor_bin, chain = tensor_tuple
 
-    bin_tensor_stream = io.BytesIO(tensor)
+    bin_tensor_stream = io.BytesIO(tensor_bin)
     tensor = torch.load(bin_tensor_stream)
 
     initialize_tensor(
@@ -254,6 +257,11 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         init_args=[],
         kwargs={},
     )
+
+    if chain is not None:
+        chain = _detail(worker, chain)
+        tensor.child = chain
+        tensor.is_wrapper = True
 
     return tensor
 

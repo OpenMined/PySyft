@@ -400,6 +400,18 @@ class TorchHook:
         """
 
         @property
+        def location(self):
+            return self.child.location
+
+        tensor_type.location = location
+
+        @property
+        def id_at_location(self):
+            return self.child.id_at_location
+
+        tensor_type.id_at_location = id_at_location
+
+        @property
         def id(self):
             if not hasattr(self, "_id"):
                 self._id = int(10e10 * random.random())

@@ -51,5 +51,5 @@ def test_get(workers):
 
     pointer = tensor.send(bob)
 
-    assert type(pointer) == PointerTensor
+    assert type(pointer.child) == PointerTensor
     assert (pointer.get() == tensor).all()
