@@ -221,3 +221,23 @@ class TestPointer(object):
 
         # ensure bob has tensor
         assert x.id in self.bob._objects
+
+    def test_signature_cache_change(self):
+        """Tests that calls to the same method using a different
+        signature works correctly. We cache signatures in the
+        hook.build_hook_args_function dictionary but sometimes they
+        are incorrect if we use the same method with different
+        parameter types. So, we need to test to make sure that
+        this cache missing fails gracefully. This test tests
+        that for the .div(tensor) .div(int) method."""
+
+        self.setUp()
+
+        x = torch.Tensor([1, 2, 3])
+        y = torch.Tensor([1, 2, 3])
+
+        z = x.div(y)
+        z = x.div(2)
+        z = x.div(y)
+
+        assert True

@@ -43,13 +43,18 @@ class BaseWorker(AbstractWorker):
             tensor/variable/model lifecycle internally. Set to True if this
             object is not where the objects will be stored, but is instead
             a pointer to a worker that eists elsewhere.
+        log_msgs: An optional boolean parameter to indicate whether all
+            messages should be saved into a log for later review. This is
+            primarily a development/testing feature.
     """
 
-    def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False):
+    def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False, log_msgs=False):
         """Initializes a BaseWorker."""
         self.hook = hook
         self.id = id
         self.is_client_worker = is_client_worker
+        self.log_msgs = log_msgs
+        self.msg_history = list()
         # A core object in every BaseWorker instantiation. A Collection of
         # objects where all objects are stored using their IDs as keys.
         self._objects = {}
@@ -155,6 +160,11 @@ class BaseWorker(AbstractWorker):
         Returns:
             A binary message response.
         """
+
+        # Step -1: save message if log_msgs ==  True
+        if self.log_msgs:
+            self.msg_history.append(bin_message)
+
         # Step 0: deserialize message
         (msg_type, contents) = serde.deserialize(bin_message, worker=self)
 
@@ -199,6 +209,7 @@ class BaseWorker(AbstractWorker):
         Returns:
             A PointerTensor object representing the pointer to the remote worker(s).
         """
+
         if not isinstance(workers, list):
             workers = [workers]
 
@@ -220,12 +231,15 @@ class BaseWorker(AbstractWorker):
         if ptr_id is None:  # Define a remote id if not specified
             ptr_id = int(10e10 * random.random())
 
-        # Send the object
-        self.send_obj(tensor, worker)
-
         pointer = tensor.create_pointer(
             owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
         )
+
+        # if (tensor.is_wrapper):
+        #     tensor = tensor.child
+
+        # Send the object
+        self.send_obj(tensor, worker)
 
         return pointer
 
