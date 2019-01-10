@@ -286,10 +286,25 @@ class TorchHook:
             if not isinstance(_self, syft.frameworks.torch.tensors.PointerTensor):
                 # Transform the args
 
-                # Load the utility function to transform the args
-                hook_args = hook_self.args_hook_for_overloaded_attr[attr]
-                # Try running it
-                new_self, new_args = hook_args((_self, args))
+                try:
+                    # Load the utility function to transform the args
+                    hook_args = hook_self.args_hook_for_overloaded_attr[attr]
+                    # Try running it
+                    new_self, new_args = hook_args((_self, args))
+
+                # at first it might seem like this is redundant. After all, if the dictionary
+                # args_hook_for_overloaded_attr is supposed to save how we should parse the
+                # signature of the method, then why do we need to check it again? Well, as it happens
+                # some methods can be passed with multiple kinds of signatures, which means the
+                # one we cached might not always be the correct one. Thus, on the off chance
+                # that a method gets used in multiple ways, then we need to change what's in
+                # the cache and re-run. That's what this exception below handles.
+                except (IndexError, KeyError):  # Update the function in cas of an error
+                    args_hook_function = build_hook_args_function((_self, args))
+                    # Store this utility function in the registry
+                    hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
+                    # Run it
+                    new_self, new_args = args_hook_function((_self, args))
 
                 # Run the native function with the new args
                 if isinstance(new_args, tuple):

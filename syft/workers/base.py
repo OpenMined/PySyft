@@ -209,6 +209,7 @@ class BaseWorker(AbstractWorker):
         Returns:
             A PointerTensor object representing the pointer to the remote worker(s).
         """
+
         if not isinstance(workers, list):
             workers = [workers]
 
@@ -230,12 +231,15 @@ class BaseWorker(AbstractWorker):
         if ptr_id is None:  # Define a remote id if not specified
             ptr_id = int(10e10 * random.random())
 
-        # Send the object
-        self.send_obj(tensor, worker)
-
         pointer = tensor.create_pointer(
             owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
         )
+
+        # if (tensor.is_wrapper):
+        #     tensor = tensor.child
+
+        # Send the object
+        self.send_obj(tensor, worker)
 
         return pointer
 
