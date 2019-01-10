@@ -268,12 +268,6 @@ class TorchHook:
             """
             Operate the hooking
             """
-            # If the function is not hooked we hook it, to do so
-            # We search in the registry of "functions for hooking attr args"
-            if attr not in hook_self.args_hook_for_overloaded_attr:
-                hook_args_function = build_hook_args_function((_self, args))
-                # Store this utility function in the registry
-                hook_self.args_hook_for_overloaded_attr[attr] = hook_args_function
 
             # has_child = hasattr(_self, "child")
             # if(has_child):
