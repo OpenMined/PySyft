@@ -250,6 +250,42 @@ class TorchHook:
                     # 5. Put instead the hooked one
                     setattr(torch_module, func, new_func)
 
+    def hook_method_args(hook_self, method_self, attr, args):
+        """Method arguments are sometimes simple types (such as strings or ints) but
+        sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LogTensor
+        or some other tensor type. Complex types (which have a .child attribute) need to
+        have arguments converted from the arg to arg.child so that the types match as the
+        method is being called down the chain. To make this efficient, we cache which args
+        need to be replaced with their children in a dictionary called
+        args_hook_for_overloaded_attr. However, sometimes an method (an attr) has multiple
+        different argumetn signatures, such that sometimes arguments have .child objects
+        and other times they don't (such as x.div(), which can accept either a tensor or a
+        float as an argument). This invalidates the cache, so we need to have a try/except
+        which refreshes the cache if the signature triggers an error.
+
+        Args:
+            hook_self (TorchHook): the TorchHook object this method is being called on
+            method_self: the tensor on which the method is being called
+            attr (str): the name of the method being called
+            args (list): the arguments being passed to the tensor
+        """
+
+        try:
+            # Load the utility function to transform the args
+            hook_args = hook_self.args_hook_for_overloaded_attr[attr]
+            # Try running it
+            new_self, new_args = hook_args((method_self, args))
+
+        except (IndexError, KeyError):  # Update the function in cas of an error
+            args_hook_function = build_hook_args_function((method_self, args))
+            # Store this utility function in the registry
+            hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
+            # Run it
+            new_self, new_args = args_hook_function((method_self, args))
+
+        return (new_self, new_args)
+
+
     def get_hooked_method(hook_self, attr):
         """
         Hook a function in order to inspect its args and search for pointer
@@ -278,27 +314,9 @@ class TorchHook:
             # TODO: change if statement to "if has_pointer_child"
 
             if not isinstance(_self, syft.frameworks.torch.tensors.PointerTensor):
+
                 # Transform the args
-
-                try:
-                    # Load the utility function to transform the args
-                    hook_args = hook_self.args_hook_for_overloaded_attr[attr]
-                    # Try running it
-                    new_self, new_args = hook_args((_self, args))
-
-                # at first it might seem like this is redundant. After all, if the dictionary
-                # args_hook_for_overloaded_attr is supposed to save how we should parse the
-                # signature of the method, then why do we need to check it again? Well, as it happens
-                # some methods can be passed with multiple kinds of signatures, which means the
-                # one we cached might not always be the correct one. Thus, on the off chance
-                # that a method gets used in multiple ways, then we need to change what's in
-                # the cache and re-run. That's what this exception below handles.
-                except (IndexError, KeyError):  # Update the function in cas of an error
-                    args_hook_function = build_hook_args_function((_self, args))
-                    # Store this utility function in the registry
-                    hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
-                    # Run it
-                    new_self, new_args = args_hook_function((_self, args))
+                new_self, new_args = hook_self.hook_method_args(_self, attr, args)
 
                 # Run the native function with the new args
                 if isinstance(new_args, tuple):
@@ -376,6 +394,7 @@ class TorchHook:
                         return attr(new_args)
                     except TypeError:
                         return overloaded_attr(new_args)
+
             except RemoteTensorFoundError as err:  # if a pointer as been detected
                 # Extract the pointer with the error
                 pointer = err.pointer
