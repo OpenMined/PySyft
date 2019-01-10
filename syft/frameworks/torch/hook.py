@@ -285,7 +285,6 @@ class TorchHook:
 
         return (new_self, new_args)
 
-
     def get_hooked_method(hook_self, attr):
         """
         Hook a function in order to inspect its args and search for pointer
