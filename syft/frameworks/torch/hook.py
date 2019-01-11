@@ -112,8 +112,6 @@ class TorchHook:
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
-        self._hook_pointer_tensor(torch.Tensor)
-
         self._hook_torch_module()
 
         # Add the local_worker to syft so that it can be found if the hook is
@@ -175,23 +173,6 @@ class TorchHook:
                 setattr(tensor_type, f"native_{attr}", native_method)
                 new_method = self.get_hooked_method(native_method)
                 setattr(tensor_type, attr, new_method)
-
-    def _hook_pointer_tensor(self, tensor_type: type):
-        """
-        Add hooked version of all methods of the tensor_type to the
-        Pointer tensor: instead of performing the native tensor
-        method, it will be sent remotely to the location the pointer
-        is pointing at.
-        :param tensor_type: the tensor_type which holds the methods
-        """
-
-        # Use a pre-defined list to select the methods to overload
-        for attr in self.to_auto_overload[tensor_type]:
-            # if we haven't already overloaded this function
-            if f"native_{attr}" not in dir(tensor_type):
-                native_method = getattr(tensor_type, attr)
-                setattr(PointerTensor, f"native_{attr}", native_method)
-                setattr(PointerTensor, attr, self.get_pointer_method(attr))
 
     @staticmethod
     def get_pointer_method(attr):
