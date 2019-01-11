@@ -23,22 +23,6 @@ class LogTensor(AbstractTensor):
         self.id = id
         self.child = None
 
-    def __str__(self) -> str:
-        if hasattr(self, "child"):
-            return type(self).__name__ + ">" + self.child.__str__()
-        else:
-            return type(self).__name__
-
-    def __repr__(self) -> str:
-        if hasattr(self, "child"):
-            return type(self).__name__ + ">" + self.child.__repr__()
-        else:
-            return type(self).__name__
-
-    def on(self, tensor):
-        self.child = tensor
-        return self
-
     @classmethod
     def handle_method_command(cls, command):
         """

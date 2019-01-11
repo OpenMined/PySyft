@@ -31,7 +31,7 @@ backward_func = {
     TorchTensor: lambda i: i.wrap(),
     torch.Tensor: lambda i: i.wrap(),
     PointerTensor: lambda i: i,
-    LogTensor: lambda i: LogTensor().on(i),
+    LogTensor: lambda i: LogTensor().on(i, wrap=False),
     "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i)",
 }
 

@@ -174,27 +174,6 @@ class TorchHook:
                 new_method = self.get_hooked_method(native_method)
                 setattr(tensor_type, attr, new_method)
 
-    @staticmethod
-    def get_pointer_method(attr):
-        """
-        Return a overloaded method which doesn't perform the initial method
-        but send it to the appropriate worker, using the self attribute
-        which is a pointer with a location
-        :param attr: the method to overload
-        :return: the overloaded method
-        """
-
-        def overloaded_attr(self, *args, **kwargs):
-            owner = self.owner
-            # Identify the location using self which is a pointer
-            location = self.location
-            # Build the message to send
-            message = (attr, self, args, kwargs)
-            response = owner.send_command(location, message)
-            return response
-
-        return overloaded_attr
-
     def _hook_torch_module(self):
         """Overloads functions in the main torch modules.
         The way this is accomplished is by first moving all existing module
@@ -249,7 +228,7 @@ class TorchHook:
             """
             Operate the hooking
             """
-            command = (attr.__name__, _self, args)
+            command = (attr.__name__, _self, args)  # TODO add kwargs
             response = TorchTensor.handle_method_command(command)
             return response
 
