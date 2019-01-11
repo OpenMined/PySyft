@@ -249,7 +249,9 @@ class BaseWorker(AbstractWorker):
         :param message: the message specifying the command and the args
         :return: a pointer to the result
         """
-        command, _self, args, kwargs = message
+        command, _self, args = message
+        # TODO add kwargs
+        kwargs = {}
         command = command.decode("utf-8")
         # Handle methods
         if _self is not None:

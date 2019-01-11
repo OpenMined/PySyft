@@ -1,3 +1,4 @@
+import syft
 from syft.frameworks.torch.tensors.abstract import AbstractTensor
 from syft.codes import MSGTYPE
 
@@ -72,6 +73,28 @@ class PointerTensor(AbstractTensor):
         self.owner = owner
         self.id = id
         self.garbage_collect_data = garbage_collect_data
+
+    @classmethod
+    def handle_method_command(cls, command):
+        """
+        Receive an instruction for a method to be applied on a Pointer,
+        Get the remote location to send the command, send it and get a
+        pointer to the response, return.
+        :param command: instruction of a method command: (command name,
+        self of the method, arguments[, kwargs])
+        :return: the response of the method command
+        """
+        cmd, self, args = command  # TODO: add kwargs
+
+        pointer = self
+        # Get info on who needs to send where the command
+        owner = pointer.owner
+        location = pointer.location
+
+        # Send the command
+        response = owner.send_command(location, command)
+
+        return response
 
     def __str__(self):
         """Returns a string version of this pointer.
