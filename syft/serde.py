@@ -678,7 +678,10 @@ def _simplify_log_tensor(tensor: LogTensor) -> tuple:
         data = _simplify_log_tensor(tensor)
     """
 
-    return (tensor.id,)
+    chain = None
+    if hasattr(tensor, "child"):
+        chain = _simplify(tensor.child)
+    return (tensor.id, chain)
 
 
 def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LogTensor:
@@ -690,12 +693,17 @@ def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LogTensor
     Returns:
         LogTensor: a LogTensor
     Examples:
-        ptr = _detail_pointer_tensor(data)
+        logtensor = _detail_log_tensor(data)
     """
-    # TODO: fix comment for this and simplifier
-    obj_id = tensor_tuple[0]
+    obj_id, chain = tensor_tuple
 
-    return LogTensor(owner=worker, id=obj_id)
+    tensor = LogTensor(owner=worker, id=obj_id)
+
+    if chain is not None:
+        chain = _detail(worker, chain)
+        tensor.child = chain
+
+    return tensor
 
 
 # High Level Simplification Router

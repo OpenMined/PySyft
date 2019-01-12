@@ -49,3 +49,28 @@ class TestLogTensor(object):
         x = LogTensor().on(x_tensor)
         y = x.add(x)
         assert (y.child.child == x_tensor.add(x_tensor)).all()
+
+    def test_send_get_log_chain(self):
+        """
+        Test sending and getting back a chain including a logtensor
+        """
+        self.setUp()
+        # build a long chain tensor Wrapper>LogTensor>TorchTensor
+        x_tensor = torch.Tensor([1, 2, 3])
+        x = LogTensor().on(x_tensor)
+        x_ptr = x.send(self.bob)
+        x_back = x_ptr.get()
+        assert (x_back.child.child == x_tensor).all()
+
+    def test_remote_method_on_log_chain(self):
+        """
+        Test remote method call on a chain including a log tensor
+        """
+        self.setUp()
+        # build a long chain tensor Wrapper>LogTensor>TorchTensor
+        x_tensor = torch.Tensor([1, 2, 3])
+        x = LogTensor().on(x_tensor)
+        x_ptr = x.send(self.bob)
+        y_ptr = x_ptr.add(x_ptr)
+        y = y_ptr.get()
+        assert (y.child.child == x_tensor.add(x_tensor)).all()
