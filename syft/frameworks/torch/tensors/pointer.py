@@ -1,6 +1,7 @@
 import syft
 from syft.frameworks.torch.tensors.abstract import AbstractTensor
 from syft.codes import MSGTYPE
+from syft.exceptions import RemoteTensorFoundError
 
 
 class PointerTensor(AbstractTensor):
@@ -95,6 +96,39 @@ class PointerTensor(AbstractTensor):
         response = owner.send_command(location, command)
 
         return response
+
+    @classmethod
+    def handle_func_command(cls, command):
+        """
+        Receive an instruction for a function to be applied on a Pointer,
+        Get the remote location to send the command, send it and get a
+        pointer to the response, return.
+        :param command: instruction of a function command: (command name,
+        None, arguments[, kwargs])
+        :return: the response of the function command
+        """
+        pointer = cls.find_a_pointer(command)
+        # Get info on who needs to send where the command
+        owner = pointer.owner
+        location = pointer.location
+
+        # Send the command
+        response = owner.send_command(location, command)
+
+        return response
+
+    @classmethod
+    def find_a_pointer(cls, command):
+        """
+        Find and return the first pointer in the args object, using a trick
+        with the raising error RemoteTensorFoundError
+        """
+        try:
+            cmd, _, args = command
+            _ = syft.frameworks.torch.hook_args.hook_function_args(cmd, args)
+        except RemoteTensorFoundError as err:
+            pointer = err.pointer
+            return pointer
 
     def __str__(self):
         """Returns a string version of this pointer.

@@ -1,11 +1,13 @@
 import torch
 from syft.exceptions import RemoteTensorFoundError
+from syft.exceptions import PureTorchTensorFoundError
 from .tensors import PointerTensor
 from .tensors import LogTensor
 from .tensors import TorchTensor
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
+get_tensor_type_functions = {}
 
 one = lambda _args: 1
 
@@ -21,7 +23,9 @@ type_rule = {
 # Dict to return the proper lambda function for the right torch or syft tensor type
 forward_func = {
     PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
-    torch.Tensor: lambda i: i.child if hasattr(i, "child") else i,
+    torch.Tensor: lambda i: i.child
+    if hasattr(i, "child")
+    else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
     LogTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
 }
@@ -66,7 +70,7 @@ def hook_method_args(attr, method_self, args):
         new_self, new_args = hook_args((method_self, args))
 
     except (IndexError, KeyError):  # Update the function in case of an error
-        args_hook_function = build_hook_args_function((method_self, args))
+        args_hook_function, _ = build_hook_args_function((method_self, args))
         # Store this utility function in the registry
         hook_method_args_functions[attr_id] = args_hook_function
         # Run it
@@ -75,15 +79,48 @@ def hook_method_args(attr, method_self, args):
     return (new_self, new_args)
 
 
-def build_hook_args_function(args):
+def hook_function_args(attr, args):
+    """See hook_method_args for details
+
+    Args:
+        attr (str): the name of the function being called
+        args (list): the arguments being passed to the tensor
+    """
+    try:
+        # Load the utility function to transform the args
+        # TODO rename registry or use another one than for methods
+        hook_args = hook_method_args_functions[attr]
+        get_tensor_type = get_tensor_type_functions[attr]
+        # Try running it
+        new_args = hook_args(args)
+        new_type = get_tensor_type(new_args)
+
+    except (IndexError, KeyError):  # Update the function in case of an error
+        args_hook_function, get_tensor_type_function = build_hook_args_function(
+            args, return_tuple=True
+        )
+        # Store the utility functions in registries
+        hook_method_args_functions[attr] = args_hook_function
+        get_tensor_type_functions[attr] = get_tensor_type_function
+        # Run it
+        new_args = args_hook_function(args)
+        new_type = get_tensor_type_function(new_args)
+
+    return new_args, new_type
+
+
+def build_hook_args_function(args, return_tuple=False):
     # Inspect the call to find tensor arguments and return a rule whose
     # structure is the same as the args object, with 1 where there was
     # (torch or syft) tensors and 0 when not (ex: number, str, ...)
     rule = build_rule(args)
     # Build a function with this rule to efficiently replace syft tensors
     # (but not pointer) with their child in the args objects
-    args_hook_function = build_args_hook(args, rule)
-    return args_hook_function
+    args_hook_function = build_args_hook(args, rule, return_tuple)
+    # Build a function with this rule to efficiently the child type of the
+    # tensor found in the args
+    get_tensor_type_function = build_get_tensor_type(rule)
+    return args_hook_function, get_tensor_type_function
 
 
 def hook_method_response(attr, response, wrap_type):
@@ -192,6 +229,93 @@ def build_args_hook(args, rules, return_tuple=False):
     folds = {0: zero_fold, 1: one_fold(return_tuple), 2: two_fold, 3: three_fold, 4: four_fold}
     f = folds[len(lambdas)]
     return lambda x: f(lambdas, x)
+
+
+def build_get_tensor_type(rules, layer=None):
+    """
+    Build a function which uses some rules to find efficiently the first tensor in
+    the args objects and return the type of its child.
+    :param rules: a skeleton object with the same structure as args but each tensor
+    is replaced with a 1 and other types (int, str) with a 0
+    :param layer: keep track of the path of inspection: each element in the list
+    stand for one layer of deepness into the object, and its value for the index
+    in the current layer. See example for details
+    :return: a function returning a type
+
+    Example:
+        *Understanding the layer parameter*
+        obj = (a, [b, (c, d)], e)
+        the layer position is for:
+        a: [0]
+        b: [1, 0]
+        c: [1, 1, 0]
+        d: [1, 1, 1]
+        e: [2]
+
+        *Global behaviour example*
+        rules = (0, [1, (0, 0), 0)
+        - First recursion level
+          0 found -> do nothing
+          list found -> recursive call with layer = [1]
+        - Second recursion level
+          1 found -> update layer to [1, 0]
+                     build the function x: type(x[1][0])
+                     break
+        - Back to first recursion level
+          save the function returned in the lambdas list
+          0 found -> do nothing
+          exit loop
+          return the first (and here unique) function
+
+
+    """
+    # We keep note of the first layer or recursion level to return at the end
+    # only one function and instantiate the layer list the first time
+    first_layer = layer is None
+
+    if first_layer:
+        layer = []
+
+    # Iteration through the rules object
+    lambdas = []
+    for i, r in enumerate(rules):
+        if r == 1:  # if a tensor is found
+            layer.append(i)
+            lambdas.append(
+                # the layer object is given to build a getter to reach the
+                # tensor position and then the type() is called on the obj found
+                lambda a: type(get_element_at[len(layer)](*layer)(a))
+            )
+            # we only need one to get the type of all tensors as they should be the same
+            break
+        if isinstance(r, (list, tuple)):  # we iterate recursively if necessary
+            layer.append(i)
+            lambdas += build_get_tensor_type(r, layer)
+
+    if first_layer:
+        return lambdas[0]
+    else:
+        return lambdas
+
+
+# Function helpers to convert [a, b, c, ...] -> obj[a][b][c][...]
+def one_layer(idx1):
+    return lambda l: l[idx1]
+
+
+def two_layers(idx1, idx2):
+    return lambda l: one_layer(idx2)(l[idx1])
+
+
+def three_layers(idx1, *ids):
+    return lambda l: two_layers(*ids)(l[idx1])
+
+
+def four_layers(idx1, *ids):
+    return lambda l: three_layers(*ids)(l[idx1])
+
+
+get_element_at = {1: one_layer, 2: two_layers, 3: three_layers, 4: four_layers}
 
 
 def build_response_hook(response, rules, wrap_type, return_tuple=False):

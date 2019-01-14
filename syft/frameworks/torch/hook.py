@@ -252,48 +252,10 @@ class TorchHook:
             """
             Operate the hooking
             """
-            # If the function is not hooked we hook it, to do so
-            # We search in the registry of "functions for hooking attr args"
-            if attr not in hook_self.args_hook_for_overloaded_attr:
-                # Inspect the call to find tensor arguments and return a rule whose
-                # structure is the same as the args object, with 1 where there was
-                # (torch or syft) tensors and 0 when not (ex: number, str, ...)
-                rule = build_rule(args)
-                # Build a function with this rule to efficiently replace syft tensors
-                # (but not pointer) with their child in the args objects
-                args_hook_function = build_args_hook(args, rule)
-                # Store this utility function in the registry
-                hook_self.args_hook_for_overloaded_attr[attr] = args_hook_function
-
-            # Load the utility function to transform the args
-            hook_args = hook_self.args_hook_for_overloaded_attr[attr]
-            try:
-                # Transform the args
-                new_args = hook_args(args)
-                # Run the native function with the new args
-                if isinstance(new_args, tuple):
-                    try:
-                        return attr(*new_args)
-                    except TypeError:
-                        return overloaded_attr(*new_args)
-                else:
-                    try:
-                        return attr(new_args)
-                    except TypeError:
-                        return overloaded_attr(new_args)
-
-            except RemoteTensorFoundError as err:  # if a pointer as been detected
-                # Extract the pointer with the error
-                pointer = err.pointer
-                # Get info where to send the command
-                owner = pointer.owner
-                location = pointer.location
-                # Build the message to send
-                cmd_name = f"{attr.__module__}.{attr.__name__}"
-                message = (cmd_name, None, args, kwargs)
-                # Send the command
-                response = owner.send_command(location, message)
-                return response
+            cmd_name = f"{attr.__module__}.{attr.__name__}"
+            command = (cmd_name, None, args)  # TODO add kwargs
+            response = TorchTensor.handle_func_command(command)
+            return response
 
         return overloaded_attr
 
