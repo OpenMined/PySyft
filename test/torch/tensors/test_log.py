@@ -1,6 +1,7 @@
 import random
 
 import torch
+import torch.nn.functional as F
 import syft
 
 from syft.frameworks.torch.tensors import LogTensor
@@ -50,6 +51,15 @@ class TestLogTensor(object):
         y = x.add(x)
         assert (y.child.child == x_tensor.add(x_tensor)).all()
 
+    def test_function_on_log_chain(self):
+        """
+        Test torch function call on a chain including a log tensor
+        """
+        self.setUp()
+        x = LogTensor().on(torch.Tensor([1, -1, 3]))
+        y = F.relu(x)
+        assert (y.child.child == torch.Tensor([1, 0, 3])).all()
+
     def test_send_get_log_chain(self):
         """
         Test sending and getting back a chain including a logtensor
@@ -65,6 +75,19 @@ class TestLogTensor(object):
     def test_remote_method_on_log_chain(self):
         """
         Test remote method call on a chain including a log tensor
+        """
+        self.setUp()
+        # build a long chain tensor Wrapper>LogTensor>TorchTensor
+        x_tensor = torch.Tensor([1, 2, 3])
+        x = LogTensor().on(x_tensor)
+        x_ptr = x.send(self.bob)
+        y_ptr = F.relu(x_ptr)
+        y = y_ptr.get()
+        assert (y.child.child == F.relu(x_tensor)).all()
+
+    def test_remote_function_on_log_chain(self):
+        """
+        Test remote function call on a chain including a log tensor
         """
         self.setUp()
         # build a long chain tensor Wrapper>LogTensor>TorchTensor
