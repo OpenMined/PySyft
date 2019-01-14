@@ -51,6 +51,7 @@ class BaseWorker(AbstractWorker):
     def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False, log_msgs=False):
         """Initializes a BaseWorker."""
         self.hook = hook
+        self.torch = None if hook is None else hook.torch
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
@@ -259,15 +260,14 @@ class BaseWorker(AbstractWorker):
         # Handle functions
         else:
             sy.torch.command_guard(command, "torch_modules")
-            command = sy.torch.eval_torch_modules_functions[command]
+            command = eval("self." + command)
             tensor = command(*args, **kwargs)
 
         # FIXME: should be added automatically
         tensor.owner = self
         # tensor.id ??
 
-        # TODO: Handle when the reponse is not simply a tensor
-
+        # TODO: Handle when the response is not simply a tensor
         self.register_obj(tensor)
 
         pointer = tensor.create_pointer(
