@@ -65,6 +65,18 @@ class TestHook(object):
             assert isinstance(err_pointer, PointerTensor)
             assert err_pointer.id == ptr_id
 
+    def test_build_get_child_type(self):
+        from syft.frameworks.torch.hook_args import build_rule, build_get_tensor_type
+
+        x = torch.Tensor([1, 2, 3])
+        args = (x, [[1, x]])
+        rule = build_rule(args)
+
+        get_child_type_function = build_get_tensor_type(rule)
+
+        tensor_type = get_child_type_function(args)
+        assert tensor_type == torch.Tensor
+
     @pytest.mark.parametrize("attr", ["abs"])
     def test_get_pointer_unary_method(self, attr):
         self.setUp()
@@ -113,16 +125,16 @@ class TestHook(object):
         res = res_ptr.get().get()
         assert (res == expected).all()
 
-    # @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
-    # def test_hook_module_functional(self, attr):
-    #     self.setUp()
-    #     attr = getattr(F, attr)
-    #     x = torch.Tensor([1, -1, 3, 4])
-    #     expected = attr(x)
-    #     x_ptr = x.send(self.bob)
-    #     res_ptr = attr(x_ptr)
-    #     res = res_ptr.get()
-    #     assert (res == expected).all()
+    @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
+    def test_hook_module_functional(self, attr):
+        self.setUp()
+        attr = getattr(F, attr)
+        x = torch.Tensor([1, -1, 3, 4])
+        expected = attr(x)
+        x_ptr = x.send(self.bob)
+        res_ptr = attr(x_ptr)
+        res = res_ptr.get()
+        assert (res == expected).all()
 
     def test_properties(self):
         self.setUp()
