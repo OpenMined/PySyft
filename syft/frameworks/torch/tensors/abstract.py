@@ -9,6 +9,38 @@ class AbstractTensor(ABC):
     This is the tensor abstraction.
     """
 
+    def __str__(self) -> str:
+        if hasattr(self, "child"):
+            return type(self).__name__ + ">" + self.child.__str__()
+        else:
+            return type(self).__name__
+
+    def __repr__(self) -> str:
+        if hasattr(self, "child"):
+            return type(self).__name__ + ">" + self.child.__repr__()
+        else:
+            return type(self).__name__
+
+    def on(self, tensor, wrap=True):
+        """
+        Add a syft(log) tensor on top of the tensor.
+        :param tensor: the tensor to extend
+        :param wrap: if true, add the syft tensor between the wrapper
+        and the rest of the chain. If false, just add it at the top
+        :return: a syft/torch tensor
+        """
+        if not wrap:
+            self.child = tensor
+            return self
+        else:
+            # if tensor is a wrapper
+            if not hasattr(tensor, "child"):
+                tensor = tensor.wrap()
+
+            self.child = tensor.child
+            tensor.child = self
+            return tensor
+
     def wrap(self):
         """Wraps the class inside torch tensor.
 

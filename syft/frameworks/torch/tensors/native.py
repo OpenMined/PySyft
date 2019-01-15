@@ -1,9 +1,12 @@
 import random
 import weakref
 
+import syft
 from syft.frameworks.torch.tensors import AbstractTensor
 from syft.frameworks.torch.tensors import PointerTensor
 from syft.workers import BaseWorker
+
+from syft.exceptions import PureTorchTensorFoundError
 
 
 class TorchTensor(AbstractTensor):
@@ -21,16 +24,101 @@ class TorchTensor(AbstractTensor):
     """
 
     def __str__(self) -> str:
-        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
-            return type(self).__name__ + self.child.__str__()
+        if hasattr(self, "child"):
+            return type(self).__name__ + ">" + self.child.__str__()
         else:
             return self.native___str__()
 
     def __repr__(self) -> str:
-        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
-            return type(self).__name__ + self.child.__repr__()
+        if hasattr(self, "child"):
+            return type(self).__name__ + ">" + self.child.__repr__()
         else:
             return self.native___repr__()
+
+    @classmethod
+    def handle_method_command(cls, command):
+        """
+        Receive an instruction for a method to be applied on a torch
+        tensor, which can be a "real" tensor or just a wrapper at the
+        top of a chain (ex: wrapper>LogTensor>Torch tensor).
+        If this is not a wrapper layer, run the native torch command.
+        If this is a wrapper layer, just forward the instruction to the
+        next layer type in the chain (in the example above to LogTensor.
+        handle_method_command), get the response and replace a wrapper
+        on top of all tensors found in the response.
+        :param command: instruction of a method command: (command name,
+        self of the method, arguments[, kwargs])
+        :return: the response of the method command
+        """
+        # TODO: add kwargs
+        cmd, self, args = command
+
+        if not hasattr(self, "child"):  # means that it's not a wrapper
+            cmd = getattr(self, f"native_{cmd}")
+            # Run the native function with the new args
+            if isinstance(args, tuple):
+                response = cmd(*args)
+            else:
+                response = cmd(args)
+        else:  # means that there is a wrapper to remove
+            # Replace all torch tensor with their child attribute
+            new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args(cmd, self, args)
+            # build the new command
+            new_command = (cmd, new_self, new_args)
+            # Send it to the appropriate class and get the response
+            response = type(new_self).handle_method_command(new_command)
+            # Put back the wrappers where needed
+            response = syft.frameworks.torch.hook_args.hook_method_response(
+                cmd, response, wrap_type=cls
+            )
+
+        return response
+
+    @classmethod
+    def handle_func_command(cls, command):
+        """
+        Receive an instruction for a function to be applied on a torch
+        tensor, which can be a "real" tensor or just a wrapper at the
+        top of a chain (ex: wrapper>LogTensor>Torch tensor).
+        If this is not a wrapper layer, run the native torch command.
+        If this is a wrapper layer, just forward the instruction to the
+        next layer type in the chain (in the example above to LogTensor.
+        handle_method_command), get the response and replace a wrapper
+        on top of all tensors found in the response.
+        :param command: instruction of a function command: (command name,
+        <no self>, arguments[, kwargs])
+        :return: the response of the function command
+        """
+        # TODO: add kwargs
+        cmd, _, args = command
+
+        try:  # will work if tensors are wrappers
+            # Replace all torch tensor with their child attribute
+            new_args, new_type = syft.frameworks.torch.hook_args.hook_function_args(cmd, args)
+            # build the new command
+            new_command = (cmd, None, new_args)
+            # Send it to the appropriate class and get the response
+            response = new_type.handle_func_command(new_command)
+            # Put back the wrappers where needed
+            response = syft.frameworks.torch.hook_args.hook_method_response(
+                cmd, response, wrap_type=cls
+            )
+        except PureTorchTensorFoundError:  # means that it's not a wrapper but a pure tensor
+            # TODO: clean this line
+            cmd = (
+                "syft.local_worker.hook."
+                + ".".join(cmd.split(".")[:-1])
+                + ".native_"
+                + cmd.split(".")[-1]
+            )
+            # Run the native function with the new args
+            # TODO: guard
+            if isinstance(args, tuple):
+                response = eval(cmd)(*args)
+            else:
+                response = eval(cmd)(args)
+
+        return response
 
     def send(self, location):
         """Gets the pointer to a new remote object.

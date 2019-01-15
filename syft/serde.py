@@ -43,6 +43,7 @@ import zstd
 import syft
 
 from syft.workers import AbstractWorker
+from syft.frameworks.torch.tensors import LogTensor
 from syft.frameworks.torch.tensors import PointerTensor
 
 from syft.frameworks.torch.tensors.abstract import initialize_tensor
@@ -666,6 +667,45 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     # return PointerTensor(**new_data)
 
 
+def _simplify_log_tensor(tensor: LogTensor) -> tuple:
+    """
+    This function takes the attributes of a LogTensor and saves them in a tuple
+    Args:
+        tensor (LogTensor): a LogTensor
+    Returns:
+        tuple: a tuple holding the unique attributes of the log tensor
+    Examples:
+        data = _simplify_log_tensor(tensor)
+    """
+
+    chain = None
+    if hasattr(tensor, "child"):
+        chain = _simplify(tensor.child)
+    return (tensor.id, chain)
+
+
+def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LogTensor:
+    """
+    This function reconstructs a LogTensor given it's attributes in form of a tuple.
+    Args:
+        worker: the worker doing the deserialization
+        tensor_tuple: a tuple holding the attributes of the LogTensor
+    Returns:
+        LogTensor: a LogTensor
+    Examples:
+        logtensor = _detail_log_tensor(data)
+    """
+    obj_id, chain = tensor_tuple
+
+    tensor = LogTensor(owner=worker, id=obj_id)
+
+    if chain is not None:
+        chain = _detail(worker, chain)
+        tensor.child = chain
+
+    return tensor
+
+
 # High Level Simplification Router
 
 
@@ -720,6 +760,7 @@ simplifiers = {
     slice: [7, _simplify_slice],
     type(Ellipsis): [8, _simplify_ellipsis],
     PointerTensor: [9, _simplify_pointer_tensor],
+    LogTensor: [10, _simplify_log_tensor],
 }
 
 
@@ -758,4 +799,5 @@ detailers = [
     _detail_slice,
     _detail_ellipsis,
     _detail_pointer_tensor,
+    _detail_log_tensor,
 ]
