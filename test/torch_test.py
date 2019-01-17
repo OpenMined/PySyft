@@ -1157,6 +1157,17 @@ class TestSNNTensor(TestCase):
         ).all()
         assert ((data * 1.1).get().decode() == torch.FloatTensor([1.1, 2.2, 3.3])).all()
 
+    def test_mpc_pseudo_scalar_mult(self):
+        """
+        When the scalar is also a tensor
+        """
+        scalar = torch.FloatTensor([2]).fix_precision().share(alice, bob)
+        data = torch.FloatTensor([1, 2, 3]).fix_precision().share(alice, bob)
+        result = scalar * data
+        assert (result.get().decode() == torch.FloatTensor([2, 4, 6])).all()
+        result = data * scalar
+        assert (result.get().decode() == torch.FloatTensor([2, 4, 6])).all()
+
 
 class TestSPDZTensor(TestCase):
     def mpc_sum(self, n1, n2):
