@@ -107,6 +107,14 @@ def spdz_neg(a, mod=field):
 
 def spdz_mul(x, y, workers, mod=field):
     if x.get_shape() != y.get_shape():
+        # Accept exception when multiplying with a scalar
+        if list(x.get_shape()) == [1]:
+            y_shape = list(y.get_shape())
+            x_scaled = x.repeat(*y_shape)
+            return spdz_mul(x_scaled, y, workers, mod=field)
+        elif list(y.get_shape()) == [1]:
+            return spdz_mul(y, x, workers, mod=field)
+
         raise ValueError("Shapes must be identical in order to multiply them")
     shape = x.get_shape()
     triple = generate_mul_triple_communication(shape, workers)

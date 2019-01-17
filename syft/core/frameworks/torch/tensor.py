@@ -2744,7 +2744,7 @@ class _TorchVariable(_TorchObject):
         new_data_id=None,
         new_grad_id=None,
         new_grad_data_id=None,
-        as_list: bool = False,
+        as_list: bool = False
     ):
         """Give the root of the chain held by self to worker self->alice->obj
         [worker] => self->worker->alice->obj Because there are Variable
