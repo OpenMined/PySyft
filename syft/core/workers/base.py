@@ -987,7 +987,9 @@ class BaseWorker(ABC):
         # if this is none - then it means that self_ is not a torch wrapper
         # and we need to execute one level higher TODO: not ok for complex args
         if self_ is not None and self_.child is None:
-            new_args = [arg.wrap(True) for arg in args]
+            new_args = [
+                arg.wrap(True) if not isinstance(arg, int) else arg for arg in args
+            ]
             return self._execute_call(attr, self_.wrap(True), *new_args, **kwargs)
 
         # Distinguish between a command with torch tensors (like when called by the client,

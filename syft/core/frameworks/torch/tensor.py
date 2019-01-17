@@ -1756,7 +1756,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         )
 
     def sum(self, *args, **kwargs):
-        return self.child.sum(*args, *kwargs) / 10 ** self.precision_fractional
+        return self.child.sum(*args, *kwargs)
 
     def cumsum(self, *args, **kwargs):
         return self.child.cumsum(*args, *kwargs) / 10 ** self.precision_fractional
