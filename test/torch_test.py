@@ -10,10 +10,12 @@ import numpy as np
 from syft.core.frameworks.torch import utils as torch_utils
 from syft.core.frameworks import encode
 from syft.core.frameworks.torch.tensor import _GeneralizedPointerTensor
+from syft.core.frameworks.torch.tensor import _PolynomialTensor
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable as Var
 import msgpack
+import math
 
 bob = None
 alice = None
@@ -1992,6 +1994,50 @@ class TestGPCTensor(TestCase):
         results = x_gp.workers()
 
         assert results == [k.id for k in x_pointer_tensor_dict.keys()]
+        
+        
+class TestPolynomialTensor():
+    
+        ''' Test cases to ensure working of Polynomial Tensor '''
+        
+        Ptensor=_PolynomialTensor()
+        threshold=0.5
+        
+        
+        def SigmoidTest():
+        
+              test_range=4
+              for i in range(-test_range,test_range,1):
+
+                  assert(abs(Ptensor.exp(i/10)-math.exp(i/10))<threshold)
+    
+    
+        def ExpTest():
+
+    
+               test_range=4
+               for i in range(-test_range,test_range,1):
+        
+                   assert(abs(Ptensor.exp(i/10)-math.exp(i/10))<threshold)
+    
+        
+        def tanhTest():
+    
+    
+               test_range=4
+               for i in range(-test_range,test_range,1):
+        
+                    assert(abs(Ptensor.tanh(i/10)-math.tanh(i/10))<threshold)
+    
+        
+        def  LogTest():
+            
+    
+               test_range=4
+               for i in range(1,test_range,1):
+        
+                     assert(abs(Ptensor.log(i)-math.log(i))<threshold)
+            
 
 
 if __name__ == "__main__":

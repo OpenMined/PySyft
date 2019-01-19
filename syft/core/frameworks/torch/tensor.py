@@ -2260,7 +2260,7 @@ class _SNNTensor(_SPDZTensor, _SyftTensor):
         return negdiff2.positive()
 
 
-class PolynomialTensor(_SyftTensor):
+class _PolynomialTensor(_SyftTensor):
 
     """Tensor type which provides polynomial approximation functionalities using Taylor Series expansion
        since computing exact functions could impose a overhead on computation
@@ -2288,7 +2288,7 @@ class PolynomialTensor(_SyftTensor):
                
            approximation of the exponential function as a float"""
 
-        return 1 + x + (x ** 2 / 2) + (x ** 3 / 6) + (x ** 4 / 24)
+        return 1 + x + (x ** 2 / 2) + (x ** 3 / 3) + (x ** 4 / 4)
 
     def tanh(self, x: float) -> float:
 
@@ -2312,7 +2312,7 @@ class PolynomialTensor(_SyftTensor):
                
             approximation of the log function as a float"""
 
-        return (x) - ((x ** 2) / 2) + ((x ** 3) / 6) - ((x ** 4) / 24)
+        return (x) - ((x ** 2) / 2) + ((x ** 3) / 3) - ((x ** 4) / 4)
 
 
 class _TorchObject:

@@ -10,6 +10,7 @@ from syft.core.frameworks.torch.tensor import (
     _PointerTensor,
     _SPDZTensor,
     _SNNTensor,
+    _PolynomialTensor
 )
 
 __all__ = [
@@ -24,6 +25,7 @@ __all__ = [
     "_GeneralizedPointerTensor",
     "_SPDZTensor",
     "_SNNTensor",
+    "_PolynomialTensor"
 ]
 
 import torch
