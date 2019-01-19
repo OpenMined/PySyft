@@ -1,5 +1,6 @@
 import syft
 from syft.frameworks.torch.tensors.abstract import AbstractTensor
+from .utils import hook
 
 
 class LoggingTensor(AbstractTensor):
@@ -23,39 +24,25 @@ class LoggingTensor(AbstractTensor):
         self.id = id
         self.child = None
 
-    @classmethod
-    def handle_method_command(cls, command):
-        """
-        Receive an instruction for a method to be applied on a LoggingTensor,
-        Perform some specific action (like logging) which depends of the
-        instruction content, replace in the args all the LogTensors with
-        their child attribute, forward the command instruction to the
-        handle_method_command of the type of the child attributes, get the
-        response and replace a LoggingTensor on top of all tensors found in
-        the response.
-        :param command: instruction of a method command: (command name,
-        self of the method, arguments[, kwargs])
-        :return: the response of the method command
-        """
-        # TODO: add kwargs in command
-        cmd, self, args = command
+    @hook
+    def add(self, _self, *args, **kwargs):
+        print("Log add")
+        response = getattr(_self, "add")(*args, **kwargs)
 
-        # Do what you have to
-        print("Logtensor logging method", cmd)
+        return response
 
-        # TODO: I can't manage the import issue, can you?
-        # Replace all LoggingTensor with their child attribute
-        new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args(cmd, self, args)
+    def manual_add(self, *args, **kwargs):
+        # Replace all syft tensor with their child attribute
+        new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args("add", self, args)
 
-        # build the new command
-        new_command = (cmd, new_self, new_args)
-
+        print("Log add")
         # Send it to the appropriate class and get the response
-        response = type(new_self).handle_method_command(new_command)
+        response = getattr(new_self, "add")(*new_args, **kwargs)
 
-        # Put back LoggingTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
-
+        # Put back SyftTensor on the tensors found in the response
+        response = syft.frameworks.torch.hook_args.hook_response(
+            "add", response, wrap_type=type(self)
+        )
         return response
 
     @classmethod
