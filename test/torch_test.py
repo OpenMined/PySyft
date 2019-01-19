@@ -1998,13 +1998,18 @@ class TestGPCTensor(TestCase):
         
 class TestPolynomialTensor():
     
-        ''' Test cases to ensure working of Polynomial Tensor '''
-        
-        Ptensor=_PolynomialTensor()
-        threshold=0.5
+        ''' Test cases to ensure working of Polynomial Tensor. The tests under these ensure that the error between actual funcion values and approximations do not deviate too much'''
         
         
-        def SigmoidTest():
+        def __init__(self):
+            
+              self.tensor=_PolynomialTensor()
+              #Maximum difference in error between actual value of functiona and approximation
+              self.threshold=0.1
+            
+            
+        
+        def SigmoidTest(self):
         
               test_range=4
               for i in range(-test_range,test_range,1):
@@ -2012,7 +2017,7 @@ class TestPolynomialTensor():
                   assert(abs(Ptensor.exp(i/10)-math.exp(i/10))<threshold)
     
     
-        def ExpTest():
+        def ExpTest(self):
 
     
                test_range=4
@@ -2021,16 +2026,17 @@ class TestPolynomialTensor():
                    assert(abs(Ptensor.exp(i/10)-math.exp(i/10))<threshold)
     
         
-        def tanhTest():
+        def tanhTest(self):
     
-    
-               test_range=4
+               
+               test_range=5
                for i in range(-test_range,test_range,1):
         
-                    assert(abs(Ptensor.tanh(i/10)-math.tanh(i/10))<threshold)
+                   assert(abs(Ptensor.tanh(i/10)-math.tanh(i/10))<threshold)
+                   print((abs(Ptensor.tanh(i/10)-math.tanh(i/10))))
     
         
-        def  LogTest():
+        def  LogTest(self):
             
     
                test_range=4
