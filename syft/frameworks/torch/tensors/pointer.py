@@ -76,28 +76,6 @@ class PointerTensor(AbstractTensor):
         self.garbage_collect_data = garbage_collect_data
 
     @classmethod
-    def handle_method_command(cls, command):
-        """
-        Receive an instruction for a method to be applied on a Pointer,
-        Get the remote location to send the command, send it and get a
-        pointer to the response, return.
-        :param command: instruction of a method command: (command name,
-        self of the method, arguments[, kwargs])
-        :return: the response of the method command
-        """
-        cmd, self, args = command  # TODO: add kwargs
-
-        pointer = self
-        # Get info on who needs to send where the command
-        owner = pointer.owner
-        location = pointer.location
-
-        # Send the command
-        response = owner.send_command(location, command)
-
-        return response
-
-    @classmethod
     def handle_func_command(cls, command):
         """
         Receive an instruction for a function to be applied on a Pointer,
