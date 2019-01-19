@@ -40,10 +40,10 @@ class TorchTensor(AbstractTensor):
         """
         Receive an instruction for a method to be applied on a torch
         tensor, which can be a "real" tensor or just a wrapper at the
-        top of a chain (ex: wrapper>LogTensor>Torch tensor).
+        top of a chain (ex: wrapper>LoggingTensor>Torch tensor).
         If this is not a wrapper layer, run the native torch command.
         If this is a wrapper layer, just forward the instruction to the
-        next layer type in the chain (in the example above to LogTensor.
+        next layer type in the chain (in the example above to LoggingTensor.
         handle_method_command), get the response and replace a wrapper
         on top of all tensors found in the response.
         :param command: instruction of a method command: (command name,
@@ -68,9 +68,7 @@ class TorchTensor(AbstractTensor):
             # Send it to the appropriate class and get the response
             response = type(new_self).handle_method_command(new_command)
             # Put back the wrappers where needed
-            response = syft.frameworks.torch.hook_args.hook_method_response(
-                cmd, response, wrap_type=cls
-            )
+            response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
 
@@ -79,10 +77,10 @@ class TorchTensor(AbstractTensor):
         """
         Receive an instruction for a function to be applied on a torch
         tensor, which can be a "real" tensor or just a wrapper at the
-        top of a chain (ex: wrapper>LogTensor>Torch tensor).
+        top of a chain (ex: wrapper>LoggingTensor>Torch tensor).
         If this is not a wrapper layer, run the native torch command.
         If this is a wrapper layer, just forward the instruction to the
-        next layer type in the chain (in the example above to LogTensor.
+        next layer type in the chain (in the example above to LoggingTensor.
         handle_method_command), get the response and replace a wrapper
         on top of all tensors found in the response.
         :param command: instruction of a function command: (command name,
@@ -100,9 +98,7 @@ class TorchTensor(AbstractTensor):
             # Send it to the appropriate class and get the response
             response = new_type.handle_func_command(new_command)
             # Put back the wrappers where needed
-            response = syft.frameworks.torch.hook_args.hook_method_response(
-                cmd, response, wrap_type=cls
-            )
+            response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
         except PureTorchTensorFoundError:  # means that it's not a wrapper but a pure tensor
             # TODO: clean this line
             cmd = (
@@ -112,7 +108,8 @@ class TorchTensor(AbstractTensor):
                 + cmd.split(".")[-1]
             )
             # Run the native function with the new args
-            # TODO: guard
+            # Note the the cmd should already be checked upon reception by the worker
+            # in the execute_command function
             if isinstance(args, tuple):
                 response = eval(cmd)(*args)
             else:

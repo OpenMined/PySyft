@@ -2,7 +2,7 @@ import torch
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
 from .tensors import PointerTensor
-from .tensors import LogTensor
+from .tensors import LoggingTensor
 from .tensors import TorchTensor
 
 hook_method_args_functions = {}
@@ -15,7 +15,7 @@ one = lambda _args: 1
 type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
-    LogTensor: one,
+    LoggingTensor: one,
     PointerTensor: one,
     torch.Tensor: one,
 }
@@ -26,7 +26,7 @@ forward_func = {
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
-    LogTensor: lambda i: i.child,
+    LoggingTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -35,14 +35,14 @@ backward_func = {
     TorchTensor: lambda i: i.wrap(),
     torch.Tensor: lambda i: i.wrap(),
     PointerTensor: lambda i: i,
-    LogTensor: lambda i: LogTensor().on(i, wrap=False),
+    LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i)",
 }
 
 
 def hook_method_args(attr, method_self, args):
     """Method arguments are sometimes simple types (such as strings or ints) but
-    sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LogTensor
+    sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LoggingTensor
     or some other tensor type. Complex types (which have a .child attribute) need to
     have arguments converted from the arg to arg.child so that the types match as the
     method is being called down the chain. To make this efficient, we cache which args
@@ -123,14 +123,14 @@ def build_hook_args_function(args, return_tuple=False):
     return args_hook_function, get_tensor_type_function
 
 
-def hook_method_response(attr, response, wrap_type):
+def hook_response(attr, response, wrap_type):
     """
     When executing a command, arguments are inspected and all tensors are replaced
     with their child attribute until a pointer or a torch tensor is found (for
-    example an argument could be a torch wrapper with a child being a LogTensor, with
+    example an argument could be a torch wrapper with a child being a LoggingTensor, with
     a child being a torch tensor). When the result of the command is calculated,
     we need to rebuild this chain in the reverse order (in our example put back
-    a LogTensor on top of the result and then a torch wrapper).
+    a LoggingTensor on top of the result and then a torch wrapper).
     To make this efficient, we cache which elements of the response (which can be more
     complicated with nested tuples for example) need to be wrapped in a dictionary called
     hook_method_response_functions. However, sometimes a method (an attr) has multiple

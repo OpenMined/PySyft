@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 import syft
 
-from syft.frameworks.torch.tensors import LogTensor
+from syft.frameworks.torch.tensors import LoggingTensor
 
 
 class TestLogTensor(object):
@@ -31,13 +31,13 @@ class TestLogTensor(object):
 
     def test_wrap(self):
         """
-        Test the .on() wrap functionality for LogTensor
+        Test the .on() wrap functionality for LoggingTensor
         """
         self.setUp()
         x_tensor = torch.Tensor([1, 2, 3])
-        x = LogTensor().on(x_tensor)
+        x = LoggingTensor().on(x_tensor)
         assert isinstance(x, torch.Tensor)
-        assert isinstance(x.child, LogTensor)
+        assert isinstance(x.child, LoggingTensor)
         assert isinstance(x.child.child, torch.Tensor)
 
     def test_method_on_log_chain(self):
@@ -45,9 +45,9 @@ class TestLogTensor(object):
         Test method call on a chain including a log tensor
         """
         self.setUp()
-        # build a long chain tensor Wrapper>LogTensor>TorchTensor
+        # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
         x_tensor = torch.Tensor([1, 2, 3])
-        x = LogTensor().on(x_tensor)
+        x = LoggingTensor().on(x_tensor)
         y = x.add(x)
         assert (y.child.child == x_tensor.add(x_tensor)).all()
 
@@ -56,7 +56,7 @@ class TestLogTensor(object):
         Test torch function call on a chain including a log tensor
         """
         self.setUp()
-        x = LogTensor().on(torch.Tensor([1, -1, 3]))
+        x = LoggingTensor().on(torch.Tensor([1, -1, 3]))
         y = F.relu(x)
         assert (y.child.child == torch.Tensor([1, 0, 3])).all()
 
@@ -65,9 +65,9 @@ class TestLogTensor(object):
         Test sending and getting back a chain including a logtensor
         """
         self.setUp()
-        # build a long chain tensor Wrapper>LogTensor>TorchTensor
+        # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
         x_tensor = torch.Tensor([1, 2, 3])
-        x = LogTensor().on(x_tensor)
+        x = LoggingTensor().on(x_tensor)
         x_ptr = x.send(self.bob)
         x_back = x_ptr.get()
         assert (x_back.child.child == x_tensor).all()
@@ -77,9 +77,9 @@ class TestLogTensor(object):
         Test remote method call on a chain including a log tensor
         """
         self.setUp()
-        # build a long chain tensor Wrapper>LogTensor>TorchTensor
+        # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
         x_tensor = torch.Tensor([1, 2, 3])
-        x = LogTensor().on(x_tensor)
+        x = LoggingTensor().on(x_tensor)
         x_ptr = x.send(self.bob)
         y_ptr = F.relu(x_ptr)
         y = y_ptr.get()
@@ -90,9 +90,9 @@ class TestLogTensor(object):
         Test remote function call on a chain including a log tensor
         """
         self.setUp()
-        # build a long chain tensor Wrapper>LogTensor>TorchTensor
+        # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
         x_tensor = torch.Tensor([1, 2, 3])
-        x = LogTensor().on(x_tensor)
+        x = LoggingTensor().on(x_tensor)
         x_ptr = x.send(self.bob)
         y_ptr = x_ptr.add(x_ptr)
         y = y_ptr.get()

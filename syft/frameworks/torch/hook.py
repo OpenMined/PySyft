@@ -7,15 +7,11 @@ from functools import wraps
 
 
 import syft
-from syft.exceptions import RemoteTensorFoundError
 from syft import workers
 from syft.workers import BaseWorker
-from .tensors import TorchTensor, PointerTensor, LogTensor
+from .tensors import TorchTensor, PointerTensor, LoggingTensor
 from .torch_attributes import TorchAttributes
 from .tensors.abstract import initialize_tensor
-from .hook_args import hook_method_args
-from .hook_args import build_rule
-from .hook_args import build_args_hook
 
 
 class TorchHook:
