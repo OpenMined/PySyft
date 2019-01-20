@@ -2279,17 +2279,26 @@ class _PolynomialTensor(_SyftTensor):
 
         return (1 / 2) + (x / 4) - (x ** 3 / 48) + (x ** 5 / 480)
 
-    def exp(self, x: float) -> float:
+    def exp(self, x: float, order: int) -> float:
 
         """Parameters:
             
-           x: A float value
+           x: (float) value for which approximation must be found
+           order: (int) order of Taylor series expansion
 
            return: 
                
-           approximation of the exponential function as a float"""
+           value: (float) approximation of the exponential function """
 
-        return 1 + x + (x ** 2 / 2) + (x ** 3 / 3) + (x ** 4 / 4)
+        denom = 1
+        value = 1
+
+        for i in range(1, order):
+
+            value += (x ** order) / denom
+            denom *= i + 1
+
+        return value
 
     def tanh(self, x: float) -> float:
 
