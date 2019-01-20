@@ -2265,6 +2265,7 @@ class _PolynomialTensor(_SyftTensor):
     """Tensor type which provides polynomial approximation functionalities using Taylor Series expansion
        since computing exact functions could impose a overhead on computation
     """
+    
 
     def sigmoid(self, x: float) -> float:
 
@@ -2313,6 +2314,21 @@ class _PolynomialTensor(_SyftTensor):
             approximation of the log function as a float"""
 
         return (x) - ((x ** 2) / 2) + ((x ** 3) / 3) - ((x ** 4) / 4)
+    
+    def EvalRelative(x_true,x_pred):
+        
+        """The function is used to measure the error between actual function value and approximated function value. The error is evaluated with respect to actual value.
+           
+        
+            Parameters: 
+            
+            x_true: Value of true function 
+            x_pred: Value of function approximation 
+            
+        """
+        
+        error=abs(x_true-x_pred)
+        return(round((error/x_true),2))
 
 
 class _TorchObject:
