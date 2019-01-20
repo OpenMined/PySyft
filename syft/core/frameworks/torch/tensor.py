@@ -2315,16 +2315,6 @@ class _PolynomialTensor(_SyftTensor):
 
         return (x) - ((x ** 2) / 2) + ((x ** 3) / 3) - ((x ** 4) / 4)
 
-    def Sigmoid(self, x: float):
-
-        """Parameters:
-            
-           x: A float value
-           
-           return: Sigmoid value"""
-
-        return 1 / (math.exp(-x) + 1)
-
     def EvalRelative(x_true, x_pred):
 
         """The function is used to measure the error between actual function value and approximated function value. The error is evaluated with respect to actual value.
