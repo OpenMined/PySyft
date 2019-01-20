@@ -12,6 +12,7 @@ import numpy as np
 from syft.spdz import spdz
 from syft.mpc.securenn import relu, relu_deriv
 from typing import Union
+import math
 
 
 class _SyftTensor:
