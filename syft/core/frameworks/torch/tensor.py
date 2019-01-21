@@ -1805,7 +1805,7 @@ class _FixedPrecisionTensor(_SyftTensor):
             else:
                 even_width = unfolded
 
-            folded_x = even_width.view(-1, s, 2)
+            folded_x = even_width.contiguous().view(-1, s, 2)
             left = folded_x[..., 0]
             right = folded_x[..., 1]
             l_gate = left > right
