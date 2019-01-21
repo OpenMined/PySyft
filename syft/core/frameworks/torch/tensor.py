@@ -2307,11 +2307,11 @@ class _TorchObject:
             except Exception:
                 return self.native___eq__(*args, **kwargs)
 
-    def max(self):
+    def max(self, *args):
         if isinstance(self.child, _LocalTensor):
-            return self.native_max()
+            return self.native_max(*args)
         else:
-            return self.child.max()
+            return self.child.max(*args)
 
     def argmax(self):
         if hasattr(self.child, "argmax"):
