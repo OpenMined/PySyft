@@ -1384,6 +1384,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         if has_self:
 
             self = command["self"]
+            self_precision = self.precision_fractional
 
             # A) override the "share" command (which would normally call .share on the .child object
             if attr == "share":
@@ -1396,10 +1397,14 @@ class _FixedPrecisionTensor(_SyftTensor):
                 return _FixedPrecisionTensor(response).wrap(True)
             elif attr == "sum":
                 response = cls.sum(self, *args, **kwargs)
-                return _FixedPrecisionTensor(response).wrap(True)
+                return _FixedPrecisionTensor(
+                    response, already_encoded=True, precision_fractional=self_precision
+                ).wrap(True)
             elif attr == "cumsum":
                 response = cls.cumsum(self, *args, **kwargs)
-                return _FixedPrecisionTensor(response).wrap(True)
+                return _FixedPrecisionTensor(
+                    response, already_encoded=True, precision_fractional=self_precision
+                ).wrap(True)
             elif attr == "relu":
                 return _FixedPrecisionTensor(self.child.relu()).wrap(True)
             # C) override functions which have tensors as arguments
@@ -1424,8 +1429,6 @@ class _FixedPrecisionTensor(_SyftTensor):
                     other_precision = other.precision_fractional
                 else:
                     other_precision = 0
-
-                self_precision = self.precision_fractional
 
                 # If the precision fractional of self is different than other's raise an exception
                 # You may uncomment this line out if you do care about different precisions,
@@ -1759,7 +1762,7 @@ class _FixedPrecisionTensor(_SyftTensor):
         return self.child.sum(*args, *kwargs)
 
     def cumsum(self, *args, **kwargs):
-        return self.child.cumsum(*args, *kwargs) / 10 ** self.precision_fractional
+        return self.child.cumsum(*args, *kwargs)
 
     def mm(self, other):
         response = self.child.mm(other.child)
