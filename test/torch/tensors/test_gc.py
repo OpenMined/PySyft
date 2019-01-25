@@ -149,32 +149,36 @@ class TestGarbageCollection(object):
 
     def test_explicit_garbage_collect_logging_on_pointer(self):
         """
-        Tests whether deleting a LoggingTensor on aPointerTensor
+        Tests whether deleting a LoggingTensor on a PointerTensor
         garbage collects the remote object too
         """
         self.setUp()
 
         x = torch.Tensor([1, 2])
+        x_id = x.id
 
-        x_ptr = x.send(self.bob)
-        x_log = LoggingTensor().on(x_ptr)
-        assert x.id in self.bob._objects
-
-        del x_log
-        assert x.id not in self.bob._objects
-
-    def test_explicit_garbage_collect_pointer_to_logging(self):
-        """
-        Tests whether deleting a LoggingTensor on aPointerTensor
-        garbage collects the remote object too
-        """
-        self.setUp()
-
-        x = torch.Tensor([1, 2])
+        x = x.send(self.bob)
         x = LoggingTensor().on(x)
+        assert x_id in self.bob._objects
 
-        x_ptr = x.send(self.bob)
-        assert x.id in self.bob._objects
+        del x
 
-        del x_ptr
-        assert x.id not in self.bob._objects
+        assert x_id not in self.bob._objects
+
+    def test_implicit_garbage_collect_logging_on_pointer(self):
+        """
+        Tests whether GCing a LoggingTensor on a PointerTensor
+        garbage collects the remote object too
+        """
+        self.setUp()
+
+        x = torch.Tensor([1, 2])
+        x_id = x.id
+
+        x = x.send(self.bob)
+        x = LoggingTensor().on(x)
+        assert x_id in self.bob._objects
+
+        x = "open-source"
+
+        assert x_id not in self.bob._objects
