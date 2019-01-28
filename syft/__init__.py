@@ -4,10 +4,21 @@ from . import workers
 from . import serde
 from . import codes
 
+# CONVENIENCE HOOKS
+# The purpose of the following import section is to increase the convenience of using
+# PySyft by making it possible to import the most commonly used objects from syft
+# directly (i.e., syft.TorchHook or syft.VirtualWorker or syft.LoggingTensor)
+
+# Import Hook
 from syft.frameworks.torch import TorchHook
+
+# Import Worker Types
 from syft.workers import VirtualWorker
 
-__all__ = ["frameworks", "workers", "serde", "TorchHook", "VirtualWorker", "codes"]
+# Import Tensor Types
+from syft.frameworks.torch.tensors import LoggingTensor
+
+__all__ = ["frameworks", "workers", "serde", "TorchHook", "VirtualWorker", "codes", "LoggingTensor"]
 
 local_worker = None
 torch = None
