@@ -25,13 +25,19 @@ class TorchTensor(AbstractTensor):
 
     def __str__(self) -> str:
         if hasattr(self, "child"):
-            return type(self).__name__ + ">" + self.child.__str__()
+            if(self.is_wrapper):
+                return "(Wrapper)>" + self.child.__str__()
+            else:
+                return type(self).__name__ + ">" + self.child.__str__()
         else:
             return self.native___str__()
 
     def __repr__(self) -> str:
         if hasattr(self, "child"):
-            return type(self).__name__ + ">" + self.child.__repr__()
+            if(self.is_wrapper):
+                return "(Wrapper)>" + self.child.__str__()
+            else:
+                return type(self).__name__ + ">" + self.child.__repr__()
         else:
             return self.native___repr__()
 
