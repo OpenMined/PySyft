@@ -138,6 +138,11 @@ class TestHook(object):
         res = res_ptr.get()
         assert (res == expected).all()
 
+    def test_hook_tensor(self):
+        self.setUp()
+        x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)
+        x.send(self.bob)
+
     def test_properties(self):
         self.setUp()
         x = torch.Tensor([1, -1, 3, 4])

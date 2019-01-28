@@ -109,11 +109,15 @@ def initialize_tensor(
     if not torch_tensor:
         cls.native___init__(*init_args, **init_kwargs)
 
+    _apply_args(hook_self, cls, owner, id)
+
+
+def _apply_args(hook_self, new_tensor, owner=None, id=None):
     if owner is None:
         owner = hook_self.local_worker
 
     if id is None:
         id = int(10e10 * random.random())
 
-    cls.id = id
-    cls.owner = owner
+    new_tensor.id = id
+    new_tensor.owner = owner
