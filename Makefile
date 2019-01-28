@@ -14,7 +14,7 @@ notebook: venv
 		python -m ipykernel install --user --name=pysyft; \
 		jupyter notebook;\
 	)
-
+.PHONY: test
 test: venv
 	(. venv/bin/activate; \
 		python setup.py install; \

@@ -11,7 +11,7 @@ from syft import workers
 from syft.workers import BaseWorker
 from .tensors import TorchTensor, PointerTensor, LoggingTensor
 from .torch_attributes import TorchAttributes
-from .tensors.abstract import initialize_tensor
+from .tensors.abstract import initialize_tensor, _apply_args
 
 
 class TorchHook:
@@ -113,6 +113,9 @@ class TorchHook:
 
         # add all hooked tensor methods to Logging tensor but change behaviour
         self._hook_syft_tensor_methods(LoggingTensor)
+
+        # hooks the tensor constuctor function
+        self._hook_tensor()
 
         self._hook_torch_module()
 
@@ -395,6 +398,24 @@ class TorchHook:
             #     owner.register_object(cls, id=id)
 
         tensor_type.__init__ = new___init__
+
+    def _hook_tensor(hook_self):
+        """Hooks the function torch.tensor()
+        We need to do this seperately from hooking the class because internally
+        torch does not pick up the change to add the args
+        Args:
+            hook_self: the hook itself
+        """
+
+        if "native_tensor" not in dir(hook_self.torch):
+            hook_self.torch.native_tensor = hook_self.torch.tensor
+
+        def new_tensor(*args, owner=None, id=None, register=True, **kwargs):
+            current_tensor = hook_self.torch.native_tensor(*args, **kwargs)
+            _apply_args(hook_self, current_tensor, owner, id)
+            return current_tensor
+
+        hook_self.torch.tensor = new_tensor
 
     @staticmethod
     def _hook_properties(tensor_type: type):
