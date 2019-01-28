@@ -25,7 +25,7 @@ class TorchTensor(AbstractTensor):
 
     def __str__(self) -> str:
         if hasattr(self, "child"):
-            if(self.is_wrapper):
+            if self.is_wrapper:
                 return "(Wrapper)>" + self.child.__str__()
             else:
                 return type(self).__name__ + ">" + self.child.__str__()
@@ -34,7 +34,7 @@ class TorchTensor(AbstractTensor):
 
     def __repr__(self) -> str:
         if hasattr(self, "child"):
-            if(self.is_wrapper):
+            if self.is_wrapper:
                 return "(Wrapper)>" + self.child.__str__()
             else:
                 return type(self).__name__ + ">" + self.child.__repr__()
