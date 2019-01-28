@@ -1471,14 +1471,14 @@ class TestSPDZTensor(TestCase):
         x = x.fix_precision(precision_fractional=4)
         z = x.sum(0)
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([2, 13])).all()
+        assert torch.eq(z, torch.FloatTensor([2.9, 13.2])).all()
 
     def test_fix_precision_cumsum(self):
         x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
         x = x.fix_precision(precision_fractional=4)
         z = x.cumsum(0)
         z = z.decode()
-        assert torch.eq(z, torch.FloatTensor([[1, 1], [2, 13]])).all()
+        assert torch.eq(z, torch.FloatTensor([[1, 1.2], [2.9, 13.2]])).all()
 
     def test_fix_precision_prod(self):
         x = torch.FloatTensor([[1, 1.2], [1.9, 12]])
