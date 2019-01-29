@@ -99,3 +99,29 @@ class TestPointer(object):
 
         # ensure bob has tensor
         assert x.id in self.bob._objects
+
+    def test_remote_autograd(self):
+        """Tests the ability to backpropagate gradients on a remote
+        worker."""
+
+        self.setUp()
+
+        # create a tensor
+        x = torch.tensor([1, 2, 3, 4.], requires_grad=True)
+        
+        # send tensor to bob
+        x = x.send(self.bob)
+
+        # do some calculatinos
+        y = (x + x).sum()
+
+        # send gradient to backprop to Bob
+        grad = torch.tensor([1.]).send(self.bob)
+
+        # backpropagate on remote machine
+        y.backward(grad)
+
+        # check that remote gradient is correct
+        xgrad = self.bob._objects[x.id_at_location].grad
+        xgrad_target = (torch.ones(4).float() + 1)
+        assert (xgrad == xgrad_target).all()

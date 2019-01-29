@@ -173,9 +173,12 @@ class BaseWorker(AbstractWorker):
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
-        # Step 2: If response in none, set default
-        if response is None:
-            response = 0
+        # # Step 2: If response in none, set default
+        # TODO: not sure if someone needed this - if this comment
+        # is still here after Feb 15, 2018, please delete these
+        # two lines of (commented out) code.
+        # if response is None:
+        #     response = None
 
         # Step 3: Serialize the message to simple python objects
         bin_response = serde.serialize(response)
@@ -257,6 +260,7 @@ class BaseWorker(AbstractWorker):
         command = command.decode("utf-8")
         # Handle methods
         if _self is not None:
+
             tensor = getattr(_self, command)(*args, **kwargs)
         # Handle functions
         else:
@@ -273,22 +277,25 @@ class BaseWorker(AbstractWorker):
 
             tensor = command(*args, **kwargs)
 
-        # FIXME: should be added automatically
-        tensor.owner = self
-        # tensor.id ??
+        # some functions don't return anything (such as .backward())
+        # so we need to check for that here.
+        if(tensor is not None):
 
-        # TODO: Handle when the response is not simply a tensor
-        self.register_obj(tensor)
+            # FIXME: should be added automatically
+            tensor.owner = self
 
-        pointer = tensor.create_pointer(
-            location=self,
-            id_at_location=tensor.id,
-            register=True,
-            owner=self,
-            ptr_id=tensor.id,
-            garbage_collect_data=False,
-        )
-        return pointer
+            # TODO: Handle when the response is not simply a tensor
+            self.register_obj(tensor)
+
+            pointer = tensor.create_pointer(
+                location=self,
+                id_at_location=tensor.id,
+                register=True,
+                owner=self,
+                ptr_id=tensor.id,
+                garbage_collect_data=False,
+            )
+            return pointer
 
     def send_command(self, recipient, message):
         """
