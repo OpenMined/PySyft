@@ -130,18 +130,32 @@ class TestPointer(object):
 
 
         # TEST: Ensure remote grad calculation gets properly serded
+
+        # create tensor
         x = torch.tensor([1, 2, 3, 4.], requires_grad=True).send(self.bob)
+
+        # create output gradient
         out_grad = torch.tensor([1.]).send(self.bob)
+
+        # compute function
         y = x.sum()
+
+        # backpropagate
         y.backward(out_grad)
+
+        # get the gradient created from backpropagation manually
         x_grad = self.bob._objects[x.id_at_location].grad
+
+        # get the entire x tensor (should bring the grad too)
         x = x.get()
+
+        # make sure that the grads match
         assert (x.grad == x_grad).all()
 
     def test_gradient_send_recv(self):
         """Tests that gradients are properly sent and received along
         with their tensors."""
-        
+
         self.setUp()
 
         # create a tensor
