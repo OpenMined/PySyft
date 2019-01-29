@@ -226,52 +226,29 @@ class TorchHook:
         attributes on our custom tensors, so we wrote our own.
         """
 
-        class Parameter:
-            r"""A kind of Tensor that is to be considered a module parameter.
+        def hooked__new__(cls, data=None, requires_grad=True):
+            if data is None:
+                data = torch.Tensor()
+            p = torch.Tensor._make_subclass(cls, data, requires_grad)
+            p.child = data
+            return p
 
-            Parameters are :class:`~torch.Tensor` subclasses, that have a
-            very special property when used with :class:`Module` s - when they're
-            assigned as Module attributes they are automatically added to the list of
-            its parameters, and will appear e.g. in :meth:`~Module.parameters` iterator.
-            Assigning a Tensor doesn't have such effect. This is because one might
-            want to cache some temporary state, like last hidden state of the RNN, in
-            the model. If there was no such class as :class:`Parameter`, these
-            temporaries would get registered too.
+        def hooked__repr__(self):
+            return "Parameter containing:\n" + self.child.__repr__()
 
-            Arguments:
-                data (Tensor): parameter tensor.
-                requires_grad (bool, optional): if the parameter requires gradient. See
-                    :ref:`excluding-subgraphs` for more details. Default: `True`
-            """
+        torch.nn.Parameter.__new__ = hooked__new__
+        torch.nn.Parameter.__repr__ = hooked__repr__
 
-            def __init__(self, data=None, requires_grad=True):
-                self.data = data
+        @property
+        def data(self):
+            return self.child
 
-            def __repr__(self):
-                return "Parameter containing:\n" + self.data.__repr__()
+        @data.setter
+        def data(self, new_data):
+            self.child = new_data
+            return self
 
-        # this was in the original torch.nn.Parameter code and we might need it later
-        # thought we'd just leave it here for now.
-        #     def __deepcopy__(self, memo):
-        #         if id(self) in memo:
-        #             return memo[id(self)]
-        #         else:
-        #             result = type(self)(self.data.clone(), self.requires_grad)
-        #             memo[id(self)] = result
-        #             return result
-
-        torch.nn.Parameter = Parameter
-        torch.nn.parameter.Parameter = Parameter
-
-        def get_params(self):
-
-            params = list()
-            for v in self.__dict__.values():
-                if isinstance(v, torch.nn.Parameter):
-                    params.append(v)
-            return params
-
-        nn.Module.parameters = get_params
+        torch.nn.Parameter.data = data
 
     def _hook_torch_module(self):
         """Overloads functions in the main torch modules.

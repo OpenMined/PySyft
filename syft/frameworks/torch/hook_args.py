@@ -18,6 +18,7 @@ type_rule = {
     LoggingTensor: one,
     PointerTensor: one,
     torch.Tensor: one,
+    torch.nn.Parameter: one,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
@@ -26,6 +27,7 @@ forward_func = {
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
+    torch.nn.Parameter: lambda i: i.child,
     LoggingTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
 }
@@ -34,6 +36,7 @@ forward_func = {
 backward_func = {
     TorchTensor: lambda i: i.wrap(),
     torch.Tensor: lambda i: i.wrap(),
+    torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i)",

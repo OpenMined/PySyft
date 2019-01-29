@@ -123,7 +123,14 @@ class TorchTensor(AbstractTensor):
         # the same pointer which was previously created
         self.ptr = weakref.ref(ptr)
 
-        return ptr.wrap()
+        ptr_wrapper = ptr.wrap()
+
+        print(type(self))
+        if isinstance(self, syft.hook.torch.nn.Parameter):
+            self.data = ptr_wrapper
+            return self
+
+        return ptr_wrapper
 
     def create_pointer(
         self,
