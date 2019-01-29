@@ -225,6 +225,8 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     torch.save(tensor, binary_stream)
     tensor_bin = binary_stream.getvalue()
 
+    # note we need to do this expicitly because torch.save does not
+    # seem to be including .grad by default
     if tensor.grad is not None:
         grad_chain = _simplify_torch_tensor(tensor.grad)
     else:
@@ -243,8 +245,9 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     Args:
         tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
-            the first value is the ID and the second vlaue is the binary for the
-            PyTorch object.
+            the first value is the ID, the second vlaue is the binary for the
+            PyTorch object, the third value is the chain of tensor abstractions,
+            and the fourth object is the chain of gradients (.grad.grad, etc.)
 
     Returns:
         torch.Tensor: a torch tensor that was serialized
@@ -255,6 +258,8 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     bin_tensor_stream = io.BytesIO(tensor_bin)
     tensor = torch.load(bin_tensor_stream)
 
+    # note we need to do this explicitly because torch.load does not
+    # include .grad informatino
     if grad_chain is not None:
         tensor.grad = _detail_torch_tensor(worker, grad_chain)
 
