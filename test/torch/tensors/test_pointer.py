@@ -106,6 +106,8 @@ class TestPointer(object):
 
         self.setUp()
 
+        # TEST: simple remote grad calculation
+
         # create a tensor
         x = torch.tensor([1, 2, 3, 4.], requires_grad=True)
 
@@ -125,6 +127,16 @@ class TestPointer(object):
         xgrad = self.bob._objects[x.id_at_location].grad
         xgrad_target = (torch.ones(4).float() + 1)
         assert (xgrad == xgrad_target).all()
+
+
+        # TEST: Ensure remote grad calculation gets properly serded
+        x = torch.tensor([1, 2, 3, 4.], requires_grad=True).send(self.bob)
+        out_grad = torch.tensor([1.]).send(self.bob)
+        y = x.sum()
+        y.backward(out_grad)
+        x_grad = self.bob._objects[x.id_at_location].grad
+        x = x.get()
+        assert (x.grad == x_grad).all()
 
     def test_gradient_send_recv(self):
 
