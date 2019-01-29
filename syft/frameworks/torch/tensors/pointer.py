@@ -203,6 +203,25 @@ class PointerTensor(AbstractTensor):
 
         return tensor
 
+
+    def move(self, destination):
+        """Moves data from one worker to another without passing through the client
+        
+        This method returns a pointer tensor to the data on the destination worker
+
+        Args:
+            
+            destination (AbstractWorker): the worker that the data is to be moved to.
+
+        Returns:
+            A PointerTensor object which points to the data on the destination machine.
+        
+        """
+        new_pointer = self.copy().send(destination)
+
+        
+
+
     def __del__(self):
         """This method garbage collects the object this pointer is pointing to.
         By default, PySyft assumes that every object only has one pointer to it.
