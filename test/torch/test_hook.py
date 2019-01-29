@@ -138,6 +138,17 @@ class TestHook(object):
         res = res_ptr.get()
         assert (res == expected).all()
 
+    @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
+    def test_functional_same_in_both_imports(self, attr):
+        """This function tests that the hook modifies the behavior of
+        torch.nn.function regardless of the import namespace
+        """
+        self.setUp()
+        fattr = getattr(F, attr)
+        tattr = getattr(torch.nn.functional, attr)
+        x = torch.Tensor([1, -1, 3, 4])
+        assert (fattr(x) == tattr(x)).all()
+
     def test_hook_tensor(self):
         self.setUp()
         x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)
