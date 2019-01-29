@@ -3,6 +3,8 @@ import re
 import random
 import logging
 import types
+import torch
+import torch.nn as nn
 from functools import wraps
 
 
@@ -117,6 +119,8 @@ class TorchHook:
         # hooks the tensor constuctor function
         self._hook_tensor()
 
+        self._hook_parameters()
+
         self._hook_torch_module()
 
         # Add the local_worker to syft so that it can be found if the hook is
@@ -209,6 +213,61 @@ class TorchHook:
             if attr not in dir(PointerTensor):  # TODO and add special functions to include / avoid
                 new_method = self.get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
+
+    def _hook_parameters(self):
+        """
+        This method overrides the torch Parameter class such that
+        it works correctly with our overridden tensor types. The
+        native torch Parameter class kept deleting all of our
+        attributes on our custom tensors, so we wrote our own.
+        """
+
+        class Parameter:
+            r"""A kind of Tensor that is to be considered a module parameter.
+
+            Parameters are :class:`~torch.Tensor` subclasses, that have a
+            very special property when used with :class:`Module` s - when they're
+            assigned as Module attributes they are automatically added to the list of
+            its parameters, and will appear e.g. in :meth:`~Module.parameters` iterator.
+            Assigning a Tensor doesn't have such effect. This is because one might
+            want to cache some temporary state, like last hidden state of the RNN, in
+            the model. If there was no such class as :class:`Parameter`, these
+            temporaries would get registered too.
+
+            Arguments:
+                data (Tensor): parameter tensor.
+                requires_grad (bool, optional): if the parameter requires gradient. See
+                    :ref:`excluding-subgraphs` for more details. Default: `True`
+            """
+
+            def __init__(self, data=None, requires_grad=True):
+                self.data = data
+
+            def __repr__(self):
+                return "Parameter containing:\n" + self.data.__repr__()
+
+        # this was in the original torch.nn.Parameter code and we might need it later
+        # thought we'd just leave it here for now.
+        #     def __deepcopy__(self, memo):
+        #         if id(self) in memo:
+        #             return memo[id(self)]
+        #         else:
+        #             result = type(self)(self.data.clone(), self.requires_grad)
+        #             memo[id(self)] = result
+        #             return result
+
+        torch.nn.Parameter = Parameter
+        torch.nn.parameter.Parameter = Parameter
+
+        def get_params(self):
+
+            params = list()
+            for v in self.__dict__.values():
+                if isinstance(v, torch.nn.Parameter):
+                    params.append(v)
+            return params
+
+        nn.Module.parameters = get_params
 
     def _hook_torch_module(self):
         """Overloads functions in the main torch modules.
@@ -417,8 +476,7 @@ class TorchHook:
 
         hook_self.torch.tensor = new_tensor
 
-    @staticmethod
-    def _hook_properties(tensor_type: type):
+    def _hook_properties(hook_self, tensor_type: type):
         """Overloads tensor_type properties.
 
         This method gets called only on torch.Tensor. If you're not sure how
@@ -454,6 +512,19 @@ class TorchHook:
             return self
 
         tensor_type.id = id
+
+        @property
+        def owner(self):
+            if not hasattr(self, "_owner"):
+                self._owner = hook_self.local_worker
+            return self._owner
+
+        @owner.setter
+        def owner(self, new_owner):
+            self._owner = new_owner
+            return self
+
+        tensor_type.owner = owner
 
         @property
         def is_wrapper(self):
