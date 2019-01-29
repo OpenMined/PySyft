@@ -125,3 +125,22 @@ class TestPointer(object):
         xgrad = self.bob._objects[x.id_at_location].grad
         xgrad_target = (torch.ones(4).float() + 1)
         assert (xgrad == xgrad_target).all()
+
+    def test_gradient_send_recv(self):
+
+        self.setUp()
+
+        # create a tensor
+        x = torch.tensor([1, 2, 3, 4.], requires_grad=True)
+
+        # create gradient on tensor
+        x.sum().backward(torch.ones(1))
+
+        # save gradient
+        orig_grad = x.grad
+
+        # send and get back
+        t = x.send(self.bob).get()
+
+        # check that gradient was properly serde
+        assert (t.grad == orig_grad).all()
