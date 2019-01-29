@@ -108,7 +108,7 @@ class TestPointer(object):
 
         # create a tensor
         x = torch.tensor([1, 2, 3, 4.], requires_grad=True)
-        
+
         # send tensor to bob
         x = x.send(self.bob)
 

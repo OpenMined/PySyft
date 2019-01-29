@@ -218,16 +218,22 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     Returns:
         tuple: serialized tuple of torch tensor. The first value is the
         id of the tensor and the second is the binary for the PyTorch
-        object.
+        object. The third is the chain of abstractions, and the fourth
+        (optinally) is the chain of graident tensors (nested tuple)
     """
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
     tensor_bin = binary_stream.getvalue()
 
+    if tensor.grad is not None:
+        grad_chain = _simplify_torch_tensor(tensor.grad)
+    else:
+        grad_chain = None
+
     chain = None
     if hasattr(tensor, "child"):
         chain = _simplify(tensor.child)
-    return (tensor.id, tensor_bin, chain)
+    return (tensor.id, tensor_bin, chain, grad_chain)
 
 
 def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
@@ -244,10 +250,13 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor_bin, chain = tensor_tuple
+    tensor_id, tensor_bin, chain, grad_chain = tensor_tuple
 
     bin_tensor_stream = io.BytesIO(tensor_bin)
     tensor = torch.load(bin_tensor_stream)
+
+    if grad_chain is not None:
+        tensor.grad = _detail_torch_tensor(worker, grad_chain)
 
     initialize_tensor(
         hook_self=syft.torch.hook,
