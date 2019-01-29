@@ -139,7 +139,9 @@ class TestPointer(object):
         assert (x.grad == x_grad).all()
 
     def test_gradient_send_recv(self):
-
+        """Tests that gradients are properly sent and received along
+        with their tensors."""
+        
         self.setUp()
 
         # create a tensor
