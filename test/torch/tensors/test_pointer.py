@@ -109,7 +109,7 @@ class TestPointer(object):
         # TEST: simple remote grad calculation
 
         # create a tensor
-        x = torch.tensor([1, 2, 3, 4.], requires_grad=True)
+        x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
 
         # send tensor to bob
         x = x.send(self.bob)
@@ -118,24 +118,23 @@ class TestPointer(object):
         y = (x + x).sum()
 
         # send gradient to backprop to Bob
-        grad = torch.tensor([1.]).send(self.bob)
+        grad = torch.tensor([1.0]).send(self.bob)
 
         # backpropagate on remote machine
         y.backward(grad)
 
         # check that remote gradient is correct
         xgrad = self.bob._objects[x.id_at_location].grad
-        xgrad_target = (torch.ones(4).float() + 1)
+        xgrad_target = torch.ones(4).float() + 1
         assert (xgrad == xgrad_target).all()
-
 
         # TEST: Ensure remote grad calculation gets properly serded
 
         # create tensor
-        x = torch.tensor([1, 2, 3, 4.], requires_grad=True).send(self.bob)
+        x = torch.tensor([1, 2, 3, 4.0], requires_grad=True).send(self.bob)
 
         # create output gradient
-        out_grad = torch.tensor([1.]).send(self.bob)
+        out_grad = torch.tensor([1.0]).send(self.bob)
 
         # compute function
         y = x.sum()
@@ -159,7 +158,7 @@ class TestPointer(object):
         self.setUp()
 
         # create a tensor
-        x = torch.tensor([1, 2, 3, 4.], requires_grad=True)
+        x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
 
         # create gradient on tensor
         x.sum().backward(torch.ones(1))

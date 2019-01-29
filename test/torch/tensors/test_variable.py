@@ -37,7 +37,7 @@ class TestVariables(object):
         self.setUp()
 
         # create a tensor
-        x = torch.tensor([1, 2, 3, 4.], requires_grad=True)
+        x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
 
         # create gradient on tensor
         x.sum().backward(torch.ones(1))
