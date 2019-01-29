@@ -279,7 +279,7 @@ class BaseWorker(AbstractWorker):
 
         # some functions don't return anything (such as .backward())
         # so we need to check for that here.
-        if(tensor is not None):
+        if tensor is not None:
 
             # FIXME: should be added automatically
             tensor.owner = self
