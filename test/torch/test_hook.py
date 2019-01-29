@@ -167,3 +167,17 @@ class TestHook(object):
         z = x.div(y)
 
         assert True
+
+    def test_parameter_hooking(self):
+
+        self.setUp()
+
+        class MyLayer(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.some_params = torch.nn.Parameter(torch.tensor([5.0]))
+
+        m = MyLayer()
+        out = list(m.parameters())
+        assert len(out) == 1
+        assert out[0] == m.some_params

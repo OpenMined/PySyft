@@ -215,8 +215,14 @@ class TorchHook:
                 setattr(PointerTensor, attr, new_method)
 
     def _hook_parameters(self):
+        """
+        This method overrides the torch Parameter class such that
+        it works correctly with our overridden tensor types. The
+        native torch Parameter class kept deleting all of our
+        attributes on our custom tensors, so we wrote our own.
+        """
 
-        class Parameter():
+        class Parameter:
             r"""A kind of Tensor that is to be considered a module parameter.
 
             Parameters are :class:`~torch.Tensor` subclasses, that have a
@@ -238,8 +244,10 @@ class TorchHook:
                 self.data = data
 
             def __repr__(self):
-                return 'Parameter containing:\n' + self.data.__repr__()
+                return "Parameter containing:\n" + self.data.__repr__()
 
+        # this was in the original torch.nn.Parameter code and we might need it later
+        # thought we'd just leave it here for now.
         #     def __deepcopy__(self, memo):
         #         if id(self) in memo:
         #             return memo[id(self)]
