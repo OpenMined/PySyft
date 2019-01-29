@@ -376,8 +376,8 @@ class BaseWorker(AbstractWorker):
 
         if hasattr(obj, "id"):
             self.rm_obj(obj.id)
-        if hasattr(obj, "owner"):
-            del obj.owner
+        if hasattr(obj, "_owner"):
+            del obj._owner
 
     def rm_obj(self, remote_key):
         """Removes an object.

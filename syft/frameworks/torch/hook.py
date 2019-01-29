@@ -476,8 +476,7 @@ class TorchHook:
 
         hook_self.torch.tensor = new_tensor
 
-    @staticmethod
-    def _hook_properties(tensor_type: type):
+    def _hook_properties(hook_self, tensor_type: type):
         """Overloads tensor_type properties.
 
         This method gets called only on torch.Tensor. If you're not sure how
@@ -513,6 +512,19 @@ class TorchHook:
             return self
 
         tensor_type.id = id
+
+        @property
+        def owner(self):
+            if not hasattr(self, "_owner"):
+                self._owner = hook_self.local_worker
+            return self._owner
+
+        @owner.setter
+        def owner(self, new_owner):
+            self._owner = new_owner
+            return self
+
+        tensor_type.owner = owner
 
         @property
         def is_wrapper(self):
