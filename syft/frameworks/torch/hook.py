@@ -123,9 +123,13 @@ class TorchHook:
 
         self._hook_torch_module()
 
+        # Hook torch.nn
+        self._hook_module()
+
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
         syft.local_worker = self.local_worker
+        syft.hook = self
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
@@ -623,3 +627,80 @@ class TorchHook:
                     setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
                 # Add to the native tensor this method
                 setattr(tensor_type, attr, getattr(TorchTensor, attr))
+
+    def _hook_module(self):
+
+        """Overloading torch.nn.Module with PySyft functionality, the primary module
+           responsible for core ML functionality such as Neural network layers and
+           loss functions
+        """
+
+        def module_is_missing_grad(model):
+            """Checks if all the parameters in the model have been assigned a gradient"""
+            for p in model.parameters():
+                if p.grad is None:
+                    return True
+            return False
+
+        def create_grad_objects(model):
+            """Assigns gradient to model parameters if not assigned"""
+            # for p in model.parameters():
+            #     o = p.sum()
+            #     o.backward()
+            #     p.grad -= p.grad
+
+        def module_send_(nn_self, dest):
+            """Overloads torch.nn instances so that they could be sent to other workers"""
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
+
+            for p in nn_self.parameters():
+                p.send(dest)
+
+            return nn_self
+
+        self.torch.nn.Module.send = module_send_
+
+        def module_end_get_(nn_self):
+            """Overloads send to remote for torch.nn.Module."""
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
+
+            for p in nn_self.parameters():
+                p.end_get()
+
+            return nn_self
+
+        self.torch.nn.Module.end_get = module_end_get_
+
+        def module_move_(nn_self, dest):
+            return nn_self.send(dest).end_get()
+
+        self.torch.nn.Module.move = module_move_
+
+        def module_get_(nn_self):
+            """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
+            for p in nn_self.parameters():
+                p.get()
+
+            return nn_self
+
+        self.torch.nn.Module.get = module_get_
+
+        def module_fix_precision_(nn_self):
+            """Overloads fix_precision for torch.nn.Module."""
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
+
+            for p in nn_self.parameters():
+                p.fix_precision_()
+
+            return nn_self
+
+        # TODO: confusion between inplace and not inplace method to disambiguate
+        self.torch.nn.Module.fix_precision = module_fix_precision_
+
+        def module_copy_(nn_self):
+            return copy.deepcopy(nn_self)
+
+        self.torch.nn.Module.copy = module_copy_
