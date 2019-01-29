@@ -1,5 +1,6 @@
 import logging
 import random
+import sys
 
 from abc import abstractmethod
 import syft as sy
@@ -259,8 +260,17 @@ class BaseWorker(AbstractWorker):
             tensor = getattr(_self, command)(*args, **kwargs)
         # Handle functions
         else:
+            # At this point, the command is ALWAYS a path to a
+            # function (i.e., torch.nn.functional.relu). Thus,
+            # we need to fetch this function and run it.
+
             sy.torch.command_guard(command, "torch_modules")
-            command = eval("self." + command)
+
+            paths = command.split(".")
+            command = self
+            for path in paths:
+                command = getattr(command, path)
+
             tensor = command(*args, **kwargs)
 
         # FIXME: should be added automatically
