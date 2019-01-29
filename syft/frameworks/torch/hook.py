@@ -3,6 +3,8 @@ import re
 import random
 import logging
 import types
+import torch
+import torch.nn as nn
 from functools import wraps
 
 
@@ -117,6 +119,8 @@ class TorchHook:
         # hooks the tensor constuctor function
         self._hook_tensor()
 
+        self._hook_parameters()
+
         self._hook_torch_module()
 
         # Add the local_worker to syft so that it can be found if the hook is
@@ -209,6 +213,53 @@ class TorchHook:
             if attr not in dir(PointerTensor):  # TODO and add special functions to include / avoid
                 new_method = self.get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
+
+    def _hook_parameters(self):
+
+        class Parameter():
+            r"""A kind of Tensor that is to be considered a module parameter.
+
+            Parameters are :class:`~torch.Tensor` subclasses, that have a
+            very special property when used with :class:`Module` s - when they're
+            assigned as Module attributes they are automatically added to the list of
+            its parameters, and will appear e.g. in :meth:`~Module.parameters` iterator.
+            Assigning a Tensor doesn't have such effect. This is because one might
+            want to cache some temporary state, like last hidden state of the RNN, in
+            the model. If there was no such class as :class:`Parameter`, these
+            temporaries would get registered too.
+
+            Arguments:
+                data (Tensor): parameter tensor.
+                requires_grad (bool, optional): if the parameter requires gradient. See
+                    :ref:`excluding-subgraphs` for more details. Default: `True`
+            """
+
+            def __init__(self, data=None, requires_grad=True):
+                self.data = data
+
+            def __repr__(self):
+                return 'Parameter containing:\n' + self.data.__repr__()
+
+        #     def __deepcopy__(self, memo):
+        #         if id(self) in memo:
+        #             return memo[id(self)]
+        #         else:
+        #             result = type(self)(self.data.clone(), self.requires_grad)
+        #             memo[id(self)] = result
+        #             return result
+
+        torch.nn.Parameter = Parameter
+        torch.nn.parameter.Parameter = Parameter
+
+        def get_params(self):
+
+            params = list()
+            for v in self.__dict__.values():
+                if isinstance(v, torch.nn.Parameter):
+                    params.append(v)
+            return params
+
+        nn.Module.parameters = get_params
 
     def _hook_torch_module(self):
         """Overloads functions in the main torch modules.
