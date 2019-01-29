@@ -140,6 +140,9 @@ class TestHook(object):
 
     @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
     def test_functional_same_in_both_imports(self, attr):
+        """This function tests that the hook modifies the behavior of
+        torch.nn.function regardless of the import namespace
+        """
         self.setUp()
         fattr = getattr(F, attr)
         tattr = getattr(torch.nn.functional, attr)
