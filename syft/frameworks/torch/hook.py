@@ -110,20 +110,23 @@ class TorchHook:
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
-        # add all hooked tensor methods to pointer but change behaviour
+        # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods()
 
-        # add all hooked tensor methods to Logging tensor but change behaviour
+        # Add all hooked tensor methods to Logging tensor but change behaviour to just forward
+        # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
         self._hook_syft_tensor_methods(LoggingTensor)
 
-        # hooks the tensor constuctor function
+        # Hook the tensor constructor function
         self._hook_tensor()
 
+        # Hook the Parameter methods to store tensor chains in parameters
         self._hook_parameters()
 
+        # Hook torch functions from modules like torch.nn.functional (containing relu, etc.)
         self._hook_torch_module()
 
-        # Hook torch.nn
+        # Hook torch.nn (containing Linear and Convolution layers)
         self._hook_module()
 
         # Add the local_worker to syft so that it can be found if the hook is
@@ -226,26 +229,55 @@ class TorchHook:
         attributes on our custom tensors, so we wrote our own.
         """
 
+        # Hook __new__ to handle when non-pure torch tensors are given as data attribute
+
         def hooked__new__(cls, data=None, requires_grad=True):
             if data is None:
                 data = torch.Tensor()
-            p = torch.Tensor._make_subclass(cls, data, requires_grad)
-            p.child = data
+            # If data is not a pure torch tensor you need to store the chain in a
+            # specific place otherwise it will get deleted
+            if not isinstance(data, torch.Tensor) or hasattr(data, "child"):
+                p = torch.Tensor._make_subclass(cls, torch.Tensor(), requires_grad)
+                p.child = data
+            else:
+                p = torch.Tensor._make_subclass(cls, data, requires_grad)
             return p
 
-        def hooked__repr__(self):
-            return "Parameter containing:\n" + self.child.__repr__()
-
         torch.nn.Parameter.__new__ = hooked__new__
+
+        # Hook __repr__ to handle chain repr when needed
+
+        torch.nn.Parameter.native_param___repr__ = torch.nn.Parameter.__repr__
+
+        def hooked__repr__(self):
+            if hasattr(self, "child"):
+                return "Parameter containing:\n" + self.child.__repr__()
+            else:
+                return self.native_param___repr__()
+
         torch.nn.Parameter.__repr__ = hooked__repr__
+
+        # Hook .data to handle chain assignment when needed
+
+        torch.nn.Parameter.native_param_data = torch.nn.Parameter.data
 
         @property
         def data(self):
-            return self.child
+            if hasattr(self, "child"):
+                return self.child
+            else:
+                return self.native_param_data
 
         @data.setter
         def data(self, new_data):
-            self.child = new_data
+            # If data is not a pure torch tensor you need to store the chain in a
+            # specific place otherwise it will get deleted
+            if not isinstance(data, torch.Tensor) or hasattr(data, "child"):
+                self.child = new_data
+            else:
+                if hasattr(self, "child"):
+                    del self.child
+                self.native_param_data = new_data
             return self
 
         torch.nn.Parameter.data = data
