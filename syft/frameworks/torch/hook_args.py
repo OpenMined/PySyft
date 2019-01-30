@@ -39,7 +39,7 @@ backward_func = {
     torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
-    "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i)",
+    "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i, wrap=False)",
 }
 
 
@@ -161,7 +161,7 @@ def hook_response(attr, response, wrap_type):
     except (IndexError, KeyError):  # Update the function in cas of an error
         response_hook_function = build_hook_response_function(response, wrap_type)
         # Store this utility function in the registry
-        hook_method_args_functions[attr] = response_hook_function
+        hook_method_response_functions[attr] = response_hook_function
         # Run it
         new_response = response_hook_function(response)
 
