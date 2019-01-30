@@ -2,6 +2,7 @@
 
 import pytest
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import random
 
@@ -182,7 +183,7 @@ class TestHook(object):
         assert True
 
     def test_parameter_hooking(self):
-
+        """Test custom nn.Module and parameter auto listing in m.parameters()"""
         self.setUp()
 
         class MyLayer(torch.nn.Module):
@@ -194,3 +195,10 @@ class TestHook(object):
         out = list(m.parameters())
         assert len(out) == 1
         assert out[0] == m.some_params
+
+    def test_torch_module_hook(self):
+        """Tests sending and getting back torch nn module like nn.Linear"""
+        self.setUp()
+        model = nn.Linear(2, 1)
+        model_ptr = model.send(self.bob)
+        res = model_ptr.get()

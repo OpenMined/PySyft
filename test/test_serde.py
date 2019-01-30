@@ -30,7 +30,7 @@ def test_tuple_simplify():
     for tuples so that the detailer knows how to interpret it."""
 
     input = ("hello", "world")
-    target = (1, ("hello", "world"))
+    target = (2, ("hello", "world"))
     assert _simplify(input) == target
 
 
@@ -42,7 +42,7 @@ def test_list_simplify():
     for lists so that the detailer knows how to interpret it."""
 
     input = ["hello", "world"]
-    target = (2, ["hello", "world"])
+    target = (3, ["hello", "world"])
     assert _simplify(input) == target
 
 
@@ -54,7 +54,7 @@ def test_set_simplify():
     for sets so that the detailer knows how to interpret it."""
 
     input = set(["hello", "world"])
-    target = (3, ["hello", "world"])
+    target = (4, ["hello", "world"])
     assert _simplify(input)[0] == target[0]
     assert set(_simplify(input)[1]) == set(target[1])
 
@@ -100,7 +100,7 @@ def test_dict_simplify():
     for dicts so that the detailer knows how to interpret it."""
 
     input = {"hello": "world"}
-    target = (4, {"hello": "world"})
+    target = (5, {"hello": "world"})
     assert _simplify(input) == target
 
 
@@ -112,7 +112,7 @@ def test_range_simplify():
     for dicts so that the detailer knows how to interpret it."""
 
     input = range(1, 3, 4)
-    target = (5, (1, 3, 4))
+    target = (6, (1, 3, 4))
     assert _simplify(input) == target
 
 
@@ -160,7 +160,7 @@ def test_ndarray_simplify():
     output = _simplify(input)
 
     # make sure simplified type ID is correct
-    assert output[0] == 6
+    assert output[0] == 7
 
     # make sure serialized form is correct
     assert type(output[1][0]) == bytes
@@ -172,7 +172,7 @@ def test_ellipsis_simplify():
     """Make sure ellipsis simplifies correctly."""
 
     # the id indicating an ellipsis is here
-    assert _simplify(Ellipsis)[0] == 8
+    assert _simplify(Ellipsis)[0] == 9
 
     # the simplified ellipsis (empty object)
     assert _simplify(Ellipsis)[1] == b""

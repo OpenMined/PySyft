@@ -281,6 +281,49 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     return tensor
 
 
+# Simplify/Detail Parameters
+
+
+def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
+    """
+    This function converts a torch Parameter into a serialized torch Parameter
+
+    Args:
+        param (torch.nn.Parameter): an input Parameter to be serialized
+
+    Returns:
+        tuple: serialized tuple of torch Parameter. The first value is the
+        id of the Parameter and the second is the binary for the PyTorch
+        tensor data attribute and last is the requires_grad attr.
+    """
+    tensor = param.data
+    tensor_ser = _simplify_torch_tensor(tensor)
+    return (param.id, tensor_ser, param.requires_grad)
+
+
+def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch.nn.Parameter:
+    """
+    This function converts a serialized torch Parameter into a torch Parameter.
+
+    Args:
+        param_tuple (tuple): serialized obj of torch tensor. It's a tuple where
+            the first value is the ID and the second value is the binary for the
+            PyTorch data attribute et and third value is the requires_grad attr.
+
+    Returns:
+        torch.Parameter: a torch Parameter that was serialized
+    """
+
+    param_id, tensor_ser, requires_grad = param_tuple
+
+    tensor = _detail_torch_tensor(worker, tensor_ser)
+
+    param = torch.nn.Parameter(tensor, requires_grad)
+    param.id = param_id
+
+    return param
+
+
 # Simplify/Detail Collections (list, set, tuple, etc.)
 
 
@@ -765,16 +808,17 @@ def _simplify(obj: object) -> object:
 
 simplifiers = {
     torch.Tensor: [0, _simplify_torch_tensor],
-    tuple: [1, _simplify_collection],
-    list: [2, _simplify_collection],
-    set: [3, _simplify_collection],
-    dict: [4, _simplify_dictionary],
-    range: [5, _simplify_range],
-    numpy.ndarray: [6, _simplify_ndarray],
-    slice: [7, _simplify_slice],
-    type(Ellipsis): [8, _simplify_ellipsis],
-    PointerTensor: [9, _simplify_pointer_tensor],
-    LoggingTensor: [10, _simplify_log_tensor],
+    torch.nn.Parameter: [1, _simplify_torch_parameter],
+    tuple: [2, _simplify_collection],
+    list: [3, _simplify_collection],
+    set: [4, _simplify_collection],
+    dict: [5, _simplify_dictionary],
+    range: [6, _simplify_range],
+    numpy.ndarray: [7, _simplify_ndarray],
+    slice: [8, _simplify_slice],
+    type(Ellipsis): [9, _simplify_ellipsis],
+    PointerTensor: [10, _simplify_pointer_tensor],
+    LoggingTensor: [11, _simplify_log_tensor],
 }
 
 
@@ -804,6 +848,7 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
 
 detailers = [
     _detail_torch_tensor,
+    _detail_torch_parameter,
     _detail_collection_tuple,
     _detail_collection_list,
     _detail_collection_set,
