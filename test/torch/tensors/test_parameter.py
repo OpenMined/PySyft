@@ -1,6 +1,7 @@
 import random
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
 import syft
@@ -8,7 +9,7 @@ import syft
 from syft.frameworks.torch.tensors import LoggingTensor
 
 
-class TestLogTensor(object):
+class TestParameter(object):
     def setUp(self):
         hook = syft.TorchHook(torch, verbose=True)
 
@@ -61,3 +62,17 @@ class TestLogTensor(object):
         param_double_back = param_double_ptr.get()
         double_tensor = tensor + tensor
         assert (param_double_back.data == double_tensor).all()
+
+    def test_local_param_in_nn_module_linear(self):
+        model = nn.Linear(2, 1)
+        tensor = torch.tensor([1.0, -1.0])
+        res = model(tensor)
+
+    def test_remote_param_in_nn_module_linear(self):
+        self.setUp()
+        model = nn.Linear(2, 1)
+        tensor = torch.tensor([1.0, -1.0])
+        model_ptr = model.send(self.bob)
+        tensor_ptr = tensor.send(self.bob)
+        res_ptr = model_ptr(tensor_ptr)
+        res = res_ptr.get()
