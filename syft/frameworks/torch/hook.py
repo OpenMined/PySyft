@@ -3,6 +3,7 @@ import re
 import random
 import logging
 import types
+import copy
 import torch
 import torch.nn as nn
 from functools import wraps
@@ -670,22 +671,22 @@ class TorchHook:
 
         self.torch.nn.Module.send = module_send_
 
-        def module_end_get_(nn_self):
-            """Overloads send to remote for torch.nn.Module."""
-            if module_is_missing_grad(nn_self):
-                create_grad_objects(nn_self)
-
-            for p in nn_self.parameters():
-                p.end_get()
-
-            return nn_self
-
-        self.torch.nn.Module.end_get = module_end_get_
-
-        def module_move_(nn_self, dest):
-            return nn_self.send(dest).end_get()
-
-        self.torch.nn.Module.move = module_move_
+        # def module_end_get_(nn_self):
+        #     """Overloads send to remote for torch.nn.Module."""
+        #     if module_is_missing_grad(nn_self):
+        #         create_grad_objects(nn_self)
+        #
+        #     for p in nn_self.parameters():
+        #         p.end_get()
+        #
+        #     return nn_self
+        #
+        # self.torch.nn.Module.end_get = module_end_get_
+        #
+        # def module_move_(nn_self, dest):
+        #     return nn_self.send(dest).end_get()
+        #
+        # self.torch.nn.Module.move = module_move_
 
         def module_get_(nn_self):
             """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
@@ -696,18 +697,18 @@ class TorchHook:
 
         self.torch.nn.Module.get = module_get_
 
-        def module_fix_precision_(nn_self):
-            """Overloads fix_precision for torch.nn.Module."""
-            if module_is_missing_grad(nn_self):
-                create_grad_objects(nn_self)
+        # def module_fix_precision_(nn_self):
+        #     """Overloads fix_precision for torch.nn.Module."""
+        #     if module_is_missing_grad(nn_self):
+        #         create_grad_objects(nn_self)
+        #
+        #     for p in nn_self.parameters():
+        #         p.fix_precision_()
+        #
+        #     return nn_self
 
-            for p in nn_self.parameters():
-                p.fix_precision_()
-
-            return nn_self
-
-        # TODO: confusion between inplace and not inplace method to disambiguate
-        self.torch.nn.Module.fix_precision = module_fix_precision_
+        # # TODO: confusion between inplace and not inplace method to disambiguate
+        # self.torch.nn.Module.fix_precision = module_fix_precision_
 
         def module_copy_(nn_self):
             return copy.deepcopy(nn_self)
