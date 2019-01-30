@@ -4,6 +4,7 @@ ipykernel
 lz4
 msgpack
 pre-commit
+pytest
 sphinx_rtd_theme
 torch==1.0.0
 websockets
