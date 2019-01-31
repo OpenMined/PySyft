@@ -53,7 +53,8 @@ class TorchHook:
 
     Example:
         >>> import syft as sy
-        >>> hook = sy.TorchHook()
+        >>> import torch
+        >>> hook = sy.TorchHook(torch)
         Hooking into Torch...
         Overloading Complete.
         >>> x = sy.Tensor([-2,-1,0,1,2,3])
