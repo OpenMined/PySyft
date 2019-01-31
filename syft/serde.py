@@ -79,7 +79,7 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
 
     """
     # 1) Simplify
-    # simplify difficult-to-serialize objects. See the _simpliy method
+    # simplify difficult-to-serialize objects. See the _simplify method
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
     simple_objects = _simplify(obj)
@@ -208,7 +208,7 @@ def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
 
 def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     """
-    This function converts a torch tensor into a serliaized torch tensor
+    This function converts a torch tensor into a serialized torch tensor
     using pickle. We choose to use this because PyTorch has a custom and
     very fast PyTorch pickler.
 
