@@ -109,7 +109,7 @@ class TestLoggingTensor(object):
         x_ptr = x.send(self.bob)
         y_ptr = F.relu(x_ptr)
         y = y_ptr.get()
-        assert (y.child == F.relu(x_tensor)).all()
+        assert (y.child.child == F.relu(x_tensor)).all()
 
     def test_remote_method_on_log_chain(self):
         """
