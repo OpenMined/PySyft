@@ -26,7 +26,7 @@ class BaseWorker(AbstractWorker):
     protocol.
 
     Args:
-        hook: An optional reference to the TorchHook object which is used
+        hook: A reference to the TorchHook object which is used
             to modify PyTorch with PySyft's functionality.
         id: An optional string or integer unique id of the worker.
         known_workers: An optional dictionary of all known workers on a
@@ -49,7 +49,7 @@ class BaseWorker(AbstractWorker):
             primarily a development/testing feature.
     """
 
-    def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False, log_msgs=False):
+    def __init__(self, hook, id=0, known_workers={}, is_client_worker=False, log_msgs=False):
         """Initializes a BaseWorker."""
         self.hook = hook
         self.torch = None if hook is None else hook.torch

@@ -39,6 +39,18 @@ class TestPointer(object):
         x.create_pointer()
         x.create_pointer(location=self.james)
 
+    def test_remote_function(self):
+        self.setUp()
+
+        # init remote object
+        x = torch.Tensor([-1, 2, 3]).send(self.bob)
+
+        # call remote method
+        y = torch.add(x, x).get()
+
+        # check answer
+        assert (y == torch.tensor([-2.0, 4, 6])).all()
+
     def test_send_get(self):
         """Test several send get usages"""
         self.setUp()

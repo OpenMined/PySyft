@@ -293,31 +293,47 @@ class TorchHook:
             and :func:`torch.cat` will have our hooking code.
         """
 
-        torch_modules = {"torch.nn.functional": self.torch.nn.functional}
-        # TODO Replace with syft.torch.torch_modules when hooking 'torch' will not break msgpack
+        def perform_overloading(torch_module, func):
+
+            # Where the overloading happens
+            # 1. Get native function
+            native_func = getattr(torch_module, func)
+            # 2. Check it is a proper function
+            if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
+                # 3. Build the hooked function
+                new_func = self.get_hooked_func(native_func)
+                # 4. Move the native function
+                setattr(torch_module, f"native_{func}", native_func)
+                # 5. Put instead the hooked one
+                setattr(torch_module, func, new_func)
+
+        torch_modules = syft.torch.torch_modules
 
         for module_name, torch_module in torch_modules.items():
             for func in dir(torch_module):
+
                 # Some functions we want to ignore (not override). Such functions have been hard
                 # coded into the torch_attribute exclude (see TorchAttribute class)
                 if func in syft.torch.exclude:
+                    continue
+
+                # ignore dunder functions
+                if "__" in func:
+                    continue
+
+                # ignore capitalized func values which are Classes not functinos
+                if func[0].isupper():
+                    continue
+
+                # ignore hidden functins
+                if func[0] == "_":
                     continue
 
                 # If we haven't already overloaded this function
                 if "native_" in func or f"native_{func}" in dir(torch_module):
                     continue
 
-                # Where the overloading happens
-                # 1. Get native function
-                native_func = getattr(torch_module, func)
-                # 2. Check it is a proper function
-                if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
-                    # 3. Build the hooked function
-                    new_func = self.get_hooked_func(native_func)
-                    # 4. Move the native function
-                    setattr(torch_module, f"native_{func}", native_func)
-                    # 5. Put instead the hooked one
-                    setattr(torch_module, func, new_func)
+                perform_overloading(torch_module, func)
 
     def get_hooked_pointer_method(hook_self, attr):
         """
@@ -425,6 +441,9 @@ class TorchHook:
         :param attr: the function to hook
         :return: the hooked function
         """
+
+        if attr.__module__ is None:
+            attr.__module__ = "torch"
 
         @wraps(attr)
         def overloaded_attr(*args, **kwargs):
