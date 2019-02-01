@@ -43,6 +43,7 @@ class PointerTensor(AbstractTensor):
         owner=None,
         id=None,
         garbage_collect_data=True,
+        point_to_attr=None
     ):
         """Initializes a PointerTensor.
 
@@ -67,6 +68,12 @@ class PointerTensor(AbstractTensor):
             id: An optional string or integer id of the PointerTensor.
             garbage_collect_data: If true (default), delete the remote tensor when the
                 pointer is deleted.
+            point_to_attr: string which can tell a pointer to not point directly to\
+                a tensor, but to point to an attribute of that tensor (which must
+                also be a tensor) such as .child or .grad. Note the string can be
+                a chain (i.e., .child.child.child or .grad.child.child). Defaults
+                to None, which meants don't point to any attr, just point to the
+                tensor corresponding to the id_at_location.
         """
 
         self.location = location
@@ -74,6 +81,7 @@ class PointerTensor(AbstractTensor):
         self.owner = owner
         self.id = id
         self.garbage_collect_data = garbage_collect_data
+        self.point_to_attr = point_to_attr
 
     @classmethod
     def handle_func_command(cls, command):

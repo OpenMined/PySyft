@@ -670,7 +670,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
         data = _simplify_pointer_tensor(ptr)
     """
 
-    return (ptr.id, ptr.id_at_location, ptr.location.id)
+    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr)
 
     # a more general but slower/more verbose option
 
@@ -698,10 +698,24 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     obj_id = tensor_tuple[0]
     id_at_location = tensor_tuple[1]
     worker_id = tensor_tuple[2].decode("utf-8")
+    point_to_attr =  tensor_tuple[3]
 
     # If the pointer received is pointing at the current worker, we load the tensor instead
     if worker_id == worker.id:
-        tensor = worker.get_obj(id_at_location)
+
+        if(point_to_attr is not None):
+            tensor = worker.get_obj(id_at_location)
+
+            point_to_attrs = point_to_attr.decode("utf-8").split(".")
+            for attr in point_to_attrs:
+
+                tensor = getattr(tensor,attr)
+
+            tensor = tensor.wrap()
+
+        else:
+            tensor = worker.get_obj(id_at_location)
+
         return tensor
     # Else we keep the same Pointer
     else:
