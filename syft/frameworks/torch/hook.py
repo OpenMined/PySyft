@@ -307,9 +307,9 @@ class TorchHook:
                 # 5. Put instead the hooked one
                 setattr(torch_module, func, new_func)
 
-        # torch_modules = syft.torch.torch_modules
-        torch_modules = {"torch.nn.functional": self.torch.nn.functional,
-                         "torch": self.torch}
+        torch_modules = syft.torch.torch_modules
+        # torch_modules = {"torch.nn.functional": self.torch.nn.functional,
+                         # "torch": self.torch}
         # TODO Replace with syft.torch.torch_modules when hooking 'torch' will not break msgpack
 
         for module_name, torch_module in torch_modules.items():
