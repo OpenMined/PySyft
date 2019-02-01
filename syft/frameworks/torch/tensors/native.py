@@ -234,16 +234,17 @@ class TorchTensor(AbstractTensor):
 
         return ptr
 
-    def get(self, deregister_ptr: bool = True):
+    def get(self, deregister_ptr: bool = True, inplace: bool = False):
         """Requests the tensor/chain being pointed to, be serialized and return
         """
         # Transfer the get() to the child attribute which is a pointer
-        tensor = self.child.get()
+        tensor = self.child.get(deregister_ptr, inplace)
 
         # Clean the wrapper
         delattr(self, "child")
 
         return tensor
+
 
     def attr(self, attr_name):
         """"""
@@ -273,3 +274,9 @@ class TorchTensor(AbstractTensor):
         else:
             # just so it throws an appropriate error
             return self.__getattribute__(attr_name)
+
+
+    def move(self, destination):
+        tensor = self.child.move(destination)
+
+        return tensor

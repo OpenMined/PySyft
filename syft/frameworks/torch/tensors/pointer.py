@@ -142,7 +142,7 @@ class PointerTensor(AbstractTensor):
         """
         return self.__str__()
 
-    def get(self, deregister_ptr: bool = True):
+    def get(self, deregister_ptr: bool = True, inplace: bool =  False):
         """Requests the tensor/chain being pointed to, be serialized and return
 
         Since PointerTensor objects always point to a remote tensor (or chain
@@ -163,6 +163,8 @@ class PointerTensor(AbstractTensor):
                 method. This defaults to True because the main reason people use
                 this method is to move the tensor from the remote machine to the
                 local one, at which time the pointer has no use.
+            inplace (bool, optional): this determines if we store the gotten tensor
+                at the same id as its pointer (this removes the pointer)
 
         Returns:
             An AbstractTensor object which is the tensor (or chain) that this
@@ -187,11 +189,14 @@ class PointerTensor(AbstractTensor):
             tensor = self.owner.request_obj(self.id_at_location, self.location)
 
         # Register the result
-        assigned_id = self.id_at_location
+        if inplace:
+            assigned_id = self.id
+        else:
+            assigned_id = self.id_at_location
         self.owner.register_obj(tensor, assigned_id)
 
         # Remove this pointer by default
-        if deregister_ptr:
+        if deregister_ptr and not inplace:
             self.owner.de_register_obj(self)
 
         # TODO: remove these 3 lines
@@ -203,6 +208,10 @@ class PointerTensor(AbstractTensor):
 
         return tensor
 
+    def _get_(self):
+        """Private method which calls get on a remote pointer
+        """
+        self.owner.send_command(self.location, ("get", self, [False, True]))
 
     def move(self, destination):
         """Moves data from one worker to another without passing through the client
@@ -217,8 +226,9 @@ class PointerTensor(AbstractTensor):
             A PointerTensor object which points to the data on the destination machine.
         
         """
-        new_pointer = self.copy().send(destination)
-
+        new_pointer = self.send(destination)
+        new_pointer._get_()
+        return new_pointer
         
 
 
