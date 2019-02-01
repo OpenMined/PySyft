@@ -62,8 +62,7 @@ def hook_method_args(attr, method_self, args):
         args (list): the arguments being passed to the tensor
     """
     # Specify an id to distinguish methods from different classes
-    # TODO: analyse exactly the role of adding the type of self in the id
-    # TODO: and the need to recalculate also the rule (should be the same)
+    # As they won't be used with the same arg types
     attr_id = type(method_self).__name__ + "." + attr
 
     try:
@@ -152,16 +151,18 @@ def hook_response(attr, response, wrap_type):
     if not response_is_tuple:
         response = (response, 1)
 
+    attr_id = "{}@{}".format(attr, wrap_type.__name__)
+
     try:
         # Load the utility function to transform the args
-        response_hook_function = hook_method_response_functions[attr]
+        response_hook_function = hook_method_response_functions[attr_id]
         # Try running it
         new_response = response_hook_function(response)
 
     except (IndexError, KeyError):  # Update the function in cas of an error
         response_hook_function = build_hook_response_function(response, wrap_type)
         # Store this utility function in the registry
-        hook_method_response_functions[attr] = response_hook_function
+        hook_method_response_functions[attr_id] = response_hook_function
         # Run it
         new_response = response_hook_function(response)
 

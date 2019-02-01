@@ -17,7 +17,7 @@ def hook(attr):
 
         # Put back SyftTensor on the tensors found in the response
         response = syft.frameworks.torch.hook_args.hook_response(
-            attr, response, wrap_type=type(self)
+            attr.__name__, response, wrap_type=type(self)
         )
 
         return response
