@@ -128,15 +128,10 @@ class PointerTensor(AbstractTensor):
         """
 
         type_name = type(self).__name__
-        out = (
-            f"["
-            f"{type_name} - "
-            f"...{str(self.id_at_location)[-3:]}@{self.location.id}"
-            f"]"
-        )
+        out = f"[" f"{type_name} - " f"...{str(self.id_at_location)[-3:]}@{self.location.id}" f"]"
 
         if self.point_to_attr is not None:
-            out += "::" + str(self.point_to_attr).replace(".","::")
+            out += "::" + str(self.point_to_attr).replace(".", "::")
         return out
 
     def __repr__(self):
