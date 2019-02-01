@@ -716,7 +716,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
 
         else:
             tensor = worker.get_obj(id_at_location)
-        print("Tensor:" + str(tensor))
+
         return tensor
     # Else we keep the same Pointer
     else:

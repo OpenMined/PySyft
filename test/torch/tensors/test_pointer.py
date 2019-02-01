@@ -206,3 +206,13 @@ class TestPointer(object):
             x.get()
         except syft.exceptions.CannotRequestTensorAttribute as e:
             assert True
+
+    def test_grad_pointer(self):
+        """Tests the automatic creation of a .grad pointer when
+        calling .send() on a tensor with requires_grad==True"""
+
+        self.setUp()
+
+        x = torch.tensor([1, 2, 3.], requires_grad=True).send(self.bob)
+        (x + x).backward(x)
+        assert (x.grad.clone().get() == torch.tensor([2, 4, 6.])).all()
