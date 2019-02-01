@@ -99,6 +99,8 @@ class PointerTensor(AbstractTensor):
         owner = pointer.owner
         location = pointer.location
 
+        print("handling func command")
+
         # Send the command
         response = owner.send_command(location, command)
 

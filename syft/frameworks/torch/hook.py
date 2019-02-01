@@ -293,6 +293,21 @@ class TorchHook:
             and :func:`torch.cat` will have our hooking code.
         """
 
+        def perform_overloading(torch_module, func):
+
+            # Where the overloading happens
+            # 1. Get native function
+            native_func = getattr(torch_module, func)
+            # 2. Check it is a proper function
+            if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
+                # 3. Build the hooked function
+                new_func = self.get_hooked_func(native_func)
+                # 4. Move the native function
+                setattr(torch_module, f"native_{func}", native_func)
+                # 5. Put instead the hooked one
+                setattr(torch_module, func, new_func)
+
+        # torch_modules = syft.torch.torch_modules
         torch_modules = {"torch.nn.functional": self.torch.nn.functional}
         # TODO Replace with syft.torch.torch_modules when hooking 'torch' will not break msgpack
 
@@ -303,21 +318,233 @@ class TorchHook:
                 if func in syft.torch.exclude:
                     continue
 
+                if("__" in func):
+                    continue
+
                 # If we haven't already overloaded this function
                 if "native_" in func or f"native_{func}" in dir(torch_module):
                     continue
 
-                # Where the overloading happens
-                # 1. Get native function
-                native_func = getattr(torch_module, func)
-                # 2. Check it is a proper function
-                if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
-                    # 3. Build the hooked function
-                    new_func = self.get_hooked_func(native_func)
-                    # 4. Move the native function
-                    setattr(torch_module, f"native_{func}", native_func)
-                    # 5. Put instead the hooked one
-                    setattr(torch_module, func, new_func)
+                perform_overloading(torch_module, func)
+        tms = ['abs',
+                 'abs_',
+                 'acos',
+                 'acos_',
+                 'adaptive_avg_pool1d',
+                 'adaptive_max_pool1d',
+                 'add',
+                 'addbmm',
+                 'addcdiv',
+                 'addcmul',
+                 'addmm',
+                 'addmv',
+                 'addmv_',
+                 'addr',
+                 'affine_grid_generator',
+                 'all',
+                 'allclose',
+                 'alpha_dropout',
+                 'alpha_dropout_',
+                 'any',
+                 'arange',
+                 'argmax',
+                 'argmin',
+                 'argsort',
+                 'as_strided',
+                 'as_strided_',
+                 'as_tensor',
+                 'asin',
+                 'asin_',
+                 'atan',
+                 'atan2',
+                 'atan_',
+                 'autograd',
+                 'avg_pool1d',
+                 'backends',
+                 'baddbmm',
+                 'bartlett_window',
+                 'batch_norm',
+                 'bernoulli',
+                 'bilinear',
+                 'binary_cross_entropy_with_logits',
+                 'bincount',
+                 'blackman_window',
+                 'bmm',
+                 'broadcast_tensors',
+                 #
+                 'btrifact',
+                 'btrifact_with_info',
+                 'btrisolve',
+                 'btriunpack',
+                 'cat',
+                 'ceil',
+                 'ceil_',
+                 'celu',
+                 'celu_',
+                 'chain_matmul',
+                 'cholesky',
+                 'chunk',
+                 'clamp',
+                 'clamp_',
+                 'clamp_max',
+                 'clamp_max_',
+                 'clamp_min',
+                 'clamp_min_',
+                 'clone',
+                 'compiled_with_cxx11_abi',
+                 'complex128',
+                 'complex32',
+                 'complex64',
+                 'constant_pad_nd',
+                 'conv1d',
+                 'conv2d',
+                 'conv3d',
+                 'conv_tbc',
+                 'conv_transpose1d',
+                 'conv_transpose2d',
+                 'conv_transpose3d',
+                 'convolution',
+                 'cos',
+                 'cos_',
+                 'cosh',
+                 'cosh_',
+                 'cosine_embedding_loss',
+                 'cosine_similarity',
+                 'cross',
+                 'ctc_loss',
+                 'cuda',
+                 'cudnn_affine_grid_generator',
+                 'cudnn_batch_norm',
+                 'cudnn_convolution',
+                 'cudnn_convolution_transpose',
+                 'cudnn_grid_sampler',
+                 'cudnn_is_acceptable',
+                 'cumprod',
+                 'cumsum',
+                 'default_generator',
+                 'det',
+                 'detach',
+                 'detach_',
+                 'device',
+                 'diag',
+                 'diag_embed',
+                 'diagflat',
+                 'diagonal',
+                 'digamma',
+                 'dist',
+                 'distributed',
+                 'distributions',
+                 'div',
+                 'dot',
+                 'double',
+                 'dropout',
+                 'dropout_',
+                 'dsmm',
+                 'dtype',
+                 'eig',
+                 'einsum',
+                 'embedding',
+                 'embedding_bag',
+                 'embedding_renorm_',
+                 'empty',
+                 'empty_like',
+                 'empty_strided',
+                 'enable_grad',
+                 'eq',
+                 'equal',
+                 'erf',
+                 'erf_',
+                 'erfc',
+                 'erfc_',
+                 'erfinv',
+                 'exp',
+                 'exp_',
+                 'expm1',
+                 'expm1_',
+                 'eye',
+                 'feature_alpha_dropout',
+                 'feature_alpha_dropout_',
+                 'feature_dropout',
+                 'feature_dropout_',
+                 'fft',
+                 'fill_',
+                 'finfo',
+                 'flatten',
+                 'flip',
+                 'float',
+                 'float16',
+                 'float32',
+                 'float64',
+                 'floor',
+                 'floor_',
+                 'fmod',
+                 'fork',
+                 'frac',
+                 'frobenius_norm',
+                 'from_numpy',
+                 'full',
+                 'full_like',
+                 'functional',
+                 'gather',
+                 'ge',
+                 'gels',
+                 'geqrf',
+                 'ger',
+                 'gesv',
+                 # 'get_default_dtype',
+                 # 'get_device',
+                 # 'get_file_path',
+                 # 'get_num_threads',
+                 # 'get_rng_state',
+                 'grid_sampler',
+                 'grid_sampler_2d',
+                 'grid_sampler_3d',
+                 'group_norm',
+                 'gru',
+                 'gru_cell',
+                 'gt',
+                 'half',
+                 'hamming_window',
+                 'hann_window',
+                 'hardshrink',
+                 'has_cudnn',
+                 'has_lapack',
+                 'has_mkl',
+                 'hinge_embedding_loss',
+                 'histc',
+                 'hsmm',
+                 'hspmm',
+                 'ifft',
+                 'iinfo',
+                 'import_ir_module',
+                 'import_ir_module_from_buffer',
+                 'index_put',
+                 'index_put_',
+                 'index_select',
+                 'initial_seed',
+                 'instance_norm',
+                 # 'int',
+                 # 'int16',
+                 # 'int32',
+                 # 'int64',
+                 # 'int8',
+                 'inverse',
+                 'irfft',
+                 # 'is_anomaly_enabled',
+                 # 'is_complex',
+                 # 'is_distributed',
+                 # 'is_floating_point',
+                 # 'is_grad_enabled',
+                 # 'is_nonzero',
+                 # 'is_same_size',
+                 # 'is_signed',
+                 # 'is_storage',
+                 # 'is_tensor',
+                 # 'isclose',
+                 # 'isfinite'
+                ]
+        for m in tms:
+            perform_overloading(self.torch,m)
 
     def get_hooked_pointer_method(hook_self, attr):
         """
@@ -425,6 +652,9 @@ class TorchHook:
         :param attr: the function to hook
         :return: the hooked function
         """
+
+        if(attr.__module__ is None):
+            attr.__module__ = "torch"
 
         @wraps(attr)
         def overloaded_attr(*args, **kwargs):
