@@ -136,7 +136,7 @@ class BaseWorker(AbstractWorker):
 
         # Step 0: combine type and message
         message = (msg_type, message)
-        
+
         # Step 1: serialize the message to simple python objects
         bin_message = serde.serialize(message)
 

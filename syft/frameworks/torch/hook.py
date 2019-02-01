@@ -316,13 +316,13 @@ class TorchHook:
                 if func in syft.torch.exclude:
                     continue
 
-                if("__" in func):
+                if "__" in func:
                     continue
 
-                if(func[0].isupper()):
+                if func[0].isupper():
                     continue
 
-                if(func[0] == "_"):
+                if func[0] == "_":
                     continue
 
                 # If we haven't already overloaded this function
@@ -330,7 +330,6 @@ class TorchHook:
                     continue
 
                 perform_overloading(torch_module, func)
-
 
     def get_hooked_pointer_method(hook_self, attr):
         """
@@ -439,7 +438,7 @@ class TorchHook:
         :return: the hooked function
         """
 
-        if(attr.__module__ is None):
+        if attr.__module__ is None:
             attr.__module__ = "torch"
 
         @wraps(attr)
