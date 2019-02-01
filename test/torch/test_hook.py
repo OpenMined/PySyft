@@ -10,6 +10,7 @@ import syft
 from syft.exceptions import RemoteTensorFoundError
 from syft.frameworks.torch.tensors import PointerTensor
 from test.conftest import hook
+from test.conftest import workers
 
 
 def test__init__(hook):
@@ -27,23 +28,20 @@ def test_torch_attributes():
     syft.torch._command_guard("torch.add", "torch_modules", get_native=False)
 
 
-def test_worker_registration(hook):
-    me = hook.local_worker
-    boris = syft.VirtualWorker(id="boris", hook=hook, is_client_worker=False)
-    me.add_workers([boris])
+def test_worker_registration(hook, workers):
+    me = workers["me"]
+    james = workers["james"]
+    me.add_workers([james])
 
-    worker = me.get_worker(boris)
+    worker = me.get_worker(james)
 
-    assert boris == worker
+    assert james == worker
 
 
-def test_pointer_found_exception(hook):
-    me = hook.local_worker
-
-    instance_id = str(int(10e10 * random.random()))
+def test_pointer_found_exception(hook, workers):
+    me = workers["me"]
+    alice = workers["alice"]
     ptr_id = int(10e10 * random.random())
-
-    alice = syft.VirtualWorker(id=f"alice{instance_id}", hook=hook, is_client_worker=False)
 
     pointer = PointerTensor(id=ptr_id, location=alice, owner=me)
     try:
@@ -68,10 +66,9 @@ def test_build_get_child_type():
 
 
 @pytest.mark.parametrize("attr", ["abs"])
-def test_get_pointer_unary_method(attr, hook):
-    instance_id = str(int(10e10 * random.random()))
+def test_get_pointer_unary_method(attr, hook, workers):
+    bob = workers["bob"]
 
-    bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
     x = torch.Tensor([1, 2, 3])
     native_method = getattr(x, f"native_{attr}")
     expected = native_method()
@@ -83,10 +80,8 @@ def test_get_pointer_unary_method(attr, hook):
 
 
 @pytest.mark.parametrize("attr", ["add", "mul"])
-def test_get_pointer_binary_method(attr, hook):
-    instance_id = str(int(10e10 * random.random()))
-
-    bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
+def test_get_pointer_binary_method(attr, hook, workers):
+    bob = workers["bob"]
 
     x = torch.Tensor([1, 2, 3])
     native_method = getattr(x, f"native_{attr}")
@@ -99,11 +94,9 @@ def test_get_pointer_binary_method(attr, hook):
 
 
 @pytest.mark.parametrize("attr", ["abs"])
-def test_get_pointer_to_pointer_unary_method(attr, hook):
-    instance_id = str(int(10e10 * random.random()))
-
-    bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
-    alice = syft.VirtualWorker(id=f"alice{instance_id}", hook=hook, is_client_worker=False)
+def test_get_pointer_to_pointer_unary_method(attr, hook, workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
 
     x = torch.Tensor([1, 2, 3])
     native_method = getattr(x, f"native_{attr}")
@@ -116,11 +109,9 @@ def test_get_pointer_to_pointer_unary_method(attr, hook):
 
 
 @pytest.mark.parametrize("attr", ["add", "mul"])
-def test_get_pointer_to_pointer_binary_method(attr, hook):
-    instance_id = str(int(10e10 * random.random()))
-
-    bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
-    alice = syft.VirtualWorker(id=f"alice{instance_id}", hook=hook, is_client_worker=False)
+def test_get_pointer_to_pointer_binary_method(attr, hook, workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
 
     x = torch.Tensor([1, 2, 3])
     native_method = getattr(x, f"native_{attr}")
@@ -133,10 +124,8 @@ def test_get_pointer_to_pointer_binary_method(attr, hook):
 
 
 @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
-def test_hook_module_functional(attr, hook):
-    instance_id = str(int(10e10 * random.random()))
-
-    bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
+def test_hook_module_functional(attr, hook, workers):
+    bob = workers["bob"]
 
     attr = getattr(F, attr)
     x = torch.Tensor([1, -1, 3, 4])
@@ -158,10 +147,8 @@ def test_functional_same_in_both_imports(attr):
     assert (fattr(x) == tattr(x)).all()
 
 
-def test_hook_tensor(hook):
-    instance_id = str(int(10e10 * random.random()))
-
-    bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
+def test_hook_tensor(hook, workers):
+    bob = workers["bob"]
 
     x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)
     x.send(bob)
@@ -207,12 +194,9 @@ def test_parameter_hooking():
     assert out[0] == m.some_params
 
 
-def test_torch_module_hook(hook):
+def test_torch_module_hook(hook, workers):
     """Tests sending and getting back torch nn module like nn.Linear"""
-
-    instance_id = str(int(10e10 * random.random()))
-
-    bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
+    bob = workers["bob"]
 
     model = nn.Linear(2, 1)
     model_ptr = model.send(bob)
