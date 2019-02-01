@@ -215,14 +215,12 @@ class TestPointer(object):
         x = torch.tensor([1, 2, 3.0], requires_grad=True).send(self.bob)
         (x + x).backward(x)
         assert (x.grad.clone().get() == torch.tensor([2, 4, 6.0])).all()
-    
+
     def test_move(self):
         self.setUp()
 
-        x = torch.Tensor([1,2])
-
+        x = torch.Tensor([1, 2])
         x_ptr = x.send(self.bob)
         x_alice = x_ptr.move(self.alice)
         x_got = x_alice.get()
         assert (x_got == x).all()
-

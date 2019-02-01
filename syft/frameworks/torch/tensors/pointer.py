@@ -142,7 +142,7 @@ class PointerTensor(AbstractTensor):
         """
         return self.__str__()
 
-    def get(self, deregister_ptr: bool = True, inplace: bool =  False):
+    def get(self, deregister_ptr: bool = True, inplace: bool = False):
         """Requests the tensor/chain being pointed to, be serialized and return
 
         Since PointerTensor objects always point to a remote tensor (or chain
@@ -172,7 +172,6 @@ class PointerTensor(AbstractTensor):
 
         TODO: add param get_copy which doesn't destroy remote if true.
         """
-
         if self.point_to_attr is not None:
             raise CannotRequestTensorAttribute(
                 "You called .get() on a pointer to"
@@ -193,7 +192,8 @@ class PointerTensor(AbstractTensor):
             assigned_id = self.id
         else:
             assigned_id = self.id_at_location
-        self.owner.register_obj(tensor, assigned_id)
+        tensor.id = assigned_id
+        self.owner.set_obj(tensor)
 
         # Remove this pointer by default
         if deregister_ptr and not inplace:
@@ -228,8 +228,6 @@ class PointerTensor(AbstractTensor):
         """
         new_pointer._get_()
         return new_pointer
-        
-
 
     def __del__(self):
         """This method garbage collects the object this pointer is pointing to.

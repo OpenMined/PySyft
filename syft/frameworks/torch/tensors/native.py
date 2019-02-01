@@ -213,10 +213,7 @@ class TorchTensor(AbstractTensor):
             id_at_location = self.id
 
         if ptr_id is None:
-            if location.id != self.owner.id:
-                ptr_id = self.id
-            else:
-                ptr_id = int(10e10 * random.random())
+            ptr_id = self.id
 
         # previous_pointer = owner.get_pointer_to(location, id_at_location)
         previous_pointer = None
@@ -244,7 +241,6 @@ class TorchTensor(AbstractTensor):
         delattr(self, "child")
 
         return tensor
-
 
     def attr(self, attr_name):
         """"""
@@ -275,9 +271,9 @@ class TorchTensor(AbstractTensor):
             # just so it throws an appropriate error
             return self.__getattribute__(attr_name)
 
-
     def move(self, destination):
         if isinstance(self.child, PointerTensor):
+            self.child.garbage_collect_data = False
             new_pointer = self.send(destination)
             new_pointer.child._get_()
             return new_pointer

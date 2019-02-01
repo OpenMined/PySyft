@@ -63,6 +63,7 @@ class AbstractTensor(ABC):
         wrapper = torch.Tensor()
         wrapper.child = self
         wrapper.is_wrapper = True
+        wrapper.id = self.id
         return wrapper
 
     def serialize(

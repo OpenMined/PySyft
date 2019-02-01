@@ -233,11 +233,8 @@ class BaseWorker(AbstractWorker):
 
         worker = self.get_worker(worker)
 
-        if ptr_id is None:  # Define a remote id if not specified
-            ptr_id = int(10e10 * random.random())
-
         pointer = tensor.create_pointer(
-            owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
+            owner=self, location=worker, id_at_location=None, register=True, ptr_id=ptr_id
         )
 
         # if (tensor.is_wrapper):
@@ -280,7 +277,7 @@ class BaseWorker(AbstractWorker):
 
         # some functions don't return anything (such as .backward())
         # so we need to check for that here.
-        if tensor is not None:
+        if tensor is not None and command != "get":
 
             # FIXME: should be added automatically
             tensor.owner = self
