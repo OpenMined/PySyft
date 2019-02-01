@@ -277,6 +277,10 @@ class TorchTensor(AbstractTensor):
 
 
     def move(self, destination):
-        tensor = self.child.move(destination)
+        if isinstance(self.child, PointerTensor):
+            new_pointer = self.send(destination)
+            new_pointer.child._get_()
+            return new_pointer
 
-        return tensor
+        else:
+            raise AttributeError("Move must be called on a pointer")

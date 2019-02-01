@@ -226,7 +226,6 @@ class PointerTensor(AbstractTensor):
             A PointerTensor object which points to the data on the destination machine.
         
         """
-        new_pointer = self.send(destination)
         new_pointer._get_()
         return new_pointer
         

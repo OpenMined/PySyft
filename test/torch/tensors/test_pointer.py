@@ -98,7 +98,6 @@ class TestPointer(object):
 
         # ensure bob has tensor
         assert x.id in self.bob._objects
-<<<<<<< HEAD
 
     def test_remote_autograd(self):
         """Tests the ability to backpropagate gradients on a remote
@@ -224,8 +223,6 @@ class TestPointer(object):
 
         x_ptr = x.send(self.bob)
         x_alice = x_ptr.move(self.alice)
-
         x_got = x_alice.get()
-
-        assert x_got == x
+        assert (x_got == x).all()
 
