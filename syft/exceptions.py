@@ -36,6 +36,7 @@ class CompressionNotFoundException(Exception):
 
     pass
 
+
 class CannotRequestTensorAttribute(Exception):
     """Raised when .get() is called on a pointer which points to an attribute of
     another tensor."""

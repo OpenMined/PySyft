@@ -44,7 +44,7 @@ class PointerTensor(AbstractTensor):
         owner=None,
         id=None,
         garbage_collect_data=True,
-        point_to_attr=None
+        point_to_attr=None,
     ):
         """Initializes a PointerTensor.
 
@@ -138,7 +138,7 @@ class PointerTensor(AbstractTensor):
             f"]"
         )
 
-        if(self.point_to_attr is not None):
+        if self.point_to_attr is not None:
             out += "::" + str(self.point_to_attr)
         return out
 
@@ -179,10 +179,12 @@ class PointerTensor(AbstractTensor):
         TODO: add param get_copy which doesn't destroy remote if true.
         """
 
-        if(self.point_to_attr is not None):
-            raise CannotRequestTensorAttribute("You called .get() on a pointer to"
-                                               " a tensor attribute. This is not yet"
-                                               " supported. Call .clone().get() instead.")
+        if self.point_to_attr is not None:
+            raise CannotRequestTensorAttribute(
+                "You called .get() on a pointer to"
+                " a tensor attribute. This is not yet"
+                " supported. Call .clone().get() instead."
+            )
 
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
@@ -203,8 +205,8 @@ class PointerTensor(AbstractTensor):
         # TODO: remove these 3 lines
         # The fact we have to check this means
         # something else is probably broken
-        if(tensor.is_wrapper):
-            if(isinstance(tensor.child, torch.Tensor)):
+        if tensor.is_wrapper:
+            if isinstance(tensor.child, torch.Tensor):
                 return tensor.child
 
         return tensor
@@ -224,5 +226,5 @@ class PointerTensor(AbstractTensor):
         if hasattr(self, "owner") and self.garbage_collect_data:
 
             # attribute pointers are not in charge of GC
-            if(self.point_to_attr is None):
+            if self.point_to_attr is None:
                 self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)

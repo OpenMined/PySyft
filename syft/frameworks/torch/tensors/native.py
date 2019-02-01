@@ -129,7 +129,7 @@ class TorchTensor(AbstractTensor):
 
         ptr = ptr.wrap()
 
-        if(self.requires_grad):
+        if self.requires_grad:
             grad = ptr.attr("grad")
 
             ptr.grad = grad
@@ -250,21 +250,23 @@ class TorchTensor(AbstractTensor):
         x = self.child
 
         # check this first
-        if(attr_name != "grad" and hasattr(self, attr_name)):
+        if attr_name != "grad" and hasattr(self, attr_name):
 
             return self.__getattribute__(attr_name)
 
-        elif(attr_name == "grad" and self.grad is not None):
+        elif attr_name == "grad" and self.grad is not None:
 
             return self.grad
 
-        elif(isinstance(x, syft.PointerTensor)):
+        elif isinstance(x, syft.PointerTensor):
 
-            attr_ptr = syft.PointerTensor(id=x.id,
-                                          owner=x.owner,
-                                          location=x.location,
-                                          id_at_location=x.id_at_location,
-                                          point_to_attr=attr_name).wrap()
+            attr_ptr = syft.PointerTensor(
+                id=x.id,
+                owner=x.owner,
+                location=x.location,
+                id_at_location=x.id_at_location,
+                point_to_attr=attr_name,
+            ).wrap()
             self.__setattr__(attr_name, attr_ptr)
             return attr_ptr
 

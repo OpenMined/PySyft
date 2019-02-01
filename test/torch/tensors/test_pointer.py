@@ -213,6 +213,6 @@ class TestPointer(object):
 
         self.setUp()
 
-        x = torch.tensor([1, 2, 3.], requires_grad=True).send(self.bob)
+        x = torch.tensor([1, 2, 3.0], requires_grad=True).send(self.bob)
         (x + x).backward(x)
-        assert (x.grad.clone().get() == torch.tensor([2, 4, 6.])).all()
+        assert (x.grad.clone().get() == torch.tensor([2, 4, 6.0])).all()
