@@ -181,7 +181,7 @@ def test_ellipsis_simplify():
 def test_pointer_tensor_simplify():
     """Test the simplification of PointerTensor"""
 
-    alice = syft.VirtualWorker(id="alice")
+    alice = syft.VirtualWorker(syft.torch.hook, id="alice")
     input_tensor = PointerTensor(id=1000, location=alice, owner=alice)
 
     output = _simplify(input_tensor)

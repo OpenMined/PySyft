@@ -18,7 +18,7 @@ def test_send_msg():
     me = sy.torch.hook.local_worker
 
     # create a new worker (to send the object to)
-    bob = VirtualWorker()
+    bob = VirtualWorker(sy.torch.hook)
 
     # initialize the object and save it's id
     obj = torch.Tensor([100, 100])
@@ -39,7 +39,7 @@ def test_send_msg_using_tensor_api():
     """
 
     # create worker to send object to
-    bob = VirtualWorker()
+    bob = VirtualWorker(sy.torch.hook)
 
     # create a tensor to send (default on local_worker)
     obj = torch.Tensor([100, 100])
@@ -65,7 +65,7 @@ def test_recv_msg():
     # TEST 1: send tensor to alice
 
     # create a worker to send data to
-    alice = VirtualWorker()
+    alice = VirtualWorker(sy.torch.hook)
 
     # create object to send
     obj = torch.Tensor([100, 100])
@@ -112,8 +112,8 @@ def tests_worker_convenience_methods():
     """
 
     me = sy.torch.hook.local_worker
-    bob = VirtualWorker()
-    alice = VirtualWorker()
+    bob = VirtualWorker(sy.torch.hook)
+    alice = VirtualWorker(sy.torch.hook)
     obj = torch.Tensor([100, 100])
 
     # Send data to alice
