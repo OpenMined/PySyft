@@ -246,10 +246,19 @@ class TorchTensor(AbstractTensor):
         return tensor
 
     def attr(self, attr_name):
-
+        """"""
         x = self.child
 
-        if(isinstance(x, syft.PointerTensor)):
+        # check this first
+        if(attr_name != "grad" and hasattr(self, attr_name)):
+
+            return self.__getattribute__(attr_name)
+
+        elif(attr_name == "grad" and self.grad is not None):
+
+            return self.grad
+
+        elif(isinstance(x, syft.PointerTensor)):
 
             attr_ptr = syft.PointerTensor(id=x.id,
                                           owner=x.owner,
@@ -260,4 +269,5 @@ class TorchTensor(AbstractTensor):
             return attr_ptr
 
         else:
+            # just so it throws an appropriate error
             return self.__getattribute__(attr_name)
