@@ -28,7 +28,7 @@ def test_torch_attributes():
     syft.torch._command_guard("torch.add", "torch_modules", get_native=False)
 
 
-def test_worker_registration(hook, workers):
+def test_worker_registration(workers):
     me = workers["me"]
     james = workers["james"]
     me.add_workers([james])
@@ -38,7 +38,7 @@ def test_worker_registration(hook, workers):
     assert james == worker
 
 
-def test_pointer_found_exception(hook, workers):
+def test_pointer_found_exception(workers):
     me = workers["me"]
     alice = workers["alice"]
     ptr_id = int(10e10 * random.random())
@@ -66,7 +66,7 @@ def test_build_get_child_type():
 
 
 @pytest.mark.parametrize("attr", ["abs"])
-def test_get_pointer_unary_method(attr, hook, workers):
+def test_get_pointer_unary_method(attr, workers):
     bob = workers["bob"]
 
     x = torch.Tensor([1, 2, 3])
@@ -80,7 +80,7 @@ def test_get_pointer_unary_method(attr, hook, workers):
 
 
 @pytest.mark.parametrize("attr", ["add", "mul"])
-def test_get_pointer_binary_method(attr, hook, workers):
+def test_get_pointer_binary_method(attr, workers):
     bob = workers["bob"]
 
     x = torch.Tensor([1, 2, 3])
@@ -94,7 +94,7 @@ def test_get_pointer_binary_method(attr, hook, workers):
 
 
 @pytest.mark.parametrize("attr", ["abs"])
-def test_get_pointer_to_pointer_unary_method(attr, hook, workers):
+def test_get_pointer_to_pointer_unary_method(attr, workers):
     bob = workers["bob"]
     alice = workers["alice"]
 
@@ -109,7 +109,7 @@ def test_get_pointer_to_pointer_unary_method(attr, hook, workers):
 
 
 @pytest.mark.parametrize("attr", ["add", "mul"])
-def test_get_pointer_to_pointer_binary_method(attr, hook, workers):
+def test_get_pointer_to_pointer_binary_method(attr, workers):
     bob = workers["bob"]
     alice = workers["alice"]
 
@@ -124,7 +124,7 @@ def test_get_pointer_to_pointer_binary_method(attr, hook, workers):
 
 
 @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
-def test_hook_module_functional(attr, hook, workers):
+def test_hook_module_functional(attr, workers):
     bob = workers["bob"]
 
     attr = getattr(F, attr)
@@ -147,7 +147,7 @@ def test_functional_same_in_both_imports(attr):
     assert (fattr(x) == tattr(x)).all()
 
 
-def test_hook_tensor(hook, workers):
+def test_hook_tensor(workers):
     bob = workers["bob"]
 
     x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)
@@ -194,7 +194,7 @@ def test_parameter_hooking():
     assert out[0] == m.some_params
 
 
-def test_torch_module_hook(hook, workers):
+def test_torch_module_hook(workers):
     """Tests sending and getting back torch nn module like nn.Linear"""
     bob = workers["bob"]
 
