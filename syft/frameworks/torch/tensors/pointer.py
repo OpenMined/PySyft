@@ -131,10 +131,7 @@ class PointerTensor(AbstractTensor):
         out = (
             f"["
             f"{type_name} - "
-            # f"id:{self.id} "
-            # f"owner:{self.owner.id} "
             f"...{str(self.id_at_location)[-3:]}@{self.location.id}"
-            # f"id@loc:"
             f"]"
         )
 
