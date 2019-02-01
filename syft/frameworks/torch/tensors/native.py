@@ -127,7 +127,22 @@ class TorchTensor(AbstractTensor):
             self.data = ptr
             return self
 
-        return ptr.wrap()
+        ptr = ptr.wrap()
+
+        if self.requires_grad:
+            grad = ptr.attr("grad")
+
+            ptr.grad = grad
+
+            # Because of the way PyTorch works, .grad is prone to
+            # create entirely new Python objects for the tensor, which
+            # inadvertently deletes our custom attributes (like .child)
+            # But, if we keep a backup reference around, PyTorch seems
+            # to re-use it, which means .grad keeps the attributes we
+            # want it to keep. #HackAlert
+            ptr.backup_grad = grad
+
+        return ptr
 
     def create_pointer(
         self,
@@ -229,3 +244,32 @@ class TorchTensor(AbstractTensor):
         delattr(self, "child")
 
         return tensor
+
+    def attr(self, attr_name):
+        """"""
+        x = self.child
+
+        # check this first
+        if attr_name != "grad" and hasattr(self, attr_name):
+
+            return self.__getattribute__(attr_name)
+
+        elif attr_name == "grad" and self.grad is not None:
+
+            return self.grad
+
+        elif isinstance(x, syft.PointerTensor):
+
+            attr_ptr = syft.PointerTensor(
+                id=x.id,
+                owner=x.owner,
+                location=x.location,
+                id_at_location=x.id_at_location,
+                point_to_attr=attr_name,
+            ).wrap()
+            self.__setattr__(attr_name, attr_ptr)
+            return attr_ptr
+
+        else:
+            # just so it throws an appropriate error
+            return self.__getattribute__(attr_name)

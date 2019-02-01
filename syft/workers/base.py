@@ -255,6 +255,7 @@ class BaseWorker(AbstractWorker):
         :return: a pointer to the result
         """
         command, _self, args = message
+
         # TODO add kwargs
         kwargs = {}
         command = command.decode("utf-8")

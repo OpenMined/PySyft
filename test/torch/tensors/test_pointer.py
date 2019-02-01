@@ -171,3 +171,48 @@ class TestPointer(object):
 
         # check that gradient was properly serde
         assert (t.grad == orig_grad).all()
+
+    def test_method_on_attribute(self):
+
+        self.setUp()
+
+        # create remote object with children
+        x = torch.Tensor([1, 2, 3])
+        x = syft.LoggingTensor().on(x).send(self.bob)
+
+        # call method on data tensor directly
+        x.child.point_to_attr = "child.child"
+        y = x.add(x)
+        assert isinstance(y.get(), torch.Tensor)
+
+        # call method on loggingtensor directly
+        x.child.point_to_attr = "child"
+        y = x.add(x)
+        y = y.get()
+        assert isinstance(y.child, syft.LoggingTensor)
+
+        # call method on zeroth attribute
+        x.child.point_to_attr = ""
+        y = x.add(x)
+        y = y.get()
+
+        assert isinstance(y, torch.Tensor)
+        assert isinstance(y.child, syft.LoggingTensor)
+        assert isinstance(y.child.child, torch.Tensor)
+
+        # call .get() on pinter to attribute (should error)
+        x.child.point_to_attr = "child"
+        try:
+            x.get()
+        except syft.exceptions.CannotRequestTensorAttribute as e:
+            assert True
+
+    def test_grad_pointer(self):
+        """Tests the automatic creation of a .grad pointer when
+        calling .send() on a tensor with requires_grad==True"""
+
+        self.setUp()
+
+        x = torch.tensor([1, 2, 3.0], requires_grad=True).send(self.bob)
+        (x + x).backward(x)
+        assert (x.grad.clone().get() == torch.tensor([2, 4, 6.0])).all()
