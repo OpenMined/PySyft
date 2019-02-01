@@ -139,7 +139,7 @@ class PointerTensor(AbstractTensor):
         )
 
         if self.point_to_attr is not None:
-            out += "::" + str(self.point_to_attr)
+            out += "::" + str(self.point_to_attr).replace(".","::")
         return out
 
     def __repr__(self):
