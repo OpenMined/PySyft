@@ -9,6 +9,8 @@ class AbstractTensor(ABC):
     This is the tensor abstraction.
     """
 
+    is_wrapper = False
+
     def __str__(self) -> str:
         if hasattr(self, "child"):
             return type(self).__name__ + ">" + self.child.__str__()

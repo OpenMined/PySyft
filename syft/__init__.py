@@ -17,8 +17,11 @@ from syft.workers import VirtualWorker
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors import LoggingTensor
+from syft.frameworks.torch.tensors import PointerTensor
 
-__all__ = ["frameworks", "workers", "serde", "TorchHook", "VirtualWorker", "codes", "LoggingTensor"]
+__all__ = ["frameworks", "workers", "serde", "TorchHook",
+           "VirtualWorker", "codes", "LoggingTensor",
+           "PointerTensor"]
 
 local_worker = None
 torch = None

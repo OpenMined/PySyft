@@ -1,7 +1,8 @@
 import syft
+import torch
 from syft.frameworks.torch.tensors.abstract import AbstractTensor
 from syft.codes import MSGTYPE
-from syft.exceptions import RemoteTensorFoundError
+from syft.exceptions import RemoteTensorFoundError, CannotRequestTensorAttribute
 
 
 class PointerTensor(AbstractTensor):
@@ -127,15 +128,19 @@ class PointerTensor(AbstractTensor):
         """
 
         type_name = type(self).__name__
-        return (
+        out = (
             f"["
             f"{type_name} - "
-            f"id:{self.id} "
-            f"owner:{self.owner.id} "
-            f"loc:{self.location.id} "
-            f"id@loc:{self.id_at_location}"
+            # f"id:{self.id} "
+            # f"owner:{self.owner.id} "
+            f"...{str(self.id_at_location)[-3:]}@{self.location.id}"
+            # f"id@loc:"
             f"]"
         )
+
+        if(self.point_to_attr is not None):
+            out += "::" + str(self.point_to_attr)
+        return out
 
     def __repr__(self):
         """Returns the to-string method.
@@ -174,6 +179,11 @@ class PointerTensor(AbstractTensor):
         TODO: add param get_copy which doesn't destroy remote if true.
         """
 
+        if(self.point_to_attr is not None):
+            raise CannotRequestTensorAttribute("You called .get() on a pointer to"
+                                               " a tensor attribute. This is not yet"
+                                               " supported. Call .clone().get() instead.")
+
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
         if self.location == self.owner:
@@ -190,6 +200,13 @@ class PointerTensor(AbstractTensor):
         if deregister_ptr:
             self.owner.de_register_obj(self)
 
+        # TODO: remove these 3 lines
+        # The fact we have to check this means
+        # something else is probably broken
+        if(tensor.is_wrapper):
+            if(isinstance(tensor.child, torch.Tensor)):
+                return tensor.child
+
         return tensor
 
     def __del__(self):
@@ -205,4 +222,7 @@ class PointerTensor(AbstractTensor):
         # first here and not try to call self.owner.anything if self doesn't have
         # .owner anymore.
         if hasattr(self, "owner") and self.garbage_collect_data:
-            self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)
+
+            # attribute pointers are not in charge of GC
+            if(self.point_to_attr is None):
+                self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)

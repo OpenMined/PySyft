@@ -708,14 +708,15 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
 
             point_to_attrs = point_to_attr.decode("utf-8").split(".")
             for attr in point_to_attrs:
+                if(len(attr) > 0):
+                    tensor = getattr(tensor,attr)
 
-                tensor = getattr(tensor,attr)
-
-            tensor = tensor.wrap()
+            if(not tensor.is_wrapper):
+                tensor = tensor.wrap()
 
         else:
             tensor = worker.get_obj(id_at_location)
-
+        print("Tensor:" + str(tensor))
         return tensor
     # Else we keep the same Pointer
     else:
