@@ -49,7 +49,7 @@ class TestPointer(object):
         y = torch.add(x, x).get()
 
         # check answer
-        assert (y == torch.tensor([-2., 4, 6])).all()
+        assert (y == torch.tensor([-2.0, 4, 6])).all()
 
     def test_send_get(self):
         """Test several send get usages"""
