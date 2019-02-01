@@ -98,9 +98,9 @@ class TestLoggingTensor(object):
         x_back = x_ptr.get()
         assert (x_back.child.child == x_tensor).all()
 
-    def test_remote_method_on_log_chain(self):
+    def test_remote_function_on_log_chain(self):
         """
-        Test remote method call on a chain including a log tensor
+        Test remote function call on a chain including a log tensor
         """
         self.setUp()
         # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
@@ -111,9 +111,22 @@ class TestLoggingTensor(object):
         y = y_ptr.get()
         assert (y.child == F.relu(x_tensor)).all()
 
-    def test_remote_function_on_log_chain(self):
+    def test_remote_method_on_log_chain(self):
         """
-        Test remote function call on a chain including a log tensor
+        Test remote method call on a chain including a log tensor
+        """
+        self.setUp()
+        # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
+        x_tensor = torch.Tensor([1, 2, 3])
+        x = LoggingTensor().on(x_tensor)
+        x_ptr = x.send(self.bob)
+        y_ptr = x_ptr.mul(x_ptr)
+        y = y_ptr.get()
+        assert (y.child.child == x_tensor.mul(x_tensor)).all()
+
+    def test_remote_overwritten_method_on_log_chain(self):
+        """
+        Test remote overwritten method call on a chain including a log tensor
         """
         self.setUp()
         # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
