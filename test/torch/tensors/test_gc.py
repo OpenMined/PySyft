@@ -5,180 +5,168 @@ import random
 import torch
 import syft
 from syft.frameworks.torch.tensors import LoggingTensor
+from test.conftest import hook
+from test.conftest import workers
+
+# POINTERS
 
 
-class TestGarbageCollection(object):
-    def setUp(self):
-        hook = syft.TorchHook(torch, verbose=True)
+def test_explicit_garbage_collect_pointer(workers):
+    """Tests whether deleting a PointerTensor garbage collects the remote object too"""
 
-        self.me = hook.local_worker
-        self.me.is_client_worker = True
+    bob = workers["bob"]
 
-        instance_id = str(int(10e10 * random.random()))
-        bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
-        alice = syft.VirtualWorker(id=f"alice{instance_id}", hook=hook, is_client_worker=False)
-        james = syft.VirtualWorker(id=f"james{instance_id}", hook=hook, is_client_worker=False)
+    # create tensor
+    x = torch.Tensor([1, 2])
 
-        bob.add_workers([alice, james])
-        alice.add_workers([bob, james])
-        james.add_workers([bob, alice])
+    # send tensor to bob
+    x_ptr = x.send(bob)
 
-        self.hook = hook
+    # ensure bob has tensor
+    assert x.id in bob._objects
 
-        self.bob = bob
-        self.alice = alice
-        self.james = james
+    # delete pointer to tensor, which should
+    # automatically garbage collect the remote
+    # object on Bob's machine
+    del x_ptr
 
-    # POINTERS
+    # ensure bob's object was garbage collected
+    assert x.id not in bob._objects
 
-    def test_explicit_garbage_collect_pointer(self):
-        """Tests whether deleting a PointerTensor garbage collects the remote object too"""
 
-        self.setUp()
+def test_explicit_garbage_collect_double_pointer(workers):
+    """Tests whether deleting a pointer to a pointer garbage collects
+    the remote object too"""
 
-        # create tensor
-        x = torch.Tensor([1, 2])
+    bob = workers["bob"]
+    alice = workers["alice"]
 
-        # send tensor to bob
-        x_ptr = x.send(self.bob)
+    # create tensor
+    x = torch.Tensor([1, 2])
 
-        # ensure bob has tensor
-        assert x.id in self.bob._objects
+    # send tensor to bob and then pointer to alice
+    x_ptr = x.send(bob)
+    x_ptr_ptr = x_ptr.send(alice)
 
-        # delete pointer to tensor, which should
-        # automatically garbage collect the remote
-        # object on Bob's machine
-        del x_ptr
+    # ensure bob has tensor
+    assert x.id in bob._objects
 
-        # ensure bob's object was garbage collected
-        assert x.id not in self.bob._objects
+    # delete pointer to pointer to tensor, which should automatically
+    # garbage collect the remote object on Bob's machine
+    del x_ptr_ptr
 
-    def test_explicit_garbage_collect_double_pointer(self):
-        """Tests whether deleting a pointer to a pointer garbage collects
-        the remote object too"""
+    # ensure bob's object was garbage collected
+    assert x.id not in bob._objects
 
-        self.setUp()
+    # Chained version
+    x = torch.Tensor([1, 2])
+    x_id = x.id
+    # send tensor to bob and then pointer to alice
+    x = x.send(bob).send(alice)
+    # ensure bob has tensor
+    assert x_id in bob._objects
+    # delete pointer to pointer to tensor
+    del x
+    # ensure bob's object was garbage collected
+    assert x_id not in bob._objects
 
-        # create tensor
-        x = torch.Tensor([1, 2])
 
-        # send tensor to bob and then pointer to alice
-        x_ptr = x.send(self.bob)
-        x_ptr_ptr = x_ptr.send(self.alice)
+def test_implicit_garbage_collection_pointer(workers):
+    """Tests whether GCing a PointerTensor GCs the remote object too."""
 
-        # ensure bob has tensor
-        assert x.id in self.bob._objects
+    bob = workers["bob"]
 
-        # delete pointer to pointer to tensor, which should automatically
-        # garbage collect the remote object on Bob's machine
-        del x_ptr_ptr
+    # create tensor
+    x = torch.Tensor([1, 2])
 
-        # ensure bob's object was garbage collected
-        assert x.id not in self.bob._objects
+    # send tensor to bob
+    x_ptr = x.send(bob)
 
-        # Chained version
-        x = torch.Tensor([1, 2])
-        x_id = x.id
-        # send tensor to bob and then pointer to alice
-        x = x.send(self.bob).send(self.alice)
-        # ensure bob has tensor
-        assert x_id in self.bob._objects
-        # delete pointer to pointer to tensor
-        del x
-        # ensure bob's object was garbage collected
-        assert x_id not in self.bob._objects
+    # ensure bob has tensor
+    assert x.id in bob._objects
 
-    def test_implicit_garbage_collection_pointer(self):
-        """Tests whether GCing a PointerTensor GCs the remote object too."""
+    # delete pointer to tensor, which should
+    # automatically garbage collect the remote
+    # object on Bob's machine
+    x_ptr = "asdf"
 
-        self.setUp()
+    # ensure bob's object was garbage collected
+    assert x.id not in bob._objects
 
-        # create tensor
-        x = torch.Tensor([1, 2])
 
-        # send tensor to bob
-        x_ptr = x.send(self.bob)
+def test_implicit_garbage_collect_double_pointer(workers):
+    """Tests whether GCing a pointer to a pointer garbage collects
+    the remote object too"""
 
-        # ensure bob has tensor
-        assert x.id in self.bob._objects
+    bob = workers["bob"]
+    alice = workers["alice"]
 
-        # delete pointer to tensor, which should
-        # automatically garbage collect the remote
-        # object on Bob's machine
-        x_ptr = "asdf"
+    # create tensor
+    x = torch.Tensor([1, 2])
 
-        # ensure bob's object was garbage collected
-        assert x.id not in self.bob._objects
+    # send tensor to bob and then pointer to alice
+    x_ptr = x.send(bob)
+    x_ptr_ptr = x_ptr.send(alice)
 
-    def test_implicit_garbage_collect_double_pointer(self):
-        """Tests whether GCing a pointer to a pointer garbage collects
-        the remote object too"""
+    # ensure bob has tensor
+    assert x.id in bob._objects
 
-        self.setUp()
+    # delete pointer to pointer to tensor, which should automatically
+    # garbage collect the remote object on Bob's machine
+    x_ptr_ptr = "asdf"
 
-        # create tensor
-        x = torch.Tensor([1, 2])
+    # ensure bob's object was garbage collected
+    assert x.id not in bob._objects
 
-        # send tensor to bob and then pointer to alice
-        x_ptr = x.send(self.bob)
-        x_ptr_ptr = x_ptr.send(self.alice)
+    # Chained version
+    x = torch.Tensor([1, 2])
+    x_id = x.id
+    # send tensor to bob and then pointer to alice
+    x = x.send(bob).send(alice)
+    # ensure bob has tensor
+    assert x_id in bob._objects
+    # delete pointer to pointer to tensor
+    x = "asdf"
+    # ensure bob's object was garbage collected
+    assert x_id not in bob._objects
 
-        # ensure bob has tensor
-        assert x.id in self.bob._objects
 
-        # delete pointer to pointer to tensor, which should automatically
-        # garbage collect the remote object on Bob's machine
-        x_ptr_ptr = "asdf"
+# LOGGING TENSORS
 
-        # ensure bob's object was garbage collected
-        assert x.id not in self.bob._objects
 
-        # Chained version
-        x = torch.Tensor([1, 2])
-        x_id = x.id
-        # send tensor to bob and then pointer to alice
-        x = x.send(self.bob).send(self.alice)
-        # ensure bob has tensor
-        assert x_id in self.bob._objects
-        # delete pointer to pointer to tensor
-        x = "asdf"
-        # ensure bob's object was garbage collected
-        assert x_id not in self.bob._objects
+def test_explicit_garbage_collect_logging_on_pointer(workers):
+    """
+    Tests whether deleting a LoggingTensor on a PointerTensor
+    garbage collects the remote object too
+    """
+    bob = workers["bob"]
 
-    # LOGGING TENSORS
+    x = torch.Tensor([1, 2])
+    x_id = x.id
 
-    def test_explicit_garbage_collect_logging_on_pointer(self):
-        """
-        Tests whether deleting a LoggingTensor on a PointerTensor
-        garbage collects the remote object too
-        """
-        self.setUp()
+    x = x.send(bob)
+    x = LoggingTensor().on(x)
+    assert x_id in bob._objects
 
-        x = torch.Tensor([1, 2])
-        x_id = x.id
+    del x
 
-        x = x.send(self.bob)
-        x = LoggingTensor().on(x)
-        assert x_id in self.bob._objects
+    assert x_id not in bob._objects
 
-        del x
 
-        assert x_id not in self.bob._objects
+def test_implicit_garbage_collect_logging_on_pointer(workers):
+    """
+    Tests whether GCing a LoggingTensor on a PointerTensor
+    garbage collects the remote object too
+    """
+    bob = workers["bob"]
 
-    def test_implicit_garbage_collect_logging_on_pointer(self):
-        """
-        Tests whether GCing a LoggingTensor on a PointerTensor
-        garbage collects the remote object too
-        """
-        self.setUp()
+    x = torch.Tensor([1, 2])
+    x_id = x.id
 
-        x = torch.Tensor([1, 2])
-        x_id = x.id
+    x = x.send(bob)
+    x = LoggingTensor().on(x)
+    assert x_id in bob._objects
 
-        x = x.send(self.bob)
-        x = LoggingTensor().on(x)
-        assert x_id in self.bob._objects
+    x = "open-source"
 
-        x = "open-source"
-
-        assert x_id not in self.bob._objects
+    assert x_id not in bob._objects
