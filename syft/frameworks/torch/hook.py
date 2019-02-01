@@ -311,17 +311,21 @@ class TorchHook:
 
         for module_name, torch_module in torch_modules.items():
             for func in dir(torch_module):
+
                 # Some functions we want to ignore (not override). Such functions have been hard
                 # coded into the torch_attribute exclude (see TorchAttribute class)
                 if func in syft.torch.exclude:
                     continue
 
+                # ignore dunder functions
                 if "__" in func:
                     continue
 
+                # ignore capitalized func values which are Classes not functinos
                 if func[0].isupper():
                     continue
 
+                # ignore hidden functins
                 if func[0] == "_":
                     continue
 
