@@ -1,4 +1,4 @@
-""""Tests relative to verifying the hook process behaves properly."""
+"""Tests relative to verifying the hook process behaves properly."""
 
 import pytest
 import torch
@@ -9,10 +9,10 @@ import random
 import syft
 from syft.exceptions import RemoteTensorFoundError
 from syft.frameworks.torch.tensors import PointerTensor
+from test.conftest import hook
 
 
-def test__init__():
-    hook = syft.TorchHook(torch, verbose=True)
+def test__init__(hook):
     assert torch.torch_hooked
     assert hook.torch.__version__ == torch.__version__
 
@@ -27,9 +27,7 @@ def test_torch_attributes():
     syft.torch._command_guard("torch.add", "torch_modules", get_native=False)
 
 
-def test_worker_registration():
-    hook = syft.TorchHook(torch, verbose=True)
-
+def test_worker_registration(hook):
     me = hook.local_worker
     boris = syft.VirtualWorker(id="boris", hook=hook, is_client_worker=False)
     me.add_workers([boris])
@@ -39,9 +37,7 @@ def test_worker_registration():
     assert boris == worker
 
 
-def test_pointer_found_exception():
-    hook = syft.TorchHook(torch, verbose=True)
-
+def test_pointer_found_exception(hook):
     me = hook.local_worker
 
     instance_id = str(int(10e10 * random.random()))
@@ -72,9 +68,7 @@ def test_build_get_child_type():
 
 
 @pytest.mark.parametrize("attr", ["abs"])
-def test_get_pointer_unary_method(attr):
-    hook = syft.TorchHook(torch, verbose=True)
-
+def test_get_pointer_unary_method(attr, hook):
     instance_id = str(int(10e10 * random.random()))
 
     bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
@@ -89,9 +83,7 @@ def test_get_pointer_unary_method(attr):
 
 
 @pytest.mark.parametrize("attr", ["add", "mul"])
-def test_get_pointer_binary_method(attr):
-    hook = syft.TorchHook(torch, verbose=True)
-
+def test_get_pointer_binary_method(attr, hook):
     instance_id = str(int(10e10 * random.random()))
 
     bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
@@ -107,9 +99,7 @@ def test_get_pointer_binary_method(attr):
 
 
 @pytest.mark.parametrize("attr", ["abs"])
-def test_get_pointer_to_pointer_unary_method(attr):
-    hook = syft.TorchHook(torch, verbose=True)
-
+def test_get_pointer_to_pointer_unary_method(attr, hook):
     instance_id = str(int(10e10 * random.random()))
 
     bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
@@ -126,9 +116,7 @@ def test_get_pointer_to_pointer_unary_method(attr):
 
 
 @pytest.mark.parametrize("attr", ["add", "mul"])
-def test_get_pointer_to_pointer_binary_method(attr):
-    hook = syft.TorchHook(torch, verbose=True)
-
+def test_get_pointer_to_pointer_binary_method(attr, hook):
     instance_id = str(int(10e10 * random.random()))
 
     bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
@@ -145,9 +133,7 @@ def test_get_pointer_to_pointer_binary_method(attr):
 
 
 @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
-def test_hook_module_functional(attr):
-    hook = syft.TorchHook(torch, verbose=True)
-
+def test_hook_module_functional(attr, hook):
     instance_id = str(int(10e10 * random.random()))
 
     bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
@@ -172,9 +158,7 @@ def test_functional_same_in_both_imports(attr):
     assert (fattr(x) == tattr(x)).all()
 
 
-def test_hook_tensor():
-    hook = syft.TorchHook(torch, verbose=True)
-
+def test_hook_tensor(hook):
     instance_id = str(int(10e10 * random.random()))
 
     bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
@@ -223,10 +207,8 @@ def test_parameter_hooking():
     assert out[0] == m.some_params
 
 
-def test_torch_module_hook():
+def test_torch_module_hook(hook):
     """Tests sending and getting back torch nn module like nn.Linear"""
-
-    hook = syft.TorchHook(torch, verbose=True)
 
     instance_id = str(int(10e10 * random.random()))
 
