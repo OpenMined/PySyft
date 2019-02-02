@@ -17,10 +17,10 @@ type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     LoggingTensor: one,
+    FixedPrecisionTensor: one,
     PointerTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
-    FixedPrecisionTensor: one,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
@@ -31,8 +31,8 @@ forward_func = {
     else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
     torch.nn.Parameter: lambda i: i.child,
     LoggingTensor: lambda i: i.child,
-    "my_syft_tensor_type": lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
+    "my_syft_tensor_type": lambda i: i.child,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
