@@ -44,18 +44,18 @@ class TorchTensor(AbstractTensor):
 
     @property
     def id(self):
-        if (self.is_wrapper):
+        if self.is_wrapper:
             return self.child.id
         else:
             try:
                 return self._id
             except:
-                self._id =  int(10e10 * random.random())
+                self._id = int(10e10 * random.random())
                 return self._id
 
     @id.setter
     def id(self, new_id):
-        if (self.is_wrapper):
+        if self.is_wrapper:
             self.child.id = new_id
         else:
             self._id = new_id

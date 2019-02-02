@@ -146,13 +146,13 @@ def hook_response(attr, response, wrap_type, new_self=None):
     """
 
     # inline methods should just return new_self
-    if("__i" == attr[0:3]):
+    if "__i" == attr[0:3]:
         return new_self
 
     # TODO: Why do we need to cast it in a tuple? this is a (small) time waste
     response_is_tuple = isinstance(response, tuple)
 
-    if(wrap_type == torch.nn.Parameter):
+    if wrap_type == torch.nn.Parameter:
         wrap_type = torch.Tensor
 
     # Add an artificial tuple

@@ -226,7 +226,6 @@ class TestPointer(object):
         y = (x + x).sum()
         y.backward()
 
-
         assert (bob._objects[x.id_at_location].grad == torch.tensor([2, 2, 2.0])).all()
 
     def test_move(self):

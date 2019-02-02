@@ -445,7 +445,6 @@ class TorchHook:
                     attr, response, wrap_type=type(self), new_self=self
                 )
 
-
             return response
 
         return overloaded_attr

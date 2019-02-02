@@ -5,6 +5,7 @@ class MSGTYPE(object):
     OBJ_DEL = 4
     EXCEPTION = 5
 
+
 code2MSGTYPE = {}
 code2MSGTYPE[1] = "CMD"
 code2MSGTYPE[2] = "OBJ"
