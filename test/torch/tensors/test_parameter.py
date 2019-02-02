@@ -46,7 +46,7 @@ class TestParameter(object):
         """
         self.setUp()
         tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
-        param = Parameter(data=tensor)
+        param = Parameter(data=tensor.clone())
         param_ptr = param.send(self.bob)
         param_back = param_ptr.get()
         assert (param_back.data == tensor).all()
@@ -56,7 +56,7 @@ class TestParameter(object):
         """
         self.setUp()
         tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
-        param = Parameter(data=tensor)
+        param = Parameter(data=tensor.clone())
         param_ptr = param.send(self.bob)
         param_double_ptr = param_ptr + param_ptr
         param_double_back = param_double_ptr.get()
@@ -70,7 +70,7 @@ class TestParameter(object):
 
     def test_remote_param_in_nn_module_linear(self):
         self.setUp()
-        model = nn.Linear(2, 1)
+        model = nn.Linear(2, 1, bias=False)
         tensor = torch.tensor([1.0, -1.0])
         model_ptr = model.send(self.bob)
         tensor_ptr = tensor.send(self.bob)

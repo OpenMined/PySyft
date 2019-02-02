@@ -242,6 +242,7 @@ class TorchHook:
                 p.child = data
             else:
                 p = torch.Tensor._make_subclass(cls, data, requires_grad)
+
             return p
 
         torch.nn.Parameter.__new__ = hooked__new__
@@ -264,21 +265,25 @@ class TorchHook:
 
         @property
         def data(self):
+
             if hasattr(self, "child"):
-                return self.child
+                to_return = self.child.attr("data")
             else:
-                return self.native_param_data
+                to_return = self.native_param_data
+
+            return to_return
 
         @data.setter
         def data(self, new_data):
+
             # If data is not a pure torch tensor you need to store the chain in a
             # specific place otherwise it will get deleted
-            if not isinstance(data, torch.Tensor) or hasattr(data, "child"):
-                self.child = new_data
+            if not isinstance(new_data, torch.Tensor) or hasattr(new_data, "child"):
+                self.child = new_data  # .wrap()
             else:
                 if hasattr(self, "child"):
                     del self.child
-                self.native_param_data = new_data
+                self.native_param_data = new_data  # .wrap()
             return self
 
         torch.nn.Parameter.data = data
@@ -308,6 +313,7 @@ class TorchHook:
                 setattr(torch_module, func, new_func)
 
         torch_modules = syft.torch.torch_modules
+        # torch_modules = {"torch.nn.functional": torch.nn.functional}
 
         for module_name, torch_module in torch_modules.items():
             for func in dir(torch_module):
@@ -394,7 +400,7 @@ class TorchHook:
         their child attribute if they exist
         If so, forward this method with the new args and new self, get response
         and "rebuild" the torch tensor wrapper upon all tensors found
-        If not, just execute the native torch method
+        If not, just execute the native torch methodn
         :param attr: the method to hook
         :return: the hooked method
         """
@@ -680,6 +686,7 @@ class TorchHook:
 
         def module_send_(nn_self, dest):
             """Overloads torch.nn instances so that they could be sent to other workers"""
+
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
