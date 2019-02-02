@@ -128,7 +128,7 @@ class PointerTensor(AbstractTensor):
         """
 
         type_name = type(self).__name__
-        out = f"[" f"{type_name} - " f"...{str(self.id_at_location)[-3:]}@{self.location.id}" f"]"
+        out = f"[" f"{type_name} - " f"{str(self.id_at_location)}@{self.location.id}" f"]"
 
         if self.point_to_attr is not None:
             out += "::" + str(self.point_to_attr).replace(".", "::")
@@ -220,3 +220,25 @@ class PointerTensor(AbstractTensor):
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
                 self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)
+
+    @property
+    def grad(self):
+        if not hasattr(self, "_grad"):
+            self._grad = self.attr("grad")
+        return self._grad
+
+    @grad.setter
+    def grad(self, new_grad):
+        self._grad = new_grad
+
+    def attr(self, attr_name):
+
+        attr_ptr = syft.PointerTensor(
+            id=self.id,
+            owner=self.owner,
+            location=self.location,
+            id_at_location=self.id_at_location,
+            point_to_attr=attr_name,
+        ).wrap()
+        self.__setattr__(attr_name, attr_ptr)
+        return attr_ptr

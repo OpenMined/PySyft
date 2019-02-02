@@ -1,5 +1,6 @@
 import random
 import weakref
+import torch
 
 import syft
 from syft.frameworks.torch.tensors import AbstractTensor
@@ -109,6 +110,7 @@ class TorchTensor(AbstractTensor):
         # p2 is not GCed, GCing p1 shouldn't delete the remote tensor, but if you
         # want to do so, as p2 is not GCed, you can still do `del p2`.
         # This allows to chain multiple .send().send() calls.
+
         if hasattr(self, "child") and isinstance(self.child, PointerTensor):
             self.child.garbage_collect_data = False
 
@@ -116,7 +118,10 @@ class TorchTensor(AbstractTensor):
 
         # The last pointer should control remote GC, not the previous self.ptr
         if hasattr(self, "ptr"):
-            self.ptr().garbage_collect_data = False
+            if self.ptr is not None:
+                ptr_ = self.ptr()
+                if ptr_ is not None:
+                    ptr_.garbage_collect_data = False
 
         # we need to cache this weak reference to the pointer so that
         # if this method gets called multiple times we can simply re-use
@@ -124,15 +129,18 @@ class TorchTensor(AbstractTensor):
         self.ptr = weakref.ref(ptr)
 
         if isinstance(self, syft.hook.torch.nn.Parameter):
+            self.data.set_()
             self.data = ptr
-            return self
+            output = self
 
-        ptr = ptr.wrap()
+        else:
+            output = ptr.wrap()
 
         if self.requires_grad:
-            grad = ptr.attr("grad")
 
-            ptr.grad = grad
+            grad = output.attr("grad")
+
+            output.grad = grad
 
             # Because of the way PyTorch works, .grad is prone to
             # create entirely new Python objects for the tensor, which
@@ -140,9 +148,9 @@ class TorchTensor(AbstractTensor):
             # But, if we keep a backup reference around, PyTorch seems
             # to re-use it, which means .grad keeps the attributes we
             # want it to keep. #HackAlert
-            ptr.backup_grad = grad
+            output.backup_grad = grad
 
-        return ptr
+        return output
 
     def create_pointer(
         self,
@@ -238,38 +246,32 @@ class TorchTensor(AbstractTensor):
         """Requests the tensor/chain being pointed to, be serialized and return
         """
         # Transfer the get() to the child attribute which is a pointer
+
         tensor = self.child.get()
 
         # Clean the wrapper
         delattr(self, "child")
 
+        # Parameters use .data instead of children
+        # so we need to have special support to make sure
+        # that Parmaeters operate inline (because they're
+        # typically being managed inside of a model/optimizer
+        # so not using the same wrapper can cause the model/
+        # optimizer to lose track of where the actual weights
+        # are.
+        if isinstance(self, torch.nn.Parameter):
+            self.data = tensor.data
+            self.grad = tensor.grad
+            return self
+
         return tensor
 
     def attr(self, attr_name):
         """"""
-        x = self.child
 
-        # check this first
-        if attr_name != "grad" and hasattr(self, attr_name):
+        attr_val = self.child.attr(attr_name)
 
-            return self.__getattribute__(attr_name)
+        if attr_name == "grad":
+            self.grad = attr_val
 
-        elif attr_name == "grad" and self.grad is not None:
-
-            return self.grad
-
-        elif isinstance(x, syft.PointerTensor):
-
-            attr_ptr = syft.PointerTensor(
-                id=x.id,
-                owner=x.owner,
-                location=x.location,
-                id_at_location=x.id_at_location,
-                point_to_attr=attr_name,
-            ).wrap()
-            self.__setattr__(attr_name, attr_ptr)
-            return attr_ptr
-
-        else:
-            # just so it throws an appropriate error
-            return self.__getattribute__(attr_name)
+        return attr_val

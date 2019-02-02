@@ -19,6 +19,9 @@ from syft.workers import VirtualWorker
 from syft.frameworks.torch.tensors import LoggingTensor
 from syft.frameworks.torch.tensors import PointerTensor
 
+# import modules
+from syft.frameworks.torch import optim
+
 __all__ = [
     "frameworks",
     "workers",
@@ -28,6 +31,7 @@ __all__ = [
     "codes",
     "LoggingTensor",
     "PointerTensor",
+    "optim",
 ]
 
 local_worker = None

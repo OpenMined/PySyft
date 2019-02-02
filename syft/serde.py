@@ -298,7 +298,16 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
     """
     tensor = param.data
     tensor_ser = _simplify_torch_tensor(tensor)
-    return (param.id, tensor_ser, param.requires_grad)
+
+    grad = param.grad
+
+    if grad is not None:
+        grad_ser = _simplify_torch_tensor(grad)
+
+    else:
+        grad_ser = None
+
+    return (param.id, tensor_ser, param.requires_grad, grad_ser)
 
 
 def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch.nn.Parameter:
@@ -314,12 +323,18 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
         torch.Parameter: a torch Parameter that was serialized
     """
 
-    param_id, tensor_ser, requires_grad = param_tuple
+    param_id, tensor_ser, requires_grad, grad_ser = param_tuple
 
     tensor = _detail_torch_tensor(worker, tensor_ser)
 
+    if grad_ser is not None:
+        grad = _detail_torch_tensor(worker, grad_ser)
+    else:
+        grad = None
+
     param = torch.nn.Parameter(tensor, requires_grad)
     param.id = param_id
+    param.grad = grad
 
     return param
 
@@ -703,19 +718,18 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     # If the pointer received is pointing at the current worker, we load the tensor instead
     if worker_id == worker.id:
 
-        if point_to_attr is not None:
-            tensor = worker.get_obj(id_at_location)
+        tensor = worker.get_obj(id_at_location)
+
+        if point_to_attr is not None and tensor is not None:
 
             point_to_attrs = point_to_attr.decode("utf-8").split(".")
             for attr in point_to_attrs:
                 if len(attr) > 0:
                     tensor = getattr(tensor, attr)
 
-            if not tensor.is_wrapper:
-                tensor = tensor.wrap()
-
-        else:
-            tensor = worker.get_obj(id_at_location)
+            if tensor is not None:
+                if not tensor.is_wrapper:
+                    tensor = tensor.wrap()
 
         return tensor
     # Else we keep the same Pointer
