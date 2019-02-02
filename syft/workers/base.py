@@ -170,8 +170,6 @@ class BaseWorker(AbstractWorker):
         # Step 0: deserialize message
         (msg_type, contents) = serde.deserialize(bin_message, worker=self)
 
-        # print("routing:" + str((sy.codes.code2MSGTYPE[msg_type], contents)))
-
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
