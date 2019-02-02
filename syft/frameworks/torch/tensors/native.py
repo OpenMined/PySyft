@@ -311,3 +311,12 @@ class TorchTensor(AbstractTensor):
             self.grad = attr_val
 
         return attr_val
+
+    def enc_fix_prec(self):
+        return self.child.fix_precision()
+
+    def float_prec(self):
+        return self.child.float_precision()
+
+    def fix_prec(self):
+        return syft.frameworks.torch.tensors.FixedPrecisionTensor().on(self).enc_fix_prec().wrap()

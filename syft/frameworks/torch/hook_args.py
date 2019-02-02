@@ -4,6 +4,7 @@ from syft.exceptions import PureTorchTensorFoundError
 from .tensors import PointerTensor
 from .tensors import LoggingTensor
 from .tensors import TorchTensor
+from .tensors import FixedPrecisionTensor
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -19,6 +20,7 @@ type_rule = {
     PointerTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
+    FixedPrecisionTensor: one,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
@@ -30,6 +32,7 @@ forward_func = {
     torch.nn.Parameter: lambda i: i.child,
     LoggingTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
+    FixedPrecisionTensor: lambda i: i.child,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
@@ -39,6 +42,7 @@ backward_func = {
     torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
+    FixedPrecisionTensor: lambda i: FixedPrecisionTensor().on(i, wrap=False),
     "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i, wrap=False)",
 }
 
