@@ -235,6 +235,7 @@ class TorchHook:
         def hooked__new__(cls, data=None, requires_grad=True):
             if data is None:
                 data = torch.Tensor()
+
             # If data is not a pure torch tensor you need to store the chain in a
             # specific place otherwise it will get deleted
             if not isinstance(data, torch.Tensor) or hasattr(data, "child"):
@@ -269,7 +270,16 @@ class TorchHook:
             if hasattr(self, "child"):
                 to_return = self.child.attr("data")
             else:
+
                 to_return = self.native_param_data
+
+                # good to ensure that the ID stays consistent
+                # not 100% this is required but it's at least
+                # good practice
+                try:
+                    to_return.id = self.data_id
+                except:
+                    self.data_id = to_return.id
 
             return to_return
 
@@ -361,6 +371,7 @@ class TorchHook:
             # Send the command
             command = (attr, self, args)
             response = owner.send_command(location, command)
+
             return response
 
         return overloaded_attr
@@ -390,6 +401,7 @@ class TorchHook:
             response = syft.frameworks.torch.hook_args.hook_response(
                 attr, response, wrap_type=type(self)
             )
+
             return response
 
         return overloaded_attr
@@ -410,6 +422,7 @@ class TorchHook:
             """
             Operate the hooking
             """
+
             if not hasattr(self, "child"):  # means that it's not a wrapper
                 cmd = getattr(self, f"native_{attr}")
                 # Run the native function with the new args
@@ -426,9 +439,10 @@ class TorchHook:
                 # Send the new command to the appropriate class and get the response
                 cmd = getattr(new_self, attr)
                 response = cmd(*new_args, **kwargs)
+
                 # Put back the wrappers where needed
                 response = syft.frameworks.torch.hook_args.hook_response(
-                    attr, response, wrap_type=type(self)
+                    attr, response, wrap_type=type(self), new_self=self
                 )
 
             return response
@@ -696,6 +710,14 @@ class TorchHook:
             return nn_self
 
         self.torch.nn.Module.send = module_send_
+
+        def module_move_(nn_self, destination):
+
+            params = list(nn_self.parameters())
+            for p in params:
+                p.child.wrap().move(destination)
+
+        self.torch.nn.Module.move = module_move_
 
         # def module_end_get_(nn_self):
         #     """Overloads send to remote for torch.nn.Module."""

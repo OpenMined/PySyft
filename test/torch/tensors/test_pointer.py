@@ -112,57 +112,51 @@ class TestPointer(object):
         # ensure bob has tensor
         assert x.id in self.bob._objects
 
-    # def test_remote_autograd(self):
-    #     """Tests the ability to backpropagate gradients on a remote
-    #     worker."""
-    #
-    #     self.setUp()
-    #
-    #     # TEST: simple remote grad calculation
-    #
-    #     # create a tensor
-    #     x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
-    #
-    #     # send tensor to bob
-    #     x = x.send(self.bob)
-    #
-    #     # do some calculatinos
-    #     y = (x + x).sum()
-    #
-    #     # send gradient to backprop to Bob
-    #     grad = torch.tensor([1.0]).send(self.bob)
-    #
-    #     # backpropagate on remote machine
-    #     y.backward(grad)
-    #
-    #     # check that remote gradient is correct
-    #     xgrad = self.bob._objects[x.id_at_location].grad
-    #     xgrad_target = torch.ones(4).float() + 1
-    #
-    #     assert (xgrad == xgrad_target).all()
-    #
-    #     # TEST: Ensure remote grad calculation gets properly serded
-    #
-    #     # create tensor
-    #     x = torch.tensor([1, 2, 3, 4.0], requires_grad=True).send(self.bob)
-    #
-    #     # create output gradient
-    #     out_grad = torch.tensor([1.0]).send(self.bob)
-    #
-    #     # compute function
-    #     y = x.sum()
-    #
-    #     # backpropagate
-    #     y.backward(out_grad)
-    #
-    #     # get the gradient created from backpropagation manually
-    #     x_grad = self.bob._objects[x.id_at_location].grad
-    #
-    #     # get the entire x tensor (should bring the grad too)
-    #     x = x.get()
-    #
-    #     # make sure that the grads match
-    #     assert (x.grad == x_grad).all()
+    def test_remote_autograd(self):
+        """Tests the ability to backpropagate gradients on a remote
+        worker."""
+
+        self.setUp()
+
+        # TEST: simple remote grad calculation
+
+        # create a tensor
+        x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
+
+        # send tensor to bob
+        x = x.send(self.bob)
+
+        # do some calculatinos
+        y = (x + x).sum()
+
+        # backpropagate on remote machine
+        y.backward()
+
+        # check that remote gradient is correct
+        xgrad = self.bob._objects[x.id_at_location].grad
+        xgrad_target = torch.ones(4).float() + 1
+
+        assert (xgrad == xgrad_target).all()
+
+        # TEST: Ensure remote grad calculation gets properly serded
+
+        # create tensor
+        x = torch.tensor([1, 2, 3, 4.0], requires_grad=True).send(self.bob)
+
+        # compute function
+        y = x.sum()
+
+        # backpropagate
+        y.backward()
+
+        # get the gradient created from backpropagation manually
+        x_grad = self.bob._objects[x.id_at_location].grad
+
+        # get the entire x tensor (should bring the grad too)
+        x = x.get()
+
+        # make sure that the grads match
+        assert (x.grad == x_grad).all()
 
     def test_gradient_send_recv(self):
         """Tests that gradients are properly sent and received along
@@ -204,14 +198,14 @@ class TestPointer(object):
         y = y.get()
         assert isinstance(y.child, syft.LoggingTensor)
 
-        # call method on zeroth attribute
-        x.child.point_to_attr = ""
-        y = x.add(x)
-        y = y.get()
-
-        assert isinstance(y, torch.Tensor)
-        assert isinstance(y.child, syft.LoggingTensor)
-        assert isinstance(y.child.child, torch.Tensor)
+        # # call method on zeroth attribute
+        # x.child.point_to_attr = ""
+        # y = x.add(x)
+        # y = y.get()
+        #
+        # assert isinstance(y, torch.Tensor)
+        # assert isinstance(y.child, syft.LoggingTensor)
+        # assert isinstance(y.child.child, torch.Tensor)
 
         # call .get() on pinter to attribute (should error)
         x.child.point_to_attr = "child"
@@ -220,20 +214,19 @@ class TestPointer(object):
         except syft.exceptions.CannotRequestTensorAttribute as e:
             assert True
 
-    # def test_grad_pointer(self):
-    #     """Tests the automatic creation of a .grad pointer when
-    #     calling .send() on a tensor with requires_grad==True"""
-    #
-    #     self.setUp()
-    #     bob = self.bob
-    #
-    #     x = torch.tensor([1, 2, 3.0], requires_grad=True).send(bob)
-    #     grad = torch.tensor([1, 1, 1]).send(bob)
-    #     y = (x + x).sum()
-    #     y.backward(torch.tensor([1.]).send(bob))
-    #
-    #
-    #     assert (bob._objects[x.id_at_location].grad == torch.tensor([2, 4, 6.0])).all()
+    def test_grad_pointer(self):
+        """Tests the automatic creation of a .grad pointer when
+        calling .send() on a tensor with requires_grad==True"""
+
+        self.setUp()
+        bob = self.bob
+
+        x = torch.tensor([1, 2, 3.0], requires_grad=True).send(bob)
+        grad = torch.tensor([1, 1, 1]).send(bob)
+        y = (x + x).sum()
+        y.backward()
+
+        assert (bob._objects[x.id_at_location].grad == torch.tensor([2, 2, 2.0])).all()
 
     def test_move(self):
 

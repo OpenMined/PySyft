@@ -9,7 +9,7 @@ class SGD:
 
         # TODO: all all the SGD features from PyTorch's SGD
         for p in self.params:
-            p.data -= p.grad * self.lr
+            p.data.sub_(p.grad * self.lr)
 
     def zero_grad(self):
         """We need to use a try/catch because our pointers
