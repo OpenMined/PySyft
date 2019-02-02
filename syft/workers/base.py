@@ -170,6 +170,8 @@ class BaseWorker(AbstractWorker):
         # Step 0: deserialize message
         (msg_type, contents) = serde.deserialize(bin_message, worker=self)
 
+        # print("routing:" + str((sy.codes.code2MSGTYPE[msg_type], contents)))
+
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
@@ -254,6 +256,7 @@ class BaseWorker(AbstractWorker):
         :param message: the message specifying the command and the args
         :return: a pointer to the result
         """
+
         command, _self, args = message
 
         # TODO add kwargs
@@ -286,6 +289,11 @@ class BaseWorker(AbstractWorker):
             tensor.owner = self
 
             # TODO: Handle when the response is not simply a tensor
+            # don't re-register tensors if the operation was inline
+            # not only would this be inefficient, but it can cause
+            # serious issues later on
+            # if(_self is not None):
+            #     if(tensor.id != _self.id):
             self.register_obj(tensor)
 
             pointer = tensor.create_pointer(
@@ -296,6 +304,7 @@ class BaseWorker(AbstractWorker):
                 ptr_id=tensor.id,
                 garbage_collect_data=False,
             )
+
             return pointer
 
     def send_command(self, recipient, message):
@@ -307,6 +316,7 @@ class BaseWorker(AbstractWorker):
         """
 
         response = self.send_msg(MSGTYPE.CMD, message, location=recipient)
+
         return response
 
     def set_obj(self, obj):
@@ -563,3 +573,6 @@ class BaseWorker(AbstractWorker):
     def __repr__(self):
         """Returns the official string representation of BaseWorker."""
         return self.__str__()
+
+    def __getitem__(self, idx):
+        return self._objects[idx]
