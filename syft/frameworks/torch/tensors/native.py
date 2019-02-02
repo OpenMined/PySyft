@@ -242,6 +242,14 @@ class TorchTensor(AbstractTensor):
 
         return ptr
 
+    def mid_get(self):
+        print("mid get")
+        child_id = self.child.id
+        tensor = self.child.get()
+        del self.owner._objects[tensor.id]
+        self.owner._objects[child_id] = tensor
+
+
     def get(self, deregister_ptr: bool = True):
         """Requests the tensor/chain being pointed to, be serialized and return
         """
@@ -265,6 +273,14 @@ class TorchTensor(AbstractTensor):
             return self
 
         return tensor
+
+    def move(self, location):
+        ptr = self.send(location)
+        self.owner.send_command(message=("mid_get", ptr, ()),
+                                       recipient=location)
+        self.child.location = location
+        self.child = ptr.child
+        return self
 
     def attr(self, attr_name):
         """"""

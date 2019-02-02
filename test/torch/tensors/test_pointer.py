@@ -234,3 +234,17 @@ class TestPointer(object):
     #
     #
     #     assert (bob._objects[x.id_at_location].grad == torch.tensor([2, 4, 6.0])).all()
+
+    def test_move(self):
+
+        self.setUp()
+
+        x = torch.tensor([1, 2, 3, 4, 5]).send(self.bob)
+
+        assert x.id_at_location in self.bob._objects
+        assert x.id_at_location not in self.alice._objects
+
+        x.move(self.alice)
+
+        assert x.id_at_location not in self.bob._objects
+        assert x.id_at_location in self.alice._objects
