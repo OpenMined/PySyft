@@ -86,7 +86,10 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @hook
     def add(self, _self, *args, **kwargs):
-        print("Log add")
+        """Add two fixed precision tensors together.
+        
+        TODO: fix!
+        """
         response = getattr(_self, "add")(*args, **kwargs)
 
         return response
