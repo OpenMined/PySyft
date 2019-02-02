@@ -2,10 +2,12 @@
 
 import syft as sy
 import torch
+
 hook = sy.TorchHook(torch)
 from torch import nn
 from syft import optim
 import random
+
 
 class TestFederatedLearning(object):
     def setUp(self):
@@ -30,8 +32,8 @@ class TestFederatedLearning(object):
         self.james = james
 
         # A Toy Dataset
-        data = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.]], requires_grad=True)
-        target = torch.tensor([[0], [0], [1], [1.]], requires_grad=True)
+        data = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]], requires_grad=True)
+        target = torch.tensor([[0], [0], [1], [1.0]], requires_grad=True)
 
         # get pointers to training data on each worker by
         # sending some training data to bob and alice
@@ -87,4 +89,3 @@ class TestFederatedLearning(object):
 
                 # 6) print our progress
                 print(loss.get())  # NEW) slight edit... need to call .get() on loss
-
