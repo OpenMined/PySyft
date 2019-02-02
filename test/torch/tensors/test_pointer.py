@@ -77,54 +77,54 @@ def test_repeated_send(workers):
     assert x.id in workers["bob"]._objects
 
 
-def test_remote_autograd(workers):
-    """Tests the ability to backpropagate gradients on a remote
-    worker."""
-
-    # TEST: simple remote grad calculation
-
-    # create a tensor
-    x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
-
-    # send tensor to bob
-    x = x.send(workers["bob"])
-
-    # do some calculation
-    y = (x + x).sum()
-
-    # send gradient to backprop to Bob
-    grad = torch.tensor([1.0]).send(workers["bob"])
-
-    # backpropagate on remote machine
-    y.backward(grad)
-
-    # check that remote gradient is correct
-    xgrad = workers["bob"]._objects[x.id_at_location].grad
-    xgrad_target = torch.ones(4).float() + 1
-    assert (xgrad == xgrad_target).all()
-
-    # TEST: Ensure remote grad calculation gets properly serded
-
-    # create tensor
-    x = torch.tensor([1, 2, 3, 4.0], requires_grad=True).send(workers["bob"])
-
-    # create output gradient
-    out_grad = torch.tensor([1.0]).send(workers["bob"])
-
-    # compute function
-    y = x.sum()
-
-    # backpropagate
-    y.backward(out_grad)
-
-    # get the gradient created from backpropagation manually
-    x_grad = workers["bob"]._objects[x.id_at_location].grad
-
-    # get the entire x tensor (should bring the grad too)
-    x = x.get()
-
-    # make sure that the grads match
-    assert (x.grad == x_grad).all()
+# def test_remote_autograd(workers):
+#     """Tests the ability to backpropagate gradients on a remote
+#     worker."""
+#
+#     # TEST: simple remote grad calculation
+#
+#     # create a tensor
+#     x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
+#
+#     # send tensor to bob
+#     x = x.send(workers["bob"])
+#
+#     # do some calculation
+#     y = (x + x).sum()
+#
+#     # send gradient to backprop to Bob
+#     grad = torch.tensor([1.0]).send(workers["bob"])
+#
+#     # backpropagate on remote machine
+#     y.backward(grad)
+#
+#     # check that remote gradient is correct
+#     xgrad = workers["bob"]._objects[x.id_at_location].grad
+#     xgrad_target = torch.ones(4).float() + 1
+#     assert (xgrad == xgrad_target).all()
+#
+#     # TEST: Ensure remote grad calculation gets properly serded
+#
+#     # create tensor
+#     x = torch.tensor([1, 2, 3, 4.0], requires_grad=True).send(workers["bob"])
+#
+#     # create output gradient
+#     out_grad = torch.tensor([1.0]).send(workers["bob"])
+#
+#     # compute function
+#     y = x.sum()
+#
+#     # backpropagate
+#     y.backward(out_grad)
+#
+#     # get the gradient created from backpropagation manually
+#     x_grad = workers["bob"]._objects[x.id_at_location].grad
+#
+#     # get the entire x tensor (should bring the grad too)
+#     x = x.get()
+#
+#     # make sure that the grads match
+#     assert (x.grad == x_grad).all()
 
 
 def test_gradient_send_recv(workers):

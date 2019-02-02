@@ -20,7 +20,7 @@ def test_param_on_pointer(workers):
 
 def test_param_send_get(workers):
     tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
-    param = Parameter(data=tensor)
+    param = Parameter(data=tensor.clone())
     param_ptr = param.send(workers["bob"])
     param_back = param_ptr.get()
 
@@ -29,7 +29,7 @@ def test_param_send_get(workers):
 
 def test_param_remote_binary_method(workers):
     tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
-    param = Parameter(data=tensor)
+    param = Parameter(data=tensor.clone())
     param_ptr = param.send(workers["bob"])
     param_double_ptr = param_ptr + param_ptr
     param_double_back = param_double_ptr.get()
@@ -45,7 +45,7 @@ def test_local_param_in_nn_module_linear():
 
 
 def test_remote_param_in_nn_module_linear(workers):
-    model = nn.Linear(2, 1)
+    model = nn.Linear(2, 1, bias=False)
     tensor = torch.tensor([1.0, -1.0])
     model_ptr = model.send(workers["bob"])
     tensor_ptr = tensor.send(workers["bob"])
