@@ -243,7 +243,8 @@ class TorchTensor(AbstractTensor):
         return ptr
 
     def mid_get(self):
-        
+        """This method calls .get() on a child pointer and correctly registers the results"""
+
         child_id = self.child.id
         tensor = self.child.get()
         del self.owner._objects[tensor.id]
