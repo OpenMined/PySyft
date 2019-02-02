@@ -243,7 +243,7 @@ class TorchTensor(AbstractTensor):
         return ptr
 
     def mid_get(self):
-        print("mid get")
+        
         child_id = self.child.id
         tensor = self.child.get()
         del self.owner._objects[tensor.id]
