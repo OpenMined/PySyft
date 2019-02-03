@@ -9,3 +9,4 @@ sphinx_rtd_theme
 torch==1.0.0
 websockets
 zstd
+sklearn

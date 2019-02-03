@@ -58,6 +58,7 @@ class TorchAttributes(object):
             "storage_offset",
             "size",
             "stride",
+            "from_numpy",
             "set_",
             "get_default_dtype",
             "get_device",
