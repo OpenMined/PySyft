@@ -32,3 +32,11 @@ def workers(hook):
     output["james"] = james
 
     return output
+
+@pytest.fixture(scope="session", autouse=True)
+def test_sandbox(hook):
+    syft.create_sandbox(globals())
+
+    # check to make sure global variable gets set for alice
+    assert alice == alice
+    assert isinstance(alice, syft.VirtualWorker)
