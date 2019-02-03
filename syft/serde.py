@@ -698,7 +698,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
         data = _simplify_pointer_tensor(ptr)
     """
 
-    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr)
+    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr, ptr.shape)
 
     # a more general but slower/more verbose option
 
@@ -727,6 +727,10 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     id_at_location = tensor_tuple[1]
     worker_id = tensor_tuple[2].decode("utf-8")
     point_to_attr = tensor_tuple[3]
+    shape = tensor_tuple[4]
+
+    if(shape is not None):
+        shape = torch.Size(shape)
 
     # If the pointer received is pointing at the current worker, we load the tensor instead
     if worker_id == worker.id:
@@ -741,6 +745,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
                     tensor = getattr(tensor, attr)
 
             if tensor is not None:
+
                 if not tensor.is_wrapper and not isinstance(tensor, torch.Tensor):
 
                     # if the tensor is a wrapper then it doesn't need to be wrapped
@@ -756,7 +761,11 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     else:
         location = syft.torch.hook.local_worker.get_worker(worker_id)
         return PointerTensor(
-            location=location, id_at_location=id_at_location, owner=worker, id=obj_id
+            location=location,
+            id_at_location=id_at_location,
+            owner=worker,
+            id=obj_id,
+            shape=shape
         )
 
     # a more general but slower/more verbose option

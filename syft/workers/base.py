@@ -587,11 +587,19 @@ class BaseWorker(AbstractWorker):
         for key, tensor in self._objects.items():
             found_something = True
             for query_item in query:
-                if not (
-                    query_item == key
-                    or query_item in tensor.tags
-                    or query_item in tensor.description
-                ):
+                match = False
+                if(query_item == str(key)):
+                    match = True
+
+                if(tensor.tags is not None):
+                    if(query_item in tensor.tags):
+                        match = True
+
+                if(tensor.description is not None):
+                    if(query_item in tensor.description):
+                        match = True
+
+                if not match:
                     found_something = False
 
             if found_something:

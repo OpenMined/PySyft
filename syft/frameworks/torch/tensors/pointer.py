@@ -193,6 +193,7 @@ class PointerTensor(AbstractTensor):
         """
 
         if self.point_to_attr is not None:
+
             raise CannotRequestTensorAttribute(
                 "You called .get() on a pointer to"
                 " a tensor attribute. This is not yet"
@@ -252,8 +253,26 @@ class PointerTensor(AbstractTensor):
     def grad(self, new_grad):
         self._grad = new_grad
 
+    def get_shape(self):
+
+        results = self.location.search(str(self.id_at_location))
+
+        if (len(results) > 0):
+            return results[0].shape
+        else:
+            print("couldn't find shape... are you sure this tensor exists?")
+
     @property
     def shape(self):
+        """This method returns the shape of the data being pointed to.
+        This shape information SHOULD be cached on self._shape, but
+        occasionally this information may not be present. If this is the
+        case, then it requests the shape information from the remote object
+        directly (which is inefficient and should be avoided)."""
+
+        if(self._shape is None):
+            self._shape = self.get_shape()
+
         return self._shape
 
     @shape.setter
