@@ -218,16 +218,24 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     Returns:
         tuple: serialized tuple of torch tensor. The first value is the
         id of the tensor and the second is the binary for the PyTorch
-        object.
+        object. The third is the chain of abstractions, and the fourth
+        (optinally) is the chain of graident tensors (nested tuple)
     """
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
     tensor_bin = binary_stream.getvalue()
 
+    # note we need to do this expicitly because torch.save does not
+    # seem to be including .grad by default
+    if tensor.grad is not None:
+        grad_chain = _simplify_torch_tensor(tensor.grad)
+    else:
+        grad_chain = None
+
     chain = None
     if hasattr(tensor, "child"):
         chain = _simplify(tensor.child)
-    return (tensor.id, tensor_bin, chain)
+    return (tensor.id, tensor_bin, chain, grad_chain)
 
 
 def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
@@ -237,17 +245,23 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     Args:
         tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
-            the first value is the ID and the second vlaue is the binary for the
-            PyTorch object.
+            the first value is the ID, the second vlaue is the binary for the
+            PyTorch object, the third value is the chain of tensor abstractions,
+            and the fourth object is the chain of gradients (.grad.grad, etc.)
 
     Returns:
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor_bin, chain = tensor_tuple
+    tensor_id, tensor_bin, chain, grad_chain = tensor_tuple
 
     bin_tensor_stream = io.BytesIO(tensor_bin)
     tensor = torch.load(bin_tensor_stream)
+
+    # note we need to do this explicitly because torch.load does not
+    # include .grad informatino
+    if grad_chain is not None:
+        tensor.grad = _detail_torch_tensor(worker, grad_chain)
 
     initialize_tensor(
         hook_self=syft.torch.hook,
@@ -265,6 +279,64 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         tensor.is_wrapper = True
 
     return tensor
+
+
+# Simplify/Detail Parameters
+
+
+def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
+    """
+    This function converts a torch Parameter into a serialized torch Parameter
+
+    Args:
+        param (torch.nn.Parameter): an input Parameter to be serialized
+
+    Returns:
+        tuple: serialized tuple of torch Parameter. The first value is the
+        id of the Parameter and the second is the binary for the PyTorch
+        tensor data attribute and last is the requires_grad attr.
+    """
+    tensor = param.data
+    tensor_ser = _simplify_torch_tensor(tensor)
+
+    grad = param.grad
+
+    if grad is not None:
+        grad_ser = _simplify_torch_tensor(grad)
+
+    else:
+        grad_ser = None
+
+    return (param.id, tensor_ser, param.requires_grad, grad_ser)
+
+
+def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch.nn.Parameter:
+    """
+    This function converts a serialized torch Parameter into a torch Parameter.
+
+    Args:
+        param_tuple (tuple): serialized obj of torch tensor. It's a tuple where
+            the first value is the ID and the second value is the binary for the
+            PyTorch data attribute et and third value is the requires_grad attr.
+
+    Returns:
+        torch.Parameter: a torch Parameter that was serialized
+    """
+
+    param_id, tensor_ser, requires_grad, grad_ser = param_tuple
+
+    tensor = _detail_torch_tensor(worker, tensor_ser)
+
+    if grad_ser is not None:
+        grad = _detail_torch_tensor(worker, grad_ser)
+    else:
+        grad = None
+
+    param = torch.nn.Parameter(tensor, requires_grad)
+    param.id = param_id
+    param.grad = grad
+
+    return param
 
 
 # Simplify/Detail Collections (list, set, tuple, etc.)
@@ -613,7 +685,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
         data = _simplify_pointer_tensor(ptr)
     """
 
-    return (ptr.id, ptr.id_at_location, ptr.location.id)
+    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr)
 
     # a more general but slower/more verbose option
 
@@ -641,10 +713,31 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     obj_id = tensor_tuple[0]
     id_at_location = tensor_tuple[1]
     worker_id = tensor_tuple[2].decode("utf-8")
+    point_to_attr = tensor_tuple[3]
 
     # If the pointer received is pointing at the current worker, we load the tensor instead
     if worker_id == worker.id:
+
         tensor = worker.get_obj(id_at_location)
+
+        if point_to_attr is not None and tensor is not None:
+
+            point_to_attrs = point_to_attr.decode("utf-8").split(".")
+            for attr in point_to_attrs:
+                if len(attr) > 0:
+                    tensor = getattr(tensor, attr)
+
+            if tensor is not None:
+                if not tensor.is_wrapper and not isinstance(tensor, torch.Tensor):
+
+                    # if the tensor is a wrapper then it doesn't need to be wrapped
+                    # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
+                    # then it doesn't need to be wrapped.
+                    # if the tensor is not a wrapper BUT it's also not a torch tensor,
+                    # then it needs to be wrapped or else it won't be able to be used
+                    # by other interfaces
+                    tensor = tensor.wrap()
+
         return tensor
     # Else we keep the same Pointer
     else:
@@ -751,16 +844,17 @@ def _simplify(obj: object) -> object:
 
 simplifiers = {
     torch.Tensor: [0, _simplify_torch_tensor],
-    tuple: [1, _simplify_collection],
-    list: [2, _simplify_collection],
-    set: [3, _simplify_collection],
-    dict: [4, _simplify_dictionary],
-    range: [5, _simplify_range],
-    numpy.ndarray: [6, _simplify_ndarray],
-    slice: [7, _simplify_slice],
-    type(Ellipsis): [8, _simplify_ellipsis],
-    PointerTensor: [9, _simplify_pointer_tensor],
-    LoggingTensor: [10, _simplify_log_tensor],
+    torch.nn.Parameter: [1, _simplify_torch_parameter],
+    tuple: [2, _simplify_collection],
+    list: [3, _simplify_collection],
+    set: [4, _simplify_collection],
+    dict: [5, _simplify_dictionary],
+    range: [6, _simplify_range],
+    numpy.ndarray: [7, _simplify_ndarray],
+    slice: [8, _simplify_slice],
+    type(Ellipsis): [9, _simplify_ellipsis],
+    PointerTensor: [10, _simplify_pointer_tensor],
+    LoggingTensor: [11, _simplify_log_tensor],
 }
 
 
@@ -790,6 +884,7 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
 
 detailers = [
     _detail_torch_tensor,
+    _detail_torch_parameter,
     _detail_collection_tuple,
     _detail_collection_list,
     _detail_collection_set,

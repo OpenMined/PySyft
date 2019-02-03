@@ -1,5 +1,6 @@
 import random
 import weakref
+import torch
 
 import syft
 from syft.frameworks.torch.tensors import AbstractTensor
@@ -40,6 +41,24 @@ class TorchTensor(AbstractTensor):
                 return type(self).__name__ + ">" + self.child.__repr__()
         else:
             return self.native___repr__()
+
+    @property
+    def id(self):
+        if self.is_wrapper:
+            return self.child.id
+        else:
+            try:
+                return self._id
+            except:
+                self._id = int(10e10 * random.random())
+                return self._id
+
+    @id.setter
+    def id(self, new_id):
+        if self.is_wrapper:
+            self.child.id = new_id
+        else:
+            self._id = new_id
 
     @classmethod
     def handle_func_command(cls, command):
@@ -109,6 +128,7 @@ class TorchTensor(AbstractTensor):
         # p2 is not GCed, GCing p1 shouldn't delete the remote tensor, but if you
         # want to do so, as p2 is not GCed, you can still do `del p2`.
         # This allows to chain multiple .send().send() calls.
+
         if hasattr(self, "child") and isinstance(self.child, PointerTensor):
             self.child.garbage_collect_data = False
 
@@ -116,14 +136,39 @@ class TorchTensor(AbstractTensor):
 
         # The last pointer should control remote GC, not the previous self.ptr
         if hasattr(self, "ptr"):
-            self.ptr().garbage_collect_data = False
+            if self.ptr is not None:
+                ptr_ = self.ptr()
+                if ptr_ is not None:
+                    ptr_.garbage_collect_data = False
 
         # we need to cache this weak reference to the pointer so that
         # if this method gets called multiple times we can simply re-use
         # the same pointer which was previously created
         self.ptr = weakref.ref(ptr)
 
-        return ptr.wrap()
+        if isinstance(self, syft.hook.torch.nn.Parameter):
+            self.data.set_()
+            self.data = ptr
+            output = self
+
+        else:
+            output = ptr.wrap()
+
+        if self.requires_grad:
+
+            grad = output.attr("grad")
+
+            output.grad = grad
+
+            # Because of the way PyTorch works, .grad is prone to
+            # create entirely new Python objects for the tensor, which
+            # inadvertently deletes our custom attributes (like .child)
+            # But, if we keep a backup reference around, PyTorch seems
+            # to re-use it, which means .grad keeps the attributes we
+            # want it to keep. #HackAlert
+            output.backup_grad = grad
+
+        return output
 
     def create_pointer(
         self,
@@ -215,13 +260,63 @@ class TorchTensor(AbstractTensor):
 
         return ptr
 
+    def mid_get(self):
+        """This method calls .get() on a child pointer and correctly registers the results"""
+
+        child_id = self.child.id
+        tensor = self.child.get()
+        del self.owner._objects[tensor.id]
+        self.owner._objects[child_id] = tensor
+
     def get(self, deregister_ptr: bool = True):
         """Requests the tensor/chain being pointed to, be serialized and return
         """
         # Transfer the get() to the child attribute which is a pointer
+
         tensor = self.child.get()
 
         # Clean the wrapper
         delattr(self, "child")
 
+        # Parameters use .data instead of children
+        # so we need to have special support to make sure
+        # that Parmaeters operate inline (because they're
+        # typically being managed inside of a model/optimizer
+        # so not using the same wrapper can cause the model/
+        # optimizer to lose track of where the actual weights
+        # are.
+        if isinstance(self, torch.nn.Parameter):
+            self.data = tensor.data
+            self.grad = tensor.grad
+            return self
+
         return tensor
+
+    def move(self, location):
+        ptr = self.send(location)
+        self.owner.send_command(message=("mid_get", ptr, ()), recipient=location)
+        self.child.location = location
+        self.child.id_at_location = ptr.child.id_at_location
+        # don't want it to accidentally delete the remote object
+        # when this pointer is deleted
+        ptr.child.garbage_collect_data = False
+        return self
+
+    def attr(self, attr_name):
+        """"""
+
+        attr_val = self.child.attr(attr_name)
+
+        if attr_name == "grad":
+            self.grad = attr_val
+
+        return attr_val
+
+    def enc_fix_prec(self):
+        return self.child.fix_precision()
+
+    def float_prec(self):
+        return self.child.float_precision()
+
+    def fix_prec(self):
+        return syft.frameworks.torch.tensors.FixedPrecisionTensor().on(self).enc_fix_prec().wrap()

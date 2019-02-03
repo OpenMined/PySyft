@@ -4,6 +4,7 @@ from syft.exceptions import PureTorchTensorFoundError
 from .tensors import PointerTensor
 from .tensors import LoggingTensor
 from .tensors import TorchTensor
+from .tensors import FixedPrecisionTensor
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -16,8 +17,10 @@ type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     LoggingTensor: one,
+    FixedPrecisionTensor: one,
     PointerTensor: one,
     torch.Tensor: one,
+    torch.nn.Parameter: one,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
@@ -26,7 +29,9 @@ forward_func = {
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
+    torch.nn.Parameter: lambda i: i.child,
     LoggingTensor: lambda i: i.child,
+    FixedPrecisionTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -34,9 +39,11 @@ forward_func = {
 backward_func = {
     TorchTensor: lambda i: i.wrap(),
     torch.Tensor: lambda i: i.wrap(),
+    torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
-    "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i)",
+    FixedPrecisionTensor: lambda i: FixedPrecisionTensor().on(i, wrap=False),
+    "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i, wrap=False)",
 }
 
 
@@ -59,8 +66,7 @@ def hook_method_args(attr, method_self, args):
         args (list): the arguments being passed to the tensor
     """
     # Specify an id to distinguish methods from different classes
-    # TODO: analyse exactly the role of adding the type of self in the id
-    # TODO: and the need to recalculate also the rule (should be the same)
+    # As they won't be used with the same arg types
     attr_id = type(method_self).__name__ + "." + attr
 
     try:
@@ -123,7 +129,7 @@ def build_hook_args_function(args, return_tuple=False):
     return args_hook_function, get_tensor_type_function
 
 
-def hook_response(attr, response, wrap_type):
+def hook_response(attr, response, wrap_type, new_self=None):
     """
     When executing a command, arguments are inspected and all tensors are replaced
     with their child attribute until a pointer or a torch tensor is found (for
@@ -142,23 +148,33 @@ def hook_response(attr, response, wrap_type):
         response (list): the arguments being passed to the tensor
         wrap_type (type): the type of wrapper we'd like to have
     """
+
+    # inline methods should just return new_self
+    if "__i" == attr[0:3]:
+        return new_self
+
     # TODO: Why do we need to cast it in a tuple? this is a (small) time waste
     response_is_tuple = isinstance(response, tuple)
+
+    if wrap_type == torch.nn.Parameter:
+        wrap_type = torch.Tensor
 
     # Add an artificial tuple
     if not response_is_tuple:
         response = (response, 1)
 
+    attr_id = "{}@{}".format(attr, wrap_type.__name__)
+
     try:
         # Load the utility function to transform the args
-        response_hook_function = hook_method_response_functions[attr]
+        response_hook_function = hook_method_response_functions[attr_id]
         # Try running it
         new_response = response_hook_function(response)
 
     except (IndexError, KeyError):  # Update the function in cas of an error
         response_hook_function = build_hook_response_function(response, wrap_type)
         # Store this utility function in the registry
-        hook_method_args_functions[attr] = response_hook_function
+        hook_method_response_functions[attr_id] = response_hook_function
         # Run it
         new_response = response_hook_function(response)
 

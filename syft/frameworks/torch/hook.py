@@ -3,6 +3,9 @@ import re
 import random
 import logging
 import types
+import copy
+import torch
+import torch.nn as nn
 from functools import wraps
 
 
@@ -10,6 +13,7 @@ import syft
 from syft import workers
 from syft.workers import BaseWorker
 from .tensors import TorchTensor, PointerTensor, LoggingTensor
+from .tensors import FixedPrecisionTensor
 from .torch_attributes import TorchAttributes
 from .tensors.abstract import initialize_tensor, _apply_args
 
@@ -108,20 +112,33 @@ class TorchHook:
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
-        # add all hooked tensor methods to pointer but change behaviour
+        # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods()
 
-        # add all hooked tensor methods to Logging tensor but change behaviour
+        # Add all hooked tensor methods to Logging tensor but change behaviour to just forward
+        # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
         self._hook_syft_tensor_methods(LoggingTensor)
 
-        # hooks the tensor constuctor function
+        # Add all hooked tensor methods to Logging tensor but change behaviour to just forward
+        # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
+        self._hook_syft_tensor_methods(FixedPrecisionTensor)
+
+        # Hook the tensor constructor function
         self._hook_tensor()
 
+        # Hook the Parameter methods to store tensor chains in parameters
+        self._hook_parameters()
+
+        # Hook torch functions from modules like torch.nn.functional (containing relu, etc.)
         self._hook_torch_module()
+
+        # Hook torch.nn (containing Linear and Convolution layers)
+        self._hook_module()
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
         syft.local_worker = self.local_worker
+        syft.hook = self
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
@@ -210,6 +227,82 @@ class TorchHook:
                 new_method = self.get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
 
+    def _hook_parameters(self):
+        """
+        This method overrides the torch Parameter class such that
+        it works correctly with our overridden tensor types. The
+        native torch Parameter class kept deleting all of our
+        attributes on our custom tensors, so we wrote our own.
+        """
+
+        # Hook __new__ to handle when non-pure torch tensors are given as data attribute
+
+        def hooked__new__(cls, data=None, requires_grad=True):
+            if data is None:
+                data = torch.Tensor()
+
+            # If data is not a pure torch tensor you need to store the chain in a
+            # specific place otherwise it will get deleted
+            if not isinstance(data, torch.Tensor) or hasattr(data, "child"):
+                p = torch.Tensor._make_subclass(cls, torch.Tensor(), requires_grad)
+                p.child = data
+            else:
+                p = torch.Tensor._make_subclass(cls, data, requires_grad)
+
+            return p
+
+        torch.nn.Parameter.__new__ = hooked__new__
+
+        # Hook __repr__ to handle chain repr when needed
+
+        torch.nn.Parameter.native_param___repr__ = torch.nn.Parameter.__repr__
+
+        def hooked__repr__(self):
+            if hasattr(self, "child"):
+                return "Parameter containing:\n" + self.child.__repr__()
+            else:
+                return self.native_param___repr__()
+
+        torch.nn.Parameter.__repr__ = hooked__repr__
+
+        # Hook .data to handle chain assignment when needed
+
+        torch.nn.Parameter.native_param_data = torch.nn.Parameter.data
+
+        @property
+        def data(self):
+
+            if hasattr(self, "child"):
+                to_return = self.child.attr("data")
+            else:
+
+                to_return = self.native_param_data
+
+                # good to ensure that the ID stays consistent
+                # not 100% this is required but it's at least
+                # good practice
+                try:
+                    to_return.id = self.data_id
+                except:
+                    self.data_id = to_return.id
+
+            return to_return
+
+        @data.setter
+        def data(self, new_data):
+
+            # If data is not a pure torch tensor you need to store the chain in a
+            # specific place otherwise it will get deleted
+            if not isinstance(new_data, torch.Tensor) or hasattr(new_data, "child"):
+                self.child = new_data  # .wrap()
+            else:
+                if hasattr(self, "child"):
+                    del self.child
+                self.native_param_data = new_data  # .wrap()
+            return self
+
+        torch.nn.Parameter.data = data
+
     def _hook_torch_module(self):
         """Overloads functions in the main torch modules.
         The way this is accomplished is by first moving all existing module
@@ -220,31 +313,48 @@ class TorchHook:
             and :func:`torch.cat` will have our hooking code.
         """
 
-        torch_modules = {"torch.nn.functional": self.torch.nn.functional}
-        # TODO Replace with syft.torch.torch_modules when hooking 'torch' will not break msgpack
+        def perform_overloading(torch_module, func):
+
+            # Where the overloading happens
+            # 1. Get native function
+            native_func = getattr(torch_module, func)
+            # 2. Check it is a proper function
+            if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
+                # 3. Build the hooked function
+                new_func = self.get_hooked_func(native_func)
+                # 4. Move the native function
+                setattr(torch_module, f"native_{func}", native_func)
+                # 5. Put instead the hooked one
+                setattr(torch_module, func, new_func)
+
+        torch_modules = syft.torch.torch_modules
+        # torch_modules = {"torch.nn.functional": torch.nn.functional}
 
         for module_name, torch_module in torch_modules.items():
             for func in dir(torch_module):
+
                 # Some functions we want to ignore (not override). Such functions have been hard
                 # coded into the torch_attribute exclude (see TorchAttribute class)
                 if func in syft.torch.exclude:
+                    continue
+
+                # ignore dunder functions
+                if "__" in func:
+                    continue
+
+                # ignore capitalized func values which are Classes not functinos
+                if func[0].isupper():
+                    continue
+
+                # ignore hidden functins
+                if func[0] == "_":
                     continue
 
                 # If we haven't already overloaded this function
                 if "native_" in func or f"native_{func}" in dir(torch_module):
                     continue
 
-                # Where the overloading happens
-                # 1. Get native function
-                native_func = getattr(torch_module, func)
-                # 2. Check it is a proper function
-                if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
-                    # 3. Build the hooked function
-                    new_func = self.get_hooked_func(native_func)
-                    # 4. Move the native function
-                    setattr(torch_module, f"native_{func}", native_func)
-                    # 5. Put instead the hooked one
-                    setattr(torch_module, func, new_func)
+                perform_overloading(torch_module, func)
 
     def get_hooked_pointer_method(hook_self, attr):
         """
@@ -266,6 +376,7 @@ class TorchHook:
             # Send the command
             command = (attr, self, args)
             response = owner.send_command(location, command)
+
             return response
 
         return overloaded_attr
@@ -295,6 +406,7 @@ class TorchHook:
             response = syft.frameworks.torch.hook_args.hook_response(
                 attr, response, wrap_type=type(self)
             )
+
             return response
 
         return overloaded_attr
@@ -305,7 +417,7 @@ class TorchHook:
         their child attribute if they exist
         If so, forward this method with the new args and new self, get response
         and "rebuild" the torch tensor wrapper upon all tensors found
-        If not, just execute the native torch method
+        If not, just execute the native torch methodn
         :param attr: the method to hook
         :return: the hooked method
         """
@@ -315,6 +427,7 @@ class TorchHook:
             """
             Operate the hooking
             """
+
             if not hasattr(self, "child"):  # means that it's not a wrapper
                 cmd = getattr(self, f"native_{attr}")
                 # Run the native function with the new args
@@ -331,9 +444,10 @@ class TorchHook:
                 # Send the new command to the appropriate class and get the response
                 cmd = getattr(new_self, attr)
                 response = cmd(*new_args, **kwargs)
+
                 # Put back the wrappers where needed
                 response = syft.frameworks.torch.hook_args.hook_response(
-                    attr, response, wrap_type=type(self)
+                    attr, response, wrap_type=type(self), new_self=self
                 )
 
             return response
@@ -352,6 +466,9 @@ class TorchHook:
         :param attr: the function to hook
         :return: the hooked function
         """
+
+        if attr.__module__ is None:
+            attr.__module__ = "torch"
 
         @wraps(attr)
         def overloaded_attr(*args, **kwargs):
@@ -417,8 +534,7 @@ class TorchHook:
 
         hook_self.torch.tensor = new_tensor
 
-    @staticmethod
-    def _hook_properties(tensor_type: type):
+    def _hook_properties(hook_self, tensor_type: type):
         """Overloads tensor_type properties.
 
         This method gets called only on torch.Tensor. If you're not sure how
@@ -454,6 +570,19 @@ class TorchHook:
             return self
 
         tensor_type.id = id
+
+        @property
+        def owner(self):
+            if not hasattr(self, "_owner"):
+                self._owner = hook_self.local_worker
+            return self._owner
+
+        @owner.setter
+        def owner(self, new_owner):
+            self._owner = new_owner
+            return self
+
+        tensor_type.owner = owner
 
         @property
         def is_wrapper(self):
@@ -552,3 +681,89 @@ class TorchHook:
                     setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
                 # Add to the native tensor this method
                 setattr(tensor_type, attr, getattr(TorchTensor, attr))
+
+    def _hook_module(self):
+
+        """Overloading torch.nn.Module with PySyft functionality, the primary module
+           responsible for core ML functionality such as Neural network layers and
+           loss functions
+        """
+
+        def module_is_missing_grad(model):
+            """Checks if all the parameters in the model have been assigned a gradient"""
+            for p in model.parameters():
+                if p.grad is None:
+                    return True
+            return False
+
+        def create_grad_objects(model):
+            """Assigns gradient to model parameters if not assigned"""
+            # for p in model.parameters():
+            #     o = p.sum()
+            #     o.backward()
+            #     p.grad -= p.grad
+
+        def module_send_(nn_self, dest):
+            """Overloads torch.nn instances so that they could be sent to other workers"""
+
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
+
+            for p in nn_self.parameters():
+                p.send(dest)
+
+            return nn_self
+
+        self.torch.nn.Module.send = module_send_
+
+        def module_move_(nn_self, destination):
+
+            params = list(nn_self.parameters())
+            for p in params:
+                p.child.wrap().move(destination)
+
+        self.torch.nn.Module.move = module_move_
+
+        # def module_end_get_(nn_self):
+        #     """Overloads send to remote for torch.nn.Module."""
+        #     if module_is_missing_grad(nn_self):
+        #         create_grad_objects(nn_self)
+        #
+        #     for p in nn_self.parameters():
+        #         p.end_get()
+        #
+        #     return nn_self
+        #
+        # self.torch.nn.Module.end_get = module_end_get_
+        #
+        # def module_move_(nn_self, dest):
+        #     return nn_self.send(dest).end_get()
+        #
+        # self.torch.nn.Module.move = module_move_
+
+        def module_get_(nn_self):
+            """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
+            for p in nn_self.parameters():
+                p.get()
+
+            return nn_self
+
+        self.torch.nn.Module.get = module_get_
+
+        # def module_fix_precision_(nn_self):
+        #     """Overloads fix_precision for torch.nn.Module."""
+        #     if module_is_missing_grad(nn_self):
+        #         create_grad_objects(nn_self)
+        #
+        #     for p in nn_self.parameters():
+        #         p.fix_precision_()
+        #
+        #     return nn_self
+
+        # # TODO: confusion between inplace and not inplace method to disambiguate
+        # self.torch.nn.Module.fix_precision = module_fix_precision_
+
+        def module_copy_(nn_self):
+            return copy.deepcopy(nn_self)
+
+        self.torch.nn.Module.copy = module_copy_

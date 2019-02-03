@@ -1,13 +1,17 @@
 from unittest import TestCase
 
+import torch
+import syft as sy
 from syft.exceptions import WorkerNotFoundException
 from syft.workers import VirtualWorker
 
 
 def test___init__():
-    alice = VirtualWorker(id="alice")
-    bob = VirtualWorker(id="bob", known_workers={alice.id: alice})
-    charlie = VirtualWorker(id="charlie")
+    hook = sy.TorchHook(torch)
+
+    alice = VirtualWorker(hook, id="alice")
+    bob = VirtualWorker(hook, id="bob", known_workers={alice.id: alice})
+    charlie = VirtualWorker(hook, id="charlie")
 
     assert bob.get_worker("alice").id == alice.id
     assert bob.get_worker(alice).id == alice.id
@@ -20,8 +24,11 @@ def test___init__():
 
 class TestWorker(TestCase):
     def test_get_unknown_worker(self):
-        bob = VirtualWorker(id="bob")
-        charlie = VirtualWorker(id="charlie")
+
+        hook = sy.TorchHook(torch)
+
+        bob = VirtualWorker(hook, id="bob")
+        charlie = VirtualWorker(hook, id="charlie")
 
         # if an unknown string or id representing a worker is given it fails
         try:

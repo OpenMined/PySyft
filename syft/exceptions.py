@@ -35,3 +35,10 @@ class CompressionNotFoundException(Exception):
     """Raised when a non existent compression/decompression scheme is requested."""
 
     pass
+
+
+class CannotRequestTensorAttribute(Exception):
+    """Raised when .get() is called on a pointer which points to an attribute of
+    another tensor."""
+
+    pass

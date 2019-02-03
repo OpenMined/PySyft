@@ -2,6 +2,7 @@
 
 import pytest
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import random
 
@@ -138,9 +139,22 @@ class TestHook(object):
         res = res_ptr.get()
         assert (res == expected).all()
 
+    @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
+    def test_functional_same_in_both_imports(self, attr):
+        """This function tests that the hook modifies the behavior of
+        torch.nn.function regardless of the import namespace
+        """
+        self.setUp()
+        fattr = getattr(F, attr)
+        tattr = getattr(torch.nn.functional, attr)
+        x = torch.Tensor([1, -1, 3, 4])
+        assert (fattr(x) == tattr(x)).all()
+
     def test_hook_tensor(self):
         self.setUp()
         x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)
+        x.send(self.bob)
+        x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)[0:2]
         x.send(self.bob)
 
     def test_properties(self):
@@ -167,3 +181,24 @@ class TestHook(object):
         z = x.div(y)
 
         assert True
+
+    def test_parameter_hooking(self):
+        """Test custom nn.Module and parameter auto listing in m.parameters()"""
+        self.setUp()
+
+        class MyLayer(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.some_params = torch.nn.Parameter(torch.tensor([5.0]))
+
+        m = MyLayer()
+        out = list(m.parameters())
+        assert len(out) == 1
+        assert out[0] == m.some_params
+
+    def test_torch_module_hook(self):
+        """Tests sending and getting back torch nn module like nn.Linear"""
+        self.setUp()
+        model = nn.Linear(2, 1)
+        model_ptr = model.send(self.bob)
+        res = model_ptr.get()

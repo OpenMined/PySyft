@@ -1,5 +1,6 @@
 import random
 
+import pytest
 import torch
 import torch.nn.functional as F
 import syft
@@ -7,7 +8,7 @@ import syft
 from syft.frameworks.torch.tensors import LoggingTensor
 
 
-class TestLogTensor(object):
+class TestLoggingTensor(object):
     def setUp(self):
         hook = syft.TorchHook(torch, verbose=True)
 
@@ -40,7 +41,7 @@ class TestLogTensor(object):
         assert isinstance(x.child, LoggingTensor)
         assert isinstance(x.child.child, torch.Tensor)
 
-    def test_method_on_log_chain(self):
+    def test_overwritten_method_on_log_chain(self):
         """
         Test method call on a chain including a log tensor
         """
@@ -50,6 +51,31 @@ class TestLogTensor(object):
         x = LoggingTensor().on(x_tensor)
         y = x.add(x)
         assert (y.child.child == x_tensor.add(x_tensor)).all()
+
+    def test_method_on_log_chain(self):
+        """
+        Test method call on a chain including a log tensor
+        """
+        self.setUp()
+        # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
+        x_tensor = torch.Tensor([1, 2, 3])
+        x = LoggingTensor().on(x_tensor)
+        y = x.mul(x)
+        assert (y.child.child == x_tensor.mul(x_tensor)).all()
+
+    @pytest.mark.parametrize("attr", ["relu", "celu", "elu"])
+    def test_hook_module_functional_on_log_chain(self, attr):
+        """
+        Test torch function call on a chain including a log tensor
+        """
+        self.setUp()
+        attr = getattr(F, attr)
+        x = torch.Tensor([1, -1, 3, 4])
+        expected = attr(x)
+        x_log = LoggingTensor().on(x)
+        res_log = attr(x_log)
+        res = res_log.child.child
+        assert (res == expected).all()
 
     def test_function_on_log_chain(self):
         """
@@ -72,9 +98,9 @@ class TestLogTensor(object):
         x_back = x_ptr.get()
         assert (x_back.child.child == x_tensor).all()
 
-    def test_remote_method_on_log_chain(self):
+    def test_remote_function_on_log_chain(self):
         """
-        Test remote method call on a chain including a log tensor
+        Test remote function call on a chain including a log tensor
         """
         self.setUp()
         # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
@@ -85,9 +111,22 @@ class TestLogTensor(object):
         y = y_ptr.get()
         assert (y.child.child == F.relu(x_tensor)).all()
 
-    def test_remote_function_on_log_chain(self):
+    def test_remote_method_on_log_chain(self):
         """
-        Test remote function call on a chain including a log tensor
+        Test remote method call on a chain including a log tensor
+        """
+        self.setUp()
+        # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
+        x_tensor = torch.Tensor([1, 2, 3])
+        x = LoggingTensor().on(x_tensor)
+        x_ptr = x.send(self.bob)
+        y_ptr = x_ptr.mul(x_ptr)
+        y = y_ptr.get()
+        assert (y.child.child == x_tensor.mul(x_tensor)).all()
+
+    def test_remote_overwritten_method_on_log_chain(self):
+        """
+        Test remote overwritten method call on a chain including a log tensor
         """
         self.setUp()
         # build a long chain tensor Wrapper>LoggingTensor>TorchTensor

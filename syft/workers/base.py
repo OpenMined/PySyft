@@ -1,5 +1,6 @@
 import logging
 import random
+import sys
 
 from abc import abstractmethod
 import syft as sy
@@ -25,7 +26,7 @@ class BaseWorker(AbstractWorker):
     protocol.
 
     Args:
-        hook: An optional reference to the TorchHook object which is used
+        hook: A reference to the TorchHook object which is used
             to modify PyTorch with PySyft's functionality.
         id: An optional string or integer unique id of the worker.
         known_workers: An optional dictionary of all known workers on a
@@ -48,7 +49,7 @@ class BaseWorker(AbstractWorker):
             primarily a development/testing feature.
     """
 
-    def __init__(self, hook=None, id=0, known_workers={}, is_client_worker=False, log_msgs=False):
+    def __init__(self, hook, id=0, known_workers={}, is_client_worker=False, log_msgs=False):
         """Initializes a BaseWorker."""
         self.hook = hook
         self.torch = None if hook is None else hook.torch
@@ -172,9 +173,12 @@ class BaseWorker(AbstractWorker):
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
-        # Step 2: If response in none, set default
-        if response is None:
-            response = 0
+        # # Step 2: If response in none, set default
+        # TODO: not sure if someone needed this - if this comment
+        # is still here after Feb 15, 2018, please delete these
+        # two lines of (commented out) code.
+        # if response is None:
+        #     response = None
 
         # Step 3: Serialize the message to simple python objects
         bin_response = serde.serialize(response)
@@ -250,35 +254,56 @@ class BaseWorker(AbstractWorker):
         :param message: the message specifying the command and the args
         :return: a pointer to the result
         """
+
         command, _self, args = message
+
         # TODO add kwargs
         kwargs = {}
         command = command.decode("utf-8")
         # Handle methods
         if _self is not None:
+
             tensor = getattr(_self, command)(*args, **kwargs)
         # Handle functions
         else:
+            # At this point, the command is ALWAYS a path to a
+            # function (i.e., torch.nn.functional.relu). Thus,
+            # we need to fetch this function and run it.
+
             sy.torch.command_guard(command, "torch_modules")
-            command = eval("self." + command)
+
+            paths = command.split(".")
+            command = self
+            for path in paths:
+                command = getattr(command, path)
+
             tensor = command(*args, **kwargs)
 
-        # FIXME: should be added automatically
-        tensor.owner = self
-        # tensor.id ??
+        # some functions don't return anything (such as .backward())
+        # so we need to check for that here.
+        if tensor is not None:
 
-        # TODO: Handle when the response is not simply a tensor
-        self.register_obj(tensor)
+            # FIXME: should be added automatically
+            tensor.owner = self
 
-        pointer = tensor.create_pointer(
-            location=self,
-            id_at_location=tensor.id,
-            register=True,
-            owner=self,
-            ptr_id=tensor.id,
-            garbage_collect_data=False,
-        )
-        return pointer
+            # TODO: Handle when the response is not simply a tensor
+            # don't re-register tensors if the operation was inline
+            # not only would this be inefficient, but it can cause
+            # serious issues later on
+            # if(_self is not None):
+            #     if(tensor.id != _self.id):
+            self.register_obj(tensor)
+
+            pointer = tensor.create_pointer(
+                location=self,
+                id_at_location=tensor.id,
+                register=True,
+                owner=self,
+                ptr_id=tensor.id,
+                garbage_collect_data=False,
+            )
+
+            return pointer
 
     def send_command(self, recipient, message):
         """
@@ -289,6 +314,7 @@ class BaseWorker(AbstractWorker):
         """
 
         response = self.send_msg(MSGTYPE.CMD, message, location=recipient)
+
         return response
 
     def set_obj(self, obj):
@@ -359,8 +385,8 @@ class BaseWorker(AbstractWorker):
 
         if hasattr(obj, "id"):
             self.rm_obj(obj.id)
-        if hasattr(obj, "owner"):
-            del obj.owner
+        if hasattr(obj, "_owner"):
+            del obj._owner
 
     def rm_obj(self, remote_key):
         """Removes an object.
@@ -545,3 +571,6 @@ class BaseWorker(AbstractWorker):
     def __repr__(self):
         """Returns the official string representation of BaseWorker."""
         return self.__str__()
+
+    def __getitem__(self, idx):
+        return self._objects[idx]

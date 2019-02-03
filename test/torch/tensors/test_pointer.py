@@ -39,6 +39,18 @@ class TestPointer(object):
         x.create_pointer()
         x.create_pointer(location=self.james)
 
+    def test_remote_function(self):
+        self.setUp()
+
+        # init remote object
+        x = torch.Tensor([-1, 2, 3]).send(self.bob)
+
+        # call remote method
+        y = torch.add(x, x).get()
+
+        # check answer
+        assert (y == torch.tensor([-2.0, 4, 6])).all()
+
     def test_send_get(self):
         """Test several send get usages"""
         self.setUp()
@@ -99,3 +111,133 @@ class TestPointer(object):
 
         # ensure bob has tensor
         assert x.id in self.bob._objects
+
+    def test_remote_autograd(self):
+        """Tests the ability to backpropagate gradients on a remote
+        worker."""
+
+        self.setUp()
+
+        # TEST: simple remote grad calculation
+
+        # create a tensor
+        x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
+
+        # send tensor to bob
+        x = x.send(self.bob)
+
+        # do some calculatinos
+        y = (x + x).sum()
+
+        # backpropagate on remote machine
+        y.backward()
+
+        # check that remote gradient is correct
+        xgrad = self.bob._objects[x.id_at_location].grad
+        xgrad_target = torch.ones(4).float() + 1
+
+        assert (xgrad == xgrad_target).all()
+
+        # TEST: Ensure remote grad calculation gets properly serded
+
+        # create tensor
+        x = torch.tensor([1, 2, 3, 4.0], requires_grad=True).send(self.bob)
+
+        # compute function
+        y = x.sum()
+
+        # backpropagate
+        y.backward()
+
+        # get the gradient created from backpropagation manually
+        x_grad = self.bob._objects[x.id_at_location].grad
+
+        # get the entire x tensor (should bring the grad too)
+        x = x.get()
+
+        # make sure that the grads match
+        assert (x.grad == x_grad).all()
+
+    def test_gradient_send_recv(self):
+        """Tests that gradients are properly sent and received along
+        with their tensors."""
+
+        self.setUp()
+
+        # create a tensor
+        x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
+
+        # create gradient on tensor
+        x.sum().backward(torch.ones(1))
+
+        # save gradient
+        orig_grad = x.grad
+
+        # send and get back
+        t = x.send(self.bob).get()
+
+        # check that gradient was properly serde
+        assert (t.grad == orig_grad).all()
+
+    def test_method_on_attribute(self):
+
+        self.setUp()
+
+        # create remote object with children
+        x = torch.Tensor([1, 2, 3])
+        x = syft.LoggingTensor().on(x).send(self.bob)
+
+        # call method on data tensor directly
+        x.child.point_to_attr = "child.child"
+        y = x.add(x)
+        assert isinstance(y.get(), torch.Tensor)
+
+        # call method on loggingtensor directly
+        x.child.point_to_attr = "child"
+        y = x.add(x)
+        y = y.get()
+        assert isinstance(y.child, syft.LoggingTensor)
+
+        # # call method on zeroth attribute
+        # x.child.point_to_attr = ""
+        # y = x.add(x)
+        # y = y.get()
+        #
+        # assert isinstance(y, torch.Tensor)
+        # assert isinstance(y.child, syft.LoggingTensor)
+        # assert isinstance(y.child.child, torch.Tensor)
+
+        # call .get() on pinter to attribute (should error)
+        x.child.point_to_attr = "child"
+        try:
+            x.get()
+        except syft.exceptions.CannotRequestTensorAttribute as e:
+            assert True
+
+    def test_grad_pointer(self):
+        """Tests the automatic creation of a .grad pointer when
+        calling .send() on a tensor with requires_grad==True"""
+
+        self.setUp()
+        bob = self.bob
+
+        x = torch.tensor([1, 2, 3.0], requires_grad=True).send(bob)
+        grad = torch.tensor([1, 1, 1]).send(bob)
+        y = (x + x).sum()
+        y.backward()
+
+        assert (bob._objects[x.id_at_location].grad == torch.tensor([2, 2, 2.0])).all()
+
+    def test_move(self):
+
+        self.setUp()
+
+        x = torch.tensor([1, 2, 3, 4, 5]).send(self.bob)
+
+        assert x.id_at_location in self.bob._objects
+        assert x.id_at_location not in self.alice._objects
+
+        x.move(self.alice)
+
+        assert x.id_at_location not in self.bob._objects
+        assert x.id_at_location in self.alice._objects

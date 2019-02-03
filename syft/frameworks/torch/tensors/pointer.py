@@ -1,7 +1,8 @@
 import syft
+import torch
 from syft.frameworks.torch.tensors.abstract import AbstractTensor
 from syft.codes import MSGTYPE
-from syft.exceptions import RemoteTensorFoundError
+from syft.exceptions import RemoteTensorFoundError, CannotRequestTensorAttribute
 
 
 class PointerTensor(AbstractTensor):
@@ -43,6 +44,7 @@ class PointerTensor(AbstractTensor):
         owner=None,
         id=None,
         garbage_collect_data=True,
+        point_to_attr=None,
     ):
         """Initializes a PointerTensor.
 
@@ -67,6 +69,12 @@ class PointerTensor(AbstractTensor):
             id: An optional string or integer id of the PointerTensor.
             garbage_collect_data: If true (default), delete the remote tensor when the
                 pointer is deleted.
+            point_to_attr: string which can tell a pointer to not point directly to\
+                a tensor, but to point to an attribute of that tensor (which must
+                also be a tensor) such as .child or .grad. Note the string can be
+                a chain (i.e., .child.child.child or .grad.child.child). Defaults
+                to None, which meants don't point to any attr, just point to the
+                tensor corresponding to the id_at_location.
         """
 
         self.location = location
@@ -74,6 +82,7 @@ class PointerTensor(AbstractTensor):
         self.owner = owner
         self.id = id
         self.garbage_collect_data = garbage_collect_data
+        self.point_to_attr = point_to_attr
 
     @classmethod
     def handle_func_command(cls, command):
@@ -119,15 +128,11 @@ class PointerTensor(AbstractTensor):
         """
 
         type_name = type(self).__name__
-        return (
-            f"["
-            f"{type_name} - "
-            f"id:{self.id} "
-            f"owner:{self.owner.id} "
-            f"loc:{self.location.id} "
-            f"id@loc:{self.id_at_location}"
-            f"]"
-        )
+        out = f"[" f"{type_name} - " f"{str(self.id_at_location)}@{self.location.id}" f"]"
+
+        if self.point_to_attr is not None:
+            out += "::" + str(self.point_to_attr).replace(".", "::")
+        return out
 
     def __repr__(self):
         """Returns the to-string method.
@@ -166,6 +171,13 @@ class PointerTensor(AbstractTensor):
         TODO: add param get_copy which doesn't destroy remote if true.
         """
 
+        if self.point_to_attr is not None:
+            raise CannotRequestTensorAttribute(
+                "You called .get() on a pointer to"
+                " a tensor attribute. This is not yet"
+                " supported. Call .clone().get() instead."
+            )
+
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
         if self.location == self.owner:
@@ -182,6 +194,13 @@ class PointerTensor(AbstractTensor):
         if deregister_ptr:
             self.owner.de_register_obj(self)
 
+        # TODO: remove these 3 lines
+        # The fact we have to check this means
+        # something else is probably broken
+        if tensor.is_wrapper:
+            if isinstance(tensor.child, torch.Tensor):
+                return tensor.child
+
         return tensor
 
     def __del__(self):
@@ -197,4 +216,29 @@ class PointerTensor(AbstractTensor):
         # first here and not try to call self.owner.anything if self doesn't have
         # .owner anymore.
         if hasattr(self, "owner") and self.garbage_collect_data:
-            self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)
+
+            # attribute pointers are not in charge of GC
+            if self.point_to_attr is None:
+                self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)
+
+    @property
+    def grad(self):
+        if not hasattr(self, "_grad"):
+            self._grad = self.attr("grad")
+        return self._grad
+
+    @grad.setter
+    def grad(self, new_grad):
+        self._grad = new_grad
+
+    def attr(self, attr_name):
+
+        attr_ptr = syft.PointerTensor(
+            id=self.id,
+            owner=self.owner,
+            location=self.location,
+            id_at_location=self.id_at_location,
+            point_to_attr=attr_name,
+        ).wrap()
+        self.__setattr__(attr_name, attr_ptr)
+        return attr_ptr
