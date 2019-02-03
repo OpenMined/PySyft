@@ -44,7 +44,10 @@ class PointerTensor(AbstractTensor):
         owner=None,
         id=None,
         garbage_collect_data=True,
+        shape=None,
         point_to_attr=None,
+        tags=None,
+        description=None,
     ):
         """Initializes a PointerTensor.
 
@@ -76,12 +79,14 @@ class PointerTensor(AbstractTensor):
                 to None, which meants don't point to any attr, just point to the
                 tensor corresponding to the id_at_location.
         """
+        super().__init__(tags, description)
 
         self.location = location
         self.id_at_location = id_at_location
         self.owner = owner
         self.id = id
         self.garbage_collect_data = garbage_collect_data
+        self.shape = shape
         self.point_to_attr = point_to_attr
 
     @classmethod
@@ -132,6 +137,22 @@ class PointerTensor(AbstractTensor):
 
         if self.point_to_attr is not None:
             out += "::" + str(self.point_to_attr).replace(".", "::")
+
+        big_str = False
+
+        if self.tags is not None:
+            big_str = True
+            out += "\n\tTags: "
+            for tag in self.tags:
+                out += str(tag) + " "
+
+        if self.description is not None:
+            big_str = True
+            out += "\n\tDescription: " + str(self.description)
+
+        if big_str:
+            out += "\n\tShape: " + str(self.shape)
+
         return out
 
     def __repr__(self):
@@ -172,6 +193,7 @@ class PointerTensor(AbstractTensor):
         """
 
         if self.point_to_attr is not None:
+
             raise CannotRequestTensorAttribute(
                 "You called .get() on a pointer to"
                 " a tensor attribute. This is not yet"
@@ -230,6 +252,32 @@ class PointerTensor(AbstractTensor):
     @grad.setter
     def grad(self, new_grad):
         self._grad = new_grad
+
+    def get_shape(self):
+
+        results = self.location.search(str(self.id_at_location))
+
+        if len(results) > 0:
+            return results[0].shape
+        else:
+            print("couldn't find shape... are you sure this tensor exists?")
+
+    @property
+    def shape(self):
+        """This method returns the shape of the data being pointed to.
+        This shape information SHOULD be cached on self._shape, but
+        occasionally this information may not be present. If this is the
+        case, then it requests the shape information from the remote object
+        directly (which is inefficient and should be avoided)."""
+
+        if self._shape is None:
+            self._shape = self.get_shape()
+
+        return self._shape
+
+    @shape.setter
+    def shape(self, new_shape):
+        self._shape = new_shape
 
     def attr(self, attr_name):
 

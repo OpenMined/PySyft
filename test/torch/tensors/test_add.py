@@ -33,3 +33,20 @@ def test_add(workers):
     y = (x + x).get()
 
     assert y[0] == 2
+
+
+def test_fixed_precision_and_sharing(workers):
+
+    bob, alice = (workers["bob"], workers["alice"])
+
+    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice)
+    out = x.get().float_prec()
+
+    assert out[0] == 1
+
+    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice)
+
+    y = x + x
+
+    y = y.get().float_prec()
+    assert y[0] == 2
