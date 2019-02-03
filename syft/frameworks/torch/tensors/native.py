@@ -320,3 +320,7 @@ class TorchTensor(AbstractTensor):
 
     def fix_prec(self):
         return syft.frameworks.torch.tensors.FixedPrecisionTensor().on(self).enc_fix_prec().wrap()
+
+    def share(self, *owners):
+        return syft.frameworks.torch.tensors.AdditiveSharingTensor()\
+            .on(self).child.init_shares(*owners).wrap()

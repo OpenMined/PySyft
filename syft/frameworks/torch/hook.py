@@ -14,6 +14,7 @@ from syft import workers
 from syft.workers import BaseWorker
 from .tensors import TorchTensor, PointerTensor, LoggingTensor
 from .tensors import FixedPrecisionTensor
+from .tensors import AdditiveSharingTensor
 from .torch_attributes import TorchAttributes
 from .tensors.abstract import initialize_tensor, _apply_args
 
@@ -119,9 +120,15 @@ class TorchHook:
         # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
         self._hook_syft_tensor_methods(LoggingTensor)
 
-        # Add all hooked tensor methods to Logging tensor but change behaviour to just forward
-        # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
+        # Add all hooked tensor methods to FixedPrecisionTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
+
+        # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(AdditiveSharingTensor)
 
         # Hook the tensor constructor function
         self._hook_tensor()

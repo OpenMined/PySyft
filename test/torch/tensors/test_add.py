@@ -5,10 +5,10 @@ import torch
 import torch.nn.functional as F
 import syft
 
-from syft.frameworks.torch.tensors import FixedPrecisionTensor
+from syft.frameworks.torch.tensors import AdditiveSharingTensor
 
 
-class TestFixedPrecisionTensor(object):
+class TestAdditiveSharingTensor(object):
     def setUp(self):
         hook = syft.TorchHook(torch, verbose=True)
 
@@ -36,30 +36,28 @@ class TestFixedPrecisionTensor(object):
         """
         self.setUp()
         x_tensor = torch.Tensor([1, 2, 3])
-        x = FixedPrecisionTensor().on(x_tensor)
+        x = AdditiveSharingTensor().on(x_tensor)
         assert isinstance(x, torch.Tensor)
-        assert isinstance(x.child, FixedPrecisionTensor)
+        assert isinstance(x.child, AdditiveSharingTensor)
         assert isinstance(x.child.child, torch.Tensor)
 
     def test_encode_decode(self):
 
         self.setUp()
 
-        x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
-        assert x.child.child[0] == 100
-        x = x.float_prec()
+        x = torch.tensor([1,2,3]).share(self.bob, self.alice, self.james)
 
-        assert x[0] == 0.1
+        x = x.get()
+
+        assert x[0] == 1
 
     def test_add(self):
 
         self.setUp()
 
-        x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+        x = torch.tensor([1, 2, 3]).share(self.bob, self.alice, self.james)
 
-        y = x + x
+        y = (x + x).get()
 
-        assert y.child.child[0] == 200
-        y = y.float_prec()
+        assert y[0] == 2
 
-        assert y[0] == 0.2
