@@ -4,6 +4,7 @@ from syft.exceptions import PureTorchTensorFoundError
 from .tensors import PointerTensor
 from .tensors import LoggingTensor
 from .tensors import TorchTensor
+from .tensors import FixedPrecisionTensor
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -16,6 +17,7 @@ type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     LoggingTensor: one,
+    FixedPrecisionTensor: one,
     PointerTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
@@ -29,6 +31,7 @@ forward_func = {
     else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
     torch.nn.Parameter: lambda i: i.child,
     LoggingTensor: lambda i: i.child,
+    FixedPrecisionTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -39,6 +42,7 @@ backward_func = {
     torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
+    FixedPrecisionTensor: lambda i: FixedPrecisionTensor().on(i, wrap=False),
     "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i, wrap=False)",
 }
 
@@ -125,7 +129,7 @@ def build_hook_args_function(args, return_tuple=False):
     return args_hook_function, get_tensor_type_function
 
 
-def hook_response(attr, response, wrap_type):
+def hook_response(attr, response, wrap_type, new_self=None):
     """
     When executing a command, arguments are inspected and all tensors are replaced
     with their child attribute until a pointer or a torch tensor is found (for
@@ -144,8 +148,16 @@ def hook_response(attr, response, wrap_type):
         response (list): the arguments being passed to the tensor
         wrap_type (type): the type of wrapper we'd like to have
     """
+
+    # inline methods should just return new_self
+    if "__i" == attr[0:3]:
+        return new_self
+
     # TODO: Why do we need to cast it in a tuple? this is a (small) time waste
     response_is_tuple = isinstance(response, tuple)
+
+    if wrap_type == torch.nn.Parameter:
+        wrap_type = torch.Tensor
 
     # Add an artificial tuple
     if not response_is_tuple:

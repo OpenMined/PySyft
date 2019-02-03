@@ -42,6 +42,24 @@ class TorchTensor(AbstractTensor):
         else:
             return self.native___repr__()
 
+    @property
+    def id(self):
+        if self.is_wrapper:
+            return self.child.id
+        else:
+            try:
+                return self._id
+            except:
+                self._id = int(10e10 * random.random())
+                return self._id
+
+    @id.setter
+    def id(self, new_id):
+        if self.is_wrapper:
+            self.child.id = new_id
+        else:
+            self._id = new_id
+
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -278,7 +296,10 @@ class TorchTensor(AbstractTensor):
         ptr = self.send(location)
         self.owner.send_command(message=("mid_get", ptr, ()), recipient=location)
         self.child.location = location
-        self.child = ptr.child
+        self.child.id_at_location = ptr.child.id_at_location
+        # don't want it to accidentally delete the remote object
+        # when this pointer is deleted
+        ptr.child.garbage_collect_data = False
         return self
 
     def attr(self, attr_name):
@@ -290,3 +311,12 @@ class TorchTensor(AbstractTensor):
             self.grad = attr_val
 
         return attr_val
+
+    def enc_fix_prec(self):
+        return self.child.fix_precision()
+
+    def float_prec(self):
+        return self.child.float_precision()
+
+    def fix_prec(self):
+        return syft.frameworks.torch.tensors.FixedPrecisionTensor().on(self).enc_fix_prec().wrap()
