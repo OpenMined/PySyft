@@ -2,11 +2,7 @@ import random
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.nn import Parameter
-import syft
-
-from syft.frameworks.torch.tensors import LoggingTensor
 
 
 def test_param_on_pointer(workers):
