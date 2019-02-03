@@ -25,7 +25,7 @@ def test_create_pointer(workers):
 
 
 def test_remote_function(workers):
-    bob = workers['bob']
+    bob = workers["bob"]
 
     # init remote object
     x = torch.Tensor([-1, 2, 3]).send(bob)
@@ -35,6 +35,7 @@ def test_remote_function(workers):
 
     # check answer
     assert (y == torch.tensor([-2.0, 4, 6])).all()
+
 
 def test_send_get(workers):
     """Test several send get usages"""
@@ -97,11 +98,12 @@ def test_repeated_send(workers):
     # ensure bob has tensor
     assert x.id in bob._objects
 
+
 def test_remote_autograd(workers):
     """Tests the ability to backpropagate gradients on a remote
     worker."""
 
-    bob = workers['bob']
+    bob = workers["bob"]
 
     # TEST: simple remote grad calculation
 
@@ -143,11 +145,12 @@ def test_remote_autograd(workers):
     # make sure that the grads match
     assert (x.grad == x_grad).all()
 
+
 def test_gradient_send_recv(workers):
     """Tests that gradients are properly sent and received along
     with their tensors."""
 
-    bob = workers['bob']
+    bob = workers["bob"]
 
     # create a tensor
     x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
@@ -164,9 +167,10 @@ def test_gradient_send_recv(workers):
     # check that gradient was properly serde
     assert (t.grad == orig_grad).all()
 
+
 def test_method_on_attribute(workers):
 
-    bob = workers['bob']
+    bob = workers["bob"]
 
     # create remote object with children
     x = torch.Tensor([1, 2, 3])
@@ -199,11 +203,12 @@ def test_method_on_attribute(workers):
     except syft.exceptions.CannotRequestTensorAttribute as e:
         assert True
 
+
 def test_grad_pointer(workers):
     """Tests the automatic creation of a .grad pointer when
     calling .send() on a tensor with requires_grad==True"""
 
-    bob = workers['bob']
+    bob = workers["bob"]
 
     x = torch.tensor([1, 2, 3.0], requires_grad=True).send(bob)
     grad = torch.tensor([1, 1, 1]).send(bob)
@@ -212,10 +217,11 @@ def test_grad_pointer(workers):
 
     assert (bob._objects[x.id_at_location].grad == torch.tensor([2, 2, 2.0])).all()
 
+
 def test_move(workers):
 
-    bob = workers['bob']
-    alice = workers['alice']
+    bob = workers["bob"]
+    alice = workers["alice"]
 
     x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
 

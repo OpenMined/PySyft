@@ -9,6 +9,7 @@ from test.conftest import workers
 
 from syft.frameworks.torch.tensors import LoggingTensor
 
+
 def test_wrap():
     """
     Test the .on() wrap functionality for LoggingTensor
@@ -82,11 +83,12 @@ def test_send_get_log_chain(workers):
     x_back = x_ptr.get()
     assert (x_back.child.child == x_tensor).all()
 
+
 def test_remote_function_on_log_chain(workers):
     """
     Test remote function call on a chain including a log tensor
     """
-    bob = workers['bob']
+    bob = workers["bob"]
     # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
     x_tensor = torch.Tensor([1, 2, 3])
     x = LoggingTensor().on(x_tensor)
@@ -94,6 +96,7 @@ def test_remote_function_on_log_chain(workers):
     y_ptr = F.relu(x_ptr)
     y = y_ptr.get()
     assert (y.child.child == F.relu(x_tensor)).all()
+
 
 def test_remote_method_on_log_chain(workers):
     """
@@ -108,11 +111,12 @@ def test_remote_method_on_log_chain(workers):
     y = y_ptr.get()
     assert (y.child.child == F.relu(x_tensor)).all()
 
+
 def test_remote_overwritten_method_on_log_chain(workers):
     """
     Test remote overwritten method call on a chain including a log tensor
     """
-    bob = workers['bob']
+    bob = workers["bob"]
     # build a long chain tensor Wrapper>LoggingTensor>TorchTensor
     x_tensor = torch.Tensor([1, 2, 3])
     x = LoggingTensor().on(x_tensor)

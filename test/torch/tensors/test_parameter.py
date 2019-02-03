@@ -48,10 +48,12 @@ def test_param_remote_binary_method(workers):
     double_tensor = tensor + tensor
     assert (param_double_back.data == double_tensor).all()
 
+
 def test_local_param_in_nn_module_linear():
     model = nn.Linear(2, 1)
     tensor = torch.tensor([1.0, -1.0])
     res = model(tensor)
+
 
 def test_remote_param_in_nn_module_linear(workers):
     bob = workers["bob"]
