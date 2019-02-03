@@ -43,7 +43,7 @@ def create_sandbox(gbs):
     just playing around would like to have. This will create
     that for you"""
 
-    torch = gbs['torch']
+    torch = gbs["torch"]
 
     global hook
     global bob
@@ -72,10 +72,10 @@ def create_sandbox(gbs):
     andy = VirtualWorker(hook, id="jon")
 
     print("Storing hook and workers as global variables...")
-    gbs['hook'] = hook
-    gbs['bob'] = bob
-    gbs['theo'] = theo
-    gbs['jason'] = jason
-    gbs['alice'] = alice
-    gbs['andy'] = andy
+    gbs["hook"] = hook
+    gbs["bob"] = bob
+    gbs["theo"] = theo
+    gbs["jason"] = jason
+    gbs["alice"] = alice
+    gbs["andy"] = andy
     print("Done!")
