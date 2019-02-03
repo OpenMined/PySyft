@@ -44,9 +44,10 @@ class PointerTensor(AbstractTensor):
         owner=None,
         id=None,
         garbage_collect_data=True,
+        shape=None,
         point_to_attr=None,
         tags=None,
-        description=None
+        description=None,
     ):
         """Initializes a PointerTensor.
 
@@ -85,6 +86,7 @@ class PointerTensor(AbstractTensor):
         self.owner = owner
         self.id = id
         self.garbage_collect_data = garbage_collect_data
+        self.shape = shape
         self.point_to_attr = point_to_attr
 
     @classmethod
@@ -136,13 +138,21 @@ class PointerTensor(AbstractTensor):
         if self.point_to_attr is not None:
             out += "::" + str(self.point_to_attr).replace(".", "::")
 
-        if (self.tags is not None):
+        big_str = False
+
+        if self.tags is not None:
+            big_str = True
             out += "\n\tTags: "
             for tag in self.tags:
                 out += str(tag) + " "
 
-        if (self.description is not None):
+        if self.description is not None:
+            big_str = True
             out += "\n\tDescription: " + str(self.description)
+
+        if big_str:
+            out += "\n\tShape: " + str(self.shape)
+
         return out
 
     def __repr__(self):
@@ -241,6 +251,14 @@ class PointerTensor(AbstractTensor):
     @grad.setter
     def grad(self, new_grad):
         self._grad = new_grad
+
+    @property
+    def shape(self):
+        return self._shape
+
+    @shape.setter
+    def shape(self, new_shape):
+        self._shape = new_shape
 
     def attr(self, attr_name):
 

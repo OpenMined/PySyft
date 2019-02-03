@@ -104,6 +104,13 @@ class AbstractTensor(ABC):
         """
         return sy.serde.serialize(self, compress=compress, compress_scheme=compress_scheme)
 
+    def ser(self, *args, **kwargs):
+        return self.serialize(*args, **kwargs)
+
+    @property
+    def shape(self):
+        return self.child.shape
+
 
 def initialize_tensor(
     hook_self, cls, torch_tensor: bool = False, owner=None, id=None, *init_args, **init_kwargs

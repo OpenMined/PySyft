@@ -4,12 +4,9 @@ from .utils import hook
 
 
 class LoggingTensor(AbstractTensor):
-    def __init__(self,
-                 parent: AbstractTensor = None,
-                 owner=None,
-                 id=None,
-                 tags=None,
-                 description=None):
+    def __init__(
+        self, parent: AbstractTensor = None, owner=None, id=None, tags=None, description=None
+    ):
         """Initializes a LoggingTensor, whose behaviour is to log all operations
         applied on it.
 

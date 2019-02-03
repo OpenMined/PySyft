@@ -25,14 +25,14 @@ class TorchTensor(AbstractTensor):
     """
 
     def has_child(self):
-        return hasattr(self, 'child')
+        return hasattr(self, "child")
 
     def describe(self, description):
         self.description = description
         return self
 
     def tag(self, *_tags):
-        if(self.tags is None):
+        if self.tags is None:
             tags = list()
         else:
             tags = list(self.tags)
@@ -45,10 +45,10 @@ class TorchTensor(AbstractTensor):
 
     @property
     def tags(self):
-        if(self.has_child()):
+        if self.has_child():
             return self.child.tags
         else:
-            if(not hasattr(self, "_tags")):
+            if not hasattr(self, "_tags"):
                 self._tags = None
             return self._tags
 
@@ -64,7 +64,7 @@ class TorchTensor(AbstractTensor):
         if self.has_child():
             return self.child.description
         else:
-            if(not hasattr(self, "_description")):
+            if not hasattr(self, "_description"):
                 self._description = None
             return self._description
 
@@ -74,6 +74,13 @@ class TorchTensor(AbstractTensor):
             self.child.description = new_desc
         else:
             self._description = new_desc
+
+    @property
+    def shape(self):
+        if self.is_wrapper:
+            return self.child.shape
+        else:
+            return self.native_shape
 
     def __str__(self) -> str:
         if self.has_child():
@@ -92,13 +99,22 @@ class TorchTensor(AbstractTensor):
                 return type(self).__name__ + ">" + self.child.__repr__()
         else:
             out = self.native___repr__()
-            if (self.tags is not None):
+
+            big_repr = False
+
+            if self.tags is not None:
+                big_repr = True
                 out += "\n\tTags: "
                 for tag in self.tags:
                     out += str(tag) + " "
 
-            if (self.description is not None):
+            if self.description is not None:
+                big_repr = True
                 out += "\n\tDescription: " + str(self.description)
+
+            if big_repr:
+                out += "\n\tShape: " + str(self.shape)
+
             return out
 
     @property
@@ -240,6 +256,7 @@ class TorchTensor(AbstractTensor):
         owner: BaseWorker = None,
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
+        shape=None,
     ) -> PointerTensor:
         """Creates a pointer to the "self" torch.Tensor object.
 
@@ -306,6 +323,9 @@ class TorchTensor(AbstractTensor):
             else:
                 ptr_id = int(10e10 * random.random())
 
+        if shape is None:
+            shape = self.shape
+
         # previous_pointer = owner.get_pointer_to(location, id_at_location)
         previous_pointer = None
 
@@ -318,8 +338,9 @@ class TorchTensor(AbstractTensor):
                 owner=owner,
                 id=ptr_id,
                 garbage_collect_data=garbage_collect_data,
+                shape=shape,
                 tags=self.tags,
-                description=self.description
+                description=self.description,
             )
 
         return ptr

@@ -585,13 +585,20 @@ class BaseWorker(AbstractWorker):
             """
         results = list()
         for key, tensor in self._objects.items():
-            found_something  = True
+            found_something = True
             for query_item in query:
-                if not (query_item == key or query_item in tensor.tags or query_item in tensor.description):
+                if not (
+                    query_item == key
+                    or query_item in tensor.tags
+                    or query_item in tensor.description
+                ):
                     found_something = False
 
-            if(found_something):
-                ptr = tensor.create_pointer()
+            if found_something:
+                # set garbage_collect_data to False because if we're searching
+                # for a tensor we don't own, then it's probably someone else's
+                # decision to decide when to delete the tensor.
+                ptr = tensor.create_pointer(garbage_collect_data=False)
                 results.append(ptr)
 
         return results

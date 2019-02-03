@@ -237,7 +237,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         chain = _simplify(tensor.child)
 
     tags = tensor.tags
-    if(tags is not None):
+    if tags is not None:
         tags = list(tags)
 
     return (tensor.id, tensor_bin, chain, grad_chain, tags, tensor.description)
@@ -278,7 +278,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         kwargs={},
     )
 
-    if(tags is not None):
+    if tags is not None:
         for i in range(len(tags)):
             tags[i] = tags[i].decode("utf-8")
         tensor.tags = tags
