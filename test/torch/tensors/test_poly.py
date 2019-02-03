@@ -1,60 +1,69 @@
-import syft 
+
 from syft.frameworks.torch.tensors.Polynomial import PolynomialTensor
 
 import math
 
-class TestPolynomialTensor:
+""" Test cases to ensure working of Polynomial Tensor. The tests under these ensure that the error between actual funcion values and approximations do not deviate too much"""
 
-    """ Test cases to ensure working of Polynomial Tensor. The tests under these ensure that the error between actual funcion values and approximations do not deviate too much"""
+tensor = PolynomialTensor()
+# Maximum permissible error as calculated by EvalRelative under PolynomialTensor
+threshold = 0.1
 
-    def __init__(self):
+def EvalRelative(x_true, x_pred):
 
-        self.tensor = PolynomialTensor()
-        # Maximum permissible error as calculated by EvalRelative under PolynomialTensor
-        self.threshold = 0.1
+        """The function is used to measure the error between actual function value and approximated function value. The error is evaluated with respect to actual value.
+           
+        
+            Parameters: 
+            
+            x_true: Value of true function 
+            x_pred: Value of function approximation 
+            
+        """
 
-    def EvalRelative_Test(self, x_true, x_pred):
+        error = abs(x_true - x_pred)
+        return round((error / x_true), 2)
 
-        assert self.tensor.EvalRelative(15 / 7.5) == 0.5
-        assert self.tensor.EvalRelative(15 / 1.5) == 0.9
-        assert self.tensor.EvalRelative(15 / 15) == 0
+def EvalRelative_Test(x_true, x_pred):
 
-    def SigmoidTest(self):
+    assert EvalRelative(15 / 7.5) == 0.5
+    assert EvalRelative(15 / 1.5) == 0.9
+    assert EvalRelative(15 / 15) == 0
 
-        test_range = 4
-        for i in range(-test_range, test_range, 1):
+def SigmoidTest(self):
+
+    test_range = 4
+    for i in range(-test_range, test_range, 1):
+
+         assert (
+            tensor.EvalRelative(tensor.exp(i / 10), math.exp(i / 10))
+            < threshold
+         )
+
+def ExpTest():
+
+    test_range = 10
+    for i in range(-test_range, test_range, 1):
 
             assert (
-                self.tensor.EvalRelative(self.tensor.exp(i / 10), math.exp(i / 10))
-                < self.threshold
+                   tensor.EvalRelative(tensor.exp(i / 10), math.exp(i / 10))
+                < threshold
             )
 
-    def ExpTest(self):
+def tanhTest():
 
-        test_range = 10
-        for i in range(-test_range, test_range, 1):
+    test_range = 9
+    for i in range(-test_range, test_range, 1):
 
             assert (
-                self.tensor.EvalRelative(self.tensor.exp(i / 10), math.exp(i / 10))
-                < self.threshold
+                 tensor.EvalRelative(tensor.tanh(i / 10), math.tanh(i / 10))< threshold
             )
 
-    def tanhTest(self):
+def LogTest():
 
-        test_range = 9
-        for i in range(-test_range, test_range, 1):
-
-            assert (
-                self.tensor.EvalRelative(self.tensor.tanh(i / 10), math.tanh(i / 10))
-                < self.threshold
-            )
-
-    def LogTest(self):
-
-        test_range = 4
-        for i in range(1, test_range, 1):
+    test_range = 4
+    for i in range(1, test_range, 1):
 
             assert (
-                self.tensor.EvalRelative(self.tensor.log(i / 10), math.log(i / 10))
-                < self.threshold
+                   EvalRelative(tensor.log(i / 10), math.log(i / 10))<threshold
             )

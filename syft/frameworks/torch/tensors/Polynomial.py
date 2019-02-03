@@ -1,4 +1,7 @@
-class PolynomialTensor:
+from syft.frameworks.torch.tensors.abstract import AbstractTensor
+
+
+class PolynomialTensor(AbstractTensor):
 
     """Tensor type which provides polynomial approximation functionalities using Taylor Series expansion
        since computing exact functions could impose a overhead on computation
