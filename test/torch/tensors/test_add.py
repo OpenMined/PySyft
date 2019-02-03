@@ -1,62 +1,35 @@
 import random
-
-import pytest
 import torch
-import torch.nn.functional as F
 import syft
 
 from syft.frameworks.torch.tensors import AdditiveSharingTensor
 
 
-class TestAdditiveSharingTensor(object):
-    def setUp(self):
-        hook = syft.TorchHook(torch, verbose=True)
+def test_wrap(workers):
+    """
+    Test the .on() wrap functionality for LoggingTensor
+    """
 
-        self.me = hook.local_worker
-        self.me.is_client_worker = True
+    x_tensor = torch.Tensor([1, 2, 3])
+    x = AdditiveSharingTensor().on(x_tensor)
+    assert isinstance(x, torch.Tensor)
+    assert isinstance(x.child, AdditiveSharingTensor)
+    assert isinstance(x.child.child, torch.Tensor)
 
-        instance_id = str(int(10e10 * random.random()))
-        bob = syft.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
-        alice = syft.VirtualWorker(id=f"alice{instance_id}", hook=hook, is_client_worker=False)
-        james = syft.VirtualWorker(id=f"james{instance_id}", hook=hook, is_client_worker=False)
 
-        bob.add_workers([alice, james])
-        alice.add_workers([bob, james])
-        james.add_workers([bob, alice])
+def test_encode_decode(workers):
 
-        self.hook = hook
+    x = torch.tensor([1, 2, 3]).share(workers["bob"], workers["alice"], workers["james"])
 
-        self.bob = bob
-        self.alice = alice
-        self.james = james
+    x = x.get()
 
-    def test_wrap(self):
-        """
-        Test the .on() wrap functionality for LoggingTensor
-        """
-        self.setUp()
-        x_tensor = torch.Tensor([1, 2, 3])
-        x = AdditiveSharingTensor().on(x_tensor)
-        assert isinstance(x, torch.Tensor)
-        assert isinstance(x.child, AdditiveSharingTensor)
-        assert isinstance(x.child.child, torch.Tensor)
+    assert x[0] == 1
 
-    def test_encode_decode(self):
 
-        self.setUp()
+def test_add(workers):
 
-        x = torch.tensor([1, 2, 3]).share(self.bob, self.alice, self.james)
+    x = torch.tensor([1, 2, 3]).share(workers["bob"], workers["alice"], workers["james"])
 
-        x = x.get()
+    y = (x + x).get()
 
-        assert x[0] == 1
-
-    def test_add(self):
-
-        self.setUp()
-
-        x = torch.tensor([1, 2, 3]).share(self.bob, self.alice, self.james)
-
-        y = (x + x).get()
-
-        assert y[0] == 2
+    assert y[0] == 2
