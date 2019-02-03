@@ -45,7 +45,7 @@ class TestAdditiveSharingTensor(object):
 
         self.setUp()
 
-        x = torch.tensor([1,2,3]).share(self.bob, self.alice, self.james)
+        x = torch.tensor([1, 2, 3]).share(self.bob, self.alice, self.james)
 
         x = x.get()
 
@@ -60,4 +60,3 @@ class TestAdditiveSharingTensor(object):
         y = (x + x).get()
 
         assert y[0] == 2
-

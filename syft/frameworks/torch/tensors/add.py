@@ -2,13 +2,9 @@ import torch
 from syft.frameworks.torch.tensors.abstract import AbstractTensor
 from .utils import hook
 
+
 class AdditiveSharingTensor(AbstractTensor):
-    def __init__(self,
-                 parent: AbstractTensor = None,
-                 owner=None,
-                 id=None,
-                 Q_BITS = 31,
-                 BASE = 2):
+    def __init__(self, parent: AbstractTensor = None, owner=None, id=None, Q_BITS=31, BASE=2):
         """Initializes an Additive Sharing Tensor, whose behaviour is to split a
         single tensor into shares, distribute the shares amongst several machines,
         and then manage how those shares are used to compute various arithmetic
@@ -53,10 +49,9 @@ class AdditiveSharingTensor(AbstractTensor):
             *owners the list of shareholders. Can be of any length.
 
             """
-        shares = self.generate_shares(self.child,
-                                      n_workers=len(owners),
-                                      mod=self.field,
-                                      random_type=torch.LongTensor)
+        shares = self.generate_shares(
+            self.child, n_workers=len(owners), mod=self.field, random_type=torch.LongTensor
+        )
 
         for i in range(len(shares)):
             shares[i] = shares[i].send(owners[i])
@@ -92,8 +87,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 given the choise of mod"
             """
 
-
-        if (not isinstance(secret, random_type)):
+        if not isinstance(secret, random_type):
             secret = secret.type(random_type)
 
         random_shares = [random_type(secret.shape) for i in range(n_workers - 1)]
@@ -114,7 +108,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return shares
 
     @hook
-    def add(self, shares:dict, other_shares, *args, **kwargs):
+    def add(self, shares: dict, other_shares, *args, **kwargs):
         """Adds two tensors together
 
         Args:
@@ -125,15 +119,15 @@ class AdditiveSharingTensor(AbstractTensor):
         """
 
         # if someone passes in a constant... (i.e., x + 3)
-        if (not isinstance(other_shares, dict)):
+        if not isinstance(other_shares, dict):
             other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child
 
         assert len(shares) == len(other_shares)
 
         # matches each share which needs to be added according
         # to the location of the share
-        new_shares =  {}
-        for k,v in shares.items():
+        new_shares = {}
+        for k, v in shares.items():
             new_shares[k] = other_shares[k] + v
 
         # return the true tensor (unwrapped - wrapping will happen
@@ -148,7 +142,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return self.add(*args, **kwargs)
 
     @hook
-    def sub(self, shares:dict, other_shares, **kwargs):
+    def sub(self, shares: dict, other_shares, **kwargs):
         """Subtracts an other tensor from self.
 
         Args:
@@ -159,15 +153,15 @@ class AdditiveSharingTensor(AbstractTensor):
         """
 
         # if someone passes in a constant... (i.e., x - 3)
-        if (not isinstance(other_shares, dict)):
+        if not isinstance(other_shares, dict):
             other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child
 
         assert len(shares) == len(other_shares)
 
         # matches each share which needs to be added according
         # to the location of the share
-        new_shares =  {}
-        for k,v in shares.items():
+        new_shares = {}
+        for k, v in shares.items():
             new_shares[k] = v - other_shares[k]
 
         # return the true tensor (unwrapped - wrapping will happen
