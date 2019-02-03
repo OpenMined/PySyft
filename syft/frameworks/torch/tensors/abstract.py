@@ -12,6 +12,19 @@ class AbstractTensor(ABC):
 
     is_wrapper = False
 
+    def __init__(self, tags=None, description=None):
+        """Initializer for AbstractTensor
+
+        Args:
+            tags: an optional set of hashtags corresponding to this tensor
+                which this tensor should be searchable for.
+            description: an optional string describing the purpose of the
+                tensor
+        """
+
+        self.tags = tags
+        self.description = description
+
     def __str__(self) -> str:
         if hasattr(self, "child"):
             return type(self).__name__ + ">" + self.child.__str__()

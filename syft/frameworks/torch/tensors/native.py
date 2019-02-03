@@ -24,8 +24,59 @@ class TorchTensor(AbstractTensor):
     checking AbstractTensor.
     """
 
+    def has_child(self):
+        return hasattr(self, 'child')
+
+    def describe(self, description):
+        self.description = description
+        return self
+
+    def tag(self, *_tags):
+        if(self.tags is None):
+            tags = list()
+        else:
+            tags = list(self.tags)
+
+        for new_tag in _tags:
+            tags.append(new_tag)
+
+        self.tags = set(tags)
+        return self
+
+    @property
+    def tags(self):
+        if(self.has_child()):
+            return self.child.tags
+        else:
+            if(not hasattr(self, "_tags")):
+                self._tags = None
+            return self._tags
+
+    @tags.setter
+    def tags(self, new_tags):
+        if self.has_child():
+            self.child.tags = set(new_tags)
+        else:
+            self._tags = new_tags
+
+    @property
+    def description(self):
+        if self.has_child():
+            return self.child.description
+        else:
+            if(not hasattr(self, "_description")):
+                self._description = None
+            return self._description
+
+    @description.setter
+    def description(self, new_desc):
+        if self.has_child():
+            self.child.description = new_desc
+        else:
+            self._description = new_desc
+
     def __str__(self) -> str:
-        if hasattr(self, "child"):
+        if self.has_child():
             if self.is_wrapper:
                 return "(Wrapper)>" + self.child.__str__()
             else:
@@ -34,13 +85,21 @@ class TorchTensor(AbstractTensor):
             return self.native___str__()
 
     def __repr__(self) -> str:
-        if hasattr(self, "child"):
+        if self.has_child():
             if self.is_wrapper:
                 return "(Wrapper)>" + self.child.__str__()
             else:
                 return type(self).__name__ + ">" + self.child.__repr__()
         else:
-            return self.native___repr__()
+            out = self.native___repr__()
+            if (self.tags is not None):
+                out += "\n\tTags: "
+                for tag in self.tags:
+                    out += str(tag) + " "
+
+            if (self.description is not None):
+                out += "\n\tDescription: " + str(self.description)
+            return out
 
     @property
     def id(self):
@@ -133,6 +192,9 @@ class TorchTensor(AbstractTensor):
             self.child.garbage_collect_data = False
 
         ptr = self.owner.send(self, location)
+
+        ptr.description = self.description
+        ptr.tags = self.tags
 
         # The last pointer should control remote GC, not the previous self.ptr
         if hasattr(self, "ptr"):
@@ -256,6 +318,8 @@ class TorchTensor(AbstractTensor):
                 owner=owner,
                 id=ptr_id,
                 garbage_collect_data=garbage_collect_data,
+                tags=self.tags,
+                description=self.description
             )
 
         return ptr

@@ -4,7 +4,8 @@ from .utils import hook
 
 
 class AdditiveSharingTensor(AbstractTensor):
-    def __init__(self, parent: AbstractTensor = None, owner=None, id=None, Q_BITS=31, BASE=2):
+    def __init__(self, parent: AbstractTensor = None, owner=None, id=None, Q_BITS=31,
+                 BASE=2, tags=None, description=None):
         """Initializes an Additive Sharing Tensor, whose behaviour is to split a
         single tensor into shares, distribute the shares amongst several machines,
         and then manage how those shares are used to compute various arithmetic
@@ -23,6 +24,8 @@ class AdditiveSharingTensor(AbstractTensor):
             Q_BITS: the amount of memory for each number  (the exponent)
             BASE: the amount of memory for each number (the base)
         """
+        super().__init__(tags, description)
+
         self.parent = parent
         self.owner = owner
         self.id = id

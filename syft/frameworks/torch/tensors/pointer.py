@@ -45,6 +45,8 @@ class PointerTensor(AbstractTensor):
         id=None,
         garbage_collect_data=True,
         point_to_attr=None,
+        tags=None,
+        description=None
     ):
         """Initializes a PointerTensor.
 
@@ -76,6 +78,7 @@ class PointerTensor(AbstractTensor):
                 to None, which meants don't point to any attr, just point to the
                 tensor corresponding to the id_at_location.
         """
+        super().__init__(tags, description)
 
         self.location = location
         self.id_at_location = id_at_location
@@ -132,6 +135,14 @@ class PointerTensor(AbstractTensor):
 
         if self.point_to_attr is not None:
             out += "::" + str(self.point_to_attr).replace(".", "::")
+
+        if (self.tags is not None):
+            out += "\n\tTags: "
+            for tag in self.tags:
+                out += str(tag) + " "
+
+        if (self.description is not None):
+            out += "\n\tDescription: " + str(self.description)
         return out
 
     def __repr__(self):

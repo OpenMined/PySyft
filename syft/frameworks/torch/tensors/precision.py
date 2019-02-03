@@ -15,6 +15,8 @@ class FixedPrecisionTensor(AbstractTensor):
         precision_fractional: int = 3,
         precision_integral: int = 1,
         kappa: int = 1,
+        tags:set = None,
+        description:str =  None
     ):
         """Initializes a Fixed Precision tensor, which encodes all decimal point
         values using an underlying integer value.
@@ -37,6 +39,8 @@ class FixedPrecisionTensor(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the FixedPrecisionTensor.
         """
+        super().__init__(tags, description)
+
         self.parent = parent
         self.owner = owner
         self.id = id

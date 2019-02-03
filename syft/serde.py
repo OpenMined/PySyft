@@ -235,7 +235,12 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     chain = None
     if hasattr(tensor, "child"):
         chain = _simplify(tensor.child)
-    return (tensor.id, tensor_bin, chain, grad_chain)
+
+    tags = tensor.tags
+    if(tags is not None):
+        tags = list(tags)
+
+    return (tensor.id, tensor_bin, chain, grad_chain, tags, tensor.description)
 
 
 def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
@@ -253,7 +258,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor_bin, chain, grad_chain = tensor_tuple
+    tensor_id, tensor_bin, chain, grad_chain, tags, description = tensor_tuple
 
     bin_tensor_stream = io.BytesIO(tensor_bin)
     tensor = torch.load(bin_tensor_stream)
@@ -272,6 +277,14 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         init_args=[],
         kwargs={},
     )
+
+    if(tags is not None):
+        for i in range(len(tags)):
+            tags[i] = tags[i].decode("utf-8")
+        tensor.tags = tags
+
+    if description is not None:
+        tensor.description = description.decode("utf-8")
 
     if chain is not None:
         chain = _detail(worker, chain)

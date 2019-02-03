@@ -574,3 +574,24 @@ class BaseWorker(AbstractWorker):
 
     def __getitem__(self, idx):
         return self._objects[idx]
+
+    def search(self, *query):
+        """Search for a match between the query terms and the tensor's Id, Tag, or Description.
+        Note that the query is an AND query meaning that every item in the list of strings (query*)
+        must be found somewhere on the tensor in order for it to be included in the results.
+
+        Args:
+            query: a list of strings to match against.
+            """
+        results = list()
+        for key, tensor in self._objects.items():
+            found_something  = True
+            for query_item in query:
+                if not (query_item == key or query_item in tensor.tags or query_item in tensor.description):
+                    found_something = False
+
+            if(found_something):
+                ptr = tensor.create_pointer()
+                results.append(ptr)
+
+        return results
