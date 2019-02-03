@@ -358,6 +358,14 @@ class TorchTensor(AbstractTensor):
         """
         # Transfer the get() to the child attribute which is a pointer
 
+        # if (self.has_child()):
+        #     if (isinstance(self.child, syft.frameworks.torch.tensors.FixedPrecisionTensor)):
+        #         if (hasattr(self.child, "child")):
+        #             if (hasattr(self.child.child, "child")):
+        #                 if(isinstance(self.child.child.child, syft.frameworks.torch.tensors.AdditiveSharingTensor)):
+        #                     self.child.child =  self.child.child.get()
+        #                     return self
+
         tensor = self.child.get()
 
         # Clean the wrapper
@@ -407,6 +415,16 @@ class TorchTensor(AbstractTensor):
         return syft.frameworks.torch.tensors.FixedPrecisionTensor().on(self).enc_fix_prec().wrap()
 
     def share(self, *owners):
+        """This is a passthrough method which calls .share on the child.
+
+        Args:
+            owners: a list of BaseWorker objects determining who to send shares to.
+        """
+
+        if self.has_child():
+            self.child = self.child.share(*owners)
+            return self
+
         return (
             syft.frameworks.torch.tensors.AdditiveSharingTensor()
             .on(self)

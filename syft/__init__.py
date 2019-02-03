@@ -43,7 +43,10 @@ def create_sandbox(gbs):
     just playing around would like to have. This will create
     that for you"""
 
-    torch = gbs["torch"]
+    try:
+        torch = gbs["torch"]
+    except:
+        torch = gbs["th"]
 
     global hook
     global bob

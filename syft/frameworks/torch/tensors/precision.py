@@ -132,3 +132,12 @@ class FixedPrecisionTensor(AbstractTensor):
         response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
+
+    def get(self):
+        """Just a pass through. This is most commonly used when calling .get() on a
+        FixedPrecisionTensor which has also been shared."""
+        return FixedPrecisionTensor().on(self.child.get())
+
+    def share(self, *owners):
+        self.child = self.child.share(*owners)
+        return self

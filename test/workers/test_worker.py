@@ -52,30 +52,30 @@ class TestWorker(TestCase):
 
         x = (
             torch.tensor([1, 2, 3, 4, 5])
-                .tag("#fun", "#mnist")
-                .describe("The images in the MNIST training dataset.")
-                .send(bob)
+            .tag("#fun", "#mnist")
+            .describe("The images in the MNIST training dataset.")
+            .send(bob)
         )
 
         y = (
             torch.tensor([1, 2, 3, 4, 5])
-                .tag("#not_fun", "#cifar")
-                .describe("The images in the MNIST training dataset.")
-                .send(bob)
+            .tag("#not_fun", "#cifar")
+            .describe("The images in the MNIST training dataset.")
+            .send(bob)
         )
 
         z = (
             torch.tensor([1, 2, 3, 4, 5])
-                .tag("#fun", "#boston_housing")
-                .describe("The images in the MNIST training dataset.")
-                .send(bob)
+            .tag("#fun", "#boston_housing")
+            .describe("The images in the MNIST training dataset.")
+            .send(bob)
         )
 
         a = (
             torch.tensor([1, 2, 3, 4, 5])
-                .tag("#not_fun", "#boston_housing")
-                .describe("The images in the MNIST training dataset.")
-                .send(bob)
+            .tag("#not_fun", "#boston_housing")
+            .describe("The images in the MNIST training dataset.")
+            .send(bob)
         )
 
         assert len(bob.search("#fun")) == 2
