@@ -51,6 +51,7 @@ def create_sandbox(gbs):
     global alice
     global andy
     global jason
+    global jon
 
     print("Setting up Sandbox...")
 
