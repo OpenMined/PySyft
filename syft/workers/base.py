@@ -588,15 +588,15 @@ class BaseWorker(AbstractWorker):
             found_something = True
             for query_item in query:
                 match = False
-                if(query_item == str(key)):
+                if query_item == str(key):
                     match = True
 
-                if(tensor.tags is not None):
-                    if(query_item in tensor.tags):
+                if tensor.tags is not None:
+                    if query_item in tensor.tags:
                         match = True
 
-                if(tensor.description is not None):
-                    if(query_item in tensor.description):
+                if tensor.description is not None:
+                    if query_item in tensor.description:
                         match = True
 
                 if not match:

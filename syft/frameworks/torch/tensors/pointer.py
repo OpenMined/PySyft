@@ -257,7 +257,7 @@ class PointerTensor(AbstractTensor):
 
         results = self.location.search(str(self.id_at_location))
 
-        if (len(results) > 0):
+        if len(results) > 0:
             return results[0].shape
         else:
             print("couldn't find shape... are you sure this tensor exists?")
@@ -270,7 +270,7 @@ class PointerTensor(AbstractTensor):
         case, then it requests the shape information from the remote object
         directly (which is inefficient and should be avoided)."""
 
-        if(self._shape is None):
+        if self._shape is None:
             self._shape = self.get_shape()
 
         return self._shape

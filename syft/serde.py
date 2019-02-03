@@ -729,7 +729,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     point_to_attr = tensor_tuple[3]
     shape = tensor_tuple[4]
 
-    if(shape is not None):
+    if shape is not None:
         shape = torch.Size(shape)
 
     # If the pointer received is pointing at the current worker, we load the tensor instead
@@ -761,11 +761,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     else:
         location = syft.torch.hook.local_worker.get_worker(worker_id)
         return PointerTensor(
-            location=location,
-            id_at_location=id_at_location,
-            owner=worker,
-            id=obj_id,
-            shape=shape
+            location=location, id_at_location=id_at_location, owner=worker, id=obj_id, shape=shape
         )
 
     # a more general but slower/more verbose option
