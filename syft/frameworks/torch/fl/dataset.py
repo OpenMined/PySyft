@@ -1,5 +1,4 @@
-class FederatedDataset():
-
+class FederatedDataset:
     def __init__(self, inputs: dict, targets: dict, batch_size=12, num_iterators=10):
         """This class takes two dictionaries of datapoints and forms
         them into batches ready for training. The keys to both inputs
@@ -14,7 +13,7 @@ class FederatedDataset():
         union = input_workers.intersection(target_workers)
         diff = input_workers.difference(target_workers)
 
-        if (len(diff) == 0):
+        if len(diff) == 0:
             ""
         else:
             print("Data from some workers ignored:" + str(diff))
@@ -33,14 +32,17 @@ class FederatedDataset():
         for worker in self.ordered_workers:
 
             if (len(inputs[worker]) != 1) or (len(targets[worker]) != 1):
-                raise Exception("There must be only one input and one target" +
-                                "tensor per worker. Otherwise it's not clear" +
-                                "which rows in the input correspond to which" +
-                                "rows in the output")
+                raise Exception(
+                    "There must be only one input and one target"
+                    + "tensor per worker. Otherwise it's not clear"
+                    + "which rows in the input correspond to which"
+                    + "rows in the output"
+                )
 
             if inputs[worker][0].shape[0] != targets[worker][0].shape[0]:
-                raise Exception("On each worker, the input and target must have" +
-                                " the same number of rows.")
+                raise Exception(
+                    "On each worker, the input and target must have" + " the same number of rows."
+                )
 
             self.worker2num_rows[worker] = inputs[worker][0].shape[0]
             self.worker2inputs[worker] = inputs[worker][0]
@@ -50,7 +52,9 @@ class FederatedDataset():
 
         self.iterators = list()
         for i in range(self.num_iterators):
-            self.iterators.append(FederatedIterator(self, self.worker2num_rows, self.ordered_workers))
+            self.iterators.append(
+                FederatedIterator(self, self.worker2num_rows, self.ordered_workers)
+            )
 
         self.reset()
 
@@ -60,13 +64,13 @@ class FederatedDataset():
             iterator.reset(i)
 
     def keep_going(self):
-        if(self.row_i < self.num_rows):
+        if self.row_i < self.num_rows:
             return True
         return False
 
     def step(self):
 
-        if (self.num_iterators> 1):
+        if self.num_iterators > 1:
             batches = {}
             for i in range(self.num_iterators):
                 data, target = self.iterators[i].step()
@@ -76,11 +80,10 @@ class FederatedDataset():
         else:
             data, target = self.iterators[0].step()
             self.row_i += data.shape[0]
-            return (data,target)
+            return (data, target)
 
 
-class FederatedIterator():
-
+class FederatedIterator:
     def __init__(self, federated_dataset, worker2num_rows, ordered_workers):
 
         self.worker2num_rows = worker2num_rows
@@ -90,19 +93,19 @@ class FederatedIterator():
     def step(self):
         worker = self.ordered_workers[self.worker_iterator]
         wi = self.worker2iterators[worker]
-        input_batch = self.fd.worker2inputs[worker][wi:wi + self.fd.batch_size]
-        target_batch = self.fd.worker2targets[worker][wi:wi + self.fd.batch_size]
+        input_batch = self.fd.worker2inputs[worker][wi : wi + self.fd.batch_size]
+        target_batch = self.fd.worker2targets[worker][wi : wi + self.fd.batch_size]
 
         self.worker2iterators[worker] += self.fd.batch_size
-        if (self.worker2iterators[worker] >= self.worker2num_rows[worker]):
+        if self.worker2iterators[worker] >= self.worker2num_rows[worker]:
             self.worker2iterators[worker] = 0
             new_iterator = (self.worker_iterator + 1) % len(self.ordered_workers)
 
             keepgoing = True
-            while (keepgoing):
+            while keepgoing:
                 keepgoing = False
-                for i,it in enumerate(self.fd.iterators):
-                    if (it.worker_iterator == new_iterator):
+                for i, it in enumerate(self.fd.iterators):
+                    if it.worker_iterator == new_iterator:
                         keepgoing = True
                         new_iterator = (new_iterator + 1) % len(self.ordered_workers)
                         break

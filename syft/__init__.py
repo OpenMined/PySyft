@@ -72,12 +72,14 @@ def create_sandbox(gbs, verbose=True, download_data=True):
         def load_sklearn(func, *tags):
             dataset = func()
             data = (
-                torch.tensor(dataset["data"]).float()
+                torch.tensor(dataset["data"])
+                .float()
                 .tag(*(list(tags) + ["#data"]))
                 .describe(dataset["DESCR"])
             )
             target = (
-                torch.tensor(dataset["target"]).float()
+                torch.tensor(dataset["target"])
+                .float()
                 .tag(*(list(tags) + ["#target"]))
                 .describe(dataset["DESCR"])
             )
