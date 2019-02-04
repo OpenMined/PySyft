@@ -43,10 +43,10 @@ import zstd
 import syft
 
 from syft.workers import AbstractWorker
-from syft.frameworks.torch.tensors import LoggingTensor
-from syft.frameworks.torch.tensors import PointerTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
-from syft.frameworks.torch.tensors.abstract import initialize_tensor
+from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.exceptions import CompressionNotFoundException
 
 
@@ -235,7 +235,12 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     chain = None
     if hasattr(tensor, "child"):
         chain = _simplify(tensor.child)
-    return (tensor.id, tensor_bin, chain, grad_chain)
+
+    tags = tensor.tags
+    if tags is not None:
+        tags = list(tags)
+
+    return (tensor.id, tensor_bin, chain, grad_chain, tags, tensor.description)
 
 
 def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
@@ -253,7 +258,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor_bin, chain, grad_chain = tensor_tuple
+    tensor_id, tensor_bin, chain, grad_chain, tags, description = tensor_tuple
 
     bin_tensor_stream = io.BytesIO(tensor_bin)
     tensor = torch.load(bin_tensor_stream)
@@ -272,6 +277,14 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         init_args=[],
         kwargs={},
     )
+
+    if tags is not None:
+        for i in range(len(tags)):
+            tags[i] = tags[i].decode("utf-8")
+        tensor.tags = tags
+
+    if description is not None:
+        tensor.description = description.decode("utf-8")
 
     if chain is not None:
         chain = _detail(worker, chain)
@@ -685,7 +698,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
         data = _simplify_pointer_tensor(ptr)
     """
 
-    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr)
+    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr, ptr.shape)
 
     # a more general but slower/more verbose option
 
@@ -714,6 +727,10 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     id_at_location = tensor_tuple[1]
     worker_id = tensor_tuple[2].decode("utf-8")
     point_to_attr = tensor_tuple[3]
+    shape = tensor_tuple[4]
+
+    if shape is not None:
+        shape = torch.Size(shape)
 
     # If the pointer received is pointing at the current worker, we load the tensor instead
     if worker_id == worker.id:
@@ -728,6 +745,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
                     tensor = getattr(tensor, attr)
 
             if tensor is not None:
+
                 if not tensor.is_wrapper and not isinstance(tensor, torch.Tensor):
 
                     # if the tensor is a wrapper then it doesn't need to be wrapped
@@ -743,7 +761,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     else:
         location = syft.torch.hook.local_worker.get_worker(worker_id)
         return PointerTensor(
-            location=location, id_at_location=id_at_location, owner=worker, id=obj_id
+            location=location, id_at_location=id_at_location, owner=worker, id=obj_id, shape=shape
         )
 
     # a more general but slower/more verbose option

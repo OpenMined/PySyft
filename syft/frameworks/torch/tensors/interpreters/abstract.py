@@ -12,6 +12,19 @@ class AbstractTensor(ABC):
 
     is_wrapper = False
 
+    def __init__(self, tags=None, description=None):
+        """Initializer for AbstractTensor
+
+        Args:
+            tags: an optional set of hashtags corresponding to this tensor
+                which this tensor should be searchable for.
+            description: an optional string describing the purpose of the
+                tensor
+        """
+
+        self.tags = tags
+        self.description = description
+
     def __str__(self) -> str:
         if hasattr(self, "child"):
             return type(self).__name__ + ">" + self.child.__str__()
@@ -90,6 +103,13 @@ class AbstractTensor(ABC):
                 x.serialize() # returns a serialized object
         """
         return sy.serde.serialize(self, compress=compress, compress_scheme=compress_scheme)
+
+    def ser(self, *args, **kwargs):
+        return self.serialize(*args, **kwargs)
+
+    @property
+    def shape(self):
+        return self.child.shape
 
 
 def initialize_tensor(

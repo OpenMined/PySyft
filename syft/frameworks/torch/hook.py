@@ -12,10 +12,13 @@ from functools import wraps
 import syft
 from syft import workers
 from syft.workers import BaseWorker
-from .tensors import TorchTensor, PointerTensor, LoggingTensor
-from .tensors import FixedPrecisionTensor
+from .tensors.interpreters import TorchTensor
+from .tensors.interpreters import PointerTensor
+from .tensors.decorators import LoggingTensor
+from .tensors.interpreters import FixedPrecisionTensor
+from .tensors.interpreters import AdditiveSharingTensor
 from .torch_attributes import TorchAttributes
-from .tensors.abstract import initialize_tensor, _apply_args
+from .tensors.interpreters.abstract import initialize_tensor, _apply_args
 
 
 class TorchHook:
@@ -119,9 +122,15 @@ class TorchHook:
         # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
         self._hook_syft_tensor_methods(LoggingTensor)
 
-        # Add all hooked tensor methods to Logging tensor but change behaviour to just forward
-        # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
+        # Add all hooked tensor methods to FixedPrecisionTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
+
+        # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(AdditiveSharingTensor)
 
         # Hook the tensor constructor function
         self._hook_tensor()
@@ -590,12 +599,14 @@ class TorchHook:
                 self._is_wrapper = False
             return self._is_wrapper
 
+        tensor_type.is_wrapper = is_wrapper
+
         @is_wrapper.setter
         def is_wrapper(self, it_is_a_wrapper):
             self._is_wrapper = it_is_a_wrapper
             return self
 
-        tensor_type.is_wrapper = is_wrapper
+        tensor_type.native_shape = tensor_type.shape
 
     def _which_methods_should_we_auto_overload(self, tensor_type: type):
         """Creates a list of Torch methods to auto overload.

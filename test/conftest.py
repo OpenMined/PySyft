@@ -21,9 +21,14 @@ def workers(hook):
     alice.add_workers([bob, james])
     james.add_workers([bob, alice])
     hook.local_worker.add_workers([alice, bob, james])
+    # TODO: should one set this boolean to true?
+    # It was done previously in self.setUp() from `test_hook.py`
+    # hook.local_worker.is_client_worker = True
+
     output = {}
     output["me"] = hook.local_worker
     output["alice"] = alice
     output["bob"] = bob
     output["james"] = james
+
     return output

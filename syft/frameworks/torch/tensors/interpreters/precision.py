@@ -1,7 +1,7 @@
 import syft
 import torch
-from syft.frameworks.torch.tensors.abstract import AbstractTensor
-from .utils import hook
+from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters.utils import hook
 
 
 class FixedPrecisionTensor(AbstractTensor):
@@ -15,6 +15,8 @@ class FixedPrecisionTensor(AbstractTensor):
         precision_fractional: int = 3,
         precision_integral: int = 1,
         kappa: int = 1,
+        tags: set = None,
+        description: str = None,
     ):
         """Initializes a Fixed Precision tensor, which encodes all decimal point
         values using an underlying integer value.
@@ -37,6 +39,8 @@ class FixedPrecisionTensor(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the FixedPrecisionTensor.
         """
+        super().__init__(tags, description)
+
         self.parent = parent
         self.owner = owner
         self.id = id
@@ -128,3 +132,12 @@ class FixedPrecisionTensor(AbstractTensor):
         response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
+
+    def get(self):
+        """Just a pass through. This is most commonly used when calling .get() on a
+        FixedPrecisionTensor which has also been shared."""
+        return FixedPrecisionTensor().on(self.child.get())
+
+    def share(self, *owners):
+        self.child = self.child.share(*owners)
+        return self

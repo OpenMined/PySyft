@@ -3,8 +3,8 @@ import weakref
 import torch
 
 import syft
-from syft.frameworks.torch.tensors import AbstractTensor
-from syft.frameworks.torch.tensors import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
@@ -24,8 +24,66 @@ class TorchTensor(AbstractTensor):
     checking AbstractTensor.
     """
 
+    def has_child(self):
+        return hasattr(self, "child")
+
+    def describe(self, description):
+        self.description = description
+        return self
+
+    def tag(self, *_tags):
+        if self.tags is None:
+            tags = list()
+        else:
+            tags = list(self.tags)
+
+        for new_tag in _tags:
+            tags.append(new_tag)
+
+        self.tags = set(tags)
+        return self
+
+    @property
+    def tags(self):
+        if self.has_child():
+            return self.child.tags
+        else:
+            if not hasattr(self, "_tags"):
+                self._tags = None
+            return self._tags
+
+    @tags.setter
+    def tags(self, new_tags):
+        if self.has_child():
+            self.child.tags = set(new_tags)
+        else:
+            self._tags = new_tags
+
+    @property
+    def description(self):
+        if self.has_child():
+            return self.child.description
+        else:
+            if not hasattr(self, "_description"):
+                self._description = None
+            return self._description
+
+    @description.setter
+    def description(self, new_desc):
+        if self.has_child():
+            self.child.description = new_desc
+        else:
+            self._description = new_desc
+
+    @property
+    def shape(self):
+        if self.is_wrapper:
+            return self.child.shape
+        else:
+            return self.native_shape
+
     def __str__(self) -> str:
-        if hasattr(self, "child"):
+        if self.has_child():
             if self.is_wrapper:
                 return "(Wrapper)>" + self.child.__str__()
             else:
@@ -34,13 +92,30 @@ class TorchTensor(AbstractTensor):
             return self.native___str__()
 
     def __repr__(self) -> str:
-        if hasattr(self, "child"):
+        if self.has_child():
             if self.is_wrapper:
                 return "(Wrapper)>" + self.child.__str__()
             else:
                 return type(self).__name__ + ">" + self.child.__repr__()
         else:
-            return self.native___repr__()
+            out = self.native___repr__()
+
+            big_repr = False
+
+            if self.tags is not None:
+                big_repr = True
+                out += "\n\tTags: "
+                for tag in self.tags:
+                    out += str(tag) + " "
+
+            if big_repr:
+                out += "\n\tShape: " + str(self.shape)
+
+            if self.description is not None:
+                big_repr = True
+                out += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
+
+            return out
 
     @property
     def id(self):
@@ -134,6 +209,9 @@ class TorchTensor(AbstractTensor):
 
         ptr = self.owner.send(self, location)
 
+        ptr.description = self.description
+        ptr.tags = self.tags
+
         # The last pointer should control remote GC, not the previous self.ptr
         if hasattr(self, "ptr"):
             if self.ptr is not None:
@@ -178,6 +256,7 @@ class TorchTensor(AbstractTensor):
         owner: BaseWorker = None,
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
+        shape=None,
     ) -> PointerTensor:
         """Creates a pointer to the "self" torch.Tensor object.
 
@@ -244,6 +323,9 @@ class TorchTensor(AbstractTensor):
             else:
                 ptr_id = int(10e10 * random.random())
 
+        if shape is None:
+            shape = self.shape
+
         # previous_pointer = owner.get_pointer_to(location, id_at_location)
         previous_pointer = None
 
@@ -256,6 +338,9 @@ class TorchTensor(AbstractTensor):
                 owner=owner,
                 id=ptr_id,
                 garbage_collect_data=garbage_collect_data,
+                shape=shape,
+                tags=self.tags,
+                description=self.description,
             )
 
         return ptr
@@ -272,6 +357,14 @@ class TorchTensor(AbstractTensor):
         """Requests the tensor/chain being pointed to, be serialized and return
         """
         # Transfer the get() to the child attribute which is a pointer
+
+        # if (self.has_child()):
+        #     if (isinstance(self.child, syft.frameworks.torch.tensors.FixedPrecisionTensor)):
+        #         if (hasattr(self.child, "child")):
+        #             if (hasattr(self.child.child, "child")):
+        #                 if(isinstance(self.child.child.child, syft.frameworks.torch.tensors.AdditiveSharingTensor)):
+        #                     self.child.child =  self.child.child.get()
+        #                     return self
 
         tensor = self.child.get()
 
@@ -319,4 +412,27 @@ class TorchTensor(AbstractTensor):
         return self.child.float_precision()
 
     def fix_prec(self):
-        return syft.frameworks.torch.tensors.FixedPrecisionTensor().on(self).enc_fix_prec().wrap()
+        return (
+            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor()
+            .on(self)
+            .enc_fix_prec()
+            .wrap()
+        )
+
+    def share(self, *owners):
+        """This is a passthrough method which calls .share on the child.
+
+        Args:
+            owners: a list of BaseWorker objects determining who to send shares to.
+        """
+
+        if self.has_child():
+            self.child = self.child.share(*owners)
+            return self
+
+        return (
+            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor()
+            .on(self)
+            .child.init_shares(*owners)
+            .wrap()
+        )

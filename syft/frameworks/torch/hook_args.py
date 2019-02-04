@@ -1,10 +1,11 @@
 import torch
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
-from .tensors import PointerTensor
-from .tensors import LoggingTensor
-from .tensors import TorchTensor
-from .tensors import FixedPrecisionTensor
+from .tensors.interpreters import PointerTensor
+from .tensors.decorators import LoggingTensor
+from .tensors.interpreters import TorchTensor
+from .tensors.interpreters import FixedPrecisionTensor
+from .tensors.interpreters import AdditiveSharingTensor
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -18,6 +19,7 @@ type_rule = {
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     LoggingTensor: one,
     FixedPrecisionTensor: one,
+    AdditiveSharingTensor: one,
     PointerTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
@@ -32,6 +34,7 @@ forward_func = {
     torch.nn.Parameter: lambda i: i.child,
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
+    AdditiveSharingTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -43,6 +46,7 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i: FixedPrecisionTensor().on(i, wrap=False),
+    AdditiveSharingTensor: lambda i: i,
     "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i, wrap=False)",
 }
 
@@ -242,7 +246,16 @@ def build_args_hook(args, rules, return_tuple=False):
 
     # Instead of iterating which is slow, we use trick to efficiently
     # apply each lambda to each arg
-    folds = {0: zero_fold, 1: one_fold(return_tuple), 2: two_fold, 3: three_fold, 4: four_fold}
+    folds = {
+        0: zero_fold,
+        1: one_fold(return_tuple),
+        2: two_fold,
+        3: three_fold,
+        4: four_fold,
+        5: five_fold,
+        6: six_fold,
+        7: seven_fold,
+    }
     f = folds[len(lambdas)]
     return lambda x: f(lambdas, x)
 
@@ -360,7 +373,17 @@ def build_response_hook(response, rules, wrap_type, return_tuple=False):
 
     # Instead of iterating which is slow, we use trick to efficiently
     # apply each lambda to each arg
-    folds = {0: zero_fold, 1: one_fold(return_tuple), 2: two_fold, 3: three_fold, 4: four_fold}
+    folds = {
+        0: zero_fold,
+        1: one_fold(return_tuple),
+        2: two_fold,
+        3: three_fold,
+        4: four_fold,
+        5: five_fold,
+        6: six_fold,
+        7: seven_fold,
+        8: eight_fold,
+    }
     f = folds[len(lambdas)]
     return lambda x: f(lambdas, x)
 
@@ -389,3 +412,49 @@ def three_fold(lambdas, args):
 
 def four_fold(lambdas, args):
     return (lambdas[0](args[0]), lambdas[1](args[1]), lambdas[2](args[2]), lambdas[3](args[3]))
+
+
+def five_fold(lambdas, args):
+    return (
+        lambdas[0](args[0]),
+        lambdas[1](args[1]),
+        lambdas[2](args[2]),
+        lambdas[3](args[3]),
+        lambdas[4](args[4]),
+    )
+
+
+def six_fold(lambdas, args):
+    return (
+        lambdas[0](args[0]),
+        lambdas[1](args[1]),
+        lambdas[2](args[2]),
+        lambdas[3](args[3]),
+        lambdas[4](args[4]),
+        lambdas[5](args[5]),
+    )
+
+
+def seven_fold(lambdas, args):
+    return (
+        lambdas[0](args[0]),
+        lambdas[1](args[1]),
+        lambdas[2](args[2]),
+        lambdas[3](args[3]),
+        lambdas[4](args[4]),
+        lambdas[5](args[5]),
+        lambdas[6](args[6]),
+    )
+
+
+def eight_fold(lambdas, args):
+    return (
+        lambdas[0](args[0]),
+        lambdas[1](args[1]),
+        lambdas[2](args[2]),
+        lambdas[3](args[3]),
+        lambdas[4](args[4]),
+        lambdas[5](args[5]),
+        lambdas[6](args[6]),
+        lambdas[7](args[7]),
+    )

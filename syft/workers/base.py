@@ -5,7 +5,7 @@ import sys
 from abc import abstractmethod
 import syft as sy
 from syft import serde
-from syft.frameworks.torch.tensors import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
 from syft.codes import MSGTYPE
@@ -563,8 +563,9 @@ class BaseWorker(AbstractWorker):
         """
 
         out = "<"
-        out += str(type(self)).split("'")[1]
+        out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
+        out += " #tensors:" + str(len(self._objects))
         out += ">"
         return out
 
@@ -574,3 +575,42 @@ class BaseWorker(AbstractWorker):
 
     def __getitem__(self, idx):
         return self._objects[idx]
+
+    def search(self, *query):
+        """Search for a match between the query terms and the tensor's Id, Tag, or Description.
+        Note that the query is an AND query meaning that every item in the list of strings (query*)
+        must be found somewhere on the tensor in order for it to be included in the results.
+
+        Args:
+            query: a list of strings to match against.
+            me: a reference to the worker calling the search.
+            """
+        results = list()
+        for key, tensor in self._objects.items():
+            found_something = True
+            for query_item in query:
+                match = False
+                if query_item == str(key):
+                    match = True
+
+                if tensor.tags is not None:
+                    if query_item in tensor.tags:
+                        match = True
+
+                if tensor.description is not None:
+                    if query_item in tensor.description:
+                        match = True
+
+                if not match:
+                    found_something = False
+
+            if found_something:
+                # set garbage_collect_data to False because if we're searching
+                # for a tensor we don't own, then it's probably someone else's
+                # decision to decide when to delete the tensor.
+                ptr = tensor.create_pointer(
+                    garbage_collect_data=False, owner=sy.local_worker
+                ).wrap()
+                results.append(ptr)
+
+        return results

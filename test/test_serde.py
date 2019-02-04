@@ -14,7 +14,7 @@ from syft.serde import ZSTD
 
 import syft
 from syft.exceptions import CompressionNotFoundException
-from syft.frameworks.torch.tensors import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
 import msgpack
 import numpy

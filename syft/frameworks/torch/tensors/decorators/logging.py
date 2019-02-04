@@ -1,10 +1,12 @@
 import syft
-from syft.frameworks.torch.tensors.abstract import AbstractTensor
-from .utils import hook
+from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters.utils import hook
 
 
 class LoggingTensor(AbstractTensor):
-    def __init__(self, parent: AbstractTensor = None, owner=None, id=None):
+    def __init__(
+        self, parent: AbstractTensor = None, owner=None, id=None, tags=None, description=None
+    ):
         """Initializes a LoggingTensor, whose behaviour is to log all operations
         applied on it.
 
@@ -19,6 +21,8 @@ class LoggingTensor(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the LoggingTensor.
         """
+        super().__init__(tags, description)
+
         self.parent = parent
         self.owner = owner
         self.id = id

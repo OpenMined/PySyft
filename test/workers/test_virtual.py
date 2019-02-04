@@ -138,3 +138,41 @@ def tests_worker_convenience_methods():
     resp_bob_alice = alice.request_obj(obj2.id, bob)
 
     assert (resp_bob_alice == obj2).all()
+
+
+def test_search():
+    bob = VirtualWorker(sy.torch.hook)
+
+    x = (
+        torch.tensor([1, 2, 3, 4, 5])
+        .tag("#fun", "#mnist")
+        .describe("The images in the MNIST training dataset.")
+        .send(bob)
+    )
+
+    y = (
+        torch.tensor([1, 2, 3, 4, 5])
+        .tag("#not_fun", "#cifar")
+        .describe("The images in the MNIST training dataset.")
+        .send(bob)
+    )
+
+    z = (
+        torch.tensor([1, 2, 3, 4, 5])
+        .tag("#fun", "#boston_housing")
+        .describe("The images in the MNIST training dataset.")
+        .send(bob)
+    )
+
+    a = (
+        torch.tensor([1, 2, 3, 4, 5])
+        .tag("#not_fun", "#boston_housing")
+        .describe("The images in the MNIST training dataset.")
+        .send(bob)
+    )
+
+    assert len(bob.search("#fun")) == 2
+    assert len(bob.search("#mnist")) == 1
+    assert len(bob.search("#cifar")) == 1
+    assert len(bob.search("#not_fun")) == 2
+    assert len(bob.search("#not_fun", "#boston_housing")) == 1
