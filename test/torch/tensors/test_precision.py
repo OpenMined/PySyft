@@ -24,11 +24,23 @@ def test_encode_decode(workers):
     assert x[0] == 0.1
 
 
-def test_add(workers):
+def test_add_method():
 
     x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
 
     y = x + x
+
+    assert y.child.child[0] == 200
+    y = y.float_prec()
+
+    assert y[0] == 0.2
+
+
+def test_add_func():
+
+    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+
+    y = torch.add(x, x)
 
     assert y.child.child[0] == 200
     y = y.float_prec()
