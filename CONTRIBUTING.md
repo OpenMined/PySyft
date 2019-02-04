@@ -25,6 +25,8 @@ You can install it via `pip install -r requirements.txt` or directly doing `pip 
 
 Then you just need to call `pre-commit install`
 
+This can all also be done by running `make install_hooks`
+
 ## Syncing a Forked Repository
 To sync your fork with the OpenMined/PySyft repository please see this [Guide](https://help.github.com/articles/syncing-a-fork/) on how to sync your fork.
 
@@ -36,9 +38,9 @@ If you are new to the project and want to get into the code, we recommend pickin
 ## Issue Allocation
 Each issue someone is currently working on should have an assignee. If you want to contribute to an issue someone else is already working on please make sure to get in contact with that person via slack or github and organize yourself.
 
-If you want to work on an open issue, please post a comment telling that you will work on that issue, we will assign you ass the assignee then.
+If you want to work on an open issue, please post a comment telling that you will work on that issue, we will assign you as the assignee then.
 
-**Caution**: We try our best to keep the assignee up-to-date but as we are all humans with our own schedule delays are possible, so make sure to check the comments once before you start working on an issue even when noone is assigned to it.
+**Caution**: We try our best to keep the assignee up-to-date but as we are all humans with our own schedule delays are possible, so make sure to check the comments once before you start working on an issue even when no one is assigned to it.
 
 
 ## Writing Test Cases
