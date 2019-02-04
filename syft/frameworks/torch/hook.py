@@ -12,11 +12,13 @@ from functools import wraps
 import syft
 from syft import workers
 from syft.workers import BaseWorker
-from .tensors import TorchTensor, PointerTensor, LoggingTensor
-from .tensors import FixedPrecisionTensor
-from .tensors import AdditiveSharingTensor
+from .tensors.interpreters import TorchTensor
+from .tensors.interpreters import PointerTensor
+from .tensors.decorators import LoggingTensor
+from .tensors.interpreters import FixedPrecisionTensor
+from .tensors.interpreters import AdditiveSharingTensor
 from .torch_attributes import TorchAttributes
-from .tensors.abstract import initialize_tensor, _apply_args
+from .tensors.interpreters.abstract import initialize_tensor, _apply_args
 
 
 class TorchHook:

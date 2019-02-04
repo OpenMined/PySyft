@@ -1,6 +1,6 @@
 import torch
 
-from syft.frameworks.torch.tensors import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 
 
 def test_wrap(workers):

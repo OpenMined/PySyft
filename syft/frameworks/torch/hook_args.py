@@ -1,11 +1,11 @@
 import torch
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
-from .tensors import PointerTensor
-from .tensors import LoggingTensor
-from .tensors import TorchTensor
-from .tensors import FixedPrecisionTensor
-from .tensors import AdditiveSharingTensor
+from .tensors.interpreters import PointerTensor
+from .tensors.decorators import LoggingTensor
+from .tensors.interpreters import TorchTensor
+from .tensors.interpreters import FixedPrecisionTensor
+from .tensors.interpreters import AdditiveSharingTensor
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
