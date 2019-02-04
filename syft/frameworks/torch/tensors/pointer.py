@@ -146,12 +146,12 @@ class PointerTensor(AbstractTensor):
             for tag in self.tags:
                 out += str(tag) + " "
 
-        if self.description is not None:
-            big_str = True
-            out += "\n\tDescription: " + str(self.description)
-
         if big_str:
             out += "\n\tShape: " + str(self.shape)
+
+        if self.description is not None:
+            big_str = True
+            out += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
 
         return out
 

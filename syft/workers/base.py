@@ -563,8 +563,9 @@ class BaseWorker(AbstractWorker):
         """
 
         out = "<"
-        out += str(type(self)).split("'")[1]
+        out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
+        out += " #tensors:" + str(len(self._objects))
         out += ">"
         return out
 
