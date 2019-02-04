@@ -24,13 +24,20 @@ class VirtualGrid:
                     worker_tag_ctr[tag] += 1
             results[worker.id] = worker_results
             tags = str(worker_tag_ctr.most_common(3))
-            if(verbose):
-                print("Found " + str(len(worker_results)) + " results on " + str(worker) + " - " + tags)
+            if verbose:
+                print(
+                    "Found "
+                    + str(len(worker_results))
+                    + " results on "
+                    + str(worker)
+                    + " - "
+                    + tags
+                )
             result_ctr += len(worker_results)
-        if(verbose):
+        if verbose:
             print("\nFound " + str(result_ctr) + " results in total.")
             print("\nTag Profile:")
         for tag, cnt in tag_ctr.most_common():
-            if(verbose):
+            if verbose:
                 print("\t" + tag + " found " + str(cnt))
         return results, tag_ctr
