@@ -147,9 +147,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return response
 
-    @hook
     def __add__(self, *args, **kwargs):
-        """Adds two tensors. See add() for more details."""
+        """Adds two tensors. Forwards command to add. See add() for more details."""
         return self.add(*args, **kwargs)
 
     @hook
@@ -181,7 +180,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return response
 
-    @hook
     def __sub__(self, *args, **kwargs):
-        """Subtracts two tensors. See .sub() forr details."""
+        """Subtracts two tensors. Forwards command to sub. See .sub() for details."""
         return self.sub(*args, **kwargs)
