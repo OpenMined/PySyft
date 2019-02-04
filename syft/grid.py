@@ -5,11 +5,11 @@ class VirtualGrid:
     def __init__(self, *workers):
         self.workers = workers
 
-    def search(self, *query, verbose=True):
+    def search(self, *query, verbose=True, return_counter=True):
         """Searches over a collection of workers, returning pointers to the results
         grouped by worker."""
 
-        tag_ctr = Counter()
+        tag_counter = Counter()
         result_counter = 0
 
         results = {}
@@ -22,7 +22,7 @@ class VirtualGrid:
 
             for result in worker_results:
                 for tag in result.tags:
-                    tag_ctr[tag] += 1
+                    tag_counter[tag] += 1
                     worker_tag_ctr[tag] += 1
 
             if verbose:
@@ -41,7 +41,10 @@ class VirtualGrid:
         if verbose:
             print("\nFound " + str(result_counter) + " results in total.")
             print("\nTag Profile:")
-            for tag, count in tag_ctr.most_common():
+            for tag, count in tag_counter.most_common():
                 print("\t" + tag + " found " + str(count))
 
-        return results, tag_ctr
+        if return_counter:
+            return results, tag_counter
+        else:
+            return results
