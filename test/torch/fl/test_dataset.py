@@ -6,8 +6,8 @@ import syft as sy
 def test_federated_dataset():
     sy.create_sandbox(globals(), verbose=False)
 
-    boston_data, _ = grid.search("#boston", "#data", verbose=False) # noqa: F821
-    boston_target, _ = grid.search("#boston", "#target", verbose=False) # noqa: F821
+    boston_data, _ = grid.search("#boston", "#data", verbose=False)  # noqa: F821
+    boston_target, _ = grid.search("#boston", "#target", verbose=False)  # noqa: F821
 
     n_inputs = boston_data["alice"][0].shape[1]
     n_targets = 1
