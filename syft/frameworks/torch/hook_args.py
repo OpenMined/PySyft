@@ -31,7 +31,9 @@ forward_func = {
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
-    torch.nn.Parameter: lambda i: i.child,
+    torch.nn.Parameter: lambda i: i.child
+    if hasattr(i, "child")
+    else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
