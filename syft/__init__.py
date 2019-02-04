@@ -23,6 +23,8 @@ from syft.frameworks.torch.tensors import PointerTensor
 # import modules
 from syft.frameworks.torch import optim
 
+from syft.frameworks.torch.fl import FederatedDataset
+
 __all__ = [
     "frameworks",
     "workers",
@@ -71,11 +73,13 @@ def create_sandbox(gbs, verbose=True, download_data=True):
             dataset = func()
             data = (
                 torch.tensor(dataset["data"])
+                .float()
                 .tag(*(list(tags) + ["#data"]))
                 .describe(dataset["DESCR"])
             )
             target = (
                 torch.tensor(dataset["target"])
+                .float()
                 .tag(*(list(tags) + ["#target"]))
                 .describe(dataset["DESCR"])
             )

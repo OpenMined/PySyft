@@ -5,11 +5,11 @@ class SGD:
         self.params = list(params)
         self.lr = lr
 
-    def step(self):
+    def step(self, batch_size):
 
         # TODO: all all the SGD features from PyTorch's SGD
         for p in self.params:
-            p.data.sub_(p.grad * self.lr)
+            p.data.sub_(p.grad * self.lr / batch_size)
 
     def zero_grad(self):
         """We need to use a try/catch because our pointers
