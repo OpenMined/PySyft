@@ -1,23 +1,28 @@
 import pytest
 import torch as th
 import syft as sy
+import numpy as np
 
 
-def test_federated_dataset():
-    sy.create_sandbox(globals(), verbose=False)
+def test_federated_dataset(workers):
 
-    boston_data, _ = grid.search("#boston", "#data", verbose=False)  # noqa: F821
-    boston_target, _ = grid.search("#boston", "#target", verbose=False)  # noqa: F821
+    bob = workers["bob"]
+    alice = workers["alice"]
 
-    n_inputs = boston_data["alice"][0].shape[1]
-    n_targets = 1
+    grid = sy.VirtualGrid(*[bob, alice])
 
-    model = th.nn.Linear(n_inputs, n_targets, bias=False)
-    opt = sy.optim.SGD(params=model.parameters(), lr=0.000_000_1)
+    train_bob = th.Tensor(th.zeros(1000, 100)).tag("data").send(bob)
+    target_bob = th.Tensor(th.zeros(1000, 100)).tag("target").send(bob)
 
-    fd = sy.FederatedDataset(boston_data, boston_target, batch_size=32, num_iterators=1)
+    train_alice = th.Tensor(th.zeros(1000, 100)).tag("data").send(alice)
+    target_alice = th.Tensor(th.zeros(1000, 100)).tag("target").send(alice)
 
-    for iter in range(100):
+    data, _ = grid.search("data")
+    target, _ = grid.search("target")
+
+    fd = sy.FederatedDataset(data, target, batch_size=32, num_iterators=1)
+
+    for iter in range(5):
         fd.reset()
         i = 0
         loss_accum = 0
