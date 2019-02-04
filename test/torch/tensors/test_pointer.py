@@ -3,7 +3,7 @@ import random
 import torch
 import syft
 
-from syft.frameworks.torch.tensors import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
 
 def test_init(workers):

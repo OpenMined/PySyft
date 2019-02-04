@@ -4,7 +4,7 @@ import random
 
 import torch
 import syft
-from syft.frameworks.torch.tensors import LoggingTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
 
 # TESTING POINTERS

@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import syft
 
-from syft.frameworks.torch.tensors import LoggingTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
 
 def test_wrap():

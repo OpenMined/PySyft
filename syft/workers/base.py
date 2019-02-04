@@ -5,7 +5,7 @@ import sys
 from abc import abstractmethod
 import syft as sy
 from syft import serde
-from syft.frameworks.torch.tensors import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
 from syft.codes import MSGTYPE

@@ -3,8 +3,8 @@ import weakref
 import torch
 
 import syft
-from syft.frameworks.torch.tensors import AbstractTensor
-from syft.frameworks.torch.tensors import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
@@ -412,7 +412,12 @@ class TorchTensor(AbstractTensor):
         return self.child.float_precision()
 
     def fix_prec(self):
-        return syft.frameworks.torch.tensors.FixedPrecisionTensor().on(self).enc_fix_prec().wrap()
+        return (
+            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor()
+            .on(self)
+            .enc_fix_prec()
+            .wrap()
+        )
 
     def share(self, *owners):
         """This is a passthrough method which calls .share on the child.
@@ -426,7 +431,7 @@ class TorchTensor(AbstractTensor):
             return self
 
         return (
-            syft.frameworks.torch.tensors.AdditiveSharingTensor()
+            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor()
             .on(self)
             .child.init_shares(*owners)
             .wrap()

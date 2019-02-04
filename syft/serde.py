@@ -43,10 +43,10 @@ import zstd
 import syft
 
 from syft.workers import AbstractWorker
-from syft.frameworks.torch.tensors import LoggingTensor
-from syft.frameworks.torch.tensors import PointerTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
-from syft.frameworks.torch.tensors.abstract import initialize_tensor
+from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.exceptions import CompressionNotFoundException
 
 

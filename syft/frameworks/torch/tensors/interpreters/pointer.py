@@ -1,6 +1,6 @@
 import syft
 import torch
-from syft.frameworks.torch.tensors.abstract import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.codes import MSGTYPE
 from syft.exceptions import RemoteTensorFoundError, CannotRequestTensorAttribute
 

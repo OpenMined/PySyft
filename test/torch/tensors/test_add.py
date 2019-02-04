@@ -2,7 +2,7 @@ import random
 import torch
 import syft
 
-from syft.frameworks.torch.tensors import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 
 
 def test_wrap(workers):

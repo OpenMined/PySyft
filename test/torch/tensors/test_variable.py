@@ -7,7 +7,7 @@ import random
 
 import torch
 import syft as sy
-from syft.frameworks.torch.tensors import LoggingTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
 
 def test_gradient_serde():

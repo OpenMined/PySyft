@@ -17,8 +17,8 @@ from syft.frameworks.torch import TorchHook
 from syft.workers import VirtualWorker
 
 # Import Tensor Types
-from syft.frameworks.torch.tensors import LoggingTensor
-from syft.frameworks.torch.tensors import PointerTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
 # import modules
 from syft.frameworks.torch import optim
