@@ -82,7 +82,7 @@ class TestFederatedLearning(object):
                 loss.backward()
 
                 # 5) change those weights
-                opt.step()
+                opt.step(data.shape[0])
 
                 # get model (with gradients)
                 model.get()
