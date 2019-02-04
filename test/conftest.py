@@ -4,7 +4,6 @@ import torch
 import syft
 from syft import TorchHook
 
-
 @pytest.fixture(scope="session", autouse=True)
 def hook():
     hook = TorchHook(torch)
