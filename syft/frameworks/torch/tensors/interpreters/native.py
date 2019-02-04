@@ -412,7 +412,12 @@ class TorchTensor(AbstractTensor):
         return self.child.float_precision()
 
     def fix_prec(self):
-        return syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor().on(self).enc_fix_prec().wrap()
+        return (
+            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor()
+            .on(self)
+            .enc_fix_prec()
+            .wrap()
+        )
 
     def share(self, *owners):
         """This is a passthrough method which calls .share on the child.
