@@ -35,6 +35,15 @@ def test_add(workers):
     assert y[0] == 2
 
 
+def test_sub(workers):
+
+    x = torch.tensor([1, 2, 3]).share(workers["bob"], workers["alice"], workers["james"])
+
+    y = (x - x).get()
+
+    assert y[0] == 0
+
+
 def test_fixed_precision_and_sharing(workers):
 
     bob, alice = (workers["bob"], workers["alice"])

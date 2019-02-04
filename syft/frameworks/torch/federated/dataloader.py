@@ -28,22 +28,22 @@ def default_collate(batch):
         elem_type.__module__ == "numpy"
         and elem_type.__name__ != "str_"
         and elem_type.__name__ != "string_"
-    ):
+    ):  # pragma: no cover
         elem = batch[0]
         if elem_type.__name__ == "ndarray":
             return torch.stack([torch.from_numpy(b) for b in batch], 0)
         if elem.shape == ():  # scalars
             py_type = float if elem.dtype.name.startswith("float") else int
             return numpy_type_map[elem.dtype.name](list(map(py_type, batch)))
-    elif isinstance(batch[0], int_classes):
+    elif isinstance(batch[0], int_classes):  # pragma: no cover
         return torch.LongTensor(batch)
-    elif isinstance(batch[0], float):
+    elif isinstance(batch[0], float):  # pragma: no cover
         return torch.DoubleTensor(batch)
-    elif isinstance(batch[0], string_classes):
+    elif isinstance(batch[0], string_classes):  # pragma: no cover
         return batch
-    elif isinstance(batch[0], container_abcs.Mapping):
+    elif isinstance(batch[0], container_abcs.Mapping):  # pragma: no cover
         return {key: default_collate([d[key] for d in batch]) for key in batch[0]}
-    elif isinstance(batch[0], container_abcs.Sequence):
+    elif isinstance(batch[0], container_abcs.Sequence):  # pragma: no cover
         transposed = zip(*batch)
         return [default_collate(samples) for samples in transposed]
 
