@@ -659,3 +659,23 @@ class BaseWorker(AbstractWorker):
                 results.append(ptr)
 
         return results
+
+    def generate_triple(
+        self, equation: str, field: int, a_size: tuple, b_size: tuple, locations: list
+    ):
+        """Generates a multiplication triple and sends it to all locations
+
+        Args:
+            equation: string representation of the equation in einsum notation
+            field: interger representing the field size
+            a_size: tuple which is the size that a should be
+            b_size: tuple which is the size that b should be
+            locations: a list of workers where the triple should be shared between
+            """
+        a = self.torch.randint(0, field, a_size, d_type=self.torch.long)
+        b = self.torch.randint(0, field, b_size, d_type=self.torch.long)
+        c = self.torch.einsum(equation, a, b)
+        a_shared = a.share(locations, field=field)
+        b_shared = b.share(locations, field=field)
+        c_shared = c.share(locations, field=field)
+        return (a_shared, b_shared, c_shared)

@@ -9,8 +9,8 @@ class AdditiveSharingTensor(AbstractTensor):
         parent: AbstractTensor = None,
         owner=None,
         id=None,
-        Q_BITS=31,
-        BASE=2,
+        field=None,
+        crypto_provider=None,
         tags=None,
         description=None,
     ):
@@ -39,9 +39,7 @@ class AdditiveSharingTensor(AbstractTensor):
         self.id = id
         self.child = None
 
-        self.BASE = BASE
-        self.Q_BITS = Q_BITS
-        self.field = (self.BASE ** Q_BITS) - 1  # < 63 bits
+        self.field = (2 ** 31) - 1 if field is None else field  # < 63 bits
 
     def __repr__(self):
         return self.__str__()
@@ -96,14 +94,14 @@ class AdditiveSharingTensor(AbstractTensor):
         return self
 
     @staticmethod
-    def generate_shares(secret, n_workers, mod, random_type):
+    def generate_shares(secret, n_workers, field, random_type):
         """The cryptographic method for generating shares given a secret tensor.
 
         Args:
             secret: the tensor to be shared.
             n_workers: the number of shares to generate for each value
                 (i.e., the number of tensors to return)
-            mod: 1 + the max value for a share
+            field: 1 + the max value for a share
             random_type: the torch type shares should be encoded in (use the smallest possible
                 given the choise of mod"
             """
@@ -114,7 +112,7 @@ class AdditiveSharingTensor(AbstractTensor):
         random_shares = [random_type(secret.shape) for i in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(mod)
+            share.random_(field)
 
         shares = []
         for i in range(n_workers):
@@ -193,3 +191,106 @@ class AdditiveSharingTensor(AbstractTensor):
     def __sub__(self, *args, **kwargs):
         """Subtracts two tensors. Forwards command to sub. See .sub() for details."""
         return self.sub(*args, **kwargs)
+
+    def abstract_mul(self, equation: str, shares: dict, other_shares, **kwargs):
+        """Abstractly Multiplies two tensors
+
+        Args:
+            equation: a string reprsentation of the equation to be computed in einstein
+                summation form
+            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
+                self. Equivalent to calling self.child.
+            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
+                to the tensor being multiplied by self.
+        """
+
+        # if someone passes in a constant... (i.e., x + 3)
+        if not isinstance(other_shares, dict):
+            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child
+
+        assert len(shares) == len(other_shares)
+
+        if self.crypto_provider is None:
+            raise AttributeError("For multiplication a crytoprovider must be passed.")
+
+        locations = []
+        for location, pointer in shares.items():
+            locations.append(k)
+
+        triple = self.crypto_provider.generate_triple(
+            equation, self.field, shares.items()[0].shape, other_shares.items()[0].shape, locations
+        )
+        a, b, c = triple
+
+        d = {}
+        e = {}
+        for (location,) in locations:
+            d[location] = (shares[location] - a[location]) % self.field
+            e[location] = (other_shares[location] - b[location]) % self.field
+
+        delta = torch.zeros(d.items()[0].shape)
+        epsilson = torch.zeros(e.items()[0].shape)
+
+        for (location,) in locations:
+            d_temp = d[location].get()
+            e_temp = e[location].get()
+            delta = delta + d_temp
+            epsilson = epsilson + e_temp
+
+        delta_epsilon = torch.einsum(equation, delta, epsilon)
+
+        delta_ptrs = {}
+        epsilon_ptrs = {}
+        a_epsilon = {}
+        delta_b = {}
+        z = {}
+        for location in locations:
+            delta_ptrs[location] = delta.send(location)
+            epsilon_ptrs[location] = epsilon.send(location)
+            a_epsilon[location] = torch.einsum(equation, a[location], epsilon_ptrs[location])
+            delta_b[location] = torch.einsum(equation, delta_ptrs[location], b[location])
+            z[location] = a_epsilon[location] + delta_b[location] + c[location]
+        delta_epsilon_pointer = delta_epsilon.send(locations[0])
+        z[locations[0]] = z[locations[0]] + delta_epsilon_pointer
+
+        return AdditiveSharingTensor(
+            field=self.field, crypto_provider=self.crypto_provider
+        ).set_shares(z)
+
+    @hook
+    def mul(self, shares: dict, other_shares, *args, **kwargs):
+        """Multiplies two tensors together
+        For details see abstract_mul
+
+        Args:
+            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
+                self. Equivalent to calling self.child.
+            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
+                to the tensor being multiplied by self.
+        """
+
+        return self.abstract_mul("ij,ij->ij", shares, other_shares, **kwargs)
+
+    def __mul__(self, *args, **kwargs):
+        """Multiplies two number for details see mul
+        """
+        return self.mul(self, *args, **kwargs)
+
+    @hook
+    def matmul(self, shares: dict, other_shares, *args, **kwargs):
+        """Multiplies two tensors together
+        For details see abstract_mul
+
+        Args:
+            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
+                self. Equivalent to calling self.child.
+            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
+                to the tensor being multiplied by self.
+        """
+
+        return self.abstract_mul("ij,jk->ik", shares, other_shares, **kwargs)
+
+    def __matmul__(self, *args, **kwargs):
+        """Multiplies two number for details see mul
+        """
+        return self.mul(self, *args, **kwargs)
