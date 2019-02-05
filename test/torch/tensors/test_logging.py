@@ -33,6 +33,10 @@ def test_overwritten_method_on_log_chain():
 
     assert (y.child.child == x_tensor.add(x_tensor)).all()
 
+    y = x.child.manual_add(x.child)
+
+    assert (y.child == x_tensor.add(x_tensor)).all()
+
 
 def test_method_on_log_chain():
     """
@@ -117,3 +121,16 @@ def test_remote_function_on_log_chain(workers):
     y = y_ptr.get()
 
     assert (y.child.child == x_tensor.add(x_tensor)).all()
+
+
+def test_print_log_chain():
+    """
+    Test sending and getting back a chain including a logtensor
+    """
+
+    # Build a long chain tensor Wrapper>LoggingTensor>TorchTensor
+    x_tensor = torch.Tensor([1, 2, 3])
+    x = LoggingTensor().on(x_tensor)
+
+    assert isinstance(x.__str__(), str)
+    assert isinstance(x.__repr__(), str)

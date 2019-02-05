@@ -20,6 +20,9 @@ def test___repr__(workers):
     tensor_ptr = tensor.send(workers["bob"])
     assert isinstance(tensor_ptr.__repr__(), str)
 
+    tensor = torch.Tensor([1, 2, 3, 4]).tag("#my_tag").describe("This is a description")
+    assert isinstance(tensor.__repr__(), str)
+
 
 def test_overload_reshape():
     tensor = torch.Tensor([1, 2, 3, 4])

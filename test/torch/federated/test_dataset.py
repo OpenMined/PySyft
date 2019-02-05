@@ -20,13 +20,10 @@ def test_federated_dataset(workers):
     data, _ = grid.search("data")
     target, _ = grid.search("target")
 
-    fd = sy.FederatedDataset(data, target, batch_size=32, num_iterators=1)
+    dataset = sy.FederatedDataset(data, target)
+    train_loader = sy.FederatedDataLoader(dataset, batch_size=4, shuffle=False, drop_last=False)
 
-    for iter in range(5):
-        fd.reset()
-        i = 0
-        loss_accum = 0
-        while fd.keep_going():
-            i += 1
-
-            data, target = fd.step()
+    epochs = 2
+    for epoch in range(1, epochs + 1):
+        for batch_idx, (data, target) in enumerate(train_loader):
+            pass
