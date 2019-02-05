@@ -1,7 +1,0 @@
-This directory contains type annotations (stub files) for
-external libraries.
-
-
-Sources
-
-numpy: https://github.com/machinalis/mypy-data
