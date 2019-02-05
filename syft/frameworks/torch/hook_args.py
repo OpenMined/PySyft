@@ -257,8 +257,13 @@ def build_args_hook(args, rules, return_tuple=False):
         5: five_fold,
         6: six_fold,
         7: seven_fold,
+        8: eight_fold,
     }
-    f = folds[len(lambdas)]
+    try:
+        f = folds[len(lambdas)]
+    except KeyError:
+        f = many_fold
+
     return lambda x: f(lambdas, x)
 
 
@@ -386,7 +391,11 @@ def build_response_hook(response, rules, wrap_type, return_tuple=False):
         7: seven_fold,
         8: eight_fold,
     }
-    f = folds[len(lambdas)]
+    try:
+        f = folds[len(lambdas)]
+    except KeyError:
+        f = many_fold
+
     return lambda x: f(lambdas, x)
 
 
@@ -460,3 +469,7 @@ def eight_fold(lambdas, args):
         lambdas[6](args[6]),
         lambdas[7](args[7]),
     )
+
+
+def many_fold(lambdas, args):
+    return tuple([lambdas[i](args[i]) for i in range(len(lambdas))])
