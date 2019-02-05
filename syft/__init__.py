@@ -74,13 +74,13 @@ def create_sandbox(gbs, verbose=True, download_data=True):
             data = (
                 torch.tensor(dataset["data"])
                 .float()
-                .tag(*(list(tags) + ["#data"]))
+                .tag(*(list(tags) + ["#data"] + dataset["DESCR"].split("\n")[0].lower().split(" ")))
                 .describe(dataset["DESCR"])
             )
             target = (
                 torch.tensor(dataset["target"])
                 .float()
-                .tag(*(list(tags) + ["#target"]))
+                .tag(*(list(tags) + ["#target"] + dataset["DESCR"].split("\n")[0].lower().split(" ")))
                 .describe(dataset["DESCR"])
             )
 

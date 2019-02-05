@@ -22,13 +22,16 @@ setup(
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),
     license="Apache-2.0",
-    keywords="deep learning artificial intelligence homomorphic encryption",
+    keywords="deep learning artificial intelligence privacy secure multi-party computation",
     packages=find_packages(exclude=["docs", "examples", "dist"]),
     include_package_data=True,
     long_description=read("README.md"),
-    url="github.com/OpenMined/PySyft",
-    classifiers=["Development Status :: 1 - Alpha"],
+    url="https://github.com/OpenMined/PySyft",
     install_requires=requirements,
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-flake8"],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Operating System :: OS Independent",
+    ]
 )
