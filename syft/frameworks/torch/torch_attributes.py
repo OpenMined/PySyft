@@ -49,6 +49,7 @@ class TorchAttributes(object):
 
         # Add special functions to exclude from the hook
         self.exclude = [
+            "arange",
             "save",
             "load",
             "typename",
@@ -95,6 +96,7 @@ class TorchAttributes(object):
             "rand",
             "randint",
             "randn_like",
+            "range",
             "save",
             "short",
             "zeros",
