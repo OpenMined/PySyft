@@ -60,7 +60,7 @@ def create_sandbox(gbs, verbose=True, download_data=True):
     global jason
     global jon
 
-    if download_data:
+    if download_data:  # pragma: no cover
         from sklearn.datasets import load_boston
         from sklearn.datasets import load_breast_cancer
         from sklearn.datasets import load_digits
@@ -74,13 +74,15 @@ def create_sandbox(gbs, verbose=True, download_data=True):
             data = (
                 torch.tensor(dataset["data"])
                 .float()
-                .tag(*(list(tags) + ["#data"]))
+                .tag(*(list(tags) + ["#data"] + dataset["DESCR"].split("\n")[0].lower().split(" ")))
                 .describe(dataset["DESCR"])
             )
             target = (
                 torch.tensor(dataset["target"])
                 .float()
-                .tag(*(list(tags) + ["#target"]))
+                .tag(
+                    *(list(tags) + ["#target"] + dataset["DESCR"].split("\n")[0].lower().split(" "))
+                )
                 .describe(dataset["DESCR"])
             )
 
@@ -140,7 +142,7 @@ def create_sandbox(gbs, verbose=True, download_data=True):
 
     gbs["workers"] = [bob, theo, jason, alice, andy, jon]
 
-    if download_data:
+    if download_data:  # pragma: no cover
 
         if verbose:
             print("\tLoading datasets from SciKit Learn...")
