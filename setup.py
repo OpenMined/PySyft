@@ -30,8 +30,5 @@ setup(
     install_requires=requirements,
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-flake8"],
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
-    ]
+    classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],
 )
