@@ -27,7 +27,7 @@ and selecting the pysyft kernel
 
 ## Try out the Tutorials
 
-A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/tutorials/)
+A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials)
 
 These tutorials cover how to perform techniques such as federated learning and differential privacy using PySyft.
 
