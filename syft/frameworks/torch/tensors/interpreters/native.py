@@ -419,7 +419,7 @@ class TorchTensor(AbstractTensor):
             .wrap()
         )
 
-    def share(self, *owners, field=None):
+    def share(self, *owners, field=None, crypto_provider=None):
         """This is a passthrough method which calls .share on the child.
 
         Args:
@@ -427,11 +427,13 @@ class TorchTensor(AbstractTensor):
         """
 
         if self.has_child():
-            self.child = self.child.share(*owners, field=field)
+            self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
             return self
 
         return (
-            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(field=field)
+            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
+                field=field, crypto_provider=crypto_provider
+            )
             .on(self)
             .child.init_shares(*owners)
             .wrap()

@@ -1,3 +1,4 @@
+import pytest
 import random
 import torch
 import syft
@@ -42,6 +43,29 @@ def test_sub(workers):
     y = (x - x).get()
 
     assert y[0] == 0
+
+
+def test_mul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x * x).get().float_prec()
+
+    assert y[0] == 1
+
+
+def test_mul_with_no_crypto_provider(workers):
+    bob, alice = (workers["bob"], workers["alice"])
+    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice)
+    with pytest.raises(AttributeError):
+        y = (x * x).get().float_prec()
+
+
+def test_matmul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([[1, 2], [3, 4.0]]).fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x @ x).get().float_prec()
+
+    assert y[0] == 7
 
 
 def test_fixed_precision_and_sharing(workers):

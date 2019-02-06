@@ -40,6 +40,7 @@ class AdditiveSharingTensor(AbstractTensor):
         self.child = None
 
         self.field = (2 ** 31) - 1 if field is None else field  # < 63 bits
+        self.crypto_provider = crypto_provider
 
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
@@ -59,7 +60,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
             """
         shares = self.generate_shares(
-            self.child, n_workers=len(owners), mod=self.field, random_type=torch.LongTensor
+            self.child, n_workers=len(owners), field=self.field, random_type=torch.LongTensor
         )
 
         for i in range(len(shares)):
@@ -205,10 +206,14 @@ class AdditiveSharingTensor(AbstractTensor):
 
         locations = []
         for location, pointer in shares.items():
-            locations.append(k)
+            locations.append(location)
 
         triple = self.crypto_provider.generate_triple(
-            equation, self.field, shares.items()[0].shape, other_shares.items()[0].shape, locations
+            equation,
+            self.field,
+            tuple(shares[locations[0]].shape),
+            tuple(other_shares[locations[0]].shape),
+            locations,
         )
         a, b, c = triple
 
