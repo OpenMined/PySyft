@@ -85,7 +85,7 @@ def hook_method_args(attr, method_self, args):
         # Try running it
         new_self, new_args = hook_args((method_self, args))
 
-    except (IndexError, KeyError):  # Update the function in case of an error
+    except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
         args_hook_function, _ = build_hook_args_function((method_self, args))
         # Store this utility function in the registry
         hook_method_args_functions[attr_id] = args_hook_function
@@ -111,7 +111,7 @@ def hook_function_args(attr, args):
         new_args = hook_args(args)
         new_type = get_tensor_type(new_args)
 
-    except (IndexError, KeyError):  # Update the function in case of an error
+    except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
         args_hook_function, get_tensor_type_function = build_hook_args_function(
             args, return_tuple=True
         )
@@ -181,7 +181,7 @@ def hook_response(attr, response, wrap_type, new_self=None):
         # Try running it
         new_response = response_hook_function(response)
 
-    except (IndexError, KeyError):  # Update the function in cas of an error
+    except (IndexError, KeyError, AssertionError):  # Update the function in cas of an error
         response_hook_function = build_hook_response_function(response, wrap_type)
         # Store this utility function in the registry
         hook_method_response_functions[attr_id] = response_hook_function
@@ -241,7 +241,7 @@ def build_args_hook(args, rules, return_tuple=False):
 
     # get the transformation lambda for each args
     lambdas = [
-        (lambda i: i)  # return the same object
+        typed_identity(a)  # return the same obj with an identity fct with a type check if needed
         if not r  # if the rule is a number == 0.
         else build_args_hook(a, r, True)  # If not, call recursively build_args_hook
         if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
@@ -477,3 +477,20 @@ def eight_fold(lambdas, args):
 
 def many_fold(lambdas, args):
     return tuple([lambdas[i](args[i]) for i in range(len(lambdas))])
+
+
+# Add the possibility to make a type check in the identity function applied
+# On some arg which could be None are of another type.
+# Could add more checks but not sure it is needed so far.
+
+
+def typed_identity(a):
+    if a is None:
+
+        def none_identity(i):
+            assert i is None
+            return i
+
+        return none_identity
+    else:
+        return lambda i: i
