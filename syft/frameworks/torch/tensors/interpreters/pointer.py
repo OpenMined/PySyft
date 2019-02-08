@@ -237,7 +237,6 @@ class PointerTensor(AbstractTensor):
         # this next line because self no longer has .owner. Thus, we need to check
         # first here and not try to call self.owner.anything if self doesn't have
         # .owner anymore.
-
         if hasattr(self, "owner") and self.garbage_collect_data:
 
             # attribute pointers are not in charge of GC

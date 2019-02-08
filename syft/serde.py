@@ -331,7 +331,9 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
 
     grad = param.grad
 
-    if grad is not None:
+    if grad is not None and not (
+        hasattr(grad, "child") and isinstance(grad.child, sy.PointerTensor)
+    ):
         grad_ser = _simplify_torch_tensor(grad)
     else:
         grad_ser = None
@@ -351,13 +353,15 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     Returns:
         torch.Parameter: a torch Parameter that was serialized
     """
-
     param_id, tensor_ser, requires_grad, grad_ser = param_tuple
 
     tensor = _detail_torch_tensor(worker, tensor_ser)
 
     if grad_ser is not None:
         grad = _detail_torch_tensor(worker, grad_ser)
+        grad.garbage_collect_data = False
+    elif hasattr(tensor, "child") and isinstance(tensor.child, sy.PointerTensor):
+        grad = tensor.attr("grad")
     else:
         grad = None
 

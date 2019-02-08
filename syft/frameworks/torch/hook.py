@@ -279,7 +279,10 @@ class TorchHook:
             # specific place otherwise it will get deleted
             if not isinstance(data, torch.Tensor) or hasattr(data, "child"):
                 p = torch.Tensor._make_subclass(cls, torch.Tensor(), requires_grad)
-                p.child = data
+                if isinstance(data, torch.Tensor):  # so it's a wrapper: remove it
+                    p.child = data.child
+                else:
+                    p.child = data
             else:
                 p = torch.Tensor._make_subclass(cls, data, requires_grad)
 
@@ -297,7 +300,7 @@ class TorchHook:
             else:
                 return self.native_param___repr__()
 
-        torch.nn.Parameter.__repr__ = hooked__repr__
+        # torch.nn.Parameter.__repr__ = hooked__repr__
 
         # Hook .data to handle chain assignment when needed
 
@@ -790,7 +793,7 @@ class TorchHook:
                 create_grad_objects(nn_self)
 
             for p in nn_self.parameters():
-                p.send(dest)
+                p.send_(dest)
 
             return nn_self
 
@@ -824,7 +827,7 @@ class TorchHook:
         def module_get_(nn_self):
             """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
             for p in nn_self.parameters():
-                p.get()
+                p.get_()
 
             return nn_self
 
