@@ -332,11 +332,11 @@ class BaseWorker(AbstractWorker):
 
         try:
             obj = self._objects[obj_id]
+
         except KeyError as e:
+
             if obj_id not in self._objects:
-                msg = (
-                    'Tensor "' + str(obj_id) + '" not found on worker "' + str(self.id) + '"!!!\n\n'
-                )
+                msg = 'Tensor "' + str(obj_id) + '" not found on worker "' + str(self.id) + '"!!! '
                 msg += (
                     "You just tried to interact with an object ID:"
                     + str(obj_id)
@@ -346,7 +346,7 @@ class BaseWorker(AbstractWorker):
                 )
                 msg += (
                     "Use .send() and .get() on all your tensors to make sure they're"
-                    "on the same machines.\n\n"
+                    "on the same machines. "
                     "If you think this tensor does exist, check the ._objects dictionary"
                     "on the worker and see for yourself!!! "
                     "The most common reason this error happens is because someone calls"
@@ -354,7 +354,7 @@ class BaseWorker(AbstractWorker):
                     "the remote object and sends it to the pointer). Check your code to "
                     "make sure you haven't already called .get() on this pointer!!!"
                 )
-                raise KeyErro(msg)
+                raise KeyError(msg)
             else:
                 raise e
 
