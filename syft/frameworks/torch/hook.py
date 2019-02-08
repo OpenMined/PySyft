@@ -296,7 +296,7 @@ class TorchHook:
 
         def hooked__repr__(self):
             if hasattr(self, "child"):
-                return "&Parameter containing:\n" + self.child.__repr__()
+                return "Parameter containing:\n" + self.child.__repr__()
             else:
                 return self.native_param___repr__()
 

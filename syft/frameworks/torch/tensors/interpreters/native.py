@@ -239,10 +239,6 @@ class TorchTensor(AbstractTensor):
             self.ptr = weakref.ref(ptr)
 
             if isinstance(self, syft.hook.torch.nn.Parameter):
-                # self.data.set_()
-                # self.data = ptr
-                # output = self
-
                 wrapper = torch.Tensor()
                 param_wrapper = torch.nn.Parameter(wrapper)
                 param_wrapper.data.set_()
@@ -410,7 +406,6 @@ class TorchTensor(AbstractTensor):
         if isinstance(self, torch.nn.Parameter):
             if isinstance(tensor, torch.nn.Parameter):
                 return tensor
-            # print('#', tensor)
             self.data = tensor.data
             self.grad = tensor.grad
             return self
