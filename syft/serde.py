@@ -41,6 +41,7 @@ import io
 import numpy
 import zstd
 import syft
+import syft as sy
 
 from syft.workers import AbstractWorker
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
@@ -221,25 +222,39 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         object. The third is the chain of abstractions, and the fourth
         (optinally) is the chain of graident tensors (nested tuple)
     """
+
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
     tensor_bin = binary_stream.getvalue()
 
     # note we need to do this expicitly because torch.save does not
     # seem to be including .grad by default
+
     if tensor.grad is not None:
-        grad_chain = _simplify_torch_tensor(tensor.grad)
+        if hasattr(tensor, "child"):
+            if isinstance(tensor.child, PointerTensor):
+                grad_chain = None
+            else:
+                grad_chain = _simplify_torch_tensor(tensor.grad)
+        else:
+            grad_chain = _simplify_torch_tensor(tensor.grad)
+
     else:
         grad_chain = None
 
     chain = None
+
+    # I think the pointer bug is is between here
+
     if hasattr(tensor, "child"):
         chain = _simplify(tensor.child)
+
+    # and here... leaving a reerence here so i can find it later
+    # TODO fix pointer bug
 
     tags = tensor.tags
     if tags is not None:
         tags = list(tags)
-
     return (tensor.id, tensor_bin, chain, grad_chain, tags, tensor.description)
 
 
@@ -309,14 +324,15 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
         id of the Parameter and the second is the binary for the PyTorch
         tensor data attribute and last is the requires_grad attr.
     """
+
     tensor = param.data
+
     tensor_ser = _simplify_torch_tensor(tensor)
 
     grad = param.grad
 
     if grad is not None:
         grad_ser = _simplify_torch_tensor(grad)
-
     else:
         grad_ser = None
 
@@ -759,10 +775,19 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
         return tensor
     # Else we keep the same Pointer
     else:
+
         location = syft.torch.hook.local_worker.get_worker(worker_id)
-        return PointerTensor(
-            location=location, id_at_location=id_at_location, owner=worker, id=obj_id, shape=shape
+
+        ptr = PointerTensor(
+            location=location,
+            id_at_location=id_at_location,
+            owner=worker,
+            id=obj_id,
+            shape=shape,
+            garbage_collect_data=True,
         )
+
+        return ptr
 
     # a more general but slower/more verbose option
 
@@ -849,7 +874,10 @@ def _simplify(obj: object) -> object:
         # for this type. If there is, run return
         # the simplified object
         current_type = type(obj)
-        return (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+
+        result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+
+        return result
 
     except KeyError:
 
@@ -894,6 +922,7 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
             deserializing directly.
 
     """
+
     if type(obj) == list:
         return detailers[obj[0]](worker, obj[1])
     else:

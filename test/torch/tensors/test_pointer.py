@@ -199,3 +199,13 @@ def test_move(workers):
 
     assert x.id_at_location not in workers["bob"]._objects
     assert x.id_at_location in workers["alice"]._objects
+
+    x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(workers["bob"])
+
+    assert x.id_at_location in workers["bob"]._objects
+    assert x.id_at_location not in workers["alice"]._objects
+
+    x.move(workers["alice"])
+
+    assert x.id_at_location not in workers["bob"]._objects
+    assert x.id_at_location in workers["alice"]._objects

@@ -182,7 +182,6 @@ class BaseWorker(AbstractWorker):
 
         # Step 3: Serialize the message to simple python objects
         bin_response = serde.serialize(response)
-
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
@@ -239,9 +238,6 @@ class BaseWorker(AbstractWorker):
         pointer = tensor.create_pointer(
             owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
         )
-
-        # if (tensor.is_wrapper):
-        #     tensor = tensor.child
 
         # Send the object
         self.send_obj(tensor, worker)
@@ -333,7 +329,34 @@ class BaseWorker(AbstractWorker):
         Args:
             obj_id: A string or integer id of an object to look up.
         """
-        obj = self._objects[obj_id]
+
+        try:
+            obj = self._objects[obj_id]
+        except KeyError as e:
+            if obj_id not in self._objects:
+                msg = (
+                    'Tensor "' + str(obj_id) + '" not found on worker "' + str(self.id) + '"!!!\n\n'
+                )
+                msg += (
+                    "You just tried to interact with an object ID:"
+                    + str(obj_id)
+                    + " on worker "
+                    + str(self.id)
+                    + " which does not exist!!! "
+                )
+                msg += (
+                    "Use .send() and .get() on all your tensors to make sure they're"
+                    "on the same machines.\n\n"
+                    "If you think this tensor does exist, check the ._objects dictionary"
+                    "on the worker and see for yourself!!! "
+                    "The most common reason this error happens is because someone calls"
+                    ".get() on the object's pointer without realizing it (which deletes "
+                    "the remote object and sends it to the pointer). Check your code to "
+                    "make sure you haven't already called .get() on this pointer!!!"
+                )
+                raise Exception(msg)
+            else:
+                raise e
 
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
@@ -410,6 +433,7 @@ class BaseWorker(AbstractWorker):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
+
         return self.send_msg(MSGTYPE.OBJ, obj, location)
 
     def request_obj(self, obj_id, location):
