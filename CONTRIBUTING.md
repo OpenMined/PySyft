@@ -100,7 +100,7 @@ As with any software project it's important to keep the amount of code to a mini
 
 ## Creating a Pull Request
 At any point in time you can create a pull request, so others can see your changes and give you feedback.
-Please create all pull request to the `dev` branch.
+Please create all pull requests to the `dev` branch.
 If your PR is still work in progress and not ready to be merged please add a `[WIP]` at the start of the title
 Example:`[WIP] Serialization of PointerTensor`
 
