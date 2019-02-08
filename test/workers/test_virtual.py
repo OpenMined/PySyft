@@ -5,6 +5,7 @@ from syft.codes import MSGTYPE
 from syft import serde
 
 import torch
+import torch as th
 
 
 def test_send_msg():
@@ -176,3 +177,19 @@ def test_search():
     assert len(bob.search("#cifar")) == 1
     assert len(bob.search("#not_fun")) == 2
     assert len(bob.search("#not_fun", "#boston_housing")) == 1
+
+
+def test_obj_not_found(workers):
+    """Test for useful error message when trying to call a method on
+    a tensor which does not exist on a worker anymore."""
+
+    bob = workers["bob"]
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+
+    bob._objects = {}
+
+    try:
+        y = x + x
+    except KeyError as e:
+        assert "If you think this tensor does exist" in str(e)

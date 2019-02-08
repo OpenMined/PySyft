@@ -6,6 +6,7 @@ from .tensors.decorators import LoggingTensor
 from .tensors.interpreters import TorchTensor
 from .tensors.interpreters import FixedPrecisionTensor
 from .tensors.interpreters import AdditiveSharingTensor
+from .tensors.interpreters import MultiPointerTensor
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -20,6 +21,7 @@ type_rule = {
     LoggingTensor: one,
     FixedPrecisionTensor: one,
     AdditiveSharingTensor: one,
+    MultiPointerTensor: one,
     PointerTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
@@ -37,6 +39,7 @@ forward_func = {
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
+    MultiPointerTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -49,6 +52,7 @@ backward_func = {
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i: FixedPrecisionTensor().on(i, wrap=False),
     AdditiveSharingTensor: lambda i: i,
+    MultiPointerTensor: lambda i: i,
     "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i, wrap=False)",
 }
 

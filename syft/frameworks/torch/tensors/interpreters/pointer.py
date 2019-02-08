@@ -237,6 +237,7 @@ class PointerTensor(AbstractTensor):
         # this next line because self no longer has .owner. Thus, we need to check
         # first here and not try to call self.owner.anything if self doesn't have
         # .owner anymore.
+
         if hasattr(self, "owner") and self.garbage_collect_data:
 
             # attribute pointers are not in charge of GC
@@ -252,6 +253,16 @@ class PointerTensor(AbstractTensor):
     @grad.setter
     def grad(self, new_grad):
         self._grad = new_grad
+
+    @property
+    def data(self):
+        if not hasattr(self, "_data"):
+            self._data = self.attr("data")
+        return self._data
+
+    @data.setter
+    def data(self, new_data):
+        self._data = new_data
 
     def get_shape(self):
 
