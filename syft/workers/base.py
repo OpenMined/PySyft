@@ -354,7 +354,7 @@ class BaseWorker(AbstractWorker):
                     "the remote object and sends it to the pointer). Check your code to "
                     "make sure you haven't already called .get() on this pointer!!!"
                 )
-                raise Exception(msg)
+                raise KeyErro(msg)
             else:
                 raise e
 

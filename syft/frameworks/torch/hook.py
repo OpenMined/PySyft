@@ -411,7 +411,7 @@ class TorchHook:
             if len(args) > 0:
                 if isinstance(args[0], PointerTensor):
                     if args[0].location.id != location.id:
-                        raise TensorsNotCollocatedException(pointer, args[0])
+                        raise TensorsNotCollocatedException(pointer, args[0], attr)
 
             # Send the command
             command = (attr, self, args)
@@ -423,7 +423,7 @@ class TorchHook:
 
     def get_hooked_multi_pointer_method(hook_self, attr):
         """
-        Hook a method to send it to remote worker
+        Hook a method to send it multiple recmote workers
         :param attr: the method to hook
         :return: the hooked method
         """
@@ -442,8 +442,6 @@ class TorchHook:
                 results.append(v.__getattribute__(attr)(*map(lambda x: x[k], new_args), **kwargs))
 
             return MultiPointerTensor(children=results)
-
-            return response
 
         return overloaded_attr
 
