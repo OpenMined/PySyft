@@ -49,13 +49,16 @@ class BaseWorker(AbstractWorker):
             primarily a development/testing feature.
     """
 
-    def __init__(self, hook, id=0, known_workers={}, is_client_worker=False, log_msgs=False):
+    def __init__(
+        self, hook, id=0, known_workers={}, is_client_worker=False, log_msgs=False, verbose=False
+    ):
         """Initializes a BaseWorker."""
         self.hook = hook
         self.torch = None if hook is None else hook.torch
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
+        self.verbose = verbose
         self.msg_history = list()
         # A core object in every BaseWorker instantiation. A Collection of
         # objects where all objects are stored using their IDs as keys.
@@ -133,7 +136,8 @@ class BaseWorker(AbstractWorker):
             The deserialized form of message from the worker at specified
             location.
         """
-
+        if self.verbose:
+            print(f"worker {self} sending {msg_type} {message} to {location}")
         # Step 0: combine type and message
         message = (msg_type, message)
 
@@ -169,7 +173,8 @@ class BaseWorker(AbstractWorker):
 
         # Step 0: deserialize message
         (msg_type, contents) = serde.deserialize(bin_message, worker=self)
-
+        if self.verbose:
+            print(f"worker {self} received {msg_type} {contents}")
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 

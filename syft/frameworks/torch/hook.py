@@ -399,7 +399,7 @@ class TorchHook:
         """
 
         @wraps(attr)
-        def overloaded_attr(self, *args, **kwargs):
+        def overloaded_pointer_method(self, *args, **kwargs):
             """
             Operate the hooking
             """
@@ -419,7 +419,7 @@ class TorchHook:
 
             return response
 
-        return overloaded_attr
+        return overloaded_pointer_method
 
     def get_hooked_multi_pointer_method(hook_self, attr):
         """
@@ -455,7 +455,7 @@ class TorchHook:
         """
 
         @wraps(attr)
-        def overloaded_attr(self, *args, **kwargs):
+        def overloaded_syft_method(self, *args, **kwargs):
             """
             Operate the hooking
             """
@@ -473,7 +473,7 @@ class TorchHook:
 
             return response
 
-        return overloaded_attr
+        return overloaded_syft_method
 
     def get_hooked_method(hook_self, attr):
         """
@@ -487,7 +487,7 @@ class TorchHook:
         """
 
         @wraps(attr)
-        def overloaded_attr(self, *args, **kwargs):
+        def overloaded_native_method(self, *args, **kwargs):
             """
             Operate the hooking
             """
@@ -529,7 +529,7 @@ class TorchHook:
 
             return response
 
-        return overloaded_attr
+        return overloaded_native_method
 
     def get_hooked_func(hook_self, attr):
         """
@@ -548,7 +548,7 @@ class TorchHook:
             attr.__module__ = "torch"
 
         @wraps(attr)
-        def overloaded_attr(*args, **kwargs):
+        def overloaded_func(*args, **kwargs):
             """
             Operate the hooking
             """
@@ -557,7 +557,7 @@ class TorchHook:
             response = TorchTensor.handle_func_command(command)
             return response
 
-        return overloaded_attr
+        return overloaded_func
 
     def _add_registration_to___init__(hook_self, tensor_type: type, torch_tensor: bool = False):
         """Adds several attributes to the tensor.

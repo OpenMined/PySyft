@@ -8,7 +8,7 @@ PySyft is a Python library for secure, private Deep Learning. PySyft decouples p
 
 A more detailed explanation of PySyft can be found in the [paper on arxiv](https://arxiv.org/abs/1811.04017)
 
-PySyft has also been explained in video form by [Siraj Ravel](https://www.youtube.com/watch?v=39hNjnhY7cY&feature=youtu.be&a=)
+PySyft has also been explained in video form by [Siraj Raval](https://www.youtube.com/watch?v=39hNjnhY7cY&feature=youtu.be&a=)
 
 
 ## Installation
@@ -16,8 +16,7 @@ PySyft has also been explained in video form by [Siraj Ravel](https://www.youtub
 > PySyft supports Python &gt;= 3.6 and PyTorch 1.0.0
 
 ```bash
-pip3 install -r requirements.txt
-python3 setup.py install
+pip install syft
 ```
 ## Run Local Notebook Server
 All the examples can be played with by running the command
@@ -28,13 +27,13 @@ and selecting the pysyft kernel
 
 ## Try out the Tutorials
 
-A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/torch_1/tutorials/)
+A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials)
 
 These tutorials cover how to perform techniques such as federated learning and differential privacy using PySyft.
 
 ## Start Contributing
 
-The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/torch_1/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
+The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
 
 Also join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
@@ -43,12 +42,12 @@ Also join the rapidly growing community of 2500+ on [Slack](http://slack.openmin
 We are very grateful for contributions to PySyft from the following organizations!
 
  ![drawing](https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png)  
-  
+
  [coMind Website](https://comind.org/) & [coMind Github](https://github.com/coMindOrg/federated-averaging-tutorials)
 
 ## Disclaimer
 
-Do NOT use this code to protect data (private or otherwise) - at present it is very insecure. 
+Do NOT use this code to protect data (private or otherwise) - at present it is very insecure.
 
 ## License
 
