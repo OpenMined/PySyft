@@ -8,7 +8,7 @@ PySyft is a Python library for secure, private Deep Learning. PySyft decouples p
 
 A more detailed explanation of PySyft can be found in the [paper on arxiv](https://arxiv.org/abs/1811.04017)
 
-PySyft has also been explained in video form by [Siraj Ravel](https://www.youtube.com/watch?v=39hNjnhY7cY&feature=youtu.be&a=)
+PySyft has also been explained in video form by [Siraj Raval](https://www.youtube.com/watch?v=39hNjnhY7cY&feature=youtu.be&a=)
 
 
 ## Installation
@@ -27,7 +27,7 @@ and selecting the pysyft kernel
 
 ## Try out the Tutorials
 
-A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/tutorials/)
+A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials)
 
 These tutorials cover how to perform techniques such as federated learning and differential privacy using PySyft.
 
