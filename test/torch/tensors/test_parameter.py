@@ -23,6 +23,24 @@ def test_param_send_get(workers):
     assert (param_back.data == tensor).all()
 
 
+def test_param_inplace_send_get(workers):
+    tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
+    param = Parameter(data=tensor.clone())
+    param_ptr = param.send_(workers["bob"])
+
+    assert param_ptr.id == param.id
+    assert id(param_ptr) == id(param)
+
+    param_back = param_ptr.get_()
+
+    assert param_back.id == param_ptr.id
+    assert param_back.id == param.id
+    assert id(param_back) == id(param_ptr)
+    assert id(param_back) == id(param)
+
+    assert (param_back.data == tensor).all()
+
+
 def test_param_double_send_get(workers):
     tensor = torch.tensor([[1.0, 1]])
     param = Parameter(tensor)

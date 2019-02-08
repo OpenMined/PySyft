@@ -58,6 +58,23 @@ def test_send_get(workers):
     assert (torch.Tensor([1, 2]) == x_back).all()
 
 
+def test_inplace_send_get(workers):
+    tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
+    tensor_ptr = tensor.send_(workers["bob"])
+
+    assert tensor_ptr.id == tensor.id
+    assert id(tensor_ptr) == id(tensor)
+
+    tensor_back = tensor_ptr.get_()
+
+    assert tensor_back.id == tensor_ptr.id
+    assert tensor_back.id == tensor.id
+    assert id(tensor_back) == id(tensor)
+    assert id(tensor_back) == id(tensor)
+
+    assert (tensor_back == tensor).all()
+
+
 def test_repeated_send(workers):
     """Tests that repeated calls to .send(bob) works gracefully.
     Previously garbage collection deleted the remote object

@@ -436,7 +436,13 @@ class TorchTensor(AbstractTensor):
             else:
                 return tensor
 
-        return tensor
+        if inplace:
+            self.set_(tensor)
+            if hasattr(tensor, "child"):
+                self.child = tensor.child
+            return self
+        else:
+            return tensor
 
     def get_(self, *args, **kwargs):
         """
