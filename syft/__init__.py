@@ -27,7 +27,7 @@ from syft.frameworks.torch import optim
 from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader
 
 # import functions
-from syft.frameworks.torch.functions import unite_pointers
+from syft.frameworks.torch.functions import combine_pointers
 
 __all__ = [
     "frameworks",
