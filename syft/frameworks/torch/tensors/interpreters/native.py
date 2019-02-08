@@ -188,7 +188,7 @@ class TorchTensor(AbstractTensor):
 
         return response
 
-    def send(self, *location):
+    def send(self, *location, inplace: bool = False):
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes
@@ -200,6 +200,7 @@ class TorchTensor(AbstractTensor):
             location: The BaseWorker object which you want to send this object
                 to. Note that this is never actually the BaseWorker but instead
                 a class which instantiates the BaseWorker abstraction.
+            inplace: if true, return the same object instance, else a new wrapper
 
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
@@ -239,14 +240,23 @@ class TorchTensor(AbstractTensor):
             self.ptr = weakref.ref(ptr)
 
             if isinstance(self, syft.hook.torch.nn.Parameter):
-                wrapper = torch.Tensor()
-                param_wrapper = torch.nn.Parameter(wrapper)
-                param_wrapper.data.set_()
-                param_wrapper.data = ptr
-                output = param_wrapper
-
+                if inplace:
+                    self.data.set_()
+                    self.data = ptr
+                    output = self
+                else:
+                    wrapper = torch.Tensor()
+                    param_wrapper = torch.nn.Parameter(wrapper)
+                    param_wrapper.data.set_()
+                    param_wrapper.data = ptr
+                    output = param_wrapper
             else:
-                output = ptr.wrap()
+                if inplace:
+                    self.set_()
+                    self.child = ptr
+                    return self
+                else:
+                    output = ptr.wrap()
 
             if self.requires_grad:
 
@@ -272,6 +282,17 @@ class TorchTensor(AbstractTensor):
             ).wrap()
 
         return output
+
+    def send_(self, *location):
+        """
+        Calls send() with inplace option, but only with a single location
+        :param location: workers locations
+        :return:
+        """
+        if len(location) > 1:
+            raise NotImplementedError("Inplace send to several workers is currently not reported.")
+
+        return self.send(*location, inplace=True)
 
     def create_pointer(
         self,
@@ -378,8 +399,12 @@ class TorchTensor(AbstractTensor):
         del self.owner._objects[tensor.id]
         self.owner._objects[child_id] = tensor
 
-    def get(self, *args, deregister_ptr: bool = True, **kwargs):
+    def get(self, *args, inplace: bool = False, **kwargs):
         """Requests the tensor/chain being pointed to, be serialized and return
+            args:
+                args: args to forward to worker
+                inplace: if true, return the same object instance, else a new wrapper
+                kwargs: kwargs to forward to worker
         """
         # Transfer the get() to the child attribute which is a pointer
 
@@ -404,13 +429,20 @@ class TorchTensor(AbstractTensor):
         # optimizer to lose track of where the actual weights
         # are.
         if isinstance(self, torch.nn.Parameter):
-            if isinstance(tensor, torch.nn.Parameter):
+            if inplace:
+                self.data = tensor.data
+                self.grad = tensor.grad
+                return self
+            else:
                 return tensor
-            self.data = tensor.data
-            self.grad = tensor.grad
-            return self
 
         return tensor
+
+    def get_(self, *args, **kwargs):
+        """
+        Calls get() with inplace option set to True
+        """
+        return self.get(*args, inplace=True, **kwargs)
 
     def move(self, location):
         ptr = self.send(location)

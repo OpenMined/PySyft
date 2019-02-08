@@ -331,7 +331,9 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
 
     grad = param.grad
 
-    if grad is not None and not isinstance(grad.child, sy.PointerTensor):
+    if grad is not None and not (
+        hasattr(grad, "child") and isinstance(grad.child, sy.PointerTensor)
+    ):
         grad_ser = _simplify_torch_tensor(grad)
     else:
         grad_ser = None

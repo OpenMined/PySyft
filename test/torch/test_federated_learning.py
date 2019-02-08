@@ -57,8 +57,8 @@ class TestFederatedLearning(object):
 
         self.setUp()
 
-        # Iniitalize A Toy Model
-        model = nn.Linear(2, 1, bias=False)
+        # Initialize A Toy Model
+        model = nn.Linear(2, 1)
 
         # Training Logic
         opt = optim.SGD(params=model.parameters(), lr=0.1)
