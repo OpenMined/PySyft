@@ -47,3 +47,10 @@ def test_remote_param_in_nn_module_linear(workers):
     tensor_ptr = tensor.send(workers["bob"])
     res_ptr = model_ptr(tensor_ptr)
     res = res_ptr.get()
+
+    model = nn.Linear(2, 1)
+    tensor = torch.tensor([1.0, -1.0])
+    model_ptr = model.send(workers["bob"])
+    tensor_ptr = tensor.send(workers["bob"])
+    res_ptr = model_ptr(tensor_ptr)
+    res = res_ptr.get()
