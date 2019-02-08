@@ -229,7 +229,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         d = {}
         e = {}
-        for (location,) in locations:
+        for location in locations:
             d[location] = (shares[location] - a[location]) % self.field
             e[location] = (other_shares[location] - b[location]) % self.field
 
