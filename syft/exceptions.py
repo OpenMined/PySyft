@@ -6,11 +6,15 @@ import torch
 
 class PureTorchTensorFoundError(BaseException):
     """Exception raised for errors in the input.
+    This error is used in a recursive analysis of the args provided as an
+    input of a function, to break the recursion if a TorchTensor is found
+    as it means that _probably_ all the tensors are pure torch tensor and
+    the function can be applied natively on this input.
 
-        Attributes:
-            expression -- input expression in which the error occurred
-            message -- explanation of the error
-        """
+    Attributes:
+        expression -- input expression in which the error occurred
+        message -- explanation of the error
+    """
 
     def __init__(self, tensor):
         self.tensor = tensor
@@ -18,6 +22,10 @@ class PureTorchTensorFoundError(BaseException):
 
 class RemoteTensorFoundError(BaseException):
     """Exception raised for errors in the input.
+    This error is used in a context similar to PureTorchTensorFoundError but
+    to indicate that a Pointer to a remote tensor was found  in the input
+    and thus that the command should be send elsewhere. The pointer retrieved
+    by the error gives the location where the command should be sent.
 
     Attributes:
         expression -- input expression in which the error occurred
