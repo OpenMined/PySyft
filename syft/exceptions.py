@@ -65,7 +65,7 @@ class TensorsNotCollocatedException(Exception):
             message = (
                 "You tried to call "
                 + attr
-                + " involving two tensors which"
+                + " involving two tensors which "
                 + "are not on the same machine! One tensor is on "
                 + str(tensor_a.location)
                 + " while the other is on "

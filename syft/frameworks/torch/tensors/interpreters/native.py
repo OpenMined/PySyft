@@ -457,3 +457,18 @@ class TorchTensor(AbstractTensor):
             .child.init_shares(*owners)
             .wrap()
         )
+
+    def combine(self, *pointers):
+        """This method will combine the child pointer with another list of pointers
+
+        Args:
+            *pointers a list of pointers to be combined into a MultiPointerTensor
+
+            """
+
+        assert isinstance(self.child, PointerTensor)
+
+        ps = list(pointers)
+        ps.append(self)
+
+        return sy.combine_pointers(*ps)
