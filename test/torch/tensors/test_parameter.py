@@ -23,6 +23,16 @@ def test_param_send_get(workers):
     assert (param_back.data == tensor).all()
 
 
+def test_param_double_send_get(workers):
+    tensor = torch.tensor([[1.0, 1]])
+    param = Parameter(tensor)
+
+    param = param.send(workers["bob"]).send(workers["alice"])
+    param = param.get().get()
+
+    assert (param.data == tensor).all()
+
+
 def test_param_remote_binary_method(workers):
     tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
     param = Parameter(data=tensor.clone())
