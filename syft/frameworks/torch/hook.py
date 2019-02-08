@@ -792,8 +792,10 @@ class TorchHook:
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for p in nn_self.parameters():
-                p.send(dest)
+            for name, param in nn_self._parameters.items():
+                if param is not None:
+                    param_ptr = param.send(dest)
+                    nn_self.register_parameter(name, param_ptr)
 
             return nn_self
 
@@ -826,8 +828,10 @@ class TorchHook:
 
         def module_get_(nn_self):
             """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
-            for p in nn_self.parameters():
-                p.get()
+            for name, param_ptr in nn_self._parameters.items():
+                if param_ptr is not None:
+                    param = param_ptr.get()
+                    nn_self.register_parameter(name, param)
 
             return nn_self
 
