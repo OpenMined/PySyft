@@ -279,7 +279,10 @@ class TorchHook:
             # specific place otherwise it will get deleted
             if not isinstance(data, torch.Tensor) or hasattr(data, "child"):
                 p = torch.Tensor._make_subclass(cls, torch.Tensor(), requires_grad)
-                p.child = data
+                if isinstance(data, torch.Tensor):  # so it's a wrapper: remove it
+                    p.child = data.child
+                else:
+                    p.child = data
             else:
                 p = torch.Tensor._make_subclass(cls, data, requires_grad)
 
@@ -293,11 +296,11 @@ class TorchHook:
 
         def hooked__repr__(self):
             if hasattr(self, "child"):
-                return "Parameter containing:\n" + self.child.__repr__()
+                return "&Parameter containing:\n" + self.child.__repr__()
             else:
                 return self.native_param___repr__()
 
-        torch.nn.Parameter.__repr__ = hooked__repr__
+        # torch.nn.Parameter.__repr__ = hooked__repr__
 
         # Hook .data to handle chain assignment when needed
 

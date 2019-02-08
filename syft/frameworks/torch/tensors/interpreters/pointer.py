@@ -237,12 +237,15 @@ class PointerTensor(AbstractTensor):
         # this next line because self no longer has .owner. Thus, we need to check
         # first here and not try to call self.owner.anything if self doesn't have
         # .owner anymore.
+        # print(self.id, '@', self.owner.id, 'ptr del', self.id_at_location, '@', self.location.id)
 
         if hasattr(self, "owner") and self.garbage_collect_data:
 
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
-                self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)
+                pass
+                # print('SENT')
+                # self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)
 
     @property
     def grad(self):

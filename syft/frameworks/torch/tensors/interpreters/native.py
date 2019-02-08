@@ -218,6 +218,8 @@ class TorchTensor(AbstractTensor):
 
             if hasattr(self, "child") and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
+                if isinstance(self, syft.hook.torch.nn.Parameter):
+                    self.data.child.garbage_collect_data = False
 
             ptr = self.owner.send(self, location)
 
@@ -237,9 +239,15 @@ class TorchTensor(AbstractTensor):
             self.ptr = weakref.ref(ptr)
 
             if isinstance(self, syft.hook.torch.nn.Parameter):
-                self.data.set_()
-                self.data = ptr
-                output = self
+                # self.data.set_()
+                # self.data = ptr
+                # output = self
+
+                wrapper = torch.Tensor()
+                param_wrapper = torch.nn.Parameter(wrapper)
+                param_wrapper.data.set_()
+                param_wrapper.data = ptr
+                output = param_wrapper
 
             else:
                 output = ptr.wrap()
@@ -400,6 +408,9 @@ class TorchTensor(AbstractTensor):
         # optimizer to lose track of where the actual weights
         # are.
         if isinstance(self, torch.nn.Parameter):
+            if isinstance(tensor, torch.nn.Parameter):
+                return tensor
+            # print('#', tensor)
             self.data = tensor.data
             self.grad = tensor.grad
             return self

@@ -324,6 +324,7 @@ class BaseWorker(AbstractWorker):
         Args:
             obj: A torch or syft tensor with an id
         """
+        # print(self.id, obj)
         self._objects[obj.id] = obj
 
     def get_obj(self, obj_id):
@@ -379,6 +380,8 @@ class BaseWorker(AbstractWorker):
         """
 
         obj = self.get_obj(obj_id)
+        # print(self.id, obj)
+        # print('###', obj)
         self.de_register_obj(obj)
         return obj
 
@@ -453,6 +456,7 @@ class BaseWorker(AbstractWorker):
             A torch Tensor or Variable object.
         """
         obj = self.send_msg(MSGTYPE.OBJ_REQ, obj_id, location)
+        # print('##', obj)
         return obj
 
     # SECTION: Manage the workers network
