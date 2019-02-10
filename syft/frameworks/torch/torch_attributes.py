@@ -109,6 +109,7 @@ class TorchAttributes(object):
             "isfinite",
             "load",
             "zeros_like",
+            "randperm",
         ]
 
         # SECTION: List all torch tensor methods we want to overload
