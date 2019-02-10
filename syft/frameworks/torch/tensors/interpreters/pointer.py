@@ -290,13 +290,17 @@ class PointerTensor(AbstractTensor):
         self._shape = new_shape
 
     def attr(self, attr_name):
+        if self.point_to_attr is not None:
+            point_to_attr = "{}.{}".format(self.point_to_attr, attr_name)
+        else:
+            point_to_attr = attr_name
 
         attr_ptr = syft.PointerTensor(
             id=self.id,
             owner=self.owner,
             location=self.location,
             id_at_location=self.id_at_location,
-            point_to_attr=attr_name,
+            point_to_attr=point_to_attr,
         ).wrap()
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
