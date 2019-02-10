@@ -5,7 +5,7 @@ import torch
 
 hook = sy.TorchHook(torch)
 from torch import nn
-from syft import optim
+from torch import optim
 import random
 
 
