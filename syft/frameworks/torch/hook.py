@@ -341,6 +341,50 @@ class TorchHook:
 
         torch.nn.Parameter.data = data
 
+        # Hook .grad to handle chain assignment when needed
+
+        torch.nn.Parameter.native_param_grad = torch.nn.Parameter.grad
+
+        @property
+        def grad(self):
+
+            if hasattr(self, "child"):
+                to_return = self.child.attr("grad")
+                if isinstance(to_return.child, syft.PointerTensor):
+                    if to_return.child.is_none():
+                        to_return = None
+            else:
+                to_return = self.native_param_grad
+
+                # good to ensure that the ID stays consistent
+                # not 100% this is required but it's at least
+                # good practice
+                try:
+                    to_return.id = self.grad_id
+                except AttributeError:
+                    if to_return is not None and hasattr(to_return, "id"):
+                        self.grad_id = to_return.id
+
+            return to_return
+
+        @grad.setter
+        def grad(self, new_grad):
+
+            # If grad is not a pure torch tensor you need to store the chain in a
+            # specific place otherwise it will get deleted
+            if new_grad is not None and (
+                not isinstance(new_grad, torch.Tensor) or hasattr(new_grad, "child")
+            ):
+                self.child.grad = new_grad  # .wrap()
+            else:
+                if self.native_param_grad is not None:
+                    self.native_param_grad.set_(new_grad)  # .wrap()
+                elif new_grad is not None:
+                    self.native_param_grad = new_grad
+            return self
+
+        torch.nn.Parameter.grad = grad
+
     def _hook_torch_module(self):
         """Overloads functions in the main torch modules.
         The way this is accomplished is by first moving all existing module

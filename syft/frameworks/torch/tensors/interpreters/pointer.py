@@ -247,6 +247,10 @@ class PointerTensor(AbstractTensor):
     def grad(self):
         if not hasattr(self, "_grad"):
             self._grad = self.attr("grad")
+
+        if self._grad.child.is_none():
+            return None
+
         return self._grad
 
     @grad.setter
