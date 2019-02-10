@@ -263,6 +263,9 @@ class PointerTensor(AbstractTensor):
     def data(self, new_data):
         self._data = new_data
 
+    def is_none(self):
+        return self.owner.request_is_remote_tensor_none(self)
+
     def get_shape(self):
 
         results = self.location.search(str(self.id_at_location))
