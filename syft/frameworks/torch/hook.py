@@ -146,7 +146,7 @@ class TorchHook:
         # Hook the Parameter methods to store tensor chains in parameters
         self._hook_parameters()
 
-        # Hook torch functions from modules like torch.nn.functional (containing relu, etc.)
+        # Hook torch functions from modules like torch.add OR torch.nn.functional (containing relu, etc.)
         self._hook_torch_module()
 
         # Hook torch.nn (containing Linear and Convolution layers)
@@ -360,8 +360,11 @@ class TorchHook:
             if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
                 # 3. Build the hooked function
                 new_func = self.get_hooked_func(native_func)
-                # 4. Move the native function
-                setattr(torch_module, f"native_{func}", native_func)
+                # 4. Move the native function to its original module
+                # /!\ Can be different from the torch_module!
+                # Ex: in torch.py `torch.argmax = torch.functional.argmax`
+                # ... So torch.argmax.__module__ is 'torch.functional' != 'torch'
+                setattr(eval(native_func.__module__), f"native_{func}", native_func)
                 # 5. Put instead the hooked one
                 setattr(torch_module, func, new_func)
 
