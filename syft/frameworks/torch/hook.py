@@ -813,10 +813,10 @@ class TorchHook:
                 setattr(tensor_type, attr, getattr(TorchTensor, attr))
 
     def _hook_module(self):
-
         """Overloading torch.nn.Module with PySyft functionality, the primary module
            responsible for core ML functionality such as Neural network layers and
-           loss functions
+           loss functions.
+           It is important to note that all the operations are actually in-place.
         """
 
         def module_is_missing_grad(model):
@@ -880,18 +880,31 @@ class TorchHook:
 
         self.torch.nn.Module.get = module_get_
 
-        # def module_fix_precision_(nn_self):
-        #     """Overloads fix_precision for torch.nn.Module."""
-        #     if module_is_missing_grad(nn_self):
-        #         create_grad_objects(nn_self)
-        #
-        #     for p in nn_self.parameters():
-        #         p.fix_precision_()
-        #
-        #     return nn_self
+        def module_fix_precision_(nn_self, *args, **kwargs):
+            """Overloads fix_precision for torch.nn.Module."""
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
 
-        # # TODO: confusion between inplace and not inplace method to disambiguate
-        # self.torch.nn.Module.fix_precision = module_fix_precision_
+            for p in nn_self.parameters():
+                p.fix_precision_(*args, **kwargs)
+
+            return nn_self
+
+        self.torch.nn.Module.fix_precision = module_fix_precision_
+
+        def module_float_precision_(nn_self):
+            """Overloads float_precision for torch.nn.Module, convert fix_precision
+            parameters to normal float parameters"""
+            # TODO: add .data and .grad to syft tensors
+            # if module_is_missing_grad(nn_self):
+            #    create_grad_objects(nn_self)
+
+            for p in nn_self.parameters():
+                p.float_precision_()
+
+            return nn_self
+
+        self.torch.nn.Module.float_precision = module_float_precision_
 
         def module_copy_(nn_self):
             return copy.deepcopy(nn_self)

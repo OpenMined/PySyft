@@ -476,13 +476,37 @@ class TorchTensor(AbstractTensor):
     def float_prec(self):
         return self.child.float_precision()
 
-    def fix_prec(self):
+    float_precision = float_prec
+
+    def float_prec_(self):
+        tensor = self.float_prec()
+        if hasattr(tensor, "child"):
+            self.child = tensor.child
+        elif self.is_parameter():
+            self.data = tensor
+        else:
+            del self.child
+            self.set_(tensor)
+        return self
+
+    float_precision_ = float_prec_
+
+    def fix_prec(self, *args, **kwargs):
         return (
-            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor()
+            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor(*args, **kwargs)
             .on(self)
             .enc_fix_prec()
             .wrap()
         )
+
+    fix_precision = fix_prec
+
+    def fix_prec_(self, *args, **kwargs):
+        tensor = self.fix_prec(*args, **kwargs)
+        self.child = tensor.child
+        return self
+
+    fix_precision_ = fix_prec_
 
     def share(self, *owners):
         """This is a passthrough method which calls .share on the child.
