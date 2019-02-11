@@ -88,15 +88,70 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return result
 
+    def truncate(self, precision_fractional):
+        truncation = self.base ** precision_fractional
+        self.child /= truncation
+        return self
+
     @hook
     def add(self, _self, *args, **kwargs):
         """Add two fixed precision tensors together.
-
-        TODO: fix!
         """
         response = getattr(_self, "add")(*args, **kwargs)
 
         return response
+
+    __add__ = add
+
+    def mul(self, *args, **kwargs):
+        # Replace all syft tensor with their child attribute
+        new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args("mul", self, args)
+
+        # Send it to the appropriate class and get the response
+        response = getattr(new_self, "mul")(*new_args, **kwargs)
+
+        # Put back SyftTensor on the tensors found in the response
+        response = syft.frameworks.torch.hook_args.hook_response(
+            "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
+        )
+
+        other = args[0]
+
+        assert (
+            self.precision_fractional == other.precision_fractional
+        ), "In mul, all args should have the same precision_fractional"
+
+        return response.truncate(other.precision_fractional)
+
+    __mul__ = mul
+
+    @hook
+    def t(self, _self, *args, **kwargs):
+        """Add two fixed precision tensors together.
+        """
+        response = getattr(_self, "t")(*args, **kwargs)
+
+        return response
+
+    def matmul(self, *args, **kwargs):
+        # Replace all syft tensor with their child attribute
+        new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args("matmul", self, args)
+
+        # Send it to the appropriate class and get the response
+        response = getattr(new_self, "matmul")(*new_args, **kwargs)
+
+        # Put back SyftTensor on the tensors found in the response
+        response = syft.frameworks.torch.hook_args.hook_response(
+            "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
+        )
+
+        other = args[0]
+
+        assert (
+            self.precision_fractional == other.precision_fractional
+        ), "In matmul, all args should have the same precision_fractional"
+
+        return response.truncate(other.precision_fractional)
 
     @classmethod
     def handle_func_command(cls, command):
@@ -114,6 +169,12 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         # TODO: add kwargs in command
         cmd, _, args = command
+
+        if cmd == "torch.addmm":
+            bias, input_tensor, weight = args
+            matmul = input_tensor.matmul(weight)
+            r = bias.add(matmul)
+            return r
 
         # Do what you have to
         print("Fixed Precision function", cmd)
