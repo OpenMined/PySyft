@@ -143,6 +143,12 @@ class TorchTensor(AbstractTensor):
         else:
             self._id = new_id
 
+    def is_parameter(self):
+        """
+        Utility method to test if the tensor is in fact a Parameter
+        """
+        return isinstance(self, syft.hook.torch.nn.Parameter)
+
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -219,7 +225,7 @@ class TorchTensor(AbstractTensor):
 
             if hasattr(self, "child") and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
-                if isinstance(self, syft.hook.torch.nn.Parameter):
+                if self.is_parameter():
                     self.data.child.garbage_collect_data = False
 
             ptr = self.owner.send(self, location)
@@ -239,7 +245,7 @@ class TorchTensor(AbstractTensor):
             # the same pointer which was previously created
             self.ptr = weakref.ref(ptr)
 
-            if isinstance(self, syft.hook.torch.nn.Parameter):
+            if self.is_parameter():
                 if inplace:
                     self.data.set_()
                     self.data = ptr
