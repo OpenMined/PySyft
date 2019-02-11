@@ -53,8 +53,17 @@ class FixedPrecisionTensor(AbstractTensor):
         self.kappa = kappa
         self.torch_max_value = torch.tensor([round(self.field / 2)])
 
+    def get_class_attributes(self):
+        """
+        Specify all the attributes need to build a wrapper correctly when returning a response,
+        for example precision_fractional is important when wrapping the result of a method
+        on a self which is a fixed precision tensor with a non default precision_fractional.
+        """
+        return {"precision_fractional": self.precision_fractional}
+
     def fix_precision(self):
-        """This method encodes the .child object using fixed precision"""
+        """This method encodes the .child object using fixed precision
+        Question: what's the use case? --tr"""
 
         rational = self.child
 

@@ -518,7 +518,7 @@ class TorchHook:
 
             # Put back SyftTensor on the tensors found in the response
             response = syft.frameworks.torch.hook_args.hook_response(
-                attr, response, wrap_type=type(self)
+                attr, response, wrap_type=type(self), wrap_args=self.get_class_attributes()
             )
 
             return response
