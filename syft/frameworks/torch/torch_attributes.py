@@ -31,7 +31,11 @@ class TorchAttributes(object):
         self.hook = hook
 
         # List modules that we will hook
-        self.torch_modules = {"torch": torch, "torch.nn.functional": torch.nn.functional}
+        self.torch_modules = {
+            "torch": torch,
+            "torch.functional": torch.functional,
+            "torch.nn.functional": torch.nn.functional,
+        }
 
         # List all the function names with module as prefix in the modules to hook
         self.torch_modules_functions = {
