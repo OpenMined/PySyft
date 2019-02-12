@@ -198,3 +198,9 @@ def test_torch_module_hook(workers):
 
     # TODO: shouldn't there be an assertion here?
     # assert True
+
+
+def test_functional_hook():
+    x = torch.tensor([[1, 2], [3, 4]])
+    y = torch.einsum("ij,jk->ik", x, x)
+    assert (y == torch.tensor([[7, 10], [15, 22]])).all()
