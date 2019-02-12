@@ -49,13 +49,16 @@ class BaseWorker(AbstractWorker):
             primarily a development/testing feature.
     """
 
-    def __init__(self, hook, id=0, known_workers={}, is_client_worker=False, log_msgs=False):
+    def __init__(
+        self, hook, id=0, known_workers={}, is_client_worker=False, log_msgs=False, verbose=False
+    ):
         """Initializes a BaseWorker."""
         self.hook = hook
         self.torch = None if hook is None else hook.torch
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
+        self.verbose = verbose
         self.msg_history = list()
         # A core object in every BaseWorker instantiation. A Collection of
         # objects where all objects are stored using their IDs as keys.
@@ -133,7 +136,8 @@ class BaseWorker(AbstractWorker):
             The deserialized form of message from the worker at specified
             location.
         """
-
+        if self.verbose:
+            print(f"worker {self} sending {msg_type} {message} to {location}")
         # Step 0: combine type and message
         message = (msg_type, message)
 
@@ -169,7 +173,8 @@ class BaseWorker(AbstractWorker):
 
         # Step 0: deserialize message
         (msg_type, contents) = serde.deserialize(bin_message, worker=self)
-
+        if self.verbose:
+            print(f"worker {self} received {msg_type} {contents}")
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
@@ -182,7 +187,6 @@ class BaseWorker(AbstractWorker):
 
         # Step 3: Serialize the message to simple python objects
         bin_response = serde.serialize(response)
-
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
@@ -239,9 +243,6 @@ class BaseWorker(AbstractWorker):
         pointer = tensor.create_pointer(
             owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
         )
-
-        # if (tensor.is_wrapper):
-        #     tensor = tensor.child
 
         # Send the object
         self.send_obj(tensor, worker)
@@ -333,7 +334,34 @@ class BaseWorker(AbstractWorker):
         Args:
             obj_id: A string or integer id of an object to look up.
         """
-        obj = self._objects[obj_id]
+
+        try:
+            obj = self._objects[obj_id]
+
+        except KeyError as e:
+
+            if obj_id not in self._objects:
+                msg = 'Tensor "' + str(obj_id) + '" not found on worker "' + str(self.id) + '"!!! '
+                msg += (
+                    "You just tried to interact with an object ID:"
+                    + str(obj_id)
+                    + " on worker "
+                    + str(self.id)
+                    + " which does not exist!!! "
+                )
+                msg += (
+                    "Use .send() and .get() on all your tensors to make sure they're"
+                    "on the same machines. "
+                    "If you think this tensor does exist, check the ._objects dictionary"
+                    "on the worker and see for yourself!!! "
+                    "The most common reason this error happens is because someone calls"
+                    ".get() on the object's pointer without realizing it (which deletes "
+                    "the remote object and sends it to the pointer). Check your code to "
+                    "make sure you haven't already called .get() on this pointer!!!"
+                )
+                raise KeyError(msg)
+            else:
+                raise e
 
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
@@ -410,6 +438,7 @@ class BaseWorker(AbstractWorker):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
+
         return self.send_msg(MSGTYPE.OBJ, obj, location)
 
     def request_obj(self, obj_id, location):

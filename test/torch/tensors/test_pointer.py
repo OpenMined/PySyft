@@ -1,6 +1,7 @@
 import random
 
 import torch
+import torch as th
 import syft
 
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
@@ -55,6 +56,23 @@ def test_send_get(workers):
     x = x.send(bob).send(alice)
     x_back = x.get().get()
     assert (torch.Tensor([1, 2]) == x_back).all()
+
+
+def test_inplace_send_get(workers):
+    tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
+    tensor_ptr = tensor.send_(workers["bob"])
+
+    assert tensor_ptr.id == tensor.id
+    assert id(tensor_ptr) == id(tensor)
+
+    tensor_back = tensor_ptr.get_()
+
+    assert tensor_back.id == tensor_ptr.id
+    assert tensor_back.id == tensor.id
+    assert id(tensor_back) == id(tensor)
+    assert id(tensor_back) == id(tensor)
+
+    assert (tensor_back == tensor).all()
 
 
 def test_repeated_send(workers):
@@ -199,3 +217,36 @@ def test_move(workers):
 
     assert x.id_at_location not in workers["bob"]._objects
     assert x.id_at_location in workers["alice"]._objects
+
+    x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(workers["bob"])
+
+    assert x.id_at_location in workers["bob"]._objects
+    assert x.id_at_location not in workers["alice"]._objects
+
+    x.move(workers["alice"])
+
+    assert x.id_at_location not in workers["bob"]._objects
+    assert x.id_at_location in workers["alice"]._objects
+
+
+def test_combine_pointers(workers):
+    """
+    Ensure that the sy.combine_pointers works as expected
+    """
+
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    y = th.tensor([1, 2, 3, 4, 5]).send(alice)
+
+    a = x.combine(y)
+    b = a + a
+
+    c = b.get(sum_results=True)
+    assert (c == th.tensor([4, 8, 12, 16, 20])).all()
+
+    b = a + a
+    c = b.get(sum_results=False)
+    assert len(c) == 2
+    assert (c[0] == th.tensor([2, 4, 6, 8, 10])).all

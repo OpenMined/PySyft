@@ -3,6 +3,7 @@ import weakref
 import torch
 
 import syft
+import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.workers import BaseWorker
@@ -81,6 +82,13 @@ class TorchTensor(AbstractTensor):
             return self.child.shape
         else:
             return self.native_shape
+
+    @property
+    def data(self):
+        if self.is_wrapper:
+            return self.child.data
+        else:
+            return self.native_data
 
     def __str__(self) -> str:
         if self.has_child():
@@ -180,7 +188,7 @@ class TorchTensor(AbstractTensor):
 
         return response
 
-    def send(self, location):
+    def send(self, *location, inplace: bool = False):
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes
@@ -192,6 +200,7 @@ class TorchTensor(AbstractTensor):
             location: The BaseWorker object which you want to send this object
                 to. Note that this is never actually the BaseWorker but instead
                 a class which instantiates the BaseWorker abstraction.
+            inplace: if true, return the same object instance, else a new wrapper
 
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
@@ -204,49 +213,86 @@ class TorchTensor(AbstractTensor):
         # want to do so, as p2 is not GCed, you can still do `del p2`.
         # This allows to chain multiple .send().send() calls.
 
-        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
-            self.child.garbage_collect_data = False
+        if len(location) == 1:
 
-        ptr = self.owner.send(self, location)
+            location = location[0]
 
-        ptr.description = self.description
-        ptr.tags = self.tags
+            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+                self.child.garbage_collect_data = False
+                if isinstance(self, syft.hook.torch.nn.Parameter):
+                    self.data.child.garbage_collect_data = False
 
-        # The last pointer should control remote GC, not the previous self.ptr
-        if hasattr(self, "ptr"):
-            if self.ptr is not None:
-                ptr_ = self.ptr()
-                if ptr_ is not None:
-                    ptr_.garbage_collect_data = False
+            ptr = self.owner.send(self, location)
 
-        # we need to cache this weak reference to the pointer so that
-        # if this method gets called multiple times we can simply re-use
-        # the same pointer which was previously created
-        self.ptr = weakref.ref(ptr)
+            ptr.description = self.description
+            ptr.tags = self.tags
 
-        if isinstance(self, syft.hook.torch.nn.Parameter):
-            self.data.set_()
-            self.data = ptr
-            output = self
+            # The last pointer should control remote GC, not the previous self.ptr
+            if hasattr(self, "ptr"):
+                if self.ptr is not None:
+                    ptr_ = self.ptr()
+                    if ptr_ is not None:
+                        ptr_.garbage_collect_data = False
 
+            # we need to cache this weak reference to the pointer so that
+            # if this method gets called multiple times we can simply re-use
+            # the same pointer which was previously created
+            self.ptr = weakref.ref(ptr)
+
+            if isinstance(self, syft.hook.torch.nn.Parameter):
+                if inplace:
+                    self.data.set_()
+                    self.data = ptr
+                    output = self
+                else:
+                    wrapper = torch.Tensor()
+                    param_wrapper = torch.nn.Parameter(wrapper)
+                    param_wrapper.data.set_()
+                    param_wrapper.data = ptr
+                    output = param_wrapper
+            else:
+                if inplace:
+                    self.set_()
+                    self.child = ptr
+                    return self
+                else:
+                    output = ptr.wrap()
+
+            if self.requires_grad:
+
+                grad = output.attr("grad")
+
+                output.grad = grad
+
+                # Because of the way PyTorch works, .grad is prone to
+                # create entirely new Python objects for the tensor, which
+                # inadvertently deletes our custom attributes (like .child)
+                # But, if we keep a backup reference around, PyTorch seems
+                # to re-use it, which means .grad keeps the attributes we
+                # want it to keep. #HackAlert
+                output.backup_grad = grad
         else:
-            output = ptr.wrap()
 
-        if self.requires_grad:
+            children = list()
+            for loc in location:
+                children.append(self.clone().send(loc))
 
-            grad = output.attr("grad")
-
-            output.grad = grad
-
-            # Because of the way PyTorch works, .grad is prone to
-            # create entirely new Python objects for the tensor, which
-            # inadvertently deletes our custom attributes (like .child)
-            # But, if we keep a backup reference around, PyTorch seems
-            # to re-use it, which means .grad keeps the attributes we
-            # want it to keep. #HackAlert
-            output.backup_grad = grad
+            output = syft.frameworks.torch.tensors.interpreters.MultiPointerTensor(
+                children=children
+            ).wrap()
 
         return output
+
+    def send_(self, *location):
+        """
+        Calls send() with inplace option, but only with a single location
+        :param location: workers locations
+        :return:
+        """
+        if len(location) > 1:
+            raise NotImplementedError("Inplace send to several workers is currently not reported.")
+
+        return self.send(*location, inplace=True)
 
     def create_pointer(
         self,
@@ -353,8 +399,12 @@ class TorchTensor(AbstractTensor):
         del self.owner._objects[tensor.id]
         self.owner._objects[child_id] = tensor
 
-    def get(self, deregister_ptr: bool = True):
+    def get(self, *args, inplace: bool = False, **kwargs):
         """Requests the tensor/chain being pointed to, be serialized and return
+            args:
+                args: args to forward to worker
+                inplace: if true, return the same object instance, else a new wrapper
+                kwargs: kwargs to forward to worker
         """
         # Transfer the get() to the child attribute which is a pointer
 
@@ -366,7 +416,7 @@ class TorchTensor(AbstractTensor):
         #                     self.child.child =  self.child.child.get()
         #                     return self
 
-        tensor = self.child.get()
+        tensor = self.child.get(*args, **kwargs)
 
         # Clean the wrapper
         delattr(self, "child")
@@ -379,11 +429,26 @@ class TorchTensor(AbstractTensor):
         # optimizer to lose track of where the actual weights
         # are.
         if isinstance(self, torch.nn.Parameter):
-            self.data = tensor.data
-            self.grad = tensor.grad
-            return self
+            if inplace:
+                self.data = tensor.data
+                self.grad = tensor.grad
+                return self
+            else:
+                return tensor
 
-        return tensor
+        if inplace:
+            self.set_(tensor)
+            if hasattr(tensor, "child"):
+                self.child = tensor.child
+            return self
+        else:
+            return tensor
+
+    def get_(self, *args, **kwargs):
+        """
+        Calls get() with inplace option set to True
+        """
+        return self.get(*args, inplace=True, **kwargs)
 
     def move(self, location):
         ptr = self.send(location)
@@ -436,3 +501,18 @@ class TorchTensor(AbstractTensor):
             .child.init_shares(*owners)
             .wrap()
         )
+
+    def combine(self, *pointers):
+        """This method will combine the child pointer with another list of pointers
+
+        Args:
+            *pointers a list of pointers to be combined into a MultiPointerTensor
+
+            """
+
+        assert isinstance(self.child, PointerTensor)
+
+        ps = list(pointers)
+        ps.append(self)
+
+        return sy.combine_pointers(*ps)

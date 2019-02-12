@@ -253,6 +253,16 @@ class PointerTensor(AbstractTensor):
     def grad(self, new_grad):
         self._grad = new_grad
 
+    @property
+    def data(self):
+        if not hasattr(self, "_data"):
+            self._data = self.attr("data")
+        return self._data
+
+    @data.setter
+    def data(self, new_data):
+        self._data = new_data
+
     def get_shape(self):
 
         results = self.location.search(str(self.id_at_location))

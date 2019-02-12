@@ -23,7 +23,11 @@ from syft.frameworks.torch.tensors.interpreters import PointerTensor
 # import modules
 from syft.frameworks.torch import optim
 
+# import other useful classes
 from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader
+
+# import functions
+from syft.frameworks.torch.functions import combine_pointers
 
 __all__ = [
     "frameworks",
