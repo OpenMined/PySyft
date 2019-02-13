@@ -113,6 +113,7 @@ class TorchAttributes(object):
             "isfinite",
             "load",
             "zeros_like",
+            "randperm",
         ]
 
         # SECTION: List all torch tensor methods we want to overload
@@ -230,3 +231,21 @@ class TorchAttributes(object):
         parts[-1] = "native_" + parts[-1]
         native_func_name = ".".join(parts)
         return native_func_name
+
+    @staticmethod
+    def apply_fix16922(torch):
+        """
+        Apply the fix made in PR16922 of PyTorch until people use PyTorch 1.0.2
+        :param torch: the pytorch module
+        """
+        broken_funcs = [
+            "max_pool1d",
+            "max_pool2d",
+            "max_pool3d",
+            "adaptive_max_pool1d",
+            "adaptive_max_pool2d",
+            "adaptive_max_pool3d",
+        ]
+        for broken_func in broken_funcs:
+            getattr(torch.nn.functional, broken_func).__module__ = "torch.nn.functional"
+            getattr(torch.nn.functional, broken_func).__name__ = broken_func

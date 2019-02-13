@@ -73,6 +73,7 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ: self.set_obj,
             MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
             MSGTYPE.OBJ_DEL: self.rm_obj,
+            MSGTYPE.IS_NONE: self.is_tensor_none,
         }
 
     # SECTION: Methods which MUST be overridden by subclasses
@@ -604,6 +605,13 @@ class BaseWorker(AbstractWorker):
 
     def __getitem__(self, idx):
         return self._objects[idx]
+
+    @staticmethod
+    def is_tensor_none(obj):
+        return obj is None
+
+    def request_is_remote_tensor_none(self, pointer):
+        return self.send_msg(MSGTYPE.IS_NONE, pointer, location=pointer.location)
 
     def search(self, *query):
         """Search for a match between the query terms and the tensor's Id, Tag, or Description.

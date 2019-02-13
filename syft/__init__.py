@@ -20,9 +20,6 @@ from syft.workers import VirtualWorker
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
-# import modules
-from syft.frameworks.torch import optim
-
 # import other useful classes
 from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader
 
@@ -38,7 +35,6 @@ __all__ = [
     "codes",
     "LoggingTensor",
     "PointerTensor",
-    "optim",
     "VirtualGrid",
 ]
 
