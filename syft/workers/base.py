@@ -605,6 +605,12 @@ class BaseWorker(AbstractWorker):
     def __getitem__(self, idx):
         return self._objects[idx]
 
+    def clear_objects(self):
+        """Removes all objects from the worker."""
+
+        self._objects = {}
+        return self
+
     def search(self, *query):
         """Search for a match between the query terms and the tensor's Id, Tag, or Description.
         Note that the query is an AND query meaning that every item in the list of strings (query*)
