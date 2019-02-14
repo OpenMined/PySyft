@@ -404,16 +404,15 @@ class TorchHook:
             if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
                 # 3. Build the hooked function
                 new_func = self.get_hooked_func(native_func)
-                # 4. Move the native function to its original module
-                # /!\ Can be different from the torch_module!
-                # Ex: in torch.py `torch.argmax = torch.functional.argmax`
-                # ... So torch.argmax.__module__ is 'torch.functional' != 'torch'
-                setattr(eval(native_func.__module__), f"native_{func}", native_func)
+                # 4. Move the native function
+                setattr(torch_module, f"native_{func}", native_func)
                 # 5. Put instead the hooked one
                 setattr(torch_module, func, new_func)
 
+        # Hard fix for PyTorch versions < 1.0.2
+        syft.torch.apply_fix16922(self.torch)
+
         torch_modules = syft.torch.torch_modules
-        # torch_modules = {"torch.nn.functional": torch.nn.functional}
 
         for module_name, torch_module in torch_modules.items():
             for func in dir(torch_module):
@@ -525,7 +524,7 @@ class TorchHook:
 
         return overloaded_syft_method
 
-    def get_hooked_method(hook_self, attr):
+    def get_hooked_method(hook_self, method_name):
         """
         Hook a method in order to replace all args/kwargs syft/torch tensors with
         their child attribute if they exist
@@ -536,45 +535,47 @@ class TorchHook:
         :return: the hooked method
         """
 
-        @wraps(attr)
+        @wraps(method_name)
         def overloaded_native_method(self, *args, **kwargs):
             """
             Operate the hooking
             """
 
             if not hasattr(self, "child"):  # means that it's not a wrapper
-                cmd = getattr(self, f"native_{attr}")
+                method = getattr(self, f"native_{method_name}")
                 # Run the native function with the new args
 
                 try:
-
                     if isinstance(args, tuple):
-                        response = cmd(*args)
+                        response = method(*args)
                     else:
-                        response = cmd(args)
+                        response = method(args)
 
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
                     raise route_method_exception(e, self, args, kwargs)
 
             else:  # means that there is a wrapper to remove
-
                 try:
                     # Replace all torch tensor with their child attribute
                     new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args(
-                        attr, self, args
+                        method_name, self, args
                     )
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
                     raise route_method_exception(e, self, args, kwargs)
 
                 # Send the new command to the appropriate class and get the response
-                cmd = getattr(new_self, attr)
-                response = cmd(*new_args, **kwargs)
+                method = getattr(new_self, method_name)
+                response = method(*new_args, **kwargs)
+
+                # For inplace methods, just directly return self
+                if syft.torch.is_inplace_method(method_name):
+                    return self
 
                 # Put back the wrappers where needed
                 response = syft.frameworks.torch.hook_args.hook_response(
-                    attr, response, wrap_type=type(self), new_self=self
+                    method_name, response, wrap_type=type(self), new_self=self
                 )
 
             return response
