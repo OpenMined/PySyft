@@ -240,9 +240,12 @@ class TorchAttributes(object):
         :param method_name: the name for the method
         :return: boolean
         """
-        if method_name not in self.inplace_methods:
-            self.inplace_methods[method_name] = method_name[-1] == "_" and "__" not in method_name
-        return self.inplace_methods[method_name]
+        try:
+            return self.inplace_methods[method_name]
+        except KeyError:
+            is_inplace = method_name[-1] == "_" and "__" not in method_name
+            self.inplace_methods[method_name] = is_inplace
+            return is_inplace
 
     @staticmethod
     def apply_fix16922(torch):
