@@ -146,7 +146,7 @@ class TorchHook:
         # Hook the Parameter methods to store tensor chains in parameters
         self._hook_parameters()
 
-        # Hook torch functions from modules like torch.nn.functional (containing relu, etc.)
+        # Hook torch functions from modules like torch.add OR torch.nn.functional (containing relu, etc.)
         self._hook_torch_module()
 
         # Hook torch.nn (containing Linear and Convolution layers)
@@ -341,6 +341,50 @@ class TorchHook:
 
         torch.nn.Parameter.data = data
 
+        # Hook .grad to handle chain assignment when needed
+
+        torch.nn.Parameter.native_param_grad = torch.nn.Parameter.grad
+
+        @property
+        def grad(self):
+
+            if hasattr(self, "child"):
+                to_return = self.child.attr("grad")
+                if isinstance(to_return.child, syft.PointerTensor):
+                    if to_return.child.is_none():
+                        to_return = None
+            else:
+                to_return = self.native_param_grad
+
+                # good to ensure that the ID stays consistent
+                # not 100% this is required but it's at least
+                # good practice
+                try:
+                    to_return.id = self.grad_id
+                except AttributeError:
+                    if to_return is not None and hasattr(to_return, "id"):
+                        self.grad_id = to_return.id
+
+            return to_return
+
+        @grad.setter
+        def grad(self, new_grad):
+
+            # If grad is not a pure torch tensor you need to store the chain in a
+            # specific place otherwise it will get deleted
+            if new_grad is not None and (
+                not isinstance(new_grad, torch.Tensor) or hasattr(new_grad, "child")
+            ):
+                self.child.grad = new_grad  # .wrap()
+            else:
+                if self.native_param_grad is not None:
+                    self.native_param_grad.set_(new_grad)  # .wrap()
+                elif new_grad is not None:
+                    self.native_param_grad = new_grad
+            return self
+
+        torch.nn.Parameter.grad = grad
+
     def _hook_torch_module(self):
         """Overloads functions in the main torch modules.
         The way this is accomplished is by first moving all existing module
@@ -365,8 +409,10 @@ class TorchHook:
                 # 5. Put instead the hooked one
                 setattr(torch_module, func, new_func)
 
+        # Hard fix for PyTorch versions < 1.0.2
+        syft.torch.apply_fix16922(self.torch)
+
         torch_modules = syft.torch.torch_modules
-        # torch_modules = {"torch.nn.functional": torch.nn.functional}
 
         for module_name, torch_module in torch_modules.items():
             for func in dir(torch_module):
@@ -478,7 +524,7 @@ class TorchHook:
 
         return overloaded_syft_method
 
-    def get_hooked_method(hook_self, attr):
+    def get_hooked_method(hook_self, method_name):
         """
         Hook a method in order to replace all args/kwargs syft/torch tensors with
         their child attribute if they exist
@@ -489,45 +535,47 @@ class TorchHook:
         :return: the hooked method
         """
 
-        @wraps(attr)
+        @wraps(method_name)
         def overloaded_native_method(self, *args, **kwargs):
             """
             Operate the hooking
             """
 
             if not hasattr(self, "child"):  # means that it's not a wrapper
-                cmd = getattr(self, f"native_{attr}")
+                method = getattr(self, f"native_{method_name}")
                 # Run the native function with the new args
 
                 try:
-
                     if isinstance(args, tuple):
-                        response = cmd(*args)
+                        response = method(*args)
                     else:
-                        response = cmd(args)
+                        response = method(args)
 
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
                     raise route_method_exception(e, self, args, kwargs)
 
             else:  # means that there is a wrapper to remove
-
                 try:
                     # Replace all torch tensor with their child attribute
                     new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args(
-                        attr, self, args
+                        method_name, self, args
                     )
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
                     raise route_method_exception(e, self, args, kwargs)
 
                 # Send the new command to the appropriate class and get the response
-                cmd = getattr(new_self, attr)
-                response = cmd(*new_args, **kwargs)
+                method = getattr(new_self, method_name)
+                response = method(*new_args, **kwargs)
+
+                # For inplace methods, just directly return self
+                if syft.torch.is_inplace_method(method_name):
+                    return self
 
                 # Put back the wrappers where needed
                 response = syft.frameworks.torch.hook_args.hook_response(
-                    attr, response, wrap_type=type(self), new_self=self
+                    method_name, response, wrap_type=type(self), new_self=self
                 )
 
             return response
