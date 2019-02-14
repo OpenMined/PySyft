@@ -112,7 +112,6 @@ class TorchAttributes(object):
             "is_tensor",
             "isfinite",
             "load",
-            "zeros_like",
             "randperm",
         ]
 
@@ -158,6 +157,9 @@ class TorchAttributes(object):
         }
 
         self.command_guard = self._command_guard
+
+        # Dict {method_name: <is_inplace:bool>
+        self.inplace_methods = {}
 
     def _command_guard(
         self, command: str, torch_domain: str, get_native: bool = False
@@ -231,6 +233,19 @@ class TorchAttributes(object):
         parts[-1] = "native_" + parts[-1]
         native_func_name = ".".join(parts)
         return native_func_name
+
+    def is_inplace_method(self, method_name):
+        """
+        Says if a method is inplace or not by test if it ends by _ and is not a __xx__
+        :param method_name: the name for the method
+        :return: boolean
+        """
+        try:
+            return self.inplace_methods[method_name]
+        except KeyError:
+            is_inplace = method_name[-1] == "_" and "__" not in method_name
+            self.inplace_methods[method_name] = is_inplace
+            return is_inplace
 
     @staticmethod
     def apply_fix16922(torch):

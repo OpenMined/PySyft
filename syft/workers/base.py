@@ -264,8 +264,11 @@ class BaseWorker(AbstractWorker):
         command = command.decode("utf-8")
         # Handle methods
         if _self is not None:
-
-            tensor = getattr(_self, command)(*args, **kwargs)
+            if sy.torch.is_inplace_method(command):
+                getattr(_self, command)(*args, **kwargs)
+                return
+            else:
+                tensor = getattr(_self, command)(*args, **kwargs)
         # Handle functions
         else:
             # At this point, the command is ALWAYS a path to a
@@ -304,7 +307,6 @@ class BaseWorker(AbstractWorker):
                 ptr_id=tensor.id,
                 garbage_collect_data=False,
             )
-
             return pointer
 
     def send_command(self, recipient, message):
