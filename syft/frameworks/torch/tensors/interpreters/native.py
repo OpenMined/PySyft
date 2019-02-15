@@ -464,7 +464,7 @@ class TorchTensor(AbstractTensor):
 
     def move(self, location):
         ptr = self.send(location)
-        self.owner.send_command(message=("mid_get", ptr, ()), recipient=location)
+        ptr.remote_get()
         self.child.location = location
         self.child.id_at_location = ptr.child.id_at_location
         # don't want it to accidentally delete the remote object
