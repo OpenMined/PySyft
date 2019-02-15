@@ -29,8 +29,7 @@ class PolynomialTensor(AbstractTensor):
                
            value: (float) approximation of the exponential function """
 
-
-        return (1 + x + (x ** 2 / 2) + (x ** 3 / 6) + (x ** 4 / 24))
+        return 1 + x + (x ** 2 / 2) + (x ** 3 / 6) + (x ** 4 / 24)
 
     def tanh(self, x: float) -> float:
 
@@ -55,4 +54,3 @@ class PolynomialTensor(AbstractTensor):
             approximation of the log function as a float"""
 
         return (x) - ((x ** 2) / 2) + ((x ** 3) / 3) - ((x ** 4) / 4)
-
