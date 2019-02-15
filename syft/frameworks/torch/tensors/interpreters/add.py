@@ -43,6 +43,16 @@ class AdditiveSharingTensor(AbstractTensor):
         self.Q_BITS = Q_BITS
         self.field = (self.BASE ** Q_BITS) - 1  # < 63 bits
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        type_name = type(self).__name__
+        out = f"[" f"{type_name}]"
+        for v in self.child.values():
+            out += "\n\t-> " + str(v)
+        return out
+
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
 
