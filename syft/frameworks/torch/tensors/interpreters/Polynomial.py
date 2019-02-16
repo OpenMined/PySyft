@@ -1,4 +1,4 @@
-from syft.frameworks.torch.tensors.abstract import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 
 
 class PolynomialTensor(AbstractTensor):
