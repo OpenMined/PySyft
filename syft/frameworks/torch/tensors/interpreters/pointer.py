@@ -133,7 +133,14 @@ class PointerTensor(AbstractTensor):
         """
 
         type_name = type(self).__name__
-        out = f"[" f"{type_name} - " f"{str(self.id_at_location)}@{self.location.id}" f"]"
+        out = (
+            f"["
+            f"{type_name} | "
+            f"{str(self.owner.id)}:{self.id}"
+            " -> "
+            f"{str(self.location.id)}:{self.id_at_location}"
+            f"]"
+        )
 
         if self.point_to_attr is not None:
             out += "::" + str(self.point_to_attr).replace(".", "::")
@@ -247,6 +254,10 @@ class PointerTensor(AbstractTensor):
     def grad(self):
         if not hasattr(self, "_grad"):
             self._grad = self.attr("grad")
+
+        if self._grad.child.is_none():
+            return None
+
         return self._grad
 
     @grad.setter
@@ -262,6 +273,9 @@ class PointerTensor(AbstractTensor):
     @data.setter
     def data(self, new_data):
         self._data = new_data
+
+    def is_none(self):
+        return self.owner.request_is_remote_tensor_none(self)
 
     def get_shape(self):
 
@@ -290,13 +304,17 @@ class PointerTensor(AbstractTensor):
         self._shape = new_shape
 
     def attr(self, attr_name):
+        if self.point_to_attr is not None:
+            point_to_attr = "{}.{}".format(self.point_to_attr, attr_name)
+        else:
+            point_to_attr = attr_name
 
         attr_ptr = syft.PointerTensor(
             id=self.id,
             owner=self.owner,
             location=self.location,
             id_at_location=self.id_at_location,
-            point_to_attr=attr_name,
+            point_to_attr=point_to_attr,
         ).wrap()
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr

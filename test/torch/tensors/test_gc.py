@@ -132,6 +132,18 @@ def test_implicit_garbage_collect_double_pointer(workers):
     # assert x.id not in workers["alice"]._objects
 
 
+# TESTING IN PLACE METHODS
+
+
+def test_inplace_method_on_pointer(workers):
+    bob = workers["bob"]
+    tensor = torch.tensor([[1.0, 2], [4.0, 2]])
+    pointer = tensor.send(bob)
+    pointer.add_(pointer)
+    tensor_back = pointer.get()
+    assert (tensor * 2 == tensor_back).all()
+
+
 # TESTING LOGGING TENSORS
 
 

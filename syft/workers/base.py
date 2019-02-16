@@ -73,6 +73,7 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ: self.set_obj,
             MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
             MSGTYPE.OBJ_DEL: self.rm_obj,
+            MSGTYPE.IS_NONE: self.is_tensor_none,
         }
 
     # SECTION: Methods which MUST be overridden by subclasses
@@ -263,8 +264,11 @@ class BaseWorker(AbstractWorker):
         command = command.decode("utf-8")
         # Handle methods
         if _self is not None:
-
-            tensor = getattr(_self, command)(*args, **kwargs)
+            if sy.torch.is_inplace_method(command):
+                getattr(_self, command)(*args, **kwargs)
+                return
+            else:
+                tensor = getattr(_self, command)(*args, **kwargs)
         # Handle functions
         else:
             # At this point, the command is ALWAYS a path to a
@@ -303,7 +307,6 @@ class BaseWorker(AbstractWorker):
                 ptr_id=tensor.id,
                 garbage_collect_data=False,
             )
-
             return pointer
 
     def send_command(self, recipient, message):
@@ -604,6 +607,19 @@ class BaseWorker(AbstractWorker):
 
     def __getitem__(self, idx):
         return self._objects[idx]
+
+    def clear_objects(self):
+        """Removes all objects from the worker."""
+
+        self._objects = {}
+        return self
+
+    @staticmethod
+    def is_tensor_none(obj):
+        return obj is None
+
+    def request_is_remote_tensor_none(self, pointer):
+        return self.send_msg(MSGTYPE.IS_NONE, pointer, location=pointer.location)
 
     def search(self, *query):
         """Search for a match between the query terms and the tensor's Id, Tag, or Description.
