@@ -1,11 +1,13 @@
-from syft.frameworks.torch.tensors.Polynomial import PolynomialTensor
+from syft.frameworks.torch.tensors.interpreters.Polynomial import PolynomialTensor
 import torch
 
 
 """ Test cases to ensure working of Polynomial Tensor. The tests under these ensure that the error between actual funcion values and approximations do not deviate too much"""
 
 # Maximum permissible error as calculated by EvalRelative under PolynomialTensor
-threshold = 0.25
+
+DATA_THRESHOLD=3
+ERROR_THRESHOLD =0.15
 
 
 def EvalRelative(x_true, x_pred):
@@ -21,8 +23,21 @@ def EvalRelative(x_true, x_pred):
         """
 
     error = torch.div(torch.abs(x_true - x_pred), x_true)
+    
+    error=error<ERROR_THRESHOLD
+        
+    count=0
+    
+    for i in error:
+        
+        if(i.item()==0):
+            
+            count+=1
+    
+    data_error=(count/len(x_true))*100
+    print(data_error<DATA_THRESHOLD)
 
-    return round(torch.max(error).item(), 2)
+    return data_error
 
 
 def test_EvalRelative():
@@ -44,20 +59,27 @@ def test_EvalRelative():
     ones = torch.ones((2, 3))
     pred = ones + 0.1
     assert EvalRelative(ones, pred) == 0.1
+    
+    ones = torch.ones((2, 3))*2
+    pred = ones + 0.2
+    assert EvalRelative(ones, pred) == 0.1
+    
+    ones = torch.ones((2, 3))*2
+    pred = ones - 0.2
+    assert EvalRelative(ones, pred) == 0.1
 
 
 def testSigmoid():
 
     Ptensor = PolynomialTensor()
 
-    x = torch.randn(100) * 1.5
+    x = torch.randn(100000)*(-1)
+    
+    
     m = torch.nn.Sigmoid()
     ten = m(x)
 
-    print(ten)
-    print("0.1215==0.1036")
-    print(Ptensor.sigmoid(x))
-    print((EvalRelative(ten, Ptensor.sigmoid(x))))
+
     assert (EvalRelative(ten, Ptensor.sigmoid(x))) < threshold
 
 
@@ -94,5 +116,4 @@ def testLog():
     assert EvalRelative(ten, Ptensor.sigmoid(in_tensor)).all() < threshold
 
 
-test_EvalRelative()
 testSigmoid()
