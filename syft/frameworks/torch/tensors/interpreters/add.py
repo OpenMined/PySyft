@@ -204,6 +204,9 @@ class AdditiveSharingTensor(AbstractTensor):
             other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
                 to the tensor being multiplied by self.
         """
+        # check to see that operation is either mul or matmul
+        assert equation == "mul" or equation == "matmul"
+        cmd = getattr(torch, equation)
 
         # if someone passes in a constant... (i.e., x + 3)
         if not isinstance(other_shares, dict):
@@ -229,7 +232,11 @@ class AdditiveSharingTensor(AbstractTensor):
 
         d = {}
         e = {}
+        print(f"shares {shares}")
         for location in locations:
+            print(f"location {location}")
+            print(f"shares {shares[location]}")
+            print(f"a {a[location]}")
             d[location] = (shares[location] - a[location]) % self.field
             e[location] = (other_shares[location] - b[location]) % self.field
 
@@ -242,7 +249,7 @@ class AdditiveSharingTensor(AbstractTensor):
             delta = delta + d_temp
             epsilson = epsilson + e_temp
 
-        delta_epsilon = torch.einsum(equation, delta, epsilon)
+        delta_epsilon = cmd(delta, epsilon)
 
         delta_ptrs = {}
         epsilon_ptrs = {}
@@ -252,8 +259,8 @@ class AdditiveSharingTensor(AbstractTensor):
         for location in locations:
             delta_ptrs[location] = delta.send(location)
             epsilon_ptrs[location] = epsilon.send(location)
-            a_epsilon[location] = torch.einsum(equation, a[location], epsilon_ptrs[location])
-            delta_b[location] = torch.einsum(equation, delta_ptrs[location], b[location])
+            a_epsilon[location] = cmd(a[location], epsilon_ptrs[location])
+            delta_b[location] = cmd(delta_ptrs[location], b[location])
             z[location] = a_epsilon[location] + delta_b[location] + c[location]
         delta_epsilon_pointer = delta_epsilon.send(locations[0])
         z[locations[0]] = z[locations[0]] + delta_epsilon_pointer
@@ -274,7 +281,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 to the tensor being multiplied by self.
         """
 
-        return self.abstract_mul("ij,ij->ij", shares, other_shares, **kwargs)
+        return self.abstract_mul("mul", shares, other_shares, **kwargs)
 
     def __mul__(self, *args, **kwargs):
         """Multiplies two number for details see mul
@@ -293,9 +300,9 @@ class AdditiveSharingTensor(AbstractTensor):
                 to the tensor being multiplied by self.
         """
 
-        return self.abstract_mul("ij,jk->ik", shares, other_shares, **kwargs)
+        return self.abstract_mul("matmul", shares, other_shares, **kwargs)
 
     def __matmul__(self, *args, **kwargs):
         """Multiplies two number for details see mul
         """
-        return self.mul(self, *args, **kwargs)
+        return self.matmul(self, *args, **kwargs)
