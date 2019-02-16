@@ -6,8 +6,8 @@ import torch
 
 # Maximum permissible error as calculated by EvalRelative under PolynomialTensor
 
-DATA_THRESHOLD=2.9
-ERROR_THRESHOLD =0.15
+DATA_THRESHOLD = 2.9
+ERROR_THRESHOLD = 0.15
 
 
 def EvalRelative(x_true, x_pred):
@@ -23,17 +23,18 @@ def EvalRelative(x_true, x_pred):
         """
 
     error = torch.div(torch.abs(x_true - x_pred), x_true)
-    
-    error=error<ERROR_THRESHOLD
-        
-    count=0
-    
+
+    error = error < ERROR_THRESHOLD
+
+    count = 0
+
     for i in error:
-        
-        if i.item() == 0 : count+=1
-    
-    data_error=(count/len(x_true))*100
-    within_limits=(data_error<DATA_THRESHOLD)
+
+        if i.item() == 0:
+            count += 1
+
+    data_error = (count / len(x_true)) * 100
+    within_limits = data_error < DATA_THRESHOLD
 
     return within_limits
 
@@ -57,12 +58,12 @@ def test_EvalRelative():
     ones = torch.ones((2, 3))
     pred = ones + 0.1
     assert EvalRelative(ones, pred) == 0.1
-    
-    ones = torch.ones((2, 3))*2
+
+    ones = torch.ones((2, 3)) * 2
     pred = ones + 0.2
     assert EvalRelative(ones, pred) == 0.1
-    
-    ones = torch.ones((2, 3))*2
+
+    ones = torch.ones((2, 3)) * 2
     pred = ones - 0.2
     assert EvalRelative(ones, pred) == 0.1
 
@@ -71,14 +72,12 @@ def testSigmoid():
 
     Ptensor = PolynomialTensor()
 
-    x = torch.randn(100000)*(-1)
-    
-    
+    x = torch.randn(100_000) * (-1)
+
     m = torch.nn.Sigmoid()
     ten = m(x)
 
-
-    assert (EvalRelative(ten, Ptensor.sigmoid(x)))==True
+    assert (EvalRelative(ten, Ptensor.sigmoid(x))) == True
 
 
 def testExpTest():
@@ -112,5 +111,3 @@ def testLog():
     ten = m(in_tensor)
 
     assert EvalRelative(ten, Ptensor.sigmoid(in_tensor)).all() < threshold
-
-
