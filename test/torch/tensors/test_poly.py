@@ -28,11 +28,11 @@ def EvalError(x_true, x_pred):
             within_limits: If function approximation error of given tensor is within DATA_THRESHOLD
             
         """
-    
-    #Relative absolute error give by abs(true_value-prediction_value)/(true_value)
+
+    # Relative absolute error give by abs(true_value-prediction_value)/(true_value)
     error_rel = torch.div(torch.abs(x_true - x_pred), x_true)
-    
-    #Check if individual approximations are within the threshold
+
+    # Check if individual approximations are within the threshold
     error = error_rel < ERROR_THRESHOLD
 
     count = 0
@@ -82,8 +82,8 @@ def testSigmoid():
 
     Ptensor = PolynomialTensor()
 
-    x = torch.randn(50000) 
-    
+    x = torch.randn(50000)
+
     print(x)
 
     m = torch.nn.Sigmoid()
@@ -96,8 +96,8 @@ def testExp():
 
     Ptensor = PolynomialTensor()
 
-    x = torch.randn(50000) 
-    
+    x = torch.randn(50000)
+
     print(x)
 
     ten = torch.exp(x)
@@ -109,8 +109,8 @@ def testtanh():
 
     Ptensor = PolynomialTensor()
 
-    x = torch.randn(50000) 
-    
+    x = torch.randn(50000)
+
     print(x)
 
     m = torch.nn.tanh()
@@ -123,14 +123,14 @@ def testLog():
 
     Ptensor = PolynomialTensor()
 
-    x = torch.randn(50000) 
-    
+    x = torch.randn(50000)
+
     print(x)
 
     m = torch.nn.tanh()
     ten = m(x)
 
     assert (EvalError(ten, Ptensor.log(x))) == True
-    
-testExp()
 
+
+testExp()
