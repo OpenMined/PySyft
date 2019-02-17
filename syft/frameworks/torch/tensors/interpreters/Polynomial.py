@@ -1,45 +1,46 @@
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters.add import AdditiveSharingTensor
+import torch
 
 
-class PolynomialTensor(AbstractTensor):
+class PolynomialTensor(AdditiveSharingTensor):
 
     """Tensor type which provides polynomial approximation functionalities using Taylor Series expansion
        since computing exact functions could impose a overhead on computation
     """
 
-    def sigmoid(self, x: float) -> float:
+    def sigmoid(x: torch.tensor) -> torch.tensor:
 
         """Parameters:
             
-           x: A float value
+           x: Torch tensor
            
            return: 
                
-           approximation of the sigmoid function as a float"""
+           approximation of the sigmoid function as a torch tensor"""
 
         return (1 / 2) + (x / 4) - (x ** 3 / 48) + (x ** 5 / 480)
 
-    def exp(self, x: float) -> float:
+    def exp(x: torch.tensor) -> torch.tensor:
 
         """Parameters:
             
-           x: (float) value for which approximation must be found
-           
-           return: 
-               
-           value: (float) approximation of the exponential function """
-
-        return 1 + x + (x ** 2 / 2) + (x ** 3 / 6) + (x ** 4 / 24) + (x ** 5 / 120) + (x ** 6 / 840)
-
-    def tanh(self, x: float) -> float:
-
-        """Parameters:
-            
-            x: A float value
+            x: Torch tensor
            
             return: 
                
-            approximation of the tanh function as a float"""
+            approximation of the sigmoid function as a torch tensor"""
+
+        return 1 + x + (x ** 2 / 2) + (x ** 3 / 6) + (x ** 4 / 24) + (x ** 5 / 120) + (x ** 6 / 840)
+
+    def tanh(x: torch.tensor) -> torch.tensor:
+
+        """Parameters:
+            
+            x: Torch tensor
+           
+            return: 
+               
+            approximation of the sigmoid function as a torch tensor"""
 
         return (
             (x)
