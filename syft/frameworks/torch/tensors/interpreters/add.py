@@ -229,25 +229,22 @@ class AdditiveSharingTensor(AbstractTensor):
             locations,
         )
         a, b, c = triple
-
+        a = a.child
+        b = b.child
+        c = c.child
         d = {}
         e = {}
-        print(f"shares {shares}")
         for location in locations:
-            print(f"location {location}")
-            print(f"shares {shares[location]}")
-            print(f"a {a[location]}")
             d[location] = (shares[location] - a[location]) % self.field
             e[location] = (other_shares[location] - b[location]) % self.field
+        delta = torch.zeros(d[locations[0]].shape, dtype=torch.long)
+        epsilon = torch.zeros(e[locations[0]].shape, dtype=torch.long)
 
-        delta = torch.zeros(d.items()[0].shape)
-        epsilson = torch.zeros(e.items()[0].shape)
-
-        for (location,) in locations:
+        for location in locations:
             d_temp = d[location].get()
             e_temp = e[location].get()
             delta = delta + d_temp
-            epsilson = epsilson + e_temp
+            epsilon = epsilon + e_temp
 
         delta_epsilon = cmd(delta, epsilon)
 

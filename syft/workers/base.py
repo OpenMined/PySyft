@@ -676,7 +676,6 @@ class BaseWorker(AbstractWorker):
         cmd = getattr(self.torch, equation)
         a = self.torch.randint(field, a_size)
         b = self.torch.randint(field, b_size)
-        print(f"a {a}")
         c = cmd(a, b)
         a_shared = a.share(*locations, field=field)
         b_shared = b.share(*locations, field=field)
