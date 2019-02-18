@@ -2,101 +2,91 @@ from syft.frameworks.torch.tensors.interpreters.Polynomial import PolynomialTens
 import torch
 
 
-""" Test cases to ensure working of Polynomial Tensor. The tests under these ensure that the error between actual funcion values and approximations do not deviate too much"""
+""" Test cases to ensure working of Polynomial Tensor. The tests under these ensure that the error implementation of function approximations work as expected"""
 
-# Maximum permissible error as calculated by EvalRelative under PolynomialTensor
+# Maximum permissible error as calculated by EvalError under PolynomialTensor
 
-DATA_THRESHOLD = 5.5
-ERROR_THRESHOLD = 5
-DATA_SIZE = 50000
+MARGIN=0.01
+
+LOWER_RANGE =-3
+HIGHER_RANGE=3
+
+STEPS=10
 
 
 def EvalError(x_true, x_pred):
 
-    """ The function is used to measure the error between actual function value and approximated function value. It is evaluated as follows.
-        Given a tensor of 1000 random numbers, the function approximation of individual numbers in the tensor must be within atleast +- 5% error of actual value.
-        This threshold is given by ERROR_THRESHOLD.
-        But , a certain percentage of numbers in the tensor can exceed the ERROR_THRESHOLD. This threshold is described by DATA_THRESHOLD.
-        The function returns true the total data error (% of individual approximations which have error within ERROR_THRESHOLD)
+    """ The function is used to find out if the actual value and approximated value are the same within a margin of error
+        given by MARGIN. Since there would be changes in approximation formula leading to small differences and differences
+        due to floating points. We want to ensure that the value of actual function value and approximated function value
+        differ by only small margin defined by RANGE.
         
-            Parameters: 
+        Arguments:
             
-            x_true: Value of true function 
-            x_pred: Value of function approximation 
+            x_true (Torch Tensor): True value
+            x_pred (Torch Tensor): Expected value
             
-            Returns:
-                
-            data_error: 
+        Returns:
             
-        """
-
-    # Relative absolute error give by abs(true_value-prediction_value)/(true_value)
-    error_rel = torch.div(torch.abs(x_true - x_pred), x_true) * 100
-
-    # Check if individual approximations are within the threshold
-    error = error_rel < ERROR_THRESHOLD
-
-    count = 0
-
-    for i in error:
-
-        if i.item() == 0:
-            count += 1
-
-    data_error = (count / len(x_true)) * 100
-
-    return data_error
+            within range (boolean): Indicates if the values are within margin of error
+            
+        """     
+        
+    within_range=(torch.abs(x_true-x_pred)<MARGIN)
+    within_range=torch.eq(within_range.all(),1)
+    within_range=within_range.item()==1
+    
+    return(within_range)
 
 
 def test_EvalError():
 
-    " Ensure that EvalRelative function does what it has to. For the purpose we take a tensor of ones and subtract and add an amount of error "
-
-    one = torch.ones(6)
-    two = torch.ones(6) * 2
-
-    assert EvalError(two, one) == 100
-    assert EvalError(one, one) == 0
-    assert EvalError(two, two) == 0
-
-    three = torch.tensor([1.0, 1.0, 1.0, 0.0, 0.0, 0.0])
-
-    assert EvalError(three, one) == 50
-    assert EvalError(one, three) == 50
-
+    " Ensure that EvalError function implementation works the way it has to"
+    
+    ones=torch.ones([5])
+    zero=torch.zeros([5])
+    
+    margin1=ones+(MARGIN-0.002)
+    margin2=ones+(MARGIN+0.001)
+    
+    assert(EvalError(ones,zero)==False)
+    assert(EvalError(ones,ones)==True)
+    assert(EvalError(ones,margin1)==True)
+    assert(EvalError(ones,margin2)==False)
+    
 
 def testSigmoid():
 
     Ptensor = PolynomialTensor()
 
-    x = torch.randn(DATA_SIZE)
-
-    m = torch.nn.Sigmoid()
-    ten = m(x)
-
-    assert (EvalError(ten, Ptensor.sigmoid(x))) < DATA_THRESHOLD
-
+    x = torch.linspace(-3,3, steps=10)
+    expected=torch.tensor([-0.1938,  0.0372,  0.1530,  0.2688, 
+                            0.4174,  0.5826,  0.7313,  0.8470,
+                            0.9628,  1.1938])
+    
+    assert(EvalError(expected,Ptensor.sigmoid(x))==True)
+    
 
 def testExp():
 
     Ptensor = PolynomialTensor()
 
-    x = torch.randn(DATA_SIZE)
+    x = torch.linspace(-3,3, steps=10)
+    expected=torch.tensor([ 0.2179,  0.1224,  0.1905,  0.3679, 
+                            0.7165,  1.3956,  2.7179,  5.2813,
+                            10.1764, 19.2679])
 
-    ten = torch.exp(x)
-
-    assert (EvalError(ten, Ptensor.exp(x))) < DATA_THRESHOLD
+    assert(EvalError(expected,Ptensor.exp(x))==True)
 
 
 def testtanh():
 
-    # Ideally the error for any approximation to be under DATA_THRESHOLD. For tanh it could be not be improved beyond 12 , which should be addressed in the future.
-    Tanh_thresh = 12
-
     Ptensor = PolynomialTensor()
 
-    x = torch.randn(DATA_SIZE)
-
-    ten = torch.tanh(x)
-
-    assert (EvalError(ten, Ptensor.tanh(x))) < Tanh_thresh
+    x = torch.linspace(-3,3, steps=10)
+    expected=torch.tensor([-3.3883e+02, -3.1835e+01, -2.0803e+00, 
+                           -7.6790e-01, -3.2151e-01,  3.2151e-01, 
+                            7.6790e-01,  2.0803e+00,  3.1835e+01,  
+                            3.3883e+02])
+    
+    assert(EvalError(expected,Ptensor.tanh(x))==True)

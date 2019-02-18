@@ -51,5 +51,7 @@ class PolynomialTensor(AdditiveSharingTensor):
         )
 
 
-# if x < 0 then f(x) = 1 / (0.5/(1+(x^2)))
-# if x > 0 then f(x) = 1 / (-0.5/(1+(x^2)))+1
+'''
+   An implementation of fast sigmoid
+   if x < 0 then f(x) = 1 / (0.5/(1+(x^2)))
+   if x > 0 then f(x) = 1 / (-0.5/(1+(x^2)))+1'''
