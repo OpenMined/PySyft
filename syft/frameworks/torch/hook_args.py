@@ -95,21 +95,27 @@ def hook_method_args(attr, method_self, args):
     return (new_self, new_args)
 
 
-def hook_function_args(attr, args):
+def hook_function_args(attr, args, return_args_type=False):
     """See hook_method_args for details
 
     Args:
         attr (str): the name of the function being called
         args (list): the arguments being passed to the tensor
+        return_args_type (bool): return the type of the tensors in the
+        original arguments
+
+    Returns:
+        - the arguments where all tensors are replaced with their child
+        - the type of this new child
+        (- the type of the tensors in the arguments)
     """
     try:
         # Load the utility function to transform the args
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
-        get_tensor_type = get_tensor_type_functions[attr]
+        get_tensor_type_function = get_tensor_type_functions[attr]
         # Try running it
         new_args = hook_args(args)
-        new_type = get_tensor_type(new_args)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
         args_hook_function, get_tensor_type_function = build_hook_args_function(
@@ -120,9 +126,13 @@ def hook_function_args(attr, args):
         get_tensor_type_functions[attr] = get_tensor_type_function
         # Run it
         new_args = args_hook_function(args)
-        new_type = get_tensor_type_function(new_args)
 
-    return new_args, new_type
+    new_type = get_tensor_type_function(new_args)
+    if return_args_type:
+        args_type = get_tensor_type_function(args)
+        return new_args, new_type, args_type
+    else:
+        return new_args, new_type
 
 
 def build_hook_args_function(args, return_tuple=False):

@@ -179,6 +179,11 @@ class FixedPrecisionTensor(AbstractTensor):
         # TODO: add kwargs in command
         cmd, _, args = command
 
+        # unhook
+        if cmd == "torch.nn.functional.linear":
+            return torch.nn.functional.native_linear(*args)
+
+        # overwrite
         if cmd == "torch.addmm":
             bias, input_tensor, weight = args
             matmul = input_tensor.matmul(weight)
@@ -186,7 +191,7 @@ class FixedPrecisionTensor(AbstractTensor):
             return r
 
         # Do what you have to
-        print("Fixed Precision function", cmd)
+        # print("Fixed Precision function", cmd)
 
         # TODO: I can't manage the import issue, can you?
         # Replace all FixedPrecisionTensor with their child attribute

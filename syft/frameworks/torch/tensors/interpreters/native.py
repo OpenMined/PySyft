@@ -152,14 +152,29 @@ class TorchTensor(AbstractTensor):
     @classmethod
     def handle_func_command(cls, command):
         """
-        Receive an instruction for a function to be applied on a torch
-        tensor, which can be a "real" tensor or just a wrapper at the
-        top of a chain (ex: wrapper>LoggingTensor>Torch tensor).
-        If this is not a wrapper layer, run the native torch command.
-        If this is a wrapper layer, just forward the instruction to the
-        next layer type in the chain (in the example above to LoggingTensor.
-        handle_method_command), get the response and replace a wrapper
-        on top of all tensors found in the response.
+        Operates as a router for functions. A function call always starts
+        by being handled here and 3 scenarii must be considered:
+
+        Real Torch tensor:
+            The arguments of the function are real tensors so we should
+            run the native torch command
+
+        Torch wrapper:
+            The arguments are just wrappers at the top of a chain
+            (ex: wrapper>LoggingTensor>Torch tensor), so just forward
+            the instruction to the next layer type in the chain (in
+            the example above to LoggingTensor.handle_func_command),
+            get the response and replace a wrapper on top of all tensors
+            found in the response.
+
+        Syft Tensor:
+            The arguments are syft tensors of same type: this can happen
+            if at any node of the chain where some function is forwarded,
+            the handle_func_command modify the function and make a new
+            call but keeps the arguments "un-wrapped". Making a new call
+            means that by default the command is treated here in the
+            global router.
+
         :param command: instruction of a function command: (command name,
         <no self>, arguments[, kwargs])
         :return: the response of the function command
@@ -169,13 +184,23 @@ class TorchTensor(AbstractTensor):
 
         try:  # will work if tensors are wrappers
             # Replace all torch tensor with their child attribute
-            new_args, new_type = syft.frameworks.torch.hook_args.hook_function_args(cmd, args)
+            # Note that we return also args_type which helps handling case 3 in the docstring
+            new_args, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
+                cmd, args, return_args_type=True
+            )
+            # This handles case 3: it redirects the command to the appropriate class depending
+            # of the syft type of the arguments and returns
+            if args_type not in (torch.Tensor, torch.nn.Parameter):
+                return args_type.handle_func_command(command)
+
             # build the new command
             new_command = (cmd, None, new_args)
             # Send it to the appropriate class and get the response
             response = new_type.handle_func_command(new_command)
             # Put back the wrappers where needed
-            response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
+            response = syft.frameworks.torch.hook_args.hook_response(
+                cmd, response, wrap_type=args_type
+            )
         except PureTorchTensorFoundError:  # means that it's not a wrapper but a pure tensor
             # TODO: clean this line
             cmd = (
