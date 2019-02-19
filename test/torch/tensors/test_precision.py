@@ -23,20 +23,20 @@ def test_encode_decode(workers, parameter):
     if parameter:
         x = nn.Parameter(x)
     x = x.fix_prec()
-    assert x.child.child[0] == 100
+    assert (x.child.child == torch.LongTensor([100, 200, 300])).all()
     x = x.float_prec()
 
-    assert x[0] == 0.1
+    assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
 
 
 def test_inplace_encode_decode(workers):
 
     x = torch.tensor([0.1, 0.2, 0.3])
     x.fix_prec_()
-    assert x.child.child[0] == 100
+    assert (x.child.child == torch.LongTensor([100, 200, 300])).all()
     x.float_prec_()
 
-    assert x[0] == 0.1
+    assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
 
 
 def test_add_method():
@@ -46,7 +46,7 @@ def test_add_method():
 
     y = x + x
 
-    assert y.child.child[0] == 200
+    assert (y.child.child == torch.LongTensor([200, 400, 600])).all()
     y = y.float_prec()
 
     assert (y == t + t).all()
@@ -89,10 +89,10 @@ def test_add_func():
 
     y = torch.add(x, x)
 
-    assert y.child.child[0] == 200
+    assert (y.child.child == torch.LongTensor([200, 400, 600])).all()
     y = y.float_prec()
 
-    assert y[0] == 0.2
+    assert (y == torch.tensor([0.2, 0.4, 0.6])).all()
 
 
 def test_fixed_precision_and_sharing(workers):
@@ -102,11 +102,11 @@ def test_fixed_precision_and_sharing(workers):
     x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice)
     out = x.get().float_prec()
 
-    assert out[0] == 1
+    assert (out == torch.tensor([1, 2, 3, 4.0])).all()
 
     x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice)
 
     y = x + x
 
     y = y.get().float_prec()
-    assert y[0] == 2
+    assert (y == torch.tensor([2, 4, 6, 8.0])).all()
