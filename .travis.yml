@@ -15,13 +15,11 @@ matrix:
 install:
   - sudo apt-get update
   - hash -r
-  - python -m venv venv
-  - source venv/bin/activate
-  - pip install -r requirements.txt >build.log
-  - pip install flake8
-  - pip install flake8-docstrings
-  - pip install flake8-comprehensions
-  - pip install pep8-naming
+  - pip3 install -r requirements.txt >build.log
+  - pip3 install flake8
+  - pip3 install flake8-docstrings
+  - pip3 install flake8-comprehensions
+  - pip3 install pep8-naming
   - python setup.py install >> build.log
 before_script:
   # stop the build if there are Python syntax errors or undefined
