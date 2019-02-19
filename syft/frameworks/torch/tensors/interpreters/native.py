@@ -143,7 +143,7 @@ class TorchTensor(AbstractTensor):
         else:
             self._id = new_id
 
-    def is_parameter(self):
+    def _is_parameter(self):
         """
         Utility method to test if the tensor is in fact a Parameter
         """
@@ -250,7 +250,7 @@ class TorchTensor(AbstractTensor):
 
             if hasattr(self, "child") and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
-                if self.is_parameter():
+                if self._is_parameter():
                     self.data.child.garbage_collect_data = False
 
             ptr = self.owner.send(self, location)
@@ -270,7 +270,7 @@ class TorchTensor(AbstractTensor):
             # the same pointer which was previously created
             self.ptr = weakref.ref(ptr)
 
-            if self.is_parameter():
+            if self._is_parameter():
                 if inplace:
                     self.data.set_()
                     self.data = ptr
@@ -525,7 +525,7 @@ class TorchTensor(AbstractTensor):
         tensor = self.float_prec()
         if hasattr(tensor, "child"):
             self.child = tensor.child
-        elif self.is_parameter():
+        elif self._is_parameter():
             self.data = tensor
         else:
             del self.child
