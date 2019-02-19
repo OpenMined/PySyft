@@ -112,7 +112,18 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __add__ = add
 
+    @hook
+    def t(self, _self, *args, **kwargs):
+        """Transpose a tensor. Hooked is handled by the decorator"""
+        response = getattr(_self, "t")(*args, **kwargs)
+
+        return response
+
     def mul(self, *args, **kwargs):
+        """
+        Hook manually mul to add the truncation part which is inherent to multiplication
+        in the fixed precision setting
+        """
         # Replace all syft tensor with their child attribute
         new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args("mul", self, args)
 
@@ -134,15 +145,11 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __mul__ = mul
 
-    @hook
-    def t(self, _self, *args, **kwargs):
-        """Add two fixed precision tensors together.
-        """
-        response = getattr(_self, "t")(*args, **kwargs)
-
-        return response
-
     def matmul(self, *args, **kwargs):
+        """
+        Hook manually matmul to add the truncation part which is inherent to multiplication
+        in the fixed precision setting
+        """
         # Replace all syft tensor with their child attribute
         new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args("matmul", self, args)
 
@@ -189,9 +196,6 @@ class FixedPrecisionTensor(AbstractTensor):
             matmul = input_tensor.matmul(weight)
             r = bias.add(matmul)
             return r
-
-        # Do what you have to
-        # print("Fixed Precision function", cmd)
 
         # TODO: I can't manage the import issue, can you?
         # Replace all FixedPrecisionTensor with their child attribute
