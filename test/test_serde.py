@@ -19,6 +19,7 @@ from syft.frameworks.torch.tensors.interpreters import PointerTensor
 import msgpack
 import numpy
 import pytest
+import torch
 from torch import Tensor
 
 
@@ -176,6 +177,17 @@ def test_ellipsis_simplify():
 
     # the simplified ellipsis (empty object)
     assert _simplify(Ellipsis)[1] == b""
+
+
+def test_torch_device_simplify():
+    """Test the simplification of torch.device"""
+    device = torch.device("cpu")
+
+    # the id indicating an torch.device is here
+    assert _simplify(device)[0] == 10
+
+    # the simplified torch.device
+    assert _simplify(device)[1] == "cpu"
 
 
 def test_pointer_tensor_simplify():
