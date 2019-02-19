@@ -430,6 +430,18 @@ class TorchTensor(AbstractTensor):
         del self.owner._objects[tensor.id]
         self.owner._objects[child_id] = tensor
 
+    def remote_get(self):
+        """Assuming .child is a PointerTensor, this method calls .get() on the tensor
+        that the .child is pointing to (which should also be a PointerTensor)
+
+        TODO: make this kind of message forwarding generic?
+        """
+
+        location = self.child.location
+        self.owner.send_command(message=("mid_get", self.child, ()), recipient=location)
+
+        return self
+
     def get(self, *args, inplace: bool = False, **kwargs):
         """Requests the tensor/chain being pointed to, be serialized and return
             args:
@@ -483,7 +495,7 @@ class TorchTensor(AbstractTensor):
 
     def move(self, location):
         ptr = self.send(location)
-        self.owner.send_command(message=("mid_get", ptr, ()), recipient=location)
+        ptr.remote_get()
         self.child.location = location
         self.child.id_at_location = ptr.child.id_at_location
         # don't want it to accidentally delete the remote object

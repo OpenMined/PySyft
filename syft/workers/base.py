@@ -608,6 +608,12 @@ class BaseWorker(AbstractWorker):
     def __getitem__(self, idx):
         return self._objects[idx]
 
+    def clear_objects(self):
+        """Removes all objects from the worker."""
+
+        self._objects = {}
+        return self
+
     @staticmethod
     def is_tensor_none(obj):
         return obj is None
