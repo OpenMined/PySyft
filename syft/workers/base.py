@@ -51,11 +51,18 @@ class BaseWorker(AbstractWorker):
     """
 
     def __init__(
-        self, hook, id=0, known_workers={},Data={},is_client_worker=False, log_msgs=False, verbose=False
+        self,
+        hook,
+        id=0,
+        known_workers={},
+        data={},
+        is_client_worker=False,
+        log_msgs=False,
+        verbose=False,
     ):
         """Initializes a BaseWorker."""
-        
-        self.Load_Data(Data)
+
+        self.load_data(data)
         self.hook = hook
         self.torch = None if hook is None else hook.torch
         self.id = id
@@ -78,8 +85,6 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ_DEL: self.rm_obj,
             MSGTYPE.IS_NONE: self.is_tensor_none,
         }
-        
-        
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -122,15 +127,14 @@ class BaseWorker(AbstractWorker):
 
         """
         raise NotImplementedError  # pragma: no cover
-        
-    def Load_Data(self,Data):
-        
-        Data={}
-        
-        for i in Data:
-            
-             ptr=self.send(Data)
-             Data[ptr]=Data
+
+    def load_data(self, Data):
+
+        Data = {}
+
+        for tensor in Data:
+
+            self.register_obj(tensor)
 
     def send_msg(self, msg_type, message, location):
         """Implements the logic to send messages.
