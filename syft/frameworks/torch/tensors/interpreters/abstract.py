@@ -37,6 +37,10 @@ class AbstractTensor(ABC):
         else:
             return type(self).__name__
 
+    def __len__(self):
+        """Alias .shape[0] with len(), helpful for pointers"""
+        return self.shape[0]
+
     def on(self, tensor, wrap=True):
         """
         Add a syft(log) tensor on top of the tensor.
