@@ -128,11 +128,9 @@ class BaseWorker(AbstractWorker):
         """
         raise NotImplementedError  # pragma: no cover
 
-    def load_data(self, Data):
+    def load_data(self, data):
 
-        Data = {}
-
-        for tensor in Data:
+        for tensor in data:
 
             self.register_obj(tensor)
 
