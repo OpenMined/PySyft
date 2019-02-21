@@ -37,7 +37,7 @@ class BaseWorker(AbstractWorker):
             for adding to this dictionary(node discovery). In some cases,
             one can initialize this with known workers to help bootstrap
             the network.
-        Data: Initialize Data worker with data
+        data: Initialize workers with data on creating worker object
         is_client_worker: An optional boolean parameter to indicate
             whether this worker is associated with an end user client. If
             so, it assumes that the client will maintain control over when
@@ -62,7 +62,6 @@ class BaseWorker(AbstractWorker):
     ):
         """Initializes a BaseWorker."""
 
-        self.load_data(data)
         self.hook = hook
         self.torch = None if hook is None else hook.torch
         self.id = id
@@ -85,6 +84,7 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ_DEL: self.rm_obj,
             MSGTYPE.IS_NONE: self.is_tensor_none,
         }
+        self.load_data(data)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -129,10 +129,22 @@ class BaseWorker(AbstractWorker):
         raise NotImplementedError  # pragma: no cover
 
     def load_data(self, data):
+        """Allows workers to be initialized with data when created 
+        
+           The method registers the tensor individual tensor objects.
+        
+        Args:
+            
+            data: A list of tensors
 
+            
+        """
+        
         for tensor in data:
-
+     
             self.register_obj(tensor)
+            tensor.owner=self
+            
 
     def send_msg(self, msg_type, message, location):
         """Implements the logic to send messages.
