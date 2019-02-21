@@ -14,32 +14,12 @@ matrix:
     - python: pypy3
 install:
   - sudo apt-get update
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
-
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION tornado=4.4 pytorch-nightly scipy jupyter -c pytorch
-  - source activate test-environment
-  # install TensorFlow from https://storage.googleapis.com/tensorflow/
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-    pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp27-none-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
-    pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp34-cp34m-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
-    pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.10.1-cp36-cp36m-linux_x86_64.whl;
-    fi
-  - pip install -r requirements.txt >build.log
-  - pip install flake8
-  - pip install flake8-docstrings
-  - pip install flake8-comprehensions
-  - pip install pep8-naming
-  - pip install black
-  - pip install torchvision
+  - pip3 install -r requirements.txt >build.log
+  - pip3 install flake8
+  - pip3 install flake8-docstrings
+  - pip3 install flake8-comprehensions
+  - pip3 install pep8-naming
   - python setup.py install >> build.log
 before_script:
   # stop the build if there are Python syntax errors or undefined
@@ -52,7 +32,7 @@ before_script:
   # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
   - flake8 . --count --exit-zero --statistics
 script:
-  - coverage run --omit=*/venv/*,setup.py,.eggs/*,*__init__.py setup.py test
+  - coverage run --omit=*/virtualenv/*,setup.py,.eggs/*,*__init__.py setup.py test
   - coverage report --fail-under 95 -m
   # - bash scripts/execute_notebooks.sh
   # - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
