@@ -81,11 +81,8 @@ class _DataLoaderIter(object):
 
         try:
             indices = next(self.sample_iter[worker])
-            input_batch = self.collate_fn([self.federated_dataset.data[worker][i] for i in indices])
-            target_batch = self.collate_fn(
-                [self.federated_dataset.targets[worker][i] for i in indices]
-            )
-            return input_batch, target_batch
+            batch = self.collate_fn([self.federated_dataset[worker][i] for i in indices])
+            return batch
         # All the data for this worker has been used
         except StopIteration:
             # Forget this worker
@@ -158,7 +155,7 @@ class FederatedDataLoader(object):
         # Build a batch sampler per worker
         self.batch_samplers = {}
         for worker in self.workers:
-            data_range = range(len(federated_dataset.data[worker]))
+            data_range = range(len(federated_dataset[worker]))
             if shuffle:
                 sampler = RandomSampler(data_range)
             else:
