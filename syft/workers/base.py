@@ -139,12 +139,11 @@ class BaseWorker(AbstractWorker):
 
             
         """
-        
+
         for tensor in data:
-     
+
             self.register_obj(tensor)
-            tensor.owner=self
-            
+            tensor.owner = self
 
     def send_msg(self, msg_type, message, location):
         """Implements the logic to send messages.
