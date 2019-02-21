@@ -39,7 +39,10 @@ class AbstractTensor(ABC):
 
     def __len__(self):
         """Alias .shape[0] with len(), helpful for pointers"""
-        return self.shape[0]
+        try:
+            return self.shape[0]
+        except IndexError:
+            return 0
 
     def on(self, tensor, wrap=True):
         """
