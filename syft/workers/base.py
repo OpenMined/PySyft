@@ -315,9 +315,9 @@ class BaseWorker(AbstractWorker):
         # so we need to check for that here.
         if tensor is not None:
 
-            tensor.id = return_ids
-            # FIXME: should be added automatically
+            # FIXME: should be added automatically ?
             tensor.owner = self
+            tensor.id = return_ids
 
             # TODO: Handle when the response is not simply a tensor
             # don't re-register tensors if the operation was inline
@@ -327,15 +327,15 @@ class BaseWorker(AbstractWorker):
             #     if(tensor.id != _self.id):
             self.register_obj(tensor)
 
-            pointer = tensor.create_pointer(
-                location=self,
-                id_at_location=tensor.id,
-                register=True,
-                owner=self,
-                ptr_id=tensor.id,
-                garbage_collect_data=False,
-            )
-            return pointer
+            # pointer = tensor.create_pointer(
+            #     location=self,
+            #     id_at_location=tensor.id,
+            #     register=True,
+            #     owner=self,
+            #     ptr_id=tensor.id,
+            #     garbage_collect_data=False,
+            # )
+            return None
 
     def send_command(self, recipient, message):
         """
