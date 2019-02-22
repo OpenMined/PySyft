@@ -5,6 +5,6 @@
 
 from .abstract import AbstractWorker  # noqa: F401
 from .base import BaseWorker  # noqa: F401
-from .virtual import VirtualWorker  # noqa: F401
+from .virtual import VirtualWorker, Plan  # noqa: F401
 
 __all__ = ["base", "virtual"]

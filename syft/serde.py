@@ -106,6 +106,27 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     return b"\x30" + binary
 
 
+def decompress(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
+
+    # check the 1-byte header to see if input stream was compressed or not
+    if binary[0] == UNUSED_COMPRESSION_INDICATOR:
+        compressed = False
+
+    # remove the 1-byte header from the input stream
+    binary = binary[1:]
+    # 1)  Decompress
+    # If enabled, this functionality decompresses the binary
+    if compressed:
+        binary = _decompress(binary, compress_scheme)
+
+    # 2) Deserialize
+    # This function converts the binary into the appropriate python
+    # object (or nested dict/collection of python objects)
+    simple_objects = msgpack.loads(binary)
+
+    return simple_objects
+
+
 def deserialize(
     binary: bin, worker: AbstractWorker = None, compressed=True, compress_scheme=LZ4
 ) -> object:
@@ -132,21 +153,8 @@ def deserialize(
     if worker is None:
         worker = syft.torch.hook.local_worker
 
-    # check the 1-byte header to see if input stream was compressed or not
-    if binary[0] == UNUSED_COMPRESSION_INDICATOR:
-        compressed = False
-
-    # remove the 1-byte header from the input stream
-    binary = binary[1:]
-    # 1)  Decompress
-    # If enabled, this functionality decompresses the binary
-    if compressed:
-        binary = _decompress(binary, compress_scheme)
-
-    # 2) Deserialize
-    # This function converts the binary into the appropriate python
-    # object (or nested dict/collection of python objects)
-    simple_objects = msgpack.loads(binary)
+    # 1, 2) Decompress the binary if needed
+    simple_objects = decompress(binary, compressed, compress_scheme)
 
     # 3) Detail
     # This function converts typed, simple objects into their more

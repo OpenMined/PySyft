@@ -284,7 +284,7 @@ class BaseWorker(AbstractWorker):
         :return: a pointer to the result
         """
 
-        command, _self, args = message
+        (command, _self, args), return_ids = message
 
         # TODO add kwargs
         kwargs = {}
@@ -315,6 +315,7 @@ class BaseWorker(AbstractWorker):
         # so we need to check for that here.
         if tensor is not None:
 
+            tensor.id = return_ids
             # FIXME: should be added automatically
             tensor.owner = self
 
@@ -343,8 +344,18 @@ class BaseWorker(AbstractWorker):
         :param message:
         :return:
         """
+        return_ids = int(10e10 * random.random())
 
-        response = self.send_msg(MSGTYPE.CMD, message, location=recipient)
+        message = (message, return_ids)
+
+        _ = self.send_msg(MSGTYPE.CMD, message, location=recipient)
+
+        response = sy.PointerTensor(
+            location=recipient,
+            id_at_location=return_ids,
+            owner=self,
+            id=int(10e10 * random.random()),
+        )
 
         return response
 
