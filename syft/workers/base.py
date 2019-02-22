@@ -327,14 +327,6 @@ class BaseWorker(AbstractWorker):
             #     if(tensor.id != _self.id):
             self.register_obj(tensor)
 
-            # pointer = tensor.create_pointer(
-            #     location=self,
-            #     id_at_location=tensor.id,
-            #     register=True,
-            #     owner=self,
-            #     ptr_id=tensor.id,
-            #     garbage_collect_data=False,
-            # )
             return None
 
     def send_command(self, recipient, message):
