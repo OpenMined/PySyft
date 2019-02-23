@@ -118,4 +118,4 @@ def test_federated_dataset_search(workers):
     for batch_idx, (data, target) in enumerate(train_loader):
         counter += 1
 
-    assert counter == len(train_loader), f"{counter} == {len(fdataset)}"
+    assert counter == len(train_loader), f"{counter} == {len(fed_dataset)}"
