@@ -16,6 +16,7 @@ from .tensors.interpreters import TorchTensor
 from .tensors.interpreters import PointerTensor
 from .tensors.decorators import LoggingTensor
 from .tensors.interpreters import FixedPrecisionTensor
+from .tensors.interpreters import AutogradTensor
 from .tensors.interpreters import AdditiveSharingTensor
 from .tensors.interpreters import MultiPointerTensor
 from .torch_attributes import TorchAttributes
@@ -135,6 +136,11 @@ class TorchHook:
         # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
 
+        # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(AutogradTensor)
+
         # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
@@ -212,6 +218,7 @@ class TorchHook:
                 setattr(tensor_type, f"native_{attr}", native_method)
                 new_method = self.get_hooked_method(attr)
                 setattr(tensor_type, attr, new_method)
+
 
     def _hook_syft_tensor_methods(self, syft_type: type):
         """
@@ -725,8 +732,20 @@ class TorchHook:
             self._is_wrapper = it_is_a_wrapper
             return self
 
+
         tensor_type.native_shape = tensor_type.shape
         tensor_type.native_data = tensor_type.data
+
+        tensor_type.native_grad_fn = tensor_type.grad_fn
+
+        @property
+        def grad_fn(self):
+            if self.has_child():
+                return self.child.grad_fn
+            else:
+                return self.native_grad_fn
+        
+        tensor_type.grad_fn = grad_fn
 
     def _which_methods_should_we_auto_overload(self, tensor_type: type):
         """Creates a list of Torch methods to auto overload.

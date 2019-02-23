@@ -5,6 +5,7 @@ from .tensors.interpreters import PointerTensor
 from .tensors.decorators import LoggingTensor
 from .tensors.interpreters import TorchTensor
 from .tensors.interpreters import FixedPrecisionTensor
+from .tensors.interpreters import AutogradTensor
 from .tensors.interpreters import AdditiveSharingTensor
 from .tensors.interpreters import MultiPointerTensor
 
@@ -20,11 +21,13 @@ type_rule = {
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     LoggingTensor: one,
     FixedPrecisionTensor: one,
+    AutogradTensor: one,
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
     PointerTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
+
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
@@ -38,6 +41,7 @@ forward_func = {
     else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
+    AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
@@ -51,6 +55,7 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
+    AutogradTensor: lambda i: AutogradTensor().on(i, wrap=False),
     AdditiveSharingTensor: lambda i: i,
     MultiPointerTensor: lambda i: i,
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
