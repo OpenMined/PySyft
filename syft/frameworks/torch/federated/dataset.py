@@ -11,6 +11,7 @@ class BaseDataset:
     be used like the MNIST Dataset object, and is useful to avoid handling
     the two inputs and label tensors separately.
     """
+
     def __init__(self, data, targets):
         self.data = data
         self.targets = targets
