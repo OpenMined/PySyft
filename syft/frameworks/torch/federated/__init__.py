@@ -1,2 +1,2 @@
-from .dataset import FederatedDataset
+from .dataset import FederatedDataset, BaseDataset
 from .dataloader import FederatedDataLoader

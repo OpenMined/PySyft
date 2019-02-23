@@ -40,7 +40,10 @@ class AbstractTensor(ABC):
     def __len__(self):
         """Alias .shape[0] with len(), helpful for pointers"""
         try:
-            return self.shape[0]
+            if hasattr(self, "child"):
+                return self.child.shape[0]
+            else:
+                return self.shape[0]
         except IndexError:
             return 0
 

@@ -1,123 +1,92 @@
-import pytest
 import torch as th
 import syft as sy
-from syft.frameworks.torch.federated import FederatedData
+
+from syft.frameworks.torch.federated import BaseDataset
 
 
-def test_federated_data():
-    data = {"bob": th.Tensor([1, 2]), "alice": th.Tensor([3, 4, 5, 6])}
-    fed_data = FederatedData(data)
-    assert (fed_data.alice == th.Tensor([3, 4, 5, 6])).all()
-    assert fed_data.alice[2] == 5
-    assert (fed_data["alice"] == th.Tensor([3, 4, 5, 6])).all()
-    assert fed_data["alice"][2] == 5
-    assert fed_data["alice", 2] == 5
-    assert len(fed_data.alice) == 4
-    assert len(fed_data) == 6
+def test_base_dataset(workers):
+    bob = workers["bob"]
 
-    assert fed_data.workers == {"bob", "alice"}
-    fed_data.drop_worker("bob")
-    assert fed_data.workers == {"alice"}
+    inputs = th.tensor([1, 2, 3, 4.0])
+    targets = th.tensor([1, 2, 3, 4.0])
+    dataset = BaseDataset(inputs, targets)
+    assert len(dataset) == 4
+    assert dataset[2] == (3, 3)
+
+    dataset.send(bob)
+    assert dataset.data.location.id == "bob"
+    assert dataset.targets.location.id == "bob"
+    assert dataset.location.id == "bob"
+
+    dataset.get()
     try:
-        fed_data.bob
+        assert dataset.data.location.id == 0
+        assert dataset.targets.location.id == 0
         assert False
     except AttributeError:
         pass
 
-    assert isinstance(fed_data.__str__(), str)
 
-
-def test_federated_dataset_local():
-    inputs = {"bob": th.Tensor([1, 2]), "alice": th.Tensor([3, 4, 5, 6])}
-    targets = {"bob": th.Tensor([1, 2]), "alice": th.Tensor([3, 4, 5, 6])}
-    fdataset = sy.FederatedDataset(inputs, targets)
-    assert len(fdataset) == 6
-
-    inputs = sy.frameworks.torch.federated.FederatedData(
-        {"bob": th.Tensor([1, 2]), "alice": th.Tensor([3, 4, 5, 6])}
-    )
-    targets = sy.frameworks.torch.federated.FederatedData(
-        {"bob": th.Tensor([1, 2]), "alice": th.Tensor([3, 4, 5, 6])}
-    )
-    fdataset = sy.FederatedDataset(inputs, targets)
-    assert len(fdataset) == 6
-
-    inputs = {"bob": th.Tensor([1, 2]), "alice": th.Tensor([3, 4, 5, 6])}
-    targets = {"bob": th.Tensor([1, 2])}
-    fdataset = sy.FederatedDataset(inputs, targets)
-    assert fdataset.workers == {"bob"}
-
-    try:
-        inputs = {"bob": th.Tensor([1, 2]), "alice": th.Tensor([3, 4, 5, 6])}
-        targets = {"bob": th.Tensor([1]), "alice": th.Tensor([3, 4, 5, 6])}
-        fdataset = sy.FederatedDataset(inputs, targets)
-    except AssertionError:
-        pass
-
-    assert isinstance(fdataset.__str__(), str)
-
-
-def test_federated_dataset_remote(workers):
+def test_federated_dataset(workers):
     bob = workers["bob"]
     alice = workers["alice"]
-    inputs = {"bob": th.Tensor([1, 2]).send(bob), "alice": th.Tensor([3, 4, 5, 6]).send(alice)}
-    targets = {"bob": th.Tensor([1, 2]).send(bob), "alice": th.Tensor([3, 4, 5, 6]).send(alice)}
-    fdataset = sy.FederatedDataset(inputs, targets)
-    assert len(fdataset) == 6
 
-    inputs = sy.frameworks.torch.federated.FederatedData(
-        {"bob": th.Tensor([1, 2]).send(bob), "alice": th.Tensor([3, 4, 5, 6]).send(alice)}
-    )
-    targets = sy.frameworks.torch.federated.FederatedData(
-        {"bob": th.Tensor([1, 2]).send(bob), "alice": th.Tensor([3, 4, 5, 6]).send(alice)}
-    )
-    fdataset = sy.FederatedDataset(inputs, targets)
-    assert len(fdataset) == 6
+    alice_base_dataset = BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6]))
+    datasets = [
+        BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
+        alice_base_dataset.send(alice),
+    ]
 
-    inputs = {"bob": th.Tensor([1, 2]).send(bob), "alice": th.Tensor([3, 4, 5, 6]).send(alice)}
-    targets = {"bob": th.Tensor([1, 2]).send(bob)}
-    fdataset = sy.FederatedDataset(inputs, targets)
-    assert fdataset.workers == {"bob"}
+    fed_dataset = sy.FederatedDataset(datasets)
 
-    try:
-        inputs = {"bob": th.Tensor([1, 2]).send(bob), "alice": th.Tensor([3, 4, 5, 6]).send(alice)}
-        targets = {"bob": th.Tensor([1, 2]).send(bob), "alice": th.Tensor([3, 4, 5, 6]).send(alice)}
-        fdataset = sy.FederatedDataset(inputs, targets)
-    except AssertionError:
-        pass
+    assert fed_dataset.workers == ["bob", "alice"]
+    assert len(fed_dataset) == 6
 
-    assert isinstance(fdataset.__str__(), str)
+    fed_dataset["alice"].get()
+    assert (fed_dataset["alice"].data == alice_base_dataset.data).all()
+    assert fed_dataset["alice"][2] == (5, 5)
+    assert len(fed_dataset["alice"]) == 4
+    assert len(fed_dataset) == 6
+
+    assert isinstance(fed_dataset.__str__(), str)
+
+
+def test_dataset_to_federate(workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    dataset = BaseDataset(th.tensor([1.0, 2, 3, 4, 5, 6]), th.tensor([1.0, 2, 3, 4, 5, 6]))
+
+    fed_dataset = dataset.federate((bob, alice))
+
+    assert isinstance(fed_dataset, sy.FederatedDataset)
+
+    assert fed_dataset.workers == ["bob", "alice"]
+    assert fed_dataset["bob"].location.id == "bob"
+    assert len(fed_dataset) == 6
 
 
 def test_federated_dataloader(workers):
     bob = workers["bob"]
     alice = workers["alice"]
-    inputs = {"bob": th.Tensor([1, 2]), "alice": th.Tensor([3, 4, 5, 6])}
-    targets = {"bob": th.Tensor([1, 2]), "alice": th.Tensor([3, 4, 5, 6])}
-    fdataset = sy.FederatedDataset(inputs, targets)
+    datasets = [
+        BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
+        BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6])).send(alice),
+    ]
+    fed_dataset = sy.FederatedDataset(datasets)
 
-    fdataloader = sy.FederatedDataLoader(fdataset, batch_size=2)
+    fdataloader = sy.FederatedDataLoader(fed_dataset, batch_size=2)
     counter = 0
     for batch_idx, (data, target) in enumerate(fdataloader):
         counter += 1
 
     assert counter == len(fdataloader), f"{counter} == {len(fdataloader)}"
 
-    fdataloader = sy.FederatedDataLoader(fdataset, batch_size=2, drop_last=True)
+    fdataloader = sy.FederatedDataLoader(fed_dataset, batch_size=2, drop_last=True)
     counter = 0
     for batch_idx, (data, target) in enumerate(fdataloader):
         counter += 1
 
-    assert counter == len(fdataloader), f"{counter} == {len(fdataloader)}"
-
-    inputs = {"bob": th.Tensor([1, 2]).send(bob), "alice": th.Tensor([3, 4, 5, 6]).send(alice)}
-    targets = {"bob": th.Tensor([1, 2]).send(bob), "alice": th.Tensor([3, 4, 5, 6]).send(alice)}
-    fdataset = sy.FederatedDataset(inputs, targets)
-
-    fdataloader = sy.FederatedDataLoader(fdataset, batch_size=1, drop_last=True, num_iterators=2)
-    counter = 0
-    for batch_idx, (data, target) in enumerate(fdataloader):
-        counter += 1
     assert counter == len(fdataloader), f"{counter} == {len(fdataloader)}"
 
 
@@ -137,8 +106,13 @@ def test_federated_dataset_search(workers):
     data, _ = grid.search("data")
     target, _ = grid.search("target")
 
-    dataset = sy.FederatedDataset(data, target)
-    train_loader = sy.FederatedDataLoader(dataset, batch_size=4, shuffle=False, drop_last=False)
+    datasets = [
+        BaseDataset(data["bob"][0], target["bob"][0]),
+        BaseDataset(data["alice"][0], target["alice"][0]),
+    ]
+
+    fed_dataset = sy.FederatedDataset(datasets)
+    train_loader = sy.FederatedDataLoader(fed_dataset, batch_size=4, shuffle=False, drop_last=False)
 
     counter = 0
     for batch_idx, (data, target) in enumerate(train_loader):

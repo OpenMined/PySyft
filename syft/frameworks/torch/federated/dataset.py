@@ -25,6 +25,10 @@ class BaseDataset:
         self.targets.get_()
         return self
 
+    @property
+    def location(self):
+        return self.data.location
+
 
 def dataset_federate(dataset, workers):
     """Add a method to easily transform a torch.Dataset in a sy.FederatedDataset"""
@@ -63,6 +67,7 @@ def dataset_federate(dataset, workers):
 
 
 Dataset.federate = dataset_federate
+BaseDataset.federate = dataset_federate
 
 
 class FederatedDataset:
