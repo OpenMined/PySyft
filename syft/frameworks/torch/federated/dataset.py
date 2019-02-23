@@ -5,6 +5,12 @@ from torch.utils.data import Dataset
 
 
 class BaseDataset:
+    """
+    This is a base class to used for manipulating a dataset. This is composed
+    of a .data attribute for inputs and a .targets one for labels. It is to
+    be used like the MNIST Dataset object, and is useful to avoid handling
+    the two inputs and label tensors separately.
+    """
     def __init__(self, data, targets):
         self.data = data
         self.targets = targets
@@ -31,8 +37,11 @@ class BaseDataset:
 
 
 def dataset_federate(dataset, workers):
-    """Add a method to easily transform a torch.Dataset in a sy.FederatedDataset"""
-
+    """
+    Add a method to easily transform a torch.Dataset or a sy.BaseDataset
+    into a sy.FederatedDataset. The dataset given is split in len(workers)
+    part and sent to each workers
+    """
     print("Scanning and sending data to {}...".format(", ".join([w.id for w in workers])))
 
     # take ceil to have exactly len(workers) sets after splitting
@@ -72,13 +81,12 @@ BaseDataset.federate = dataset_federate
 
 class FederatedDataset:
     def __init__(self, datasets):
-        """This class takes two dictionaries of data points, the keys
-        of which are worker IDs, and their values are tensors or pointers
-        to tensors. One can also provide direct FederatedData elements.
-        The class will use these collections of datasets or pointers
-        to datasets and form them into one cohesive dataset.
+        """This class takes a list of datasets, each of which is supposed
+        to be already sent to a remote worker (they have a location), and
+        acts like a dictionary based on the worker ids.
+        It serves like an input for the FederatedDataLoader.
         Args:
-            datasets (list)
+            datasets (list): list of remote Datasets
         """
         self.datasets = {}
         for dataset in datasets:
