@@ -61,7 +61,7 @@ UNUSED_COMPRESSION_INDICATOR = 48
 
 
 # High Level Public Functions (these are the ones you use)
-def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
+def serialize(obj: object, compress=True, compress_scheme=LZ4, simplified=False) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
     This is the high level function for serializing any object or collection
@@ -74,6 +74,9 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
         compress_scheme (int): the integer code specifying which compression
             scheme to use (see above this method for scheme codes) if
             compress == True.
+        simplified (bool): in some cases we want to pass in data which has
+            already been simplified - in which case we must skip double
+            simplification - which would be bad.... so bad... so... so bad
 
     Returns:
         binary: the serialized form of the object.
@@ -83,7 +86,10 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     # simplify difficult-to-serialize objects. See the _simpliy method
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
-    simple_objects = _simplify(obj)
+    if not simplified:
+        simple_objects = _simplify(obj)
+    else:
+        simple_objects = obj
 
     # 2) Serialize
     # serialize into a binary

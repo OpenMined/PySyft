@@ -36,7 +36,7 @@ class Plan(BaseWorker):
         response = None
         for bin_message, message in zip(self.plan, self.readable_plan):
             print(message)
-            response = self.recv_msg(bin_message)
+            response = self.recv_msg(serde.serialize(message, simplified=True))
 
         self.plan = []
         self.readable_plan = []
