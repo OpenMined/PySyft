@@ -121,6 +121,15 @@ class AbstractTensor(ABC):
     def shape(self):
         return self.child.shape
 
+    def get_class_attributes(self):
+        """
+        Return all elements which defines an instance of a certain class.
+        By default there is nothing so we return an empty dict, but for
+        example for fixed precision tensor, the fractional precision is
+        very important.
+        """
+        return {}
+
 
 def initialize_tensor(
     hook_self, cls, torch_tensor: bool = False, owner=None, id=None, *init_args, **init_kwargs
