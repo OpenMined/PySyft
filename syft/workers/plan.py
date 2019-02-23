@@ -18,11 +18,11 @@ class Plan(BaseWorker):
         return location._recv_msg(message)
 
     def _recv_msg(self, bin_message):
-        (some_type, (msg_type, contents)) = serde.decompress(bin_message)
+        (some_type, (msg_type, contents)) = serde.deserialize(bin_message, detail=False)
 
         self.plan.append(bin_message)
-        self.readable_plan.append((msg_type, contents))
-        
+        self.readable_plan.append((some_type, (msg_type, contents)))
+
         # we can't receive the results of a plan without
         # executing it. So, execute the plan.
         if msg_type == MSGTYPE.OBJ_REQ:

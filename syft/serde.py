@@ -98,37 +98,10 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     # otherwise we output the compressed stream with header set to '1'
     # even if compressed flag is set to false by the caller we
     # output the input stream as it is with header set to '0'
-    if compress:
-        compress_stream = _compress(binary, compress_scheme)
-        if len(compress_stream) < len(binary):
-            return b"\x31" + compress_stream
-
-    return b"\x30" + binary
-
-
-def decompress(binary: bin, compressed=True, compress_scheme=LZ4) -> object:
-
-    # check the 1-byte header to see if input stream was compressed or not
-    if binary[0] == UNUSED_COMPRESSION_INDICATOR:
-        compressed = False
-
-    # remove the 1-byte header from the input stream
-    binary = binary[1:]
-    # 1)  Decompress
-    # If enabled, this functionality decompresses the binary
-    if compressed:
-        binary = _decompress(binary, compress_scheme)
-
-    # 2) Deserialize
-    # This function converts the binary into the appropriate python
-    # object (or nested dict/collection of python objects)
-    simple_objects = msgpack.loads(binary)
-
-    return simple_objects
-
+    return _compress(binary, compress_scheme, compress)
 
 def deserialize(
-    binary: bin, worker: AbstractWorker = None, compressed=True, compress_scheme=LZ4
+    binary: bin, worker: AbstractWorker = None, compressed=True, compress_scheme=LZ4, detail=True
 ) -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 
@@ -153,22 +126,31 @@ def deserialize(
     if worker is None:
         worker = syft.torch.hook.local_worker
 
-    # 1, 2) Decompress the binary if needed
-    simple_objects = decompress(binary, compressed, compress_scheme)
+    # 1) Decompress the binary if needed
+    binary = _decompress(binary, compress_scheme)
 
-    # 3) Detail
-    # This function converts typed, simple objects into their more
-    # complex (and difficult to serialize) counterparts which the
-    # serialization library wasn't natively able to serialize (such
-    # as msgpack's inability to serialize torch tensors or ... or
-    # python slice objects
-    return _detail(worker, simple_objects)
+    # 2) Deserialize
+    # This function converts the binary into the appropriate python
+    # object (or nested dict/collection of python objects)
+    simple_objects = msgpack.loads(binary)
 
+    if(detail):
+        # 3) Detail
+        # This function converts typed, simple objects into their more
+        # complex (and difficult to serialize) counterparts which the
+        # serialization library wasn't natively able to serialize (such
+        # as msgpack's inability to serialize torch tensors or ... or
+        # python slice objects
+        return _detail(worker, simple_objects)
+
+    else:
+        # sometimes we want to skip detailing (such as in Plan)
+        return simple_objects
 
 # Chosen Compression Algorithm
 
 
-def _compress(decompressed_input_bin: bin, compress_scheme=LZ4) -> bin:
+def _compress(decompressed_input_bin: bin, compress_scheme=LZ4, compress=True) -> bin:
     """
     This function compresses a binary using LZ4
 
@@ -180,17 +162,24 @@ def _compress(decompressed_input_bin: bin, compress_scheme=LZ4) -> bin:
         bin: a compressed binary
 
     """
-    if compress_scheme == LZ4:
-        return lz4.frame.compress(decompressed_input_bin)
-    elif compress_scheme == ZSTD:
-        return zstd.compress(decompressed_input_bin)
-    else:
-        raise CompressionNotFoundException(
-            "compression scheme note found for" " compression code:" + str(compress_scheme)
-        )
 
+    if compress:
 
-def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
+        if compress_scheme == LZ4:
+            compress_stream = lz4.frame.compress(decompressed_input_bin)
+        elif compress_scheme == ZSTD:
+            compress_stream = zstd.compress(decompressed_input_bin)
+        else:
+            raise CompressionNotFoundException(
+                "compression scheme note found for" " compression code:" + str(compress_scheme)
+            )
+
+        if len(compress_stream) < len(decompressed_input_bin):
+            return b"\x31" + compress_stream
+
+    return b"\x30" + decompressed_input_bin
+
+def _decompress(binary: bin, compress_scheme=LZ4) -> bin:
     """
     This function decompresses a binary using LZ4
 
@@ -202,15 +191,30 @@ def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
         bin: decompressed binary
 
     """
-    if compress_scheme == LZ4:
-        return lz4.frame.decompress(compressed_input_bin)
-    elif compress_scheme == ZSTD:
-        return zstd.decompress(compressed_input_bin)
-    else:
-        raise CompressionNotFoundException(
-            "compression scheme note found for" " compression code:" + str(compress_scheme)
-        )
 
+    # check the 1-byte header to see if input stream was compressed or not
+    if binary[0] == UNUSED_COMPRESSION_INDICATOR:
+        compressed = False
+    else:
+        compressed = True
+
+    # remove the 1-byte header from the input stream
+    binary = binary[1:]
+
+    # 1)  Decompress
+    # If enabled, this functionality decompresses the binary
+    if compressed:
+
+        if compress_scheme == LZ4:
+            return lz4.frame.decompress(binary)
+        elif compress_scheme == ZSTD:
+            return zstd.decompress(binary)
+        else:
+            raise CompressionNotFoundException(
+                "compression scheme note found for" " compression code:" + str(compress_scheme)
+            )
+
+    return binary
 
 # Simplify/Detail Torch Tensors
 
