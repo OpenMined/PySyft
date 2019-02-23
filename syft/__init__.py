@@ -15,6 +15,7 @@ from syft.frameworks.torch import TorchHook
 
 # Import Worker Types
 from syft.workers import VirtualWorker
+from syft.workers import Plan
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
@@ -32,6 +33,7 @@ __all__ = [
     "serde",
     "TorchHook",
     "VirtualWorker",
+    "Plan",
     "codes",
     "LoggingTensor",
     "PointerTensor",
