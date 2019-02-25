@@ -8,7 +8,6 @@ class Plan(BaseWorker):
     it simply records messages that are sent to it such that message batches
     (called 'Plans') can be created and sent once."""
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.plan = list()
@@ -25,7 +24,7 @@ class Plan(BaseWorker):
 
         # we can't receive the results of a plan without
         # executing it. So, execute the plan.
-        if msg_type == MSGTYPE.OBJ_REQ:
+        if msg_type in (MSGTYPE.OBJ_REQ, MSGTYPE.IS_NONE, MSGTYPE.GET_SHAPE):
             return self.execute_plan()
 
         return serde.serialize(None)

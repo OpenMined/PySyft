@@ -86,7 +86,7 @@ class PointerTensor(AbstractTensor):
         self.owner = owner
         self.id = id
         self.garbage_collect_data = garbage_collect_data
-        self.shape = shape
+        self._shape = shape
         self.point_to_attr = point_to_attr
 
     @classmethod
@@ -278,13 +278,8 @@ class PointerTensor(AbstractTensor):
         return self.owner.request_is_remote_tensor_none(self)
 
     def get_shape(self):
-
-        results = self.location.search(str(self.id_at_location))
-
-        if len(results) > 0:
-            return results[0].shape
-        else:
-            print("couldn't find shape... are you sure this tensor exists?")
+        """Request information about the shape to the remote worker"""
+        return self.owner.request_remote_tensor_shape(self)
 
     @property
     def shape(self):

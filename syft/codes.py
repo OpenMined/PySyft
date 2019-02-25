@@ -5,12 +5,11 @@ class MSGTYPE(object):
     OBJ_DEL = 4
     EXCEPTION = 5
     IS_NONE = 6
+    GET_SHAPE = 7
 
 
 code2MSGTYPE = {}
-code2MSGTYPE[1] = "CMD"
-code2MSGTYPE[2] = "OBJ"
-code2MSGTYPE[3] = "OBJ_REQ"
-code2MSGTYPE[4] = "OBJ_DEL"
-code2MSGTYPE[5] = "EXCEPTION"
-code2MSGTYPE[6] = "IS_NONE"
+for code in dir(MSGTYPE):
+    if "__" not in code:
+        key = getattr(MSGTYPE, code)
+        code2MSGTYPE[key] = code

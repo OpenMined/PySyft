@@ -83,6 +83,7 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
             MSGTYPE.OBJ_DEL: self.rm_obj,
             MSGTYPE.IS_NONE: self.is_tensor_none,
+            MSGTYPE.GET_SHAPE: self.get_tensor_shape,
         }
         self.load_data(data)
 
@@ -649,7 +650,41 @@ class BaseWorker(AbstractWorker):
         return obj is None
 
     def request_is_remote_tensor_none(self, pointer):
+        """
+        Send a request to the remote worker that holds the target a pointer if
+        the value of the remote tensor is None or not.
+        Note that the pointer must be valid: if there is no target (which is
+        different from having a target equal to None), it will return an error.
+
+        Args:
+            :param pointer: the pointer on which we can to get information
+
+        :return: a boolean stating if the remote value is None
+        """
         return self.send_msg(MSGTYPE.IS_NONE, pointer, location=pointer.location)
+
+    @staticmethod
+    def get_tensor_shape(obj):
+        """
+        Return the shape of a tensor casted into a list, to bypass the serialization of
+        a torch.Size object.
+        :param obj: torch.Tensor
+        :return: a list containing the tensor shape
+        """
+        return list(obj.shape)
+
+    def request_remote_tensor_shape(self, pointer):
+        """
+        Send a request to the remote worker that holds the target a pointer to
+        have its shape.
+
+        Args:
+            :param pointer: the pointer on which we can to get the shape
+
+        :return: a torch.Size object for the shape
+        """
+        shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
+        return sy.hook.torch.Size(shape)
 
     def search(self, *query):
         """Search for a match between the query terms and the tensor's Id, Tag, or Description.

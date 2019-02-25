@@ -106,6 +106,7 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4, simplified=False)
     # output the input stream as it is with header set to '0'
     return _compress(binary, compress_scheme, compress)
 
+
 def deserialize(
     binary: bin, worker: AbstractWorker = None, compressed=True, compress_scheme=LZ4, detail=True
 ) -> object:
@@ -140,7 +141,7 @@ def deserialize(
     # object (or nested dict/collection of python objects)
     simple_objects = msgpack.loads(binary)
 
-    if(detail):
+    if detail:
         # 3) Detail
         # This function converts typed, simple objects into their more
         # complex (and difficult to serialize) counterparts which the
@@ -152,6 +153,7 @@ def deserialize(
     else:
         # sometimes we want to skip detailing (such as in Plan)
         return simple_objects
+
 
 # Chosen Compression Algorithm
 
@@ -184,6 +186,7 @@ def _compress(decompressed_input_bin: bin, compress_scheme=LZ4, compress=True) -
             return b"\x31" + compress_stream
 
     return b"\x30" + decompressed_input_bin
+
 
 def _decompress(binary: bin, compress_scheme=LZ4) -> bin:
     """
@@ -221,6 +224,7 @@ def _decompress(binary: bin, compress_scheme=LZ4) -> bin:
             )
 
     return binary
+
 
 # Simplify/Detail Torch Tensors
 
@@ -744,7 +748,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
         data = _simplify_pointer_tensor(ptr)
     """
 
-    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr, ptr.shape)
+    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr, ptr._shape)
 
     # a more general but slower/more verbose option
 
