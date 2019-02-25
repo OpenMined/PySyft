@@ -2,8 +2,7 @@ import torch
 from torch.utils.data import SequentialSampler, RandomSampler, BatchSampler
 from torch._six import string_classes, int_classes, container_abcs
 
-import copy
-import random
+import math
 
 numpy_type_map = {
     "float64": torch.DoubleTensor,
@@ -55,9 +54,7 @@ class _DataLoaderIter(object):
 
     def __init__(self, loader, worker_idx):
         self.loader = loader
-        self.dataset = loader.dataset
-        self.worker2inputs = loader.dataset.worker2inputs
-        self.worker2targets = loader.dataset.worker2targets
+        self.federated_dataset = loader.federated_dataset
 
         # Assign the first worker to invoke
         self.worker_idx = worker_idx
@@ -73,7 +70,7 @@ class _DataLoaderIter(object):
         }
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.federated_dataset)
 
     def _get_batch(self):
         # If all workers have been used, end the iterator
@@ -84,9 +81,8 @@ class _DataLoaderIter(object):
 
         try:
             indices = next(self.sample_iter[worker])
-            input_batch = self.collate_fn([self.worker2inputs[worker][i] for i in indices])
-            target_batch = self.collate_fn([self.worker2targets[worker][i] for i in indices])
-            return input_batch, target_batch
+            batch = self.collate_fn([self.federated_dataset[worker][i] for i in indices])
+            return batch
         # All the data for this worker has been used
         except StopIteration:
             # Forget this worker
@@ -135,7 +131,7 @@ class FederatedDataLoader(object):
 
     def __init__(
         self,
-        dataset,
+        federated_dataset,
         batch_size=8,
         shuffle=False,
         num_iterators=1,
@@ -144,14 +140,14 @@ class FederatedDataLoader(object):
     ):
 
         try:
-            self.workers = dataset.workers
+            self.workers = federated_dataset.workers
         except AttributeError:
             raise Exception(
                 "Your dataset is not a FederatedDataset, please use "
                 "torch.utils.data.DataLoader instead."
             )
 
-        self.dataset = dataset
+        self.federated_dataset = federated_dataset
         self.batch_size = batch_size
         self.drop_last = drop_last
         self.collate_fn = collate_fn
@@ -159,10 +155,11 @@ class FederatedDataLoader(object):
         # Build a batch sampler per worker
         self.batch_samplers = {}
         for worker in self.workers:
+            data_range = range(len(federated_dataset[worker]))
             if shuffle:
-                sampler = RandomSampler(range(dataset.worker2num_rows[worker]))
+                sampler = RandomSampler(data_range)
             else:
-                sampler = SequentialSampler(range(dataset.worker2num_rows[worker]))
+                sampler = SequentialSampler(data_range)
             batch_sampler = BatchSampler(sampler, batch_size, drop_last)
             self.batch_samplers[worker] = batch_sampler
 
@@ -189,4 +186,8 @@ class FederatedDataLoader(object):
             return data, target
 
     def __len__(self):
-        return int(len(self.dataset) / self.batch_size) + 1 - self.drop_last
+        length = len(self.federated_dataset) / self.batch_size
+        if self.drop_last:
+            return int(length)
+        else:
+            return math.ceil(length)

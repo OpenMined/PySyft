@@ -37,6 +37,16 @@ class AbstractTensor(ABC):
         else:
             return type(self).__name__
 
+    def __len__(self):
+        """Alias .shape[0] with len(), helpful for pointers"""
+        try:
+            if hasattr(self, "child"):
+                return self.child.shape[0]
+            else:
+                return self.shape[0]
+        except IndexError:
+            return 0
+
     def on(self, tensor, wrap=True):
         """
         Add a syft(log) tensor on top of the tensor.
@@ -110,6 +120,15 @@ class AbstractTensor(ABC):
     @property
     def shape(self):
         return self.child.shape
+
+    def get_class_attributes(self):
+        """
+        Return all elements which defines an instance of a certain class.
+        By default there is nothing so we return an empty dict, but for
+        example for fixed precision tensor, the fractional precision is
+        very important.
+        """
+        return {}
 
 
 def initialize_tensor(
