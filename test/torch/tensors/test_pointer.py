@@ -11,11 +11,15 @@ def test_init(workers):
     pointer = PointerTensor(id=1000, location=workers["alice"], owner=workers["me"])
     pointer.__str__()
 
+    pointer = PointerTensor(id=1000, location=workers["plan_worker"], owner=workers["me"])
+    pointer.__str__()
+
 
 def test_create_pointer(workers):
     x = torch.Tensor([1, 2])
     x.create_pointer()
     x.create_pointer(location=workers["james"])
+    x.create_pointer(location=workers["plan_worker"])
 
 
 def test_send_get(workers):
@@ -259,3 +263,14 @@ def test_remote_to_cpu_device(workers):
 
     x = th.tensor([1, 2, 3, 4, 5]).send(bob)
     x.to(device)
+
+
+def test_get_remote_shape(workers):
+    """Test pointer.shape functionality"""
+    bob = workers["bob"]
+    # tensor directly sent: shape stored at sending
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    assert x.shape == torch.Size([5])
+    # result of an operation: need to make a call to the remote worker
+    y = x + x
+    assert y.shape == torch.Size([5])

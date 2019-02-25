@@ -8,8 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def test_plan_remote_function(hook):
-    plan_worker = sy.Plan(hook, id=str(int(10e10 * random.random())))
+def test_plan_remote_function(workers):
+    plan_worker = workers["plan_worker"]
 
     x = torch.tensor([1, -1, 3, 4])
     x_ptr = x.send(plan_worker)
@@ -18,8 +18,8 @@ def test_plan_remote_function(hook):
     assert (x_back == torch.tensor([1, 0, 3, 4])).all()
 
 
-def test_plan_remote_method(hook):
-    plan_worker = sy.Plan(hook, id=str(int(10e10 * random.random())))
+def test_plan_remote_method(workers):
+    plan_worker = workers["plan_worker"]
 
     x = torch.tensor([1, -1, 3, 4])
     x_ptr = x.send(plan_worker)
@@ -28,8 +28,8 @@ def test_plan_remote_method(hook):
     assert (x_back == torch.tensor([1, 1, 3, 4])).all()
 
 
-def test_plan_remote_inplace_method(hook):
-    plan_worker = sy.Plan(hook, id=str(int(10e10 * random.random())))
+def test_plan_remote_inplace_method(workers):
+    plan_worker = workers["plan_worker"]
 
     x = torch.tensor([1, -1, 3, 4])
     x_ptr = x.send(plan_worker)
