@@ -9,9 +9,15 @@ from syft.workers import VirtualWorker
 def test___init__():
     hook = sy.TorchHook(torch)
 
+    tensor = torch.tensor([1, 2, 3, 4])
+
     alice = VirtualWorker(hook, id="alice")
     bob = VirtualWorker(hook, id="bob", known_workers={alice.id: alice})
     charlie = VirtualWorker(hook, id="charlie")
+    dawson = VirtualWorker(hook, id="dawson", data=[tensor])
+
+    # Ensure adding data on signup functionality works as expected
+    assert tensor.owner == dawson
 
     assert bob.get_worker("alice").id == alice.id
     assert bob.get_worker(alice).id == alice.id
