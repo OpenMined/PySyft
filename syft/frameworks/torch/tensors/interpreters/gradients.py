@@ -24,6 +24,15 @@ class MulBackward(GradFunc):
         grad_other = grad * self.self_ if type(self.self_) == type(self.other) else None
         return (grad_self_, grad_other,)
 
+class SqrtBackward(GradFunc):
+    def __init__(self, self_):
+        super().__init__(self, self_)
+        self.self_ = self_.child
+
+    def gradient(self, grad):
+        grad_self_ = grad / (2 * self.result)
+        return (grad_self_,)
+
 class AsinBackward(GradFunc):
     def __init__(self, self_):
         super().__init__(self, self_)

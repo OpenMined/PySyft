@@ -31,7 +31,7 @@ def construct_grad_fn_class(grad_def):
         formula = grad_def[arg]
         for in_arg in input_args:
             formula = formula.replace(in_arg, f'self.{in_arg}')
-        formula = formula.replace('.self', '.self_')
+        formula = formula.replace('.self', '.self_').replace('result', 'self.result')
         lines.append(2*tab + f"grad_{arg.replace('self', 'self_')} = {formula}")
     grad_signature = ', '.join([f'grad_{arg}'.replace('self', 'self_') for arg in input_args])
     lines.append(2*tab + f"return ({grad_signature},)")

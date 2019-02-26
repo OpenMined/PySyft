@@ -56,6 +56,7 @@ class AutogradTensor(AbstractTensor):
                 )
 
                 result.grad_fn = grad_fn(self, *args, **kwargs)
+                result.grad_fn.result = result.child
                 return result
 
             return method_with_grad

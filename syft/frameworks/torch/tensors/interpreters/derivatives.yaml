@@ -16,6 +16,9 @@
   self: grad * other
   other: grad * self if type(self) == type(other) else None
 
+- name: sqrt(self)
+  self: grad / (2 * result)
+
 - name: asin(self)
   self: grad * (-self * self + 1).rsqrt()
 
