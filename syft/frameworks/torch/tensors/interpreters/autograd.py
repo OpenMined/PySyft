@@ -54,9 +54,10 @@ class AutogradTensor(AbstractTensor):
                 result = syft.frameworks.torch.hook_args.hook_response(
                     name, result, wrap_type=type(self)
                 )
-
+                
                 result.grad_fn = grad_fn(self, *args, **kwargs)
-                result.grad_fn.result = result.child
+                result.grad_fn.result = result
+                
                 return result
 
             return method_with_grad

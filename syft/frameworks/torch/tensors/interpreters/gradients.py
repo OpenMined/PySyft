@@ -5,8 +5,8 @@ from . gradients_core import *
 class AddBackward(GradFunc):
     def __init__(self, self_, other):
         super().__init__(self, self_, other)
-        self.self_ = self_.child
-        self.other = other.child
+        self.self_ = self_
+        self.other = other
 
     def gradient(self, grad):
         grad_self_ = grad
@@ -16,8 +16,8 @@ class AddBackward(GradFunc):
 class MulBackward(GradFunc):
     def __init__(self, self_, other):
         super().__init__(self, self_, other)
-        self.self_ = self_.child
-        self.other = other.child
+        self.self_ = self_
+        self.other = other
 
     def gradient(self, grad):
         grad_self_ = grad * self.other
@@ -27,7 +27,7 @@ class MulBackward(GradFunc):
 class SqrtBackward(GradFunc):
     def __init__(self, self_):
         super().__init__(self, self_)
-        self.self_ = self_.child
+        self.self_ = self_
 
     def gradient(self, grad):
         grad_self_ = grad / (2 * self.result)
@@ -36,7 +36,7 @@ class SqrtBackward(GradFunc):
 class AsinBackward(GradFunc):
     def __init__(self, self_):
         super().__init__(self, self_)
-        self.self_ = self_.child
+        self.self_ = self_
 
     def gradient(self, grad):
         grad_self_ = grad * (-self.self_ * self.self_ + 1).rsqrt()
@@ -45,7 +45,7 @@ class AsinBackward(GradFunc):
 class SinBackward(GradFunc):
     def __init__(self, self_):
         super().__init__(self, self_)
-        self.self_ = self_.child
+        self.self_ = self_
 
     def gradient(self, grad):
         grad_self_ = grad * self.self_.cos()
@@ -54,7 +54,7 @@ class SinBackward(GradFunc):
 class SinhBackward(GradFunc):
     def __init__(self, self_):
         super().__init__(self, self_)
-        self.self_ = self_.child
+        self.self_ = self_
 
     def gradient(self, grad):
         grad_self_ = grad * self.self_.cosh()
