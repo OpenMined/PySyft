@@ -507,6 +507,12 @@ def many_fold(lambdas, args):
 
 
 def typed_identity(a):
+    """
+    We need to add typed identity for arguments which can be either number
+    or tensors. If the argument changes from an int to a tensor, the
+    assertion error triggered by typed_identity will be caught and a
+    new signature will be computed for the command.
+    """
     if a is None:
 
         def none_identity(i):
@@ -514,5 +520,14 @@ def typed_identity(a):
             return i
 
         return none_identity
+
+    elif type(a) in (int, float, bool):
+
+        def number_identity(i):
+            assert isinstance(i, type(a))
+            return i
+
+        return number_identity
+
     else:
         return lambda i: i
