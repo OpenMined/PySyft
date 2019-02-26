@@ -14,10 +14,13 @@ def forward_grad(tensor):
 class GradFunc:
     def __init__(self, *args):
         # This part builds our graph. It takes grad functions (if they exist)
-        # from the input arguments and builds a list pointing to them. This way
+        # from the input arguments and builds a tuple pointing to them. This way
         # we can use .next_functions to traverse through the entire graph.
+
+        # okay... we need to send raw args to 
+
         self.next_functions = tuple(filter(lambda x: x is not None, 
-                                    [forward_grad(data) for data in args]))
+                                    [forward_grad(arg) for arg in args]))
 
     def gradient(self, grad):
         raise NotImplementedError
@@ -27,8 +30,7 @@ class GradFunc:
         return len(self.next_functions)
 
     def __call__(self, grad):
-        back_grad = self.gradient(grad)
-        return back_grad
+        return self.gradient(grad)
 
     def __repr__(self):
         return self.__class__.__name__
@@ -44,5 +46,4 @@ class Accumulate(GradFunc):
             self.tensor.grad += grad
         else:
             self.tensor.grad = grad + 0
-
         return ()

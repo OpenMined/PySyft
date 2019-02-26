@@ -3,16 +3,24 @@
 # GradFunc classes as strings, then written to gradients.py.
 #
 # Each entry consists of:
-#   - A 'name', corresponding to the Tensor method you are defining the derivative for
+#   - A 'name', corresponding to the signature of a Tensor method
 #   - One or more gradient entries, for each of the method inputs with a gradient
 #
 
 # Other can be a Number or a Tensor and Python doesn't have multiple dispatch...
-- name: add
+- name: add(self, other)
   self: grad
   other: grad if type(self) == type(other) else None
 
-- name: asin
+- name: mul(self, other)
+  self: grad * other
+  other: grad * self if type(self) == type(other) else None
+
+- name: asin(self)
   self: grad * (-self * self + 1).rsqrt()
 
+- name: sin(self)
+  self: grad * self.cos()
 
+- name: sinh(self)
+  self: grad * self.cosh()
