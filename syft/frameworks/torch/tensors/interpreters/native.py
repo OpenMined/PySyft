@@ -179,14 +179,13 @@ class TorchTensor(AbstractTensor):
         <no self>, arguments[, kwargs])
         :return: the response of the function command
         """
-        # TODO: add kwargs
-        cmd, _, args = command
+        cmd, _, args, kwargs = command
 
         try:  # will work if tensors are wrappers
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
-            new_args, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
-                cmd, args, return_args_type=True
+            new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
+                cmd, args, kwargs, return_args_type=True
             )
             # This handles case 3: it redirects the command to the appropriate class depending
             # of the syft type of the arguments and returns
@@ -194,7 +193,7 @@ class TorchTensor(AbstractTensor):
                 return args_type.handle_func_command(command)
 
             # build the new command
-            new_command = (cmd, None, new_args)
+            new_command = (cmd, None, new_args, new_kwargs)
             # Send it to the appropriate class and get the response
             response = new_type.handle_func_command(new_command)
             # Put back the wrappers where needed
@@ -213,9 +212,9 @@ class TorchTensor(AbstractTensor):
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
             if isinstance(args, tuple):
-                response = eval(cmd)(*args)
+                response = eval(cmd)(*args, **kwargs)
             else:
-                response = eval(cmd)(args)
+                response = eval(cmd)(args, **kwargs)
 
         return response
 
@@ -438,7 +437,7 @@ class TorchTensor(AbstractTensor):
         """
 
         location = self.child.location
-        self.owner.send_command(message=("mid_get", self.child, ()), recipient=location)
+        self.owner.send_command(message=("mid_get", self.child, (), {}), recipient=location)
 
         return self
 

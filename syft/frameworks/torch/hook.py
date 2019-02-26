@@ -463,7 +463,7 @@ class TorchHook:
                         raise TensorsNotCollocatedException(pointer, args[0], attr)
 
             # Send the command
-            command = (attr, self, args)
+            command = (attr, self, args, kwargs)
             response = owner.send_command(location, command)
 
             return response
@@ -484,11 +484,15 @@ class TorchHook:
             """
 
             # Replace all syft tensor with their child attribute
-            new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args(attr, self, args)
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                attr, self, args, kwargs
+            )
 
             results = list()
             for k, v in new_self.items():
-                results.append(v.__getattribute__(attr)(*map(lambda x: x[k], new_args), **kwargs))
+                results.append(
+                    v.__getattribute__(attr)(*map(lambda x: x[k], new_args), **new_kwargs)
+                )
 
             return MultiPointerTensor(children=results)
 
@@ -510,10 +514,12 @@ class TorchHook:
             """
             # TODO: I can't manage the import issue, can you?
             # Replace all syft tensor with their child attribute
-            new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args(attr, self, args)
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                attr, self, args, kwargs
+            )
 
             # Send it to the appropriate class and get the response
-            response = getattr(new_self, attr)(*new_args, **kwargs)
+            response = getattr(new_self, attr)(*new_args, **new_kwargs)
 
             # Put back SyftTensor on the tensors found in the response
             response = syft.frameworks.torch.hook_args.hook_response(
@@ -547,9 +553,9 @@ class TorchHook:
 
                 try:
                     if isinstance(args, tuple):
-                        response = method(*args)
+                        response = method(*args, **kwargs)
                     else:
-                        response = method(args)
+                        response = method(args, **kwargs)
 
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
@@ -558,8 +564,8 @@ class TorchHook:
             else:  # means that there is a wrapper to remove
                 try:
                     # Replace all torch tensor with their child attribute
-                    new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args(
-                        method_name, self, args
+                    new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                        method_name, self, args, kwargs
                     )
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
@@ -567,7 +573,7 @@ class TorchHook:
 
                 # Send the new command to the appropriate class and get the response
                 method = getattr(new_self, method_name)
-                response = method(*new_args, **kwargs)
+                response = method(*new_args, **new_kwargs)
 
                 # For inplace methods, just directly return self
                 if syft.torch.is_inplace_method(method_name):
@@ -604,7 +610,7 @@ class TorchHook:
             Operate the hooking
             """
             cmd_name = f"{attr.__module__}.{attr.__name__}"
-            command = (cmd_name, None, args)  # TODO add kwargs
+            command = (cmd_name, None, args, kwargs)
             response = TorchTensor.handle_func_command(command)
             return response
 
