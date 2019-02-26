@@ -284,7 +284,7 @@ class BaseWorker(AbstractWorker):
         :return: a pointer to the result
         """
 
-        command, _self, args = message
+        command, _self, args, kwargs = message
 
         # TODO add kwargs
         kwargs = {}

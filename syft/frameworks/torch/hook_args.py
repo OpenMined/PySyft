@@ -57,7 +57,7 @@ backward_func = {
 }
 
 
-def hook_method_args(attr, method_self, args):
+def hook_method_args(attr, method_self, args, kwargs):
     """Method arguments are sometimes simple types (such as strings or ints) but
     sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LoggingTensor
     or some other tensor type. Complex types (which have a .child attribute) need to
@@ -92,10 +92,10 @@ def hook_method_args(attr, method_self, args):
         # Run it
         new_self, new_args = args_hook_function((method_self, args))
 
-    return (new_self, new_args)
+    return (new_self, new_args, kwargs)
 
 
-def hook_function_args(attr, args, return_args_type=False):
+def hook_function_args(attr, args, kwargs, return_args_type=False):
     """See hook_method_args for details
 
     Args:
@@ -130,12 +130,16 @@ def hook_function_args(attr, args, return_args_type=False):
     new_type = get_tensor_type_function(new_args)
     if return_args_type:
         args_type = get_tensor_type_function(args)
-        return new_args, new_type, args_type
+        return new_args, kwargs, new_type, args_type
     else:
-        return new_args, new_type
+        return new_args, kwargs, new_type
 
 
 def build_hook_args_function(args, return_tuple=False):
+    """
+    Build the function f that hook the arguments:
+    f(args) = new_args
+    """
     # Inspect the call to find tensor arguments and return a rule whose
     # structure is the same as the args object, with 1 where there was
     # (torch or syft) tensors and 0 when not (ex: number, str, ...)
@@ -206,6 +210,14 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
 
 
 def build_hook_response_function(response, wrap_type, wrap_args):
+    """
+    Build the function that hook the response.
+
+    Example:
+        p is of type Pointer
+        f is the hook_response_function
+        then f(p) = (Wrapper)>Pointer
+    """
     # Inspect the call to find tensor arguments and return a rule whose
     # structure is the same as the response object, with 1 where there was
     # (torch or syft) tensors and 0 when not (ex: number, str, ...)
