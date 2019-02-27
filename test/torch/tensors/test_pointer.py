@@ -250,3 +250,12 @@ def test_combine_pointers(workers):
     c = b.get(sum_results=False)
     assert len(c) == 2
     assert (c[0] == th.tensor([2, 4, 6, 8, 10])).all
+
+
+def test_remote_to_cpu_device(workers):
+    """Ensure remote .to cpu works"""
+    device = torch.device("cpu")
+    bob = workers["bob"]
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    x.to(device)

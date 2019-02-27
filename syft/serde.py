@@ -703,8 +703,16 @@ def _simplify_ellipsis(e: Ellipsis) -> bytes:
     return b""
 
 
+def _simplify_torch_device(device: torch.device) -> Tuple[str]:
+    return device.type
+
+
 def _detail_ellipsis(worker: AbstractWorker, ellipsis: bytes) -> Ellipsis:
     return ...
+
+
+def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.device:
+    return torch.device(type=device_type)
 
 
 def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
@@ -903,8 +911,9 @@ simplifiers = {
     numpy.ndarray: [7, _simplify_ndarray],
     slice: [8, _simplify_slice],
     type(Ellipsis): [9, _simplify_ellipsis],
-    PointerTensor: [10, _simplify_pointer_tensor],
-    LoggingTensor: [11, _simplify_log_tensor],
+    torch.device: [10, _simplify_torch_device],
+    PointerTensor: [11, _simplify_pointer_tensor],
+    LoggingTensor: [12, _simplify_log_tensor],
 }
 
 
@@ -944,6 +953,7 @@ detailers = [
     _detail_ndarray,
     _detail_slice,
     _detail_ellipsis,
+    _detail_torch_device,
     _detail_pointer_tensor,
     _detail_log_tensor,
 ]

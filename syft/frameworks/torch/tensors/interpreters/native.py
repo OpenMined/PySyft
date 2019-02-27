@@ -143,33 +143,63 @@ class TorchTensor(AbstractTensor):
         else:
             self._id = new_id
 
+    def _is_parameter(self):
+        """
+        Utility method to test if the tensor is in fact a Parameter
+        """
+        return isinstance(self, syft.hook.torch.nn.Parameter)
+
     @classmethod
     def handle_func_command(cls, command):
         """
-        Receive an instruction for a function to be applied on a torch
-        tensor, which can be a "real" tensor or just a wrapper at the
-        top of a chain (ex: wrapper>LoggingTensor>Torch tensor).
-        If this is not a wrapper layer, run the native torch command.
-        If this is a wrapper layer, just forward the instruction to the
-        next layer type in the chain (in the example above to LoggingTensor.
-        handle_method_command), get the response and replace a wrapper
-        on top of all tensors found in the response.
+        Operates as a router for functions. A function call always starts
+        by being handled here and 3 scenarii must be considered:
+
+        Real Torch tensor:
+            The arguments of the function are real tensors so we should
+            run the native torch command
+
+        Torch wrapper:
+            The arguments are just wrappers at the top of a chain
+            (ex: wrapper>LoggingTensor>Torch tensor), so just forward
+            the instruction to the next layer type in the chain (in
+            the example above to LoggingTensor.handle_func_command),
+            get the response and replace a wrapper on top of all tensors
+            found in the response.
+
+        Syft Tensor:
+            The arguments are syft tensors of same type: this can happen
+            if at any node of the chain where some function is forwarded,
+            the handle_func_command modify the function and make a new
+            call but keeps the arguments "un-wrapped". Making a new call
+            means that by default the command is treated here in the
+            global router.
+
         :param command: instruction of a function command: (command name,
         <no self>, arguments[, kwargs])
         :return: the response of the function command
         """
-        # TODO: add kwargs
-        cmd, _, args = command
+        cmd, _, args, kwargs = command
 
         try:  # will work if tensors are wrappers
             # Replace all torch tensor with their child attribute
-            new_args, new_type = syft.frameworks.torch.hook_args.hook_function_args(cmd, args)
+            # Note that we return also args_type which helps handling case 3 in the docstring
+            new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
+                cmd, args, kwargs, return_args_type=True
+            )
+            # This handles case 3: it redirects the command to the appropriate class depending
+            # of the syft type of the arguments and returns
+            if args_type not in (torch.Tensor, torch.nn.Parameter):
+                return args_type.handle_func_command(command)
+
             # build the new command
-            new_command = (cmd, None, new_args)
+            new_command = (cmd, None, new_args, new_kwargs)
             # Send it to the appropriate class and get the response
             response = new_type.handle_func_command(new_command)
             # Put back the wrappers where needed
-            response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
+            response = syft.frameworks.torch.hook_args.hook_response(
+                cmd, response, wrap_type=args_type
+            )
         except PureTorchTensorFoundError:  # means that it's not a wrapper but a pure tensor
             # TODO: clean this line
             cmd = (
@@ -182,9 +212,9 @@ class TorchTensor(AbstractTensor):
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
             if isinstance(args, tuple):
-                response = eval(cmd)(*args)
+                response = eval(cmd)(*args, **kwargs)
             else:
-                response = eval(cmd)(args)
+                response = eval(cmd)(args, **kwargs)
 
         return response
 
@@ -219,7 +249,7 @@ class TorchTensor(AbstractTensor):
 
             if hasattr(self, "child") and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
-                if isinstance(self, syft.hook.torch.nn.Parameter):
+                if self._is_parameter():
                     self.data.child.garbage_collect_data = False
 
             ptr = self.owner.send(self, location)
@@ -239,7 +269,7 @@ class TorchTensor(AbstractTensor):
             # the same pointer which was previously created
             self.ptr = weakref.ref(ptr)
 
-            if isinstance(self, syft.hook.torch.nn.Parameter):
+            if self._is_parameter():
                 if inplace:
                     self.data.set_()
                     self.data = ptr
@@ -407,7 +437,7 @@ class TorchTensor(AbstractTensor):
         """
 
         location = self.child.location
-        self.owner.send_command(message=("mid_get", self.child, ()), recipient=location)
+        self.owner.send_command(message=("mid_get", self.child, (), {}), recipient=location)
 
         return self
 
@@ -488,14 +518,36 @@ class TorchTensor(AbstractTensor):
     def float_prec(self):
         return self.child.float_precision()
 
-    def fix_prec(self):
+    float_precision = float_prec
+
+    def float_prec_(self):
+        tensor = self.float_prec()
+        if hasattr(tensor, "child"):
+            self.child = tensor.child
+        elif self._is_parameter():
+            self.data = tensor
+        else:
+            del self.child
+            self.set_(tensor)
+        return self
+
+    float_precision_ = float_prec_
+
+    def fix_prec(self, *args, **kwargs):
         return (
-            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor()
+            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor(*args, **kwargs)
             .on(self)
             .enc_fix_prec()
             .wrap()
         )
 
+    def fix_prec_(self, *args, **kwargs):
+        tensor = self.fix_prec(*args, **kwargs)
+        self.child = tensor.child
+        return self
+
+    fix_precision_ = fix_prec_
+    
     def share(self, *owners, field=None, crypto_provider=None):
         """This is a passthrough method which calls .share on the child.
 

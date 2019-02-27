@@ -116,8 +116,8 @@ class PointerTensor(AbstractTensor):
         with the raising error RemoteTensorFoundError
         """
         try:
-            cmd, _, args = command
-            _ = syft.frameworks.torch.hook_args.hook_function_args(cmd, args)
+            cmd, _, args, kwargs = command
+            _ = syft.frameworks.torch.hook_args.hook_function_args(cmd, args, kwargs)
         except RemoteTensorFoundError as err:
             pointer = err.pointer
             return pointer

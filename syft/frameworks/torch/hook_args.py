@@ -50,14 +50,14 @@ backward_func = {
     torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
-    FixedPrecisionTensor: lambda i: FixedPrecisionTensor().on(i, wrap=False),
+    FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
     AdditiveSharingTensor: lambda i: i,
     MultiPointerTensor: lambda i: i,
-    "my_syft_tensor_type": lambda i: "my_syft_tensor_type().on(i, wrap=False)",
+    "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
 
-def hook_method_args(attr, method_self, args):
+def hook_method_args(attr, method_self, args, kwargs):
     """Method arguments are sometimes simple types (such as strings or ints) but
     sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LoggingTensor
     or some other tensor type. Complex types (which have a .child attribute) need to
@@ -92,24 +92,30 @@ def hook_method_args(attr, method_self, args):
         # Run it
         new_self, new_args = args_hook_function((method_self, args))
 
-    return (new_self, new_args)
+    return (new_self, new_args, kwargs)
 
 
-def hook_function_args(attr, args):
+def hook_function_args(attr, args, kwargs, return_args_type=False):
     """See hook_method_args for details
 
     Args:
         attr (str): the name of the function being called
         args (list): the arguments being passed to the tensor
+        return_args_type (bool): return the type of the tensors in the
+        original arguments
+
+    Returns:
+        - the arguments where all tensors are replaced with their child
+        - the type of this new child
+        (- the type of the tensors in the arguments)
     """
     try:
         # Load the utility function to transform the args
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
-        get_tensor_type = get_tensor_type_functions[attr]
+        get_tensor_type_function = get_tensor_type_functions[attr]
         # Try running it
         new_args = hook_args(args)
-        new_type = get_tensor_type(new_args)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
         args_hook_function, get_tensor_type_function = build_hook_args_function(
@@ -120,12 +126,20 @@ def hook_function_args(attr, args):
         get_tensor_type_functions[attr] = get_tensor_type_function
         # Run it
         new_args = args_hook_function(args)
-        new_type = get_tensor_type_function(new_args)
 
-    return new_args, new_type
+    new_type = get_tensor_type_function(new_args)
+    if return_args_type:
+        args_type = get_tensor_type_function(args)
+        return new_args, kwargs, new_type, args_type
+    else:
+        return new_args, kwargs, new_type
 
 
 def build_hook_args_function(args, return_tuple=False):
+    """
+    Build the function f that hook the arguments:
+    f(args) = new_args
+    """
     # Inspect the call to find tensor arguments and return a rule whose
     # structure is the same as the args object, with 1 where there was
     # (torch or syft) tensors and 0 when not (ex: number, str, ...)
@@ -139,7 +153,7 @@ def build_hook_args_function(args, return_tuple=False):
     return args_hook_function, get_tensor_type_function
 
 
-def hook_response(attr, response, wrap_type, new_self=None):
+def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     """
     When executing a command, arguments are inspected and all tensors are replaced
     with their child attribute until a pointer or a torch tensor is found (for
@@ -182,7 +196,7 @@ def hook_response(attr, response, wrap_type, new_self=None):
         new_response = response_hook_function(response)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in cas of an error
-        response_hook_function = build_hook_response_function(response, wrap_type)
+        response_hook_function = build_hook_response_function(response, wrap_type, wrap_args)
         # Store this utility function in the registry
         hook_method_response_functions[attr_id] = response_hook_function
         # Run it
@@ -195,14 +209,22 @@ def hook_response(attr, response, wrap_type, new_self=None):
     return new_response
 
 
-def build_hook_response_function(response, wrap_type):
+def build_hook_response_function(response, wrap_type, wrap_args):
+    """
+    Build the function that hook the response.
+
+    Example:
+        p is of type Pointer
+        f is the hook_response_function
+        then f(p) = (Wrapper)>Pointer
+    """
     # Inspect the call to find tensor arguments and return a rule whose
     # structure is the same as the response object, with 1 where there was
     # (torch or syft) tensors and 0 when not (ex: number, str, ...)
     rule = build_rule(response)
     # Build a function with this rule to efficiently replace syft tensors
     # (but not pointer) with their child in the args objects
-    response_hook_function = build_response_hook(response, rule, wrap_type)
+    response_hook_function = build_response_hook(response, rule, wrap_type, wrap_args)
     return response_hook_function
 
 
@@ -358,7 +380,7 @@ def four_layers(idx1, *ids):
 get_element_at = {1: one_layer, 2: two_layers, 3: three_layers, 4: four_layers}
 
 
-def build_response_hook(response, rules, wrap_type, return_tuple=False):
+def build_response_hook(response, rules, wrap_type, wrap_args, return_tuple=False):
     """
     Build a function given some rules to efficiently replace in the response object
     syft or torch tensors with a wrapper, and do nothing for other types of object
@@ -374,11 +396,11 @@ def build_response_hook(response, rules, wrap_type, return_tuple=False):
         (lambda i: i)  # return the same object
         if not r  # if the rule is a number == 0.
         else build_response_hook(
-            a, r, wrap_type, True
+            a, r, wrap_type, wrap_args, True
         )  # If not, call recursively build_response_hook
         if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
         # Last if not, rule is probably == 1 so use type to return the right transformation.
-        else lambda i: backward_func[wrap_type](i)
+        else lambda i: backward_func[wrap_type](i, **wrap_args)
         for a, r in zip(response, rules)  # And do this for all the responses / rules provided
     ]
 
@@ -485,6 +507,12 @@ def many_fold(lambdas, args):
 
 
 def typed_identity(a):
+    """
+    We need to add typed identity for arguments which can be either number
+    or tensors. If the argument changes from an int to a tensor, the
+    assertion error triggered by typed_identity will be caught and a
+    new signature will be computed for the command.
+    """
     if a is None:
 
         def none_identity(i):
@@ -492,5 +520,14 @@ def typed_identity(a):
             return i
 
         return none_identity
+
+    elif type(a) in (int, float, bool):
+
+        def number_identity(i):
+            assert isinstance(i, type(a))
+            return i
+
+        return number_identity
+
     else:
         return lambda i: i
