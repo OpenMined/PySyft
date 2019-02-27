@@ -66,6 +66,7 @@ Privacy.
 
 import torch as th
 
+# TODO: determine max according to type(self.values)
 max_long = 2 ** 62
 
 
@@ -92,7 +93,6 @@ class SensitivityTensor:
 
             entities (torch.Tensor): a matrix of 1s and 0s which corresponds to whether or not a given entity
                 was used to help encode a specific value. TODO: remove this tensor & sparsely encode max_vals/min_vals
-
 
         """
 
@@ -147,30 +147,7 @@ class SensitivityTensor:
             new_max_vals = self.max_vals + other
             new_min_vals = self.min_vals + other
 
-        return SensitivityTensor(new_vals, new_max_vals, new_min_vals)
-
-    def __sub__(self, other):
-
-        # add to a private number
-        if isinstance(other, SensitivityTensor):
-
-            new_vals = self.values - other.values
-
-            # note that other.max/min values are reversed on purpose
-            # because this functionality is equivalent to
-            # output = self + (other * -1) and multiplication by
-            # a negative number swaps the max/min values with each
-            # other and flips their sign
-            new_max_vals = (self.entities * self.max_vals) - (other.entities * other.min_vals)
-            new_min_vals = (self.entities * self.min_vals) - (other.entities * other.max_vals)
-
-        else:
-            # add to a public number
-            new_vals = self.values - other
-            new_max_vals = self.max_vals - other
-            new_min_vals = self.min_vals - other
-
-        return SensitivityTensor(new_vals, new_max_vals, new_min_vals)
+        return SensitivityTensor(values=new_vals, max_vals=new_max_vals, min_vals=new_min_vals)
 
     def __mul__(self, other):
 
@@ -231,6 +208,32 @@ class SensitivityTensor:
 
         # note that new_min_vals and new_max_vals are reversed intentionally
         return SensitivityTensor(-self.values, -self.min_vals, -self.max_vals)
+
+    def __sub__(self, other):
+
+        # add to a private number
+        if isinstance(other, SensitivityTensor):
+
+            # just telling the data to do subtraction... nothing to see here
+            new_vals = self.values - other.values
+
+            # note that other.max/min values are reversed on purpose
+            # because this functionality is equivalent to
+            # output = self + (other * -1) and multiplication by
+            # a negative number swaps the max/min values with each
+            # other and flips their sign
+
+            # similar to __add__ but with
+            new_max_vals = (self.entities * self.max_vals) - (other.entities * other.min_vals)
+            new_min_vals = (self.entities * self.min_vals) - (other.entities * other.max_vals)
+
+        else:
+            # add to a public number
+            new_vals = self.values - other
+            new_max_vals = self.max_vals - other
+            new_min_vals = self.min_vals - other
+
+        return SensitivityTensor(new_vals, new_max_vals, new_min_vals)
 
     def __truediv__(self, other):
 
