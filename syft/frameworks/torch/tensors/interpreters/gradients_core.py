@@ -1,7 +1,6 @@
 # Module for implementing gradients used in the autograd system
-from torch import Tensor
 
-__all__ = ["Tensor", "GradFunc", "Accumulate"]
+__all__ = ["GradFunc"]
 
 def forward_grad(tensor):
     try:
@@ -11,7 +10,7 @@ def forward_grad(tensor):
 
     # If a tensor doesn't have a grad_fn already attached to it, that means
     # it's a leaf of the graph and we want to accumulate the gradient
-    return Accumulate(tensor) if grad_fn is None else grad_fn
+    return Accumulate(tensor) if grad_fn is None and tensor.requires_grad else grad_fn
 
 
 class GradFunc:
@@ -21,6 +20,7 @@ class GradFunc:
         # we can use .next_functions to traverse through the entire graph.
         self.next_functions = tuple(filter(lambda x: x is not None, 
                                     [forward_grad(arg) for arg in args]))
+        self.result = None
 
     def gradient(self, grad):
         raise NotImplementedError
