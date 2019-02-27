@@ -109,10 +109,11 @@ class SensitivityTensor:
         self.entities = entities  # (self.values.shape..., #num entities)
 
     def __add__(self, other):
-        """Adds the self tensor with a tensor or a scalar, keeping track of sensitivity appropriately.
+        """Adds the self tensor with a tensor or a scalar/tensor of equal shape, keeping track of sensitivity
+        appropriately.
 
         Args:
-            other (torch.Tensor, float, int): the other tensor or scalar to add to this one.
+            other (torch.Tensor, float, int, SensitivityTensor): the other tensor or scalar to add to this one.
 
         """
 
@@ -150,11 +151,38 @@ class SensitivityTensor:
         return SensitivityTensor(values=new_vals, max_vals=new_max_vals, min_vals=new_min_vals)
 
     def __mul__(self, other):
+        """Multiplies self by either another SensitivityTensor or a scalar or a tensor of equal size.
 
-        if isinstance(other, SensitivityTensor):
+        Args:
+            other (torch.Tensor, float, int, SensitivityTensor): the other tensor or scalar to multiply to this one.
 
+        """
+
+        # if the other tensor is a scalar TODO: add support for arbitrary torch tensors (which should work)
+        if not isinstance(other, SensitivityTensor):
+
+            # add to a public number
+            new_vals = self.values * other
+
+            # if the scalar is greater than 0, then we proceed as normal
+            if other > 0:
+                new_max_vals = self.max_vals * other
+                new_min_vals = self.min_vals * other
+
+            # if the scalar is negative, then it means it's going to flip the sign which means we need to flip
+            # the position of min/max val as well because they're going to jump to the opposite sides of 0 (which means
+            # for example, if other == -1, the max value would actually become the min and vise versa)
+            else:
+                new_min_vals = self.max_vals * other
+                new_max_vals = self.min_vals * other
+
+        # i the other tensor is a sensitivty tensor, then we must consider it's max/min values for each entity
+        else:
+
+            # just multiplying the values... nothing to see here
             new_vals = self.values * other.values
 
+            #
             new_self_max_vals = th.max(
                 self.min_vals * other.expanded_minminvals, self.max_vals * other.expanded_maxmaxvals
             )
@@ -190,17 +218,6 @@ class SensitivityTensor:
             )
 
             new_min_vals = th.min(new_self_min_vals, new_other_min_vals) * entities_self_or_other
-
-        else:
-            # add to a public number
-            new_vals = self.values * other
-
-            if other > 0:
-                new_max_vals = self.max_vals * other
-                new_min_vals = self.min_vals * other
-            else:
-                new_min_vals = self.max_vals * other
-                new_max_vals = self.min_vals * other
 
         return SensitivityTensor(new_vals, new_max_vals, new_min_vals)
 
@@ -319,76 +336,7 @@ class SensitivityTensor:
         return SensitivityTensor(new_vals, new_max_val, new_min_val)
 
     def __lt__(self, other):
-
-        if isinstance(other, SensitivityTensor):
-
-            result = self.values > other.values
-
-            # if self is bigger than the biggest possible other
-            if_left = (self.min_vals > other.expanded_maxmaxvals).float() * self.entities
-
-            # if self is smaller than the smallest possible other
-            if_right = (self.max_vals < other.expanded_minminvals).float() * self.entities
-
-            # if self doesn't overlap with other at all
-            if_left_or_right = if_left + if_right  # shouldn't have to check if this > 2 assuming
-            # other's max is > other's min
-
-            # if self does overlap with other
-            new_self_max_vals = 1 - if_left_or_right
-
-            # can't have a threshold output less than 0
-            new_self_min_vals = if_left_or_right * 0
-
-            # if other is bigger than the smallest possible self
-            if_left = (other.min_vals > self.expanded_maxmaxvals).float() * other.entities
-
-            # if other is smaller than the smallest possible self
-            if_right = (other.max_vals < self.expanded_minminvals).float() * other.entities
-
-            # if other and self don't overlap
-            if_left_or_right = if_left + if_right  # shouldn't have to check if this > 2 assuming
-            # other's max is > other's min
-
-            # if other and self do overlap
-            new_other_max_vals = 1 - if_left_or_right
-
-            # the smallest possible result is 0
-            new_other_min_vals = new_self_min_vals + 0
-
-            # only contribute information from entities in ancestry
-            new_self_max_vals = (new_self_max_vals * self.entities) + (
-                (1 - self.entities) * -max_long
-            )
-            new_other_max_vals = (new_other_max_vals * self.entities) + (
-                (1 - self.entities) * -max_long
-            )
-
-            # only contribute information from entities in ancestry
-            new_self_min_vals = (new_self_min_vals * self.entities) + (
-                (1 - self.entities) * max_long
-            )
-            new_other_min_vals = (new_other_min_vals * self.entities) + (
-                (1 - self.entities) * max_long
-            )
-
-            entities_self_or_other = ((self.entities + other.entities) > 0).float()
-
-            new_max_val = th.max(new_self_max_vals, new_other_max_vals) * entities_self_or_other
-            new_min_val = th.min(new_self_min_vals, new_other_min_vals) * entities_self_or_other
-
-        else:
-
-            result = self.values < other
-
-            if_left = other <= self.max_vals
-            if_right = other >= self.min_vals
-            if_and = if_left * if_right
-
-            new_max_val = if_and
-            new_min_val = new_max_val * 0
-
-        return SensitivityTensor(result, new_max_val, new_min_val)
+        return other.__gt__(self)
 
     def clamp_min(self, other):
 
