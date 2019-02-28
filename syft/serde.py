@@ -45,6 +45,7 @@ import syft as sy
 
 from syft.workers import AbstractWorker
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.decorators import SensitivityTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
@@ -854,6 +855,30 @@ def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LoggingTe
     return tensor
 
 
+def _simplify_sensitivity_tensor(tensor: SensitivityTensor) -> tuple:
+
+    _chain = _simplify(tensor.child)
+    _min = _simplify(tensor.min_ent_conts)
+    _max = _simplify(tensor.max_ent_conts)
+    _entities = _simplify(tensor.entities)
+
+    return (_chain, _min, _max, _entities)
+
+
+def _detail_sensitivity_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> SensitivityTensor:
+
+    _chain, _min, _max, _entities = tensor_tuple
+
+    _chain = _detail(worker, _chain)
+    _min = _detail(worker, _min)
+    _max = _detail(worker, _max)
+    _entities = _detail(worker, _entities)
+
+    return SensitivityTensor(
+        values=_chain, min_ent_conts=_min, max_ent_conts=_max, entities=_entities
+    )
+
+
 # High Level Simplification Router
 
 
@@ -914,6 +939,7 @@ simplifiers = {
     torch.device: [10, _simplify_torch_device],
     PointerTensor: [11, _simplify_pointer_tensor],
     LoggingTensor: [12, _simplify_log_tensor],
+    SensitivityTensor: [13, _simplify_sensitivity_tensor],
 }
 
 
@@ -942,6 +968,8 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
         return obj
 
 
+# note that the order of this list matters
+# it must match the ID in the simplifiers dict
 detailers = [
     _detail_torch_tensor,
     _detail_torch_parameter,
@@ -956,4 +984,5 @@ detailers = [
     _detail_torch_device,
     _detail_pointer_tensor,
     _detail_log_tensor,
+    _detail_sensitivity_tensor,
 ]

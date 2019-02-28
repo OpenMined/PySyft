@@ -512,6 +512,18 @@ class SensitivityTensor(AbstractTensor):
     def entities(self, x):
         self._entities = x.float()
 
+    @property
+    def id(self):
+        return self.child.id
+
+    @property
+    def tags(self):
+        return self.child.tags
+
+    @property
+    def description(self):
+        return self.child.description
+
     def hard_sigmoid(self):
         return self.clamp_max(1).clamp_min(0)
 
