@@ -302,6 +302,9 @@ class SensitivityTensor:
         return SensitivityTensor(-self.values, -self.min_ent_conts, -self.max_ent_conts)
 
     def __sub__(self, other):
+        """Subtracts two tensors. This method is very similar to __add__ except that min/max get flipped as in
+        __neg__. I.e., this method is equivalent to return self + (-other) and you can read comments in those
+        methods to understand the implementation in this one."""
 
         # add to a private number
         if isinstance(other, SensitivityTensor):
@@ -334,76 +337,47 @@ class SensitivityTensor:
     def __truediv__(self, other):
 
         if isinstance(other, SensitivityTensor):
-            raise Exception("probably best not to do this - it's gonna be inf a lot")
+            # TODO: implement
+            raise Exception("probably best not to do this - it's gonna be inf sensitivity a lot.")
 
+        # same as scalar multiplication by a fraction - see comments in __mul__ for details
         new_vals = self.values / other
         new_max_ent_conts = self.max_ent_conts / other
         new_min_ent_conts = self.min_ent_conts / other
 
         return SensitivityTensor(new_vals, new_max_ent_conts, new_min_ent_conts)
 
+    def _could_overlap_with(self, other):
+        """Any comparison has sensitivity exclusively calculated based on whether or not it is possible that the
+        tensors could overlap at all. Thus, their sensitivity calculation is identical."""
+
+        # first we must check to see if self and other can overlap at all - which we do by comparing their
+        # maximum possible boundaries
+        could_self_top_overlap_with_other_bottom = (
+            self.expanded_max_vals
+            < other.expanded_min_vals  # TODO: expand later for better efficiency
+        )
+
+        could_self_bottom_overlap_with_other_top = self.expanded_min_vals > other.expanded_max_vals
+
+        # we calculate this because if they cannot overlap - then sensitivity is 0 - otherwise
+        # sensitivity is 1
+        could_self_and_other_overlap = (
+            could_self_bottom_overlap_with_other_top + could_self_top_overlap_with_other_bottom
+        ) > 0
+
+        return could_self_and_other_overlap
+
     def __gt__(self, other):
-        """BUG: the zero values mess this up"""
+
         if isinstance(other, SensitivityTensor):
 
             new_vals = self.values > other.values
 
-            # if self is bigger than the biggest possible other
-            if_left = (self.min_ent_conts > other.expanded_max_vals).float() * self.entities
+            could_self_and_other_overlap = self._could_overlap_with(other)
 
-            # if self is smaller than the smallest possible other
-            if_right = (self.max_ent_conts < other.expanded_min_vals).float() * self.entities
-
-            # if self doesn't overlap with other at all
-            if_left_or_right = if_left + if_right  # shouldn't have to check if this > 2 assuming
-            # other's max is > other's min
-
-            # if self does overlap with other
-            new_self_max_ent_conts = 1 - if_left_or_right
-
-            # can't have a threshold output less than 0
-            new_self_min_ent_conts = if_left_or_right * 0
-
-            # if other is bigger than the smallest possible self
-            if_left = (other.min_ent_conts > self.expanded_max_vals).float() * other.entities
-
-            # if other is smaller than the smallest possible self
-            if_right = (other.max_ent_conts < self.expanded_min_vals).float() * other.entities
-
-            # if other and self don't overlap
-            if_left_or_right = if_left + if_right  # shouldn't have to check if this > 2 assuming
-            # other's max is > other's min
-
-            # if other and self do overlap
-            new_other_max_ent_conts = 1 - if_left_or_right
-
-            # the smallest possible result is 0
-            new_other_min_ent_conts = new_self_min_ent_conts + 0
-
-            # only contribute information from entities in ancestry
-            new_self_max_ent_conts = (new_self_max_ent_conts * self.entities) + (
-                (1 - self.entities) * -max_long
-            )
-            new_other_max_ent_conts = (new_other_max_ent_conts * self.entities) + (
-                (1 - self.entities) * -max_long
-            )
-
-            # only contribute information from entities in ancestry
-            new_self_min_ent_conts = (new_self_min_ent_conts * self.entities) + (
-                (1 - self.entities) * max_long
-            )
-            new_other_min_ent_conts = (new_other_min_ent_conts * self.entities) + (
-                (1 - self.entities) * max_long
-            )
-
-            entities_self_or_other = ((self.entities + other.entities) > 0).float()
-
-            new_max_val = (
-                th.max(new_self_max_ent_conts, new_other_max_ent_conts) * entities_self_or_other
-            )
-            new_min_val = (
-                th.min(new_self_min_ent_conts, new_other_min_ent_conts) * entities_self_or_other
-            )
+            new_max_ent_conts = could_self_and_other_overlap
+            new_min_ent_conts = could_self_and_other_overlap * 0
 
         else:
 
@@ -413,13 +387,53 @@ class SensitivityTensor:
             if_right = other >= self.min_ent_conts
             if_and = if_left * if_right
 
-            new_max_val = if_and
-            new_min_val = new_max_val * 0
+            new_max_ent_conts = if_and
+            new_min_ent_conts = new_max_ent_conts * 0
 
-        return SensitivityTensor(new_vals, new_max_val, new_min_val)
+        return SensitivityTensor(
+            values=new_vals, max_ent_conts=new_max_ent_conts, min_ent_conts=new_min_ent_conts
+        )
 
     def __lt__(self, other):
+        """returns a binary tensor indicating whether self < other - tracking sensitivity
+
+            Args:
+                other (torch.Tensor): the tensor self is being compared with
+
+            """
         return other.__gt__(self)
+
+    def __eq__(self, other):
+        """returns a binary tensor indicating whether values are equal to each other - tracking sensitivity
+
+        Args:
+            other (torch.Tensor): the tensor self is being compared with
+
+        """
+
+        if isinstance(other, SensitivityTensor):
+
+            new_vals = self.values == other.values
+
+            could_self_and_other_overlap = self._could_overlap_with(other)
+
+            new_max_ent_conts = could_self_and_other_overlap
+            new_min_ent_conts = could_self_and_other_overlap * 0
+
+        else:
+
+            new_vals = self.values == other
+
+            if_left = other <= self.max_ent_conts
+            if_right = other >= self.min_ent_conts
+            if_and = if_left * if_right
+
+            new_max_ent_conts = if_and
+            new_min_ent_conts = new_max_ent_conts * 0
+
+        return SensitivityTensor(
+            values=new_vals, max_ent_conts=new_max_ent_conts, min_ent_conts=new_min_ent_conts
+        )
 
     def clamp_min(self, other):
 
