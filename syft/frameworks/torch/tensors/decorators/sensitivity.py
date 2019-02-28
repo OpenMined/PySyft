@@ -352,8 +352,6 @@ class SensitivityTensor:
         if isinstance(other, SensitivityTensor):
             raise Exception("Not implemented yet")
 
-        entities = self.entities
-
         new_max_val = self.max_vals.clamp_max(other)
 
         return SensitivityTensor(self.values.clamp_max(other), new_max_val, self.min_vals)
