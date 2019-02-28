@@ -65,12 +65,13 @@ Privacy.
 
 
 import torch as th
+from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 
-# TODO: determine max according to type(self.values)
+# TODO: determine max according to type(self.child)
 max_long = 2 ** 62
 
 
-class SensitivityTensor:
+class SensitivityTensor(AbstractTensor):
     def __init__(
         self,
         values: th.Tensor,
@@ -87,21 +88,21 @@ class SensitivityTensor:
                 this tensor could take on given the maximum possible value of all of the input values
                 (from other tensors in this tensor's "ancestry") used to create it. However, this is only
                 actually the case for the sum over the last dimension of the tensor.
-                Theoretically we always interpret self.values as a sum over contributions from
+                Theoretically we always interpret self.child as a sum over contributions from
                 all possible known entities (which can be represented in a sparse matrix. TODO: test)
                 Given this representation, self.max_ent_conts can be thought of as the maximum amount
-                that any entity could have added into self.values. Note, that if only one entity
+                that any entity could have added into self.child. Note, that if only one entity
                 is contributing to a datapoint, then the max val of that entry in the tensor is
                 also the maximum that entry in the tensor can take. self.max_ent_conts should be the same
-                shape as self.values with an extra dimension at the end which is as long as the
+                shape as self.child with an extra dimension at the end which is as long as the
                 number of known entities. TODO: add support for sparse recording of known entities
 
 
             min_ent_conts (torch.Tensor): The minimum (or max negative) amount any entity contributes to any value.
                 Same as self.max_ent_conts but instead of recording the maximum amount any entity
-                adds to create self.values, it records the maximum amount any entity could be
-                subtracting to create self.values. Summing across the last dimension returns the
-                minimum possible value that each entry in self.values could possibly be given the
+                adds to create self.child, it records the maximum amount any entity could be
+                subtracting to create self.child. Summing across the last dimension returns the
+                minimum possible value that each entry in self.child could possibly be given the
                 possible range within the tensors used to create it (it's "ancestry").
 
             entities (torch.Tensor): a matrix of 1s and 0s which corresponds to whether or not a given entity
@@ -109,20 +110,20 @@ class SensitivityTensor:
                 TODO (cont): instead.
         """
 
-        self.values = values
+        self.child = values
 
-        # to be clear, every entry in self.values has a list of corresponding entries, one for each entity.
-        # Thus, self.max_ent_conts and self.min_ent_conts are the same shape as self.values with on added dimension
+        # to be clear, every entry in self.child has a list of corresponding entries, one for each entity.
+        # Thus, self.max_ent_conts and self.min_ent_conts are the same shape as self.child with on added dimension
         # at the end of length #num entities (number of known entities - which must be known a-prior ATM)
 
-        self.max_ent_conts = max_ent_conts  # (self.values.shape..., #num entities)
-        self.min_ent_conts = min_ent_conts  # (self.values.shape..., #num entities)
+        self.max_ent_conts = max_ent_conts  # (self.child.shape..., #num entities)
+        self.min_ent_conts = min_ent_conts  # (self.child.shape..., #num entities)
 
         if entities is None:
             entities = self.max_ent_conts != self.min_ent_conts
 
         # one hot encoding of entities in the ancestry of this tensor
-        self.entities = entities  # (self.values.shape..., #num entities)
+        self.entities = entities  # (self.child.shape..., #num entities)
 
     def __add__(self, other):
         """Adds the self tensor with a tensor or a scalar/tensor of equal shape, keeping track of sensitivity
@@ -137,7 +138,7 @@ class SensitivityTensor:
         if isinstance(other, SensitivityTensor):
 
             # perform addition on the raw data (nothing interesting to see here)
-            new_vals = self.values + other.values
+            new_vals = self.child + other.child
 
             # Perhaps the simplest sensitivity calculation. If two entities add two values together, then
             # the maximum value of the result is the sum of the maximum possible value of each of the inputs.
@@ -151,7 +152,7 @@ class SensitivityTensor:
 
             # Similarly, if two entities add two values together, then the minimum value that the result could
             # take on is simply the sum of the minimum values of the inputs. If multiple entities contributed
-            # to each of the input variables, then each entitiy's maximum negative contribution is also summed
+            # to each of the input variables, then each entity's maximum negative contribution is also summed
 
             # Multiplication by .entities merely masks out entities which aren't being used.
             new_min_ent_conts = (self.min_ent_conts * self.entities) + (
@@ -160,7 +161,7 @@ class SensitivityTensor:
 
         else:
             # add to a public number
-            new_vals = self.values + other
+            new_vals = self.child + other
 
             # If the value of `other' is not a SensitivityTensor, then we assume that it is public and has a max_val
             # and min_val set at exactly the data, which we can use to sum with the current self.max_ent_conts and
@@ -184,7 +185,7 @@ class SensitivityTensor:
         if not isinstance(other, SensitivityTensor):
 
             # add to a public number
-            new_vals = self.values * other
+            new_vals = self.child * other
 
             # if the scalar is greater than 0, then we proceed as normal
             if other > 0:
@@ -202,7 +203,7 @@ class SensitivityTensor:
         else:
 
             # just multiplying the values... nothing to see here
-            new_vals = self.values * other.values
+            new_vals = self.child * other.values
 
             # Step 1: calculate the new maximum value for each entity in self's ancestry.
             # Since this could be the product of two large positive numbers
@@ -213,7 +214,7 @@ class SensitivityTensor:
             # maximum possible value of the other value given all other.entities. Aka - if Bob has x within the range
             # [0, 1], and y was created by Alice and Jim with ranges [0,2], and [1,3], then Bob's contribution to the
             # result could be scaled by (2 + 3). Thus, bob's potential contribution to the result is 1 * (2 + 3) = 6.
-            # Note: the example above is just for one value - but we're doing it for all self.values elementwise.
+            # Note: the example above is just for one value - but we're doing it for all self.child elementwise.
             self_max_other_max = self.max_ent_conts * other.expanded_max_vals
 
             # Step 1B: Same as self_max_other_max except we do it between minimum values on the off chance that they're both
@@ -302,7 +303,7 @@ class SensitivityTensor:
 
         # note that new_min_ent_conts and new_max_ent_conts are reversed intentionally because the sign is being
         # flipped. For example, a tensor with range (-1, 3) would be flipped to (-3, 1).
-        return SensitivityTensor(-self.values, -self.min_ent_conts, -self.max_ent_conts)
+        return SensitivityTensor(-self.child, -self.min_ent_conts, -self.max_ent_conts)
 
     def __sub__(self, other):
         """Subtracts two tensors. This method is very similar to __add__ except that min/max get flipped as in
@@ -313,7 +314,7 @@ class SensitivityTensor:
         if isinstance(other, SensitivityTensor):
 
             # just telling the data to do subtraction... nothing to see here
-            new_vals = self.values - other.values
+            new_vals = self.child - other.values
 
             # note that other.max/min values are reversed on purpose
             # because this functionality is equivalent to
@@ -331,7 +332,7 @@ class SensitivityTensor:
 
         else:
             # add to a public number
-            new_vals = self.values - other
+            new_vals = self.child - other
             new_max_ent_conts = self.max_ent_conts - other
             new_min_ent_conts = self.min_ent_conts - other
 
@@ -344,7 +345,7 @@ class SensitivityTensor:
             raise Exception("probably best not to do this - it's gonna be inf sensitivity a lot.")
 
         # same as scalar multiplication by a fraction - see comments in __mul__ for details
-        new_vals = self.values / other
+        new_vals = self.child / other
         new_max_ent_conts = self.max_ent_conts / other
         new_min_ent_conts = self.min_ent_conts / other
 
@@ -375,7 +376,7 @@ class SensitivityTensor:
 
         if isinstance(other, SensitivityTensor):
 
-            new_vals = self.values > other.values
+            new_vals = self.child > other.values
 
             could_self_and_other_overlap = self._could_overlap_with(other)
 
@@ -384,7 +385,7 @@ class SensitivityTensor:
 
         else:
 
-            new_vals = self.values > other
+            new_vals = self.child > other
 
             if_left = other <= self.max_ent_conts  # TODO: this <= might need to be <
             if_right = other >= self.min_ent_conts  # TODO: this >= might need to be >
@@ -416,7 +417,7 @@ class SensitivityTensor:
 
         if isinstance(other, SensitivityTensor):
 
-            new_vals = self.values == other.values
+            new_vals = self.child == other.values
 
             could_self_and_other_overlap = self._could_overlap_with(other)
 
@@ -425,7 +426,7 @@ class SensitivityTensor:
 
         else:
 
-            new_vals = self.values == other
+            new_vals = self.child == other
 
             if_left = other <= self.max_ent_conts
             if_right = other >= self.min_ent_conts
@@ -444,8 +445,9 @@ class SensitivityTensor:
             raise Exception("Not implemented yet")
 
         new_min_val = self.min_ent_conts.clamp_min(other)
+        new_max_val = self.max_ent_conts.clamp_min(other)
 
-        return SensitivityTensor(self.values.clamp_min(other), self.max_ent_conts, new_min_val)
+        return SensitivityTensor(self.child.clamp_min(other), new_max_val, new_min_val)
 
     def clamp_max(self, other):
 
@@ -454,7 +456,7 @@ class SensitivityTensor:
 
         new_max_val = self.max_ent_conts.clamp_max(other)
 
-        return SensitivityTensor(self.values.clamp_max(other), new_max_val, self.min_ent_conts)
+        return SensitivityTensor(self.child.clamp_max(other), new_max_val, self.min_ent_conts)
 
     @property
     def max_vals(self):

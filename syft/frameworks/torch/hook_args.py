@@ -3,6 +3,7 @@ from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
 from .tensors.interpreters import PointerTensor
 from .tensors.decorators import LoggingTensor
+from .tensors.decorators import SensitivityTensor
 from .tensors.interpreters import TorchTensor
 from .tensors.interpreters import FixedPrecisionTensor
 from .tensors.interpreters import AdditiveSharingTensor
@@ -19,6 +20,7 @@ type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     LoggingTensor: one,
+    SensitivityTensor: one,
     FixedPrecisionTensor: one,
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
@@ -37,6 +39,7 @@ forward_func = {
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
     LoggingTensor: lambda i: i.child,
+    SensitivityTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
@@ -50,6 +53,7 @@ backward_func = {
     torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
+    SensitivityTensor: lambda i: i,
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
     AdditiveSharingTensor: lambda i: i,
     MultiPointerTensor: lambda i: i,
