@@ -65,6 +65,7 @@ Privacy.
 
 
 import torch as th
+import syft as sy
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 
 # TODO: determine max according to type(self.child)
@@ -109,6 +110,7 @@ class SensitivityTensor(AbstractTensor):
                 was used to help encode a specific value. TODO: remove this tensor & sparsely encode max_ent_conts/min_ent_conts
                 TODO (cont): instead.
         """
+        _type = values.type()
 
         self.child = values
 
@@ -498,6 +500,19 @@ class SensitivityTensor(AbstractTensor):
 
     @property
     def entity_sensitivity(self):
+
+        more_than_halfway_to_max = self.max_ent_conts > (
+            sy.torch.torch_type2max[self.max_ent_conts.type()] / 2
+        )
+        more_than_halfway_to_min = self.min_ent_conts < (
+            sy.torch.torch_type2min[self.min_ent_conts.type()] / 2
+        )
+
+        if (more_than_halfway_to_max * more_than_halfway_to_min).any():
+            raise Exception(
+                "Sensitivity too high to high to represent with " + str(self.child.type()) + " type"
+            )
+
         return self.max_ent_conts - self.min_ent_conts
 
     @property

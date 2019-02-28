@@ -6,6 +6,7 @@ import syft
 import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.tensors.decorators import SensitivityTensor
 from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
@@ -582,3 +583,39 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return sy.combine_pointers(*ps)
+
+    def track_sensitivity(self, min_ent_conts=None, max_ent_conts=None, n_entities=None):
+
+        _type = self.type()
+
+        if _type in syft.torch.torch_type2bigger_type:
+            bigger_type = syft.torch.torch_type2bigger_type[_type]
+        else:
+            raise Exception(
+                "You cannot track sensitivity with one of PyTorch's largest types because sensitivity"
+                "needs to have more precision than the underlying data. Try casting this tensor to a "
+                "lower precision type first."
+            )
+
+        if (min_ent_conts is None or max_ent_conts is None) and n_entities is None:
+            raise Exception(
+                "If you aren't going to specify the min/max entity contributions, then you must at least supply the number of entities being tracked."
+            )
+
+        if min_ent_conts is None:
+            min_ent_conts = (
+                bigger_type(*(list(self.shape) + [n_entities])) * 0
+            ) + syft.torch.torch_type2min[self.type()]
+        elif isinstance(min_ent_conts, (float, int)):
+            min_ent_conts = (bigger_type(*(list(self.shape) + [n_entities])) * 0) + min_ent_conts
+
+        if max_ent_conts is None:
+            max_ent_conts = (
+                bigger_type(*(list(self.shape) + [n_entities])) * 0
+            ) + syft.torch.torch_type2max[self.type()]
+        elif isinstance(max_ent_conts, (float, int)):
+            max_ent_conts = (bigger_type(*(list(self.shape) + [n_entities])) * 0) + max_ent_conts
+
+        return SensitivityTensor(
+            values=self, max_ent_conts=max_ent_conts, min_ent_conts=min_ent_conts
+        ).wrap()

@@ -161,6 +161,47 @@ class TorchAttributes(object):
         # Dict {method_name: <is_inplace:bool>
         self.inplace_methods = {}
 
+        torch_type2min = {}
+        torch_type2max = {}
+
+        torch_type2max["torch.FloatTensor"] = (2 ** 63) - 1
+        torch_type2min["torch.FloatTensor"] = -(2 ** 63)
+
+        torch_type2max["torch.DoubleTensor"] = (2 ** 63) - 1
+        torch_type2min["torch.DoubleTensor"] = -(2 ** 63)
+
+        torch_type2max["torch.HalfTensor"] = 2 ** 16 - 17
+        torch_type2min["torch.HalfTensor"] = -(2 ** 16 - 17)
+
+        torch_type2max["torch.ByteTensor"] = 2 ** 8 - 1
+        torch_type2min["torch.ByteTensor"] = 0
+
+        torch_type2max["torch.CharTensor"] = 2 ** 7 - 1
+        torch_type2min["torch.CharTensor"] = -(2 ** 7)
+
+        torch_type2max["torch.ShortTensor"] = 2 ** 15 - 1
+        torch_type2min["torch.ShortTensor"] = -(2 ** 15)
+
+        torch_type2max["torch.IntTensor"] = 2 ** 31 - 1
+        torch_type2min["torch.IntTensor"] = -(2 ** 31)
+
+        torch_type2max["torch.LongTensor"] = 2 ** 63 - 1
+        torch_type2min["torch.LongTensor"] = -(2 ** 63)
+
+        self.torch_type2max = torch_type2max
+        self.torch_type2min = torch_type2min
+
+        torch_type2bigger_type = {}
+
+        torch_type2bigger_type["torch.FloatTensor"] = torch.DoubleTensor
+        torch_type2bigger_type["torch.HalfTensor"] = torch.FloatTensor
+        torch_type2bigger_type["torch.ByteTensor"] = torch.ShortTensor
+        torch_type2bigger_type["torch.CharTensor"] = torch.ShortTensor
+        torch_type2bigger_type["torch.ShortTensor"] = torch.IntTensor
+        torch_type2bigger_type["torch.IntTensor"] = torch.LongTensor
+
+        self.torch_type2bigger_type = torch_type2bigger_type
+
     def _command_guard(
         self, command: str, torch_domain: str, get_native: bool = False
     ) -> Union[Callable[..., Any], str]:
