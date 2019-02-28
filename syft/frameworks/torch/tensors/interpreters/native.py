@@ -10,6 +10,7 @@ from syft.frameworks.torch.tensors.decorators import SensitivityTensor
 from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
+from syft.exceptions import CannotInitializeSensitivityTensorWithoutKnownEntitiesError
 
 
 class TorchTensor(AbstractTensor):
@@ -597,24 +598,36 @@ class TorchTensor(AbstractTensor):
                 "lower precision type first."
             )
 
-        if (min_ent_conts is None or max_ent_conts is None) and n_entities is None:
-            raise Exception(
-                "If you aren't going to specify the min/max entity contributions, then you must at"
-                "least supply the number of entities being tracked."
-            )
-
         if min_ent_conts is None:
+
+            if n_entities is None:
+                raise CannotInitializeSensitivityTensorWithoutKnownEntitiesError
+
             min_ent_conts = (
                 bigger_type(*(list(self.shape) + [n_entities])) * 0
             ) + syft.torch.torch_type2min[self.type()]
+
         elif isinstance(min_ent_conts, (float, int)):
+
+            if n_entities is None:
+                raise CannotInitializeSensitivityTensorWithoutKnownEntitiesError
+
             min_ent_conts = (bigger_type(*(list(self.shape) + [n_entities])) * 0) + min_ent_conts
 
         if max_ent_conts is None:
+
+            if n_entities is None:
+                raise CannotInitializeSensitivityTensorWithoutKnownEntitiesError
+
             max_ent_conts = (
                 bigger_type(*(list(self.shape) + [n_entities])) * 0
             ) + syft.torch.torch_type2max[self.type()]
+
         elif isinstance(max_ent_conts, (float, int)):
+
+            if n_entities is None:
+                raise CannotInitializeSensitivityTensorWithoutKnownEntitiesError
+
             max_ent_conts = (bigger_type(*(list(self.shape) + [n_entities])) * 0) + max_ent_conts
 
         return SensitivityTensor(

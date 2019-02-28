@@ -4,6 +4,16 @@ import syft as sy
 import torch
 
 
+class CannotInitializeSensitivityTensorWithoutKnownEntitiesError(Exception):
+    def __init__(self):
+        message = (
+            "If you aren't going to specify the min/max entity contributions, then you must at"
+            "least supply the number of entities being tracked."
+        )
+
+        super().__init__(message)
+
+
 class PureTorchTensorFoundError(BaseException):
     """Exception raised for errors in the input.
     This error is used in a recursive analysis of the args provided as an
