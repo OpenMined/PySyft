@@ -76,7 +76,7 @@ class SensitivityTensor:
         values: th.Tensor,
         max_ent_conts: th.Tensor,
         min_ent_conts: th.Tensor,
-        entities: th.Tensor,
+        entities: th.Tensor = None,
     ):
         """Initializes sensitivity tensor.
 
@@ -117,6 +117,9 @@ class SensitivityTensor:
 
         self.max_ent_conts = max_ent_conts  # (self.values.shape..., #num entities)
         self.min_ent_conts = min_ent_conts  # (self.values.shape..., #num entities)
+
+        if entities is None:
+            entities = self.max_vals != self.min_vals
 
         # one hot encoding of entities in the ancestry of this tensor
         self.entities = entities  # (self.values.shape..., #num entities)
