@@ -119,7 +119,7 @@ class SensitivityTensor:
         self.min_ent_conts = min_ent_conts  # (self.values.shape..., #num entities)
 
         if entities is None:
-            entities = self.max_vals != self.min_vals
+            entities = self.max_ent_conts != self.min_ent_conts
 
         # one hot encoding of entities in the ancestry of this tensor
         self.entities = entities  # (self.values.shape..., #num entities)
@@ -500,7 +500,7 @@ class SensitivityTensor:
 
     @property
     def sensitivity(self):
-        return self.entity_sensitivity.max(-1)
+        return self.entity_sensitivity.max(-1)[0]
 
     @property
     def entities(self):
