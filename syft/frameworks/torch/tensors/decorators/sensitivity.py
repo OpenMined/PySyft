@@ -383,8 +383,8 @@ class SensitivityTensor:
 
             new_vals = self.values > other
 
-            if_left = other <= self.max_ent_conts
-            if_right = other >= self.min_ent_conts
+            if_left = other <= self.max_ent_conts  # TODO: this <= might need to be <
+            if_right = other >= self.min_ent_conts  # TODO: this >= might need to be >
             if_and = if_left * if_right
 
             new_max_ent_conts = if_and
@@ -455,27 +455,49 @@ class SensitivityTensor:
 
     @property
     def max_vals(self):
-        """This returns the maximum possible value over all entities"""
+        """This returns the maximum possible value over all entities
+
+        TODO: cache this value because it gets re-computed a lot
+
+        """
 
         return (self.max_ent_conts * self.entities).sum(1)
 
     @property
     def expanded_max_vals(self):
-        return self.max_vals.unsqueeze(1).expand(self.max_ent_conts.shape)
+        """This returns the maximum possible values over all entities, expanded to be the same shape as self.max_ent_conts
+        which is useful for many functions above.
+
+        TODO: cache this value because it gets re-computed a lot
+        """
+        return self.max_vals.unsqueeze(-1).expand(self.max_ent_conts.shape)
 
     @property
     def min_vals(self):
-        """This returns the minimum possible values over all entities"""
+        """This returns the minimum possible values over all entities
 
-        return (self.min_ent_conts * self.entities).min(1)[0]
+        TODO: cache this value because it gets re-computed a lot
+        """
+
+        return (self.min_ent_conts * self.entities).sum(1)
 
     @property
     def expanded_min_vals(self):
-        return self.min_vals.unsqueeze(1).expand(self.min_ent_conts.shape)
+        """This returns the minimum possible values over all entities, expanded to be the same shape as self.min_ent_conts
+        which is useful for many functions above.
+
+        TODO: cache this value because it gets re-computed a lot
+        """
+
+        return self.min_vals.unsqueeze(-1).expand(self.min_ent_conts.shape)
+
+    @property
+    def entity_sensitivity(self):
+        return self.max_ent_conts - self.min_ent_conts
 
     @property
     def sensitivity(self):
-        return (self.max_ent_conts - self.min_ent_conts).sum(1)
+        return self.entity_sensitivity.max(-1)
 
     @property
     def entities(self):
@@ -486,7 +508,7 @@ class SensitivityTensor:
         self._entities = x.float()
 
     def hard_sigmoid(self):
-        return self.min(1).max(0)
+        return self.clamp_max(1).clamp_min(0)
 
     def hard_sigmoid_deriv(self, leak=0.01):
         return ((self < 1) * (self > 0)) + (self < 0) * leak - (self > 1) * leak

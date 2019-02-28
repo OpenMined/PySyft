@@ -42,10 +42,20 @@ local_worker = None
 torch = None
 
 
+def sandbox(gbs, verbose=False, download_data=True):
+    create_sandbox(gbs, verbose, download_data)
+
+
 def create_sandbox(gbs, verbose=True, download_data=True):
     """There's some boilerplate stuff that most people who are
     just playing around would like to have. This will create
     that for you"""
+
+    if "torch" not in gbs:
+        import torch
+
+        gbs["torch"] = torch
+        gbs["th"] = torch
 
     try:
         torch = gbs["torch"]
@@ -129,6 +139,9 @@ def create_sandbox(gbs, verbose=True, download_data=True):
     if verbose:
         print("\t\t- jon")
     jon = VirtualWorker(hook, id="jon")
+    if verbose:
+        print("\t\t- mat")
+    mat = VirtualWorker(hook, id="mat")
 
     if verbose:
         print("\tStoring hook and workers as global variables...")
@@ -139,8 +152,10 @@ def create_sandbox(gbs, verbose=True, download_data=True):
     gbs["alice"] = alice
     gbs["andy"] = andy
     gbs["jon"] = jon
+    gbs["mat"] = mat
 
-    gbs["workers"] = [bob, theo, jason, alice, andy, jon]
+    gbs["workers"] = [bob, theo, jason, alice, andy, jon, mat]
+    workers = gbs["workers"]
 
     if download_data:  # pragma: no cover
 
@@ -166,8 +181,6 @@ def create_sandbox(gbs, verbose=True, download_data=True):
         if verbose:
             print("\t\t- Linnerud Dataset")
         linnerud = load_sklearn(load_linnerud)
-
-        workers = [bob, theo, jason, alice, andy, jon]
 
         if verbose:
             print("\tDistributing Datasets Amongst Workers...")
