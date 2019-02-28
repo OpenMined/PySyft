@@ -78,7 +78,11 @@ class SensitivityTensor:
 
         Args:
             values (torch.Tensor): the actual data points - can be any dimension
-            max_vals (torch.Tensor): Theoretically we always interpret self.values as a sum over contributions from
+            max_vals (torch.Tensor): You can simply think of max_vals as a recording of the maximum possible value
+                this tensor could take on given the maximum possible value of all of the input values
+                (from other tensors in this tensor's "ancestry") used to create it. However, this is only
+                actually the case for the sum over the last dimension of the tensor.
+                Theoretically we always interpret self.values as a sum over contributions from
                 all possible known entities (which can be represented in a sparse matrix. TODO: test)
                 Given this representation, self.max_vals can be thought of as the maximum amount
                 that any entity could have added into self.values. Note, that if only one entity
@@ -87,13 +91,16 @@ class SensitivityTensor:
                 shape as self.values with an extra dimension at the end which is as long as the
                 number of known entities. TODO: add support for sparse recording of known entities
 
+
             min_vals (torch.Tensor): same as self.max_vals but instead of recording the maximum amount any entity
                 adds to create self.values, it records the maximum amount any entity could be
-                subtracting to create self.values.
+                subtracting to create self.values. Summing across the last dimension returns the
+                minimum possible value that each entry in self.values could possibly be given the
+                possible range within the tensors used to create it (it's "ancestry").
 
             entities (torch.Tensor): a matrix of 1s and 0s which corresponds to whether or not a given entity
                 was used to help encode a specific value. TODO: remove this tensor & sparsely encode max_vals/min_vals
-
+                TODO (cont): instead.
         """
 
         self.values = values
@@ -171,12 +178,12 @@ class SensitivityTensor:
 
             # if the scalar is negative, then it means it's going to flip the sign which means we need to flip
             # the position of min/max val as well because they're going to jump to the opposite sides of 0 (which means
-            # for example, if other == -1, the max value would actually become the min and vise versa)
+            # for example, if other == -1, the max value would actually become the (-1 * min) and vise versa)
             else:
                 new_min_vals = self.max_vals * other
                 new_max_vals = self.min_vals * other
 
-        # i the other tensor is a sensitivty tensor, then we must consider it's max/min values for each entity
+        # if the other tensor is a sensitivty tensor, then we must consider it's max/min values for each entity
         else:
 
             # just multiplying the values... nothing to see here
