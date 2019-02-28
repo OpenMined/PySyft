@@ -599,7 +599,8 @@ class TorchTensor(AbstractTensor):
 
         if (min_ent_conts is None or max_ent_conts is None) and n_entities is None:
             raise Exception(
-                "If you aren't going to specify the min/max entity contributions, then you must at least supply the number of entities being tracked."
+                "If you aren't going to specify the min/max entity contributions, then you must at"
+                "least supply the number of entities being tracked."
             )
 
         if min_ent_conts is None:
