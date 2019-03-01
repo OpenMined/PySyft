@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 
 def test_plan_remote_function(workers):
-    plan_worker = workers["plan_worker"]
+    plan_worker = workers["plan"]
 
     x = torch.tensor([1, -1, 3, 4])
     x_ptr = x.send(plan_worker)
@@ -19,7 +19,7 @@ def test_plan_remote_function(workers):
 
 
 def test_plan_remote_method(workers):
-    plan_worker = workers["plan_worker"]
+    plan_worker = workers["plan"]
 
     x = torch.tensor([1, -1, 3, 4])
     x_ptr = x.send(plan_worker)
@@ -29,7 +29,7 @@ def test_plan_remote_method(workers):
 
 
 def test_plan_remote_inplace_method(workers):
-    plan_worker = workers["plan_worker"]
+    plan_worker = workers["plan"]
 
     x = torch.tensor([1, -1, 3, 4])
     x_ptr = x.send(plan_worker)

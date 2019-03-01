@@ -18,7 +18,7 @@ def workers(hook):
     bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
     james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
     # And 1 plan worker
-    plan_worker = syft.Plan(id="plan_worker", hook=hook, is_client_worker=False)
+    plan_worker = syft.Plan(id="plan", hook=hook, is_client_worker=False)
 
     bob.add_workers([alice, james, plan_worker])
     alice.add_workers([bob, james, plan_worker])
@@ -31,7 +31,7 @@ def workers(hook):
         "alice": alice,
         "bob": bob,
         "james": james,
-        "plan_worker": plan_worker,
+        "plan": plan_worker,
     }
 
     return output

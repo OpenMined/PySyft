@@ -42,6 +42,7 @@ class Plan(BaseWorker):
             bin_message = serde.serialize(message, simplified=True)
             response = on_worker.recv_msg(bin_message)
 
+
         self.plan = []
         self.readable_plan = []
         return response
