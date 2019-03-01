@@ -26,6 +26,7 @@ setup(
     packages=find_packages(exclude=["docs", "examples", "dist"]),
     include_package_data=True,
     long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     url="https://github.com/OpenMined/PySyft",
     install_requires=requirements,
     setup_requires=["pytest-runner"],
