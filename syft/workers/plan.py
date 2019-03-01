@@ -19,8 +19,9 @@ class Plan(BaseWorker):
     def _recv_msg(self, bin_message):
         (some_type, (msg_type, contents)) = serde.deserialize(bin_message, detail=False)
 
-        self.plan.append(bin_message)
-        self.readable_plan.append((some_type, (msg_type, contents)))
+        if msg_type != MSGTYPE.OBJ:
+            self.plan.append(bin_message)
+            self.readable_plan.append((some_type, (msg_type, contents)))
 
         # we can't receive the results of a plan without
         # executing it. So, execute the plan.
@@ -29,13 +30,17 @@ class Plan(BaseWorker):
 
         return serde.serialize(None)
 
-    def execute_plan(self):
+    def execute_plan(self, on_worker=None):
+
+        if on_worker is None:
+            on_worker = self
 
         print("Execute Plan")
         response = None
         for bin_message, message in zip(self.plan, self.readable_plan):
             print(message)
-            response = self.recv_msg(serde.serialize(message, simplified=True))
+            bin_message = serde.serialize(message, simplified=True)
+            response = on_worker.recv_msg(bin_message)
 
         self.plan = []
         self.readable_plan = []
