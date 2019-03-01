@@ -37,6 +37,10 @@ The guide for contributors can be found [here](https://github.com/OpenMined/PySy
 
 Also join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
+## Troubleshooting
+
+We have written an installation example in [this colab notebook](), you can use it as is to start working with PySyft on the colab cloud, or use this setup to fix your installation locally.
+
 ## Organizational Contributions
 
 We are very grateful for contributions to PySyft from the following organizations!
