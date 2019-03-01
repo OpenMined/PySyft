@@ -39,7 +39,7 @@ Also join the rapidly growing community of 2500+ on [Slack](http://slack.openmin
 
 ## Troubleshooting
 
-We have written an installation example in [this colab notebook](), you can use it as is to start working with PySyft on the colab cloud, or use this setup to fix your installation locally.
+We have written an installation example in [this colab notebook](https://colab.research.google.com/drive/14tNU98OKPsP55Y3IgFtXPfd4frqbkrxK), you can use it as is to start working with PySyft on the colab cloud, or use this setup to fix your installation locally.
 
 ## Organizational Contributions
 
