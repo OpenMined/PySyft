@@ -8,8 +8,10 @@ class Plan(BaseWorker):
     it simply records messages that are sent to it such that message batches
     (called 'Plans') can be created and sent once."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, owner, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.owner = owner
+        owner.plan = self
         self.plan = list()
         self.readable_plan = list()
 
@@ -30,18 +32,14 @@ class Plan(BaseWorker):
 
         return serde.serialize(None)
 
-    def execute_plan(self, on_worker=None):
-
-        if on_worker is None:
-            on_worker = self
+    def execute_plan(self):
 
         print("Execute Plan")
         response = None
         for bin_message, message in zip(self.plan, self.readable_plan):
             print(message)
             bin_message = serde.serialize(message, simplified=True)
-            response = on_worker.recv_msg(bin_message)
-
+            response = self.owner.recv_msg(bin_message)
 
         self.plan = []
         self.readable_plan = []

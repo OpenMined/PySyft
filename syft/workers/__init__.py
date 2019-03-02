@@ -7,5 +7,6 @@ from .abstract import AbstractWorker  # noqa: F401
 from .base import BaseWorker  # noqa: F401
 from .virtual import VirtualWorker  # noqa: F401
 from .plan import Plan  # noqa: F401
+from .utils import make_plan  # noqa: F401
 
-__all__ = ["base", "virtual", "plan"]
+__all__ = ["base", "virtual", "plan", "make_plan"]

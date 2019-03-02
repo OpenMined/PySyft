@@ -16,6 +16,7 @@ from syft.frameworks.torch import TorchHook
 # Import Worker Types
 from syft.workers import VirtualWorker
 from syft.workers import Plan
+from syft.workers import make_plan
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
