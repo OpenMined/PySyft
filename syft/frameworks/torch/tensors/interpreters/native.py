@@ -411,7 +411,6 @@ class TorchTensor(AbstractTensor):
                 parent=self,
                 location=location,
                 id_at_location=id_at_location,
-                register=register,
                 owner=owner,
                 id=ptr_id,
                 garbage_collect_data=garbage_collect_data,

@@ -44,6 +44,8 @@ import syft
 import syft as sy
 
 from syft.workers import AbstractWorker
+from syft.workers import Plan
+
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
@@ -876,6 +878,39 @@ def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LoggingTe
     return tensor
 
 
+def _simplify_plan(plan: Plan) -> tuple:
+    """
+    This function takes the attributes of a Plan and saves them in a tuple
+    Args:
+        plan (Plan): a Plan object
+    Returns:
+        tuple: a tuple holding the unique attributes of the Plan object
+
+    """
+
+    readable_plan = _simplify(plan.readable_plan)
+
+    return (readable_plan, _simplify(plan.id))
+
+
+def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
+    """This function reconstructs a Plan object given it's attributes in the form of a tuple.
+    Args:
+        worker: the worker doing the deserialization
+        plan_tuple: a tuple holding the attributes of the Plan
+    Returns:
+        Plan: a Plan object
+    """
+
+    readable_plan, id = plan_tuple
+
+    plan = syft.Plan(sy.hook, id=id)
+
+    plan.readable_plan = readable_plan
+
+    return plan
+
+
 # High Level Simplification Router
 
 
@@ -936,6 +971,7 @@ simplifiers = {
     torch.device: [10, _simplify_torch_device],
     PointerTensor: [11, _simplify_pointer_tensor],
     LoggingTensor: [12, _simplify_log_tensor],
+    Plan: [13, _simplify_plan],
 }
 
 
@@ -978,4 +1014,5 @@ detailers = [
     _detail_torch_device,
     _detail_pointer_tensor,
     _detail_log_tensor,
+    _detail_plan,
 ]

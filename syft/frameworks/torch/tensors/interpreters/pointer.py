@@ -40,7 +40,6 @@ class PointerTensor(AbstractTensor):
         parent: AbstractTensor = None,
         location=None,
         id_at_location=None,
-        register=False,
         owner=None,
         id=None,
         garbage_collect_data=True,
@@ -62,8 +61,6 @@ class PointerTensor(AbstractTensor):
                 on which this pointer's object can be found.
             id_at_location: An optional string or integer id of the tensor
                 being pointed to.
-            register: An optional boolean parameter to determine whether to
-                automatically register the new pointer that gets created.
             owner: An optional BaseWorker object to specify the worker on which
                 the pointer is located. It is also where the pointer is
                 registered if register is set to True. Note that this is
