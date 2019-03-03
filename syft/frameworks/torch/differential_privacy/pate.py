@@ -20,23 +20,6 @@ It should be used only after training the student (and therefore the
 teachers as well). We however include the label files required to
 reproduce key results from our paper (https://arxiv.org/abs/1610.05755):
 the epsilon bounds for MNIST and SVHN students.
-
-The command that computes the epsilon bound associated
-with the training of the MNIST student model (100 label queries
-with a (1/20)*2=0.1 epsilon bound each) is:
-
-python analysis.py
-  --counts_file=mnist_250_teachers_labels.npy
-  --indices_file=mnist_250_teachers_100_indices_used_by_student.npy
-
-The command that computes the epsilon bound associated
-with the training of the SVHN student model (1000 label queries
-with a (1/20)*2=0.1 epsilon bound each) is:
-
-python analysis.py
-  --counts_file=svhn_250_teachers_labels.npy
-  --max_examples=1000
-  --delta=1e-6
 """
 import os
 import math
