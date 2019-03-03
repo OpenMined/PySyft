@@ -1,6 +1,8 @@
 import torch as th
 import syft as sy
 
+from syft.frameworks.torch.federated import BaseDataset
+
 
 def test_base_dataset(workers):
     bob = workers["bob"]
@@ -23,9 +25,6 @@ def test_base_dataset(workers):
         assert False
     except AttributeError:
         pass
-
-
-from syft.frameworks.torch.federated import BaseDataset
 
 
 def test_federated_dataset(workers):
