@@ -475,3 +475,13 @@ def test_PointerTensor(hook, workers):
     assert t.id == t_serialized_deserialized.id
     assert t.location.id == t_serialized_deserialized.location.id
     assert t.id_at_location == t_serialized_deserialized.id_at_location
+
+
+@pytest.mark.parametrize("id", [1000, "1000"])
+def test_pointer_tensor_detail(id):
+    alice = syft.VirtualWorker(syft.torch.hook, id=id)
+    x = torch.tensor([1, -1, 3, 4])
+    x_ptr = x.send(alice)
+    x_ptr = 2 * x_ptr
+    x_back = x_ptr.get()
+    assert (x_back == 2 * x).all()
