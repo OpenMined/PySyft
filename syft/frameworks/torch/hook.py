@@ -336,7 +336,7 @@ class TorchHook:
                 if hasattr(self, "child"):
                     del self.child
 
-                self.native_param_data.set_(new_data)  # .wrap()
+                self.native_param_data.set_(new_data.cpu())  # .wrap()
             return self
 
         torch.nn.Parameter.data = data
