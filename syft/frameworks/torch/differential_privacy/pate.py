@@ -24,7 +24,6 @@ the epsilon bounds for MNIST and SVHN students.
 import os
 import math
 import numpy as np
-from six.moves import xrange
 
 # import tensorflow as tf
 #
@@ -66,7 +65,7 @@ def compute_q_noisy_max(counts, noise_eps):
 
     winner = np.argmax(counts)
     counts_normalized = noise_eps * (counts - counts[winner])
-    counts_rest = np.array([counts_normalized[i] for i in xrange(len(counts)) if i != winner])
+    counts_rest = np.array([counts_normalized[i] for i in range(len(counts)) if i != winner])
     q = 0.0
     for c in counts_rest:
         gap = -c
@@ -92,7 +91,7 @@ def compute_q_noisy_max_approx(counts, noise_eps):
 
     winner = np.argmax(counts)
     counts_normalized = noise_eps * (counts - counts[winner])
-    counts_rest = np.array([counts_normalized[i] for i in xrange(len(counts)) if i != winner])
+    counts_rest = np.array([counts_normalized[i] for i in range(len(counts)) if i != winner])
     gap = -max(counts_rest)
     q = (len(counts) - 1) * (gap + 2.0) / (4.0 * math.exp(gap))
     return min(q, 1.0 - (1.0 / len(counts)))
