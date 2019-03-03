@@ -206,14 +206,7 @@ class BaseWorker(AbstractWorker):
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
-        # # Step 2: If response in none, set default
-        # TODO: not sure if someone needed this - if this comment
-        # is still here after Feb 15, 2018, please delete these
-        # two lines of (commented out) code.
-        # if response is None:
-        #     response = None
-
-        # Step 3: Serialize the message to simple python objects
+        # Step 2: Serialize the message to simple python objects
         bin_response = serde.serialize(response)
         return bin_response
 
