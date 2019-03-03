@@ -208,9 +208,24 @@ def smoothed_sens(counts, noise_eps, l, beta):
     return smoothed_sensitivity
 
 
-def perform_analysis(teacher_preds, true_indices, moments=8, beta=0.09, noise_eps=0.1, delta=1e-5):
+def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, beta=0.09):
+    """"Performs PATE analysis on predictions from teachers and combined predictions for student.
+
+    Args:
+        teacher_preds: a numpy array of dim (num_teachers x num_examples). Each value corresponds to the
+            index of the label which a teacher gave for a specific example
+        indices: a numpy array of dim (num_examples) of aggregated examples which were aggregated using
+            the noisy max mechanism.
+        noise_eps: the epsilon level used to create the indices
+        delta: the desired level of delta
+        moments: the number of moments to track (see the paper)
+        beta: a smoothing parameter (see the paper)
+    Returns:
+        tuple: first value is the data dependent epsilon, then the data independent epsilon
+    """
+
     num_teachers, num_examples = teacher_preds.shape
-    _num_examples = true_indices.shape[0]
+    _num_examples = indices.shape[0]
     labels = set(list(teacher_preds.flatten()))
     num_labels = len(labels)
 
@@ -221,8 +236,6 @@ def perform_analysis(teacher_preds, true_indices, moments=8, beta=0.09, noise_ep
     for i in range(num_examples):
         for j in range(num_teachers):
             counts_mat[i, int(teacher_preds[j, i])] += 1
-
-    indices = true_indices
 
     l_list = 1.0 + np.array(range(moments))
     total_log_mgf_nm = np.array([0.0 for _ in l_list])
@@ -256,7 +269,9 @@ def perform_analysis(teacher_preds, true_indices, moments=8, beta=0.09, noise_ep
     # print("... times " + str(total_ss_nm / l_list))
     # print("Epsilon = " + str(min(eps_list_nm)) + ".")
     if min(eps_list_nm) == eps_list_nm[-1]:
-        print("Warning: May not have used enough values of l")
+        print(
+            "Warning: May not have used enough values of l. Increase 'moments' variable and run again."
+        )
 
     # Data independent bound, as mechanism is
     # 2*noise_eps DP.
