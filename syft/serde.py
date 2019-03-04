@@ -753,7 +753,9 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     # TODO: fix comment for this and simplifier
     obj_id = tensor_tuple[0]
     id_at_location = tensor_tuple[1]
-    worker_id = tensor_tuple[2].decode("utf-8")
+    worker_id = tensor_tuple[2]
+    if isinstance(worker_id, bytes):
+        worker_id = worker_id.decode()
     point_to_attr = tensor_tuple[3]
     shape = tensor_tuple[4]
 
