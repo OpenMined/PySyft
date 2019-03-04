@@ -46,5 +46,3 @@ def test_base_dataset_torch():
     assert data_dep_eps < data_ind_eps
 
 
-test_base_dataset()
-test_base_dataset_torch()
