@@ -24,8 +24,8 @@ class Plan(BaseWorker):
     it simply records messages that are sent to it such that message batches
     (called 'Plans') can be created and sent once."""
 
-    def __init__(self, owner, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, hook, owner, *args, **kwargs):
+        super().__init__(hook=hook, *args, **kwargs)
 
         self.owner = owner
 
@@ -52,17 +52,17 @@ class Plan(BaseWorker):
     def execute_plan(self, on_worker=None):
 
         if on_worker is None:
-            on_worker = self
+            on_worker = self.owner
 
         print("Execute Plan")
         response = None
-        for bin_message, message in zip(self.plan, self.readable_plan):
+        for message in self.readable_plan:
             print(message)
             bin_message = syft.serde.serialize(message, simplified=True)
             response = on_worker.recv_msg(bin_message)
 
-        self.plan = []
-        self.readable_plan = []
+        # self.plan = []
+        # self.readable_plan = []
         return response
 
     def create_pointer(

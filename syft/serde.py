@@ -45,6 +45,7 @@ import syft as sy
 
 from syft.workers import AbstractWorker
 from syft.workers import Plan
+from syft.workers import PlanPointer
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
@@ -904,11 +905,60 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
 
     readable_plan, id = plan_tuple
 
-    plan = syft.Plan(sy.hook, id=id)
+    plan = syft.Plan(hook=sy.hook, owner=worker, id=id)
 
-    plan.readable_plan = readable_plan
+    plan.readable_plan = _detail(worker, readable_plan)
 
     return plan
+
+
+def _simplify_plan_pointer(ptr: PlanPointer) -> tuple:
+    """
+    This function takes the attributes of a PointerTensor and saves them in a dictionary
+    Args:
+        ptr (PointerTensor): a PointerTensor
+    Returns:
+        tuple: a tuple holding the unique attributes of the pointer
+    Examples:
+        data = _simplify_pointer_tensor(ptr)
+    """
+
+    return (ptr.id, ptr.id_at_location, ptr.location.id)
+
+
+def _detail_plan_pointer(worker: AbstractWorker, plan_pointer_tuple: tuple) -> PointerTensor:
+    """
+    This function reconstructs a PlanPointer given it's attributes in form of a tuple.
+
+    Args:
+        worker: the worker doing the deserialization
+        plan_pointer_tuple: a tuple holding the attributes of the PlanPointer
+    Returns:
+        PointerTensor: a PointerTensor
+    Examples:
+        ptr = _detail_pointer_tensor(data)
+    """
+    # TODO: fix comment for this and simplifier
+    obj_id = plan_pointer_tuple[0]
+    id_at_location = plan_pointer_tuple[1]
+    worker_id = plan_pointer_tuple[2].decode("utf-8")
+
+    # If the pointer received is pointing at the current worker, we load the tensor instead
+    if worker_id == worker.id:
+
+        tensor = worker.get_obj(id_at_location)
+
+        return tensor
+    # Else we keep the same Pointer
+    else:
+
+        location = syft.torch.hook.local_worker.get_worker(worker_id)
+
+        ptr = PlanPointer(
+            location=location, id_at_location=id_at_location, owner=worker, id=obj_id, register=True
+        )
+
+        return ptr
 
 
 # High Level Simplification Router
@@ -972,6 +1022,7 @@ simplifiers = {
     PointerTensor: [11, _simplify_pointer_tensor],
     LoggingTensor: [12, _simplify_log_tensor],
     Plan: [13, _simplify_plan],
+    PlanPointer: [14, _simplify_plan_pointer],
 }
 
 
@@ -1015,4 +1066,5 @@ detailers = [
     _detail_pointer_tensor,
     _detail_log_tensor,
     _detail_plan,
+    _detail_plan_pointer,
 ]
