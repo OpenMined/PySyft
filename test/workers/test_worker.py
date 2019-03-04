@@ -12,7 +12,7 @@ def test___init__():
     tensor = torch.tensor([1, 2, 3, 4])
 
     alice = VirtualWorker(hook, id="alice")
-    bob = VirtualWorker(hook, id="bob", known_workers={alice.id: alice})
+    bob = VirtualWorker(hook, id="bob")
     charlie = VirtualWorker(hook, id="charlie")
     dawson = VirtualWorker(hook, id="dawson", data=[tensor])
 
