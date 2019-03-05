@@ -4,7 +4,7 @@ import sys
 
 from abc import abstractmethod
 import syft as sy
-from syft import serde
+
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
@@ -130,15 +130,15 @@ class BaseWorker(AbstractWorker):
         raise NotImplementedError  # pragma: no cover
 
     def load_data(self, data):
-        """Allows workers to be initialized with data when created 
-        
+        """Allows workers to be initialized with data when created
+
            The method registers the tensor individual tensor objects.
-        
+
         Args:
-            
+
             data: A list of tensors
 
-            
+
         """
 
         for tensor in data:
@@ -171,13 +171,13 @@ class BaseWorker(AbstractWorker):
         message = (msg_type, message)
 
         # Step 1: serialize the message to simple python objects
-        bin_message = serde.serialize(message)
+        bin_message = sy.serde.serialize(message)
 
         # Step 2: send the message and wait for a response
         bin_response = self._send_msg(bin_message, location)
 
         # Step 3: deserialize the response
-        response = serde.deserialize(bin_response, worker=self)
+        response = sy.serde.deserialize(bin_response, worker=self)
 
         return response
 
@@ -201,9 +201,9 @@ class BaseWorker(AbstractWorker):
             self.msg_history.append(bin_message)
 
         # Step 0: deserialize message
-        (msg_type, contents) = serde.deserialize(bin_message, worker=self)
+        (msg_type, contents) = sy.serde.deserialize(bin_message, worker=self)
         if self.verbose:
-            print(f"worker {self} received {msg_type} {contents}")
+            print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
@@ -215,21 +215,21 @@ class BaseWorker(AbstractWorker):
         #     response = None
 
         # Step 3: Serialize the message to simple python objects
-        bin_response = serde.serialize(response)
+        bin_response = sy.serde.serialize(response)
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
         # Each method corresponds to a MsgType enum.
 
-    def send(self, tensor, workers, ptr_id=None):
-        """Sends tensor to the worker(s).
+    def send(self, obj, workers, ptr_id=None):
+        """Sends an object to the worker(s).
 
-        Send a syft or torch tensor and his child, sub-child, etc (all the
+        Send a syft or torch tensor/object and it's child, sub-child, etc (all the
         syft chain of children) to a worker, or a list of workers, with a given
         remote storage address.
 
         Args:
-            tensor: A  Tensor object representing torch or syft tensor to send.
+            obj: A syft/torch tensor/object object to send.
             workers: A BaseWorker object representing the worker(s) that will
                 receive the object.
             ptr_id: An optional string or integer indicating the remote id of
@@ -269,12 +269,12 @@ class BaseWorker(AbstractWorker):
         if ptr_id is None:  # Define a remote id if not specified
             ptr_id = int(10e10 * random.random())
 
-        pointer = tensor.create_pointer(
-            owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
+        pointer = obj.create_pointer(
+            owner=self, location=worker, id_at_location=obj.id, register=True, ptr_id=ptr_id
         )
 
         # Send the object
-        self.send_obj(tensor, worker)
+        self.send_obj(obj, worker)
 
         return pointer
 
@@ -316,36 +316,38 @@ class BaseWorker(AbstractWorker):
         # so we need to check for that here.
         if tensor is not None:
 
-            # FIXME: should be added automatically ?
-            tensor.owner = self
-            tensor.id = return_ids
+            if hasattr(tensor, "owner"):
+                # FIXME: should be added automatically ?
+                tensor.owner = self
+                tensor.id = return_ids
 
-            # TODO: Handle when the response is not simply a tensor
-            # don't re-register tensors if the operation was inline
-            # not only would this be inefficient, but it can cause
-            # serious issues later on
-            # if(_self is not None):
-            #     if(tensor.id != _self.id):
-            self.register_obj(tensor)
+                # TODO: Handle when the response is not simply a tensor
+                # don't re-register tensors if the operation was inline
+                # not only would this be inefficient, but it can cause
+                # serious issues later on
+                # if(_self is not None):
+                #     if(tensor.id != _self.id):
+                self.register_obj(tensor)
 
             return None
 
-    def send_command(self, recipient, message):
+    def send_command(self, recipient, message, return_ids=None):
         """
         Send a command through a message to a recipient worker
         :param recipient:
         :param message:
         :return:
         """
-        return_ids = int(10e10 * random.random())
+        if return_ids is None:
+            return_ids = [int(10e10 * random.random())]
 
-        message = (message, return_ids)
+        message = (message, return_ids[0])
 
         _ = self.send_msg(MSGTYPE.CMD, message, location=recipient)
 
         response = sy.PointerTensor(
             location=recipient,
-            id_at_location=return_ids,
+            id_at_location=return_ids[0],
             owner=self,
             id=int(10e10 * random.random()),
         )
