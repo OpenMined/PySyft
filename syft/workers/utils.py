@@ -1,7 +1,6 @@
 import syft as sy
 
-import copy
-import random
+from .plan import Plan
 
 
 def make_plan():
@@ -23,7 +22,7 @@ def make_plan():
         """
         args = list(dummy_args)
 
-        plan = sy.workers.Plan(hook=sy.local_worker.hook, owner=sy.local_worker, id="plan")
+        plan = Plan(hook=sy.local_worker.hook, owner=sy.local_worker, id="plan")
 
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
