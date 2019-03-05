@@ -214,3 +214,6 @@ class Plan(BaseWorker):
             )
 
         return ptr
+
+    def send(self, location):
+        return sy.local_worker.send(obj=self, workers=location)

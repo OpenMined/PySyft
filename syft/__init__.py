@@ -16,6 +16,7 @@ from syft.frameworks.torch import TorchHook
 from syft.workers import VirtualWorker
 from syft.workers import Plan
 from . import serde
+from syft.workers import func2plan
 from syft.workers import make_plan
 
 # Import Tensor Types

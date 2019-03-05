@@ -3,12 +3,18 @@ import syft as sy
 from .plan import Plan
 
 
-def make_plan():
+def make_plan(plan_blueprint, *dummy_args):
+    """For folks who would prefer to not use a decorator, they can use this function"""
+    return func2plan(*dummy_args)(plan_blueprint)
+
+
+def func2plan(*dummy_args):
     """
-    hook args and response for methods that hold the @make_plan decorator
+    the @func2plan decorator - converts a function of pytorch code into a plan object
+    which can be sent to any arbitrary worker.
     """
 
-    def create_plan(plan_blueprint, *dummy_args):
+    def create_plan(plan_blueprint):
         """
         Take as an input a function to be converted into a plan, makes it a plan
         using a new object. The object is still local but it can be sent somewhere
@@ -20,6 +26,7 @@ def make_plan():
                 the method.
 
         """
+
         args = list(dummy_args)
 
         plan = Plan(hook=sy.local_worker.hook, owner=sy.local_worker, id="plan")
