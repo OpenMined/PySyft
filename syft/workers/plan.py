@@ -32,19 +32,26 @@ class PlanPointer(BaseWorker):
         ""
 
 
-def replace_ints(obj, change_id, to_id):
-    print("From:" + str(change_id) + " To:" + str(to_id))
+def replace_ints(obj, change_id, to_id, from_worker, to_worker):
     _obj = list()
 
     for i, item in enumerate(obj):
         if isinstance(item, int) and (item == change_id):
             _obj.append(to_id)
 
-        elif isinstance(item, str) and (item == "plan"):
-            _obj.append("bob")
+        elif isinstance(item, str) and (item == from_worker):
+            _obj.append(to_worker)
 
         elif isinstance(item, (list, tuple)):
-            _obj.append(replace_ints(item, change_id, to_id))
+            _obj.append(
+                replace_ints(
+                    obj=item,
+                    change_id=change_id,
+                    to_id=to_id,
+                    from_worker=from_worker,
+                    to_worker=to_worker,
+                )
+            )
 
         else:
             _obj.append(item)
@@ -61,7 +68,6 @@ class Plan(BaseWorker):
         super().__init__(hook=hook, *args, **kwargs)
 
         self.owner = owner
-        print("My owner:" + str(owner))
 
         self.plan = list()
         self.readable_plan = list()
@@ -90,7 +96,13 @@ class Plan(BaseWorker):
             # for every message
             for j, msg in enumerate(self.readable_plan):
                 # look for the old id and replace it with the new one
-                self.readable_plan[j] = replace_ints(msg, self.arg_ids[i], args[i].id)
+                self.readable_plan[j] = replace_ints(
+                    obj=msg,
+                    change_id=self.arg_ids[i],
+                    to_id=args[i].id,
+                    from_worker="plan",
+                    to_worker=self.owner.id,
+                )
 
             self.arg_ids[i] = args[i].id
 
@@ -99,18 +111,20 @@ class Plan(BaseWorker):
             # for every message
             for j, msg in enumerate(self.readable_plan):
                 # look for the old id and replace it with the new one
-                self.readable_plan[j] = replace_ints(msg, self.result_ids[i], result_ids[i])
+                self.readable_plan[j] = replace_ints(
+                    obj=msg,
+                    change_id=self.result_ids[i],
+                    to_id=result_ids[i],
+                    from_worker="",
+                    to_worker="",
+                )
 
             self.result_ids[i] = result_ids[i]
 
-        on_worker = self.owner
-
-        print("Execute Plan")
-        response = None
         for message in self.readable_plan:
-            print(message)
+
             bin_message = sy.serde.serialize(message, simplified=True)
-            response = on_worker.recv_msg(bin_message)
+            self.owner.recv_msg(bin_message)
 
         return sy.serde.serialize(None)
 
