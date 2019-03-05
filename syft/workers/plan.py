@@ -39,7 +39,7 @@ def replace_ids(obj, change_id, to_id, from_worker, to_worker):
         if isinstance(item, int) and (item == change_id):
             _obj.append(to_id)
 
-        elif isinstance(item, str) and (item == from_worker):
+        elif isinstance(item, type(from_worker)) and (item == from_worker):
             _obj.append(to_worker)
 
         elif isinstance(item, (list, tuple)):
@@ -100,7 +100,7 @@ class Plan(BaseWorker):
                     obj=msg,
                     change_id=self.arg_ids[i],
                     to_id=args[i].id,
-                    from_worker="plan",
+                    from_worker=self.id,
                     to_worker=self.owner.id,
                 )
 
@@ -122,7 +122,7 @@ class Plan(BaseWorker):
             self.result_ids[i] = result_ids[i]
 
         for message in self.readable_plan:
-
+            print(message)
             bin_message = sy.serde.serialize(message, simplified=True)
             self.owner.recv_msg(bin_message)
 
