@@ -4,6 +4,29 @@ import syft as sy
 import random
 
 
+def create_plan(plan_blueprint, *args):
+    args = list(args)
+
+    plan = sy.workers.Plan(hook=sy.local_worker.hook, owner=sy.local_worker, id="plan")
+
+    arg_ids = list()
+
+    for i in range(len(args)):
+        args[i] = args[i].send(plan)
+        args[i].child.garbage_collect_data = False
+        arg_ids.append(args[i].id_at_location)
+
+    plan.arg_ids = arg_ids
+
+    res_ptr = plan_blueprint(*args)
+
+    res_ptr.child.garbage_collect_data = False
+
+    plan.result_ids = [res_ptr.id_at_location]
+
+    return plan
+
+
 class PlanPointer(BaseWorker):
     def __init__(self, location, id_at_location, register, owner, *args, **kwargs):
         super().__init__(hook=sy.hook, *args, **kwargs)
