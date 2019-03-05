@@ -16,6 +16,7 @@ from syft.frameworks.torch import TorchHook
 from syft.workers import VirtualWorker
 from syft.workers import Plan
 from . import serde
+from syft.workers import make_plan
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
@@ -61,6 +62,7 @@ def create_sandbox(gbs, verbose=True, download_data=True):
     global andy
     global jason
     global jon
+    global plan
 
     if download_data:  # pragma: no cover
         from sklearn.datasets import load_boston
@@ -133,6 +135,11 @@ def create_sandbox(gbs, verbose=True, download_data=True):
     jon = VirtualWorker(hook, id="jon")
 
     if verbose:
+        print("\t- Creating Plan Workers:")
+        print("\t\t- plan_worker")
+    plan = Plan(hook, id="plan")
+
+    if verbose:
         print("\tStoring hook and workers as global variables...")
     gbs["hook"] = hook
     gbs["bob"] = bob
@@ -141,8 +148,9 @@ def create_sandbox(gbs, verbose=True, download_data=True):
     gbs["alice"] = alice
     gbs["andy"] = andy
     gbs["jon"] = jon
+    gbs["plan"] = plan
 
-    gbs["workers"] = [bob, theo, jason, alice, andy, jon]
+    gbs["workers"] = [bob, theo, jason, alice, andy, jon, plan]
 
     if download_data:  # pragma: no cover
 
@@ -169,7 +177,7 @@ def create_sandbox(gbs, verbose=True, download_data=True):
             print("\t\t- Linnerud Dataset")
         linnerud = load_sklearn(load_linnerud)
 
-        workers = [bob, theo, jason, alice, andy, jon]
+        workers = [bob, theo, jason, alice, andy, jon, plan]
 
         if verbose:
             print("\tDistributing Datasets Amongst Workers...")

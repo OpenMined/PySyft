@@ -4,29 +4,6 @@ import syft as sy
 import random
 
 
-def create_plan(plan_blueprint, *args):
-    args = list(args)
-
-    plan = sy.workers.Plan(hook=sy.local_worker.hook, owner=sy.local_worker, id="plan")
-
-    arg_ids = list()
-
-    for i in range(len(args)):
-        args[i] = args[i].send(plan)
-        args[i].child.garbage_collect_data = False
-        arg_ids.append(args[i].id_at_location)
-
-    plan.arg_ids = arg_ids
-
-    res_ptr = plan_blueprint(*args)
-
-    res_ptr.child.garbage_collect_data = False
-
-    plan.result_ids = [res_ptr.id_at_location]
-
-    return plan
-
-
 class PlanPointer(BaseWorker):
     def __init__(self, location, id_at_location, register, owner, *args, **kwargs):
         super().__init__(hook=sy.hook, *args, **kwargs)
@@ -55,7 +32,7 @@ class PlanPointer(BaseWorker):
         ""
 
 
-def replace_ints(obj, change_id, to_id, from_worker, to_worker):
+def replace_ids(obj, change_id, to_id, from_worker, to_worker):
     _obj = list()
 
     for i, item in enumerate(obj):
@@ -67,7 +44,7 @@ def replace_ints(obj, change_id, to_id, from_worker, to_worker):
 
         elif isinstance(item, (list, tuple)):
             _obj.append(
-                replace_ints(
+                replace_ids(
                     obj=item,
                     change_id=change_id,
                     to_id=to_id,
@@ -119,7 +96,7 @@ class Plan(BaseWorker):
             # for every message
             for j, msg in enumerate(self.readable_plan):
                 # look for the old id and replace it with the new one
-                self.readable_plan[j] = replace_ints(
+                self.readable_plan[j] = replace_ids(
                     obj=msg,
                     change_id=self.arg_ids[i],
                     to_id=args[i].id,
@@ -134,7 +111,7 @@ class Plan(BaseWorker):
             # for every message
             for j, msg in enumerate(self.readable_plan):
                 # look for the old id and replace it with the new one
-                self.readable_plan[j] = replace_ints(
+                self.readable_plan[j] = replace_ids(
                     obj=msg,
                     change_id=self.result_ids[i],
                     to_id=result_ids[i],
