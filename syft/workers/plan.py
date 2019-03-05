@@ -1,22 +1,55 @@
 from .base import BaseWorker
 from syft.codes import MSGTYPE
-import syft
+import syft as sy
 import random
 
 
 class PlanPointer(BaseWorker):
     def __init__(self, location, id_at_location, register, owner, *args, **kwargs):
-        super().__init__(hook=syft.hook, *args, **kwargs)
+        super().__init__(hook=sy.hook, *args, **kwargs)
 
         self.location = location
         self.id_at_location = id_at_location
         self.owner = owner
+
+    def __call__(self, *args):
+
+        response_ids = [random.randint(0, 1e10)]
+
+        args = [args, response_ids]
+        command = ("execute_plan", self, args)
+
+        response = sy.local_worker.send_command(
+            message=command, recipient=self.location, return_ids=response_ids
+        )
+
+        return response
 
     def _recv_msg(self, message):
         ""
 
     def _send_msg(self, message, location):
         ""
+
+
+def replace_ints(obj, change_id, to_id):
+    print("From:" + str(change_id) + " To:" + str(to_id))
+    _obj = list()
+
+    for i, item in enumerate(obj):
+        if isinstance(item, int) and (item == change_id):
+            _obj.append(to_id)
+
+        elif isinstance(item, str) and (item == "plan"):
+            _obj.append("bob")
+
+        elif isinstance(item, (list, tuple)):
+            _obj.append(replace_ints(item, change_id, to_id))
+
+        else:
+            _obj.append(item)
+
+    return _obj
 
 
 class Plan(BaseWorker):
@@ -28,6 +61,7 @@ class Plan(BaseWorker):
         super().__init__(hook=hook, *args, **kwargs)
 
         self.owner = owner
+        print("My owner:" + str(owner))
 
         self.plan = list()
         self.readable_plan = list()
@@ -36,7 +70,7 @@ class Plan(BaseWorker):
         return location._recv_msg(message)
 
     def _recv_msg(self, bin_message):
-        (some_type, (msg_type, contents)) = syft.serde.deserialize(bin_message, detail=False)
+        (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, detail=False)
 
         if msg_type != MSGTYPE.OBJ:
             self.plan.append(bin_message)
@@ -47,23 +81,38 @@ class Plan(BaseWorker):
         if msg_type in (MSGTYPE.OBJ_REQ, MSGTYPE.IS_NONE, MSGTYPE.GET_SHAPE):
             return self.execute_plan()
 
-        return syft.serde.serialize(None)
+        return sy.serde.serialize(None)
 
-    def execute_plan(self, on_worker=None):
+    def execute_plan(self, args, result_ids):
 
-        if on_worker is None:
-            on_worker = self.owner
+        # for every argument
+        for i in range(len(self.arg_ids)):
+            # for every message
+            for j, msg in enumerate(self.readable_plan):
+                # look for the old id and replace it with the new one
+                self.readable_plan[j] = replace_ints(msg, self.arg_ids[i], args[i].id)
+
+            self.arg_ids[i] = args[i].id
+
+        # for every argument
+        for i in range(len(self.result_ids)):
+            # for every message
+            for j, msg in enumerate(self.readable_plan):
+                # look for the old id and replace it with the new one
+                self.readable_plan[j] = replace_ints(msg, self.result_ids[i], result_ids[i])
+
+            self.result_ids[i] = result_ids[i]
+
+        on_worker = self.owner
 
         print("Execute Plan")
         response = None
         for message in self.readable_plan:
             print(message)
-            bin_message = syft.serde.serialize(message, simplified=True)
+            bin_message = sy.serde.serialize(message, simplified=True)
             response = on_worker.recv_msg(bin_message)
 
-        # self.plan = []
-        # self.readable_plan = []
-        return response
+        return sy.serde.serialize(None)
 
     def create_pointer(
         self,

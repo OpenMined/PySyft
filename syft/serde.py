@@ -891,7 +891,7 @@ def _simplify_plan(plan: Plan) -> tuple:
 
     readable_plan = _simplify(plan.readable_plan)
 
-    return (readable_plan, _simplify(plan.id))
+    return (readable_plan, _simplify(plan.id), _simplify(plan.arg_ids), _simplify(plan.result_ids))
 
 
 def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
@@ -903,9 +903,14 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
         Plan: a Plan object
     """
 
-    readable_plan, id = plan_tuple
+    readable_plan, id, arg_ids, result_ids = plan_tuple
+
+    arg_ids = _detail(worker, arg_ids)
+    result_ids = _detail(worker, result_ids)
 
     plan = syft.Plan(hook=sy.hook, owner=worker, id=id)
+    plan.arg_ids = arg_ids
+    plan.result_ids = result_ids
 
     plan.readable_plan = _detail(worker, readable_plan)
 

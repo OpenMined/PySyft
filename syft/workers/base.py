@@ -316,36 +316,38 @@ class BaseWorker(AbstractWorker):
         # so we need to check for that here.
         if tensor is not None:
 
-            # FIXME: should be added automatically ?
-            tensor.owner = self
-            tensor.id = return_ids
+            if hasattr(tensor, "owner"):
+                # FIXME: should be added automatically ?
+                tensor.owner = self
+                tensor.id = return_ids
 
-            # TODO: Handle when the response is not simply a tensor
-            # don't re-register tensors if the operation was inline
-            # not only would this be inefficient, but it can cause
-            # serious issues later on
-            # if(_self is not None):
-            #     if(tensor.id != _self.id):
-            self.register_obj(tensor)
+                # TODO: Handle when the response is not simply a tensor
+                # don't re-register tensors if the operation was inline
+                # not only would this be inefficient, but it can cause
+                # serious issues later on
+                # if(_self is not None):
+                #     if(tensor.id != _self.id):
+                self.register_obj(tensor)
 
             return None
 
-    def send_command(self, recipient, message):
+    def send_command(self, recipient, message, return_ids=None):
         """
         Send a command through a message to a recipient worker
         :param recipient:
         :param message:
         :return:
         """
-        return_ids = int(10e10 * random.random())
+        if return_ids is None:
+            return_ids = [int(10e10 * random.random())]
 
-        message = (message, return_ids)
+        message = (message, return_ids[0])
 
         _ = self.send_msg(MSGTYPE.CMD, message, location=recipient)
 
         response = sy.PointerTensor(
             location=recipient,
-            id_at_location=return_ids,
+            id_at_location=return_ids[0],
             owner=self,
             id=int(10e10 * random.random()),
         )
