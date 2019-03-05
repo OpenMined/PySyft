@@ -122,7 +122,7 @@ class Plan(BaseWorker):
             self.result_ids[i] = result_ids[i]
 
         for message in self.readable_plan:
-            print(message)
+
             bin_message = sy.serde.serialize(message, simplified=True)
             self.owner.recv_msg(bin_message)
 
