@@ -78,6 +78,7 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
             MSGTYPE.OBJ_DEL: self.rm_obj,
             MSGTYPE.IS_NONE: self.is_tensor_none,
+            MSGTYPE.SEARCH: self.search,
         }
         self.load_data(data)
 
