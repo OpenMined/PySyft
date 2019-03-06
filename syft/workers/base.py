@@ -11,6 +11,7 @@ from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
 from syft.codes import MSGTYPE
 from typing import Union, List
+import torch
 
 
 class BaseWorker(AbstractWorker):
