@@ -6,6 +6,7 @@ from abc import abstractmethod
 import syft as sy
 from syft import serde
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
 from syft.codes import MSGTYPE
@@ -89,7 +90,7 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
-    def _send_msg(self, message: bin, location: BaseWorker) -> bin:
+    def _send_msg(self, message: bin, location: "BaseWorker") -> bin:
         """Sends message from one worker to another.
 
         As BaseWorker implies, you should never instantiate this class by
@@ -129,7 +130,8 @@ class BaseWorker(AbstractWorker):
         """
         raise NotImplementedError  # pragma: no cover
 
-    def load_data(self, data: List[Union[torch.Tensor, Tensor]]) -> None:
+    def load_data(self, data: List[Union[torch.Tensor, AbstractTensor]]) -> None:
+
         """Allows workers to be initialized with data when created
 
            The method registers the tensor individual tensor objects.
@@ -146,7 +148,7 @@ class BaseWorker(AbstractWorker):
             self.register_obj(tensor)
             tensor.owner = self
 
-    def send_msg(self, msg_type: int, message: str, location: BaseWorker) -> object:
+    def send_msg(self, msg_type: int, message: str, location: "BaseWorker") -> object:
 
         """Implements the logic to send messages.
 
@@ -217,8 +219,8 @@ class BaseWorker(AbstractWorker):
 
     def send(
         self,
-        tensor: Union[torch.Tensor, Tensor],
-        workers: BaseWorker,
+        tensor: Union[torch.Tensor, AbstractTensor],
+        workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
     ) -> PointerTensor:
         """Sends tensor to the worker(s).
@@ -348,7 +350,7 @@ class BaseWorker(AbstractWorker):
 
         return response
 
-    def set_obj(self, obj: Union[torch.Tensor, Tensor]) -> None:
+    def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
 
         """Adds an object to the registry of objects.
 
