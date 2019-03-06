@@ -204,6 +204,7 @@ class BaseWorker(AbstractWorker):
 
         # Step 2: Serialize the message to simple python objects
         bin_response = serde.serialize(response)
+
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
