@@ -6,7 +6,7 @@ from syft.workers.virtual import VirtualWorker
 import binascii
 
 
-class WebsocketServerWorker(VirtualWorker):
+class GridWorker(VirtualWorker):
     def __init__(
         self,
         hook,

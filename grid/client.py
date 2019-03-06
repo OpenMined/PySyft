@@ -3,7 +3,7 @@ from syft.workers import BaseWorker
 import binascii
 
 
-class WebsocketClientWorker(BaseWorker):
+class GridClient(BaseWorker):
     def __init__(
         self, hook, host, port, id=0, is_client_worker=False, log_msgs=False, verbose=False, data={}
     ):
