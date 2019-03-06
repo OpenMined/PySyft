@@ -1,10 +1,57 @@
 import os
 import subprocess
+import random
+import json
 from flask import Flask
+import socket
+from contextlib import closing
+
+from .grid import Grid
+from .client import GridClient
+
+
+
+
+
 
 host = "localhost"
-port = "8765"
 
+def run_command(cmd="sleep 100"):
+    _id = "process" + str(random.randint(0, 1e10))
+    cmd = "screen -d -m -S " + str(_id) + " " + cmd
+
+    process = subprocess.Popen(cmd, shell=True,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+    cmd = "screen -ls " + str(_id)
+    process = subprocess.Popen(cmd, shell=True,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+    # wait for the process to terminate
+    out, err = process.communicate()
+    errcode = process.returncode
+
+    pid = int(out.decode('ascii').split("\t")[1].split(".")[0]) + 1
+    return pid
+
+
+def kill_command(pid):
+    cmd = "kill " + pid
+    process = subprocess.Popen(cmd, shell=True,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+    # wait for the process to terminate
+    out, err = process.communicate()
+    errcode = process.returncode
+
+def find_free_port():
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(('', 0))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return s.getsockname()[1]
 
 def create_app(test_config=None):
     # create and configure the app
@@ -28,7 +75,22 @@ def create_app(test_config=None):
     # a simple page that says hello
     @app.route("/get_connection")
     def get_connection():
-        subprocess.run(["python", "grid/create_process.py"])
-        return (host, port)
+
+        port = find_free_port()
+
+        pid = run_command("python grid/create_process.py " + str(port))
+        print("PID:" + str(pid))
+
+        output = {}
+        output['host'] = host
+        output['port'] = port
+        output['pid'] = pid
+
+        return json.dumps(output)
+
+    @app.route("/kill_connection/<pid>")
+    def kill_connection(pid):
+        kill_command(pid)
+        return "Done!"
 
     return app

@@ -1,10 +1,11 @@
 import syft as sy
 import torch as th
+import sys
 
 host = "localhost"
-port = 8765
+port = sys.argv[1]
 
 hook = sy.TorchHook(th)
-kwargs = {"id": "fed1", "host": host, "port": port, "hook": hook}
+kwargs = {"id": host+":"+str(port), "host": host, "port": port, "hook": hook}
 server = sy.workers.WebsocketServerWorker(**kwargs)
 server.start()
