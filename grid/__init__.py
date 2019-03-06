@@ -28,7 +28,7 @@ def create_app(test_config=None):
     # a simple page that says hello
     @app.route("/get_connection")
     def get_connection():
-        subprocess.run("python " + os.path.join(os.getcwd(), "create_process.py"))
+        subprocess.run(["python", "grid/create_process.py"])
         return (host, port)
 
     return app
