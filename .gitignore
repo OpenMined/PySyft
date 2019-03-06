@@ -18,3 +18,4 @@ bootstrap_nodes
 ipfs.log*
 notebooks/ipfs.log
 .pytest_cache
+.idea/*
