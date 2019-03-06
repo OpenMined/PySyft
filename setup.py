@@ -18,7 +18,7 @@ platform = platform.system()
 
 setup(
     name="grid",
-    version="0.1.0",
+    version="0.1.0a1",
     author="OpenMined",
     author_email="contact@openmined.org",
     description=(("A machine learning framework backed by an "
