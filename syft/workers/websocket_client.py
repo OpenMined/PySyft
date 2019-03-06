@@ -1,9 +1,9 @@
 from websocket import create_connection
-from syft.workers import VirtualWorker
+from syft.workers import BaseWorker
 import binascii
 
 
-class WebsocketClientWorker(VirtualWorker):
+class WebsocketClientWorker(BaseWorker):
     def __init__(
         self, hook, host, port, id=0, is_client_worker=False, log_msgs=False, verbose=False, data={}
     ):
@@ -21,6 +21,13 @@ class WebsocketClientWorker(VirtualWorker):
         self.ws = create_connection(self.uri)
 
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
+
+    def _send_msg(self, message: bin) -> bin:
+        raise RuntimeError(
+            "_send_msg should never get called on a ",
+            "WebsocketClientWorker. Did you accidentally "
+            "make hook.local_worker a WebsocketClientWorker?",
+        )
 
     def _recv_msg(self, message: bin) -> bin:
         """Forwards a message to the WebsocketServerWorker"""
