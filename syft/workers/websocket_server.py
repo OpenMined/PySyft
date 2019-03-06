@@ -40,12 +40,12 @@ class WebsocketServerWorker(VirtualWorker):
         self.port = port
         self.host = host
 
+        if loop is None:
+            loop = asyncio.new_event_loop()
+
         # this queue is populated when messages are received
         # from a client
         self.broadcast_queue = asyncio.Queue()
-
-        if loop is None:
-            loop = asyncio.new_event_loop()
 
         # this is the asyncio event loop
         self.loop = loop
