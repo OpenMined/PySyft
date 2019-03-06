@@ -10,7 +10,8 @@ from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
 from syft.codes import MSGTYPE
-from typing import Union, List
+from typing import Union
+from typing import List
 import torch
 
 
@@ -86,7 +87,7 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
-    def _send_msg(self, message: bin, location: "BaseWorker") -> bin:
+    def _send_msg(self, message: bin, location: "BaseWorker"):
         """Sends message from one worker to another.
 
         As BaseWorker implies, you should never instantiate this class by
@@ -108,7 +109,7 @@ class BaseWorker(AbstractWorker):
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
-    def _recv_msg(self, message: bin) -> bin:
+    def _recv_msg(self, message: bin):
         """Receives the message.
 
         As BaseWorker implies, you should never instantiate this class by
