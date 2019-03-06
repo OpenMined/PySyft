@@ -2,132 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d98b7aaa-608b-4ef5-bc2d-21a6951aa4c7" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/docs/.nojekyll" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/Makefile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_autosummary/syft.core.utils.rst" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_autosummary/syft.core.workers.rst" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/doctrees/_autosummary/syft.core.utils.doctree" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/doctrees/_autosummary/syft.core.workers.doctree" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/doctrees/environment.pickle" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/doctrees/index.doctree" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/.buildinfo" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_autosummary/syft.core.utils.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_autosummary/syft.core.workers.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_sources/_autosummary/syft.core.utils.rst.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_sources/_autosummary/syft.core.workers.rst.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_sources/index.rst.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/ajax-loader.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/basic.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/comment-bright.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/comment-close.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/comment.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/css/badge_only.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/css/theme.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/doctools.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/down-pressed.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/down.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/file.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/Inconsolata-Bold.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/Inconsolata-Regular.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/Lato-Bold.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/Lato-BoldItalic.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/Lato-Italic.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/Lato-Regular.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/RobotoSlab-Bold.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/RobotoSlab-Regular.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/fontawesome-webfont.eot" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/fontawesome-webfont.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/fontawesome-webfont.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/fontawesome-webfont.woff" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/fonts/fontawesome-webfont.woff2" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/jquery-3.1.0.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/jquery.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/js/modernizr.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/js/theme.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/minus.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/plus.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/pygments.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/searchtools.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/underscore-1.3.1.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/underscore.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/up-pressed.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/up.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/_static/websupport.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/genindex.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/objects.inv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/py-modindex.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/search.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/_build/html/searchindex.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/conf.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/index.rst" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/make.bat" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/build.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/execute_notebooks.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/grid/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/adapters/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/adapters/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/adapters/adapter.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/adapters/config.example.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/adapters/imdb.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/adapters/tweets.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/base.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/channels.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/clients/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/clients/base.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/clients/keras.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/clients/pretty_printer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/clients/torch.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/commands.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/ipfsapi/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/ipfsapi/client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/ipfsapi/encoding.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/ipfsapi/exceptions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/ipfsapi/http.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/ipfsapi/multipart.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/ipfsapi/utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/ipfsapi/version.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/ipfsapi/version_tree.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/MPCDataDemo.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/MPCModelDemo.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/Untitled.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/coinbase_helper.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/interface/base_interface.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/interface/distributed_interface.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/interface/grid_client_interface.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/interface/grid_worker_interface.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/keras_utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/output_pipe.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/serde.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/_build/html/.nojekyll" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/shared_variable.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/spdz.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/strings.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/torch_utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/lib/utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/base.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/broadcast_known_workers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/fit_worker.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/listen_for_openmined_nodes.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/passively_broadcast_membership.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/torch/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/torch/hook_service.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/torch/hook_worker_service.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/torch/listen_for_torch_objects.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/torch/torch_service.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/tree/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/services/whoami.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/workers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/workers/anchor.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/workers/base_worker.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/workers/compute.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deprecated/workers/tree.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_imports.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_imports.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_integration.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_integration.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -183,13 +59,18 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="conf.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="conf.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/docs/conf.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="375">
-              <caret line="25" column="25" lean-forward="true" selection-start-line="25" selection-start-column="25" selection-end-line="25" selection-end-column="25" />
+            <state relative-caret-position="55">
+              <caret line="25" column="25" selection-start-line="25" selection-start-column="25" selection-end-line="25" selection-end-column="25" />
             </state>
           </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="__init__.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/grid/__init__.py">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file leaf-file-name="make.bat" pinned="false" current-in-tab="false">
@@ -201,7 +82,7 @@
         <entry file="file://$PROJECT_DIR$/docs/index.rst">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="330">
-              <caret line="22" column="18" lean-forward="true" selection-start-line="22" selection-start-column="18" selection-end-line="22" selection-end-column="18" />
+              <caret line="22" column="18" selection-start-line="22" selection-start-column="18" selection-end-line="22" selection-end-column="18" />
             </state>
           </provider>
         </entry>
@@ -223,7 +104,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="y" value="23" />
     <option name="width" value="1920" />
     <option name="height" value="1177" />
@@ -241,16 +122,6 @@
               <item name="Grid" type="b2602c69:ProjectViewProjectNode" />
               <item name="Grid" type="462c0819:PsiDirectoryNode" />
             </path>
-            <path>
-              <item name="Grid" type="b2602c69:ProjectViewProjectNode" />
-              <item name="Grid" type="462c0819:PsiDirectoryNode" />
-              <item name="docs" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="Grid" type="b2602c69:ProjectViewProjectNode" />
-              <item name="Grid" type="462c0819:PsiDirectoryNode" />
-              <item name="tests" type="462c0819:PsiDirectoryNode" />
-            </path>
           </expand>
           <select />
         </subPane>
@@ -258,6 +129,8 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="configurable.group.build" />
   </component>
   <component name="RunDashboard">
@@ -287,7 +160,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1920" height="1177" extended-state="0" />
-    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -358,16 +230,19 @@
     <entry file="file://$PROJECT_DIR$/docs/index.rst">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="330">
-          <caret line="22" column="18" lean-forward="true" selection-start-line="22" selection-start-column="18" selection-end-line="22" selection-end-column="18" />
+          <caret line="22" column="18" selection-start-line="22" selection-start-column="18" selection-end-line="22" selection-end-column="18" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/docs/conf.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="375">
-          <caret line="25" column="25" lean-forward="true" selection-start-line="25" selection-start-column="25" selection-end-line="25" selection-end-column="25" />
+        <state relative-caret-position="55">
+          <caret line="25" column="25" selection-start-line="25" selection-start-column="25" selection-end-line="25" selection-end-column="25" />
         </state>
       </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/grid/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
   </component>
 </project>
