@@ -53,16 +53,7 @@ class BaseWorker(AbstractWorker):
             primarily a development/testing feature.
     """
 
-    def __init__(
-        self,
-        hook,
-        id=0,
-        known_workers={},
-        data={},
-        is_client_worker=False,
-        log_msgs=False,
-        verbose=False,
-    ):
+    def __init__(self, hook, id=0, data={}, is_client_worker=False, log_msgs=False, verbose=False):
         """Initializes a BaseWorker."""
 
         self.hook = hook
@@ -76,8 +67,12 @@ class BaseWorker(AbstractWorker):
         # objects where all objects are stored using their IDs as keys.
         self._objects = {}
         self._known_workers = {}
-        for k, v in known_workers.items():
-            self._known_workers[k] = v
+        if hook.local_worker is not None:
+            for k, v in hook.local_worker._known_workers.items():
+                if v is not hook.local_worker:
+                    self._known_workers[k] = v
+                    v.add_worker(self)
+            hook.local_worker.add_worker(self)
         self.add_worker(self)
         # For performance, we cache each
         self._message_router = {

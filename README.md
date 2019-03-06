@@ -45,7 +45,7 @@ We have written an installation example in [this colab notebook](https://colab.r
 
 We are very grateful for contributions to PySyft from the following organizations!
 
- ![drawing](https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png)  
+ <img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>  
 
  [coMind Website](https://comind.org/) & [coMind Github](https://github.com/coMindOrg/federated-averaging-tutorials)
 
