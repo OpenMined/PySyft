@@ -120,9 +120,8 @@ def create_app(test_config=None):
 
     @app.route("/get_known_workers/")
     def get_know_workers():
-        if not hasattr(g, "known_workers"):
-            return json.dumps({})
-        return json.dumps(g.known_workers)
+
+        return users2json(User.query.all())
 
     @app.route("/add_worker/<hostname>/<port>")
     def add_worker(hostname, port):
@@ -134,7 +133,9 @@ def create_app(test_config=None):
             )
             db.session.add(new_user)
             db.session.commit()
+
         except IntegrityError as e:
+
             return json.dumps({"error": "Worker already known"})
 
         return users2json(User.query.all())
