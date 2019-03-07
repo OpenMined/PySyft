@@ -5,10 +5,12 @@ import json
 from flask import Flask
 import socket
 from contextlib import closing
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 
 from .grid import Grid
 from .client import GridClient
-
+from flask import g
 
 host = "localhost"
 
@@ -59,6 +61,18 @@ def create_app(test_config=None):
         SECRET_KEY="dev", DATABASE=os.path.join(app.instance_path, "grid.sqlite")
     )
 
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////tmp/test4.db"
+    db = SQLAlchemy(app)
+
+    class User(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        hostport = host = db.Column(db.String(200), unique=True, nullable=False)
+        host = db.Column(db.String(80), unique=False, nullable=False)
+        port = db.Column(db.String(120), unique=False, nullable=False)
+
+        def __repr__(self):
+            return "<User %r>" % self.username
+
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile("config.py", silent=True)
@@ -92,13 +106,37 @@ def create_app(test_config=None):
         kill_command(pid)
         return "Done!"
 
+    def users2json(users):
+
+        out = list()
+
+        for user in users:
+            dict = {}
+            dict["host"] = str(user.host)
+            dict["port"] = str(user.port)
+            out.append(dict)
+
+        return json.dumps(out)
+
     @app.route("/get_known_workers/")
     def get_know_workers():
-        return json.dumps({"known_workers": session["known_workers"]})
+        if not hasattr(g, "known_workers"):
+            return json.dumps({})
+        return json.dumps(g.known_workers)
 
     @app.route("/add_worker/<hostname>/<port>")
     def add_worker(hostname, port):
-        session["known_workers"].append((hostname, port))
-        return "Done!"
+
+        try:
+            db.create_all()
+            new_user = User(
+                host=hostname, port=port, hostport=str(hostname) + ":" + str(port)
+            )
+            db.session.add(new_user)
+            db.session.commit()
+        except IntegrityError as e:
+            return json.dumps({"error": "Worker already known"})
+
+        return users2json(User.query.all())
 
     return app
