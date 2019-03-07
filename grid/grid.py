@@ -8,11 +8,17 @@ class Grid:
     def __init__(self, *workers):
         self.workers = list(workers)
 
-    def get_worker(self, hostname="localhost", port=5000):
+    def get_worker(self, hostname="localhost", flask_port=5000):
 
         try:
-            url = "http://" + hostname + ":" + str(port) + "/get_connection"
-            response = requests.get(url).json()
+            url = "http://" + hostname + ":" + str(flask_port) + "/get_connection"
+            response = requests.get(url)
+
+            try:
+                response = response.json()
+            except:
+                return response.text
+
         except ConnectionRefusedError as e:
             raise ConnectionRefusedError(
                 "Could not find the worker you asked us to find.",
@@ -36,5 +42,12 @@ class Grid:
         return worker
 
     def kill_worker(self, worker):
-        url = "http://" + worker.host + ":5000/kill_connection/" + str(worker.pid)
+        url = (
+            "http://"
+            + worker.host
+            + ":"
+            + str(worker.flask_port)
+            + "/kill_connection/"
+            + str(worker.pid)
+        )
         requests.get(url)
