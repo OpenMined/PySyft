@@ -68,9 +68,12 @@ class Plan(BaseWorker):
         super().__init__(hook=hook, *args, **kwargs)
 
         self.owner = owner
+        self.location = None
 
         self.plan = list()
         self.readable_plan = list()
+        self.arg_ids = list()
+        self.result_ids = list()
 
     def _send_msg(self, message, location):
         return location._recv_msg(message)
@@ -89,7 +92,28 @@ class Plan(BaseWorker):
 
         return sy.serde.serialize(None)
 
+    def build_plan(self, args):
+        # The ids of args of the first call, which should be updated when
+        # the function is called with new args
+        self.arg_ids = list()
+
+        local_args = list()
+        for i, arg in enumerate(args):
+            arg = arg.send(self)
+            arg.child.garbage_collect_data = False
+            self.arg_ids.append(arg.id_at_location)
+            local_args.append(arg)
+
+        res_ptr = self.plan_blueprint(*local_args)
+        res_ptr.child.garbage_collect_data = False
+
+        # The id where the result should be stored
+        self.result_ids = [res_ptr.id_at_location]
+
     def execute_plan(self, args, result_ids):
+        first_run = self.readable_plan == []
+        if first_run:
+            self.build_plan(args)
 
         # for every argument
         for i in range(len(self.arg_ids)):
@@ -121,10 +145,24 @@ class Plan(BaseWorker):
 
             self.result_ids[i] = result_ids[i]
 
-        for message in self.readable_plan:
+        if self.location and first_run:
+            self.readable_plan = replace_ids(
+                obj=self.readable_plan,
+                change_id=-1,
+                to_id=-1,
+                from_worker=self.owner.id,
+                to_worker=self.location.id,
+            )
+            ptr_plan = self.send_(self.location)
+            response = ptr_plan(*args)
+            return response
 
-            bin_message = sy.serde.serialize(message, simplified=True)
-            self.owner.recv_msg(bin_message)
+        if not self.location:
+            print(self.id, self.owner.id, 'launching run')
+            for message in self.readable_plan:
+                print('>', message)
+                bin_message = sy.serde.serialize(message, simplified=True)
+                p = self.owner.recv_msg(bin_message)
 
         return sy.serde.serialize(None)
 
@@ -216,4 +254,11 @@ class Plan(BaseWorker):
         return ptr
 
     def send(self, location):
+        if self.location is not None:
+            raise NotImplementedError("Can't send a Plan which already has a location")
+        else:
+            self.location = location
+        return self
+
+    def send_(self, location):
         return sy.local_worker.send(obj=self, workers=location)
