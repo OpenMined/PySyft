@@ -12,17 +12,15 @@ class PlanPointer(BaseWorker):
         self.id_at_location = id_at_location
         self.owner = owner
 
-    def __call__(self, *args):
-
-        response_ids = [random.randint(0, 1e10)]
+    def __call__(self, response_ids, *args):
 
         args = [args, response_ids]
         command = ("execute_plan", self, args)
 
+        print('send exe cmd to ', self.location.id)
         response = sy.local_worker.send_command(
             message=command, recipient=self.location, return_ids=response_ids
         )
-
         return response
 
     def _recv_msg(self, message):
@@ -64,11 +62,15 @@ class Plan(BaseWorker):
     it simply records messages that are sent to it such that message batches
     (called 'Plans') can be created and sent once."""
 
-    def __init__(self, hook, owner, *args, **kwargs):
+    def __init__(self, hook, owner, name='', *args, **kwargs):
         super().__init__(hook=hook, *args, **kwargs)
+
+        self.name = name
 
         self.owner = owner
         self.location = None
+
+        self.ptr_plan = None
 
         self.plan = list()
         self.readable_plan = list()
@@ -93,12 +95,14 @@ class Plan(BaseWorker):
         return sy.serde.serialize(None)
 
     def build_plan(self, args):
+        print('build plan')
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
         self.arg_ids = list()
 
         local_args = list()
         for i, arg in enumerate(args):
+            self.owner.register_obj(arg)
             arg = arg.send(self)
             arg.child.garbage_collect_data = False
             self.arg_ids.append(arg.id_at_location)
@@ -110,61 +114,67 @@ class Plan(BaseWorker):
         # The id where the result should be stored
         self.result_ids = [res_ptr.id_at_location]
 
+    def replace_ids(self, from_ids, to_ids):
+        # for every argument
+        for i in range(len(from_ids)):
+            # for every message
+            for j, msg in enumerate(self.readable_plan):
+                # look for the old id and replace it with the new one
+                self.readable_plan[j] = replace_ids(
+                    obj=msg,
+                    change_id=from_ids[i],
+                    to_id=to_ids[i],
+                    from_worker=self.id,
+                    to_worker=self.owner.id,
+                )
+
+    def __call__(self, *args, **kwargs):
+        assert len(kwargs) == 0, 'kwargs not supported for plan'
+        result_ids = [random.randint(0, 1e10)]
+        return self.execute_plan(args, result_ids)
+
     def execute_plan(self, args, result_ids):
         first_run = self.readable_plan == []
         if first_run:
             self.build_plan(args)
 
-        # for every argument
-        for i in range(len(self.arg_ids)):
-            # for every message
-            for j, msg in enumerate(self.readable_plan):
-                # look for the old id and replace it with the new one
-                self.readable_plan[j] = replace_ids(
-                    obj=msg,
-                    change_id=self.arg_ids[i],
-                    to_id=args[i].id,
-                    from_worker=self.id,
-                    to_worker=self.owner.id,
+        if self.location:
+            if self.ptr_plan is None:
+                self.readable_plan = replace_ids(
+                    obj=self.readable_plan,
+                    change_id=-1,
+                    to_id=-1,
+                    from_worker=self.owner.id,
+                    to_worker=self.location.id,
                 )
-
-            self.arg_ids[i] = args[i].id
-
-        # for every argument
-        for i in range(len(self.result_ids)):
-            # for every message
-            for j, msg in enumerate(self.readable_plan):
-                # look for the old id and replace it with the new one
-                self.readable_plan[j] = replace_ids(
-                    obj=msg,
-                    change_id=self.result_ids[i],
-                    to_id=result_ids[i],
-                    from_worker="",
-                    to_worker="",
-                )
-
-            self.result_ids[i] = result_ids[i]
-
-        if self.location and first_run:
-            self.readable_plan = replace_ids(
-                obj=self.readable_plan,
-                change_id=-1,
-                to_id=-1,
-                from_worker=self.owner.id,
-                to_worker=self.location.id,
-            )
-            ptr_plan = self.send_(self.location)
-            response = ptr_plan(*args)
+                self.ptr_plan = self._send(self.location)
+            response = self.request_execute_plan(result_ids, *args)
             return response
 
         if not self.location:
+            arg_ids = [arg.id for arg in args]
+            self.replace_ids(self.arg_ids, arg_ids)
+            self.arg_ids = arg_ids
+
+            self.replace_ids(self.result_ids, result_ids)
+            self.result_ids = result_ids
+
             print(self.id, self.owner.id, 'launching run')
             for message in self.readable_plan:
-                print('>', message)
                 bin_message = sy.serde.serialize(message, simplified=True)
-                p = self.owner.recv_msg(bin_message)
+                self.owner.recv_msg(bin_message)
 
         return sy.serde.serialize(None)
+
+    def request_execute_plan(self, response_ids, *args):
+        args = [args, response_ids]
+        command = ("execute_plan", self, args)
+
+        print('send exe cmd to ', self.location.id)
+        response = self.owner.send_command(
+            message=command, recipient=self.location, return_ids=response_ids
+        )
+        return response
 
     def create_pointer(
         self,
@@ -260,5 +270,29 @@ class Plan(BaseWorker):
             self.location = location
         return self
 
-    def send_(self, location):
-        return sy.local_worker.send(obj=self, workers=location)
+    def get(self):
+        self.location = None
+        self.ptr_plan = None
+
+
+    def _send(self, location):
+        return self.owner.send(obj=self, workers=location)
+
+    def __str__(self):
+        """Returns the string representation of PlanWorker.
+
+        Note:
+            __repr__ calls this method by default.
+        """
+
+        out = "<"
+        out += str(type(self)).split("'")[1].split(".")[-1]
+        out += " " + str(self.name)
+        out += " id:" + str(self.id)
+        out += " owner:" + str(self.owner.id)
+        if self.location:
+            out += " location:" + str(self.location.id)
+        if len(self.readable_plan) > 0:
+            out += " built"
+        out += ">"
+        return out
