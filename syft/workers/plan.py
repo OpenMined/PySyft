@@ -46,23 +46,28 @@ class Plan(BaseWorker):
 
     def __init__(self, hook, owner, name="", *args, **kwargs):
         super().__init__(hook=hook, *args, **kwargs)
-
+        # Plan instance info
         self.name = name
-
         self.owner = owner
-        self.location = None
-
-        self.ptr_plan = None
-
+        # Info about the plan stored
         self.plan = list()
         self.readable_plan = list()
         self.arg_ids = list()
         self.result_ids = list()
+        # Pointing info towards a remote plan
+        self.location = None
+        self.ptr_plan = None
 
     def _send_msg(self, message, location):
         return location._recv_msg(message)
 
     def _recv_msg(self, bin_message):
+        """
+        Upon reception, the PlanWorker store in the plan all commands which can be
+        executed lazily
+        :param bin_message: the message of a command received
+        :return: the None message serialized to specify the command was received
+        """
         (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, detail=False)
 
         if msg_type != MSGTYPE.OBJ:
@@ -77,6 +82,13 @@ class Plan(BaseWorker):
         return sy.serde.serialize(None)
 
     def build_plan(self, args):
+        """
+        The plan must be built with some input data, here args. When they
+        are provided, they are sent to the plan worker, which executes its
+        blueprint: each command of the blueprint is catched by _recv_msg
+        and is used to fill the plan
+        :param args: the input data
+        """
         print("build plan")
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
@@ -97,9 +109,14 @@ class Plan(BaseWorker):
         self.result_ids = [res_ptr.id_at_location]
 
     def replace_ids(self, from_ids, to_ids):
-        # for every argument
+        """
+        Replace pairs of tensor ids in the plan stored
+        :param from_ids: the left part of the pair: ids to change
+        :param to_ids: the right part of the pair: ids to replace with
+        """
+        # for every pair of id
         for i in range(len(from_ids)):
-            # for every message
+            # for every message of the plan
             for j, msg in enumerate(self.readable_plan):
                 # look for the old id and replace it with the new one
                 self.readable_plan[j] = replace_ids(
@@ -109,18 +126,44 @@ class Plan(BaseWorker):
                     from_worker=self.id,
                     to_worker=self.owner.id,
                 )
+        return self
 
-    def replace_worker_ids(self, from_id, to_id):
+    def replace_worker_ids(self, from_worker_id, to_worker_id):
+        """
+        Replace occurrences of from_worker_id by to_worker_id in the plan stored
+        """
         self.readable_plan = replace_ids(
-            obj=self.readable_plan, change_id=-1, to_id=-1, from_worker=from_id, to_worker=to_id
+            obj=self.readable_plan,
+            change_id=-1,
+            to_id=-1,
+            from_worker=from_worker_id,
+            to_worker=to_worker_id,
         )
 
     def __call__(self, *args, **kwargs):
+        """
+        Call a plan execution with some arguments, and specify the ids where the result
+        should be stored
+        :return: The pointer to the result of the execution if the plan was already sent,
+        else the None message serialized.
+        """
         assert len(kwargs) == 0, "kwargs not supported for plan"
         result_ids = [random.randint(0, 1e10)]
         return self.execute_plan(args, result_ids)
 
     def execute_plan(self, args, result_ids):
+        """
+        Control local or remote plan execution.
+
+        If the plan doesn't have the plan built, first build it using the blueprint.
+
+        Then if it has a remote location, send the plan to the remote location only the
+        first time, request a remote plan execution with specific pointers and ids for
+        storing the result, and return a pointer to the result of the execution.
+
+        If the plan is local: update the plan with the result_ids and args ids given,
+        run the plan and return the None message serialized.
+        """
         first_run = self.readable_plan == []
         if first_run:
             self.build_plan(args)
@@ -139,7 +182,6 @@ class Plan(BaseWorker):
             self.replace_ids(self.result_ids, result_ids)
             self.result_ids = result_ids
 
-            print(self.id, self.owner.id, "launching run")
             for message in self.readable_plan:
                 bin_message = sy.serde.serialize(message, simplified=True)
                 self.owner.recv_msg(bin_message)
@@ -147,10 +189,15 @@ class Plan(BaseWorker):
         return sy.serde.serialize(None)
 
     def request_execute_plan(self, response_ids, *args):
+        """
+        Send a request to execute the plan on the remote location
+        :param response_ids: where the plan result should be stored remotely
+        :param args: the arguments use as input data for the plan
+        :return:
+        """
         args = [args, response_ids]
-        command = ("execute_plan", self, args)
+        command = ("execute_plan", self.ptr_plan, args)
 
-        print("send exe cmd to ", self.location.id)
         response = self.owner.send_command(
             message=command, recipient=self.location, return_ids=response_ids
         )
@@ -167,6 +214,9 @@ class Plan(BaseWorker):
         return PlanPointer(ptr_id, location, id_at_location, owner)
 
     def send(self, location):
+        """
+        Mock send function that only specify that the Plan will have to be sent to location
+        """
         if self.location is not None:
             raise NotImplementedError(
                 "Can't send a Plan which already has a location, use .get() before"
@@ -176,12 +226,18 @@ class Plan(BaseWorker):
         return self
 
     def get(self):
+        """
+        Mock get function
+        """
         self.replace_worker_ids(self.location.id, self.owner.id)
         self.location = None
         self.ptr_plan = None
         return self
 
     def _send(self, location):
+        """
+        Real send function that sends the Plan instance with its plan to location
+        """
         self.replace_worker_ids(self.owner.id, self.location.id)
         return self.owner.send(obj=self, workers=location)
 

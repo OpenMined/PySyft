@@ -27,7 +27,12 @@ def func2plan():
 
         """
 
-        plan = Plan(hook=sy.local_worker.hook, owner=sy.local_worker, id=random.randint(0, 1e10))
+        plan = Plan(
+            hook=sy.local_worker.hook,
+            owner=sy.local_worker,
+            id=random.randint(0, 1e10),
+            name=plan_blueprint.__name__,
+        )
 
         plan.plan_blueprint = plan_blueprint
 
