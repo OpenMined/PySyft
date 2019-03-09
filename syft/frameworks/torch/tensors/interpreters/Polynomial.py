@@ -1,8 +1,8 @@
-from syft.frameworks.torch.tensors.interpreters.add import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.add import AbstractTensor
 import torch
 
 
-class PolynomialTensor(AdditiveSharingTensor):
+class PolynomialTensor(AbstractTensor):
 
     """Tensor type which provides polynomial approximation functionalities using Taylor Series expansion
        since computing exact functions could impose a overhead on computation
