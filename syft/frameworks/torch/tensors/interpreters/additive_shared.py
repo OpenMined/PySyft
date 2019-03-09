@@ -62,6 +62,17 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return sum(shares)
 
+    def virtual_get(self):
+        """Get the value of the tensor without calling get - Only for VirtualWorkers"""
+
+        shares = list()
+
+        for v in self.child.values():
+            share = v.location._objects[v.id_at_location]
+            shares.append(share)
+
+        return sum(shares)
+
     def init_shares(self, *owners):
         """Initializes shares and distributes them amongst their respective owners
 
@@ -91,6 +102,9 @@ class AdditiveSharingTensor(AbstractTensor):
             shares: a dict of shares. Each key is the id of a worker on which the share exists. Each value
                 is the PointerTensor corresponding to a share.
             """
+        assert isinstance(
+            shares, dict
+        ), "Share should be provided as a dict {'worker.id': pointer, ...}"
         self.child = shares
         return self
 
@@ -126,6 +140,20 @@ class AdditiveSharingTensor(AbstractTensor):
             shares.append(share)
 
         return shares
+
+    def alg_mod(self, number, modulus=None):
+        """Implementation of an algebric modulus:
+        Exemple:
+            alg_mod(5, 3) == 2 == 5 % 3
+            alg_mod(-5, 3) == -2 == - (-5 % 3) == (5 % -3)
+        """
+        if modulus is None:
+            modulus = self.field
+
+        if number >= 0:
+            return number % modulus
+        else:
+            return number % (-1 * modulus)
 
     @hook
     def add(self, shares: dict, other_shares, *args, **kwargs):
@@ -235,8 +263,8 @@ class AdditiveSharingTensor(AbstractTensor):
         d = {}
         e = {}
         for location in locations:
-            d[location] = (shares[location] - a[location]) % self.field
-            e[location] = (other_shares[location] - b[location]) % self.field
+            d[location] = shares[location] - a[location]
+            e[location] = other_shares[location] - b[location]
         delta = torch.zeros(d[locations[0]].shape, dtype=torch.long)
         epsilon = torch.zeros(e[locations[0]].shape, dtype=torch.long)
 
@@ -286,7 +314,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return self.mul(self, *args, **kwargs)
 
     @hook
-    def matmul(self, shares: dict, other_shares, *args, **kwargs):
+    def matmul(self, shares: dict, other_shares, **kwargs):
         """Multiplies two tensors together
         For details see abstract_mul
 
@@ -296,10 +324,26 @@ class AdditiveSharingTensor(AbstractTensor):
             other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
                 to the tensor being multiplied by self.
         """
-
         return self.abstract_mul("matmul", shares, other_shares, **kwargs)
 
     def __matmul__(self, *args, **kwargs):
         """Multiplies two number for details see mul
         """
-        return self.matmul(self, *args, **kwargs)
+        return self.matmul(*args, **kwargs)
+
+    def __itruediv__(self, *args, **kwargs):
+
+        result = self.__truediv__(*args, **kwargs)
+        self.child = result.child
+
+    @hook
+    def __truediv__(self, shares: dict, divisor):
+        assert isinstance(divisor, int)
+
+        divided_shares = {}
+        for location, pointer in shares.items():
+            divided_shares[location] = pointer / divisor
+
+        return AdditiveSharingTensor(
+            field=self.field, crypto_provider=self.crypto_provider
+        ).set_shares(divided_shares)

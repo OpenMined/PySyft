@@ -541,13 +541,15 @@ class TorchTensor(AbstractTensor):
             .wrap()
         )
 
+    fix_precision = fix_prec
+
     def fix_prec_(self, *args, **kwargs):
         tensor = self.fix_prec(*args, **kwargs)
         self.child = tensor.child
         return self
 
     fix_precision_ = fix_prec_
-    
+
     def share(self, *owners, field=None, crypto_provider=None):
         """This is a passthrough method which calls .share on the child.
 

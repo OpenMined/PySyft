@@ -173,6 +173,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return response.truncate(other.precision_fractional)
 
+    __matmul__ = matmul
+
     @classmethod
     def handle_func_command(cls, command):
         """
