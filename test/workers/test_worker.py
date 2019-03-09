@@ -1,5 +1,5 @@
 from unittest import TestCase
-
+import random
 import torch
 import syft as sy
 from syft.exceptions import WorkerNotFoundException
@@ -11,15 +11,20 @@ def test___init__():
 
     tensor = torch.tensor([1, 2, 3, 4])
 
-    alice = VirtualWorker(hook, id="alice")
-    bob = VirtualWorker(hook, id="bob")
-    charlie = VirtualWorker(hook, id="charlie")
-    dawson = VirtualWorker(hook, id="dawson", data=[tensor])
+    worker_id = int(10e10 * random.random())
+    alice_id = f"alice{worker_id}"
+    alice = VirtualWorker(hook, id=alice_id)
+    worker_id = int(10e10 * random.random())
+    bob = VirtualWorker(hook, id=f"bob{worker_id}")
+    worker_id = int(10e10 * random.random())
+    charlie = VirtualWorker(hook, id=f"charlie{worker_id}")
+    worker_id = int(10e10 * random.random())
+    dawson = VirtualWorker(hook, id=f"dawson{worker_id}", data=[tensor])
 
     # Ensure adding data on signup functionality works as expected
     assert tensor.owner == dawson
 
-    assert bob.get_worker("alice").id == alice.id
+    assert bob.get_worker(alice_id).id == alice.id
     assert bob.get_worker(alice).id == alice.id
     assert bob.get_worker(charlie).id == charlie.id
 
@@ -33,8 +38,10 @@ class TestWorker(TestCase):
 
         hook = sy.TorchHook(torch)
 
-        bob = VirtualWorker(hook, id="bob")
-        charlie = VirtualWorker(hook, id="charlie")
+        worker_id = int(10e10 * random.random())
+        bob = VirtualWorker(hook, id=f"bob{worker_id}")
+        worker_id = int(10e10 * random.random())
+        charlie = VirtualWorker(hook, id=f"charlie{worker_id}")
 
         # if an unknown string or id representing a worker is given it fails
         try:
@@ -54,7 +61,8 @@ class TestWorker(TestCase):
         assert charlie.id in bob._known_workers
 
     def test_search(self):
-        bob = VirtualWorker(sy.torch.hook)
+        worker_id = int(10e10 * random.random())
+        bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
 
         x = (
             torch.tensor([1, 2, 3, 4, 5])
