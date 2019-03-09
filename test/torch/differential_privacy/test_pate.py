@@ -17,10 +17,6 @@ def test_base_dataset():
         teacher_preds=preds, indices=indices, noise_eps=0.1, delta=1e-5
     )
 
-    print("Original")
-    print("\n")
-    print(data_ind_eps)
-    print(data_dep_eps)
 
     assert data_dep_eps < data_ind_eps
 
@@ -37,12 +33,8 @@ def test_base_dataset_torch():
         teacher_preds=preds, indices=indices, noise_eps=0.1, delta=1e-5
     )
 
-    print("\n")
-    print("TORCH")
-    print("\n")
-    print(data_ind_eps)
-    print(data_dep_eps)
-
+    
     assert data_dep_eps < data_ind_eps
 
-
+test_base_dataset()
+test_base_dataset_torch()

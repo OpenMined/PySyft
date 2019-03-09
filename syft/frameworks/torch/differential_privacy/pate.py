@@ -52,14 +52,18 @@ import torch
 
 
 def compute_q_noisy_max_torch(counts, noise_eps):
-
-    if type(counts) == list:
-
-        counts = torch.tensor(counts)
-
-    winner = torch.argmax(torch.tensor(counts))
+    
+    winner=0
+    #winner = torch.argmax(counts)
+    #print("winner")
+    #print(winner)
+    #print("counts_normailized")
+    counts=torch.tensor(counts)
+    _,winner=counts.max(0)
+        
     counts_normalized = noise_eps * (counts - counts[winner])
-    counts_rest = torch.tensor([counts_normalized[i] for i in range(len(counts)) if i != winner])
+    print(counts_normalized)
+    counts_rest = torch.tensor([counts_normalized[i] for i in range(len(counts)) if i != winner],dtype=torch.float)
     q = 0.0
     for c in counts_rest:
         gap = -c
@@ -81,9 +85,13 @@ def compute_q_noisy_max(counts, noise_eps):
     # Pr[ j beats i*] \leq (2+gap(j,i*))/ 4 exp(gap(j,i*)
     # proof at http://mathoverflow.net/questions/66763/
     # tight-bounds-on-probability-of-sum-of-laplace-random-variables
-
+    
     winner = np.argmax(counts)
+    #print("winner")
+    #print(winner)
     counts_normalized = noise_eps * (counts - counts[winner])
+    #print("counts_normalized")
+    #print(counts_normalized)
     counts_rest = np.array([counts_normalized[i] for i in range(len(counts)) if i != winner])
     q = 0.0
     for c in counts_rest:
@@ -96,7 +104,7 @@ def compute_q_noisy_max_approx_torch(counts, noise_eps):
 
     winner = torch.argmax(counts)
     counts_normalized = noise_eps * (counts - counts[winner])
-    counts_rest = torch.tensor([counts_normalized[i] for i in range(len(counts)) if i != winner])
+    counts_rest = torch.tensor([counts_normalized[i] for i in range(len(counts)) if i != winner],dtype=torch.float)
     gap = -max(counts_rest)
     q = (len(counts) - 1) * (gap + 2.0) / (4.0 * math.exp(gap))
     return min(q, 1.0 - (1.0 / len(counts)))
@@ -205,7 +213,7 @@ def logmgf_from_counts(counts, noise_eps, l):
   in our setting where one count can go up by one and another
   can go down by 1.
   """
-
+  
     q = compute_q_noisy_max(counts, noise_eps)
     return logmgf_exact(q, 2.0 * noise_eps, l)
 
@@ -342,17 +350,22 @@ def perform_analysis_torch(teacher_preds, indices, noise_eps, delta=1e-5, moment
             counts_mat[i, int(teacher_preds[j, i])] += 1
 
     l_list = 1.0 + torch.tensor(range(moments), dtype=torch.float)
-    total_log_mgf_nm = torch.tensor([0.0 for _ in l_list])
+    total_log_mgf_nm = torch.tensor([0.0 for _ in l_list],dtype=torch.float)
     total_ss_nm = torch.tensor([0.0 for _ in l_list], dtype=torch.float)
-
+    
+    print("\n")
+    print("TORCH")
+    
+    print(counts_mat[i])
     for i in indices:
         total_log_mgf_nm += torch.tensor(
-            [logmgf_from_counts_torch(counts_mat[i], noise_eps, l) for l in l_list]
+            [logmgf_from_counts_torch(counts_mat[i], noise_eps, l) for l in l_list],dtype=torch.float
         )
         total_ss_nm += torch.tensor(
             [smoothed_sens_torch(counts_mat[i], noise_eps, l, beta) for l in l_list],
-            dtype=torch.float,
+            dtype=torch.float
         )
+        
 
     # We want delta = exp(alpha - eps l).
     # Solving gives eps = (alpha - ln (delta))/l
@@ -382,13 +395,16 @@ def perform_analysis_torch(teacher_preds, indices, noise_eps, delta=1e-5, moment
 
     # Data independent bound, as mechanism is
     # 2*noise_eps DP.
-    data_ind_log_mgf = torch.tensor([0.0 for _ in l_list])
+    data_ind_log_mgf = torch.tensor([0.0 for _ in l_list],dtype=torch.float)
     data_ind_log_mgf += num_examples * torch.tensor(
-        [logmgf_exact_torch(1.0, 2.0 * noise_eps, l) for l in l_list]
+        [logmgf_exact_torch(1.0, 2.0 * noise_eps, l) for l in l_list],dtype=torch.float
     )
+    
+
 
     data_ind_eps_list = (data_ind_log_mgf - math.log(delta)) / l_list
     # print("Data independent bound = " + str(min(data_ind_eps_list)) + ".")
+    
 
     return min(eps_list_nm), min(data_ind_eps_list)
 
@@ -425,7 +441,13 @@ def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, b
     l_list = 1.0 + np.array(range(moments))
     total_log_mgf_nm = np.array([0.0 for _ in l_list])
     total_ss_nm = np.array([0.0 for _ in l_list])
+    
+    
+    print("NUMPY")
 
+    print("\n")
+    
+    print(counts_mat[i])
     for i in indices:
         total_log_mgf_nm += np.array(
             [logmgf_from_counts(counts_mat[i], noise_eps, l) for l in l_list]
@@ -434,6 +456,8 @@ def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, b
 
     # We want delta = exp(alpha - eps l).
     # Solving gives eps = (alpha - ln (delta))/l
+    
+    
     eps_list_nm = (total_log_mgf_nm - math.log(delta)) / l_list
 
     # print("Epsilons (Noisy Max): " + str(eps_list_nm))
@@ -464,8 +488,9 @@ def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, b
     data_ind_log_mgf += num_examples * np.array(
         [logmgf_exact(1.0, 2.0 * noise_eps, l) for l in l_list]
     )
+    
 
     data_ind_eps_list = (data_ind_log_mgf - math.log(delta)) / l_list
     # print("Data independent bound = " + str(min(data_ind_eps_list)) + ".")
-
+    
     return min(eps_list_nm), min(data_ind_eps_list)
