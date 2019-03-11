@@ -11,15 +11,11 @@ def test_init(workers):
     pointer = PointerTensor(id=1000, location=workers["alice"], owner=workers["me"])
     pointer.__str__()
 
-    pointer = PointerTensor(id=1000, location=workers["plan"], owner=workers["me"])
-    pointer.__str__()
-
 
 def test_create_pointer(workers):
     x = torch.Tensor([1, 2])
     x.create_pointer()
     x.create_pointer(location=workers["james"])
-    x.create_pointer(location=workers["plan"])
 
 
 def test_send_get(workers):
@@ -61,29 +57,6 @@ def test_send_get(workers):
     x_back = x.get().get()
     assert (torch.Tensor([1, 2]) == x_back).all()
 
-    # now send to a plan
-    plan_worker = workers["plan"]
-
-    # simple send
-    x = torch.Tensor([1, 2])
-    x_ptr = x.send(plan_worker)
-    x_back = x_ptr.get()
-    assert (x == x_back).all()
-
-    # double send
-    x = torch.Tensor([1, 2])
-    x_ptr = x.send(bob)
-    x_ptr_ptr = x_ptr.send(plan_worker)
-    x_ptr_back = x_ptr_ptr.get()
-    x_back_back = x_ptr_back.get()
-    assert (x == x_back_back).all()
-
-    # chained double send
-    x = torch.Tensor([1, 2])
-    x = x.send(bob).send(plan_worker)
-    x_back = x.get().get()
-    assert (torch.Tensor([1, 2]) == x_back).all()
-
 
 def test_inplace_send_get(workers):
     tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
@@ -98,14 +71,6 @@ def test_inplace_send_get(workers):
     assert tensor_back.id == tensor.id
     assert id(tensor_back) == id(tensor)
     assert id(tensor_back) == id(tensor)
-
-    assert (tensor_back == tensor).all()
-
-    # with plan worker
-    plan_worker = workers["plan"]
-    tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
-    tensor_ptr = tensor.send_(plan_worker)
-    tensor_back = tensor_ptr.get_()
 
     assert (tensor_back == tensor).all()
 
@@ -172,26 +137,6 @@ def test_remote_autograd(workers):
 
     # make sure that the grads match
     assert (x.grad == x_grad).all()
-
-    # PLAN version
-    plan_worker = workers["plan"]
-
-    # create a tensor
-    x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
-
-    # send tensor to bob
-    x = x.send(plan_worker)
-
-    # do some calculation
-    y = (x + x).sum()
-
-    # backpropagate on remote machine
-    y.backward()
-
-    # check that remote gradient is correct
-    x = x.get()
-    x_grad_target = torch.ones(4).float() + 1
-    assert (x.grad == x_grad_target).all()
 
 
 def test_gradient_send_recv(workers):
@@ -321,15 +266,6 @@ def test_get_remote_shape(workers):
     bob = workers["bob"]
     # tensor directly sent: shape stored at sending
     x = th.tensor([1, 2, 3, 4, 5]).send(bob)
-    assert x.shape == torch.Size([5])
-    # result of an operation: need to make a call to the remote worker
-    y = x + x
-    assert y.shape == torch.Size([5])
-
-    # PLAN version
-    plan_worker = workers["plan"]
-    # tensor directly sent: shape stored at sending
-    x = th.tensor([1, 2, 3, 4, 5]).send(plan_worker)
     assert x.shape == torch.Size([5])
     # result of an operation: need to make a call to the remote worker
     y = x + x

@@ -71,8 +71,3 @@ def test_get(workers):
 
     assert type(pointer.child) == PointerTensor
     assert (pointer.get() == tensor).all()
-
-    pointer = tensor.send(workers["plan"])
-
-    assert type(pointer.child) == PointerTensor
-    assert (pointer.get() == tensor).all()
