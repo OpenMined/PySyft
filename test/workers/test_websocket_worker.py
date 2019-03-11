@@ -5,7 +5,7 @@ from syft.workers import WebsocketServerWorker
 from multiprocessing import Process
 
 
-def start_proc(participant, kwargs):
+def start_proc(participant, kwargs):  # pragma: no cover
     """ helper function for spinning up a websocket participant """
 
     def target():
