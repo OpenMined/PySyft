@@ -285,57 +285,39 @@ class BaseWorker(AbstractWorker):
         :return: a pointer to the result
         """
 
-        command, _self, args, kwargs = message
+        command_name, _self, args, kwargs = message
 
         # TODO add kwargs
         kwargs = {}
-        command = command.decode("utf-8")
+        command_name = command_name.decode("utf-8")
         # Handle methods
         if _self is not None:
-            if sy.torch.is_inplace_method(command):
-                getattr(_self, command)(*args, **kwargs)
+            if sy.torch.is_inplace_method(command_name):
+                getattr(_self, command_name)(*args, **kwargs)
                 return
             else:
-                tensor = getattr(_self, command)(*args, **kwargs)
+                response = getattr(_self, command_name)(*args, **kwargs)
         # Handle functions
         else:
             # At this point, the command is ALWAYS a path to a
             # function (i.e., torch.nn.functional.relu). Thus,
             # we need to fetch this function and run it.
 
-            sy.torch.command_guard(command, "torch_modules")
+            sy.torch.command_guard(command_name, "torch_modules")
 
-            paths = command.split(".")
+            paths = command_name.split(".")
             command = self
             for path in paths:
                 command = getattr(command, path)
 
-            tensor = command(*args, **kwargs)
+            response = command(*args, **kwargs)
 
         # some functions don't return anything (such as .backward())
         # so we need to check for that here.
-        if tensor is not None:
-
-            # FIXME: should be added automatically
-            tensor.owner = self
-
-            # TODO: Handle when the response is not simply a tensor
-            # don't re-register tensors if the operation was inline
-            # not only would this be inefficient, but it can cause
-            # serious issues later on
-            # if(_self is not None):
-            #     if(tensor.id != _self.id):
-            self.register_obj(tensor)
-
-            pointer = tensor.create_pointer(
-                location=self,
-                id_at_location=tensor.id,
-                register=True,
-                owner=self,
-                ptr_id=tensor.id,
-                garbage_collect_data=False,
-            )
-            return pointer
+        if response is not None:
+            # Register response et create pointers for tensor elements
+            response = sy.frameworks.torch.hook_args.register_response(command_name, response, self)
+            return response
 
     def send_command(self, recipient, message):
         """
@@ -688,3 +670,25 @@ class BaseWorker(AbstractWorker):
                 results.append(ptr)
 
         return results
+
+    def generate_triple(
+        self, equation: str, field: int, a_size: tuple, b_size: tuple, locations: list
+    ):
+        """Generates a multiplication triple and sends it to all locations
+
+        Args:
+            equation: string representation of the equation in einsum notation
+            field: interger representing the field size
+            a_size: tuple which is the size that a should be
+            b_size: tuple which is the size that b should be
+            locations: a list of workers where the triple should be shared between
+        """
+        assert equation == "mul" or equation == "matmul"
+        cmd = getattr(self.torch, equation)
+        a = self.torch.randint(field, a_size)
+        b = self.torch.randint(field, b_size)
+        c = cmd(a, b)
+        a_shared = a.share(*locations, field=field)
+        b_shared = b.share(*locations, field=field)
+        c_shared = c.share(*locations, field=field)
+        return (a_shared, b_shared, c_shared)
