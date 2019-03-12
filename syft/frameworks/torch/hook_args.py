@@ -1,4 +1,5 @@
 import torch
+import syft as sy
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
 from .tensors.interpreters import PointerTensor
@@ -7,6 +8,8 @@ from .tensors.interpreters import TorchTensor
 from .tensors.interpreters import FixedPrecisionTensor
 from .tensors.interpreters import AdditiveSharingTensor
 from .tensors.interpreters import MultiPointerTensor
+
+from typing import Callable
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -547,21 +550,23 @@ def typed_identity(a):
 register_response_functions = {}
 
 
-def register_response(attr, response, owner):
+def register_response(attr: str, response: object, owner: sy.workers.AbstractWorker) -> object:
     """
     When a remote worker execute a command sent by someone else, the response is
     inspected: all tensors are stored by this worker and a Pointer tensor is
     made for each of them.
 
     To make this efficient, we cache which elements of the response (which can be more
-    complicated with nested tuples for example) in a dictionary called ...
-    However, sometimes a method (an attr) has multiple
-    different response signatures. This invalidates the cache, so we need to have a
-    try/except which refreshes the cache if the signature triggers an error.
+    complicated with nested tuples for example) in the dict register_response_functions
+
+    However, sometimes a function  (an attr) has multiple different response signatures.
+    This invalidates the cache, so we need to have a try/except which refreshes the
+    cache if the signature triggers an error.
 
     Args:
-        attr (str): the name of the method being called
-        response (list): the arguments being passed to the function
+        attr (str): the name of the function being called
+        response (object): the response of this function
+        owner (BaseWorker): the worker which registers the tensors
     """
 
     # TODO: Why do we need to cast it in a tuple? this is a (small) time waste
@@ -593,9 +598,9 @@ def register_response(attr, response, owner):
     return new_response
 
 
-def build_register_response_function(response):
+def build_register_response_function(response: object) -> object:
     """
-    Build the function that register the response and replace tensors with pointer.
+    Build the function that registers the response and replaces tensors with pointers.
 
     Example:
         (1, tensor([1, 2]) is the response
@@ -612,7 +617,15 @@ def build_register_response_function(response):
     return response_hook_function
 
 
-def register_transform_tensor(tensor, owner=None):
+def register_transform_tensor(
+    tensor: object, owner: sy.workers.AbstractWorker = None
+) -> PointerTensor:
+    """
+    Register a tensor and create a pointer that references it
+    :param tensor: the tensor
+    :param owner: the owner make the registration
+    :return: the pointer
+    """
     assert owner is not None
     # FIXME: should be added automatically
     tensor.owner = owner
@@ -630,15 +643,17 @@ def register_transform_tensor(tensor, owner=None):
     return pointer
 
 
-def build_register_response(response, rules, return_tuple=False):
+def build_register_response(
+    response: object, rules: object, return_tuple: bool = False
+) -> Callable:
     """
     Build a function given some rules to efficiently replace in the response object
-    syft or torch tensors with a wrapper, and do nothing for other types of object
-    including , str, numbers, bool, etc.
-    :param response:
-    :param rules:
+    torch tensors with a pointer after they are registered, and do nothing for other
+    types of object including , str, numbers, bool, etc.
+    :param response: the response
+    :param rules: the rule specifying where the tensors are
     :param return_tuple: force to return a tuple even with a single element
-    :return:
+    :return: the function to apply on generic responses
     """
 
     # get the transformation lambda for each args
