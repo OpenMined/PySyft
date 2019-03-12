@@ -1,3 +1,4 @@
+import pytest
 import torch as th
 import syft as sy
 
@@ -19,12 +20,9 @@ def test_base_dataset(workers):
     assert dataset.location.id == "bob"
 
     dataset.get()
-    try:
+    with pytest.raises(AttributeError):
         assert dataset.data.location.id == 0
         assert dataset.targets.location.id == 0
-        assert False
-    except AttributeError:
-        pass
 
 
 def test_federated_dataset(workers):
