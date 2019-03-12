@@ -1,5 +1,6 @@
 import pytest
 
+import random
 import torch
 import syft as sy
 from syft.exceptions import WorkerNotFoundException
