@@ -293,11 +293,8 @@ def test_compressed_serde(compress_scheme):
 @pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
 def test_invalid_compression_scheme(compress_scheme):
     arr = numpy.random.random((100, 100))
-    try:
+    with pytest.raises(CompressionNotFoundException):
         _ = serialize(arr, compress=True, compress_scheme=compress_scheme)
-        assert False
-    except CompressionNotFoundException:
-        assert True
 
 
 @pytest.mark.parametrize("compress_scheme", [-1, 2, 3, 1000])
@@ -305,11 +302,8 @@ def test_invalid_decompression_scheme(compress_scheme):
     # using numpy.ones because numpy.random.random is not compressed.
     arr = numpy.ones((100, 100))
     arr_serialized = serialize(arr, compress=True, compress_scheme=LZ4)
-    try:
+    with pytest.raises(CompressionNotFoundException):
         _ = deserialize(arr_serialized, compressed=True, compress_scheme=compress_scheme)
-        assert False
-    except CompressionNotFoundException:
-        assert True
 
 
 @pytest.mark.parametrize("compress", [True, False])
