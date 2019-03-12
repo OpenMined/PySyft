@@ -1,12 +1,16 @@
 import torch
+import syft as sy
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
+from .tensors.interpreters import AbstractTensor
 from .tensors.interpreters import PointerTensor
-from .tensors.decorators import LoggingTensor
 from .tensors.interpreters import TorchTensor
 from .tensors.interpreters import FixedPrecisionTensor
 from .tensors.interpreters import AdditiveSharingTensor
 from .tensors.interpreters import MultiPointerTensor
+from .tensors.decorators import LoggingTensor
+
+from typing import Callable, Union, Tuple
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -425,80 +429,89 @@ def build_response_hook(response, rules, wrap_type, wrap_args, return_tuple=Fals
     return lambda x: f(lambdas, x)
 
 
-def zero_fold(*a):
+def zero_fold(*a, **k):
     return tuple()
 
 
-def one_fold(return_tuple):
-    def _one_fold(lambdas, args):
-        return lambdas[0](args[0])
+def one_fold(return_tuple, **kwargs):
+    def _one_fold(lambdas, args, **kwargs):
+        return lambdas[0](args[0], **kwargs)
 
     def tuple_one_fold(lambdas, args):
-        return (lambdas[0](args[0]),)
+        return (lambdas[0](args[0], **kwargs),)
 
     return {False: _one_fold, True: tuple_one_fold}[return_tuple]
 
 
-def two_fold(lambdas, args):
-    return lambdas[0](args[0]), lambdas[1](args[1])
+def two_fold(lambdas, args, **kwargs):
+    return lambdas[0](args[0], **kwargs), lambdas[1](args[1], **kwargs)
 
 
-def three_fold(lambdas, args):
-    return lambdas[0](args[0]), lambdas[1](args[1]), lambdas[2](args[2])
-
-
-def four_fold(lambdas, args):
-    return (lambdas[0](args[0]), lambdas[1](args[1]), lambdas[2](args[2]), lambdas[3](args[3]))
-
-
-def five_fold(lambdas, args):
+def three_fold(lambdas, args, **kwargs):
     return (
-        lambdas[0](args[0]),
-        lambdas[1](args[1]),
-        lambdas[2](args[2]),
-        lambdas[3](args[3]),
-        lambdas[4](args[4]),
+        lambdas[0](args[0], **kwargs),
+        lambdas[1](args[1], **kwargs),
+        lambdas[2](args[2], **kwargs),
     )
 
 
-def six_fold(lambdas, args):
+def four_fold(lambdas, args, **kwargs):
     return (
-        lambdas[0](args[0]),
-        lambdas[1](args[1]),
-        lambdas[2](args[2]),
-        lambdas[3](args[3]),
-        lambdas[4](args[4]),
-        lambdas[5](args[5]),
+        lambdas[0](args[0], **kwargs),
+        lambdas[1](args[1], **kwargs),
+        lambdas[2](args[2], **kwargs),
+        lambdas[3](args[3], **kwargs),
     )
 
 
-def seven_fold(lambdas, args):
+def five_fold(lambdas, args, **kwargs):
     return (
-        lambdas[0](args[0]),
-        lambdas[1](args[1]),
-        lambdas[2](args[2]),
-        lambdas[3](args[3]),
-        lambdas[4](args[4]),
-        lambdas[5](args[5]),
-        lambdas[6](args[6]),
+        lambdas[0](args[0], **kwargs),
+        lambdas[1](args[1], **kwargs),
+        lambdas[2](args[2], **kwargs),
+        lambdas[3](args[3], **kwargs),
+        lambdas[4](args[4], **kwargs),
     )
 
 
-def eight_fold(lambdas, args):
+def six_fold(lambdas, args, **kwargs):
     return (
-        lambdas[0](args[0]),
-        lambdas[1](args[1]),
-        lambdas[2](args[2]),
-        lambdas[3](args[3]),
-        lambdas[4](args[4]),
-        lambdas[5](args[5]),
-        lambdas[6](args[6]),
-        lambdas[7](args[7]),
+        lambdas[0](args[0], **kwargs),
+        lambdas[1](args[1], **kwargs),
+        lambdas[2](args[2], **kwargs),
+        lambdas[3](args[3], **kwargs),
+        lambdas[4](args[4], **kwargs),
+        lambdas[5](args[5], **kwargs),
     )
 
 
-def many_fold(lambdas, args):
-    return tuple([lambdas[i](args[i]) for i in range(len(lambdas))])
+def seven_fold(lambdas, args, **kwargs):
+    return (
+        lambdas[0](args[0], **kwargs),
+        lambdas[1](args[1], **kwargs),
+        lambdas[2](args[2], **kwargs),
+        lambdas[3](args[3], **kwargs),
+        lambdas[4](args[4], **kwargs),
+        lambdas[5](args[5], **kwargs),
+        lambdas[6](args[6], **kwargs),
+    )
+
+
+def eight_fold(lambdas, args, **kwargs):
+    return (
+        lambdas[0](args[0], **kwargs),
+        lambdas[1](args[1], **kwargs),
+        lambdas[2](args[2], **kwargs),
+        lambdas[3](args[3], **kwargs),
+        lambdas[4](args[4], **kwargs),
+        lambdas[5](args[5], **kwargs),
+        lambdas[6](args[6], **kwargs),
+        lambdas[7](args[7], **kwargs),
+    )
+
+
+def many_fold(lambdas, args, **kwargs):
+    return tuple([lambdas[i](args[i], **kwargs) for i in range(len(lambdas))])
 
 
 # Add the possibility to make a type check in the identity function applied
@@ -531,3 +544,150 @@ def typed_identity(a):
 
     else:
         return lambda i: i
+
+
+# -- Fast way to register responses and transform tensors in pointers
+
+register_response_functions = {}
+
+
+def register_response(attr: str, response: object, owner: sy.workers.AbstractWorker) -> object:
+    """
+    When a remote worker execute a command sent by someone else, the response is
+    inspected: all tensors are stored by this worker and a Pointer tensor is
+    made for each of them.
+
+    To make this efficient, we cache which elements of the response (which can be more
+    complicated with nested tuples for example) in the dict register_response_functions
+
+    However, sometimes a function  (an attr) has multiple different response signatures.
+    This invalidates the cache, so we need to have a try/except which refreshes the
+    cache if the signature triggers an error.
+
+    Args:
+        attr (str): the name of the function being called
+        response (object): the response of this function
+        owner (BaseWorker): the worker which registers the tensors
+    """
+
+    # TODO: Why do we need to cast it in a tuple? this is a (small) time waste
+    response_is_tuple = isinstance(response, tuple)
+
+    # Add an artificial tuple
+    if not response_is_tuple:
+        response = (response, 1)
+
+    attr_id = "{}".format(attr)
+
+    try:
+        # Load the utility function to register the response and transform tensors with pointers
+        register_response_function = register_response_functions[attr_id]
+        # Try running it
+        new_response = register_response_function(response, owner=owner)
+
+    except (IndexError, KeyError, AssertionError):  # Update the function in cas of an error
+        register_response_function = build_register_response_function(response)
+        # Store this utility function in the registry
+        register_response_functions[attr_id] = register_response_function
+        # Run it
+        new_response = register_response_function(response, owner=owner)
+
+    # Remove the artificial tuple
+    if not response_is_tuple:
+        new_response, _ = new_response
+
+    return new_response
+
+
+def build_register_response_function(response: object) -> Callable:
+    """
+    Build the function that registers the response and replaces tensors with pointers.
+
+    Example:
+        (1, tensor([1, 2]) is the response
+        f is the register_response_function
+        then f(p) = (1, (Wrapper)>Pointer)
+    """
+    # Inspect the call to find tensor arguments and return a rule whose
+    # structure is the same as the response object, with 1 where there was
+    # (torch or syft) tensors and 0 when not (ex: number, str, ...)
+    rule = build_rule(response)
+    # Build a function with this rule to efficiently replace syft tensors
+    # (but not pointer) with their child in the args objects
+    response_hook_function = build_register_response(response, rule)
+    return response_hook_function
+
+
+def register_transform_tensor(
+    tensor: Union[torch.Tensor, AbstractTensor], owner: sy.workers.AbstractWorker = None
+) -> PointerTensor:
+    """
+    Register a tensor and create a pointer that references it
+
+    Args:
+        tensor: the tensor
+        owner: the owner make the registration
+    Returns:
+        the pointer
+    """
+    assert owner is not None
+    # FIXME: should be added automatically
+    tensor.owner = owner
+
+    owner.register_obj(tensor)
+
+    pointer = tensor.create_pointer(
+        location=owner,
+        id_at_location=tensor.id,
+        register=True,
+        owner=owner,
+        ptr_id=tensor.id,
+        garbage_collect_data=False,
+    )
+    return pointer
+
+
+def build_register_response(response: object, rules: Tuple, return_tuple: bool = False) -> Callable:
+    """
+    Build a function given some rules to efficiently replace in the response object
+    torch tensors with a pointer after they are registered, and do nothing for other
+    types of object including , str, numbers, bool, etc.
+
+    Args:
+        response: the response
+        rules: the rule specifying where the tensors are
+        return_tuple: force to return a tuple even with a single element
+    Returns:
+        The function to apply on generic responses
+    """
+
+    # get the transformation lambda for each args
+    lambdas = [
+        (lambda i, **kwargs: i)  # return the same object
+        if not r  # if the rule is a number == 0.
+        else build_register_response(a, r, True)  # If not, call recursively build_response_hook
+        if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
+        # Last if not, rule is probably == 1 so use type to return the right transformation.
+        else lambda i, **kwargs: register_transform_tensor(i, **kwargs)
+        for a, r in zip(response, rules)  # And do this for all the responses / rules provided
+    ]
+
+    # Instead of iterating which is slow, we use trick to efficiently
+    # apply each lambda to each arg
+    folds = {
+        0: zero_fold,
+        1: one_fold(return_tuple),
+        2: two_fold,
+        3: three_fold,
+        4: four_fold,
+        5: five_fold,
+        6: six_fold,
+        7: seven_fold,
+        8: eight_fold,
+    }
+    try:
+        f = folds[len(lambdas)]
+    except KeyError:
+        f = many_fold
+
+    return lambda x, **kwargs: f(lambdas, x, **kwargs)

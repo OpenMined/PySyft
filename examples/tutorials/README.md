@@ -16,11 +16,11 @@ In this step-by-step tutorial series, you'll learn about all the ways PySyft can
 
 # You Will Learn:
 
-- [Part 1: The Basic Tools of Private, Decentralized Data Science](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%201%20-%20The%20Basic%20Tools%20of%20Private%2C%20Decentralized%20Data%20Science.ipynb)
+- [Part 1: The Basic Tools of Private, Decentralized Data Science](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%201%20-%20The%20Basic%20Tools%20of%20Private%20Deep%20Learning.ipynb)
 - [Part 2: Intro to Federated Learning](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%202%20-%20Intro%20to%20Federated%20Learning.ipynb)
 - [Part 3: Advanced Remote Execution Tools](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%203%20-%20Advanced%20Remote%20Execution%20Tools.ipynb)
 - [Part 4: Federated Learning via Trusted Aggregator](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%204%20-%20Federated%20Learning%20via%20Trusted%20Aggregator.ipynb)
 - [Part 5: Intro to Encrypted Programs](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%205%20-%20Intro%20to%20Encrypted%20Programs.ipynb)
 - [Part 6: Welcome to the Sandbox](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%206%20-%20Welcome%20to%20the%20Sandbox.ipynb)
 - [Part 7: Federate Learning with Federated Dataset](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%207%20-%20Federated%20Learning%20with%20Federated%20Dataset.ipynb)
-- [Part 8: Federated Learning - Encrypted Gradient Aggregation](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%208%20-%20Federated%20Learning%20-%20Encrypted%20Gradient%20Aggregation.ipynb)
+- [Part 8: Federated Learning on MNIST using a CNN](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%208%20-%20Federated%20Learning%20on%20MNIST%20using%20a%20CNN.ipynb)
