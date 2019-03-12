@@ -82,6 +82,7 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
             MSGTYPE.OBJ_DEL: self.rm_obj,
             MSGTYPE.IS_NONE: self.is_tensor_none,
+            MSGTYPE.SEARCH: self.search,
         }
         self.load_data(data)
 
@@ -209,6 +210,7 @@ class BaseWorker(AbstractWorker):
 
         # Step 2: Serialize the message to simple python objects
         bin_response = serde.serialize(response)
+
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
