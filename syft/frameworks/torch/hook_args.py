@@ -2,14 +2,15 @@ import torch
 import syft as sy
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
+from .tensors.interpreters import AbstractTensor
 from .tensors.interpreters import PointerTensor
-from .tensors.decorators import LoggingTensor
 from .tensors.interpreters import TorchTensor
 from .tensors.interpreters import FixedPrecisionTensor
 from .tensors.interpreters import AdditiveSharingTensor
 from .tensors.interpreters import MultiPointerTensor
+from .tensors.decorators import LoggingTensor
 
-from typing import Callable
+from typing import Callable, Union, Tuple
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -598,7 +599,7 @@ def register_response(attr: str, response: object, owner: sy.workers.AbstractWor
     return new_response
 
 
-def build_register_response_function(response: object) -> object:
+def build_register_response_function(response: object) -> Callable:
     """
     Build the function that registers the response and replaces tensors with pointers.
 
@@ -618,13 +619,16 @@ def build_register_response_function(response: object) -> object:
 
 
 def register_transform_tensor(
-    tensor: object, owner: sy.workers.AbstractWorker = None
+    tensor: Union[torch.Tensor, AbstractTensor], owner: sy.workers.AbstractWorker = None
 ) -> PointerTensor:
     """
     Register a tensor and create a pointer that references it
-    :param tensor: the tensor
-    :param owner: the owner make the registration
-    :return: the pointer
+
+    Args:
+        tensor: the tensor
+        owner: the owner make the registration
+    Returns:
+        the pointer
     """
     assert owner is not None
     # FIXME: should be added automatically
@@ -643,17 +647,18 @@ def register_transform_tensor(
     return pointer
 
 
-def build_register_response(
-    response: object, rules: object, return_tuple: bool = False
-) -> Callable:
+def build_register_response(response: object, rules: Tuple, return_tuple: bool = False) -> Callable:
     """
     Build a function given some rules to efficiently replace in the response object
     torch tensors with a pointer after they are registered, and do nothing for other
     types of object including , str, numbers, bool, etc.
-    :param response: the response
-    :param rules: the rule specifying where the tensors are
-    :param return_tuple: force to return a tuple even with a single element
-    :return: the function to apply on generic responses
+
+    Args:
+        response: the response
+        rules: the rule specifying where the tensors are
+        return_tuple: force to return a tuple even with a single element
+    Returns:
+        The function to apply on generic responses
     """
 
     # get the transformation lambda for each args
