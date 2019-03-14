@@ -9,17 +9,18 @@ import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers import BaseWorker
 
+
 class WebsocketClientWorker(BaseWorker):
     def __init__(
-            self,
-            hook: sy.TorchHook,
-            host: str,
-            port: int,
-            id: Union[int, str] = 0,
-            is_client_worker: bool = False,
-            log_msgs: bool = False,
-            verbose: bool = False,
-            data: List[Union[torch.Tensor, AbstractTensor]] = None
+        self,
+        hook: sy.TorchHook,
+        host: str,
+        port: int,
+        id: Union[int, str] = 0,
+        is_client_worker: bool = False,
+        log_msgs: bool = False,
+        verbose: bool = False,
+        data: List[Union[torch.Tensor, AbstractTensor]] = None,
     ):
         """A client which will forward all messages to a remote worker running a
         WebsocketServerWorker and receive all responses back from the server.

@@ -10,17 +10,18 @@ import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 
+
 class WebsocketServerWorker(VirtualWorker):
     def __init__(
-            self,
-            hook: sy.TorchHook,
-            host: str,
-            port: int,
-            id: Union[int, str] = 0,
-            log_msgs: bool = False,
-            verbose: bool = False,
-            data: List[Union[torch.Tensor, AbstractTensor]] = None,
-            loop=None,
+        self,
+        hook: sy.TorchHook,
+        host: str,
+        port: int,
+        id: Union[int, str] = 0,
+        log_msgs: bool = False,
+        verbose: bool = False,
+        data: List[Union[torch.Tensor, AbstractTensor]] = None,
+        loop=None,
     ):
         """This is a simple extension to normal workers wherein
         all messages are passed over websockets. Note that because
