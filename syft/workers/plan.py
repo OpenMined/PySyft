@@ -77,7 +77,7 @@ class Plan(BaseWorker):
         # we can't receive the results of a plan without
         # executing it. So, execute the plan.
         if msg_type in (MSGTYPE.OBJ_REQ, MSGTYPE.IS_NONE, MSGTYPE.GET_SHAPE):
-            return self.execute_plan()
+            return self.__call__()
 
         return sy.serde.serialize(None)
 
@@ -89,7 +89,6 @@ class Plan(BaseWorker):
         and is used to fill the plan
         :param args: the input data
         """
-        print("build plan")
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
         self.arg_ids = list()
@@ -174,7 +173,8 @@ class Plan(BaseWorker):
             response = self.request_execute_plan(result_ids, *args)
             return response
 
-        if not self.location:
+        # if the plan is not to be sent but is not local (ie owned by the local worker)
+        if not self.location and self.owner != sy.hook.local_worker:
             arg_ids = [arg.id for arg in args]
             self.replace_ids(self.arg_ids, arg_ids)
             self.arg_ids = arg_ids
