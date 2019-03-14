@@ -1,21 +1,26 @@
-import syft as sy
-import asyncio
-import websockets
-from syft.workers.virtual import VirtualWorker
 import binascii
+from typing import Union
+from typing import List
 
+import asyncio
+import torch
+import websockets
+
+import syft as sy
+from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.workers.virtual import VirtualWorker
 
 class WebsocketServerWorker(VirtualWorker):
     def __init__(
-        self,
-        hook,
-        host: str,
-        port: int,
-        id: (int or str),
-        log_msgs: bool = False,
-        verbose: bool = False,
-        data: dict = {},
-        loop=None,
+            self,
+            hook: sy.TorchHook,
+            host: str,
+            port: int,
+            id: Union[int, str] = 0,
+            log_msgs: bool = False,
+            verbose: bool = False,
+            data: List[Union[torch.Tensor, AbstractTensor]] = None,
+            loop=None,
     ):
         """This is a simple extension to normal workers wherein
         all messages are passed over websockets. Note that because
@@ -53,7 +58,7 @@ class WebsocketServerWorker(VirtualWorker):
         # call BaseWorker constructor
         super().__init__(hook=hook, id=id, data=data, log_msgs=log_msgs, verbose=verbose)
 
-    async def _consumer_handler(self, websocket):
+    async def _consumer_handler(self, websocket: websockets.WebSocketCommonProtocol):
         """This handler listens for messages from WebsocketClientWorker
         objects.
 
@@ -66,7 +71,7 @@ class WebsocketServerWorker(VirtualWorker):
             msg = await websocket.recv()
             await self.broadcast_queue.put(msg)
 
-    async def _producer_handler(self, websocket):
+    async def _producer_handler(self, websocket: websockets.WebSocketCommonProtocol):
         """This handler listens to the queue and processes messages as they
         arrive.
 
@@ -93,7 +98,7 @@ class WebsocketServerWorker(VirtualWorker):
             # send the response
             await websocket.send(response)
 
-    async def _handler(self, websocket, *unused_args):
+    async def _handler(self, websocket: websockets.WebSocketCommonProtocol, *unused_args):
         """Setup the consumer and producer response handlers with asyncio.
 
         Args:
