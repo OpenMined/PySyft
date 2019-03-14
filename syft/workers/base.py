@@ -54,7 +54,9 @@ class BaseWorker(AbstractWorker):
             primarily a development/testing feature.
     """
 
-    def __init__(self, hook, id=0, data=None, is_client_worker=False, log_msgs=False, verbose=False):
+    def __init__(
+        self, hook, id=0, data=None, is_client_worker=False, log_msgs=False, verbose=False
+    ):
         """Initializes a BaseWorker."""
 
         self.hook = hook
