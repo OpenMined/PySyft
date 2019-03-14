@@ -933,7 +933,31 @@ class TorchHook:
 
         self.torch.nn.Module.float_precision = module_float_precision_
 
-        def module_copy_(nn_self):
+        def module_copy(nn_self):
+            """Returns a copy of a torch.nn.Module"""
             return copy.deepcopy(nn_self)
 
-        self.torch.nn.Module.copy = module_copy_
+        self.torch.nn.Module.copy = module_copy
+
+        @property
+        def owner(nn_self):
+            for p in nn_self.parameters():
+                return p.owner
+
+        self.torch.nn.Module.owner = owner
+
+        @property
+        def location(nn_self):
+            try:
+                for p in nn_self.parameters():
+                    return p.location
+            except AttributeError:
+                raise AttributeError(
+                    "Module has no attribute location, did you already send it to some location?"
+                )
+
+        self.torch.nn.Module.location = location
+
+        # Fix for RNN > LSTM as they call directly the C implementation which we can't hook,
+        # whild they should be calling self.torch.lstm which we do hook
+        self.torch.nn.modules.rnn._rnn_impls["LSTM"] = self.torch.lstm
