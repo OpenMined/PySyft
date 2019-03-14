@@ -47,7 +47,7 @@ class PointerTensor(AbstractTensor):
         shape=None,
         point_to_attr=None,
         tags=None,
-        description=None,
+        description: str = None,
     ):
         """Initializes a PointerTensor.
 

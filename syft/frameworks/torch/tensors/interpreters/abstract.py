@@ -12,7 +12,7 @@ class AbstractTensor(ABC):
 
     is_wrapper = False
 
-    def __init__(self, tags=None, description=None):
+    def __init__(self, tags=None, description: str = None):
         """Initializer for AbstractTensor
 
         Args:
@@ -37,7 +37,7 @@ class AbstractTensor(ABC):
         else:
             return type(self).__name__
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Alias .shape[0] with len(), helpful for pointers"""
         try:
             if hasattr(self, "child"):
@@ -47,7 +47,7 @@ class AbstractTensor(ABC):
         except IndexError:
             return 0
 
-    def on(self, tensor, wrap=True):
+    def on(self, tensor, wrap: bool = True):
         """
         Add a syft(log) tensor on top of the tensor.
         :param tensor: the tensor to extend
@@ -91,7 +91,7 @@ class AbstractTensor(ABC):
         return wrapper
 
     def serialize(
-        self, compress=True, compress_scheme=0
+        self, compress: bool = True, compress_scheme: int = 0
     ):  # Code 0 is LZ4 - check serde.py to see others
         """Serializes the tensor on which it's called.
 
@@ -156,6 +156,7 @@ def initialize_tensor(
 
 
 def _apply_args(hook_self, new_tensor, owner=None, id=None):
+
     if owner is None:
         owner = hook_self.local_worker
 

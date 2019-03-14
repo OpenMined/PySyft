@@ -1,5 +1,6 @@
 import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.workers import BaseWorker
 
 
 class MultiPointerTensor(AbstractTensor):
@@ -8,7 +9,7 @@ class MultiPointerTensor(AbstractTensor):
     def __init__(
         self,
         parent: AbstractTensor = None,
-        location=None,
+        location: BaseWorker = None,
         id_at_location=None,
         register=False,
         owner=None,
@@ -17,7 +18,7 @@ class MultiPointerTensor(AbstractTensor):
         shape=None,
         point_to_attr=None,
         tags=None,
-        description=None,
+        description: str = None,
         children=None,
     ):
 
@@ -45,7 +46,7 @@ class MultiPointerTensor(AbstractTensor):
 
         return list(self.child.values())[0].shape
 
-    def get(self, sum_results=False):
+    def get(self, sum_results: bool = False):
 
         results = list()
         for v in self.child.values():
