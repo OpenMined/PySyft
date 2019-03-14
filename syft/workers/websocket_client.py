@@ -5,7 +5,6 @@ from typing import List
 import torch
 from websocket import create_connection
 
-import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers import BaseWorker
 
@@ -13,7 +12,7 @@ from syft.workers import BaseWorker
 class WebsocketClientWorker(BaseWorker):
     def __init__(
         self,
-        hook: sy.TorchHook,
+        hook,
         host: str,
         port: int,
         id: Union[int, str] = 0,

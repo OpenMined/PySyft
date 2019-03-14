@@ -6,7 +6,6 @@ import asyncio
 import torch
 import websockets
 
-import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 
@@ -14,7 +13,7 @@ from syft.workers.virtual import VirtualWorker
 class WebsocketServerWorker(VirtualWorker):
     def __init__(
         self,
-        hook: sy.TorchHook,
+        hook,
         host: str,
         port: int,
         id: Union[int, str] = 0,
