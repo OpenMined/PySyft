@@ -209,7 +209,7 @@ def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
 
 def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     """
-    This function converts a torch tensor into a serliaized torch tensor
+    This function converts a torch tensor into a serialized torch tensor
     using pickle. We choose to use this because PyTorch has a custom and
     very fast PyTorch pickler.
 
@@ -220,14 +220,16 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         tuple: serialized tuple of torch tensor. The first value is the
         id of the tensor and the second is the binary for the PyTorch
         object. The third is the chain of abstractions, and the fourth
-        (optinally) is the chain of graident tensors (nested tuple)
+        (optionally) is the chain of gradient tensors (nested tuple)
     """
 
     binary_stream = io.BytesIO()
+    tensor.flip_hook_native_size()
     torch.save(tensor, binary_stream)
+    tensor.flip_hook_native_size()
     tensor_bin = binary_stream.getvalue()
 
-    # note we need to do this expicitly because torch.save does not
+    # note we need to do this explicitly because torch.save does not
     # seem to be including .grad by default
 
     if tensor.grad is not None:
@@ -244,13 +246,8 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
 
     chain = None
 
-    # I think the pointer bug is is between here
-
     if hasattr(tensor, "child"):
         chain = _simplify(tensor.child)
-
-    # and here... leaving a reerence here so i can find it later
-    # TODO fix pointer bug
 
     tags = tensor.tags
     if tags is not None:

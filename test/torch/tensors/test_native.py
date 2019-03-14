@@ -71,3 +71,10 @@ def test_get(workers):
 
     assert type(pointer.child) == PointerTensor
     assert (pointer.get() == tensor).all()
+
+
+def test_size():
+    tensor = torch.rand(5, 3)
+    assert tensor.size() == torch.Size([5, 3])
+    assert tensor.size() == tensor.shape
+    assert tensor.size(0) == tensor.shape[0]
