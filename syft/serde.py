@@ -131,7 +131,7 @@ def deserialize(
             for scheme codes).
 
     Returns:
-        binary: the serialized form of the object.
+        object: the deserialized form of the binary input.
     """
     if worker is None:
         worker = syft.torch.hook.local_worker
@@ -780,7 +780,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
     id_at_location = tensor_tuple[1]
     worker_id = tensor_tuple[2]
     if isinstance(worker_id, bytes):
-        worker_id = worker_id.decode("utf-8")
+        worker_id = worker_id.decode()
     point_to_attr = tensor_tuple[3]
     shape = tensor_tuple[4]
 

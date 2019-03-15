@@ -270,3 +270,23 @@ def test_get_remote_shape(workers):
     # result of an operation: need to make a call to the remote worker
     y = x + x
     assert y.shape == torch.Size([5])
+
+
+def test_remote_function_with_multi_ouput(workers):
+    """
+    Functions like .split return several tensors, registration and response
+    must be made carefully in this case
+    """
+    bob = workers["bob"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+    r_ptr = torch.split(ptr, 2)
+    assert (r_ptr[0].get() == torch.tensor([1, 2.0])).all()
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+    max_value, argmax_idx = torch.max(ptr, 0)
+
+    assert max_value.get().item() == 4.0
+    assert argmax_idx.get().item() == 3

@@ -6,6 +6,7 @@ class MSGTYPE(object):
     EXCEPTION = 5
     IS_NONE = 6
     GET_SHAPE = 7
+    SEARCH = 8
 
 
 code2MSGTYPE = {}

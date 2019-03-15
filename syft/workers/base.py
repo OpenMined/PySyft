@@ -6,9 +6,13 @@ from abc import abstractmethod
 import syft as sy
 
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.workers import AbstractWorker
 from syft.codes import MSGTYPE
+from typing import Union
+from typing import List
+import torch
 
 
 class BaseWorker(AbstractWorker):
@@ -50,16 +54,7 @@ class BaseWorker(AbstractWorker):
             primarily a development/testing feature.
     """
 
-    def __init__(
-        self,
-        hook,
-        id=0,
-        known_workers={},
-        data={},
-        is_client_worker=False,
-        log_msgs=False,
-        verbose=False,
-    ):
+    def __init__(self, hook, id=0, data={}, is_client_worker=False, log_msgs=False, verbose=False):
         """Initializes a BaseWorker."""
 
         self.hook = hook
@@ -73,8 +68,12 @@ class BaseWorker(AbstractWorker):
         # objects where all objects are stored using their IDs as keys.
         self._objects = {}
         self._known_workers = {}
-        for k, v in known_workers.items():
-            self._known_workers[k] = v
+        if hook.local_worker is not None:
+            for k, v in hook.local_worker._known_workers.items():
+                if v is not hook.local_worker:
+                    self._known_workers[k] = v
+                    v.add_worker(self)
+            hook.local_worker.add_worker(self)
         self.add_worker(self)
         # For performance, we cache each
         self._message_router = {
@@ -84,12 +83,13 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ_DEL: self.rm_obj,
             MSGTYPE.IS_NONE: self.is_tensor_none,
             MSGTYPE.GET_SHAPE: self.get_tensor_shape,
+            MSGTYPE.SEARCH: self.search,
         }
         self.load_data(data)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
-    def _send_msg(self, message, location):
+    def _send_msg(self, message: bin, location: "BaseWorker"):
         """Sends message from one worker to another.
 
         As BaseWorker implies, you should never instantiate this class by
@@ -99,8 +99,8 @@ class BaseWorker(AbstractWorker):
         example to study is VirtualWorker.
 
         Args:
-            message: A string representing the message being sent from one
-                worker to another.
+            message: A binary message to be sent from one worker
+                to another.
             location: A BaseWorker instance that lets you provide the
                 destination to send the message.
 
@@ -111,7 +111,7 @@ class BaseWorker(AbstractWorker):
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
-    def _recv_msg(self, message):
+    def _recv_msg(self, message: bin):
         """Receives the message.
 
         As BaseWorker implies, you should never instantiate this class by
@@ -121,7 +121,7 @@ class BaseWorker(AbstractWorker):
         example to study is VirtualWorker.
 
         Args:
-            message: A string representing the message being received.
+            message: The binary message being received.
 
         Raises:
             NotImplementedError: Method not implemented error.
@@ -129,7 +129,7 @@ class BaseWorker(AbstractWorker):
         """
         raise NotImplementedError  # pragma: no cover
 
-    def load_data(self, data):
+    def load_data(self, data: List[Union[torch.Tensor, AbstractTensor]]) -> None:
         """Allows workers to be initialized with data when created
 
            The method registers the tensor individual tensor objects.
@@ -146,7 +146,8 @@ class BaseWorker(AbstractWorker):
             self.register_obj(tensor)
             tensor.owner = self
 
-    def send_msg(self, msg_type, message, location):
+    def send_msg(self, msg_type: int, message: str, location: "BaseWorker") -> object:
+
         """Implements the logic to send messages.
 
         The message is serialized and sent to the specified location. The
@@ -181,7 +182,7 @@ class BaseWorker(AbstractWorker):
 
         return response
 
-    def recv_msg(self, bin_message):
+    def recv_msg(self, bin_message: bin) -> bin:
         """Implements the logic to receive messages.
 
         The binary message is deserialized and routed to the appropriate
@@ -207,22 +208,21 @@ class BaseWorker(AbstractWorker):
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
-        # # Step 2: If response in none, set default
-        # TODO: not sure if someone needed this - if this comment
-        # is still here after Feb 15, 2018, please delete these
-        # two lines of (commented out) code.
-        # if response is None:
-        #     response = None
+        # Step 2: Serialize the message to simple python objects
+        bin_response = serde.serialize(response)
 
-        # Step 3: Serialize the message to simple python objects
-        bin_response = sy.serde.serialize(response)
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
         # Each method corresponds to a MsgType enum.
 
-    def send(self, obj, workers, ptr_id=None):
-        """Sends an object to the worker(s).
+    def send(
+        self,
+        tensor: Union[torch.Tensor, AbstractTensor],
+        workers: "BaseWorker",
+        ptr_id: Union[str, int] = None,
+    ) -> PointerTensor:
+        """Sends tensor to the worker(s).
 
         Send a syft or torch tensor/object and it's child, sub-child, etc (all the
         syft chain of children) to a worker, or a list of workers, with a given
@@ -285,51 +285,39 @@ class BaseWorker(AbstractWorker):
         :return: a pointer to the result
         """
 
-        (command, _self, args), return_ids = message
+        (command_name, _self, args, kwargs), return_ids = message
 
         # TODO add kwargs
         kwargs = {}
-        command = command.decode("utf-8")
+        command_name = command_name.decode("utf-8")
         # Handle methods
         if _self is not None:
-            if sy.torch.is_inplace_method(command):
-                getattr(_self, command)(*args, **kwargs)
+            if sy.torch.is_inplace_method(command_name):
+                getattr(_self, command_name)(*args, **kwargs)
                 return
             else:
-                tensor = getattr(_self, command)(*args, **kwargs)
+                response = getattr(_self, command_name)(*args, **kwargs)
         # Handle functions
         else:
             # At this point, the command is ALWAYS a path to a
             # function (i.e., torch.nn.functional.relu). Thus,
             # we need to fetch this function and run it.
 
-            sy.torch.command_guard(command, "torch_modules")
+            sy.torch.command_guard(command_name, "torch_modules")
 
-            paths = command.split(".")
+            paths = command_name.split(".")
             command = self
             for path in paths:
                 command = getattr(command, path)
 
-            tensor = command(*args, **kwargs)
+            response = command(*args, **kwargs)
 
         # some functions don't return anything (such as .backward())
         # so we need to check for that here.
-        if tensor is not None:
-
-            if hasattr(tensor, "owner"):
-                # FIXME: should be added automatically ?
-                tensor.owner = self
-                tensor.id = return_ids
-
-                # TODO: Handle when the response is not simply a tensor
-                # don't re-register tensors if the operation was inline
-                # not only would this be inefficient, but it can cause
-                # serious issues later on
-                # if(_self is not None):
-                #     if(tensor.id != _self.id):
-                self.register_obj(tensor)
-
-            return None
+        if response is not None:
+            # Register response et create pointers for tensor elements
+            response = sy.frameworks.torch.hook_args.register_response(command_name, response, return_ids, self)
+            return response
 
     def send_command(self, recipient, message, return_ids=None):
         """
@@ -354,7 +342,8 @@ class BaseWorker(AbstractWorker):
 
         return response
 
-    def set_obj(self, obj):
+    def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
+
         """Adds an object to the registry of objects.
 
         Args:
@@ -362,7 +351,7 @@ class BaseWorker(AbstractWorker):
         """
         self._objects[obj.id] = obj
 
-    def get_obj(self, obj_id):
+    def get_obj(self, obj_id: Union[str, int]) -> object:
         """Returns the object from registry.
 
         Look up an object from the registry using its ID.
@@ -726,3 +715,25 @@ class BaseWorker(AbstractWorker):
                 results.append(ptr)
 
         return results
+
+    def generate_triple(
+        self, equation: str, field: int, a_size: tuple, b_size: tuple, locations: list
+    ):
+        """Generates a multiplication triple and sends it to all locations
+
+        Args:
+            equation: string representation of the equation in einsum notation
+            field: interger representing the field size
+            a_size: tuple which is the size that a should be
+            b_size: tuple which is the size that b should be
+            locations: a list of workers where the triple should be shared between
+        """
+        assert equation == "mul" or equation == "matmul"
+        cmd = getattr(self.torch, equation)
+        a = self.torch.randint(field, a_size)
+        b = self.torch.randint(field, b_size)
+        c = cmd(a, b)
+        a_shared = a.share(*locations, field=field)
+        b_shared = b.share(*locations, field=field)
+        c_shared = c.share(*locations, field=field)
+        return (a_shared, b_shared, c_shared)
