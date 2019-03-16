@@ -69,14 +69,18 @@ class BaseWorker(AbstractWorker):
         # A core object in every BaseWorker instantiation. A Collection of
         # objects where all objects are stored using their IDs as keys.
         self._objects = {}
+
+        # Declare workers as appropriate
         self._known_workers = {}
         if hook.local_worker is not None:
-            for k, v in hook.local_worker._known_workers.items():
-                if v is not hook.local_worker:
-                    self._known_workers[k] = v
-                    v.add_worker(self)
-            hook.local_worker.add_worker(self)
-        self.add_worker(self)
+            if self.id not in self.hook.local_worker._known_workers:
+                hook.local_worker.add_worker(self)
+            for worker_id, worker in hook.local_worker._known_workers.items():
+                if worker_id not in self._known_workers:
+                    self.add_worker(worker)
+                if self.id not in worker._known_workers:
+                    worker.add_worker(self)
+
         # For performance, we cache each
         self._message_router = {
             MSGTYPE.CMD: self.execute_command,
