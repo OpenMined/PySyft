@@ -16,6 +16,7 @@ def test_plan_built_locally():
     x = th.tensor([-1, 2, 3])
     x_abs = plan_abs(x)
 
+    assert isinstance(plan_abs.__str__(), str)
     assert len(plan_abs.readable_plan) > 0
 
 

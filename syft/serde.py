@@ -963,13 +963,10 @@ def _detail_plan_pointer(worker: AbstractWorker, plan_pointer_tuple: tuple) -> P
         return tensor
     # Else we keep the same Pointer
     else:
-
         location = syft.torch.hook.local_worker.get_worker(worker_id)
-
         ptr = PlanPointer(
             location=location, id_at_location=id_at_location, owner=worker, id=obj_id, register=True
         )
-
         return ptr
 
 
