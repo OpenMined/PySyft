@@ -5,7 +5,6 @@ import torch
 """ Test cases to ensure working of Polynomial Tensor. The tests under these ensure that the error implementation of function approximations work as expected"""
 
 
-
 def testSigmoid():
 
     Ptensor = PolynomialTensor()
@@ -14,9 +13,9 @@ def testSigmoid():
     expected = torch.tensor(
         [-0.1938, 0.0372, 0.1530, 0.2688, 0.4174, 0.5826, 0.7313, 0.8470, 0.9628, 1.1938]
     )
-    
-    #allclose function to compare the expected values and approximations with fixed precision
-    assert torch.allclose(expected, Ptensor.sigmoid(x),1e-03)
+
+    # allclose function to compare the expected values and approximations with fixed precision
+    assert torch.allclose(expected, Ptensor.sigmoid(x), 1e-03)
 
 
 def testExp():
@@ -27,9 +26,9 @@ def testExp():
     expected = torch.tensor(
         [0.2179, 0.1224, 0.1905, 0.3679, 0.7165, 1.3956, 2.7179, 5.2813, 10.1764, 19.2679]
     )
-    
-    #allclose function to compare the expected values and approximations with fixed precision
-    assert torch.allclose(expected, Ptensor.exp(x),1e-03)
+
+    # allclose function to compare the expected values and approximations with fixed precision
+    assert torch.allclose(expected, Ptensor.exp(x), 1e-03)
 
 
 def testtanh():
@@ -51,7 +50,6 @@ def testtanh():
             3.3883e02,
         ]
     )
-    
-    #allclose function to compare the expected values and approximations with fixed precision
-    assert torch.allclose(expected, Ptensor.tanh(x),1e-03)
 
+    # allclose function to compare the expected values and approximations with fixed precision
+    assert torch.allclose(expected, Ptensor.tanh(x), 1e-03)

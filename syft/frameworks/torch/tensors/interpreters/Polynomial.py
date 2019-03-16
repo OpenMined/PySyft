@@ -8,7 +8,7 @@ class PolynomialTensor(AbstractTensor):
        since computing exact functions could impose a overhead on computation
     """
 
-    def sigmoid(self,x: torch.tensor) -> torch.tensor:
+    def sigmoid(self, x: torch.tensor) -> torch.tensor:
 
         """Parameters:
             
@@ -20,7 +20,7 @@ class PolynomialTensor(AbstractTensor):
 
         return (1 / 2) + (x / 4) - (x ** 3 / 48) + (x ** 5 / 480)
 
-    def exp(self,x: torch.tensor) -> torch.tensor:
+    def exp(self, x: torch.tensor) -> torch.tensor:
 
         """Parameters:
             
@@ -32,7 +32,7 @@ class PolynomialTensor(AbstractTensor):
 
         return 1 + x + (x ** 2 / 2) + (x ** 3 / 6) + (x ** 4 / 24) + (x ** 5 / 120) + (x ** 6 / 840)
 
-    def tanh(self,x: torch.tensor) -> torch.tensor:
+    def tanh(self, x: torch.tensor) -> torch.tensor:
 
         """Parameters:
             
