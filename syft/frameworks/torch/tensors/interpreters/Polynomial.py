@@ -9,7 +9,7 @@ class PolynomialTensor(AbstractTensor):
        since computing exact functions could impose a overhead on computation
     """
 
-    def interpolate(self,function,interval,degree=10,precision=10):
+    def interpolate(self, function, interval, degree=10, precision=10):
 
         # function we wish to approximate
         f_real = function
@@ -27,12 +27,12 @@ class PolynomialTensor(AbstractTensor):
 
         # approximation function
         f_interpolated = np.poly1d(coefs)
-        
-        return(f_interpolated)
-        
+
+        return f_interpolated
+
     def sigmoid_inter(self):
-        
-        return self.interpolate(lambda x: 1/(1+np.exp(-x)),np.linspace(-10, 10, 100))
+
+        return self.interpolate(lambda x: 1 / (1 + np.exp(-x)), np.linspace(-10, 10, 100))
 
     def sigmoid(self, x: torch.tensor) -> torch.tensor:
 
