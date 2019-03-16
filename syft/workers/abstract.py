@@ -12,6 +12,7 @@ class IdGenerator:
     Can take a pre set list in input and will complete
     when it's empty.
     """
+
     def __init__(self, given_ids=list()):
         self.given_ids = given_ids
         self.generated = []
