@@ -1,5 +1,6 @@
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 import torch
+import numpy as np
 
 
 class PolynomialTensor(AbstractTensor):
@@ -7,6 +8,25 @@ class PolynomialTensor(AbstractTensor):
     """Tensor type which provides polynomial approximation functionalities using Taylor Series expansion
        since computing exact functions could impose a overhead on computation
     """
+
+    def Interpolate(self,):
+
+        # function we wish to approximate
+        f_real = lambda x: 1 / (1 + np.exp(-x))
+
+        # interval over which we wish to optimize
+        interval = np.linspace(-10, 10, 100)
+
+        # interpolate polynomial of given max degree
+        degree = 10
+        coefs = np.polyfit(interval, f_real(interval), degree)
+
+        # reduce precision of interpolated coefficients
+        precision = 10
+        coefs = [int(x * 10 ** precision) / 10 ** precision for x in coefs]
+
+        # approximation function
+        f_interpolated = np.poly1d(coefs)
 
     def sigmoid(self, x: torch.tensor) -> torch.tensor:
 
