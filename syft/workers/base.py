@@ -319,11 +319,11 @@ class BaseWorker(AbstractWorker):
             # Register response et create pointers for tensor elements
             try:
                 response = sy.frameworks.torch.hook_args.register_response(
-                    command_name, response, return_ids, self
+                    command_name, response, list(return_ids), self
                 )
                 return response
             except ResponseSignatureError:
-                return_ids = IdGenerator()
+                return_ids = IdGenerator(return_ids)
                 response = sy.frameworks.torch.hook_args.register_response(
                     command_name, response, return_ids, self
                 )
