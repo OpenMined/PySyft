@@ -27,7 +27,7 @@ tuple type. The same is true for all other simplifier/detailer functions.
 
 By default, we serialize using msgpack and compress using lz4.
 """
-
+from tempfile import TemporaryFile
 from typing import Collection
 from typing import Dict
 from typing import Tuple
@@ -58,6 +58,67 @@ ZSTD = 1
 
 # Indicator on binary header that compression was not used.
 UNUSED_COMPRESSION_INDICATOR = 48
+
+
+def serialize_tensor(tensor) -> bin:
+    """Serialize the tensor using as default Torch serialization strategy
+    This function can be overridden to provide different tensor serialization strategies
+
+    Args
+        (torch.Tensor): an input tensor to be serialized
+
+    Returns
+        A serialized version of the input tensor
+
+    """
+    return torch_tensor_serializer(tensor)
+
+
+def deserialize_tensor(tensor_bin) -> torch.Tensor:
+    """Deserialize the input tensor passed as parameter into a Torch tensor.
+    This function can be overriden to provide different deserialization strategies
+
+    Args
+        tensor_bin: A binary representation of a tensor
+
+    Returns
+        a Torch tensor
+    """
+    return torch_tensor_deserializer(tensor_bin)
+
+
+def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
+    """Strategy to serialize a tensor using numpy npy format
+    """
+    np_tensor = tensor.numpy()
+    outfile = TemporaryFile()
+    numpy.save(outfile, np_tensor)
+    # Simulate close and open by calling seek
+    outfile.seek(0)
+    return outfile.read()
+
+
+def numpy_tensor_deserializer(tensor_bin) -> torch.Tensor:
+    """"Strategy to deserialize a binary input in npy format into a Torch tensor"""
+    input_file = TemporaryFile()
+    input_file.write(tensor_bin)
+    # read data from file
+    input_file.seek(0)
+    return torch.from_numpy(numpy.load(input_file))
+
+
+def torch_tensor_serializer(tensor) -> bin:
+    """Strategy to serialize a tensor using Torch saver
+    """
+    binary_stream = io.BytesIO()
+    torch.save(tensor, binary_stream)
+    return binary_stream.getvalue()
+
+
+def torch_tensor_deserializer(tensor_bin) -> torch.Tensor:
+    """"Strategy to deserialize a binary input using Torch load"""
+    bin_tensor_stream = io.BytesIO(tensor_bin)
+    return torch.load(bin_tensor_stream)
 
 
 # High Level Public Functions (these are the ones you use)
@@ -223,9 +284,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         (optinally) is the chain of graident tensors (nested tuple)
     """
 
-    binary_stream = io.BytesIO()
-    torch.save(tensor, binary_stream)
-    tensor_bin = binary_stream.getvalue()
+    tensor_bin = serialize_tensor(tensor)
 
     # note we need to do this expicitly because torch.save does not
     # seem to be including .grad by default
@@ -275,8 +334,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     tensor_id, tensor_bin, chain, grad_chain, tags, description = tensor_tuple
 
-    bin_tensor_stream = io.BytesIO(tensor_bin)
-    tensor = torch.load(bin_tensor_stream)
+    tensor = deserialize_tensor(tensor_bin)
 
     # note we need to do this explicitly because torch.load does not
     # include .grad informatino

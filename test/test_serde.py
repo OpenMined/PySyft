@@ -479,3 +479,15 @@ def test_pointer_tensor_detail(id):
     x_ptr = 2 * x_ptr
     x_back = x_ptr.get()
     assert (x_back == 2 * x).all()
+
+
+def test_numpy_tensor_serde():
+    syft.serde.serialize_tensor = syft.serde.numpy_tensor_serializer
+    syft.serde.deserialize_tensor = syft.serde.numpy_tensor_deserializer
+
+    tensor = Tensor(numpy.random.random((10, 10)))
+
+    tensor_serialized = serialize(tensor)
+    tensor_serialized_deserialized = deserialize(tensor_serialized)
+
+    assert tensor_serialized_deserialized == tensor
