@@ -10,7 +10,7 @@ from .tensors.interpreters import AdditiveSharingTensor
 from .tensors.interpreters import MultiPointerTensor
 from .tensors.decorators import LoggingTensor
 
-from typing import Callable, Union, Tuple
+from typing import Callable, Union, Tuple, List
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -551,7 +551,9 @@ def typed_identity(a):
 register_response_functions = {}
 
 
-def register_response(attr: str, response: object, owner: sy.workers.AbstractWorker) -> object:
+def register_response(
+    attr: str, response: object, response_ids: object, owner: sy.workers.AbstractWorker
+) -> object:
     """
     When a remote worker execute a command sent by someone else, the response is
     inspected: all tensors are stored by this worker and a Pointer tensor is
@@ -583,14 +585,14 @@ def register_response(attr: str, response: object, owner: sy.workers.AbstractWor
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]
         # Try running it
-        new_response = register_response_function(response, owner=owner)
+        new_response = register_response_function(response, response_ids=response_ids, owner=owner)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in cas of an error
         register_response_function = build_register_response_function(response)
         # Store this utility function in the registry
         register_response_functions[attr_id] = register_response_function
         # Run it
-        new_response = register_response_function(response, owner=owner)
+        new_response = register_response_function(response, response_ids=response_ids, owner=owner)
 
     # Remove the artificial tuple
     if not response_is_tuple:
@@ -618,33 +620,26 @@ def build_register_response_function(response: object) -> Callable:
     return response_hook_function
 
 
-def register_transform_tensor(
-    tensor: Union[torch.Tensor, AbstractTensor], owner: sy.workers.AbstractWorker = None
-) -> PointerTensor:
+def register_tensor(
+    tensor: Union[torch.Tensor, AbstractTensor],
+    response_ids: List = list(),
+    owner: sy.workers.AbstractWorker = None,
+) -> None:
     """
-    Register a tensor and create a pointer that references it
+    Register a tensor
 
     Args:
         tensor: the tensor
-        owner: the owner make the registration
+        response_ids: list of ids where the tensor should be stored
+            and each id is pop out when needed
+        owner: the owner that makes the registration
     Returns:
         the pointer
     """
     assert owner is not None
-    # FIXME: should be added automatically
     tensor.owner = owner
 
     owner.register_obj(tensor)
-
-    pointer = tensor.create_pointer(
-        location=owner,
-        id_at_location=tensor.id,
-        register=True,
-        owner=owner,
-        ptr_id=tensor.id,
-        garbage_collect_data=False,
-    )
-    return pointer
 
 
 def build_register_response(response: object, rules: Tuple, return_tuple: bool = False) -> Callable:
@@ -668,7 +663,7 @@ def build_register_response(response: object, rules: Tuple, return_tuple: bool =
         else build_register_response(a, r, True)  # If not, call recursively build_response_hook
         if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
         # Last if not, rule is probably == 1 so use type to return the right transformation.
-        else lambda i, **kwargs: register_transform_tensor(i, **kwargs)
+        else lambda i, **kwargs: register_tensor(i, **kwargs)
         for a, r in zip(response, rules)  # And do this for all the responses / rules provided
     ]
 

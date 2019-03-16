@@ -188,7 +188,7 @@ class Plan(BaseWorker):
 
         return sy.serde.serialize(None)
 
-    def request_execute_plan(self, response_ids, *args):
+    def request_execute_plan(self, response_ids, *args, **kwargs):
         """
         Send a request to execute the plan on the remote location
         :param response_ids: where the plan result should be stored remotely
@@ -196,7 +196,7 @@ class Plan(BaseWorker):
         :return:
         """
         args = [args, response_ids]
-        command = ("execute_plan", self.ptr_plan, args)
+        command = ("execute_plan", self.ptr_plan, args, kwargs)
 
         response = self.owner.send_command(
             message=command, recipient=self.location, return_ids=response_ids
@@ -239,7 +239,7 @@ class Plan(BaseWorker):
         Real send function that sends the Plan instance with its plan to location
         """
         self.replace_worker_ids(self.owner.id, self.location.id)
-        return self.owner.send(obj=self, workers=location)
+        return self.owner.send(tensor=self, workers=location)
 
     def __str__(self):
         """Returns the string representation of PlanWorker.

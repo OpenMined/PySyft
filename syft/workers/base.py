@@ -209,7 +209,7 @@ class BaseWorker(AbstractWorker):
         response = self._message_router[msg_type](contents)
 
         # Step 2: Serialize the message to simple python objects
-        bin_response = serde.serialize(response)
+        bin_response = sy.serde.serialize(response)
 
         return bin_response
 
@@ -229,7 +229,7 @@ class BaseWorker(AbstractWorker):
         remote storage address.
 
         Args:
-            obj: A syft/torch tensor/object object to send.
+            tensor: A syft/torch tensor/object object to send.
             workers: A BaseWorker object representing the worker(s) that will
                 receive the object.
             ptr_id: An optional string or integer indicating the remote id of
@@ -269,13 +269,12 @@ class BaseWorker(AbstractWorker):
         if ptr_id is None:  # Define a remote id if not specified
             ptr_id = int(10e10 * random.random())
 
-        pointer = obj.create_pointer(
-            owner=self, location=worker, id_at_location=obj.id, register=True, ptr_id=ptr_id
+        pointer = tensor.create_pointer(
+            owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
         )
 
         # Send the object
-        self.send_obj(obj, worker)
-
+        self.send_obj(tensor, worker)
         return pointer
 
     def execute_command(self, message):
@@ -329,7 +328,7 @@ class BaseWorker(AbstractWorker):
         if return_ids is None:
             return_ids = [int(10e10 * random.random())]
 
-        message = (message, return_ids[0])
+        message = (message, return_ids)
 
         _ = self.send_msg(MSGTYPE.CMD, message, location=recipient)
 
@@ -463,7 +462,6 @@ class BaseWorker(AbstractWorker):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
-
         return self.send_msg(MSGTYPE.OBJ, obj, location)
 
     def request_obj(self, obj_id, location):
