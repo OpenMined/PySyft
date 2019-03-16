@@ -2,6 +2,7 @@ import torch
 import syft as sy
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
+from syft.exceptions import ResponseSignatureError
 from .tensors.interpreters import AbstractTensor
 from .tensors.interpreters import PointerTensor
 from .tensors.interpreters import TorchTensor
@@ -638,7 +639,10 @@ def register_tensor(
     """
     assert owner is not None
     tensor.owner = owner
-
+    try:
+        tensor.id = response_ids.pop(-1)
+    except IndexError:
+        raise ResponseSignatureError
     owner.register_obj(tensor)
 
 

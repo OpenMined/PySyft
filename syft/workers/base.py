@@ -8,7 +8,9 @@ import syft as sy
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.exceptions import WorkerNotFoundException
+from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
+from syft.workers import IdGenerator
 from syft.codes import MSGTYPE
 from typing import Union
 from typing import List
@@ -315,8 +317,17 @@ class BaseWorker(AbstractWorker):
         # so we need to check for that here.
         if response is not None:
             # Register response et create pointers for tensor elements
-            response = sy.frameworks.torch.hook_args.register_response(command_name, response, return_ids, self)
-            return response
+            try:
+                response = sy.frameworks.torch.hook_args.register_response(
+                    command_name, response, return_ids, self
+                )
+                return response
+            except ResponseSignatureError:
+                return_ids = IdGenerator()
+                response = sy.frameworks.torch.hook_args.register_response(
+                    command_name, response, return_ids, self
+                )
+                raise ResponseSignatureError(return_ids.generated)
 
     def send_command(self, recipient, message, return_ids=None):
         """
@@ -330,16 +341,25 @@ class BaseWorker(AbstractWorker):
 
         message = (message, return_ids)
 
-        _ = self.send_msg(MSGTYPE.CMD, message, location=recipient)
+        try:
+            _ = self.send_msg(MSGTYPE.CMD, message, location=recipient)
+        except ResponseSignatureError as e:
+            return_ids = e.ids_generated
 
-        response = sy.PointerTensor(
-            location=recipient,
-            id_at_location=return_ids[0],
-            owner=self,
-            id=int(10e10 * random.random()),
-        )
+        responses = []
+        for return_id in return_ids:
+            response = sy.PointerTensor(
+                location=recipient,
+                id_at_location=return_id,
+                owner=self,
+                id=int(10e10 * random.random()),
+            )
+            responses.append(response)
 
-        return response
+        if len(return_ids) == 1:
+            return responses[0]
+
+        return responses
 
     def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
 
