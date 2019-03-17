@@ -173,6 +173,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return response.truncate(other.precision_fractional)
 
+    __matmul__ = matmul
+
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -223,6 +225,6 @@ class FixedPrecisionTensor(AbstractTensor):
         FixedPrecisionTensor which has also been shared."""
         return FixedPrecisionTensor().on(self.child.get())
 
-    def share(self, *owners):
-        self.child = self.child.share(*owners)
+    def share(self, *owners, field=None, crypto_provider=None):
+        self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
         return self

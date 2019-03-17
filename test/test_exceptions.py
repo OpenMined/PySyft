@@ -16,39 +16,23 @@ def test_tensors_not_collated_exception(workers):
     x = th.tensor([1, 2, 3, 4, 5]).send(bob)
     y = th.tensor([1, 2, 3, 4, 5]).send(alice)
 
-    try:
-
+    with pytest.raises(sy.exceptions.TensorsNotCollocatedException):
         b = x + y
-        assert False
-    except sy.exceptions.TensorsNotCollocatedException as e:
-        assert True
 
     x = th.tensor([1, 2, 3, 4, 5]).send(alice)
     y = th.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    try:
-
+    with pytest.raises(sy.exceptions.TensorsNotCollocatedException):
         b = x + y
-        assert False
-    except sy.exceptions.TensorsNotCollocatedException as e:
-        assert True
 
     x = th.tensor([1, 2, 3, 4, 5]).send(alice)
     y = th.tensor([1, 2, 3, 4, 5])
 
-    try:
-
+    with pytest.raises(sy.exceptions.TensorsNotCollocatedException):
         b = x + y
-        assert False
-    except sy.exceptions.TensorsNotCollocatedException as e:
-        assert True
 
     x = th.tensor([1, 2, 3, 4, 5])
     y = th.tensor([1, 2, 3, 4, 5]).send(alice)
 
-    try:
-
+    with pytest.raises(sy.exceptions.TensorsNotCollocatedException):
         b = x + y
-        assert False
-    except sy.exceptions.TensorsNotCollocatedException as e:
-        assert True

@@ -21,7 +21,7 @@ from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
 # import other useful classes
-from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader
+from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
 
 # import functions
 from syft.frameworks.torch.functions import combine_pointers

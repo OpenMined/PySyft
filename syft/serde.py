@@ -127,7 +127,7 @@ def deserialize(
             for scheme codes).
 
     Returns:
-        binary: the serialized form of the object.
+        object: the deserialized form of the binary input.
     """
     if worker is None:
         worker = syft.torch.hook.local_worker

@@ -9,5 +9,6 @@ sklearn
 sphinx_rtd_theme
 torch>=1.0.0
 torchvision
+websocket_client
 websockets
 zstd
