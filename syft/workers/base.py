@@ -55,7 +55,9 @@ class BaseWorker(AbstractWorker):
             primarily a development/testing feature.
     """
 
-    def __init__(self, hook, id=0, data={}, is_client_worker=False, log_msgs=False, verbose=False):
+    def __init__(
+        self, hook, id=0, data=None, is_client_worker=False, log_msgs=False, verbose=False
+    ):
         """Initializes a BaseWorker."""
 
         self.hook = hook
@@ -142,10 +144,10 @@ class BaseWorker(AbstractWorker):
 
         """
 
-        for tensor in data:
-
-            self.register_obj(tensor)
-            tensor.owner = self
+        if data:
+            for tensor in data:
+                self.register_obj(tensor)
+                tensor.owner = self
 
     def send_msg(self, msg_type: int, message: str, location: "BaseWorker") -> object:
 
