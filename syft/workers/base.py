@@ -61,7 +61,10 @@ class BaseWorker(AbstractWorker):
 
         self.hook = hook
         self.torch = None if hook is None else hook.torch
-        self.id = id
+        if id:
+            self.id = id
+        else:
+            self.id = random.randint(0, 1000)
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
         self.verbose = verbose
@@ -69,15 +72,6 @@ class BaseWorker(AbstractWorker):
         # A core object in every BaseWorker instantiation. A Collection of
         # objects where all objects are stored using their IDs as keys.
         self._objects = {}
-        self._known_workers = {}
-        if hook.local_worker is not None:
-            for k, v in hook.local_worker._known_workers.items():
-                if v is not hook.local_worker:
-                    self._known_workers[k] = v
-                    v.add_worker(self)
-            hook.local_worker.add_worker(self)
-        self.add_worker(self)
-        # For performance, we cache each
         self._message_router = {
             MSGTYPE.CMD: self.execute_command,
             MSGTYPE.OBJ: self.set_obj,
@@ -86,6 +80,23 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.IS_NONE: self.is_tensor_none,
             MSGTYPE.SEARCH: self.search,
         }
+        self._known_workers = {}
+        if hook.local_worker is not None:
+            known_workers = hook.local_worker._known_workers
+            if self.id in known_workers:
+                if isinstance(known_workers[self.id], type(self)):
+                    self = known_workers[self.id]
+                else:
+                    raise RuntimeError("Worker initialized with the same id and different types")
+            else:
+                for k, v in known_workers.items():
+                    if v is not hook.local_worker:
+                        self._known_workers[k] = v
+                        v.add_worker(self)
+                hook.local_worker.add_worker(self)
+        self.add_worker(self)
+        # For performance, we cache each
+
         self.load_data(data)
 
     # SECTION: Methods which MUST be overridden by subclasses
