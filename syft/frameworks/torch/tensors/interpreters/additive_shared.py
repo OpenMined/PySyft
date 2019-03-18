@@ -7,6 +7,7 @@ from syft.frameworks.torch.crypto.spdz import spdz_mul
 class AdditiveSharingTensor(AbstractTensor):
     def __init__(
         self,
+        shares: dict = None,
         parent: AbstractTensor = None,
         owner=None,
         id=None,
@@ -38,7 +39,7 @@ class AdditiveSharingTensor(AbstractTensor):
         self.parent = parent
         self.owner = owner
         self.id = id
-        self.child = None
+        self.child = shares
 
         self.field = (2 ** 31) - 1 if field is None else field  # < 63 bits
         self.crypto_provider = crypto_provider
@@ -52,6 +53,19 @@ class AdditiveSharingTensor(AbstractTensor):
         for v in self.child.values():
             out += "\n\t-> " + str(v)
         return out
+
+    @property
+    def location(self):
+        """Provide a location attribute"""
+        return [s.owner for s in self.child.values()]
+
+    @property
+    def shape(self):
+        """
+        Return the shape which is the shape of any of the shares
+        """
+        for share in self.child.values():
+            return share.shape
 
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
