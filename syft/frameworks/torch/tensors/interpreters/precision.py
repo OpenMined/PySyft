@@ -71,12 +71,6 @@ class FixedPrecisionTensor(AbstractTensor):
         upscaled = (rational * self.base ** self.precision_fractional).long()
         field_element = upscaled % self.field
 
-        # Handle neg values
-        gate = field_element.gt(self.torch_max_value).long()
-        neg_nums = (field_element - self.field) * gate
-        pos_nums = field_element * (1 - gate)
-        field_element = neg_nums + pos_nums
-
         self.child = field_element
         return self
 
@@ -108,7 +102,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         response = getattr(_self, "add")(*args, **kwargs)
 
-        return response
+        return response % self.field
 
     __add__ = add
 
