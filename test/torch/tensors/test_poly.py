@@ -40,7 +40,7 @@ def testExp():
 
     x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
     expected = torch.tensor(
-        [0.2179, 0.1224, 0.1905, 0.3679, 0.7165, 1.3956, 2.7179, 5.2813, 10.1764, 19.2679],
+        [-0.1076, 0.0664, 0.1852, 0.3677, 0.7165, 1.3956, 2.7180, 5.2867, 10.2325, 19.5933],
         dtype=torch.double,
     )
 
@@ -49,6 +49,8 @@ def testExp():
 
 
 def testtanh():
+
+    # Test if tanh approximation works as expected
 
     Ptensor = PolynomialTensor()
 
@@ -71,3 +73,20 @@ def testtanh():
 
     # allclose function to compare the expected values and approximations with fixed precision
     assert torch.allclose(expected, torch.tensor(Ptensor.tanh(x), dtype=torch.double), 1e-03)
+
+
+def testinterpolate():
+
+    # Test if interpolation function works as expected by verifying an approximation of exponential function
+
+    expected = torch.tensor([1.2220, 2.9582, 7.1763, 20.3064, 54.4606], dtype=torch.double)
+
+    Ptensor = PolynomialTensor()
+
+    f1 = Ptensor.interpolate((lambda x: np.exp(x)), np.linspace(0, 10, 50))
+
+    assert torch.allclose(expected, torch.tensor(f1(torch.tensor([0, 1, 2, 3, 4]))), 1e-04)
+
+
+testSigmoid()
+testExp()
