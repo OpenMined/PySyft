@@ -482,8 +482,8 @@ def test_pointer_tensor_detail(id):
 
 
 def test_numpy_tensor_serde():
-    syft.serde.serialize_tensor = syft.serde.numpy_tensor_serializer
-    syft.serde.deserialize_tensor = syft.serde.numpy_tensor_deserializer
+    syft.serde._serialize_tensor = syft.serde.numpy_tensor_serializer
+    syft.serde._deserialize_tensor = syft.serde.numpy_tensor_deserializer
 
     tensor = torch.tensor(numpy.random.random((10, 10)), requires_grad=False)
 
@@ -491,7 +491,7 @@ def test_numpy_tensor_serde():
     tensor_deserialized = deserialize(tensor_serialized)
 
     # Back to Pytorch serializer
-    syft.serde.serialize_tensor = syft.serde.torch_tensor_serializer
-    syft.serde.deserialize_tensor = syft.serde.torch_tensor_deserializer
+    syft.serde._serialize_tensor = syft.serde.torch_tensor_serializer
+    syft.serde._deserialize_tensor = syft.serde.torch_tensor_deserializer
 
     assert torch.eq(tensor_deserialized, tensor).all()

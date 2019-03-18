@@ -27,20 +27,20 @@ tuple type. The same is true for all other simplifier/detailer functions.
 
 By default, we serialize using msgpack and compress using lz4.
 """
-import io
-import zstd
 from tempfile import TemporaryFile
 from typing import Collection
 from typing import Dict
 from typing import Tuple
-
-import lz4
-import msgpack
-import numpy
 import torch
+import msgpack
+import lz4
 from lz4 import (  # noqa: F401
     frame,
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
+import io
+import numpy
+import warnings
+import zstd
 
 import syft
 import syft as sy
@@ -155,7 +155,7 @@ def deserialize(
     return _detail(worker, simple_objects)
 
 
-def serialize_tensor(tensor) -> bin:
+def _serialize_tensor(tensor) -> bin:
     """Serialize the tensor using as default Torch serialization strategy
     This function can be overridden to provide different tensor serialization strategies
 
@@ -169,7 +169,7 @@ def serialize_tensor(tensor) -> bin:
     return torch_tensor_serializer(tensor)
 
 
-def deserialize_tensor(tensor_bin) -> torch.Tensor:
+def _deserialize_tensor(tensor_bin) -> torch.Tensor:
     """Deserialize the input tensor passed as parameter into a Torch tensor.
     This function can be overridden to provide different deserialization strategies
 
@@ -187,9 +187,9 @@ def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
     If tensor requires to calculate gradients, it will detached.
     """
     if tensor.requires_grad:
-        print(
-            "Torch to Numpy serializer can only be used with tensors that do not require"
-            "grad. Detaching tensor to continue"
+        warnings.warn(
+            "Torch to Numpy serializer can only be used with tensors that do not require grad. "
+            "Detaching tensor to continue"
         )
         tensor = tensor.detach()
 
@@ -289,7 +289,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         (optinally) is the chain of graident tensors (nested tuple)
     """
 
-    tensor_bin = serialize_tensor(tensor)
+    tensor_bin = _serialize_tensor(tensor)
 
     # note we need to do this expicitly because torch.save does not
     # seem to be including .grad by default
@@ -339,7 +339,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     tensor_id, tensor_bin, chain, grad_chain, tags, description = tensor_tuple
 
-    tensor = deserialize_tensor(tensor_bin)
+    tensor = _deserialize_tensor(tensor_bin)
 
     # note we need to do this explicitly because torch.load does not
     # include .grad informatino
