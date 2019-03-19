@@ -3,6 +3,8 @@
 __all__ = ["GradFunc"]
 
 def forward_grad(tensor):
+    ## tensor here should be an AutogradTensor or a Tensor where we can set .grad
+    
     try:
         grad_fn = tensor.grad_fn
     except AttributeError:
@@ -10,7 +12,10 @@ def forward_grad(tensor):
 
     # If a tensor doesn't have a grad_fn already attached to it, that means
     # it's a leaf of the graph and we want to accumulate the gradient
-    return Accumulate(tensor) if grad_fn is None and tensor.requires_grad else grad_fn
+    if grad_fn is None and tensor.requires_grad:
+        return Accumulate(tensor)
+    else:
+        return grad_fn
 
 
 class GradFunc:

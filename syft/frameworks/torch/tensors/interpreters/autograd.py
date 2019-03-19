@@ -27,7 +27,13 @@ class AutogradTensor(AbstractTensor):
 
     def backward(self, grad=None):
         if grad is None:
-            grad = torch.ones_like(self.child)
+            grad = torch.ones_like(self)
+
+        # Calculating gradients doesn't currently work with wrapped tensors,
+        # so doing this to work my way down the chain to the base tensor. TODO
+        while hasattr(grad, 'child'):
+            grad = grad.child
+
         backwards_grad(self.grad_fn, grad)
 
     @property
