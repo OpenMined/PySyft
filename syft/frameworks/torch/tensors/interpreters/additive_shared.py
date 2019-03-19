@@ -311,7 +311,7 @@ class AdditiveSharingTensor(AbstractTensor):
     def __mul__(self, *args, **kwargs):
         """Multiplies two number for details see mul
         """
-        return self.mul(self, *args, **kwargs)
+        return self.mul(*args, **kwargs)
 
     @hook
     def matmul(self, shares: dict, other_shares, **kwargs):
@@ -347,3 +347,17 @@ class AdditiveSharingTensor(AbstractTensor):
         return AdditiveSharingTensor(
             field=self.field, crypto_provider=self.crypto_provider
         ).set_shares(divided_shares)
+
+    @hook
+    def mod(self, shares: dict, modulus: int):
+        assert isinstance(modulus, int)
+        moded_shares = {}
+        for location, pointer in shares.items():
+            moded_shares[location] = pointer % modulus
+
+        return AdditiveSharingTensor(
+            field=self.field, crypto_provider=self.crypto_provider
+        ).set_shares(moded_shares)
+
+    def __mod__(self, *args, **kwargs):
+        return self.mod(*args, **kwargs)
