@@ -1,11 +1,9 @@
 """Some syft imports..."""
-from . import frameworks
-from . import workers
-from . import serde
-from . import codes
-from .grid import VirtualGrid
+# Major imports
+from syft import frameworks
+from syft import workers
+from syft import codes
 
-# CONVENIENCE HOOKS
 # The purpose of the following import section is to increase the convenience of using
 # PySyft by making it possible to import the most commonly used objects from syft
 # directly (i.e., syft.TorchHook or syft.VirtualWorker or syft.LoggingTensor)
@@ -13,15 +11,24 @@ from .grid import VirtualGrid
 # Import Hook
 from syft.frameworks.torch import TorchHook
 
+# Import grids
+from syft.grid import VirtualGrid
+
 # Import Worker Types
 from syft.workers import VirtualWorker
+from syft.workers import Plan
+from syft.workers import func2plan
+from syft.workers import make_plan
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
+# Import serialization tools
+from syft import serde
+
 # import other useful classes
-from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader
+from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
 
 # import functions
 from syft.frameworks.torch.functions import combine_pointers
@@ -32,6 +39,7 @@ __all__ = [
     "serde",
     "TorchHook",
     "VirtualWorker",
+    "Plan",
     "codes",
     "LoggingTensor",
     "PointerTensor",
