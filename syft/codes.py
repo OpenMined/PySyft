@@ -9,6 +9,7 @@ class MSGTYPE(object):
     SEARCH = 8
 
 
+# Build automatically the reverse map from codes to msg types
 code2MSGTYPE = {}
 for code in dir(MSGTYPE):
     if "__" not in code:

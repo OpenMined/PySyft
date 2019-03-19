@@ -1,7 +1,8 @@
-from .base import BaseWorker
+import random
+
+from syft.workers.base import BaseWorker
 from syft.codes import MSGTYPE
 import syft as sy
-import random
 
 
 class PlanPointer:
@@ -10,33 +11,6 @@ class PlanPointer:
         self.location = location
         self.id_at_location = id_at_location
         self.owner = owner
-
-
-def replace_ids(obj, change_id, to_id, from_worker, to_worker):
-    _obj = list()
-
-    for i, item in enumerate(obj):
-        if isinstance(item, int) and (item == change_id):
-            _obj.append(to_id)
-
-        elif isinstance(item, type(from_worker)) and (item == from_worker):
-            _obj.append(to_worker)
-
-        elif isinstance(item, (list, tuple)):
-            _obj.append(
-                replace_ids(
-                    obj=item,
-                    change_id=change_id,
-                    to_id=to_id,
-                    from_worker=from_worker,
-                    to_worker=to_worker,
-                )
-            )
-
-        else:
-            _obj.append(item)
-
-    return _obj
 
 
 class Plan(BaseWorker):
@@ -118,7 +92,7 @@ class Plan(BaseWorker):
             # for every message of the plan
             for j, msg in enumerate(self.readable_plan):
                 # look for the old id and replace it with the new one
-                self.readable_plan[j] = replace_ids(
+                self.readable_plan[j] = Plan._replace_message_ids(
                     obj=msg,
                     change_id=from_ids[i],
                     to_id=to_ids[i],
@@ -131,13 +105,40 @@ class Plan(BaseWorker):
         """
         Replace occurrences of from_worker_id by to_worker_id in the plan stored
         """
-        self.readable_plan = replace_ids(
+        self.readable_plan = Plan._replace_message_ids(
             obj=self.readable_plan,
             change_id=-1,
             to_id=-1,
             from_worker=from_worker_id,
             to_worker=to_worker_id,
         )
+
+    @staticmethod
+    def _replace_message_ids(obj, change_id, to_id, from_worker, to_worker):
+        _obj = list()
+
+        for i, item in enumerate(obj):
+            if isinstance(item, int) and (item == change_id):
+                _obj.append(to_id)
+
+            elif isinstance(item, type(from_worker)) and (item == from_worker):
+                _obj.append(to_worker)
+
+            elif isinstance(item, (list, tuple)):
+                _obj.append(
+                    Plan._replace_message_ids(
+                        obj=item,
+                        change_id=change_id,
+                        to_id=to_id,
+                        from_worker=from_worker,
+                        to_worker=to_worker,
+                    )
+                )
+
+            else:
+                _obj.append(item)
+
+        return _obj
 
     def __call__(self, *args, **kwargs):
         """
@@ -215,7 +216,10 @@ class Plan(BaseWorker):
 
     def send(self, location):
         """
-        Mock send function that only specify that the Plan will have to be sent to location
+        Mock send function that only specify that the Plan will have to be sent to location.
+        In a way, when one calls .send(), this doesn't trigger a call to a remote worker, but
+        just stores "a promise" that it will be sent (with _send()) later when the plan in
+        called (and built)
         """
         if self.location is not None:
             raise NotImplementedError(
@@ -225,21 +229,24 @@ class Plan(BaseWorker):
             self.location = location
         return self
 
+    def _send(self, location):
+        """
+        Real send function that sends the Plan instance with its plan to location, only
+        when the plan is built and that an execution is called, namely when it is necessary
+        to send it
+        """
+        self.replace_worker_ids(self.owner.id, self.location.id)
+        return self.owner.send(tensor=self, workers=location)
+
     def get(self):
         """
-        Mock get function
+        Mock get function: no call to remote worker is made, we just erase the information
+        linking this plan to that remote worker.
         """
         self.replace_worker_ids(self.location.id, self.owner.id)
         self.location = None
         self.ptr_plan = None
         return self
-
-    def _send(self, location):
-        """
-        Real send function that sends the Plan instance with its plan to location
-        """
-        self.replace_worker_ids(self.owner.id, self.location.id)
-        return self.owner.send(tensor=self, workers=location)
 
     def __str__(self):
         """Returns the string representation of PlanWorker.

@@ -121,14 +121,17 @@ def deserialize(
 
     Args:
         binary (bin): the serialized object to be deserialized.
-        worker (AbstractWorker): the worker which is acquiring the message content, for example
-            used to specify the owner of a tensor received(not obvious for
-            virtual workers)
+        worker (AbstractWorker): the worker which is acquiring the message content,
+            for example used to specify the owner of a tensor received(not obvious
+            for virtual workers)
         compressed (bool): whether or not the serialized object is compressed
             (and thus whether or not it needs to be decompressed).
         compress_scheme (int): the integer code specifying which compression
             scheme was used if decompression is needed (see above this method
             for scheme codes).
+        detail (bool): there are some cases where we need to perform the decompression
+            and deserialization part, but we don't need to detail all the message.
+            This is the case for Plan workers for instance
 
     Returns:
         object: the deserialized form of the binary input.
@@ -168,6 +171,8 @@ def _compress(decompressed_input_bin: bin, compress_scheme=LZ4, compress=True) -
     Args:
         decompressed_input_bin (bin): binary to be compressed
         compress_scheme: the compression method to use
+        compress (bool): if the data is already compressed, there is no
+            need to re-compress the input.
 
     Returns:
         bin: a compressed binary

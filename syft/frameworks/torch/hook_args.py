@@ -3,15 +3,18 @@ import syft as sy
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
 from syft.exceptions import ResponseSignatureError
-from .tensors.interpreters import AbstractTensor
-from .tensors.interpreters import PointerTensor
-from .tensors.interpreters import TorchTensor
-from .tensors.interpreters import FixedPrecisionTensor
-from .tensors.interpreters import AdditiveSharingTensor
-from .tensors.interpreters import MultiPointerTensor
-from .tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import TorchTensor
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
-from typing import Callable, Union, Tuple, List
+from typing import Callable
+from typing import Union
+from typing import Tuple
+from typing import List
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}

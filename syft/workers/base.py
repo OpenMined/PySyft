@@ -10,7 +10,7 @@ from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
-from syft.workers import IdGenerator
+from syft.workers import IdProvider
 from syft.codes import MSGTYPE
 from typing import Union
 from typing import List
@@ -230,7 +230,7 @@ class BaseWorker(AbstractWorker):
     ) -> PointerTensor:
         """Sends tensor to the worker(s).
 
-        Send a syft or torch tensor/object and it's child, sub-child, etc (all the
+        Send a syft or torch tensor/object and its child, sub-child, etc (all the
         syft chain of children) to a worker, or a list of workers, with a given
         remote storage address.
 
@@ -327,7 +327,7 @@ class BaseWorker(AbstractWorker):
                 )
                 return response
             except ResponseSignatureError:
-                return_ids = IdGenerator(return_ids)
+                return_ids = IdProvider(return_ids)
                 response = sy.frameworks.torch.hook_args.register_response(
                     command_name, response, return_ids, self
                 )

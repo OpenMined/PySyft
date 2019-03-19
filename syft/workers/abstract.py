@@ -6,7 +6,7 @@ class AbstractWorker(ABC):
     pass
 
 
-class IdGenerator:
+class IdProvider:
     """
     Generate id and store the list of ids generated
     Can take a pre set list in input and will complete
@@ -18,7 +18,12 @@ class IdGenerator:
         self.generated = []
 
     def pop(self, *args):
-        """Provide random ids and store them"""
+        """
+        Provide random ids and store them
+
+        The syntax .pop() mimics the list syntax for convenience
+        and not the generator syntax
+        """
         if len(self.given_ids) > 0:
             random_id = self.given_ids.pop(-1)
         else:
