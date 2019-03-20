@@ -78,10 +78,12 @@ class Plan(BaseWorker):
 
         local_args = list()
         for i, arg in enumerate(args):
-            self.owner.register_obj(arg)
-            arg = arg.send(self)
-            arg.child.garbage_collect_data = False
-            self.arg_ids.append(arg.id_at_location)
+            # Send only tensors (in particular don't send the "self" for methods)
+            if isinstance(arg, torch.Tensor):
+                self.owner.register_obj(arg)
+                arg = arg.send(self)
+                arg.child.garbage_collect_data = False
+                self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
         res_ptr = self.plan_blueprint(*local_args)
@@ -159,6 +161,9 @@ class Plan(BaseWorker):
         """
         assert len(kwargs) == 0, "kwargs not supported for plan"
         result_ids = [random.randint(0, 1e10)]
+        # Support for method hooked in plans
+        if self.self is not None:
+            args = [self.self] + list(args)
         return self.execute_plan(args, result_ids)
 
     def execute_plan(self, args, result_ids):
@@ -208,6 +213,7 @@ class Plan(BaseWorker):
         :param args: the arguments use as input data for the plan
         :return:
         """
+        args = [arg for arg in args if isinstance(arg, torch.Tensor)]
         args = [args, response_ids]
         command = ("execute_plan", self.ptr_plan, args, kwargs)
 
