@@ -296,7 +296,6 @@ class BaseWorker(AbstractWorker):
         (command_name, _self, args, kwargs), return_ids = message
 
         # TODO add kwargs
-        kwargs = {}
         command_name = command_name.decode("utf-8")
         # Handle methods
         if _self is not None:

@@ -1,5 +1,7 @@
 import random
 
+import torch
+
 from syft.workers.base import BaseWorker
 from syft.codes import MSGTYPE
 import syft as sy
@@ -31,6 +33,13 @@ class Plan(BaseWorker):
         # Pointing info towards a remote plan
         self.location = None
         self.ptr_plan = None
+
+        # Planworkers are registered by other worker, they must have information
+        # to be retrieved by search functions
+        self.tags = None
+        self.description = None
+        # For methods
+        self.self = None
 
     def _send_msg(self, message, location):
         return location._recv_msg(message)
@@ -104,14 +113,15 @@ class Plan(BaseWorker):
     def replace_worker_ids(self, from_worker_id, to_worker_id):
         """
         Replace occurrences of from_worker_id by to_worker_id in the plan stored
+        Works also if those ids are encoded in bytes (for string)
         """
-        self.readable_plan = Plan._replace_message_ids(
-            obj=self.readable_plan,
-            change_id=-1,
-            to_id=-1,
-            from_worker=from_worker_id,
-            to_worker=to_worker_id,
-        )
+        for from_id, to_id in [
+            (from_worker_id, to_worker_id),
+            (from_worker_id.encode(), to_worker_id.encode()),
+        ]:
+            self.readable_plan = Plan._replace_message_ids(
+                obj=self.readable_plan, change_id=-1, to_id=-1, from_worker=from_id, to_worker=to_id
+            )
 
     @staticmethod
     def _replace_message_ids(obj, change_id, to_id, from_worker, to_worker):
@@ -175,6 +185,8 @@ class Plan(BaseWorker):
             return response
 
         # if the plan is not to be sent but is not local (ie owned by the local worker)
+        # then it has been request to execute, to we update the plan with the correct
+        # input and output ids and we run it
         if not self.location and self.owner != sy.hook.local_worker:
             arg_ids = [arg.id for arg in args]
             self.replace_ids(self.arg_ids, arg_ids)
