@@ -27,7 +27,7 @@ tuple type. The same is true for all other simplifier/detailer functions.
 
 By default, we serialize using msgpack and compress using lz4.
 """
-
+from tempfile import TemporaryFile
 from typing import Collection
 from typing import Dict
 from typing import Tuple
@@ -39,29 +39,32 @@ from lz4 import (  # noqa: F401
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
 import io
 import numpy
+import warnings
 import zstd
+
 import syft
 import syft as sy
 
 from syft.workers import AbstractWorker
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.workers import Plan
+from syft.workers import PlanPointer
 
-from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.exceptions import CompressionNotFoundException
 
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 
 # COMPRESSION SCHEME INT CODES
 LZ4 = 0
 ZSTD = 1
-
 
 # Indicator on binary header that compression was not used.
 UNUSED_COMPRESSION_INDICATOR = 48
 
 
 # High Level Public Functions (these are the ones you use)
-def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
+def serialize(obj: object, compress=True, compress_scheme=LZ4, simplified=False) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
     This is the high level function for serializing any object or collection
@@ -74,6 +77,9 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
         compress_scheme (int): the integer code specifying which compression
             scheme to use (see above this method for scheme codes) if
             compress == True.
+        simplified (bool): in some cases we want to pass in data which has
+            already been simplified - in which case we must skip double
+            simplification - which would be bad.... so bad... so... so bad
 
     Returns:
         binary: the serialized form of the object.
@@ -83,7 +89,10 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     # simplify difficult-to-serialize objects. See the _simpliy method
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
-    simple_objects = _simplify(obj)
+    if not simplified:
+        simple_objects = _simplify(obj)
+    else:
+        simple_objects = obj
 
     # 2) Serialize
     # serialize into a binary
@@ -98,16 +107,11 @@ def serialize(obj: object, compress=True, compress_scheme=LZ4) -> bin:
     # otherwise we output the compressed stream with header set to '1'
     # even if compressed flag is set to false by the caller we
     # output the input stream as it is with header set to '0'
-    if compress:
-        compress_stream = _compress(binary, compress_scheme)
-        if len(compress_stream) < len(binary):
-            return b"\x31" + compress_stream
-
-    return b"\x30" + binary
+    return _compress(binary, compress_scheme, compress)
 
 
 def deserialize(
-    binary: bin, worker: AbstractWorker = None, compressed=True, compress_scheme=LZ4
+    binary: bin, worker: AbstractWorker = None, compressed=True, compress_scheme=LZ4, detail=True
 ) -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 
@@ -117,14 +121,17 @@ def deserialize(
 
     Args:
         binary (bin): the serialized object to be deserialized.
-        worker (AbstractWorker): the worker which is acquiring the message content, for example
-            used to specify the owner of a tensor received(not obvious for
-            virtual workers)
+        worker (AbstractWorker): the worker which is acquiring the message content,
+            for example used to specify the owner of a tensor received(not obvious
+            for virtual workers)
         compressed (bool): whether or not the serialized object is compressed
             (and thus whether or not it needs to be decompressed).
         compress_scheme (int): the integer code specifying which compression
             scheme was used if decompression is needed (see above this method
             for scheme codes).
+        detail (bool): there are some cases where we need to perform the decompression
+            and deserialization part, but we don't need to detail all the message.
+            This is the case for Plan workers for instance
 
     Returns:
         object: the deserialized form of the binary input.
@@ -132,57 +139,132 @@ def deserialize(
     if worker is None:
         worker = syft.torch.hook.local_worker
 
-    # check the 1-byte header to see if input stream was compressed or not
-    if binary[0] == UNUSED_COMPRESSION_INDICATOR:
-        compressed = False
-
-    # remove the 1-byte header from the input stream
-    binary = binary[1:]
-    # 1)  Decompress
-    # If enabled, this functionality decompresses the binary
-    if compressed:
-        binary = _decompress(binary, compress_scheme)
+    # 1) Decompress the binary if needed
+    binary = _decompress(binary, compress_scheme)
 
     # 2) Deserialize
     # This function converts the binary into the appropriate python
     # object (or nested dict/collection of python objects)
     simple_objects = msgpack.loads(binary)
 
-    # 3) Detail
-    # This function converts typed, simple objects into their more
-    # complex (and difficult to serialize) counterparts which the
-    # serialization library wasn't natively able to serialize (such
-    # as msgpack's inability to serialize torch tensors or ... or
-    # python slice objects
-    return _detail(worker, simple_objects)
+    if detail:
+        # 3) Detail
+        # This function converts typed, simple objects into their more
+        # complex (and difficult to serialize) counterparts which the
+        # serialization library wasn't natively able to serialize (such
+        # as msgpack's inability to serialize torch tensors or ... or
+        # python slice objects
+        return _detail(worker, simple_objects)
+
+    else:
+        # sometimes we want to skip detailing (such as in Plan)
+        return simple_objects
+
+
+def _serialize_tensor(tensor) -> bin:
+    """Serialize the tensor using as default Torch serialization strategy
+    This function can be overridden to provide different tensor serialization strategies
+
+    Args
+        (torch.Tensor): an input tensor to be serialized
+
+    Returns
+        A serialized version of the input tensor
+
+    """
+    return torch_tensor_serializer(tensor)
+
+
+def _deserialize_tensor(tensor_bin) -> torch.Tensor:
+    """Deserialize the input tensor passed as parameter into a Torch tensor.
+    This function can be overridden to provide different deserialization strategies
+
+    Args
+        tensor_bin: A binary representation of a tensor
+
+    Returns
+        a Torch tensor
+    """
+    return torch_tensor_deserializer(tensor_bin)
+
+
+def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
+    """Strategy to serialize a tensor using numpy npy format.
+    If tensor requires to calculate gradients, it will detached.
+    """
+    if tensor.requires_grad:
+        warnings.warn(
+            "Torch to Numpy serializer can only be used with tensors that do not require grad. "
+            "Detaching tensor to continue"
+        )
+        tensor = tensor.detach()
+
+    np_tensor = tensor.numpy()
+    outfile = TemporaryFile()
+    numpy.save(outfile, np_tensor)
+    # Simulate close and open by calling seek
+    outfile.seek(0)
+    return outfile.read()
+
+
+def numpy_tensor_deserializer(tensor_bin) -> torch.Tensor:
+    """"Strategy to deserialize a binary input in npy format into a Torch tensor"""
+    input_file = TemporaryFile()
+    input_file.write(tensor_bin)
+    # read data from file
+    input_file.seek(0)
+    return torch.from_numpy(numpy.load(input_file))
+
+
+def torch_tensor_serializer(tensor) -> bin:
+    """Strategy to serialize a tensor using Torch saver"""
+    binary_stream = io.BytesIO()
+    torch.save(tensor, binary_stream)
+    return binary_stream.getvalue()
+
+
+def torch_tensor_deserializer(tensor_bin) -> torch.Tensor:
+    """"Strategy to deserialize a binary input using Torch load"""
+    bin_tensor_stream = io.BytesIO(tensor_bin)
+    return torch.load(bin_tensor_stream)
 
 
 # Chosen Compression Algorithm
 
 
-def _compress(decompressed_input_bin: bin, compress_scheme=LZ4) -> bin:
+def _compress(decompressed_input_bin: bin, compress_scheme=LZ4, compress=True) -> bin:
     """
     This function compresses a binary using LZ4
 
     Args:
         decompressed_input_bin (bin): binary to be compressed
         compress_scheme: the compression method to use
+        compress (bool): if the data is already compressed, there is no
+            need to re-compress the input.
 
     Returns:
         bin: a compressed binary
 
     """
-    if compress_scheme == LZ4:
-        return lz4.frame.compress(decompressed_input_bin)
-    elif compress_scheme == ZSTD:
-        return zstd.compress(decompressed_input_bin)
-    else:
-        raise CompressionNotFoundException(
-            "compression scheme note found for" " compression code:" + str(compress_scheme)
-        )
+
+    if compress:
+
+        if compress_scheme == LZ4:
+            compress_stream = lz4.frame.compress(decompressed_input_bin)
+        elif compress_scheme == ZSTD:
+            compress_stream = zstd.compress(decompressed_input_bin)
+        else:
+            raise CompressionNotFoundException(
+                "compression scheme note found for" " compression code:" + str(compress_scheme)
+            )
+
+        if len(compress_stream) < len(decompressed_input_bin):
+            return b"\x31" + compress_stream
+
+    return b"\x30" + decompressed_input_bin
 
 
-def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
+def _decompress(binary: bin, compress_scheme=LZ4) -> bin:
     """
     This function decompresses a binary using LZ4
 
@@ -194,14 +276,30 @@ def _decompress(compressed_input_bin: bin, compress_scheme=LZ4) -> bin:
         bin: decompressed binary
 
     """
-    if compress_scheme == LZ4:
-        return lz4.frame.decompress(compressed_input_bin)
-    elif compress_scheme == ZSTD:
-        return zstd.decompress(compressed_input_bin)
+
+    # check the 1-byte header to see if input stream was compressed or not
+    if binary[0] == UNUSED_COMPRESSION_INDICATOR:
+        compressed = False
     else:
-        raise CompressionNotFoundException(
-            "compression scheme note found for" " compression code:" + str(compress_scheme)
-        )
+        compressed = True
+
+    # remove the 1-byte header from the input stream
+    binary = binary[1:]
+
+    # 1)  Decompress
+    # If enabled, this functionality decompresses the binary
+    if compressed:
+
+        if compress_scheme == LZ4:
+            return lz4.frame.decompress(binary)
+        elif compress_scheme == ZSTD:
+            return zstd.decompress(binary)
+        else:
+            raise CompressionNotFoundException(
+                "compression scheme note found for" " compression code:" + str(compress_scheme)
+            )
+
+    return binary
 
 
 # Simplify/Detail Torch Tensors
@@ -223,9 +321,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         (optinally) is the chain of graident tensors (nested tuple)
     """
 
-    binary_stream = io.BytesIO()
-    torch.save(tensor, binary_stream)
-    tensor_bin = binary_stream.getvalue()
+    tensor_bin = _serialize_tensor(tensor)
 
     # note we need to do this expicitly because torch.save does not
     # seem to be including .grad by default
@@ -275,8 +371,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     tensor_id, tensor_bin, chain, grad_chain, tags, description = tensor_tuple
 
-    bin_tensor_stream = io.BytesIO(tensor_bin)
-    tensor = torch.load(bin_tensor_stream)
+    tensor = _deserialize_tensor(tensor_bin)
 
     # note we need to do this explicitly because torch.load does not
     # include .grad informatino
@@ -726,7 +821,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
         data = _simplify_pointer_tensor(ptr)
     """
 
-    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr, ptr.shape)
+    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr, ptr._shape)
 
     # a more general but slower/more verbose option
 
@@ -777,7 +872,6 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
             if tensor is not None:
 
                 if not tensor.is_wrapper and not isinstance(tensor, torch.Tensor):
-
                     # if the tensor is a wrapper then it doesn't need to be wrapped
                     # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
                     # then it doesn't need to be wrapped.
@@ -856,6 +950,95 @@ def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LoggingTe
     return tensor
 
 
+def _simplify_plan(plan: Plan) -> tuple:
+    """
+    This function takes the attributes of a Plan and saves them in a tuple
+    Args:
+        plan (Plan): a Plan object
+    Returns:
+        tuple: a tuple holding the unique attributes of the Plan object
+
+    """
+
+    readable_plan = _simplify(plan.readable_plan)
+
+    return (readable_plan, _simplify(plan.id), _simplify(plan.arg_ids), _simplify(plan.result_ids))
+
+
+def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
+    """This function reconstructs a Plan object given it's attributes in the form of a tuple.
+    Args:
+        worker: the worker doing the deserialization
+        plan_tuple: a tuple holding the attributes of the Plan
+    Returns:
+        Plan: a Plan object
+    """
+
+    readable_plan, id, arg_ids, result_ids = plan_tuple
+
+    id = id
+    if isinstance(id, bytes):
+        id = id.decode("utf-8")
+    arg_ids = _detail(worker, arg_ids)
+    result_ids = _detail(worker, result_ids)
+
+    plan = syft.Plan(hook=sy.hook, owner=worker, id=id)
+    plan.arg_ids = arg_ids
+    plan.result_ids = result_ids
+
+    plan.readable_plan = _detail(worker, readable_plan)
+
+    return plan
+
+
+def _simplify_plan_pointer(ptr: PlanPointer) -> tuple:
+    """
+    This function takes the attributes of a PointerTensor and saves them in a dictionary
+    Args:
+        ptr (PointerTensor): a PointerTensor
+    Returns:
+        tuple: a tuple holding the unique attributes of the pointer
+    Examples:
+        data = _simplify_pointer_tensor(ptr)
+    """
+
+    return (ptr.id, ptr.id_at_location, ptr.location.id)
+
+
+def _detail_plan_pointer(worker: AbstractWorker, plan_pointer_tuple: tuple) -> PointerTensor:
+    """
+    This function reconstructs a PlanPointer given it's attributes in form of a tuple.
+
+    Args:
+        worker: the worker doing the deserialization
+        plan_pointer_tuple: a tuple holding the attributes of the PlanPointer
+    Returns:
+        PointerTensor: a PointerTensor
+    Examples:
+        ptr = _detail_pointer_tensor(data)
+    """
+    # TODO: fix comment for this and simplifier
+    obj_id = plan_pointer_tuple[0]
+    id_at_location = plan_pointer_tuple[1]
+    if isinstance(id_at_location, bytes):
+        id_at_location = id_at_location.decode("utf-8")
+    worker_id = plan_pointer_tuple[2].decode("utf-8")
+
+    # If the pointer received is pointing at the current worker, we load the tensor instead
+    if worker_id == worker.id:
+
+        tensor = worker.get_obj(id_at_location)
+
+        return tensor
+    # Else we keep the same Pointer
+    else:
+        location = syft.torch.hook.local_worker.get_worker(worker_id)
+        ptr = PlanPointer(
+            location=location, id_at_location=id_at_location, owner=worker, id=obj_id, register=True
+        )
+        return ptr
+
+
 # High Level Simplification Router
 
 
@@ -916,6 +1099,8 @@ simplifiers = {
     torch.device: [10, _simplify_torch_device],
     PointerTensor: [11, _simplify_pointer_tensor],
     LoggingTensor: [12, _simplify_log_tensor],
+    Plan: [13, _simplify_plan],
+    PlanPointer: [14, _simplify_plan_pointer],
 }
 
 
@@ -958,4 +1143,6 @@ detailers = [
     _detail_torch_device,
     _detail_pointer_tensor,
     _detail_log_tensor,
+    _detail_plan,
+    _detail_plan_pointer,
 ]
