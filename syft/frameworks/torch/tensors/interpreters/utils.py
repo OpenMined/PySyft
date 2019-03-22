@@ -1,9 +1,16 @@
 import syft
 
 
-def hook(attr):
+class Object(object):
+    pass
+
+
+overloaded = Object()
+
+
+def overload_method(attr):
     """
-    hook args and response for methods that hold the @hook decoarator
+    hook args and response for methods that hold the @overloaded.method decorator
     """
 
     def hook_args(self, *args, **kwargs):
@@ -23,3 +30,7 @@ def hook(attr):
         return response
 
     return hook_args
+
+
+overloaded.method = overload_method
+

@@ -1,6 +1,6 @@
 import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.utils import hook
+from syft.frameworks.torch.tensors.interpreters.utils import overloaded
 from syft.frameworks.torch.crypto.spdz import spdz_mul
 
 
@@ -156,7 +156,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return shares
 
-    @hook
+    @overloaded.method
     def add(self, shares: dict, other_shares, *args, **kwargs):
         """Adds two tensors together
 
@@ -189,7 +189,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """Adds two tensors. Forwards command to add. See add() for more details."""
         return self.add(*args, **kwargs)
 
-    @hook
+    @overloaded.method
     def sub(self, shares: dict, other_shares, **kwargs):
         """Subtracts an other tensor from self.
 
@@ -253,7 +253,7 @@ class AdditiveSharingTensor(AbstractTensor):
             field=self.field, crypto_provider=self.crypto_provider
         ).set_shares(shares)
 
-    @hook
+    @overloaded.method
     def mul(self, shares: dict, other_shares, *args, **kwargs):
         """Multiplies two tensors together
         For details see abstract_mul
@@ -272,7 +272,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         return self.mul(*args, **kwargs)
 
-    @hook
+    @overloaded.method
     def matmul(self, shares: dict, other_shares, **kwargs):
         """Multiplies two tensors together
         For details see abstract_mul
@@ -295,7 +295,7 @@ class AdditiveSharingTensor(AbstractTensor):
         result = self.__truediv__(*args, **kwargs)
         self.child = result.child
 
-    @hook
+    @overloaded.method
     def __truediv__(self, shares: dict, divisor):
         assert isinstance(divisor, int)
 
@@ -307,7 +307,7 @@ class AdditiveSharingTensor(AbstractTensor):
             field=self.field, crypto_provider=self.crypto_provider
         ).set_shares(divided_shares)
 
-    @hook
+    @overloaded.method
     def mod(self, shares: dict, modulus: int):
         assert isinstance(modulus, int)
         moded_shares = {}

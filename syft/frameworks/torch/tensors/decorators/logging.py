@@ -1,6 +1,6 @@
 import syft
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.utils import hook
+from syft.frameworks.torch.tensors.interpreters.utils import overloaded
 
 
 class LoggingTensor(AbstractTensor):
@@ -28,20 +28,34 @@ class LoggingTensor(AbstractTensor):
         self.id = id
         self.child = None
 
-    @hook
+    # Method overloading
+
+    @overloaded.method
     def add(self, _self, *args, **kwargs):
-        print("Log add")
+        """
+        Here is an example of how to use the @overloaded.method decorator. To see
+        what this decorator do, just look at the next method manual_add: it does
+        exactly the same but without the decorator.
+
+        Note the subtlety between self and _self: you should use _self and NOT self.
+        """
+        print("Log method add")
         response = getattr(_self, "add")(*args, **kwargs)
 
         return response
 
     def manual_add(self, *args, **kwargs):
+        """
+        Here is the version of the add method without the decorator: as you can see
+        it is much more complicated. However you might need sometimes to specify
+        some particular behaviour: so here what to start from :)
+        """
         # Replace all syft tensor with their child attribute
         new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
             "add", self, args, kwargs
         )
 
-        print("Log add")
+        print("Log method manual_add")
         # Send it to the appropriate class and get the response
         response = getattr(new_self, "add")(*new_args, **new_kwargs)
 
