@@ -63,7 +63,7 @@ def test_plan_built_on_method(hook):
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
 
-        @sy.meth2plan
+        @sy.method2plan
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
