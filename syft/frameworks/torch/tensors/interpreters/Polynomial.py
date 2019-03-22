@@ -6,16 +6,103 @@ from typing import Callable, List, Union
 
 class PolynomialTensor(AbstractTensor):
 
-    """Tensor type which provides function approximations using Taylor Series/Interpolation methods. 
-       For instance , non-linear operations such as relu , exp and tanh for MPC
+    """ 
+       Tensor type to provide non-linear function approximations
+       
+       MPC and Homomorphic Encryption are capable of performing some addition and logical operations. 
+       Non-Linear functions could be approximated as a series of approximated functions of basic arithmetic 
+       operations using function approximations such as interpolation/Taylor series.
+       
+       The polynomial tensor provides flexibility to consider every non-linear function as piecewise linear function 
+       and fit over different intervals.
+       
+       Parameters:
+           
+           function[callable,Optional]: Function to applied to function approximation coefficients. Used to encrypt coefficients.
+           precision[integer]: Precision of approximated values
+           
     """
 
+    def __init__(self, function=torch.tensor, precision=10):
+
+        self.function = function
+        self.precision = precision
+
+        # Stores parameters of function approximations such as precision , degree , piecewise functions and base function
+        self.function_attr = {}
+
+        # Stores fitted function
+        self.func_approx = {}
+
+        self.defaultfunctions()
+
+    def defaultfunctions(self):
+
+        """Initializes default function approximations exp,log,sigmoid and tanh"""
+
+        self.addfunction(
+            "exp",
+            10,
+            [[0, 10, 100, 10, self.fit_function], [-10, 0, 100, 10, self.fit_function]],
+            lambda x: np.exp(x),
+        )
+        self.addfunction("log", 10, [[1, 10, 100, 10, self.fit_function]], lambda x: np.log(x))
+        self.addfunction(
+            "sigmoid", 10, [[-10, 10, 100, 10, self.fit_function]], (lambda x: 1 / (1 + np.exp(-x)))
+        )
+        self.addfunction(
+            "tanh",
+            10,
+            [[0, 10, 1000, 10, self.fit_function], [-10, 0, 1000, 10, self.fit_function]],
+            lambda x: np.tanh(x),
+        )
+
+    def addfunction(self, name, degree, piecewise, function):
+
+        """Add function to function_attr dictionary.
+        
+        Parameters:
+            
+            name[str]: Name of function
+            degree[int]: Degree of function
+            piecewise[List]: List of piecewise functions in format [min_val of fit,max_val of fit,step of fit,function to fit values]
+            function[callable]: Base function
+            
+        """
+
+        self.function_attr[name + "_degree"] = degree
+        self.function_attr[name + "_piecewise"] = piecewise
+        self.function_attr[name + "_function"] = function
+
+        self.func_approx[name] = self.piecewise_linear_fit(
+            name, self.function_attr[name + "_piecewise"]
+        )
+
+    def get_val(self, name, x):
+
+        """Get value of given function approximation 
+        
+        Parameters:
+            
+            name[str]: Name of function
+            value[torch tensor,float,integer]: Value to be approximated
+        
+        returns:
+            
+            Approximated value using given function approximation
+        
+        """
+
+        value = x
+
+        if type(x) == torch.Tensor:
+
+            return value.apply_(lambda k: self.piecewise_linear_eval(self.func_approx[name], k))
+
+        return self.piecewise_linear_eval(self.func_approx[name], x)
+
     def interpolate(
-        self,
-        function: Callable,
-        interval: List[Union[int, float]],
-        degree: int = 10,
-        precision: int = 10,
+        self, function: Callable, interval: List[Union[int, float]], degree: int = 10
     ) -> np.poly1d:
 
         """Returns a interpolated version of given function using Numpy's polyfit method
@@ -44,7 +131,7 @@ class PolynomialTensor(AbstractTensor):
         coefs = np.polyfit(f_interval, f_real(f_interval), degree)
 
         # reduce precision of interpolated coefficients
-        precision = 10
+        precision = self.precision
         coefs = [int(x * 10 ** precision) / 10 ** precision for x in coefs]
 
         # approximation function
@@ -52,90 +139,136 @@ class PolynomialTensor(AbstractTensor):
 
         return f_interpolated
 
-    def sigmoid_inter(self) -> np.poly1d:
+    def applycoefs(self, polyinstance, function):
 
-        """Interpolated approximation of Sigmoid function
+        """Apply a given function over Numpy interpolation instances.This function could be used to encrypt coefficients of function approximations approximated using interpolation
+        
+           Parameters:
+               
+           polyinstance (Numpy poly1d) : Interpolation instance 
+           function (Callable) : Function to be applied"""
+
+        return function(polyinstance.coef)
+
+    def piecewise_linear_fit(self, name, array):
+
+        """Fit a piecewise linear function. This can be used to approximate a non-linear function as seperate linear functions valid for seperate ranges.
+           For , instance function approximations are more accurate for exponential when seperate instances  of interpolation are fit between 
+           -10 to 0 and 0 to 10. 
+           
+           Parameters:
+           
+              array[2D List]: Each instance of list must take four values [min_val,steps,max_val,function approximation method]
+           
+           returns:
+               
+              array[2D List]: Each instance of list with four values [min_val,max_val,Approximated function]
+           
+           """
+
+        arguments = []
+
+        for element in array:
+
+            min_val = element[0]
+            max_val = element[1]
+            steps = element[2]
+            degree = element[3]
+            function = element[4]
+            arguments.append(
+                [
+                    min_val,
+                    max_val,
+                    function(name, min_val=min_val, max_val=max_val, steps=steps, degree=degree),
+                ]
+            )
+
+        return arguments
+
+    def piecewise_linear_eval(self, data, x):
+
+        """Get approximated value for a given function. This takes only scalar value. 
+           If you have a Numpy array or torch tensor consider passing it using a 
+           lambda or torch.apply_ method.
+        
+           Parameters:
+               
+               data[2D List]: Instance of piecewise linear fit taking values [min_val,max_val,function approximation method]
+               x[Float or Integer]: Value to be approximated     """
+
+        for element in data:
+
+            min_val = element[0]
+            max_val = element[1]
+            function = element[2]
+
+            if min_val <= x <= max_val:
+
+                return function(x)
+
+    def fit_function(self, name, min_val=0, max_val=10, steps=100, degree=10) -> np.poly1d:
+        """Interpolated approximation of given function
+        
+        name: Name of function as defined in self.setting
+        min_val: Minimum range of interpolation fit
+        max_val: Maximum range of interpolation fit
+        steps:   Steps of interpolation fit
+        degree: Degree of interpolation fit
+        function: The function used to encrypt function approximation coefficients
         
         returns:
             
-            f_interpolated (Numpy Poly1d): Approximated Sigmoid
-        
-        """
+            f_interpolated (Numpy Poly1d): Approximated function"""
 
-        inter_sigmoid = self.interpolate(
-            (lambda x: 1 / (1 + np.exp(-x))), np.linspace(-10, 10, 100)
+        fitted_function = self.interpolate(
+            self.function_attr[name + "_" + "function"],
+            np.linspace(min_val, max_val, steps),
+            degree=degree,
         )
 
-        return inter_sigmoid
+        fitted_function = self.applycoefs(fitted_function, self.function)
 
-    def sigmoid(self, x, function=torch.tensor):
+        return np.poly1d(fitted_function)
+
+    def sigmoid(self, x):
 
         """Parameters:
-            
+           
+           Method provides Sigmoid function approximation interms of Taylor Series
+           
            x: Torch tensor
-           function: The function used to encrypt function approximation values
-           
-           
+                  
            return: 
                
            approximation of the sigmoid function as a torch tensor"""
 
         return (
-            (function(1 / 2))
-            + (function(x / 4))
-            - (function((x ** 3) / (48)))
-            + (function((x ** 5) / (480)))
+            (self.function(1 / 2))
+            + ((x) * self.function(1 / 4))
+            - ((x ** 3) * self.function(1 / 48))
+            + ((x ** 5) * self.function((1 / 480)))
         )
 
-    def exp(self, x, function=torch.tensor):
+    def exp(self, x):
 
-        """Parameters:
+        """
+            Method provides exponential function approximation interms of Taylor Series
+            
+            Parameters:
             
             x: Torch tensor
-            function: The function used to encrypt function approximation values
            
             return: 
                
             approximation of the sigmoid function as a torch tensor"""
 
         return (
-            function(1)
-            + function(x)
-            + (function((x ** 2) / 2))
-            + (function((x ** 3) / 6))
-            + (function((x ** 4) / (24)))
-            + (function((x ** 5) / (120)))
-            + (function((x ** 6) / (840)))
-            + (function((x ** 7) / (6720)))
+            self.function(1)
+            + self.function(x)
+            + (x ** 2) * (self.function(1 / 2))
+            + (x ** 3) * (self.function(1 / 6))
+            + (x ** 4) * (self.function(1 / (24)))
+            + (x ** 5) * (self.function(1 / (120)))
+            + (x ** 6) * (self.function(1 / (840)))
+            + (x ** 7) * (self.function(1 / (6720)))
         )
-
-    def exp_inter(self, x, function=torch.tensor):
-
-        raise NotImplementedError
-
-    def tanh_inter(self, x, function=torch.tensor):
-
-        raise NotImplementedError
-
-    def tanh(self, x: torch.tensor, function=torch.tensor) -> torch.tensor:
-
-        """Parameters:
-            
-            x: Torch tensor
-            function: The function used to encrypt function approximation values
-           
-            return: 
-               
-            approximation of the sigmoid function as a torch tensor"""
-
-        return (
-            (function(x))
-            - (function((x ** 3) / 3))
-            + ((function((2 * (x ** 5)) / 15)))
-            - ((function(17 * (x ** 7))) / 315)
-            + ((function(62 * (x ** 9) / 2835)))
-        )
-
-    def relu(self, x, function=torch.tensor):
-
-        raise NotImplementedError
