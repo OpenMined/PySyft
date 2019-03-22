@@ -34,3 +34,20 @@ def overload_method(attr):
 
 overloaded.method = overload_method
 
+
+class Module(object):
+    pass
+
+
+overloaded.module = Module()
+
+
+def overload_module(attr):
+
+    module = Module()
+    attr(module)
+
+    return module
+
+
+overloaded.module = overload_module

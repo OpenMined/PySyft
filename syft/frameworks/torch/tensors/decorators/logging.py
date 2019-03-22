@@ -1,3 +1,6 @@
+import torch
+import torch.nn.functional as F
+
 import syft
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.utils import overloaded
@@ -65,38 +68,63 @@ class LoggingTensor(AbstractTensor):
         )
         return response
 
-    @classmethod
-    def handle_func_command(cls, command):
+    # Module & Function overloading
+
+    # We overload two torch functions:
+    # - torch.add
+    # - torch.nn.functional.relu
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
         """
-        Receive an instruction for a function to be applied on a LoggingTensor,
-        Perform some specific action (like logging) which depends of the
-        instruction content, replace in the args all the LogTensors with
-        their child attribute, forward the command instruction to the
-        handle_function_command of the type of the child attributes, get the
-        response and replace a LoggingTensor on top of all tensors found in
-        the response.
-        :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
-        :return: the response of the function command
+        We use the @overloaded.module to specify we're writing here
+        a function which should overload the function with the same
+        name in the <torch> module
+        :param module: object which stores the overloading functions
+
+        Note that we used the @staticmethod decorator as we're in a
+        class
+        """
+
+        def add(x, y):
+            """
+            You can write the function to overload in the most natural
+            way
+            """
+            print("Log function torch.add")
+            return x + y
+
+        # Just register it using the module variable
+        module.add = add
+
+        # You can also overload functions in submodules!
+        @overloaded.module
+        def nn(module):
+            """
+            The syntax is the same, so @overloaded.module handles recursion
+            Note that we don't need to add the @staticmethod decorator
+            """
+
+            @overloaded.module
+            def functional(module):
+                def relu(x):
+                    print("Log function torch.nn.functional.relu")
+                    return x * (x.child > 0)
+
+                module.relu = relu
+
+            module.functional = functional
+
+        # Modules should be registered just like functions
+        module.nn = nn
+
+    @classmethod
+    def on_function_call(cls, command):
+        """
+        Override this to perform a specific action for each call of a torch
+        function with arguments containing syft tensors of the class doing
+        the overloading
         """
         cmd, _, args, kwargs = command
-
-        # Do what you have to
-        print("Logtensor logging function", cmd)
-
-        # TODO: I can't manage the import issue, can you?
-        # Replace all LoggingTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_args(
-            cmd, args, kwargs
-        )
-
-        # build the new command
-        new_command = (cmd, None, new_args, new_kwargs)
-
-        # Send it to the appropriate class and get the response
-        response = new_type.handle_func_command(new_command)
-
-        # Put back LoggingTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
-
-        return response
+        print("Default log", cmd)
