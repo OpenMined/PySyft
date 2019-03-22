@@ -1,8 +1,11 @@
 from abc import ABC
-import torch
 import random
-import syft as sy
 import weakref
+import functools
+
+import torch
+
+import syft as sy
 
 
 class AbstractTensor(ABC):
@@ -129,6 +132,65 @@ class AbstractTensor(ABC):
         very important.
         """
         return {}
+
+    @classmethod
+    def on_function_call(cls, *args):
+        """
+        Override this to perform a specific action for each call of a torch
+        function with arguments containing syft tensors of the class doing
+        the overloading
+        """
+        pass
+
+    @classmethod
+    def handle_func_command(cls, command):
+        """
+        Receive an instruction for a function to be applied on a Syft Tensor,
+        Replace in the args all the LogTensors with
+        their child attribute, forward the command instruction to the
+        handle_function_command of the type of the child attributes, get the
+        response and replace a Syft Tensor on top of all tensors found in
+        the response.
+        :param command: instruction of a function command: (command name,
+        <no self>, arguments[, kwargs])
+        :return: the response of the function command
+        """
+        cmd, _, args, kwargs = command
+
+        # Check that the function has not been overwritten
+        try:
+            # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+            cmd = rgetattr(cls, cmd)
+            return cmd(*args, **kwargs)
+        except AttributeError:
+            pass
+
+        # TODO: I can't manage the import issue, can you?
+        # Replace all LoggingTensor with their child attribute
+        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.hook_function_args(
+            cmd, args, kwargs
+        )
+
+        # build the new command
+        new_command = (cmd, None, new_args, new_kwargs)
+
+        # Do a generic action depending og the call
+        cls.on_function_call(new_command)
+
+        # Send it to the appropriate class and get the response
+        response = new_type.handle_func_command(new_command)
+
+        # Put back LoggingTensor on the tensors found in the response
+        response = sy.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
+
+        return response
+
+
+def rgetattr(obj, attr, *args):
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+
+    return functools.reduce(_getattr, [obj] + attr.split("."))
 
 
 def initialize_tensor(
