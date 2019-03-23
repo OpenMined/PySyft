@@ -194,10 +194,12 @@ def test_torch_module_hook(workers):
     """Tests sending and getting back torch nn module like nn.Linear"""
     model = nn.Linear(2, 1)
     model_ptr = model.send(workers["bob"])
-    res = model_ptr.get()
+    model_back = model_ptr.get()
 
-    # TODO: shouldn't there be an assertion here?
-    # assert True
+    bias = model_back.bias
+    model_back.fix_precision()
+    model_back.float_precision()
+    assert (bias == model_back.bias).all()
 
 
 def test_functional_hook():
