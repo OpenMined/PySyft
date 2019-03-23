@@ -90,13 +90,29 @@ class LoggingTensor(AbstractTensor):
         def add(x, y):
             """
             You can write the function to overload in the most natural
-            way
+            way, so this will be called whenever you call torch.add on
+            Logging Tensors, and the x and y you get are also Logging
+            Tensors, so compared to the @overloaded.method, you see
+            that the @overloaded.module does not hook the arguments.
             """
             print("Log function torch.add")
             return x + y
 
         # Just register it using the module variable
         module.add = add
+
+        @overloaded.function
+        def mul(x, y):
+            """
+            You can also add the @overloaded.function decorator to also
+            hook arguments, ie all the LoggingTensor are replaced with
+            their child attribute
+            """
+            print("Log function torch.mul")
+            return x * y
+
+        # Just register it using the module variable
+        module.mul = mul
 
         # You can also overload functions in submodules!
         @overloaded.module

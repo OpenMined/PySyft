@@ -35,6 +35,37 @@ def overload_method(attr):
 overloaded.method = overload_method
 
 
+def overload_function(attr):
+    """
+    hook args and response for functions that hold the @overloaded.function decorator
+    """
+
+    def hook_args(*args, **kwargs):
+
+        # TODO have a better way
+        cls = type(args[0])
+
+        # Replace all syft tensor with their child attribute
+        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_args(
+            attr.__name__, args, kwargs
+        )
+
+        # Send it to the appropriate class and get the response
+        response = attr(*new_args, **new_kwargs)
+
+        # Put back SyftTensor on the tensors found in the response
+        response = syft.frameworks.torch.hook_args.hook_response(
+            attr.__name__, response, wrap_type=cls
+        )
+
+        return response
+
+    return hook_args
+
+
+overloaded.function = overload_function
+
+
 class Module(object):
     pass
 
