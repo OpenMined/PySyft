@@ -1,8 +1,76 @@
 import random
 
+import torch
+
 from syft.workers.base import BaseWorker
 from syft.codes import MSGTYPE
 import syft as sy
+
+
+def make_plan(plan_blueprint):
+    """For folks who would prefer to not use a decorator, they can use this function"""
+    return func2plan(plan_blueprint)
+
+
+def func2plan(plan_blueprint):
+    """
+    the @func2plan decorator - converts a function of pytorch code into a plan object
+    which can be sent to any arbitrary worker.
+    """
+
+    plan = Plan(
+        hook=sy.local_worker.hook,
+        owner=sy.local_worker,
+        id=random.randint(0, 1e10),
+        name=plan_blueprint.__name__,
+    )
+
+    plan.plan_blueprint = plan_blueprint
+
+    return plan
+
+
+def method2plan(plan_blueprint):
+    """
+    the @method2plan decorator - converts a method containing sequential pytorch code into
+    a plan object which can be sent to any arbitrary worker.
+    """
+
+    plan = Plan(
+        hook=sy.local_worker.hook,
+        owner=sy.local_worker,
+        id=random.randint(0, 1e10),
+        name=plan_blueprint.__name__,
+    )
+
+    plan.plan_blueprint = plan_blueprint
+
+    @property
+    def method(self: object) -> Plan:
+        """
+        This property is a way to catch the self of the method and give it to the plan,
+        it will be provided in the future calls as this is not automatic (the structure
+        of @func2plan would not keep the self during the call)
+
+        Args:
+            self (object): an instance of a class
+
+        Returns:
+            the plan which is also a callable.
+
+        Example:
+            When you have your plan and that you do
+            > plan(*args)
+            First the property is call with the part "plan" and self is caught, plan is
+            returned
+            Then plan is called with "(*args)" and in the __call__ function of plan the
+            self parameter is re-inserted
+        """
+        plan.self = self
+
+        return plan
+
+    return method
 
 
 class PlanPointer:
@@ -31,6 +99,13 @@ class Plan(BaseWorker):
         # Pointing info towards a remote plan
         self.location = None
         self.ptr_plan = None
+
+        # Planworkers are registered by other worker, they must have information
+        # to be retrieved by search functions
+        self.tags = None
+        self.description = None
+        # For methods
+        self.self = None
 
     def _send_msg(self, message, location):
         return location._recv_msg(message)
@@ -69,10 +144,12 @@ class Plan(BaseWorker):
 
         local_args = list()
         for i, arg in enumerate(args):
-            self.owner.register_obj(arg)
-            arg = arg.send(self)
-            arg.child.garbage_collect_data = False
-            self.arg_ids.append(arg.id_at_location)
+            # Send only tensors (in particular don't send the "self" for methods)
+            if isinstance(arg, torch.Tensor):
+                self.owner.register_obj(arg)
+                arg = arg.send(self)
+                arg.child.garbage_collect_data = False
+                self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
         res_ptr = self.plan_blueprint(*local_args)
@@ -104,14 +181,15 @@ class Plan(BaseWorker):
     def replace_worker_ids(self, from_worker_id, to_worker_id):
         """
         Replace occurrences of from_worker_id by to_worker_id in the plan stored
+        Works also if those ids are encoded in bytes (for string)
         """
-        self.readable_plan = Plan._replace_message_ids(
-            obj=self.readable_plan,
-            change_id=-1,
-            to_id=-1,
-            from_worker=from_worker_id,
-            to_worker=to_worker_id,
-        )
+        for from_id, to_id in [
+            (from_worker_id, to_worker_id),
+            (from_worker_id.encode(), to_worker_id.encode()),
+        ]:
+            self.readable_plan = Plan._replace_message_ids(
+                obj=self.readable_plan, change_id=-1, to_id=-1, from_worker=from_id, to_worker=to_id
+            )
 
     @staticmethod
     def _replace_message_ids(obj, change_id, to_id, from_worker, to_worker):
@@ -149,6 +227,9 @@ class Plan(BaseWorker):
         """
         assert len(kwargs) == 0, "kwargs not supported for plan"
         result_ids = [random.randint(0, 1e10)]
+        # Support for method hooked in plans
+        if self.self is not None:
+            args = [self.self] + list(args)
         return self.execute_plan(args, result_ids)
 
     def execute_plan(self, args, result_ids):
@@ -175,6 +256,8 @@ class Plan(BaseWorker):
             return response
 
         # if the plan is not to be sent but is not local (ie owned by the local worker)
+        # then it has been request to execute, to we update the plan with the correct
+        # input and output ids and we run it
         if not self.location and self.owner != sy.hook.local_worker:
             arg_ids = [arg.id for arg in args]
             self.replace_ids(self.arg_ids, arg_ids)
@@ -196,6 +279,7 @@ class Plan(BaseWorker):
         :param args: the arguments use as input data for the plan
         :return:
         """
+        args = [arg for arg in args if isinstance(arg, torch.Tensor)]
         args = [args, response_ids]
         command = ("execute_plan", self.ptr_plan, args, kwargs)
 
