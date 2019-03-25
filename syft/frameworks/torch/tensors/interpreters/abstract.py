@@ -48,7 +48,7 @@ class AbstractTensor(ABC):
         except IndexError:
             return 0
 
-    def on(self, tensor: "AbstractTensor", wrap: bool = True):
+    def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
         """
         Add a syft(log) tensor on top of the tensor.
         :param tensor: the tensor to extend
@@ -68,7 +68,7 @@ class AbstractTensor(ABC):
             tensor.child = self
             return tensor
 
-    def wrap(self):
+    def wrap(self) -> torch.Tensor:
         """Wraps the class inside torch tensor.
 
         Because PyTorch does not (yet) support functionality for creating

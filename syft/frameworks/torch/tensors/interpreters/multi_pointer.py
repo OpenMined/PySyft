@@ -17,7 +17,7 @@ class MultiPointerTensor(AbstractTensor):
         owner: BaseWorker = None,
         id: Union[str, int] = None,
         garbage_collect_data: bool = True,
-        shape=None,
+        shape: torch.Size = None,
         point_to_attr: str = None,
         tags: List[str] = None,
         description: str = None,
@@ -39,7 +39,7 @@ class MultiPointerTensor(AbstractTensor):
             self.child[c.location.id] = c
 
     @property
-    def shape(self):
+    def shape(self) -> torch.Size:
         """This method returns the shape of the data being pointed to.
         This shape information SHOULD be cached on self._shape, but
         occasionally this information may not be present. If this is the
@@ -48,7 +48,7 @@ class MultiPointerTensor(AbstractTensor):
 
         return list(self.child.values())[0].shape
 
-    def get(self, sum_results: bool = False):
+    def get(self, sum_results: bool = False) -> torch.Tensor:
 
         results = list()
         for v in self.child.values():

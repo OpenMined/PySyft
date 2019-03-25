@@ -3,9 +3,13 @@ import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.codes import MSGTYPE
 from syft.exceptions import RemoteTensorFoundError, CannotRequestTensorAttribute
-from syft.workers import BaseWorker
 from typing import List
 from typing import Union
+from typing import TYPE_CHECKING
+
+# this if statement avoids circular imports between base.py and pointer.py
+if TYPE_CHECKING:
+    from syft.workers import BaseWorker
 
 
 class PointerTensor(AbstractTensor):
@@ -41,12 +45,12 @@ class PointerTensor(AbstractTensor):
     def __init__(
         self,
         parent: AbstractTensor = None,
-        location: BaseWorker = None,
+        location: "BaseWorker" = None,
         id_at_location: Union[str, int] = None,
-        owner: BaseWorker = None,
+        owner: "BaseWorker" = None,
         id: Union[str, int] = None,
         garbage_collect_data: bool = True,
-        shape=None,
+        shape: torch.Size = None,
         point_to_attr: str = None,
         tags: List[str] = None,
         description: str = None,
