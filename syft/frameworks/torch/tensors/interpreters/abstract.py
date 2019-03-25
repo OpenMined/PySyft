@@ -15,18 +15,28 @@ class AbstractTensor(ABC):
 
     is_wrapper = False
 
-    def __init__(self, tags=None, description=None):
+    def __init__(self, id=None, owner=None, tags=[], description=None, child=None, parent=None):
         """Initializer for AbstractTensor
 
         Args:
+            id: An optional string or integer id of the tensor
+            owner: An optional BaseWorker object to specify the worker on which
+                the tensor is located.
             tags: an optional set of hashtags corresponding to this tensor
-                which this tensor should be searchable for.
+                which this tensor should be searchable for
             description: an optional string describing the purpose of the
                 tensor
+            child: an optional tensor to put in the .child attribute to build
+                a chain of tensors
+            parent: an optional tensor whose .child attribute is this tensor
+                defined here
         """
-
+        self.owner = owner
+        self.id = id
         self.tags = tags
         self.description = description
+        self.child = child
+        self.parent = parent
 
     def __str__(self) -> str:
         if hasattr(self, "child"):

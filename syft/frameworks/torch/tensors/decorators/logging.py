@@ -24,12 +24,7 @@ class LoggingTensor(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the LoggingTensor.
         """
-        super().__init__(tags, description)
-
-        self.parent = parent
-        self.owner = owner
-        self.id = id
-        self.child = None
+        super().__init__(id=id, owner=owner, tags=tags, description=description, parent=parent)
 
     # Method overloading
 
