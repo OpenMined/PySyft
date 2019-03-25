@@ -3,6 +3,7 @@ import torch
 import random
 import syft as sy
 import weakref
+from typing import List
 
 
 class AbstractTensor(ABC):
@@ -12,7 +13,7 @@ class AbstractTensor(ABC):
 
     is_wrapper = False
 
-    def __init__(self, tags=None, description: str = None):
+    def __init__(self, tags: List[str] = None, description: str = None):
         """Initializer for AbstractTensor
 
         Args:
@@ -47,7 +48,7 @@ class AbstractTensor(ABC):
         except IndexError:
             return 0
 
-    def on(self, tensor, wrap: bool = True):
+    def on(self, tensor: "AbstractTensor", wrap: bool = True):
         """
         Add a syft(log) tensor on top of the tensor.
         :param tensor: the tensor to extend

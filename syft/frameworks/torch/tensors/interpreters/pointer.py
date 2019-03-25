@@ -3,6 +3,9 @@ import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.codes import MSGTYPE
 from syft.exceptions import RemoteTensorFoundError, CannotRequestTensorAttribute
+from syft.workers import BaseWorker
+from typing import List
+from typing import Union
 
 
 class PointerTensor(AbstractTensor):
@@ -38,17 +41,18 @@ class PointerTensor(AbstractTensor):
     def __init__(
         self,
         parent: AbstractTensor = None,
-        location=None,
-        id_at_location=None,
-        register=False,
-        owner=None,
-        id=None,
-        garbage_collect_data=True,
+        location: BaseWorker = None,
+        id_at_location: Union[str, int] = None,
+        register: bool = False,
+        owner: BaseWorker = None,
+        id: Union[str, int] = None,
+        garbage_collect_data: bool = True,
         shape=None,
-        point_to_attr=None,
-        tags=None,
+        point_to_attr: str = None,
+        tags: List[str] = None,
         description: str = None,
     ):
+
         """Initializes a PointerTensor.
 
         Args:

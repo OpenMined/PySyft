@@ -1,6 +1,8 @@
 import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.workers import BaseWorker
+from typing import List
+from typing import Union
 
 
 class MultiPointerTensor(AbstractTensor):
@@ -10,16 +12,16 @@ class MultiPointerTensor(AbstractTensor):
         self,
         parent: AbstractTensor = None,
         location: BaseWorker = None,
-        id_at_location=None,
-        register=False,
-        owner=None,
-        id=None,
-        garbage_collect_data=True,
+        id_at_location: Union[str, int] = None,
+        register: bool = False,
+        owner: BaseWorker = None,
+        id: Union[str, int] = None,
+        garbage_collect_data: bool = True,
         shape=None,
-        point_to_attr=None,
-        tags=None,
+        point_to_attr: str = None,
+        tags: List[str] = None,
         description: str = None,
-        children=None,
+        children: List[AbstractTensor] = None,
     ):
 
         super().__init__(tags, description)
