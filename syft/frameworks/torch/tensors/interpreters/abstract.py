@@ -91,21 +91,13 @@ class AbstractTensor(ABC):
         # wrapper.child.parent = weakref.ref(wrapper)
         return wrapper
 
-    def serialize(
-        self, compress: bool = True, compress_scheme: int = 0
-    ):  # Code 0 is LZ4 - check serde.py to see others
+    def serialize(self):  # check serde.py to see how to provide compression schemes
         """Serializes the tensor on which it's called.
 
         This is the high level convenience function for serializing torch
         tensors. It includes three steps, Simplify, Serialize, and Compress as
         described in serde.py.
-
-        Args:
-            compress: A boolean indicating whether to compress the object or
-                not.
-            compress_scheme: An integer code specifying the compression scheme
-                to use (see serde.py for scheme codes) if compress is True. The
-                compression scheme is set to LZ4 by default (code 0).
+        By default serde is compressing using LZ4
 
         Returns:
             The serialized form of the tensor.
@@ -113,7 +105,7 @@ class AbstractTensor(ABC):
                 x = torch.Tensor([1,2,3,4,5])
                 x.serialize() # returns a serialized object
         """
-        return sy.serde.serialize(self, compress=compress, compress_scheme=compress_scheme)
+        return sy.serde.serialize(self)
 
     def ser(self, *args, **kwargs):
         return self.serialize(*args, **kwargs)

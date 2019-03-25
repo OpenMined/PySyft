@@ -43,7 +43,6 @@ class PointerTensor(AbstractTensor):
         parent: AbstractTensor = None,
         location: BaseWorker = None,
         id_at_location: Union[str, int] = None,
-        register: bool = False,
         owner: BaseWorker = None,
         id: Union[str, int] = None,
         garbage_collect_data: bool = True,
@@ -66,8 +65,6 @@ class PointerTensor(AbstractTensor):
                 on which this pointer's object can be found.
             id_at_location: An optional string or integer id of the tensor
                 being pointed to.
-            register: An optional boolean parameter to determine whether to
-                automatically register the new pointer that gets created.
             owner: An optional BaseWorker object to specify the worker on which
                 the pointer is located. It is also where the pointer is
                 registered if register is set to True. Note that this is
@@ -90,7 +87,7 @@ class PointerTensor(AbstractTensor):
         self.owner = owner
         self.id = id
         self.garbage_collect_data = garbage_collect_data
-        self.shape = shape
+        self._shape = shape
         self.point_to_attr = point_to_attr
 
     @classmethod
@@ -282,13 +279,8 @@ class PointerTensor(AbstractTensor):
         return self.owner.request_is_remote_tensor_none(self)
 
     def get_shape(self):
-
-        results = self.location.search(str(self.id_at_location))
-
-        if len(results) > 0:
-            return results[0].shape
-        else:
-            print("couldn't find shape... are you sure this tensor exists?")
+        """Request information about the shape to the remote worker"""
+        return self.owner.request_remote_tensor_shape(self)
 
     @property
     def shape(self):

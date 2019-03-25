@@ -410,7 +410,6 @@ class TorchTensor(AbstractTensor):
                 parent=self,
                 location=location,
                 id_at_location=id_at_location,
-                register=register,
                 owner=owner,
                 id=ptr_id,
                 garbage_collect_data=garbage_collect_data,
@@ -550,7 +549,7 @@ class TorchTensor(AbstractTensor):
 
     fix_precision_ = fix_prec_
 
-    def share(self, *owners):
+    def share(self, *owners, field=None, crypto_provider=None):
         """This is a passthrough method which calls .share on the child.
 
         Args:
@@ -558,11 +557,13 @@ class TorchTensor(AbstractTensor):
         """
 
         if self.has_child():
-            self.child = self.child.share(*owners)
+            self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
             return self
 
         return (
-            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor()
+            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
+                field=field, crypto_provider=crypto_provider
+            )
             .on(self)
             .child.init_shares(*owners)
             .wrap()

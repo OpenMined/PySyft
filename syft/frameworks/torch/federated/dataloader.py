@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import SequentialSampler, RandomSampler, BatchSampler
 from torch._six import string_classes, int_classes, container_abcs
 
+import logging
 import math
 
 numpy_type_map = {
@@ -137,7 +138,11 @@ class FederatedDataLoader(object):
         num_iterators=1,
         drop_last=False,
         collate_fn=default_collate,
+        **kwargs,
     ):
+        if len(kwargs) > 0:
+            options = ", ".join([f"{k}: {v}" for k, v in kwargs.items()])
+            logging.warning(f"The following options are not supported: {options}")
 
         try:
             self.workers = federated_dataset.workers
