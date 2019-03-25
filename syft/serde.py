@@ -390,11 +390,16 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     if tags is not None:
         for i in range(len(tags)):
-            tags[i] = tags[i].decode("utf-8")
+            tag = tags[i]
+            if isinstance(tag, bytes):
+                tag = tag.decode("utf-8")
+            tags[i] = tag
         tensor.tags = tags
 
     if description is not None:
-        tensor.description = description.decode("utf-8")
+        if isinstance(description, bytes):
+            description = description.decode("utf-8")
+        tensor.description = description
 
     if chain is not None:
         chain = _detail(worker, chain)
