@@ -1,5 +1,5 @@
 
-# Part 0: Installing PySyft
+# PySyft Installation Guide
 
 Before you start following the tutorials, you need to install PySyft on your computer.
 
@@ -46,11 +46,15 @@ and run it in the terminal.
 
 <font color='red'>$</font> `cd PySyft`
 
-#### 5. Install PySyft
+#### 5. Install PySyft requirements
+
+<font color='red'>$</font> `sudo pip3 install -r requirements.txt`
+
+#### 6. Install PySyft
 
 <font color='red'>$</font> `sudo python setup.py install`
 
-#### 6. Test your installation:
+#### 7. Test your installation:
 
 <font color='red'>$</font> `sudo python setup.py test`
 
@@ -94,7 +98,9 @@ First, you need to enter the PySyft folder you cloned earlier by typing:
 
 <font color='red'>$</font> `cd PySyft`
 
-in the terminal. Then, run this to install the package:
+in the terminal. Then, run this to install the PySyft package after installing its requirements:
+
+<font color='red'>$</font> `pip3 install -r requirements.txt`
 
 <font color='red'>$</font> `python setup.py install`
 
@@ -208,9 +214,12 @@ in the command prompt.
 
 Then, type this in the command prompt as well:
 
+
+<font color='red'>**>**</font> `pip3 install -r requirements.txt`
+
 <font color='red'>**>**</font> `python setup.py install`
 
-This will install PySyft to your system. You should see no errors.
+This will install PySyft and its requirements to your system. You should see no errors.
 
 You can also test your installation by running:
 
