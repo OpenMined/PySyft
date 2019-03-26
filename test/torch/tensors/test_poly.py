@@ -150,9 +150,11 @@ def testsigmoidtaylor():
     # allclose function to compare the expected values and approximations with fixed precision
     assert torch.allclose(expected, torch.tensor(result, dtype=torch.double), atol=1e-03)
 
+
 def testfixedprecision():
-    
+
     x_tensor = torch.Tensor([1, 2, 3])
     x = FixedPrecisionTensor().on(x_tensor)
-    
+
+
 testfixedprecision()
