@@ -199,6 +199,7 @@ def rgetattr(obj, attr, *args):
         [Out] obj.attr1.attr2.attr3
 
     """
+
     def _getattr(obj, attr):
         return getattr(obj, attr, *args)
 
