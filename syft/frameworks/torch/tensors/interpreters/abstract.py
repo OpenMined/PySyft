@@ -187,6 +187,18 @@ class AbstractTensor(ABC):
 
 
 def rgetattr(obj, attr, *args):
+    """
+    Get an attribute recursively
+    :param obj: the object holding the attribute
+    :param attr: nested attribute
+    :param args: optional arguments to provide
+    :return: the attribute obj.attr
+
+    Example:
+        >>> rgetattr(obj, 'attr1.attr2.attr3')
+        [Out] obj.attr1.attr2.attr3
+
+    """
     def _getattr(obj, attr):
         return getattr(obj, attr, *args)
 

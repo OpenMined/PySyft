@@ -43,7 +43,8 @@ class Overloaded:
 
         def hook_args(*args, **kwargs):
 
-            # TODO have a better way
+            # TODO have a better way to infer the type of tensor -> this is implies
+            # that the first argument is a tensor (even if this is the case > 99%)
             cls = type(args[0])
 
             # Replace all syft tensor with their child attribute
