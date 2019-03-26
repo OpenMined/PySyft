@@ -15,6 +15,8 @@ from syft.workers.plan import make_plan  # noqa: F401
 
 from syft.workers.websocket_client import WebsocketClientWorker  # noqa: F401
 from syft.workers.websocket_server import WebsocketServerWorker  # noqa: F401
+from syft.workers.socketio_server import WebsocketIOServerWorker
+from syft.workers.socketio_client import WebsocketIOClientWorker
 
 __all__ = [
     "base",
@@ -25,4 +27,5 @@ __all__ = [
     "make_plan",
     "IdProvider",
     "websocket_client",
+    "socketio_client"
 ]
