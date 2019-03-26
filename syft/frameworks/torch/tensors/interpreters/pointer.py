@@ -142,7 +142,7 @@ class PointerTensor(AbstractTensor):
 
         big_str = False
 
-        if self.tags is not None and len(self.tags) > 0:
+        if self.tags is not None and len(self.tags):
             big_str = True
             out += "\n\tTags: "
             for tag in self.tags:

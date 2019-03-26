@@ -1,6 +1,6 @@
 import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.utils import overloaded
+from syft.frameworks.torch.overload_torch import overloaded
 from syft.frameworks.torch.crypto.spdz import spdz_mul
 
 

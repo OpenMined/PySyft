@@ -1,7 +1,7 @@
 import syft
 import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.utils import overloaded
+from syft.frameworks.torch.overload_torch import overloaded
 
 
 class FixedPrecisionTensor(AbstractTensor):

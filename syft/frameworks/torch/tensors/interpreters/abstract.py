@@ -1,8 +1,6 @@
 from abc import ABC
-import random
-import weakref
 import functools
-
+import random
 import torch
 
 import syft as sy

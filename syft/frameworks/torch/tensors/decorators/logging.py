@@ -1,9 +1,6 @@
-import torch
-import torch.nn.functional as F
-
 import syft
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.utils import overloaded
+from syft.frameworks.torch.overload_torch import overloaded
 
 
 class LoggingTensor(AbstractTensor):
