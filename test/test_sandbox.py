@@ -24,7 +24,7 @@ def test_sandbox():
     assert isinstance(jon, sy.VirtualWorker)  # noqa: F821
     assert theo == theo  # noqa: F821
     assert isinstance(theo, sy.VirtualWorker)  # noqa: F821
-    
+
     assert hook == hook  # noqa: F821
     assert isinstance(hook, TorchHook)  # noqa: F821
 
