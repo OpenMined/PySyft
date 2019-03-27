@@ -1,7 +1,7 @@
 import syft
 import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.utils import hook
+from syft.frameworks.torch.overload_torch import overloaded
 
 
 class FixedPrecisionTensor(AbstractTensor):
@@ -96,7 +96,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self.child /= truncation
         return self
 
-    @hook
+    @overloaded.method
     def add(self, _self, *args, **kwargs):
         """Add two fixed precision tensors together.
         """
@@ -106,7 +106,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __add__ = add
 
-    @hook
+    @overloaded.method
     def t(self, _self, *args, **kwargs):
         """Transpose a tensor. Hooked is handled by the decorator"""
         response = getattr(_self, "t")(*args, **kwargs)
