@@ -5,6 +5,8 @@ from typing import List
 import torch
 from websocket import create_connection
 
+import syft as sy
+from syft.codes import MSGTYPE
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers import BaseWorker
 
@@ -35,6 +37,14 @@ class WebsocketClientWorker(BaseWorker):
         self.ws = create_connection(self.uri)
 
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
+
+    def search(self, *query):
+        # Prepare a message requesting the websocket server to search among its objects
+        message = (MSGTYPE.SEARCH, query[0])
+        serialized_message = sy.serde.serialize(message)
+        # Send the message and return the deserialized response.
+        response = self._recv_msg(serialized_message)
+        return sy.serde.deserialize(response)
 
     def _send_msg(self, message: bin) -> bin:
         raise RuntimeError(

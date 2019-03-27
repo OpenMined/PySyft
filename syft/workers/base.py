@@ -714,6 +714,11 @@ class BaseWorker(AbstractWorker):
         for key, tensor in self._objects.items():
             found_something = True
             for query_item in query:
+                # If deserialization produced a bytes object instead of a string,
+                # make sure it's turned back to a string or a fair comparison.
+                if isinstance(query_item, bytes):
+                    query_item = query_item.decode("ascii")
+
                 match = False
                 if query_item == str(key):
                     match = True
