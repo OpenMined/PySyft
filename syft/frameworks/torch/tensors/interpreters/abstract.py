@@ -70,10 +70,14 @@ class AbstractTensor(ABC):
     def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
         """
         Add a syft(log) tensor on top of the tensor.
-        :param tensor: the tensor to extend
-        :param wrap: if true, add the syft tensor between the wrapper
-        and the rest of the chain. If false, just add it at the top
-        :return: a syft/torch tensor
+
+        Args:
+            tensor: the tensor to extend
+            wrap: if true, add the syft tensor between the wrapper
+            and the rest of the chain. If false, just add it at the top
+
+        Returns:
+            a syft/torch tensor
         """
         if not wrap:
             self.child = tensor
@@ -160,9 +164,13 @@ class AbstractTensor(ABC):
         handle_function_command of the type of the child attributes, get the
         response and replace a Syft Tensor on top of all tensors found in
         the response.
-        :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
-        :return: the response of the function command
+
+        Args:
+            command: instruction of a function command: (command name,
+            <no self>, arguments[, kwargs])
+
+        Returns:
+            the response of the function command
         """
         cmd, _, args, kwargs = command
 
@@ -198,10 +206,14 @@ class AbstractTensor(ABC):
 def rgetattr(obj, attr, *args):
     """
     Get an attribute recursively
-    :param obj: the object holding the attribute
-    :param attr: nested attribute
-    :param args: optional arguments to provide
-    :return: the attribute obj.attr
+
+    Args:
+        obj: the object holding the attribute
+        attr: nested attribute
+        args: optional arguments to provide
+
+    Returns:
+        the attribute obj.attr
 
     Example:
         >>> rgetattr(obj, 'attr1.attr2.attr3')
