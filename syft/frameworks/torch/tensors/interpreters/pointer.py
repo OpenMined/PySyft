@@ -3,6 +3,13 @@ import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.codes import MSGTYPE
 from syft.exceptions import RemoteTensorFoundError, CannotRequestTensorAttribute
+from typing import List
+from typing import Union
+from typing import TYPE_CHECKING
+
+# this if statement avoids circular imports between base.py and pointer.py
+if TYPE_CHECKING:
+    from syft.workers import BaseWorker
 
 
 class PointerTensor(AbstractTensor):
@@ -38,16 +45,17 @@ class PointerTensor(AbstractTensor):
     def __init__(
         self,
         parent: AbstractTensor = None,
-        location=None,
-        id_at_location=None,
-        owner=None,
-        id=None,
-        garbage_collect_data=True,
-        shape=None,
-        point_to_attr=None,
-        tags=None,
-        description=None,
+        location: "BaseWorker" = None,
+        id_at_location: Union[str, int] = None,
+        owner: "BaseWorker" = None,
+        id: Union[str, int] = None,
+        garbage_collect_data: bool = True,
+        shape: torch.Size = None,
+        point_to_attr: str = None,
+        tags: List[str] = None,
+        description: str = None,
     ):
+
         """Initializes a PointerTensor.
 
         Args:
@@ -76,12 +84,10 @@ class PointerTensor(AbstractTensor):
                 to None, which meants don't point to any attr, just point to the
                 tensor corresponding to the id_at_location.
         """
-        super().__init__(tags, description)
+        super().__init__(id=id, owner=owner, tags=tags, description=description, parent=parent)
 
         self.location = location
         self.id_at_location = id_at_location
-        self.owner = owner
-        self.id = id
         self.garbage_collect_data = garbage_collect_data
         self._shape = shape
         self.point_to_attr = point_to_attr
@@ -144,7 +150,7 @@ class PointerTensor(AbstractTensor):
 
         big_str = False
 
-        if self.tags is not None:
+        if self.tags is not None and len(self.tags):
             big_str = True
             out += "\n\tTags: "
             for tag in self.tags:

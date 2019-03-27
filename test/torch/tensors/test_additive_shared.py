@@ -28,6 +28,15 @@ def test_encode_decode(workers):
     assert (x == t).all()
 
 
+def test_virtual_get(workers):
+    t = torch.tensor([1, 2, 3])
+    x = t.share(workers["bob"], workers["alice"], workers["james"])
+
+    x = x.child.virtual_get()
+
+    assert (x == t).all()
+
+
 def test_add(workers):
 
     t = torch.tensor([1, 2, 3])
