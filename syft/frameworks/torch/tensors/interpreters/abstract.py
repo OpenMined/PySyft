@@ -3,9 +3,9 @@ import functools
 import random
 import torch
 from typing import List
-import weakref
 
 import syft as sy
+from syft.workers import AbstractWorker
 
 
 class AbstractTensor(ABC):
@@ -18,7 +18,7 @@ class AbstractTensor(ABC):
     def __init__(
         self,
         id: int = None,
-        owner: "BaseWorker" = None,
+        owner: "AbstractWorker" = None,
         tags: List[str] = None,
         description: str = None,
         child=None,
