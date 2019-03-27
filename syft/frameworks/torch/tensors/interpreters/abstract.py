@@ -2,6 +2,8 @@ from abc import ABC
 import functools
 import random
 import torch
+from typing import List
+import weakref
 
 import syft as sy
 
@@ -13,7 +15,7 @@ class AbstractTensor(ABC):
 
     is_wrapper = False
 
-    def __init__(self, id=None, owner=None, tags=[], description=None, child=None, parent=None):
+    def __init__(self, id: int = None, owner: "BaseWorker" = None, tags: List[str] = None, description: str = None, child=None, parent=None):
         """Initializer for AbstractTensor
 
         Args:
@@ -48,7 +50,7 @@ class AbstractTensor(ABC):
         else:
             return type(self).__name__
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Alias .shape[0] with len(), helpful for pointers"""
         try:
             if hasattr(self, "child"):
@@ -58,7 +60,7 @@ class AbstractTensor(ABC):
         except IndexError:
             return 0
 
-    def on(self, tensor, wrap=True):
+    def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
         """
         Add a syft(log) tensor on top of the tensor.
         :param tensor: the tensor to extend
@@ -78,7 +80,7 @@ class AbstractTensor(ABC):
             tensor.child = self
             return tensor
 
-    def wrap(self):
+    def wrap(self) -> torch.Tensor:
         """Wraps the class inside torch tensor.
 
         Because PyTorch does not (yet) support functionality for creating
@@ -231,6 +233,7 @@ def initialize_tensor(
 
 
 def _apply_args(hook_self, new_tensor, owner=None, id=None):
+
     if owner is None:
         owner = hook_self.local_worker
 
