@@ -19,7 +19,7 @@ PySyft has also been explained in video form by [Siraj Raval](https://www.youtub
 pip install syft
 ```
 
-You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/installation_guide.md).
+You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
 
 ## Run Local Notebook Server
 All the examples can be played with by running the command
