@@ -5,7 +5,6 @@ import torch
 from typing import List
 
 import syft as sy
-from syft.workers import AbstractWorker
 
 
 class AbstractTensor(ABC):
@@ -18,7 +17,7 @@ class AbstractTensor(ABC):
     def __init__(
         self,
         id: int = None,
-        owner: "AbstractWorker" = None,
+        owner: "sy.workers.AbstractWorker" = None,
         tags: List[str] = None,
         description: str = None,
         child=None,
