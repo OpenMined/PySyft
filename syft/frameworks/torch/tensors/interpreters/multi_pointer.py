@@ -1,5 +1,8 @@
 import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.workers import BaseWorker
+from typing import List
+from typing import Union
 
 
 class MultiPointerTensor(AbstractTensor):
@@ -8,17 +11,17 @@ class MultiPointerTensor(AbstractTensor):
     def __init__(
         self,
         parent: AbstractTensor = None,
-        location=None,
-        id_at_location=None,
-        register=False,
-        owner=None,
-        id=None,
-        garbage_collect_data=True,
-        shape=None,
-        point_to_attr=None,
-        tags=None,
-        description=None,
-        children=None,
+        location: BaseWorker = None,
+        id_at_location: Union[str, int] = None,
+        register: bool = False,
+        owner: BaseWorker = None,
+        id: Union[str, int] = None,
+        garbage_collect_data: bool = True,
+        shape: torch.Size = None,
+        point_to_attr: str = None,
+        tags: List[str] = None,
+        description: str = None,
+        children: List[AbstractTensor] = None,
     ):
 
         super().__init__(tags, description)
@@ -36,7 +39,7 @@ class MultiPointerTensor(AbstractTensor):
             self.child[c.location.id] = c
 
     @property
-    def shape(self):
+    def shape(self) -> torch.Size:
         """This method returns the shape of the data being pointed to.
         This shape information SHOULD be cached on self._shape, but
         occasionally this information may not be present. If this is the
@@ -45,7 +48,7 @@ class MultiPointerTensor(AbstractTensor):
 
         return list(self.child.values())[0].shape
 
-    def get(self, sum_results=False):
+    def get(self, sum_results: bool = False) -> torch.Tensor:
 
         results = list()
         for v in self.child.values():
