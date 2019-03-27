@@ -15,7 +15,15 @@ class AbstractTensor(ABC):
 
     is_wrapper = False
 
-    def __init__(self, id: int = None, owner: "BaseWorker" = None, tags: List[str] = None, description: str = None, child=None, parent=None):
+    def __init__(
+        self,
+        id: int = None,
+        owner: "BaseWorker" = None,
+        tags: List[str] = None,
+        description: str = None,
+        child=None,
+        parent=None,
+    ):
         """Initializer for AbstractTensor
 
         Args:
