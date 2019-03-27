@@ -84,12 +84,10 @@ class PointerTensor(AbstractTensor):
                 to None, which meants don't point to any attr, just point to the
                 tensor corresponding to the id_at_location.
         """
-        super().__init__(tags, description)
+        super().__init__(id=id, owner=owner, tags=tags, description=description, parent=parent)
 
         self.location = location
         self.id_at_location = id_at_location
-        self.owner = owner
-        self.id = id
         self.garbage_collect_data = garbage_collect_data
         self._shape = shape
         self.point_to_attr = point_to_attr
@@ -152,7 +150,7 @@ class PointerTensor(AbstractTensor):
 
         big_str = False
 
-        if self.tags is not None:
+        if self.tags is not None and len(self.tags):
             big_str = True
             out += "\n\tTags: "
             for tag in self.tags:
