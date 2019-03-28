@@ -1,3 +1,4 @@
+import copy
 import logging
 import random
 import sys
@@ -73,17 +74,6 @@ class BaseWorker(AbstractWorker):
         # objects where all objects are stored using their IDs as keys.
         self._objects = {}
 
-        # Declare workers as appropriate
-        self._known_workers = {}
-        if hook.local_worker is not None:
-            if self.id not in self.hook.local_worker._known_workers:
-                hook.local_worker.add_worker(self)
-            for worker_id, worker in hook.local_worker._known_workers.items():
-                if worker_id not in self._known_workers:
-                    self.add_worker(worker)
-                if self.id not in worker._known_workers:
-                    worker.add_worker(self)
-
         # For performance, we cache each
         self._message_router = {
             MSGTYPE.CMD: self.execute_command,
@@ -94,7 +84,25 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             MSGTYPE.SEARCH: self.search,
         }
+
         self.load_data(data)
+
+        # Declare workers as appropriate
+        self._known_workers = {}
+        if hook.local_worker is not None:
+            known_workers = self.hook.local_worker._known_workers
+            if self.id in known_workers:
+                if isinstance(known_workers[self.id], type(self)):
+                    self.__dict__.update(known_workers[self.id].__dict__)
+                else:
+                    raise RuntimeError("Worker initialized with the same id and different types.")
+            else:
+                hook.local_worker.add_worker(self)
+                for worker_id, worker in hook.local_worker._known_workers.items():
+                    if worker_id not in self._known_workers:
+                        self.add_worker(worker)
+                    if self.id not in worker._known_workers:
+                        worker.add_worker(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
