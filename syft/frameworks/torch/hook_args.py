@@ -26,6 +26,7 @@ one = lambda _args: 1
 type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
+    dict: one,
     LoggingTensor: one,
     FixedPrecisionTensor: one,
     AdditiveSharingTensor: one,
@@ -59,8 +60,8 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
-    AdditiveSharingTensor: lambda i: i,
-    MultiPointerTensor: lambda i: i,
+    AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
+    MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
@@ -179,6 +180,8 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
         attr (str): the name of the method being called
         response (list): the arguments being passed to the tensor
         wrap_type (type): the type of wrapper we'd like to have
+        wrap_args (dict): options to give to the wrapper (for example the
+        precision for the precision tensor)
     """
 
     # inline methods should just return new_self

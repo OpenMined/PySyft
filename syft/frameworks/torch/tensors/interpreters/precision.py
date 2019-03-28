@@ -183,7 +183,6 @@ class FixedPrecisionTensor(AbstractTensor):
         <no self>, arguments[, kwargs])
         :return: the response of the function command
         """
-        # TODO: add kwargs in command
         cmd, _, args, kwargs = command
 
         # unhook

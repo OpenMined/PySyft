@@ -125,6 +125,9 @@ class TorchTensor(AbstractTensor):
 
             return out
 
+    def __eq__(self, other):
+        return torch.eq(self, other)
+
     @property
     def id(self):
         if self.is_wrapper:

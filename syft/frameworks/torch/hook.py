@@ -136,9 +136,8 @@ class TorchHook:
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
 
         # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
-        # to just forward the cmd to the next child (behaviour can be changed in the
-        # SyftTensor class file)
-        self._hook_syft_tensor_methods(AdditiveSharingTensor)
+        # to TODO
+        self._hook_additive_shared_tensor_methods()
 
         # Hook the tensor constructor function
         self._hook_tensor()
@@ -243,6 +242,23 @@ class TorchHook:
             if attr not in dir(PointerTensor):  # TODO and add special functions to include / avoid
                 new_method = self.get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
+
+    def _hook_additive_shared_tensor_methods(self):
+        """
+        Add hooked version of all methods of the tensor_type to the
+        Pointer tensor: instead of performing the native tensor
+        method, it will be sent remotely to the location the pointer
+        is pointing at.
+        """
+
+        tensor_type = self.torch.Tensor
+        # Use a pre-defined list to select the methods to overload
+        for attr in self.to_auto_overload[tensor_type]:
+            if attr not in dir(
+                AdditiveSharingTensor
+            ):  # TODO and add special functions to include / avoid
+                new_method = self.get_hooked_additive_shared_method(attr)
+                setattr(AdditiveSharingTensor, attr, new_method)
 
     def _hook_multi_pointer_tensor_methods(self):
         """
@@ -464,18 +480,22 @@ class TorchHook:
 
             # Send the command
             command = (attr, self, args, kwargs)
+
             response = owner.send_command(location, command)
 
             return response
 
         return overloaded_pointer_method
 
-    def get_hooked_multi_pointer_method(hook_self, attr):
+    def get_hooked_additive_shared_method(hook_self, attr):
         """
         Hook a method to send it multiple recmote workers
         :param attr: the method to hook
         :return: the hooked method
         """
+
+        def dispatch(args, k):
+            return map(lambda x: x[k] if isinstance(x, dict) else x, args)
 
         @wraps(attr)
         def overloaded_attr(self, *args, **kwargs):
@@ -488,13 +508,53 @@ class TorchHook:
                 attr, self, args, kwargs
             )
 
-            results = list()
+            results = {}
             for k, v in new_self.items():
-                results.append(
-                    v.__getattribute__(attr)(*map(lambda x: x[k], new_args), **new_kwargs)
-                )
+                results[k] = v.__getattribute__(attr)(*dispatch(new_args, k), **new_kwargs)
 
-            return MultiPointerTensor(children=results)
+            # Put back AdditiveSharingTensor on the tensors found in the response
+            response = syft.frameworks.torch.hook_args.hook_response(
+                attr,
+                results,
+                wrap_type=AdditiveSharingTensor,
+                wrap_args=self.get_class_attributes(),
+            )
+
+            return response
+
+        return overloaded_attr
+
+    def get_hooked_multi_pointer_method(hook_self, attr):
+        """
+        Hook a method to send it multiple recmote workers
+        :param attr: the method to hook
+        :return: the hooked method
+        """
+
+        def dispatch(args, k):
+            return map(lambda x: x[k] if isinstance(x, dict) else x, args)
+
+        @wraps(attr)
+        def overloaded_attr(self, *args, **kwargs):
+            """
+            Operate the hooking
+            """
+
+            # Replace all syft tensor with their child attribute
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                attr, self, args, kwargs
+            )
+
+            results = {}
+            for k, v in new_self.items():
+                results[k] = v.__getattribute__(attr)(*dispatch(new_args, k), **new_kwargs)
+
+            # Put back MultiPointerTensor on the tensors found in the response
+            response = syft.frameworks.torch.hook_args.hook_response(
+                attr, results, wrap_type=MultiPointerTensor, wrap_args=self.get_class_attributes()
+            )
+
+            return response
 
         return overloaded_attr
 
@@ -805,7 +865,7 @@ class TorchHook:
             "__sizeof__",
             "__subclasshook__",
             "_get_type",
-            "__eq__",
+            # "__eq__",
             "__gt__",
             "__ge__",
             "__lt__",

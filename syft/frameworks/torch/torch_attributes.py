@@ -54,8 +54,6 @@ class TorchAttributes(object):
         # Add special functions to exclude from the hook
         self.exclude = [
             "arange",
-            "save",
-            "load",
             "typename",
             "is_tensor",
             "manual_seed",
@@ -86,8 +84,8 @@ class TorchAttributes(object):
             "is_storage",
             "is_tensor",
             "isclose",
-            "isfinite" "load",
-            "long",
+            "isfinite",
+            "load",
             "native_add",
             "native_batch_norm",
             "native_clone",
@@ -111,7 +109,6 @@ class TorchAttributes(object):
             "is_storage",
             "is_tensor",
             "isfinite",
-            "load",
             "randperm",
         ]
 
