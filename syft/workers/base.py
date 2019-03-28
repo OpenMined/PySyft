@@ -1,3 +1,4 @@
+import copy
 import logging
 import random
 import sys
