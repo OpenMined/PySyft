@@ -21,7 +21,7 @@ def test_create_already_existing_worker(hook):
     bob = sy.VirtualWorker(hook, "bob")
     z = th.tensor([2, 2, 10]).send(bob)
 
-    # Both workers should be the same, so the following operation should be valid.
+    # Both workers should be the same, so the following operation should be valid
     try:
         _ = x + y * z
     except KeyError:
