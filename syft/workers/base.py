@@ -92,6 +92,9 @@ class BaseWorker(AbstractWorker):
             known_workers = self.hook.local_worker._known_workers
             if self.id in known_workers:
                 if isinstance(known_workers[self.id], type(self)):
+                    # If the a worker with this id already exists and it has the
+                    # same type as the one being created, we copy all the attributes
+                    # of the existing worker to this one.
                     self.__dict__.update(known_workers[self.id].__dict__)
                 else:
                     raise RuntimeError("Worker initialized with the same id and different types.")
