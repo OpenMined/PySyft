@@ -1,7 +1,7 @@
 import syft
 import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.utils import hook
+from syft.frameworks.torch.overload_torch import overloaded
 
 
 class FixedPrecisionTensor(AbstractTensor):
@@ -71,12 +71,6 @@ class FixedPrecisionTensor(AbstractTensor):
         upscaled = (rational * self.base ** self.precision_fractional).long()
         field_element = upscaled % self.field
 
-        # Handle neg values
-        gate = field_element.gt(self.torch_max_value).long()
-        neg_nums = (field_element - self.field) * gate
-        pos_nums = field_element * (1 - gate)
-        field_element = neg_nums + pos_nums
-
         self.child = field_element
         return self
 
@@ -102,17 +96,17 @@ class FixedPrecisionTensor(AbstractTensor):
         self.child /= truncation
         return self
 
-    @hook
+    @overloaded.method
     def add(self, _self, *args, **kwargs):
         """Add two fixed precision tensors together.
         """
         response = getattr(_self, "add")(*args, **kwargs)
 
-        return response
+        return response % self.field
 
     __add__ = add
 
-    @hook
+    @overloaded.method
     def t(self, _self, *args, **kwargs):
         """Transpose a tensor. Hooked is handled by the decorator"""
         response = getattr(_self, "t")(*args, **kwargs)
@@ -125,10 +119,12 @@ class FixedPrecisionTensor(AbstractTensor):
         in the fixed precision setting
         """
         # Replace all syft tensor with their child attribute
-        new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args("mul", self, args)
+        new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+            "mul", self, args, kwargs
+        )
 
         # Send it to the appropriate class and get the response
-        response = getattr(new_self, "mul")(*new_args, **kwargs)
+        response = getattr(new_self, "mul")(*new_args, **new_kwargs)
 
         # Put back SyftTensor on the tensors found in the response
         response = syft.frameworks.torch.hook_args.hook_response(
@@ -151,10 +147,12 @@ class FixedPrecisionTensor(AbstractTensor):
         in the fixed precision setting
         """
         # Replace all syft tensor with their child attribute
-        new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args("matmul", self, args)
+        new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+            "matmul", self, args, kwargs
+        )
 
         # Send it to the appropriate class and get the response
-        response = getattr(new_self, "matmul")(*new_args, **kwargs)
+        response = getattr(new_self, "matmul")(*new_args, **new_kwargs)
 
         # Put back SyftTensor on the tensors found in the response
         response = syft.frameworks.torch.hook_args.hook_response(
@@ -168,6 +166,8 @@ class FixedPrecisionTensor(AbstractTensor):
         ), "In matmul, all args should have the same precision_fractional"
 
         return response.truncate(other.precision_fractional)
+
+    __matmul__ = matmul
 
     @classmethod
     def handle_func_command(cls, command):
@@ -184,7 +184,7 @@ class FixedPrecisionTensor(AbstractTensor):
         :return: the response of the function command
         """
         # TODO: add kwargs in command
-        cmd, _, args = command
+        cmd, _, args, kwargs = command
 
         # unhook
         if cmd == "torch.nn.functional.linear":
@@ -199,10 +199,12 @@ class FixedPrecisionTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all FixedPrecisionTensor with their child attribute
-        new_args, new_type = syft.frameworks.torch.hook_args.hook_function_args(cmd, args)
+        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_args(
+            cmd, args, kwargs
+        )
 
         # build the new command
-        new_command = (cmd, None, new_args)
+        new_command = (cmd, None, new_args, new_kwargs)
 
         # Send it to the appropriate class and get the response
         response = new_type.handle_func_command(new_command)
@@ -217,6 +219,6 @@ class FixedPrecisionTensor(AbstractTensor):
         FixedPrecisionTensor which has also been shared."""
         return FixedPrecisionTensor().on(self.child.get())
 
-    def share(self, *owners):
-        self.child = self.child.share(*owners)
+    def share(self, *owners, field=None, crypto_provider=None):
+        self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
         return self

@@ -113,7 +113,7 @@ class TorchTensor(AbstractTensor):
 
             big_repr = False
 
-            if self.tags is not None:
+            if self.tags is not None and len(self.tags):
                 big_repr = True
                 out += "\n\tTags: "
                 for tag in self.tags:
@@ -182,14 +182,13 @@ class TorchTensor(AbstractTensor):
         <no self>, arguments[, kwargs])
         :return: the response of the function command
         """
-        # TODO: add kwargs
-        cmd, _, args = command
+        cmd, _, args, kwargs = command
 
         try:  # will work if tensors are wrappers
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
-            new_args, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
-                cmd, args, return_args_type=True
+            new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
+                cmd, args, kwargs, return_args_type=True
             )
             # This handles case 3: it redirects the command to the appropriate class depending
             # of the syft type of the arguments and returns
@@ -197,7 +196,7 @@ class TorchTensor(AbstractTensor):
                 return args_type.handle_func_command(command)
 
             # build the new command
-            new_command = (cmd, None, new_args)
+            new_command = (cmd, None, new_args, new_kwargs)
             # Send it to the appropriate class and get the response
             response = new_type.handle_func_command(new_command)
             # Put back the wrappers where needed
@@ -216,9 +215,9 @@ class TorchTensor(AbstractTensor):
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
             if isinstance(args, tuple):
-                response = eval(cmd)(*args)
+                response = eval(cmd)(*args, **kwargs)
             else:
-                response = eval(cmd)(args)
+                response = eval(cmd)(args, **kwargs)
 
         return response
 
@@ -414,7 +413,6 @@ class TorchTensor(AbstractTensor):
                 parent=self,
                 location=location,
                 id_at_location=id_at_location,
-                register=register,
                 owner=owner,
                 id=ptr_id,
                 garbage_collect_data=garbage_collect_data,
@@ -444,7 +442,7 @@ class TorchTensor(AbstractTensor):
         """
 
         location = self.child.location
-        self.owner.send_command(message=("mid_get", self.child, ()), recipient=location)
+        self.owner.send_command(message=("mid_get", self.child, (), {}), recipient=location)
 
         return self
 
@@ -557,7 +555,7 @@ class TorchTensor(AbstractTensor):
 
     fix_precision_ = fix_prec_
 
-    def share(self, *owners):
+    def share(self, *owners, field=None, crypto_provider=None):
         """This is a passthrough method which calls .share on the child.
 
         Args:
@@ -565,11 +563,13 @@ class TorchTensor(AbstractTensor):
         """
 
         if self.has_child():
-            self.child = self.child.share(*owners)
+            self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
             return self
 
         return (
-            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor()
+            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
+                field=field, crypto_provider=crypto_provider
+            )
             .on(self)
             .child.init_shares(*owners)
             .wrap()

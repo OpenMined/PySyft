@@ -194,13 +194,30 @@ def test_torch_module_hook(workers):
     """Tests sending and getting back torch nn module like nn.Linear"""
     model = nn.Linear(2, 1)
     model_ptr = model.send(workers["bob"])
-    res = model_ptr.get()
+    model_back = model_ptr.get()
 
-    # TODO: shouldn't there be an assertion here?
-    # assert True
+    bias = model_back.bias
+    model_back.fix_precision()
+    model_back.float_precision()
+    assert (bias == model_back.bias).all()
 
 
 def test_functional_hook():
     x = torch.tensor([[1, 2], [3, 4]])
     y = torch.einsum("ij,jk->ik", x, x)
     assert (y == torch.tensor([[7, 10], [15, 22]])).all()
+
+
+def test_hook_args_and_cmd_signature_malleability():
+    """Challenge the hook_arg module with methods used with different signatures"""
+    a = syft.LoggingTensor().on(torch.tensor([1.0, 2]))
+    b = syft.LoggingTensor().on(torch.tensor([1.0, 2]))
+
+    r1 = a + b
+    assert (r1 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
+
+    r2 = a + 1
+    assert (r2 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
+
+    r3 = a + b
+    assert (r3 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
