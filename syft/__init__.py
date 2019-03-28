@@ -19,6 +19,7 @@ from syft.workers import VirtualWorker
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 
 # import other useful classes
 from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader

@@ -30,9 +30,10 @@ class AutogradTensor(AbstractTensor):
             grad = torch.ones_like(self)
 
         # Calculating gradients doesn't currently work with wrapped tensors,
-        # so doing this to work my way down the chain to the base tensor. TODO
-        while hasattr(grad, 'child'):
-            grad = grad.child
+        # so doing this to work my way down the chain to the base tensor. 
+        # TODO: figure out how to fix this so grad_fns use Syft Tensors
+        # while hasattr(grad, 'child'):
+        #     grad = grad.child
 
         backwards_grad(self.grad_fn, grad)
 
@@ -44,16 +45,25 @@ class AutogradTensor(AbstractTensor):
     def grad(self, value):
         self._grad = value
 
+    def attr(self, attr_name):
+       attr_val = self.child.attr(attr_name)
+
+       return attr_val
+
     
     def __getattribute__(self, name):
         # Automatically attaching gradient functions if they are defined in the
         # gradients module.
         grad_fn = getattr(gradients, name.capitalize() + 'Backward', None)
 
+        #print(f"getattribute {name}")
         if grad_fn is not None:
 
             def method_with_grad(*args, **kwargs):
                 new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args(name, self, args)
+                
+                print(new_self)
+                print(new_args)
                 result = getattr(new_self, name)(*new_args, **kwargs)
                 
                 # Put back SyftTensor on the tensors found in the response
@@ -71,6 +81,8 @@ class AutogradTensor(AbstractTensor):
             return object.__getattribute__(self, name)
 
     def __add__(self, other):
+        print("adding")
+        print(other)
         return self.add(other)
 
     def __mul__(self, other):

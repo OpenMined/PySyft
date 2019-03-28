@@ -56,7 +56,10 @@ class TorchTensor(AbstractTensor):
     @tags.setter
     def tags(self, new_tags):
         if self.has_child():
-            self.child.tags = set(new_tags)
+            if new_tags is not None:
+                self.child.tags = set(new_tags)
+            else:
+                self.child.tags = set()
         else:
             self._tags = new_tags
 
@@ -419,6 +422,9 @@ class TorchTensor(AbstractTensor):
                 tags=self.tags,
                 description=self.description,
             )
+        
+        if self.requires_grad:
+            ptr = sy.AutogradTensor().on(ptr, wrap=False)
 
         return ptr
 

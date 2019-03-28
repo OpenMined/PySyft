@@ -360,6 +360,7 @@ class TorchHook:
                 if isinstance(to_return.child, syft.PointerTensor):
                     if to_return.child.is_none():
                         to_return = None
+
             else:
                 to_return = self.native_param_grad
 
