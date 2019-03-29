@@ -6,7 +6,7 @@ import syft
 from syft import TorchHook
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture()
 def start_proc():  # pragma: no cover
     """ helper function for spinning up a websocket participant """
 
