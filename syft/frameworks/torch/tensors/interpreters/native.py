@@ -583,3 +583,33 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return sy.combine_pointers(*ps)
+
+    def decompose(self):
+        """This method calls decompose on the child or splits it into bits
+
+        Returns:
+            The bit representation of the tensor
+        """
+
+        if self.has_child():
+            self.child = self.self.child.decompose()
+            return self
+
+        if isinstance(self, torch.LongTensor):
+            Q_BITS = 64
+
+        elif isinstance(self, torch.IntTensor):
+            Q_BITS = 32
+        else:
+            raise TypeError(f"Decompose cannot be called on {self.type()}")
+
+        """decompose a tensor into its binary representation."""
+        powers = torch.arange(Q_BITS)
+        for i in range(len(self.shape)):
+            powers = powers.unsqueeze(0)
+        moduli = 2 ** powers
+
+        share = self.unsqueeze(-1)
+
+        decomposition = torch.remainder(((share + 2 ** (Q_BITS)) / moduli_ptr.type_as(share)), 2)
+        return decomposition

@@ -217,8 +217,23 @@ class FixedPrecisionTensor(AbstractTensor):
     def get(self):
         """Just a pass through. This is most commonly used when calling .get() on a
         FixedPrecisionTensor which has also been shared."""
-        return FixedPrecisionTensor().on(self.child.get())
+        return FixedPrecisionTensor(
+            parent=self.parent,
+            owner=self.owner,
+            id=self.id,
+            field=self.field,
+            base=self.base,
+            precision_fractional=self.precision_fractional,
+            precision_integral=self.precision_integral,
+            kappa=self.kappa,
+            tags=self.tags,
+            description=self.description,
+        ).on(self.child.get())
 
     def share(self, *owners, field=None, crypto_provider=None):
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
+        return self
+
+    def decompose(self):
+        self.child = self.child.decompose()
         return self

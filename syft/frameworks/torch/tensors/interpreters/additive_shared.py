@@ -1,3 +1,4 @@
+import math
 import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
@@ -42,6 +43,7 @@ class AdditiveSharingTensor(AbstractTensor):
         self.child = shares
 
         self.field = (2 ** 31) - 1 if field is None else field  # < 63 bits
+        self.Q_BITS = math.ceil(math.log2(field))
         self.crypto_provider = crypto_provider
 
     def __repr__(self):
@@ -149,9 +151,9 @@ class AdditiveSharingTensor(AbstractTensor):
             if i == 0:
                 share = random_shares[i]
             elif i < n_workers - 1:
-                share = random_shares[i] - random_shares[i - 1]
+                share = (random_shares[i] - random_shares[i - 1]) % field
             else:
-                share = secret - random_shares[i - 1]
+                share = (secret - random_shares[i - 1]) % field
             shares.append(share)
 
         return shares
@@ -320,3 +322,23 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def __mod__(self, *args, **kwargs):
         return self.mod(*args, **kwargs)
+
+    def decompose(self, shares: dict):
+        """decompose a tensor into its binary representation."""
+        powers = torch.arange(self.Q_BITS)
+        locations = list(shares.keys())
+        shares_shape = shares[locations[0]].shape
+
+        for i in range(len(shares_shape)):
+            powers = powers.unsqueeze(0)
+        moduli = 2 ** powers
+
+        decomposition = {}
+        for location in locations:
+            share = shares[location].unsqueeze(-1)
+            moduli_ptr = moduli.send(location)
+
+            decomposition[location] = torch.remainder(
+                ((share + 2 ** (self.Q_BITS)) / moduli_ptr.type_as(share)), 2
+            )
+        return decomposition
