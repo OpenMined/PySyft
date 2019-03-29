@@ -1,5 +1,5 @@
 import random
-
+import copy
 import torch
 
 from syft.workers.base import BaseWorker
@@ -97,8 +97,8 @@ class Plan(BaseWorker):
         self.arg_ids = list()
         self.result_ids = list()
         # Pointing info towards a remote plan
-        self.location = None
-        self.ptr_plan = None
+        self.locations = []
+        self.ptr_plans = {}
 
         # Planworkers are registered by other worker, they must have information
         # to be retrieved by search functions
@@ -249,16 +249,21 @@ class Plan(BaseWorker):
         if first_run:
             self.build_plan(args)
 
-        if self.location:
-            if self.ptr_plan is None:
-                self.ptr_plan = self._send(self.location)
-            response = self.request_execute_plan(result_ids, *args)
-            return response
+        if len(self.locations) > 0:
+            worker = args[0].location  #FIXME
+
+
+            if worker not in self.ptr_plans.keys():
+                self.ptr_plans[worker.id] = self._send(worker)
+
+                response = self.request_execute_plan(worker, result_ids, *args)
+                print(response)
+                return response
 
         # if the plan is not to be sent but is not local (ie owned by the local worker)
         # then it has been request to execute, to we update the plan with the correct
         # input and output ids and we run it
-        if not self.location and self.owner != sy.hook.local_worker:
+        if len(self.locations) == 0 and self.owner != sy.hook.local_worker:
             arg_ids = [arg.id for arg in args]
             self.replace_ids(self.arg_ids, arg_ids)
             self.arg_ids = arg_ids
@@ -272,7 +277,7 @@ class Plan(BaseWorker):
 
         return sy.serde.serialize(None)
 
-    def request_execute_plan(self, response_ids, *args, **kwargs):
+    def request_execute_plan(self, location, response_ids, *args, **kwargs):
         """
         Send a request to execute the plan on the remote location
         :param response_ids: where the plan result should be stored remotely
@@ -281,10 +286,11 @@ class Plan(BaseWorker):
         """
         args = [arg for arg in args if isinstance(arg, torch.Tensor)]
         args = [args, response_ids]
-        command = ("execute_plan", self.ptr_plan, args, kwargs)
+        command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
 
+        print('sendinf command execute plan to ', location.id)
         response = self.owner.send_command(
-            message=command, recipient=self.location, return_ids=response_ids
+            message=command, recipient=location, return_ids=response_ids
         )
         return response
 
@@ -298,19 +304,16 @@ class Plan(BaseWorker):
     ) -> PlanPointer:
         return PlanPointer(ptr_id, location, id_at_location, owner)
 
-    def send(self, location):
+    def send(self, *locations):
         """
         Mock send function that only specify that the Plan will have to be sent to location.
         In a way, when one calls .send(), this doesn't trigger a call to a remote worker, but
         just stores "a promise" that it will be sent (with _send()) later when the plan in
         called (and built)
         """
-        if self.location is not None:
-            raise NotImplementedError(
-                "Can't send a Plan which already has a location, use .get() before"
-            )
-        else:
-            self.location = location
+        self.locations += [self.owner.get_worker(location).id for location in locations]
+        # rm duplicates
+        self.locations = list(set(self.locations))
         return self
 
     def _send(self, location):
@@ -319,17 +322,28 @@ class Plan(BaseWorker):
         when the plan is built and that an execution is called, namely when it is necessary
         to send it
         """
-        self.replace_worker_ids(self.owner.id, self.location.id)
-        return self.owner.send(tensor=self, workers=location)
+        readable_plan_original = copy.deepcopy(self.readable_plan)
+        self.replace_worker_ids(self.owner.id, location.id)
+        pointer = self.owner.send(tensor=self, workers=location)
+        self.readable_plan = readable_plan_original
+        return pointer
 
-    def get(self):
+    def get(self, location=None):
         """
         Mock get function: no call to remote worker is made, we just erase the information
         linking this plan to that remote worker.
         """
-        self.replace_worker_ids(self.location.id, self.owner.id)
-        self.location = None
-        self.ptr_plan = None
+        # self.replace_worker_ids(self.location.id, self.owner.id)
+
+        if location is None:
+            self.locations = []
+            self.ptr_plans = {}
+
+        else:
+            location_id = self.owner.get_worker(location).id
+            self.locations.remove(location_id)
+            del self.ptr_plans[location_id]
+
         return self
 
     def __str__(self):
@@ -344,8 +358,9 @@ class Plan(BaseWorker):
         out += " " + str(self.name)
         out += " id:" + str(self.id)
         out += " owner:" + str(self.owner.id)
-        if self.location:
-            out += " location:" + str(self.location.id)
+        if len(self.locations):
+            for location in self.locations:
+                out += " location:" + str(location)
         if len(self.readable_plan) > 0:
             out += " built"
         out += ">"
