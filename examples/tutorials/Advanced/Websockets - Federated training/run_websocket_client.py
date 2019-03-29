@@ -4,11 +4,16 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 import logging
+import argparse
 
-import syft as sy  # <-- NEW: import the Pysyft library
+import syft as sy
 from syft.workers import WebsocketClientWorker
 from syft.workers import VirtualWorker
 from syft.frameworks.torch.federated import utils
+
+logger = logging.getLogger(__name__)
+
+LOG_INTERVAL = 25
 
 
 class Net(nn.Module):
@@ -31,32 +36,38 @@ class Net(nn.Module):
 
 
 def train_on_batches(worker, batches, model_in, device, lr):
-    # model = copy.deepcopy(model_in)
-    # model = model_in
-    # model = type(model_in)()  # get a new instance
-    # model.load_state_dict(model_in.state_dict())  # copy weights and stuff
-    # model.to(device)
+    """Train the model on the worker on the provided batches
+
+    Args:
+        worker(syft.workers.BaseWorker): worker on which the training will be executed
+        batches: batches of data of this worker
+        model_in: machine learning model, training will be done on a copy
+        device (torch.device): where to run the training
+        lr: learning rate of the training steps
+
+    Returns:
+        model, loss: obtained model and loss after training
+
+    """
     model = model_in.copy()
     optimizer = optim.SGD(model.parameters(), lr=lr)  # TODO momentum is not supported at the moment
 
     model.train()
-    model.send(worker)  # <-- NEW: send the model to the right location
-    log_interval = 10
+    model.send(worker)
     loss_local = False
 
     for batch_idx, (data, target) in enumerate(batches):
         loss_local = False
-        # data, target = batches[batch_idx]
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
-        if batch_idx % log_interval == 0:
+        if batch_idx % LOG_INTERVAL == 0:
             loss = loss.get()  # <-- NEW: get the loss back
             loss_local = True
-            print(
+            logger.debug(
                 "Train Worker {}: [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                     worker.id,
                     batch_idx,
@@ -71,41 +82,61 @@ def train_on_batches(worker, batches, model_in, device, lr):
     return model, loss
 
 
-def train(model, device, federated_train_loader, lr):
-    print("Starting train()")
-    model.train()
-    batches = utils.extract_batches_per_worker(federated_train_loader)
-    print("After extract batches()")
-    limit_to_one_worker = False
-    keys = list(batches.keys())
+def get_next_batches(fdataloader: sy.FederatedDataLoader, nr_batches: int):
+    """retrieve next nr_batches of the federated data loader and group the batches by worker
 
-    if limit_to_one_worker:
-        # artificially limit to one worker
-        keys = list(batches.keys())
-        batches = {keys[0]: batches[keys[0]]}
-    nr_batches = 20
+    Args:
+        fdataloader (sy.FederatedDataLoader): federated data loader over which the function will iterate
+        nr_batches (int): number of batches (per worker) to retrieve
+
+    Returns:
+        Dict[syft.workers.BaseWorker, List[batches]]
+
+    """
+    batches = {}
+    for worker_id in fdataloader.workers:
+        worker = fdataloader.federated_dataset.datasets[worker_id].location
+        batches[worker] = []
+    try:
+        for i in range(nr_batches):
+            next_batches = next(fdataloader)
+            for worker in next_batches:
+                batches[worker].append(next_batches[worker])
+    except StopIteration:
+        pass
+    return batches
+
+
+def train(model, device, federated_train_loader, lr, federate_after_n_batches):
+    model.train()
+
+    nr_batches = federate_after_n_batches
 
     models = {}
     loss_values = {}
 
-    print("calculating available batches")
-    available_batches = max(map(lambda x: len(x[1]), batches.items()))
-    for start_idx in range(0, available_batches, nr_batches):
-        print("Starting training round, batches [{}, {}]".format(start_idx, start_idx + nr_batches))
+    iter(federated_train_loader)  # initialize iterators
+    batches = get_next_batches(federated_train_loader, nr_batches)
+    counter = 0
 
+    while True:
+        logger.debug("Starting training round, batches [%s, %s]", counter, counter + nr_batches)
+        data_for_all_workers = True
         for worker in batches:
-            curr_batches = batches[worker][start_idx : start_idx + nr_batches]
+            curr_batches = batches[worker]
             if curr_batches:
                 models[worker], loss_values[worker] = train_on_batches(
-                    worker,
-                    curr_batches,
-                    # model.copy(), device, optimizer)
-                    model,
-                    device,
-                    lr,
+                    worker, curr_batches, model, device, lr
                 )
+            else:
+                data_for_all_workers = False
+        counter += nr_batches
+        if not data_for_all_workers:
+            logger.debug("At least one worker ran out of data, stopping.")
+            break
+
         model = utils.federated_avg(models)
-        # model = models[keys[0]]
+        batches = get_next_batches(federated_train_loader, nr_batches)
     return model
 
 
@@ -123,33 +154,48 @@ def test(model, device, test_loader):
 
     test_loss /= len(test_loader.dataset)
 
-    print(
-        "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-            test_loss, correct, len(test_loader.dataset), 100.0 * correct / len(test_loader.dataset)
+    logger.info("\n")
+    accuracy = 100.0 * correct / len(test_loader.dataset)
+    logger.info(
+        "Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
+            test_loss, correct, len(test_loader.dataset), accuracy
         )
     )
 
 
 def main():
-    class Arguments:
-        def __init__(self):
-            self.batch_size = 64
-            self.test_batch_size = 1000
-            self.epochs = 10
-            self.lr = 0.01
-            self.momentum = 0.5
-            self.no_cuda = False
-            self.seed = 1
-            self.log_interval = 30
-            self.save_model = False
-            self.verbose = False
-            self.use_virtual = False
 
-    args = Arguments()
+    parser = argparse.ArgumentParser(
+        description="Run federated learning using websocket client workers."
+    )
+    parser.add_argument("--batch_size", type=int, default=64, help="batch size of the training")
+    parser.add_argument(
+        "--test_batch_size", type=int, default=1000, help="batch size used for the test data"
+    )
+    parser.add_argument("--epochs", type=int, default=2, help="number of epochs to train")
+    parser.add_argument(
+        "--federate_after_n_batches",
+        type=int,
+        default=50,
+        help="number of training steps performed on each remote worker before averaging",
+    )
+    parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
+    parser.add_argument("--cuda", action="store_true", help="use cuda")
+    parser.add_argument("--seed", type=int, default=1, help="seed used for randomization")
+    parser.add_argument("--save_model", action="store_true", help="if set, model will be saved")
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="if set, websocket client workers will be started in verbose mode",
+    )
+    parser.add_argument(
+        "--use_virtual", action="store_true", help="if set, virtual workers will be used"
+    )
 
-    hook = sy.TorchHook(
-        torch
-    )  # <-- NEW: hook PyTorch ie add extra functionalities to support Federated Learning
+    args = parser.parse_args()
+
+    hook = sy.TorchHook(torch)
 
     if args.use_virtual:
         alice = VirtualWorker(id="alice", hook=hook, verbose=args.verbose)
@@ -163,7 +209,7 @@ def main():
 
     workers = [alice, bob, charlie]
 
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    use_cuda = args.cuda and torch.cuda.is_available()
 
     torch.manual_seed(args.seed)
 
@@ -171,7 +217,7 @@ def main():
 
     kwargs = {"num_workers": 1, "pin_memory": True} if use_cuda else {}
 
-    federated_train_loader = sy.FederatedDataLoader(  # <-- this is now a FederatedDataLoader
+    federated_train_loader = sy.FederatedDataLoader(
         datasets.MNIST(
             "../data",
             train=True,
@@ -180,9 +226,9 @@ def main():
                 [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
             ),
         ).federate(tuple(workers)),
-        # <-- NEW: we distribute the dataset across all the workers, it's now a FederatedDataset
         batch_size=args.batch_size,
         shuffle=True,
+        iter_per_worker=True,
         **kwargs,
     )
 
@@ -202,8 +248,8 @@ def main():
     model = Net().to(device)
 
     for epoch in range(1, args.epochs + 1):
-        print("Starting epoch {}/{}".format(epoch, args.epochs))
-        model = train(model, device, federated_train_loader, args.lr)
+        logger.info("Starting epoch %s/%s", epoch, args.epochs)
+        model = train(model, device, federated_train_loader, args.lr, args.federate_after_n_batches)
         test(model, device, test_loader)
 
     if args.save_model:
@@ -211,7 +257,7 @@ def main():
 
 
 if __name__ == "__main__":
-    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
+    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d) - %(message)s"
     LOG_LEVEL = logging.DEBUG
     logging.basicConfig(format=FORMAT, level=LOG_LEVEL)
 
