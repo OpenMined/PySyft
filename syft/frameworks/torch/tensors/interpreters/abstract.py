@@ -202,6 +202,9 @@ class AbstractTensor(ABC):
 
         return response
 
+    def setattr(self, name, value):
+        self.child.setattr(name, value.child)
+
 
 def rgetattr(obj, attr, *args):
     """

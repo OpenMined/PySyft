@@ -221,7 +221,7 @@ class TorchTensor(AbstractTensor):
 
         return response
 
-    def send(self, *location, inplace: bool = False):
+    def send(self, *location, inplace: bool = False, local_autograd=False, preinitialize_grad=False):
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes
@@ -234,6 +234,9 @@ class TorchTensor(AbstractTensor):
                 to. Note that this is never actually the BaseWorker but instead
                 a class which instantiates the BaseWorker abstraction.
             inplace: if true, return the same object instance, else a new wrapper
+            local_autograd: Use autograd system on the local machine instead of PyTorch's
+                autograd on the workers.
+            preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
 
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
@@ -255,7 +258,8 @@ class TorchTensor(AbstractTensor):
                 if self._is_parameter():
                     self.data.child.garbage_collect_data = False
 
-            ptr = self.owner.send(self, location)
+            ptr = self.owner.send(self, location, local_autograd=local_autograd, 
+                                  preinitialize_grad=preinitialize_grad)
 
             ptr.description = self.description
             ptr.tags = self.tags
@@ -292,8 +296,12 @@ class TorchTensor(AbstractTensor):
                     output = ptr.wrap()
 
             if self.requires_grad:
-
-                grad = output.attr("grad")
+                # This is for AutogradTensor to work on Multipointer Tensors
+                # With prinitialized gradients, this should get it from autograd.grad
+                if preinitialize_grad:
+                    grad = output.child.grad
+                else:
+                    grad = output.attr("grad")
 
                 output.grad = grad
 
@@ -304,6 +312,8 @@ class TorchTensor(AbstractTensor):
                 # to re-use it, which means .grad keeps the attributes we
                 # want it to keep. #HackAlert
                 output.backup_grad = grad
+
+                
         else:
 
             children = list()
@@ -336,6 +346,9 @@ class TorchTensor(AbstractTensor):
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
         shape=None,
+        local_autograd=False,
+        preinitialize_grad=False,
+
     ) -> PointerTensor:
         """Creates a pointer to the "self" torch.Tensor object.
 
@@ -379,6 +392,9 @@ class TorchTensor(AbstractTensor):
                 Otherwise, it will be set randomly.
             garbage_collect_data: If true (default), delete the remote tensor when the
                 pointer is deleted.
+            local_autograd: Use autograd system on the local machine instead of PyTorch's
+                autograd on the workers.
+            preinitialize_grad: Initialize gradient for AutogradTensors to a tensor.
 
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
@@ -421,8 +437,8 @@ class TorchTensor(AbstractTensor):
                 description=self.description,
             )
         
-        if self.requires_grad:
-            ptr = sy.AutogradTensor().on(ptr, wrap=False)
+        if self.requires_grad and local_autograd:
+            ptr = sy.AutogradTensor(data=ptr.wrap(), preinitialize_grad=preinitialize_grad).on(ptr, wrap=False)
 
         return ptr
 
@@ -516,6 +532,9 @@ class TorchTensor(AbstractTensor):
             self.grad = attr_val
 
         return attr_val
+
+    def setattr(self, name, value):
+        self.child.setattr(name, value.child)
 
     def enc_fix_prec(self):
         return self.child.fix_precision()

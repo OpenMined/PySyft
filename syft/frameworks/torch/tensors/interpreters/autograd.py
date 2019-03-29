@@ -3,6 +3,7 @@ import torch
 
 import syft
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from . import gradients
 
 def backwards_grad(grad_fn, in_grad=None):
@@ -14,16 +15,23 @@ class AutogradTensor(AbstractTensor):
     """ A tensor that tracks operations to build a dynamic graph and backprops 
         through the graph to calculate gradients.
     """
-    def __init__(self, data=None, requires_grad=True, owner=None, id=None):
+    def __init__(self, data=None, requires_grad=True, owner=None, id=None, preinitialize_grad=False, **kwargs):
         super().__init__()
         
+        print(kwargs)
+
         self.owner = owner
         self.id = id
 
-        self.grad = None
-        self.grad_fn = None
         self.child = data
         self.requires_grad = requires_grad
+        self.preinitialize_grad = preinitialize_grad
+        
+        if preinitialize_grad:
+            self.grad = data * 0
+        else:
+            self.grad = None
+        self.grad_fn = None
 
     def backward(self, grad=None):
         if grad is None:
@@ -43,6 +51,8 @@ class AutogradTensor(AbstractTensor):
 
     @grad.setter
     def grad(self, value):
+        self.child.setattr("grad", value)
+        
         self._grad = value
 
     def attr(self, attr_name):
@@ -60,11 +70,9 @@ class AutogradTensor(AbstractTensor):
         if grad_fn is not None:
 
             def method_with_grad(*args, **kwargs):
-                new_self, new_args = syft.frameworks.torch.hook_args.hook_method_args(name, self, args)
+                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(name, self, args, kwargs)
                 
-                print(new_self)
-                print(new_args)
-                result = getattr(new_self, name)(*new_args, **kwargs)
+                result = getattr(new_self, name)(*new_args, **new_kwargs)
                 
                 # Put back SyftTensor on the tensors found in the response
                 result = syft.frameworks.torch.hook_args.hook_response(
@@ -81,8 +89,6 @@ class AutogradTensor(AbstractTensor):
             return object.__getattribute__(self, name)
 
     def __add__(self, other):
-        print("adding")
-        print(other)
         return self.add(other)
 
     def __mul__(self, other):
