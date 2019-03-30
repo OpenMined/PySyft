@@ -4,6 +4,7 @@ from typing import Union
 
 import syft as sy
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.workers import BaseWorker
 from syft.frameworks.torch.overload_torch import overloaded
 
@@ -49,6 +50,24 @@ class MultiPointerTensor(AbstractTensor):
 
     def __eq__(self, other):
         return torch.eq(self, other)
+
+    def __add__(self, other):
+        """
+        MPT + AST should return AST
+        """
+        if isinstance(other, AdditiveSharingTensor):
+            return other.__add__(self)
+        else:
+            return self.add(other)
+
+    def __mul__(self, other):
+        """
+        MPT * AST should return AST
+        """
+        if isinstance(other, AdditiveSharingTensor):
+            return other.__mul__(self)
+        else:
+            return self.mul(other)
 
     @property
     def shape(self) -> torch.Size:

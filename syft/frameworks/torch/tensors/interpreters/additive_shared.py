@@ -190,9 +190,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return new_shares
 
-    def __add__(self, *args, **kwargs):
+    def __add__(self, other, **kwargs):
         """Adds two tensors. Forwards command to add. See add() for more details."""
-        return self.add(*args, **kwargs)
+        # FIXME
+        # if isinstance(other, sy.MultiPointerTensor):
+        #     return self.add(other, **kwargs) / len(other.child.keys())
+        return self.add(other, **kwargs)
 
     @overloaded.method
     def sub(self, shares: dict, other_shares, **kwargs):
@@ -250,7 +253,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
         shares = spdz_mul(cmd, shares, other_shares, self.crypto_provider, self.field)
 
-        print("shares", shares)
         return shares
 
     @overloaded.method
@@ -271,8 +273,8 @@ class AdditiveSharingTensor(AbstractTensor):
         """Multiplies two number for details see mul
         """
         # FIXME
-        if isinstance(other, sy.MultiPointerTensor):
-            return self.mul(other, **kwargs) / len(other.child.keys())
+        # if isinstance(other, sy.MultiPointerTensor):
+        #     return self.mul(other, **kwargs) / len(other.child.keys())
         return self.mul(other, **kwargs)
 
     @overloaded.method
