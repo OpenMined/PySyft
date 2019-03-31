@@ -182,8 +182,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         # if someone passes in a constant... (i.e., x + 3)
         if not isinstance(other_shares, dict):
-            other_shares = torch.Tensor([other_shares])
-            other_shares = other_shares.share(*self.child.keys()).child
+            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
 
         assert len(shares) == len(other_shares)
 
@@ -197,9 +196,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def __add__(self, other, **kwargs):
         """Adds two tensors. Forwards command to add. See add() for more details."""
-        # FIXME
-        # if isinstance(other, sy.MultiPointerTensor):
-        #     return self.add(other, **kwargs) / len(other.child.keys())
+
         return self.add(other, **kwargs)
 
     @overloaded.method
