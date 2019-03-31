@@ -169,7 +169,6 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __matmul__ = matmul
 
-
     @overloaded.method
     def __gt__(self, _self, other):
         result = _self.__gt__(other)
@@ -191,7 +190,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return result * self.base ** self.precision_fractional
 
     @overloaded.method
-    def eq(self,_self, other):
+    def eq(self, _self, other):
         result = _self.eq(other)
         return result * self.base ** self.precision_fractional
 

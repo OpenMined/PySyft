@@ -1,5 +1,3 @@
-
-
 import torch
 import torch as th
 import syft
@@ -28,6 +26,7 @@ def test_xor_implementation(workers):
 #     assert False
 #
 
+
 def test_relu(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     x = th.tensor([1, -3]).share(alice, bob, crypto_provider=james)
@@ -35,7 +34,7 @@ def test_relu(workers):
 
     assert (r.get() == th.tensor([1, 0])).all()
 
-    x = th.tensor([1., 3.1, -2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    x = th.tensor([1.0, 3.1, -2.1]).fix_prec().share(alice, bob, crypto_provider=james)
     r = x.relu()
 
     assert (r.get().float_prec() == th.tensor([1, 3.1, 0])).all()

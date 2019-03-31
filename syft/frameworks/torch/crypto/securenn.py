@@ -5,7 +5,7 @@ import syft
 
 # Q field
 Q_BITS = 31
-field = (2 ** Q_BITS)
+field = 2 ** Q_BITS
 
 L = field
 p = field
@@ -84,7 +84,7 @@ def private_compare(x, r, BETA, j, alice, bob):
     return result
 
 
-def msb(a_sh, alice, bob): #  AdditiveSharingTensor
+def msb(a_sh, alice, bob):  #  AdditiveSharingTensor
     """
     :param a_sh (AdditiveSharingTensor):
     :param alice:
@@ -134,7 +134,7 @@ def msb(a_sh, alice, bob): #  AdditiveSharingTensor
     # 4)
     BETA = (torch.rand(a_sh.shape) > 0.5).long().send(bob, alice).child
 
-    #assert isinstance(BETA, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
+    # assert isinstance(BETA, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
     BETA_prime = private_compare(x_bit_sh, r, BETA=BETA, j=j, alice=alice, bob=bob).long()
 
     # 5)

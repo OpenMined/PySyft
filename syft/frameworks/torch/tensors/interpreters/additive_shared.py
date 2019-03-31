@@ -338,7 +338,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return securenn.relu_deriv(self)
 
     def __gt__(self, other):
-        r = (self - other - 1)
+        r = self - other - 1
         print(r)
         return r.positive()
 
