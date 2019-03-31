@@ -89,6 +89,8 @@ def hook_method_args(attr, method_self, args, kwargs):
     attr_id = type(method_self).__name__ + "." + attr
 
     try:
+        assert attr not in ['__getitem__']  # FIXME: put this in an exclude list
+
         # Load the utility function to transform the args
         hook_args = hook_method_args_functions[attr_id]
         # Try running it

@@ -204,7 +204,7 @@ class TorchHook:
         # self._add_methods_from__torch_tensor(PointerTensor, TorchTensor)
 
         # Use a pre-defined list to select the methods to overload
-        for attr in self.to_auto_overload[tensor_type]:
+        for attr in self.to_auto_overload[tensor_type] + ["__gt__", "__ge__", "__lt__", "__le__"]:
             # if we haven't already overloaded this function
             if f"native_{attr}" not in dir(tensor_type):
                 native_method = getattr(tensor_type, attr)

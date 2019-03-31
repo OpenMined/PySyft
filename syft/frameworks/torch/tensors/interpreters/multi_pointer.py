@@ -90,6 +90,19 @@ class MultiPointerTensor(AbstractTensor):
 
         return results
 
+    def virtual_get(self, sum_results: bool = False):
+        """Get the value of the tensor without calling get - Only for VirtualWorkers"""
+
+        results = list()
+        for v in self.child.values():
+            value = v.location._objects[v.id_at_location]
+            results.append(value)
+
+        if sum_results:
+            return sum(results)
+
+        return results
+
     @staticmethod
     def dispatch(args, k):
         return map(lambda x: x[k] if isinstance(x, dict) else x, args)

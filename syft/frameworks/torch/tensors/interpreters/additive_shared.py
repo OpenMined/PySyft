@@ -2,7 +2,10 @@ import torch
 import syft as sy
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
-from syft.frameworks.torch.crypto.spdz import spdz_mul
+
+# Crypto protocols
+from syft.frameworks.torch.crypto import spdz
+from syft.frameworks.torch.crypto import securenn
 
 
 class AdditiveSharingTensor(AbstractTensor):
@@ -164,6 +167,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return shares
 
+    ## SECTION SPDZ
+
     @overloaded.method
     def add(self, shares: dict, other_shares, *args, **kwargs):
         """Adds two tensors together
@@ -208,9 +213,9 @@ class AdditiveSharingTensor(AbstractTensor):
                 to the tensor being subtracted from self.
         """
 
-        # if someone passes in a constant... (i.e., x - 3)
+        # if someone passes in a constant... (i.e., x - 3), make it a shared tensor and keep the dict
         if not isinstance(other_shares, dict):
-            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child
+            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
 
         assert len(shares) == len(other_shares)
 
@@ -244,14 +249,14 @@ class AdditiveSharingTensor(AbstractTensor):
         # if someone passes in a constant... (i.e., x + 3)
         # TODO: Handle public mul more efficiently
         if not isinstance(other_shares, dict):
-            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child
+            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
 
         assert len(shares) == len(other_shares)
 
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crytoprovider must be passed.")
 
-        shares = spdz_mul(cmd, shares, other_shares, self.crypto_provider, self.field)
+        shares = spdz.spdz_mul(cmd, shares, other_shares, self.crypto_provider, self.field)
 
         return shares
 
@@ -273,8 +278,8 @@ class AdditiveSharingTensor(AbstractTensor):
         """Multiplies two number for details see mul
         """
         # FIXME
-        # if isinstance(other, sy.MultiPointerTensor):
-        #     return self.mul(other, **kwargs) / len(other.child.keys())
+        if isinstance(other, sy.MultiPointerTensor):
+            return self.mul(other, **kwargs) / len(other.child.keys())
         return self.mul(other, **kwargs)
 
     @overloaded.method
@@ -322,6 +327,40 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def __mod__(self, *args, **kwargs):
         return self.mod(*args, **kwargs)
+
+    ## SECTION SNN
+
+    def relu(self):
+        return securenn.relu(self)
+
+    def positive(self):
+        # self >= 0
+        return securenn.relu_deriv(self)
+
+    def __gt__(self, other):
+        r = (self - other - 1)
+        print(r)
+        return r.positive()
+
+    def __ge__(self, other):
+        return (self - other).positive()
+
+    def __lt__(self, other):
+        return (other - self - 1).positive()
+
+    def __le__(self, other):
+        return (other - self).positive()
+
+    def __eq__(self, other):
+        diff = self - other
+        diff2 = diff * diff
+        negdiff2 = diff2 * -1
+        return negdiff2.positive()
+
+    def eq(self, other):
+        return self == other
+
+    ## STANDARD
 
     @staticmethod
     def dispatch(args, k):

@@ -169,6 +169,32 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __matmul__ = matmul
 
+
+    @overloaded.method
+    def __gt__(self, _self, other):
+        result = _self.__gt__(other)
+        return result * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def __ge__(self, _self, other):
+        result = _self.__ge__(other)
+        return result * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def __lt__(self, _self, other):
+        result = _self.__lt__(other)
+        return result * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def __le__(self, _self, other):
+        result = _self.__le__(other)
+        return result * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def eq(self,_self, other):
+        result = _self.eq(other)
+        return result * self.base ** self.precision_fractional
+
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -184,6 +210,15 @@ class FixedPrecisionTensor(AbstractTensor):
         :return: the response of the function command
         """
         cmd, _, args, kwargs = command
+
+        # Check that the function has not been overwritten
+        rget = syft.frameworks.torch.tensors.interpreters.abstract.rgetattr
+        try:
+            # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+            cmd = rget(cls, cmd)
+            return cmd(*args, **kwargs)
+        except AttributeError:
+            pass
 
         # unhook
         if cmd == "torch.nn.functional.linear":

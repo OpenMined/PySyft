@@ -2,19 +2,16 @@ import torch
 from typing import Union
 
 import syft
-import syft as sy
-from syft import AdditiveSharingTensor, MultiPointerTensor
-
 
 # Q field
 Q_BITS = 31
-field = (2 ** Q_BITS) - 1
+field = (2 ** Q_BITS)
 
 L = field
 p = field
 
 
-def decompose(tensor: Union[AdditiveSharingTensor, MultiPointerTensor]):
+def decompose(tensor):
     """decompose a tensor into its binary representation."""
     powers = torch.arange(Q_BITS)
     if hasattr(tensor, "child") and isinstance(tensor.child, dict):
@@ -44,7 +41,7 @@ def private_compare(x, r, BETA, j, alice, bob):
     # R_MASK = (r == ((2 ** l) - 1)).long()
     R_MASK = (r == (field - 1)).long()
 
-    assert isinstance(x, AdditiveSharingTensor)
+    assert isinstance(x, syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor)
 
     r = decompose(r)
     t = decompose(t)
@@ -56,8 +53,8 @@ def private_compare(x, r, BETA, j, alice, bob):
     l1_mask = l1_mask.send(bob, alice).child
 
     # if BETA == 0
-    assert isinstance(j, MultiPointerTensor)
-    assert isinstance(r, MultiPointerTensor)
+    assert isinstance(j, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
+    assert isinstance(r, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
 
     w = (j * r) + x - (2 * x * r)
 
@@ -74,25 +71,20 @@ def private_compare(x, r, BETA, j, alice, bob):
     # else
     c_igt1 = (1 - j) * (u + 1) - (j * u)
 
-    assert isinstance(c_igt1, MultiPointerTensor)
+    assert isinstance(c_igt1, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
 
-    print("c_igt1", c_igt1)
     c_ie1 = (j * -2) + 1
-    print("c_ie1", c_ie1)
     c_21l = (l1_mask * c_ie1) + ((1 - l1_mask) * c_igt1)
-    print("c_21l", c_21l)
 
-    print("BETA", BETA)
     c = (BETA * c_beta0) + (1 - BETA) * c_beta1
     c = (c * (1 - R_MASK)) + (c_21l * R_MASK)
 
-    print("c", c)
     cmpc = c.get()  # /2
     result = (cmpc == 0).sum(1)
     return result
 
 
-def msb(a_sh: syft.AdditiveSharingTensor, alice, bob):
+def msb(a_sh, alice, bob): #  AdditiveSharingTensor
     """
     :param a_sh (AdditiveSharingTensor):
     :param alice:
@@ -104,8 +96,6 @@ def msb(a_sh: syft.AdditiveSharingTensor, alice, bob):
 
     input_shape = a_sh.shape
     a_sh = a_sh.view(-1)
-
-    print("a_sh", a_sh)
 
     # the commented out numbers below correspond to the
     # line numbers in Table 5 of the SecureNN paper
@@ -131,20 +121,20 @@ def msb(a_sh: syft.AdditiveSharingTensor, alice, bob):
     r_0 = decompose(r)[..., -1].send(bob, alice).child
     r = r.send(bob, alice).child
 
-    assert isinstance(r, MultiPointerTensor)
+    assert isinstance(r, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
 
     j0 = torch.zeros(x_bit_sh.shape).long().send(bob)
     j1 = torch.ones(x_bit_sh.shape).long().send(alice)
     j = syft.MultiPointerTensor(children=[j0, j1])
     j_0 = j[..., -1]
 
-    assert isinstance(j, MultiPointerTensor)
-    assert isinstance(j_0, MultiPointerTensor)
+    assert isinstance(j, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
+    assert isinstance(j_0, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
 
     # 4)
     BETA = (torch.rand(a_sh.shape) > 0.5).long().send(bob, alice).child
 
-    assert isinstance(BETA, MultiPointerTensor)
+    #assert isinstance(BETA, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
     BETA_prime = private_compare(x_bit_sh, r, BETA=BETA, j=j, alice=alice, bob=bob).long()
 
     # 5)
@@ -172,14 +162,11 @@ def msb(a_sh: syft.AdditiveSharingTensor, alice, bob):
 
 
 def relu_deriv(a_sh):
-    assert isinstance(a_sh, AdditiveSharingTensor)
+    assert isinstance(a_sh, syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor)
 
-    workers = [a_sh.owner.get_worker(w_name) for w_name in list(a_sh.child.keys())]
+    workers = [syft.hook.local_worker.get_worker(w_name) for w_name in list(a_sh.child.keys())]
     return msb(a_sh, *workers)
 
 
 def relu(a):
-    print("a", a)
-    ra = relu_deriv(a)
-    print("relu_deriv(a", ra)
-    return a * ra
+    return a * relu_deriv(a)

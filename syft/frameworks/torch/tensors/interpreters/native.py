@@ -126,7 +126,7 @@ class TorchTensor(AbstractTensor):
             return out
 
     def __eq__(self, other):
-        return torch.eq(self, other)
+        return self.eq(other)
 
     @property
     def id(self):
@@ -565,7 +565,7 @@ class TorchTensor(AbstractTensor):
 
         return (
             syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
-                field=field, crypto_provider=crypto_provider
+                field=field, crypto_provider=crypto_provider, owner=self.owner
             )
             .on(self)
             .child.init_shares(*owners)
