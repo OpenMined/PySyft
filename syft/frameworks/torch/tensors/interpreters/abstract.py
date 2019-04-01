@@ -111,7 +111,8 @@ class AbstractTensor(ABC):
         wrapper = torch.Tensor()
         wrapper.child = self
         wrapper.is_wrapper = True
-        # wrapper.child.parent = weakref.ref(wrapper)
+        if self.id is None:
+            self.id = int(10e10 * random.random())
         return wrapper
 
     def serialize(self):  # check serde.py to see how to provide compression schemes

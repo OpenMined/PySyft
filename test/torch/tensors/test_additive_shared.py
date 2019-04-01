@@ -38,6 +38,26 @@ def test_virtual_get(workers):
     assert (x == t).all()
 
 
+def test_send_get(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x_sh = th.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+
+    alice_t_id = x_sh.child.child["alice"].id_at_location
+    assert alice_t_id in alice._objects
+
+    ptr_x = x_sh.send(james)
+    ptr_x_id_at_location = ptr_x.id_at_location
+    assert ptr_x_id_at_location in james._objects
+    assert alice_t_id in alice._objects
+
+    x_sh_back = ptr_x.get()
+    assert ptr_x_id_at_location not in james._objects
+    assert alice_t_id in alice._objects
+
+    x = x_sh_back.get()
+    assert alice_t_id not in alice._objects
+
+
 def test_add(workers):
 
     t = torch.tensor([1, 2, 3])
@@ -100,6 +120,18 @@ def test_fixed_precision_and_sharing(workers):
 
     y = y.get().float_prec()
     assert (y == (t + t)).all()
+
+
+def test_get_item(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    x = th.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
+    idx = torch.tensor([0]).send(alice, bob)
+
+    assert x.child.child[:, idx].get() == torch.tensor([[3100]])
+
+    x = th.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+    idx = torch.tensor([0]).send(alice, bob)
+    assert x[:, idx].get() == torch.tensor([[3]])
 
 
 def test_eq(workers):
