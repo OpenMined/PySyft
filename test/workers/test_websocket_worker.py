@@ -31,7 +31,7 @@ def test_websocket_worker(hook, start_proc):
     server.terminate()
 
 
-def test_websocket_workers_search(hook):
+def test_websocket_workers_search(hook, start_proc):
     """Evaluates that a client can search and find tensors that belong
     to another party"""
 
