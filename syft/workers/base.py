@@ -12,9 +12,10 @@ from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
 from syft.workers import IdProvider
 from syft.codes import MSGTYPE
-from typing import Union
-from typing import List
 from typing import Callable
+from typing import List
+from typing import Tuple
+from typing import Union
 import torch
 
 
@@ -81,7 +82,7 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ_DEL: self.rm_obj,
             MSGTYPE.IS_NONE: self.is_tensor_none,
             MSGTYPE.GET_SHAPE: self.get_tensor_shape,
-            MSGTYPE.SEARCH: self.search,
+            MSGTYPE.SEARCH: self.deserialized_search,
         }
 
         self.load_data(data)
@@ -724,6 +725,11 @@ class BaseWorker(AbstractWorker):
         for key, tensor in self._objects.items():
             found_something = True
             for query_item in query:
+                # If deserialization produced a bytes object instead of a string,
+                # make sure it's turned back to a string or a fair comparison.
+                if isinstance(query_item, bytes):
+                    query_item = query_item.decode("ascii")
+
                 match = False
                 if query_item == str(key):
                     match = True
@@ -749,6 +755,20 @@ class BaseWorker(AbstractWorker):
                 results.append(ptr)
 
         return results
+
+    def deserialized_search(self, query_items: Tuple[str]) -> List[PointerTensor]:
+        """Called when a message requesting a call to `search` is received.
+        The serialized arguments will arrive as a `tuple` and it needs to be
+        transformed to an arguments list.
+
+        Args:
+            query_items(tuple(str)): Tuple of items to search for. Should originate from the
+            deserialization of a message requesting a search operation.
+
+        Returns:
+            list(PointerTensor): List of matched tensors.
+        """
+        return self.search(*query_items)
 
     def generate_triple(
         self, cmd: Callable, field: int, a_size: tuple, b_size: tuple, locations: list
