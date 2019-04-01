@@ -62,14 +62,13 @@ class FixedPrecisionTensor(AbstractTensor):
         return {"precision_fractional": self.precision_fractional}
 
     def fix_precision(self):
-        """This method encodes the .child object using fixed precision
-        Question: what's the use case? --tr"""
+        """This method encodes the .child object using fixed precision"""
 
         rational = self.child
 
-        owner = rational.owner
         upscaled = (rational * self.base ** self.precision_fractional).long()
         field_element = upscaled % self.field
+        field_element.owner = rational.owner
 
         self.child = field_element
         return self
@@ -169,6 +168,86 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __matmul__ = matmul
 
+    @overloaded.method
+    def __gt__(self, _self, other):
+        result = _self.__gt__(other)
+        return result * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def __ge__(self, _self, other):
+        result = _self.__ge__(other)
+        return result * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def __lt__(self, _self, other):
+        result = _self.__lt__(other)
+        return result * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def __le__(self, _self, other):
+        result = _self.__le__(other)
+        return result * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def eq(self, _self, other):
+        result = _self.eq(other)
+        return result * self.base ** self.precision_fractional
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+
+        def mul(self, other):
+            return self.__mul__(other)
+
+        module.mul = mul
+
+        def addmm(bias, input_tensor, weight):
+            matmul = input_tensor.matmul(weight)
+            result = bias.add(matmul)
+            return result
+
+        module.addmm = addmm
+
+        # You can also overload functions in submodules!
+        @overloaded.module
+        def nn(module):
+            """
+            The syntax is the same, so @overloaded.module handles recursion
+            Note that we don't need to add the @staticmethod decorator
+            """
+
+            @overloaded.module
+            def functional(module):
+
+                def linear(*args):
+                    """
+                    Un-hook the function to have its detailed behaviour
+                    """
+                    return torch.nn.functional.native_linear(*args)
+
+                module.linear = linear
+
+            module.functional = functional
+
+        # Modules should be registered just like functions
+        module.nn = nn
+
+    def get_class_attributes(self):
+        """
+        Specify all the attributes need to build a wrapper correctly when returning a response,
+        for example precision_fractional is important when wrapping the result of a method
+        on a self which is a fixed precision tensor with a non default precision_fractional.
+        """
+        return {
+            'owner': self.owner,
+            'field': self.field,
+            'base': self.base,
+            'precision_fractional': self.precision_fractional,
+            'precision_integral': self.precision_integral,
+            'kappa': self.kappa
+        }
+
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -183,19 +262,18 @@ class FixedPrecisionTensor(AbstractTensor):
         <no self>, arguments[, kwargs])
         :return: the response of the function command
         """
-        # TODO: add kwargs in command
         cmd, _, args, kwargs = command
 
-        # unhook
-        if cmd == "torch.nn.functional.linear":
-            return torch.nn.functional.native_linear(*args)
+        # FIXME
+        tensor = args[0]
 
-        # overwrite
-        if cmd == "torch.addmm":
-            bias, input_tensor, weight = args
-            matmul = input_tensor.matmul(weight)
-            r = bias.add(matmul)
-            return r
+        # Check that the function has not been overwritten
+        try:
+            # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+            cmd = cls.rgetattr(cls, cmd)
+            return cmd(*args, **kwargs)
+        except AttributeError:
+            pass
 
         # TODO: I can't manage the import issue, can you?
         # Replace all FixedPrecisionTensor with their child attribute
@@ -210,7 +288,7 @@ class FixedPrecisionTensor(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Put back FixedPrecisionTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
+        response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes())
 
         return response
 
