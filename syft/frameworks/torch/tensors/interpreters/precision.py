@@ -196,7 +196,6 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     @overloaded.module
     def torch(module):
-
         def mul(self, other):
             return self.__mul__(other)
 
@@ -219,7 +218,6 @@ class FixedPrecisionTensor(AbstractTensor):
 
             @overloaded.module
             def functional(module):
-
                 def linear(*args):
                     """
                     Un-hook the function to have its detailed behaviour
@@ -240,12 +238,12 @@ class FixedPrecisionTensor(AbstractTensor):
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
         return {
-            'owner': self.owner,
-            'field': self.field,
-            'base': self.base,
-            'precision_fractional': self.precision_fractional,
-            'precision_integral': self.precision_integral,
-            'kappa': self.kappa
+            "owner": self.owner,
+            "field": self.field,
+            "base": self.base,
+            "precision_fractional": self.precision_fractional,
+            "precision_integral": self.precision_integral,
+            "kappa": self.kappa,
         }
 
     @classmethod
@@ -288,7 +286,9 @@ class FixedPrecisionTensor(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Put back FixedPrecisionTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes())
+        response = syft.frameworks.torch.hook_args.hook_response(
+            cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
+        )
 
         return response
 
