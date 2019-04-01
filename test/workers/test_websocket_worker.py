@@ -48,7 +48,7 @@ def test_websocket_workers_search(hook):
     to another party"""
 
     # Sample tensor to store on the server
-    sample_data = torch.tensor([1, 2, 3, 4]).tag("#sample_data")
+    sample_data = torch.tensor([1, 2, 3, 4]).tag("#sample_data", "#another_tag")
     # Args for initializing the websocket server and client
     base_kwargs = {"id": "fed2", "host": "localhost", "port": 8766, "hook": hook}
     server_kwargs = base_kwargs
@@ -60,7 +60,7 @@ def test_websocket_workers_search(hook):
     client_worker = WebsocketClientWorker(**base_kwargs)
 
     # Search for the tensor located on the server by using its tag
-    results = client_worker.search("#sample_data")
+    results = client_worker.search("#sample_data", "#another_tag")
 
     assert results
     assert results[0].owner.id == "me"
