@@ -751,6 +751,9 @@ class BaseWorker(AbstractWorker):
             a_size: tuple which is the size that a should be
             b_size: tuple which is the size that b should be
             locations: a list of workers where the triple should be shared between
+
+        return:
+            a triple of AdditiveSharedTensor
         """
         a = self.torch.randint(field, a_size)
         b = self.torch.randint(field, b_size)
