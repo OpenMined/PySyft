@@ -104,9 +104,19 @@ def private_compare(x, r, BETA, j, alice, bob, crypto_provider):
     c = (c * (1 - R_MASK)) + (c_21l * R_MASK)
 
     # FIXME: Add 14): permutation and sending to crypto provider
+    # # 14)
+    # s = torch.randint(1, field, c.shape).send(alice, bob).child
+    # mask = s * c
+    # perm = torch.randperm(c.shape[1]).send(alice, bob).child
+    # permuted_mask = mask[:, perm]
+    # remote_mask = permuted_mask.wrap().send(crypto_provider)
+    # # TODO: sum shares remotely
+    # result = (remote_mask == 0).sum(1)
+    # # Get result back
+    # result = result.get()
+    # return result
 
-    # FIXME: Reconst remotely and get back beta prime only
-    cmpc = c.get()  # /2
+    cmpc = c.get()
     result = (cmpc == 0).sum(1)
     return result
 
