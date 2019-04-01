@@ -1,6 +1,7 @@
 import pytest
 import random
 import torch
+import torch as th
 import syft
 
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -99,3 +100,58 @@ def test_fixed_precision_and_sharing(workers):
 
     y = y.get().float_prec()
     assert (y == (t + t)).all()
+
+
+def test_eq(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = th.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = th.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x == y).get().float_prec()
+
+    x = th.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = th.tensor([2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert not (x == y).get().float_prec()
+
+    x = th.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = th.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x == y).get().float_prec()
+
+
+def test_comp(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = th.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = th.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x >= y).get().float_prec()
+    assert (x <= y).get().float_prec()
+    assert not (x > y).get().float_prec()
+    assert not (x < y).get().float_prec()
+
+    x = th.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = th.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x >= y).get().float_prec()
+    assert (x <= y).get().float_prec()
+    assert not (x > y).get().float_prec()
+    assert not (x < y).get().float_prec()
+
+    x = th.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = th.tensor([2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x >= y).get().float_prec()
+    assert not (x <= y).get().float_prec()
+    assert (x > y).get().float_prec()
+    assert not (x < y).get().float_prec()
+
+    x = th.tensor([-2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = th.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x >= y).get().float_prec()
+    assert not (x <= y).get().float_prec()
+    assert (x > y).get().float_prec()
+    assert not (x < y).get().float_prec()
