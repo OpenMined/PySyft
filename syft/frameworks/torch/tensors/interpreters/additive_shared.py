@@ -167,6 +167,35 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return shares
 
+    @overloaded.overload_method
+    def _getitem_multipointer(self, _self_shares, indices_shares):
+        selected_shares = {}
+        for worker, share in _self_shares.items():
+            indices = []
+            for index in indices_shares:
+                if isinstance(index, slice):
+                    indices.append(index)
+                elif isinstance(index, dict):
+                    indices.append(index[worker])
+                else:
+                    raise NotImplementedError("Index type", type(indices), "not supported")
+            selected_share = share[tuple(indices)]
+            selected_shares[worker] = selected_share
+
+        return selected_shares
+
+    def __getitem__(self, indices):
+        tensor_type = type(indices)
+        if isinstance(indices, tuple):
+            for index in indices:
+                if isinstance(index, AbstractTensor):
+                    tensor_type = type(index)
+
+        if tensor_type == sy.MultiPointerTensor:
+            return self._getitem_multipointer(indices)
+        else:
+            raise NotImplementedError("Index type", type(indices), "not supported")
+
     ## SECTION SPDZ
 
     @overloaded.method
