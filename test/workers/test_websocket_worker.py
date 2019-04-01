@@ -8,19 +8,7 @@ from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
 
 
-def start_proc(participant, kwargs):  # pragma: no cover
-    """ helper function for spinning up a websocket participant """
-
-    def target():
-        server = participant(**kwargs)
-        server.start()
-
-    p = Process(target=target)
-    p.start()
-    return p
-
-
-def test_websocket_worker(hook):
+def test_websocket_worker(hook, start_proc):
     """Evaluates that you can do basic tensor operations using
     WebsocketServerWorker"""
 
