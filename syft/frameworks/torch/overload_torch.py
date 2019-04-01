@@ -45,7 +45,8 @@ class Overloaded:
 
             # TODO have a better way to infer the type of tensor -> this is implies
             # that the first argument is a tensor (even if this is the case > 99%)
-            cls = type(args[0])
+            tensor = args[0]
+            cls = type(tensor)
 
             # Replace all syft tensor with their child attribute
             new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_args(
@@ -57,7 +58,7 @@ class Overloaded:
 
             # Put back SyftTensor on the tensors found in the response
             response = syft.frameworks.torch.hook_args.hook_response(
-                attr.__name__, response, wrap_type=cls
+                attr.__name__, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
             )
 
             return response
