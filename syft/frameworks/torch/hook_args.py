@@ -188,7 +188,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
 
     Args:
         attr (str): the name of the method being called
-        response (list): the arguments being passed to the tensor
+        response (list or dict): the arguments being passed to the tensor
         wrap_type (type): the type of wrapper we'd like to have
         wrap_args (dict): options to give to the wrapper (for example the
         precision for the precision tensor)
@@ -209,7 +209,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     if not response_is_tuple:
         response = (response, 1)
 
-    attr_id = "{}@{}".format(attr, wrap_type.__name__)
+    attr_id = "{}@{}.{}".format(attr, wrap_type.__name__, hash(frozenset(wrap_args.items())))
 
     try:
         # Load the utility function to transform the args

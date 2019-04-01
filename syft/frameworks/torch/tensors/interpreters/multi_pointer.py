@@ -53,7 +53,11 @@ class MultiPointerTensor(AbstractTensor):
 
     def __add__(self, other):
         """
-        MPT + AST should return AST
+        Adding a MultiPointer (MPT) and an AdditiveShared Tensor (AST) should return an
+        AdditiveShared Tensor, so if we have this configuration, we permute self and
+        other to use the fact that other.__add__(...) return an object of type other
+
+        Else, we just redirect to .add which works well
         """
         if isinstance(other, AdditiveSharingTensor):
             return other.__add__(self)
@@ -62,7 +66,7 @@ class MultiPointerTensor(AbstractTensor):
 
     def __mul__(self, other):
         """
-        MPT * AST should return AST
+        See __add__ for details but, MPT * AST should return AST
         """
         if isinstance(other, AdditiveSharingTensor):
             return other.__mul__(self)
@@ -131,10 +135,9 @@ class MultiPointerTensor(AbstractTensor):
         tensor = args[0]
 
         # Check that the function has not been overwritten
-        rget = sy.frameworks.torch.tensors.interpreters.abstract.rgetattr
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = rget(cls, cmd)
+            cmd = cls.rgetattr(cls, cmd)
             return cmd(*args, **kwargs)
         except AttributeError:
             pass

@@ -1,5 +1,9 @@
+"""
+This is an implementation of the SecureNN paper
+https://eprint.iacr.org/2018/442.pdf
+"""
+
 import torch
-from typing import Union
 
 import syft
 
@@ -33,58 +37,81 @@ def flip(x, dim):
     return x.index_select(dim, indices)
 
 
-def private_compare(x, r, BETA, j, alice, bob):
+def private_compare(x, r, BETA, j, alice, bob, crypto_provider):
+    """
+    Perform privately x > r
 
-    # t = torch.fmod((r + 1), 2 ** l)
+    args:
+        x (AdditiveSharedTensor): the private tensor
+        r (MultiPointerTensor): the threshold commonly held by alice and bob
+        BETA (MultiPointerTensor): a boolean commonly held by alice and bob to
+            hide the result of computation for the crypto provider
+        j (MultiPointerTensor): a tensor with 0 and 1 to to the loop in a
+            single pass
+        alice (AbstractWorker): 1st worker holding a private share
+        bob (AbstractWorker): 2nd worker holding a private share
+        crypto_provider (AbstractWorker): the crypto_provider
+
+    return:
+        β′ = β ⊕ (x > r).
+    """
+    # the commented out numbers below correspond to the
+    # line numbers in Algorithm 3 of the SecureNN paper
+    # https://eprint.iacr.org/2018/442.pdf
+
+    # 1)
     t = torch.fmod((r + 1), field)
 
-    # R_MASK = (r == ((2 ** l) - 1)).long()
+    # Mask for the case r == 2^l −1
     R_MASK = (r == (field - 1)).long()
-
-    assert isinstance(x, syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor)
 
     r = decompose(r)
     t = decompose(t)
+    # Mask for beta
     BETA = BETA.unsqueeze(1).expand(list(r.shape))
     R_MASK = R_MASK.unsqueeze(1).expand(list(r.shape))
+
     u = (torch.rand(x.shape) > 0.5).long().send(bob, alice).child
+    # Mask for condition i̸=1 in 11)
     l1_mask = torch.zeros(x.shape).long()
     l1_mask[:, -1:] = 1
     l1_mask = l1_mask.send(bob, alice).child
 
     # if BETA == 0
-    assert isinstance(j, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
-    assert isinstance(r, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
-
+    # 5)
     w = (j * r) + x - (2 * x * r)
 
+    # 6)
     wf = flip(w, 1)
     wfc = wf.cumsum(1) - wf
     wfcf = flip(wfc, 1)
-
     c_beta0 = (j * r) - x + j + wfcf
 
-    # elif BETA == 1 AND r != 2**Q_BITS - 1
+    # elif BETA == 1 AND r != 2^l- 1
+    # 8)
     w = x + (j * t) - (2 * t * x)  # FIXME: unused
+    # 9)
     c_beta1 = (-j * t) + x + j + wfcf
 
     # else
+    # 11)
     c_igt1 = (1 - j) * (u + 1) - (j * u)
-
-    assert isinstance(c_igt1, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
-
     c_ie1 = (j * -2) + 1
     c_21l = (l1_mask * c_ie1) + ((1 - l1_mask) * c_igt1)
 
+    # Mask combination to execute the if / else statements of 4), 7), 10)
     c = (BETA * c_beta0) + (1 - BETA) * c_beta1
     c = (c * (1 - R_MASK)) + (c_21l * R_MASK)
 
+    # FIXME: Add 14): permutation and sending to crypto provider
+
+    # FIXME: Reconst remotely and get back beta prime only
     cmpc = c.get()  # /2
     result = (cmpc == 0).sum(1)
     return result
 
 
-def msb(a_sh, alice, bob):  #  AdditiveSharingTensor
+def msb(a_sh, alice, bob):
     """
     :param a_sh (AdditiveSharingTensor):
     :param alice:
@@ -133,15 +160,13 @@ def msb(a_sh, alice, bob):  #  AdditiveSharingTensor
 
     # 4)
     BETA = (torch.rand(a_sh.shape) > 0.5).long().send(bob, alice).child
-
-    # assert isinstance(BETA, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
-    BETA_prime = private_compare(x_bit_sh, r, BETA=BETA, j=j, alice=alice, bob=bob).long()
+    BETA_prime = private_compare(x_bit_sh, r, BETA=BETA, j=j, alice=alice, bob=bob, crypto_provider=crypto_provider).long()
 
     # 5)
     BETA_prime_sh = BETA_prime.share(bob, alice, crypto_provider=crypto_provider).child
 
     # 7)
-    _lambda = BETA_prime_sh + (j_0 * BETA) - (2 * BETA * BETA_prime_sh)  # TODO I rm ADDISHARET
+    _lambda = BETA_prime_sh + (j_0 * BETA) - (2 * BETA * BETA_prime_sh)
 
     # 8)
     _delta = x_bit_sh_0.squeeze(-1) + (j_0 * r_0) - (2 * r_0 * x_bit_sh_0.squeeze(-1))

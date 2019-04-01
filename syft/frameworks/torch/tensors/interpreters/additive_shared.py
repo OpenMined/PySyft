@@ -386,10 +386,9 @@ class AdditiveSharingTensor(AbstractTensor):
         tensor = args[0]
 
         # Check that the function has not been overwritten
-        rget = sy.frameworks.torch.tensors.interpreters.abstract.rgetattr
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = rget(cls, cmd)
+            cmd = cls.rgetattr(cls, cmd)
             return cmd(*args, **kwargs)
         except AttributeError:
             pass
