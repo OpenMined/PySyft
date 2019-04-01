@@ -428,7 +428,6 @@ class TorchTensor(AbstractTensor):
 
         child_id = self.child.id
         tensor = self.child.get()
-        del self.owner._objects[tensor.id]
         self.owner._objects[child_id] = tensor
 
     def remote_get(self):

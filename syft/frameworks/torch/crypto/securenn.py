@@ -103,22 +103,20 @@ def private_compare(x, r, BETA, j, alice, bob, crypto_provider):
     c = (BETA * c_beta0) + (1 - BETA) * c_beta1
     c = (c * (1 - R_MASK)) + (c_21l * R_MASK)
 
-    # FIXME: Add 14): permutation and sending to crypto provider
-    # # 14)
-    # s = torch.randint(1, field, c.shape).send(alice, bob).child
-    # mask = s * c
-    # perm = torch.randperm(c.shape[1]).send(alice, bob).child
-    # permuted_mask = mask[:, perm]
-    # remote_mask = permuted_mask.wrap().send(crypto_provider)
-    # # TODO: sum shares remotely
-    # result = (remote_mask == 0).sum(1)
-    # # Get result back
-    # result = result.get()
-    # return result
-
-    cmpc = c.get()
-    result = (cmpc == 0).sum(1)
-    return result
+    # 14)
+    # Hide c values
+    s = torch.randint(1, field, c.shape).send(alice, bob).child
+    mask = s * c
+    # Permute the mask
+    perm = torch.randperm(c.shape[1]).send(alice, bob).child
+    permuted_mask = mask[:, perm]
+    # Send it to another worker
+    remote_mask = permuted_mask.wrap().send(crypto_provider)
+    # transform remotely the AdditiveSharingTensor back to a torch tensor
+    d_ptr = remote_mask.remote_get()
+    result_ptr = (d_ptr == 0).sum(1)
+    # Get result back
+    return result_ptr.get()
 
 
 def msb(a_sh, alice, bob):
