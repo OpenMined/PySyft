@@ -1,5 +1,5 @@
 import syft as sy
-from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
+from syft.frameworks.torch.tensors.interpreters.Polynomial import PolynomialTensor
 import torch
 import numpy as np
 
