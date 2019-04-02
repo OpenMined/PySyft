@@ -152,6 +152,9 @@ class TorchTensor(AbstractTensor):
         """
         return isinstance(self, syft.hook.torch.nn.Parameter)
 
+    def copy(self):
+        return self + 0
+
     @classmethod
     def handle_func_command(cls, command):
         """

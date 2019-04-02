@@ -13,7 +13,6 @@ class FixedPrecisionTensor(AbstractTensor):
         field: int = (2 ** 31) - 1,
         base: int = 10,
         precision_fractional: int = 3,
-        precision_integral: int = 1,
         kappa: int = 1,
         tags: set = None,
         description: str = None,
@@ -49,7 +48,6 @@ class FixedPrecisionTensor(AbstractTensor):
         self.field = field
         self.base = base
         self.precision_fractional = precision_fractional
-        self.precision_integral = precision_integral
         self.kappa = kappa
         self.torch_max_value = torch.tensor([round(self.field / 2)])
 
@@ -242,7 +240,6 @@ class FixedPrecisionTensor(AbstractTensor):
             "field": self.field,
             "base": self.base,
             "precision_fractional": self.precision_fractional,
-            "precision_integral": self.precision_integral,
             "kappa": self.kappa,
         }
 
