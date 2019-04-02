@@ -323,6 +323,11 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         return self._abstract_mul("matmul", shares, other_shares, **kwargs)
 
+    def mm(self, *args, **kwargs):
+        """Multiplies two number for details see mul
+        """
+        return self.matmul(*args, **kwargs)
+
     def __matmul__(self, *args, **kwargs):
         """Multiplies two number for details see mul
         """
