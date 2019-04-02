@@ -12,9 +12,10 @@ from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
 from syft.workers import IdProvider
 from syft.codes import MSGTYPE
-from typing import Union
-from typing import List
 from typing import Callable
+from typing import List
+from typing import Tuple
+from typing import Union
 import torch
 
 
@@ -73,17 +74,6 @@ class BaseWorker(AbstractWorker):
         # objects where all objects are stored using their IDs as keys.
         self._objects = {}
 
-        # Declare workers as appropriate
-        self._known_workers = {}
-        if hook.local_worker is not None:
-            if self.id not in self.hook.local_worker._known_workers:
-                hook.local_worker.add_worker(self)
-            for worker_id, worker in hook.local_worker._known_workers.items():
-                if worker_id not in self._known_workers:
-                    self.add_worker(worker)
-                if self.id not in worker._known_workers:
-                    worker.add_worker(self)
-
         # For performance, we cache each
         self._message_router = {
             MSGTYPE.CMD: self.execute_command,
@@ -92,9 +82,30 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ_DEL: self.rm_obj,
             MSGTYPE.IS_NONE: self.is_tensor_none,
             MSGTYPE.GET_SHAPE: self.get_tensor_shape,
-            MSGTYPE.SEARCH: self.search,
+            MSGTYPE.SEARCH: self.deserialized_search,
         }
+
         self.load_data(data)
+
+        # Declare workers as appropriate
+        self._known_workers = {}
+        if hook.local_worker is not None:
+            known_workers = self.hook.local_worker._known_workers
+            if self.id in known_workers:
+                if isinstance(known_workers[self.id], type(self)):
+                    # If a worker with this id already exists and it has the
+                    # same type as the one being created, we copy all the attributes
+                    # of the existing worker to this one.
+                    self.__dict__.update(known_workers[self.id].__dict__)
+                else:
+                    raise RuntimeError("Worker initialized with the same id and different types.")
+            else:
+                hook.local_worker.add_worker(self)
+                for worker_id, worker in hook.local_worker._known_workers.items():
+                    if worker_id not in self._known_workers:
+                        self.add_worker(worker)
+                    if self.id not in worker._known_workers:
+                        worker.add_worker(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -416,8 +427,13 @@ class BaseWorker(AbstractWorker):
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
-        if hasattr(obj, "child") and isinstance(obj.child, PointerTensor):
-            obj.child.garbage_collect_data = False
+        if hasattr(obj, "child"):
+            if isinstance(obj.child, PointerTensor):
+                obj.child.garbage_collect_data = False
+            if isinstance(obj.child, (sy.AdditiveSharingTensor, sy.MultiPointerTensor)):
+                shares = obj.child.child
+                for worker, share in shares.items():
+                    share.child.garbage_collect_data = False
 
         return obj
 
@@ -714,6 +730,11 @@ class BaseWorker(AbstractWorker):
         for key, tensor in self._objects.items():
             found_something = True
             for query_item in query:
+                # If deserialization produced a bytes object instead of a string,
+                # make sure it's turned back to a string or a fair comparison.
+                if isinstance(query_item, bytes):
+                    query_item = query_item.decode("ascii")
+
                 match = False
                 if query_item == str(key):
                     match = True
@@ -740,6 +761,20 @@ class BaseWorker(AbstractWorker):
 
         return results
 
+    def deserialized_search(self, query_items: Tuple[str]) -> List[PointerTensor]:
+        """Called when a message requesting a call to `search` is received.
+        The serialized arguments will arrive as a `tuple` and it needs to be
+        transformed to an arguments list.
+
+        Args:
+            query_items(tuple(str)): Tuple of items to search for. Should originate from the
+            deserialization of a message requesting a search operation.
+
+        Returns:
+            list(PointerTensor): List of matched tensors.
+        """
+        return self.search(*query_items)
+
     def generate_triple(
         self, cmd: Callable, field: int, a_size: tuple, b_size: tuple, locations: list
     ):
@@ -751,6 +786,9 @@ class BaseWorker(AbstractWorker):
             a_size: tuple which is the size that a should be
             b_size: tuple which is the size that b should be
             locations: a list of workers where the triple should be shared between
+
+        return:
+            a triple of AdditiveSharedTensor
         """
         a = self.torch.randint(field, a_size)
         b = self.torch.randint(field, b_size)

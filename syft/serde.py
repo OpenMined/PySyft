@@ -56,6 +56,7 @@ from syft.workers import PlanPointer
 from syft.exceptions import CompressionNotFoundException
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 
@@ -660,16 +661,17 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
     pieces = {}
     # for dictionaries we want to detail both the key and the value
     for key, value in my_dict.items():
-
+        detailed_key = _detail(worker, key)
         try:
-            detailed_key = _detail(worker, key).decode("utf-8")
+            detailed_key = detailed_key.decode("utf-8")
         except AttributeError:
-            detailed_key = _detail(worker, key)
+            pass
 
+        detailed_value = _detail(worker, value)
         try:
-            detailed_value = _detail(worker, value).decode("utf-8")
+            detailed_value = detailed_value.decode("utf-8")
         except AttributeError:
-            detailed_value = _detail(worker, value)
+            pass
 
         pieces[detailed_key] = detailed_value
 
@@ -974,6 +976,50 @@ def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LoggingTe
     return tensor
 
 
+def _simplify_additive_shared_tensor(tensor: AdditiveSharingTensor) -> tuple:
+    """
+    This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
+    Args:
+        tensor (AdditiveSharingTensor): a LogTensor
+    Returns:
+        tuple: a tuple holding the unique attributes of the additive shared tensor
+    Examples:
+        data = _simplify_additive_shared_tensor(tensor)
+    """
+
+    chain = None
+    if hasattr(tensor, "child"):
+        chain = _simplify(tensor.child)
+    return (tensor.id, tensor.field, tensor.crypto_provider.id, chain)
+
+
+def _detail_additive_shared_tensor(
+    worker: AbstractWorker, tensor_tuple: tuple
+) -> AdditiveSharingTensor:
+    """
+        This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
+        Returns:
+            AdditiveSharingTensor: a AdditiveSharingTensor
+        Examples:
+            shared_tensor = _detail_additive_shared_tensor(data)
+        """
+
+    tensor_id, field, crypto_provider, chain = tensor_tuple
+
+    tensor = AdditiveSharingTensor(
+        owner=worker, id=tensor_id, field=field, crypto_provider=worker.get_worker(crypto_provider)
+    )
+
+    if chain is not None:
+        chain = _detail(worker, chain)
+        tensor.child = chain
+
+    return tensor
+
+
 def _simplify_plan(plan: Plan) -> tuple:
     """
     This function takes the attributes of a Plan and saves them in a tuple
@@ -1123,8 +1169,9 @@ simplifiers = {
     torch.device: [10, _simplify_torch_device],
     PointerTensor: [11, _simplify_pointer_tensor],
     LoggingTensor: [12, _simplify_log_tensor],
-    Plan: [13, _simplify_plan],
-    PlanPointer: [14, _simplify_plan_pointer],
+    AdditiveSharingTensor: [13, _simplify_additive_shared_tensor],
+    Plan: [14, _simplify_plan],
+    PlanPointer: [15, _simplify_plan_pointer],
 }
 
 
@@ -1147,7 +1194,7 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
 
     """
 
-    if type(obj) == list:
+    if type(obj) in (list, tuple):
         return detailers[obj[0]](worker, obj[1])
     else:
         return obj
@@ -1167,6 +1214,7 @@ detailers = [
     _detail_torch_device,
     _detail_pointer_tensor,
     _detail_log_tensor,
+    _detail_additive_shared_tensor,
     _detail_plan,
     _detail_plan_pointer,
 ]

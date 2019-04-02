@@ -14,7 +14,7 @@ def spdz_mul(
             self. Equivalent to calling self.child.
         other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
             to the tensor being multiplied by self.
-        cypto_provider: an AbstractWorker which is used to generate triples
+        crypto_provider: an AbstractWorker which is used to generate triples
         field: an interger denoting the size of the field
         """
     locations = list(shares.keys())
@@ -22,6 +22,7 @@ def spdz_mul(
     other_shape = other_shares[locations[0]].shape
     triple = crypto_provider.generate_triple(cmd, field, shares_shape, other_shape, locations)
     a, b, c = triple
+    a, b, c = a.child, b.child, c.child
     d = {}
     e = {}
     for location in locations:
