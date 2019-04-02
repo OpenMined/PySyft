@@ -370,40 +370,39 @@ class AdditiveSharingTensor(AbstractTensor):
         # self >= 0
         return securenn.relu_deriv(self)
 
-    def __gt__(self, other):
+    def gt(self, other):
         r = self - other - 1
-        print(r)
         return r.positive()
 
-    def gt(self, other):
-        return self > other
-
-    def __ge__(self, other):
-        return (self - other).positive()
+    def __gt__(self, other):
+        return self.gt(other)
 
     def ge(self, other):
-        return self >= other
+        return (self - other).positive()
 
-    def __lt__(self, other):
-        return (other - self - 1).positive()
+    def __ge__(self, other):
+        return self.ge(other)
 
     def lt(self, other):
-        return self < other
+        return (other - self - 1).positive()
 
-    def __le__(self, other):
-        return (other - self).positive()
+    def __lt__(self, other):
+        return self.lt(other)
 
     def le(self, other):
-        return self <= other
+        return (other - self).positive()
 
-    def __eq__(self, other):
+    def __le__(self, other):
+        return self.le(other)
+
+    def eq(self, other):
         diff = self - other
         diff2 = diff * diff
         negdiff2 = diff2 * -1
         return negdiff2.positive()
 
-    def eq(self, other):
-        return self == other
+    def __eq__(self, other):
+        return self.eq(other)
 
     ## STANDARD
 
