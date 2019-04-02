@@ -195,11 +195,12 @@ class TorchHook:
 
     def _hook_native_methods(self, tensor_type: type):
         """
-        Add hooked version of all methods of the tensor_type to the
-        Pointer tensor: instead of performing the native tensor
-        method, it will be sent remotely to the location the pointer
-        is pointing at.
-        :param tensor_type: the tensor_type which holds the methods
+        Add hooked version of all methods of to_auto_overload[tensor_type]
+        to the tensor_type; instead of performing the native tensor
+        method, the hooked version will be called
+
+        Args:
+            tensor_type: the tensor_type which holds the methods
         """
         # # Add methods defined in the TorchTensor class to the Pointer class
         # self._add_methods_from__torch_tensor(PointerTensor, TorchTensor)
@@ -215,11 +216,13 @@ class TorchHook:
 
     def _hook_syft_tensor_methods(self, syft_type: type):
         """
-        Add hooked version of all methods of the tensor_type to the
-        Pointer tensor: instead of performing the native tensor
-        method, it will be sent remotely to the location the pointer
-        is pointing at.
-        :param tensor_type: the tensor_type which holds the methods
+        Add hooked version of all methods of to_auto_overload[tensor_type]
+        to the syft_type, so that they act like regular tensors in
+        terms of functionality, but instead of performing the native tensor
+        method, it will be forwarded to each share when it is relevant
+
+        Args:
+            syft_type: the syft_type which holds the methods
         """
 
         tensor_type = self.torch.Tensor
@@ -248,7 +251,7 @@ class TorchHook:
         """
         Add hooked version of all methods of the torch Tensor to the
         Additive Shared tensor: instead of performing the native tensor
-        method, it will be forward to each share when it is relevant
+        method, it will be forwarded to each share when it is relevant
         """
 
         tensor_type = self.torch.Tensor
@@ -455,8 +458,11 @@ class TorchHook:
     def get_hooked_pointer_method(hook_self, attr):
         """
         Hook a method to send it to remote worker
-        :param attr: the method to hook
-        :return: the hooked method
+
+        Args:
+            attr (str): the method to hook
+        Return:
+            the hooked method
         """
 
         @wraps(attr)
@@ -486,8 +492,11 @@ class TorchHook:
     def get_hooked_additive_shared_method(hook_self, attr):
         """
         Hook a method to send it multiple recmote workers
-        :param attr: the method to hook
-        :return: the hooked method
+
+        Args:
+            attr (str): the method to hook
+        Return:
+            the hooked method
         """
 
         def dispatch(args, k):
@@ -523,8 +532,11 @@ class TorchHook:
     def get_hooked_multi_pointer_method(hook_self, attr):
         """
         Hook a method to send it multiple recmote workers
-        :param attr: the method to hook
-        :return: the hooked method
+
+        Args:
+            attr (str): the method to hook
+        Return:
+            the hooked method
         """
 
         def dispatch(args, k):
@@ -559,8 +571,11 @@ class TorchHook:
         Hook a method in order to replace all args/kwargs syft/torch tensors with
         their child attribute, forward this method with the new args and new self,
         get response and "rebuild" the syft tensor wrapper upon all tensors found
-        :param attr: the method to hook
-        :return: the hooked method
+
+        Args:
+            attr (str): the method to hook
+        Return:
+            the hooked method
         """
 
         @wraps(attr)
@@ -593,8 +608,11 @@ class TorchHook:
         If so, forward this method with the new args and new self, get response
         and "rebuild" the torch tensor wrapper upon all tensors found
         If not, just execute the native torch methodn
-        :param attr: the method to hook
-        :return: the hooked method
+
+        Args:
+            attr (str): the method to hook
+        Return:
+            the hooked method
         """
 
         @wraps(method_name)
@@ -653,8 +671,10 @@ class TorchHook:
         - Calls with pointers send the command to the location of the pointer(s)
         - Calls with syft tensor will in the future trigger specific behaviour
 
-        :param attr: the function to hook
-        :return: the hooked function
+        Args:
+            attr (str): the method to hook
+        Return:
+            the hooked method
         """
 
         if attr.__module__ is None:

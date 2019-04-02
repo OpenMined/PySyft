@@ -16,6 +16,7 @@ class AdditiveSharingTensor(AbstractTensor):
         owner=None,
         id=None,
         field=None,
+        n_bits=None,
         crypto_provider=None,
         tags=None,
         description=None,
@@ -42,7 +43,9 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
 
-        self.field = (2 ** 31) - 1 if field is None else field  # < 63 bits
+        self.field = (2 ** 31) if field is None else field  # < 63 bits
+        self.n_bits = 31 if n_bits is None else n_bits  # < 63 bits
+        assert 2 ** self.n_bits == self.field
         self.crypto_provider = crypto_provider
 
     def __repr__(self):
@@ -76,7 +79,7 @@ class AdditiveSharingTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {"crypto_provider": self.crypto_provider, "field": self.field}
+        return {"crypto_provider": self.crypto_provider, "field": self.field, "n_bits": self.n_bits}
 
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
@@ -303,7 +306,6 @@ class AdditiveSharingTensor(AbstractTensor):
     def __mul__(self, other, **kwargs):
         """Multiplies two number for details see mul
         """
-        # FIXME
         if isinstance(other, sy.MultiPointerTensor):
             return self.mul(other, **kwargs) / len(other.child.keys())
         return self.mul(other, **kwargs)
@@ -368,14 +370,26 @@ class AdditiveSharingTensor(AbstractTensor):
         print(r)
         return r.positive()
 
+    def gt(self, other):
+        return self > other
+
     def __ge__(self, other):
         return (self - other).positive()
+
+    def ge(self, other):
+        return self >= other
 
     def __lt__(self, other):
         return (other - self - 1).positive()
 
+    def lt(self, other):
+        return self < other
+
     def __le__(self, other):
         return (other - self).positive()
+
+    def le(self, other):
+        return self <= other
 
     def __eq__(self, other):
         diff = self - other
@@ -389,8 +403,21 @@ class AdditiveSharingTensor(AbstractTensor):
     ## STANDARD
 
     @staticmethod
-    def dispatch(args, k):
-        return map(lambda x: x[k] if isinstance(x, dict) else x, args)
+    def dispatch(args, worker):
+        """
+        utility function for handle_func_command which help to select
+        shares (seen as elements of dict) in an argument set. It could
+        perhaps be put elsewhere
+
+        Args:
+            args: arguments to give to a functions
+            worker: owner of the shares to select
+
+        Return:
+            args where the AdditiveSharedTensors are replaced by
+            the appropriate share
+        """
+        return map(lambda x: x[worker] if isinstance(x, dict) else x, args)
 
     @classmethod
     def handle_func_command(cls, command):

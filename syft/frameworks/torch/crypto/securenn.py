@@ -9,22 +9,19 @@ import syft
 
 # Q field
 Q_BITS = 31
-field = 2 ** Q_BITS
-
-L = field
-p = field
 
 
 def decompose(tensor):
     """decompose a tensor into its binary representation."""
-    powers = torch.arange(Q_BITS)
+    n_bits = Q_BITS
+    powers = torch.arange(n_bits)
     if hasattr(tensor, "child") and isinstance(tensor.child, dict):
         powers = powers.send(*list(tensor.child.keys())).child
     for i in range(len(tensor.shape)):
         powers = powers.unsqueeze(0)
     tensor = tensor.unsqueeze(-1)
     moduli = 2 ** powers
-    tensor = torch.fmod(((tensor + 2 ** (Q_BITS)) / moduli.type_as(tensor)), 2)
+    tensor = torch.fmod(((tensor + 2 ** n_bits) / moduli.type_as(tensor)), 2)
     return tensor
 
 
@@ -58,6 +55,8 @@ def private_compare(x, r, BETA, j, alice, bob, crypto_provider):
     # the commented out numbers below correspond to the
     # line numbers in Algorithm 3 of the SecureNN paper
     # https://eprint.iacr.org/2018/442.pdf
+
+    field = x.field
 
     # 1)
     t = torch.fmod((r + 1), field)
@@ -121,13 +120,19 @@ def private_compare(x, r, BETA, j, alice, bob, crypto_provider):
 
 def msb(a_sh, alice, bob):
     """
-    :param a_sh (AdditiveSharingTensor):
-    :param alice:
-    :param bob:
-    :return:
+    Compute the most significant bit in a_sh
+
+    args:
+        a_sh (AdditiveSharingTensor): the tensor of study
+        alice (AbstractWorker): 1st worker holding a private share of a_sh
+        bob (AbstractWorker): 2nd worker holding a private share
+
+    return:
+        the most significant bit
     """
 
     crypto_provider = a_sh.crypto_provider
+    L = a_sh.field
 
     input_shape = a_sh.shape
     a_sh = a_sh.view(-1)
@@ -140,7 +145,8 @@ def msb(a_sh, alice, bob):
     x = torch.LongTensor(a_sh.shape).random_(L - 1)
     x_bit = decompose(x)
     x_sh = x.share(bob, alice, crypto_provider=crypto_provider).child
-    x_bit_0 = x_bit[..., -1:]  # pretty sure decompose is backwards...
+    # Get last column / value as decompose reverts bits: first one is in last position
+    x_bit_0 = x_bit[..., -1:]
     x_bit_sh_0 = x_bit_0.share(
         bob, alice, crypto_provider=crypto_provider
     ).child  # least -> greatest from left -> right

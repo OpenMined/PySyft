@@ -39,7 +39,10 @@ class AbstractTensor(ABC):
                 defined here
         """
         self.owner = owner
-        self.id = id
+        if id is None:
+            self.id = int(10e10 * random.random())
+        else:
+            self.id = id
         self.tags = tags
         self.description = description
         self.child = child

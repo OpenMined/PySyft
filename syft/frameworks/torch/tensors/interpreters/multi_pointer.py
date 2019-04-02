@@ -108,8 +108,21 @@ class MultiPointerTensor(AbstractTensor):
         return results
 
     @staticmethod
-    def dispatch(args, k):
-        return map(lambda x: x[k] if isinstance(x, dict) else x, args)
+    def dispatch(args, worker):
+        """
+        utility function for handle_func_command which help to select
+        shares (seen as elements of dict) in an argument set. It could
+        perhaps be put elsewhere
+
+        Args:
+            args: arguments to give to a functions
+            worker: owner of the shares to select
+
+        Return:
+            args where the MultiPointerTensor are replaced by
+            the appropriate share
+        """
+        return map(lambda x: x[worker] if isinstance(x, dict) else x, args)
 
     @classmethod
     def handle_func_command(cls, command):
