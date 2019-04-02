@@ -75,7 +75,7 @@ def testinterpolate():
 def testcustomfunction():
 
     P = PolynomialTensor()
-    P.addfunction("Custom", 10,[[0, 10, 100, 10, P.fit_function]], lambda x: x + 2)
+    P.addfunction("Custom", 10, [[0, 10, 100, 10, P.fit_function]], lambda x: x + 2)
 
     assert round(P.get_val("Custom", 3)) == 5
     assert round(P.get_val("Custom", 6)) == 8
