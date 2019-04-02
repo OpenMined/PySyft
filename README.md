@@ -47,7 +47,7 @@ We are very grateful for contributions to PySyft from the following organization
 
   ![Udacity](https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true)
 
-  [Udacity Website](https://udacity.org/)
+  [Udacity Website](https://udacity.com/)
 
 ## Disclaimer
 
