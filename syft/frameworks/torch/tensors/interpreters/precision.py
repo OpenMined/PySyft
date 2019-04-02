@@ -7,7 +7,6 @@ from syft.frameworks.torch.overload_torch import overloaded
 class FixedPrecisionTensor(AbstractTensor):
     def __init__(
         self,
-        parent: AbstractTensor = None,
         owner=None,
         id=None,
         field: int = (2 ** 31) - 1,
@@ -28,19 +27,12 @@ class FixedPrecisionTensor(AbstractTensor):
         p decimals)
 
         Args:
-            parent: An optional AbstractTensor wrapper around the FixedPrecisionTensor
-                which makes it so that you can pass this FixedPrecisionTensor to all
-                the other methods/functions that PyTorch likes to use, although
-                it can also be other tensors which extend AbstractTensor, such
-                as custom tensors for Secure Multi-Party Computation or
-                Federated Learning.
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the FixedPrecisionTensor.
         """
         super().__init__(tags, description)
 
-        self.parent = parent
         self.owner = owner
         self.id = id
         self.child = None
@@ -292,7 +284,6 @@ class FixedPrecisionTensor(AbstractTensor):
         """Just a pass through. This is most commonly used when calling .get() on a
         FixedPrecisionTensor which has also been shared."""
         return FixedPrecisionTensor(
-            parent=self.parent,
             owner=self.owner,
             id=self.id,
             field=self.field,
