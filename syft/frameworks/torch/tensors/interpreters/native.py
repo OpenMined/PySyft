@@ -413,7 +413,6 @@ class TorchTensor(AbstractTensor):
 
         if previous_pointer is None:
             ptr = PointerTensor(
-                parent=self,
                 location=location,
                 id_at_location=id_at_location,
                 owner=owner,
