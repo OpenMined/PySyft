@@ -883,7 +883,7 @@ class TorchHook:
             "__sizeof__",
             "__subclasshook__",
             "_get_type",
-            # "__eq__", # FIXME it now overwritten in native.py to use torch.eq, because of pb between == & __eq__
+            # "__eq__", # FIXME it now overwritten in native.py to use torch.eq, because of pb between == & __eq__ See #2030
             "__gt__",
             "__ge__",
             "__lt__",

@@ -443,7 +443,6 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
 
-        # FIXME
         tensor = args[0]
 
         # Check that the function has not been overwritten
