@@ -31,7 +31,11 @@ class TorchAttributes(object):
         self.hook = hook
 
         # List modules that we will hook
-        self.torch_modules = {"torch": torch, "torch.nn.functional": torch.nn.functional}
+        self.torch_modules = {
+            "torch": torch,
+            "torch.functional": torch.functional,
+            "torch.nn.functional": torch.nn.functional,
+        }
 
         # List all the function names with module as prefix in the modules to hook
         self.torch_modules_functions = {
@@ -50,8 +54,6 @@ class TorchAttributes(object):
         # Add special functions to exclude from the hook
         self.exclude = [
             "arange",
-            "save",
-            "load",
             "typename",
             "is_tensor",
             "manual_seed",
@@ -82,8 +84,8 @@ class TorchAttributes(object):
             "is_storage",
             "is_tensor",
             "isclose",
-            "isfinite" "load",
-            "long",
+            "isfinite",
+            "load",
             "native_add",
             "native_batch_norm",
             "native_clone",
@@ -107,8 +109,7 @@ class TorchAttributes(object):
             "is_storage",
             "is_tensor",
             "isfinite",
-            "load",
-            "zeros_like",
+            "randperm",
         ]
 
         # SECTION: List all torch tensor methods we want to overload
@@ -153,6 +154,9 @@ class TorchAttributes(object):
         }
 
         self.command_guard = self._command_guard
+
+        # Dict {method_name: <is_inplace:bool>
+        self.inplace_methods = {}
 
     def _command_guard(
         self, command: str, torch_domain: str, get_native: bool = False
@@ -226,3 +230,34 @@ class TorchAttributes(object):
         parts[-1] = "native_" + parts[-1]
         native_func_name = ".".join(parts)
         return native_func_name
+
+    def is_inplace_method(self, method_name):
+        """
+        Says if a method is inplace or not by test if it ends by _ and is not a __xx__
+        :param method_name: the name for the method
+        :return: boolean
+        """
+        try:
+            return self.inplace_methods[method_name]
+        except KeyError:
+            is_inplace = method_name[-1] == "_" and "__" not in method_name
+            self.inplace_methods[method_name] = is_inplace
+            return is_inplace
+
+    @staticmethod
+    def apply_fix16922(torch):
+        """
+        Apply the fix made in PR16922 of PyTorch until people use PyTorch 1.0.2
+        :param torch: the pytorch module
+        """
+        broken_funcs = [
+            "max_pool1d",
+            "max_pool2d",
+            "max_pool3d",
+            "adaptive_max_pool1d",
+            "adaptive_max_pool2d",
+            "adaptive_max_pool3d",
+        ]
+        for broken_func in broken_funcs:
+            getattr(torch.nn.functional, broken_func).__module__ = "torch.nn.functional"
+            getattr(torch.nn.functional, broken_func).__name__ = broken_func

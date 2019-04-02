@@ -3,6 +3,7 @@ import weakref
 import torch
 
 import syft
+import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.workers import BaseWorker
@@ -82,6 +83,13 @@ class TorchTensor(AbstractTensor):
         else:
             return self.native_shape
 
+    @property
+    def data(self):
+        if self.is_wrapper:
+            return self.child.data
+        else:
+            return self.native_data
+
     def __str__(self) -> str:
         if self.has_child():
             if self.is_wrapper:
@@ -102,7 +110,7 @@ class TorchTensor(AbstractTensor):
 
             big_repr = False
 
-            if self.tags is not None:
+            if self.tags is not None and len(self.tags):
                 big_repr = True
                 out += "\n\tTags: "
                 for tag in self.tags:
@@ -116,6 +124,9 @@ class TorchTensor(AbstractTensor):
                 out += "\n\tShape: " + str(self.shape)
 
             return out
+
+    def __eq__(self, other):
+        return self.eq(other)
 
     @property
     def id(self):
@@ -135,33 +146,63 @@ class TorchTensor(AbstractTensor):
         else:
             self._id = new_id
 
+    def _is_parameter(self):
+        """
+        Utility method to test if the tensor is in fact a Parameter
+        """
+        return isinstance(self, syft.hook.torch.nn.Parameter)
+
     @classmethod
     def handle_func_command(cls, command):
         """
-        Receive an instruction for a function to be applied on a torch
-        tensor, which can be a "real" tensor or just a wrapper at the
-        top of a chain (ex: wrapper>LoggingTensor>Torch tensor).
-        If this is not a wrapper layer, run the native torch command.
-        If this is a wrapper layer, just forward the instruction to the
-        next layer type in the chain (in the example above to LoggingTensor.
-        handle_method_command), get the response and replace a wrapper
-        on top of all tensors found in the response.
+        Operates as a router for functions. A function call always starts
+        by being handled here and 3 scenarii must be considered:
+
+        Real Torch tensor:
+            The arguments of the function are real tensors so we should
+            run the native torch command
+
+        Torch wrapper:
+            The arguments are just wrappers at the top of a chain
+            (ex: wrapper>LoggingTensor>Torch tensor), so just forward
+            the instruction to the next layer type in the chain (in
+            the example above to LoggingTensor.handle_func_command),
+            get the response and replace a wrapper on top of all tensors
+            found in the response.
+
+        Syft Tensor:
+            The arguments are syft tensors of same type: this can happen
+            if at any node of the chain where some function is forwarded,
+            the handle_func_command modify the function and make a new
+            call but keeps the arguments "un-wrapped". Making a new call
+            means that by default the command is treated here in the
+            global router.
+
         :param command: instruction of a function command: (command name,
         <no self>, arguments[, kwargs])
         :return: the response of the function command
         """
-        # TODO: add kwargs
-        cmd, _, args = command
+        cmd, _, args, kwargs = command
 
         try:  # will work if tensors are wrappers
             # Replace all torch tensor with their child attribute
-            new_args, new_type = syft.frameworks.torch.hook_args.hook_function_args(cmd, args)
+            # Note that we return also args_type which helps handling case 3 in the docstring
+            new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
+                cmd, args, kwargs, return_args_type=True
+            )
+            # This handles case 3: it redirects the command to the appropriate class depending
+            # of the syft type of the arguments and returns
+            if args_type not in (torch.Tensor, torch.nn.Parameter):
+                return args_type.handle_func_command(command)
+
             # build the new command
-            new_command = (cmd, None, new_args)
+            new_command = (cmd, None, new_args, new_kwargs)
             # Send it to the appropriate class and get the response
             response = new_type.handle_func_command(new_command)
             # Put back the wrappers where needed
-            response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
+            response = syft.frameworks.torch.hook_args.hook_response(
+                cmd, response, wrap_type=args_type
+            )
         except PureTorchTensorFoundError:  # means that it's not a wrapper but a pure tensor
             # TODO: clean this line
             cmd = (
@@ -174,13 +215,13 @@ class TorchTensor(AbstractTensor):
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
             if isinstance(args, tuple):
-                response = eval(cmd)(*args)
+                response = eval(cmd)(*args, **kwargs)
             else:
-                response = eval(cmd)(args)
+                response = eval(cmd)(args, **kwargs)
 
         return response
 
-    def send(self, location):
+    def send(self, *location, inplace: bool = False):
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes
@@ -192,6 +233,7 @@ class TorchTensor(AbstractTensor):
             location: The BaseWorker object which you want to send this object
                 to. Note that this is never actually the BaseWorker but instead
                 a class which instantiates the BaseWorker abstraction.
+            inplace: if true, return the same object instance, else a new wrapper
 
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
@@ -204,49 +246,86 @@ class TorchTensor(AbstractTensor):
         # want to do so, as p2 is not GCed, you can still do `del p2`.
         # This allows to chain multiple .send().send() calls.
 
-        if hasattr(self, "child") and isinstance(self.child, PointerTensor):
-            self.child.garbage_collect_data = False
+        if len(location) == 1:
 
-        ptr = self.owner.send(self, location)
+            location = location[0]
 
-        ptr.description = self.description
-        ptr.tags = self.tags
+            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+                self.child.garbage_collect_data = False
+                if self._is_parameter():
+                    self.data.child.garbage_collect_data = False
 
-        # The last pointer should control remote GC, not the previous self.ptr
-        if hasattr(self, "ptr"):
-            if self.ptr is not None:
-                ptr_ = self.ptr()
-                if ptr_ is not None:
-                    ptr_.garbage_collect_data = False
+            ptr = self.owner.send(self, location)
 
-        # we need to cache this weak reference to the pointer so that
-        # if this method gets called multiple times we can simply re-use
-        # the same pointer which was previously created
-        self.ptr = weakref.ref(ptr)
+            ptr.description = self.description
+            ptr.tags = self.tags
 
-        if isinstance(self, syft.hook.torch.nn.Parameter):
-            self.data.set_()
-            self.data = ptr
-            output = self
+            # The last pointer should control remote GC, not the previous self.ptr
+            if hasattr(self, "ptr"):
+                if self.ptr is not None:
+                    ptr_ = self.ptr()
+                    if ptr_ is not None:
+                        ptr_.garbage_collect_data = False
 
+            # we need to cache this weak reference to the pointer so that
+            # if this method gets called multiple times we can simply re-use
+            # the same pointer which was previously created
+            self.ptr = weakref.ref(ptr)
+
+            if self._is_parameter():
+                if inplace:
+                    self.data.set_()
+                    self.data = ptr
+                    output = self
+                else:
+                    wrapper = torch.Tensor()
+                    param_wrapper = torch.nn.Parameter(wrapper)
+                    param_wrapper.data.set_()
+                    param_wrapper.data = ptr
+                    output = param_wrapper
+            else:
+                if inplace:
+                    self.set_()
+                    self.child = ptr
+                    return self
+                else:
+                    output = ptr.wrap()
+
+            if self.requires_grad:
+
+                grad = output.attr("grad")
+
+                output.grad = grad
+
+                # Because of the way PyTorch works, .grad is prone to
+                # create entirely new Python objects for the tensor, which
+                # inadvertently deletes our custom attributes (like .child)
+                # But, if we keep a backup reference around, PyTorch seems
+                # to re-use it, which means .grad keeps the attributes we
+                # want it to keep. #HackAlert
+                output.backup_grad = grad
         else:
-            output = ptr.wrap()
 
-        if self.requires_grad:
+            children = list()
+            for loc in location:
+                children.append(self.clone().send(loc))
 
-            grad = output.attr("grad")
-
-            output.grad = grad
-
-            # Because of the way PyTorch works, .grad is prone to
-            # create entirely new Python objects for the tensor, which
-            # inadvertently deletes our custom attributes (like .child)
-            # But, if we keep a backup reference around, PyTorch seems
-            # to re-use it, which means .grad keeps the attributes we
-            # want it to keep. #HackAlert
-            output.backup_grad = grad
+            output = syft.frameworks.torch.tensors.interpreters.MultiPointerTensor(
+                children=children
+            ).wrap()
 
         return output
+
+    def send_(self, *location):
+        """
+        Calls send() with inplace option, but only with a single location
+        :param location: workers locations
+        :return:
+        """
+        if len(location) > 1:
+            raise NotImplementedError("Inplace send to several workers is currently not reported.")
+
+        return self.send(*location, inplace=True)
 
     def create_pointer(
         self,
@@ -334,7 +413,6 @@ class TorchTensor(AbstractTensor):
                 parent=self,
                 location=location,
                 id_at_location=id_at_location,
-                register=register,
                 owner=owner,
                 id=ptr_id,
                 garbage_collect_data=garbage_collect_data,
@@ -350,11 +428,26 @@ class TorchTensor(AbstractTensor):
 
         child_id = self.child.id
         tensor = self.child.get()
-        del self.owner._objects[tensor.id]
         self.owner._objects[child_id] = tensor
 
-    def get(self, deregister_ptr: bool = True):
+    def remote_get(self):
+        """Assuming .child is a PointerTensor, this method calls .get() on the tensor
+        that the .child is pointing to (which should also be a PointerTensor)
+
+        TODO: make this kind of message forwarding generic?
+        """
+
+        location = self.child.location
+        self.owner.send_command(message=("mid_get", self.child, (), {}), recipient=location)
+
+        return self
+
+    def get(self, *args, inplace: bool = False, **kwargs):
         """Requests the tensor/chain being pointed to, be serialized and return
+            args:
+                args: args to forward to worker
+                inplace: if true, return the same object instance, else a new wrapper
+                kwargs: kwargs to forward to worker
         """
         # Transfer the get() to the child attribute which is a pointer
 
@@ -366,7 +459,7 @@ class TorchTensor(AbstractTensor):
         #                     self.child.child =  self.child.child.get()
         #                     return self
 
-        tensor = self.child.get()
+        tensor = self.child.get(*args, **kwargs)
 
         # Clean the wrapper
         delattr(self, "child")
@@ -379,15 +472,30 @@ class TorchTensor(AbstractTensor):
         # optimizer to lose track of where the actual weights
         # are.
         if isinstance(self, torch.nn.Parameter):
-            self.data = tensor.data
-            self.grad = tensor.grad
-            return self
+            if inplace:
+                self.data = tensor.data
+                self.grad = tensor.grad
+                return self
+            else:
+                return tensor
 
-        return tensor
+        if inplace:
+            self.set_(tensor)
+            if hasattr(tensor, "child"):
+                self.child = tensor.child
+            return self
+        else:
+            return tensor
+
+    def get_(self, *args, **kwargs):
+        """
+        Calls get() with inplace option set to True
+        """
+        return self.get(*args, inplace=True, **kwargs)
 
     def move(self, location):
         ptr = self.send(location)
-        self.owner.send_command(message=("mid_get", ptr, ()), recipient=location)
+        ptr.remote_get()
         self.child.location = location
         self.child.id_at_location = ptr.child.id_at_location
         # don't want it to accidentally delete the remote object
@@ -411,15 +519,39 @@ class TorchTensor(AbstractTensor):
     def float_prec(self):
         return self.child.float_precision()
 
-    def fix_prec(self):
+    float_precision = float_prec
+
+    def float_prec_(self):
+        tensor = self.float_prec()
+        if hasattr(tensor, "child"):
+            self.child = tensor.child
+        elif self._is_parameter():
+            self.data = tensor
+        else:
+            del self.child
+            self.set_(tensor)
+        return self
+
+    float_precision_ = float_prec_
+
+    def fix_prec(self, *args, **kwargs):
         return (
-            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor()
+            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor(*args, **kwargs)
             .on(self)
             .enc_fix_prec()
             .wrap()
         )
 
-    def share(self, *owners):
+    fix_precision = fix_prec
+
+    def fix_prec_(self, *args, **kwargs):
+        tensor = self.fix_prec(*args, **kwargs)
+        self.child = tensor.child
+        return self
+
+    fix_precision_ = fix_prec_
+
+    def share(self, *owners, field=None, crypto_provider=None):
         """This is a passthrough method which calls .share on the child.
 
         Args:
@@ -427,12 +559,29 @@ class TorchTensor(AbstractTensor):
         """
 
         if self.has_child():
-            self.child = self.child.share(*owners)
+            self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
             return self
 
         return (
-            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor()
+            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
+                field=field, crypto_provider=crypto_provider, owner=self.owner
+            )
             .on(self)
             .child.init_shares(*owners)
             .wrap()
         )
+
+    def combine(self, *pointers):
+        """This method will combine the child pointer with another list of pointers
+
+        Args:
+            *pointers a list of pointers to be combined into a MultiPointerTensor
+
+            """
+
+        assert isinstance(self.child, PointerTensor)
+
+        ps = list(pointers)
+        ps.append(self)
+
+        return sy.combine_pointers(*ps)

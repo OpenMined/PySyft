@@ -1,6 +1,7 @@
 import random
 
 import torch
+import torch as th
 import syft
 
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
@@ -57,6 +58,23 @@ def test_send_get(workers):
     assert (torch.Tensor([1, 2]) == x_back).all()
 
 
+def test_inplace_send_get(workers):
+    tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
+    tensor_ptr = tensor.send_(workers["bob"])
+
+    assert tensor_ptr.id == tensor.id
+    assert id(tensor_ptr) == id(tensor)
+
+    tensor_back = tensor_ptr.get_()
+
+    assert tensor_back.id == tensor_ptr.id
+    assert tensor_back.id == tensor.id
+    assert id(tensor_back) == id(tensor)
+    assert id(tensor_back) == id(tensor)
+
+    assert (tensor_back == tensor).all()
+
+
 def test_repeated_send(workers):
     """Tests that repeated calls to .send(bob) works gracefully.
     Previously garbage collection deleted the remote object
@@ -96,9 +114,9 @@ def test_remote_autograd(workers):
     y.backward()
 
     # check that remote gradient is correct
-    xgrad = workers["bob"]._objects[x.id_at_location].grad
-    xgrad_target = torch.ones(4).float() + 1
-    assert (xgrad == xgrad_target).all()
+    x_grad = workers["bob"]._objects[x.id_at_location].grad
+    x_grad_target = torch.ones(4).float() + 1
+    assert (x_grad == x_grad_target).all()
 
     # TEST: Ensure remote grad calculation gets properly serded
 
@@ -199,3 +217,76 @@ def test_move(workers):
 
     assert x.id_at_location not in workers["bob"]._objects
     assert x.id_at_location in workers["alice"]._objects
+
+    x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(workers["bob"])
+
+    assert x.id_at_location in workers["bob"]._objects
+    assert x.id_at_location not in workers["alice"]._objects
+
+    x.move(workers["alice"])
+
+    assert x.id_at_location not in workers["bob"]._objects
+    assert x.id_at_location in workers["alice"]._objects
+
+
+def test_combine_pointers(workers):
+    """
+    Ensure that the sy.combine_pointers works as expected
+    """
+
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    y = th.tensor([1, 2, 3, 4, 5]).send(alice)
+
+    a = x.combine(y)
+    b = a + a
+
+    c = b.get(sum_results=True)
+    assert (c == th.tensor([4, 8, 12, 16, 20])).all()
+
+    b = a + a
+    c = b.get(sum_results=False)
+    assert len(c) == 2
+    assert (c[0] == th.tensor([2, 4, 6, 8, 10])).all
+
+
+def test_remote_to_cpu_device(workers):
+    """Ensure remote .to cpu works"""
+    device = torch.device("cpu")
+    bob = workers["bob"]
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    x.to(device)
+
+
+def test_get_remote_shape(workers):
+    """Test pointer.shape functionality"""
+    bob = workers["bob"]
+    # tensor directly sent: shape stored at sending
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    assert x.shape == torch.Size([5])
+    # result of an operation: need to make a call to the remote worker
+    y = x + x
+    assert y.shape == torch.Size([5])
+
+
+def test_remote_function_with_multi_ouput(workers):
+    """
+    Functions like .split return several tensors, registration and response
+    must be made carefully in this case
+    """
+    bob = workers["bob"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+    r_ptr = torch.split(ptr, 2)
+    assert (r_ptr[0].get() == torch.tensor([1, 2.0])).all()
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+    max_value, argmax_idx = torch.max(ptr, 0)
+
+    assert max_value.get().item() == 4.0
+    assert argmax_idx.get().item() == 3

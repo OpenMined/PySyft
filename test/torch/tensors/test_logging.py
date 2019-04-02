@@ -93,6 +93,20 @@ def test_send_get_log_chain(workers):
     assert (x_back.child.child == x_tensor).all()
 
 
+def test_inplace_send_get_log_chain(workers):
+    """
+    Test sending and getting back a chain including a logtensor
+    """
+
+    # Build a long chain tensor Wrapper>LoggingTensor>TorchTensor
+    x_tensor = torch.Tensor([1, 2, 3])
+    x = LoggingTensor().on(x_tensor)
+    x_ptr = x.send_(workers["bob"])
+    x_back = x_ptr.get_()
+
+    assert (x_back.child.child == x_tensor).all()
+
+
 def test_remote_method_on_log_chain(workers):
     """
     Test remote method call on a chain including a log tensor

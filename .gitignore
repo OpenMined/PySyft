@@ -3,6 +3,7 @@ build/
 _build/
 dist/
 .cache/
+.coverage
 .eggs/
 .idea/
 .python-version

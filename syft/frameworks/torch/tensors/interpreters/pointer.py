@@ -3,6 +3,13 @@ import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.codes import MSGTYPE
 from syft.exceptions import RemoteTensorFoundError, CannotRequestTensorAttribute
+from typing import List
+from typing import Union
+from typing import TYPE_CHECKING
+
+# this if statement avoids circular imports between base.py and pointer.py
+if TYPE_CHECKING:
+    from syft.workers import BaseWorker
 
 
 class PointerTensor(AbstractTensor):
@@ -38,17 +45,17 @@ class PointerTensor(AbstractTensor):
     def __init__(
         self,
         parent: AbstractTensor = None,
-        location=None,
-        id_at_location=None,
-        register=False,
-        owner=None,
-        id=None,
-        garbage_collect_data=True,
-        shape=None,
-        point_to_attr=None,
-        tags=None,
-        description=None,
+        location: "BaseWorker" = None,
+        id_at_location: Union[str, int] = None,
+        owner: "BaseWorker" = None,
+        id: Union[str, int] = None,
+        garbage_collect_data: bool = True,
+        shape: torch.Size = None,
+        point_to_attr: str = None,
+        tags: List[str] = None,
+        description: str = None,
     ):
+
         """Initializes a PointerTensor.
 
         Args:
@@ -62,8 +69,6 @@ class PointerTensor(AbstractTensor):
                 on which this pointer's object can be found.
             id_at_location: An optional string or integer id of the tensor
                 being pointed to.
-            register: An optional boolean parameter to determine whether to
-                automatically register the new pointer that gets created.
             owner: An optional BaseWorker object to specify the worker on which
                 the pointer is located. It is also where the pointer is
                 registered if register is set to True. Note that this is
@@ -79,14 +84,12 @@ class PointerTensor(AbstractTensor):
                 to None, which meants don't point to any attr, just point to the
                 tensor corresponding to the id_at_location.
         """
-        super().__init__(tags, description)
+        super().__init__(id=id, owner=owner, tags=tags, description=description, parent=parent)
 
         self.location = location
         self.id_at_location = id_at_location
-        self.owner = owner
-        self.id = id
         self.garbage_collect_data = garbage_collect_data
-        self.shape = shape
+        self._shape = shape
         self.point_to_attr = point_to_attr
 
     @classmethod
@@ -116,8 +119,8 @@ class PointerTensor(AbstractTensor):
         with the raising error RemoteTensorFoundError
         """
         try:
-            cmd, _, args = command
-            _ = syft.frameworks.torch.hook_args.hook_function_args(cmd, args)
+            cmd, _, args, kwargs = command
+            _ = syft.frameworks.torch.hook_args.hook_function_args(cmd, args, kwargs)
         except RemoteTensorFoundError as err:
             pointer = err.pointer
             return pointer
@@ -133,14 +136,21 @@ class PointerTensor(AbstractTensor):
         """
 
         type_name = type(self).__name__
-        out = f"[" f"{type_name} - " f"{str(self.id_at_location)}@{self.location.id}" f"]"
+        out = (
+            f"["
+            f"{type_name} | "
+            f"{str(self.owner.id)}:{self.id}"
+            " -> "
+            f"{str(self.location.id)}:{self.id_at_location}"
+            f"]"
+        )
 
         if self.point_to_attr is not None:
             out += "::" + str(self.point_to_attr).replace(".", "::")
 
         big_str = False
 
-        if self.tags is not None:
+        if self.tags is not None and len(self.tags):
             big_str = True
             out += "\n\tTags: "
             for tag in self.tags:
@@ -247,20 +257,32 @@ class PointerTensor(AbstractTensor):
     def grad(self):
         if not hasattr(self, "_grad"):
             self._grad = self.attr("grad")
+
+        if self._grad.child.is_none():
+            return None
+
         return self._grad
 
     @grad.setter
     def grad(self, new_grad):
         self._grad = new_grad
 
+    @property
+    def data(self):
+        if not hasattr(self, "_data"):
+            self._data = self.attr("data")
+        return self._data
+
+    @data.setter
+    def data(self, new_data):
+        self._data = new_data
+
+    def is_none(self):
+        return self.owner.request_is_remote_tensor_none(self)
+
     def get_shape(self):
-
-        results = self.location.search(str(self.id_at_location))
-
-        if len(results) > 0:
-            return results[0].shape
-        else:
-            print("couldn't find shape... are you sure this tensor exists?")
+        """Request information about the shape to the remote worker"""
+        return self.owner.request_remote_tensor_shape(self)
 
     @property
     def shape(self):
@@ -280,13 +302,17 @@ class PointerTensor(AbstractTensor):
         self._shape = new_shape
 
     def attr(self, attr_name):
+        if self.point_to_attr is not None:
+            point_to_attr = "{}.{}".format(self.point_to_attr, attr_name)
+        else:
+            point_to_attr = attr_name
 
         attr_ptr = syft.PointerTensor(
             id=self.id,
             owner=self.owner,
             location=self.location,
             id_at_location=self.id_at_location,
-            point_to_attr=attr_name,
+            point_to_attr=point_to_attr,
         ).wrap()
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr

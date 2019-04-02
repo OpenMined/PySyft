@@ -4,11 +4,14 @@ class MSGTYPE(object):
     OBJ_REQ = 3
     OBJ_DEL = 4
     EXCEPTION = 5
+    IS_NONE = 6
+    GET_SHAPE = 7
+    SEARCH = 8
 
 
+# Build automatically the reverse map from codes to msg types
 code2MSGTYPE = {}
-code2MSGTYPE[1] = "CMD"
-code2MSGTYPE[2] = "OBJ"
-code2MSGTYPE[3] = "OBJ_REQ"
-code2MSGTYPE[4] = "OBJ_DEL"
-code2MSGTYPE[5] = "EXCEPTION"
+for code in dir(MSGTYPE):
+    if "__" not in code:
+        key = getattr(MSGTYPE, code)
+        code2MSGTYPE[key] = code
