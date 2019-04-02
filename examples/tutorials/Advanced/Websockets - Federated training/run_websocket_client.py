@@ -5,6 +5,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 import logging
 import argparse
+import sys
 
 import syft as sy
 from syft.workers import WebsocketClientWorker
@@ -163,8 +164,7 @@ def test(model, device, test_loader):
     )
 
 
-def main():
-
+def define_and_get_arguments(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(
         description="Run federated learning using websocket client workers."
     )
@@ -193,7 +193,12 @@ def main():
         "--use_virtual", action="store_true", help="if set, virtual workers will be used"
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args=args)
+    return args
+
+
+def main():
+    args = define_and_get_arguments()
 
     hook = sy.TorchHook(torch)
 
