@@ -1,6 +1,7 @@
 import pytest
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 
@@ -73,17 +74,7 @@ def test_methods_for_linear_module(method, parameter):
     assert (result == fp_result.float_precision()).all()
 
 
-def test_addmm():
-    weight = nn.Parameter(torch.tensor([[1.0, 2], [4.0, 2]])).fix_precision()
-    inputs = nn.Parameter(torch.tensor([[1.0, 2]])).fix_precision()
-    bias = nn.Parameter(torch.tensor([1.0, 2])).fix_precision()
-
-    fp_result = torch.addmm(bias, inputs, weight)
-
-    assert (fp_result.float_precision() == torch.tensor([[10.0, 8.0]])).all()
-
-
-def test_add_func():
+def test_torch_add():
 
     x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
 
@@ -93,6 +84,50 @@ def test_add_func():
     y = y.float_prec()
 
     assert (y == torch.tensor([0.2, 0.4, 0.6])).all()
+
+
+def test_torch_mul():
+
+    x = torch.tensor([2.113]).fix_prec(precision_fractional=2)
+
+    y = torch.mul(x, x)
+
+    assert y.child.child == torch.LongTensor([445])
+    assert y.child.precision_fractional == 2
+
+    y = y.float_prec()
+
+    assert y == torch.tensor([4.45])
+
+
+def test_torch_addmm():
+    weight = nn.Parameter(torch.tensor([[1.0, 2], [4.0, 2]])).fix_precision()
+    inputs = nn.Parameter(torch.tensor([[1.0, 2]])).fix_precision()
+    bias = nn.Parameter(torch.tensor([1.0, 2])).fix_precision()
+
+    fp_result = torch.addmm(bias, inputs, weight)
+
+    assert (fp_result.float_precision() == torch.tensor([[10.0, 8.0]])).all()
+
+
+def test_torch_nn_functional_linear():
+    tensor = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec()
+    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec()
+
+    result = F.linear(tensor, weight).float_prec()
+
+    expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
+
+    assert (result == expected).all()
+
+    tensor = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec(precision_fractional=2)
+    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec(precision_fractional=2)
+
+    result = F.linear(tensor, weight).float_prec()
+
+    expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
+
+    assert (result == expected).all()
 
 
 def test_fixed_precision_and_sharing(workers):

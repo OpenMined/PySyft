@@ -110,7 +110,7 @@ class TorchTensor(AbstractTensor):
 
             big_repr = False
 
-            if self.tags is not None:
+            if self.tags is not None and len(self.tags):
                 big_repr = True
                 out += "\n\tTags: "
                 for tag in self.tags:
@@ -124,6 +124,9 @@ class TorchTensor(AbstractTensor):
                 out += "\n\tShape: " + str(self.shape)
 
             return out
+
+    def __eq__(self, other):
+        return self.eq(other)
 
     @property
     def id(self):
@@ -425,7 +428,6 @@ class TorchTensor(AbstractTensor):
 
         child_id = self.child.id
         tensor = self.child.get()
-        del self.owner._objects[tensor.id]
         self.owner._objects[child_id] = tensor
 
     def remote_get(self):
@@ -562,7 +564,7 @@ class TorchTensor(AbstractTensor):
 
         return (
             syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
-                field=field, crypto_provider=crypto_provider
+                field=field, crypto_provider=crypto_provider, owner=self.owner
             )
             .on(self)
             .child.init_shares(*owners)
