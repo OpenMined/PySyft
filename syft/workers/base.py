@@ -427,8 +427,13 @@ class BaseWorker(AbstractWorker):
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
-        if hasattr(obj, "child") and isinstance(obj.child, PointerTensor):
-            obj.child.garbage_collect_data = False
+        if hasattr(obj, "child"):
+            if isinstance(obj.child, PointerTensor):
+                obj.child.garbage_collect_data = False
+            if isinstance(obj.child, (sy.AdditiveSharingTensor, sy.MultiPointerTensor)):
+                shares = obj.child.child
+                for worker, share in shares.items():
+                    share.child.garbage_collect_data = False
 
         return obj
 
@@ -781,6 +786,9 @@ class BaseWorker(AbstractWorker):
             a_size: tuple which is the size that a should be
             b_size: tuple which is the size that b should be
             locations: a list of workers where the triple should be shared between
+
+        return:
+            a triple of AdditiveSharedTensor
         """
         a = self.torch.randint(field, a_size)
         b = self.torch.randint(field, b_size)

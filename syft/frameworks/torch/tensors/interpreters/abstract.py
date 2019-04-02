@@ -39,7 +39,10 @@ class AbstractTensor(ABC):
                 defined here
         """
         self.owner = owner
-        self.id = id
+        if id is None:
+            self.id = int(10e10 * random.random())
+        else:
+            self.id = id
         self.tags = tags
         self.description = description
         self.child = child
@@ -111,7 +114,8 @@ class AbstractTensor(ABC):
         wrapper = torch.Tensor()
         wrapper.child = self
         wrapper.is_wrapper = True
-        # wrapper.child.parent = weakref.ref(wrapper)
+        if self.id is None:
+            self.id = int(10e10 * random.random())
         return wrapper
 
     def serialize(self):  # check serde.py to see how to provide compression schemes
@@ -177,7 +181,7 @@ class AbstractTensor(ABC):
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = rgetattr(cls, cmd)
+            cmd = cls.rgetattr(cls, cmd)
             return cmd(*args, **kwargs)
         except AttributeError:
             pass
@@ -202,29 +206,29 @@ class AbstractTensor(ABC):
 
         return response
 
+    @classmethod
+    def rgetattr(cls, obj, attr, *args):
+        """
+        Get an attribute recursively
 
-def rgetattr(obj, attr, *args):
-    """
-    Get an attribute recursively
+        Args:
+            obj: the object holding the attribute
+            attr: nested attribute
+            args: optional arguments to provide
 
-    Args:
-        obj: the object holding the attribute
-        attr: nested attribute
-        args: optional arguments to provide
+        Returns:
+            the attribute obj.attr
 
-    Returns:
-        the attribute obj.attr
+        Example:
+            >>> rgetattr(obj, 'attr1.attr2.attr3')
+            [Out] obj.attr1.attr2.attr3
 
-    Example:
-        >>> rgetattr(obj, 'attr1.attr2.attr3')
-        [Out] obj.attr1.attr2.attr3
+        """
 
-    """
+        def _getattr(obj, attr):
+            return getattr(obj, attr, *args)
 
-    def _getattr(obj, attr):
-        return getattr(obj, attr, *args)
-
-    return functools.reduce(_getattr, [obj] + attr.split("."))
+        return functools.reduce(_getattr, [obj] + attr.split("."))
 
 
 def initialize_tensor(

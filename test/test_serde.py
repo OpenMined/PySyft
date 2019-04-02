@@ -574,3 +574,22 @@ def test_numpy_tensor_serde():
     syft.serde._deserialize_tensor = syft.serde.torch_tensor_deserializer
 
     assert torch.eq(tensor_deserialized, tensor).all()
+
+
+@pytest.mark.parametrize("compress", [True, False])
+def test_additive_sharing_tensor_serde(compress, workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    additive_sharing_tensor = x.child.child.child
+    data = syft.serde._simplify_additive_shared_tensor(additive_sharing_tensor)
+    additive_sharing_tensor_reconstructed = syft.serde._detail_additive_shared_tensor(
+        syft.hook.local_worker, data
+    )
+
+    assert additive_sharing_tensor_reconstructed.field == additive_sharing_tensor.field
+
+    assert (
+        additive_sharing_tensor_reconstructed.child.keys() == additive_sharing_tensor.child.keys()
+    )
