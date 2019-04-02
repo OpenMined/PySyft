@@ -52,6 +52,11 @@ We are very grateful for contributions to PySyft from the following organization
 
  [coMind Website](https://comind.org/) & [coMind Github](https://github.com/coMindOrg/federated-averaging-tutorials)
 
+
+<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/>
+
+  [Udacity Website](https://udacity.com/)
+
 ## Disclaimer
 
 Do NOT use this code to protect data (private or otherwise) - at present it is very insecure.
