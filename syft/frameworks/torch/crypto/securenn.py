@@ -5,7 +5,7 @@ https://eprint.iacr.org/2018/442.pdf
 
 import torch
 
-import syft
+import syft as sy
 
 # Q field
 Q_BITS = 31
@@ -162,15 +162,15 @@ def msb(a_sh, alice, bob):
     r_0 = decompose(r)[..., -1].send(bob, alice).child
     r = r.send(bob, alice).child
 
-    assert isinstance(r, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
+    assert isinstance(r, sy.MultiPointerTensor)
 
     j0 = torch.zeros(x_bit_sh.shape).long().send(bob)
     j1 = torch.ones(x_bit_sh.shape).long().send(alice)
-    j = syft.MultiPointerTensor(children=[j0, j1])
+    j = sy.MultiPointerTensor(children=[j0, j1])
     j_0 = j[..., -1]
 
-    assert isinstance(j, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
-    assert isinstance(j_0, syft.frameworks.torch.tensors.interpreters.MultiPointerTensor)
+    assert isinstance(j, sy.MultiPointerTensor)
+    assert isinstance(j_0, sy.MultiPointerTensor)
 
     # 4)
     BETA = (torch.rand(a_sh.shape) > 0.5).long().send(bob, alice).child
@@ -203,9 +203,9 @@ def msb(a_sh, alice, bob):
 
 
 def relu_deriv(a_sh):
-    assert isinstance(a_sh, syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor)
+    assert isinstance(a_sh, sy.AdditiveSharingTensor)
 
-    workers = [syft.hook.local_worker.get_worker(w_name) for w_name in list(a_sh.child.keys())]
+    workers = [sy.hook.local_worker.get_worker(w_name) for w_name in list(a_sh.child.keys())]
     return msb(a_sh, *workers)
 
 

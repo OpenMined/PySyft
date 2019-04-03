@@ -781,19 +781,19 @@ class BaseWorker(AbstractWorker):
         """Generates a multiplication triple and sends it to all locations
 
         Args:
-            equation: string representation of the equation in einsum notation
+            cmd: equation in einsum notation
             field: integer representing the field size
             a_size: tuple which is the size that a should be
             b_size: tuple which is the size that b should be
             locations: a list of workers where the triple should be shared between
 
         return:
-            a triple of AdditiveSharedTensor
+            a triple of AdditiveSharedTensors such that c_shared = cmd(a_shared, b_shared)
         """
         a = self.torch.randint(field, a_size)
         b = self.torch.randint(field, b_size)
         c = cmd(a, b)
-        a_shared = a.share(*locations, field=field).child
-        b_shared = b.share(*locations, field=field).child
-        c_shared = c.share(*locations, field=field).child
-        return (a_shared, b_shared, c_shared)
+        a_shared = a.share(*locations, field=field, crypto_provider=self).child
+        b_shared = b.share(*locations, field=field, crypto_provider=self).child
+        c_shared = c.share(*locations, field=field, crypto_provider=self).child
+        return a_shared, b_shared, c_shared
