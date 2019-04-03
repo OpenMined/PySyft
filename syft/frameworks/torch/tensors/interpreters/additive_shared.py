@@ -26,11 +26,19 @@ class AdditiveSharingTensor(AbstractTensor):
         functions.
 
         Args:
+
+            shares: Optional dictionary with the shares already split
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the LoggingTensor.
-            Q_BITS: the amount of memory for each number  (the exponent)
-            BASE: the amount of memory for each number (the base)
+            field: size of the arithmetic field in which the shares live
+            n_bits: linked to the field with the relation (2 ** nbits) == field
+            crypto_provider: an optional BaseWorker providing crypto elements
+                such as Beaver triples
+            tags: an optional set of hashtags corresponding to this tensor
+                which this tensor should be searchable for
+            description: an optional string describing the purpose of the
+                tensor
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
@@ -54,9 +62,9 @@ class AdditiveSharingTensor(AbstractTensor):
         return out
 
     @property
-    def location(self):
-        """Provide a location attribute"""
-        return [s.owner for s in self.child.values()]
+    def locations(self):
+        """Provide a locations attribute"""
+        return [s.location for s in self.child.values()]
 
     @property
     def shape(self):
@@ -85,7 +93,8 @@ class AdditiveSharingTensor(AbstractTensor):
         return sum(shares)
 
     def virtual_get(self):
-        """Get the value of the tensor without calling get - Only for VirtualWorkers"""
+        """Get the value of the tensor without calling get
+         - Useful for debugging, only for VirtualWorkers"""
 
         shares = list()
 
@@ -114,20 +123,6 @@ class AdditiveSharingTensor(AbstractTensor):
             shares_dict[shares[i].location.id] = shares[i]
 
         self.child = shares_dict
-        return self
-
-    def set_shares(self, shares):
-        """A setter for the shares value. This is used primarily at the end of function calls.
-        (see add()  below for an example).
-
-        Args:
-            shares: a dict of shares. Each key is the id of a worker on which the share exists. Each value
-                is the PointerTensor corresponding to a share.
-            """
-        assert isinstance(
-            shares, dict
-        ), "Share should be provided as a dict {'worker.id': pointer, ...}"
-        self.child = shares
         return self
 
     @staticmethod
@@ -164,9 +159,19 @@ class AdditiveSharingTensor(AbstractTensor):
         return shares
 
     @overloaded.overload_method
-    def _getitem_multipointer(self, _self_shares, indices_shares):
+    def _getitem_multipointer(self, self_shares, indices_shares):
+        """
+        Support x[i] where x is an AdditiveSharingTensor and i a MultiPointerTensor
+        
+        Args:
+            self_shares (dict): the dict of shares of x
+            indices_shares (dict): the dict of shares of i
+        
+        Returns:
+            an AdditiveSharingTensor
+        """
         selected_shares = {}
-        for worker, share in _self_shares.items():
+        for worker, share in self_shares.items():
             indices = []
             for index in indices_shares:
                 if isinstance(index, slice):
@@ -195,7 +200,7 @@ class AdditiveSharingTensor(AbstractTensor):
     ## SECTION SPDZ
 
     @overloaded.method
-    def add(self, shares: dict, other_shares, *args, **kwargs):
+    def add(self, shares: dict, other_shares):
         """Adds two tensors together
 
         Args:
@@ -225,7 +230,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return self.add(other, **kwargs)
 
     @overloaded.method
-    def sub(self, shares: dict, other_shares, **kwargs):
+    def sub(self, shares: dict, other_shares):
         """Subtracts an other tensor from self.
 
         Args:
@@ -253,76 +258,88 @@ class AdditiveSharingTensor(AbstractTensor):
         """Subtracts two tensors. Forwards command to sub. See .sub() for details."""
         return self.sub(*args, **kwargs)
 
-    def _abstract_mul(self, equation: str, shares: dict, other_shares, **kwargs):
+    def _private_mul(self, other, equation: str):
         """Abstractly Multiplies two tensors
 
         Args:
-            equation: a string reprsentation of the equation to be computed in einstein
+            self: an AdditiveSharingTensor
+            other: another AdditiveSharingTensor
+            equation: a string representation of the equation to be computed in einstein
                 summation form
-            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
-                self. Equivalent to calling self.child.
-            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
-                to the tensor being multiplied by self.
         """
         # check to see that operation is either mul or matmul
         assert equation == "mul" or equation == "matmul"
         cmd = getattr(torch, equation)
 
-        # if someone passes in a constant... (i.e., x + 3)
-        # TODO: Handle public mul more efficiently
-        if not isinstance(other_shares, dict):
-            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
+        assert isinstance(other, AdditiveSharingTensor)
 
-        assert len(shares) == len(other_shares)
+        assert len(self.child) == len(other.child)
 
         if self.crypto_provider is None:
-            raise AttributeError("For multiplication a crytoprovider must be passed.")
+            raise AttributeError("For multiplication a cryto_provider must be passed.")
 
-        shares = spdz.spdz_mul(cmd, shares, other_shares, self.crypto_provider, self.field)
+        shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field)
 
         return shares
 
     @overloaded.method
-    def mul(self, shares: dict, other_shares, *args, **kwargs):
-        """Multiplies two tensors together
-        For details see abstract_mul
+    def _public_mul(self, shares, other, equation):
+        """Multiplies an AdditiveSharingTensor with a non-private value
+        (int, MultiPointerTensor, etc.)
 
         Args:
-            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
+            shares (dict): a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
-            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
-                to the tensor being multiplied by self.
+            other (dict of int): a dictionary <location_id -> PointerTensor) of shares corresponding
+                to the tensor being multiplied with self or an integer
+            equation: a string representation of the equation to be computed in einstein
+                summation form
         """
+        assert equation == "mul" or equation == "matmul"
+        cmd = getattr(torch, equation)
 
-        return self._abstract_mul("mul", shares, other_shares, **kwargs)
+        if isinstance(other, dict):
+            return {worker: cmd(share, other[worker]) for worker, share in shares.items()}
+        else:
+            return {worker: cmd(share, other) for worker, share in shares.items()}
+
+    def mul(self, other):
+        """Multiplies two tensors together
+
+        Args:
+            self (AdditiveSharingTensor): an AdditiveSharingTensor
+            other: another AdditiveSharingTensor, or a MultiPointerTensor, or an integer
+        """
+        if not isinstance(other, sy.AdditiveSharingTensor):
+            return self._public_mul(other, "mul")
+
+        return self._private_mul(other, "mul")
 
     def __mul__(self, other, **kwargs):
         """Multiplies two number for details see mul
         """
-        if isinstance(other, sy.MultiPointerTensor):
-            return self.mul(other, **kwargs) / len(other.child.keys())
         return self.mul(other, **kwargs)
 
-    @overloaded.method
-    def matmul(self, shares: dict, other_shares, **kwargs):
-        """Multiplies two tensors together
-        For details see abstract_mul
+    def matmul(self, other):
+        """Multiplies two tensors matrices together
 
         Args:
-            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
-                self. Equivalent to calling self.child.
-            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
-                to the tensor being multiplied by self.
+            self: an AdditiveSharingTensor
+            other: another AdditiveSharingTensor or a MultiPointerTensor
         """
-        return self._abstract_mul("matmul", shares, other_shares, **kwargs)
+        # If the multiplication can be public
+        if not isinstance(other, sy.AdditiveSharingTensor):
+            return self._public_mul(other, "matmul")
+
+        return self._private_mul(other, "matmul")
 
     def mm(self, *args, **kwargs):
-        """Multiplies two number for details see mul
+        """Multiplies two tensors matrices together
         """
         return self.matmul(*args, **kwargs)
 
     def __matmul__(self, *args, **kwargs):
-        """Multiplies two number for details see mul
+        """Multiplies two tensors matrices together
         """
         return self.matmul(*args, **kwargs)
 
@@ -353,6 +370,21 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def __mod__(self, *args, **kwargs):
         return self.mod(*args, **kwargs)
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        def mul(self, other):
+            """Overload torch.mul(x, y) to redirect to x.mul(y)"""
+            return self.mul(other)
+
+        module.mul = mul
+
+        def matmul(self, other):
+            """Overload torch.matmul(x, y) to redirect to x.matmul(y)"""
+            return self.matmul(other)
+
+        module.matmul = matmul
 
     ## SECTION SNN
 
