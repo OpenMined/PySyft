@@ -1,6 +1,7 @@
 import pytest
 import random
 import torch
+import torch.nn as nn
 import torch as th
 import syft
 
@@ -59,32 +60,107 @@ def test_send_get(workers):
 
 
 def test_add(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # 2 workers
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice)
+
+    y = (x + x).get()
+
+    # 3 workers
+    assert (y == (t + t)).all()
 
     t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james)
+
+    y = (x + x).get()
+
+    # negative numbers
+    assert (y == (t + t)).all()
+
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james)
 
     y = (x + x).get()
 
     assert (y == (t + t)).all()
 
+    # with fixed precisions
+    t = torch.tensor([1., -2, 3])
+    x = torch.tensor([1., -2, 3]).fix_prec().share(bob, alice, james)
+
+    y = (x + x).get().float_prec()
+
+    assert (y == (t + t)).all()
+
 
 def test_sub(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
+    # 3 workers
     t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james)
 
     y = (x - x).get()
+
+    assert (y == (t - t)).all()
+
+    # negative numbers
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james)
+
+    y = (x - x).get()
+
+    assert (y == (t - t)).all()
+
+    # with fixed precision
+    t = torch.tensor([1., -2, 3])
+    x = torch.tensor([1., -2, 3]).fix_prec().share(bob, alice, james)
+
+    y = (x - x).get().float_prec()
 
     assert (y == (t - t)).all()
 
 
 def test_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # 2 workers
+    t = torch.tensor([1, 2, 3, 4])
+    x = t.share(bob, alice, crypto_provider=james)
+    y = (x * x).get()
+
+    assert (y == (t * t)).all()
+
+    # with fixed precision
     t = torch.tensor([1, 2, 3, 4.0])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     y = (x * x).get().float_prec()
 
     assert (y == (t * t)).all()
+
+    # # with non-default fixed precision
+    # t = torch.tensor([1, 2, 3, 4.0])
+    # x = t.fix_prec(precision_fractional=2).share(bob, alice, crypto_provider=james)
+    # y = (x * x).get().float_prec()
+    #
+    # assert (y == (t * t)).all()
+
+
+def test_nn_linear(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([[1., 2]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    model = nn.Linear(2, 1)
+    model.weight = nn.Parameter(torch.tensor([[-1., 2]]))
+    model.bias = nn.Parameter(torch.tensor([[-1.]]))
+    model.fix_precision().share(bob, alice, crypto_provider=james)
+
+    y = model(x)
+
+    assert y.get().float_prec() == torch.tensor([[2.]])
 
 
 def test_mul_with_no_crypto_provider(workers):
