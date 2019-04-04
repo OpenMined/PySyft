@@ -11,7 +11,7 @@ import syft as sy
 Q_BITS = 31
 
 
-def decompose(tensor):
+def decompose(tensor: torch.Tensor):
     """decompose a tensor into its binary representation."""
     n_bits = Q_BITS
     powers = torch.arange(n_bits)
@@ -25,7 +25,7 @@ def decompose(tensor):
     return tensor
 
 
-def flip(x, dim):
+def flip(x: torch.Tensor, dim: int):
     indices = torch.arange(x.shape[dim] - 1, -1, -1).long()
 
     if hasattr(x, "child") and isinstance(x.child, dict):
@@ -118,7 +118,7 @@ def private_compare(x, r, BETA, j, alice, bob, crypto_provider):
     return result_ptr.get()
 
 
-def msb(a_sh, alice, bob):
+def msb(a_sh: torch.Tensor, alice: sy.BaseWorker, bob: sy.BaseWorker):
     """
     Compute the most significant bit in a_sh
 
