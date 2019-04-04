@@ -571,6 +571,11 @@ class TorchTensor(AbstractTensor):
             .wrap()
         )
 
+    def share_(self, *args, **kwargs):
+        tensor = self.share(*args, **kwargs)
+        self.child = tensor.child
+        return self
+
     def combine(self, *pointers):
         """This method will combine the child pointer with another list of pointers
 

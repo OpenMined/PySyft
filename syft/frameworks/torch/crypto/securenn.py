@@ -199,7 +199,10 @@ def msb(a_sh, alice, bob):
     )
     a = _lambda + _delta - (2 * theta) + u
 
-    return a.view(*list(input_shape))
+    if len(input_shape):
+        return a.view(*list(input_shape))
+    else:
+        return a
 
 
 def relu_deriv(a_sh):
