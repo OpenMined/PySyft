@@ -22,6 +22,7 @@ def test_base_dataset(workers):
     dataset.get()
     with pytest.raises(AttributeError):
         assert dataset.data.location.id == 0
+    with pytest.raises(AttributeError):
         assert dataset.targets.location.id == 0
 
 
