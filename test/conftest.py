@@ -33,8 +33,15 @@ def workers(hook):
     # Define 3 virtual workers
     alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
     bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
+    charlie = syft.VirtualWorker(id="charlie", hook=hook, is_client_worker=False)
     james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
 
-    output = {"me": hook.local_worker, "alice": alice, "bob": bob, "james": james}
+    output = {
+        "me": hook.local_worker,
+        "alice": alice,
+        "bob": bob,
+        "charlie": charlie,
+        "james": james,
+    }
 
     return output

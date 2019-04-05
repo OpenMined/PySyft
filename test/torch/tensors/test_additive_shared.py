@@ -87,6 +87,20 @@ def test_mul(workers):
     assert (y == (t * t)).all()
 
 
+def test_mul_with_three_parties(workers):
+    bob, alice, charlie, james = (
+        workers["bob"],
+        workers["alice"],
+        workers["charlie"],
+        workers["james"],
+    )
+    t = torch.tensor([1, 2, 3, 4.0])
+    x = t.fix_prec().share(bob, alice, charlie, crypto_provider=james)
+    y = (x * x).get().float_prec()
+
+    assert ((y - (t * t)) <= (0.001 * torch.ones(4))).all()
+
+
 def test_mul_with_no_crypto_provider(workers):
     bob, alice = (workers["bob"], workers["alice"])
     x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice)

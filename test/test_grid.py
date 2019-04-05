@@ -40,3 +40,7 @@ def test_virtual_grid(workers):
     assert len(results["bob"]) == 1
     assert "alice" not in results
     assert len(results["james"]) == 1
+    results = grid.search("#male", return_counter=False)
+    assert len(results["bob"]) == 1
+    assert "alice" not in results
+    assert len(results["james"]) == 1

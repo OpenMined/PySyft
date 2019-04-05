@@ -106,13 +106,15 @@ class TensorsNotCollocatedException(Exception):
                 + "\nTensor B: "
                 + str(tensor_b)
             )
-        else:
+        else:  # pragma: no cover
             message = (
                 "You tried to call "
                 + attr
                 + " involving two tensors which are not on the same machine."
                 + "Try calling .send(), .move(), and/or .get() on these tensors to get them to the same"
                 + "worker before calling methods that involve them working together."
+                + "You should not have been able to get to this particular point. Please file a issue at"
+                + "https://github.com/OpenMined/PySyft/issues describing how you got this errori."
             )
 
         super().__init__(message)

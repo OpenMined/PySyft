@@ -60,7 +60,7 @@ def create_sandbox(gbs, verbose=True, download_data=True):
 
     try:
         torch = gbs["torch"]
-    except:
+    except:  # pragma: no cover
         torch = gbs["th"]
 
     global hook
