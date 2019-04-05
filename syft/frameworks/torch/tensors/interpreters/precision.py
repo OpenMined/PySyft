@@ -50,14 +50,10 @@ class FixedPrecisionTensor(AbstractTensor):
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
         return {
-            "owner": self.owner,
-            "id": self.id,
             "field": self.field,
             "base": self.base,
             "precision_fractional": self.precision_fractional,
             "kappa": self.kappa,
-            "tags": self.tags,
-            "description": self.description,
         }
 
     def fix_precision(self):
@@ -279,7 +275,13 @@ class FixedPrecisionTensor(AbstractTensor):
         """Just a pass through. This is most commonly used when calling .get() on a
         FixedPrecisionTensor which has also been shared."""
         class_attributes = self.get_class_attributes()
-        return FixedPrecisionTensor(**class_attributes).on(self.child.get())
+        return FixedPrecisionTensor(
+            **class_attributes,
+            owner=self.owner,
+            tags=self.tags,
+            description=self.description,
+            id=self.id
+        ).on(self.child.get())
 
     def share(self, *owners, field=None, crypto_provider=None):
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
