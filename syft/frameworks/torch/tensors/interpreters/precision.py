@@ -280,7 +280,7 @@ class FixedPrecisionTensor(AbstractTensor):
             owner=self.owner,
             tags=self.tags,
             description=self.description,
-            id=self.id
+            id=self.id,
         ).on(self.child.get())
 
     def share(self, *owners, field=None, crypto_provider=None):
