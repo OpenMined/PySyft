@@ -80,7 +80,6 @@ def method2plan(plan_blueprint):
 class PlanPointer(AbstractTensor):
     def __init__(
         self,
-        parent=None,
         location: "BaseWorker" = None,
         id_at_location: Union[str, int] = None,
         owner: "BaseWorker" = None,
@@ -89,7 +88,7 @@ class PlanPointer(AbstractTensor):
         description: str = None,
     ):
 
-        super().__init__(id=id, owner=owner, tags=tags, description=description, parent=parent)
+        super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         self.location = location
         self.id_at_location = id_at_location
@@ -417,7 +416,6 @@ class Plan(BaseWorker):
                 ptr_id = int(10e10 * random.random())
 
         return PlanPointer(
-            parent=self,
             id=ptr_id,
             location=location,
             id_at_location=id_at_location,
