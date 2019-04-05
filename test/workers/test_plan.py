@@ -114,10 +114,8 @@ def test_search_plan_built_locally(hook):
     search_results = device_3.search("#plan")
     assert len(search_results) == 1
 
-    found_plan_wrapper = search_results[0]
-    assert isinstance(found_plan_wrapper, th.Tensor)
-
-    found_plan = found_plan_wrapper.get()
+    found_plan = search_results[0]
+    assert isinstance(found_plan, sy.Plan)
     assert found_plan.id == plan_ptr.id
 
     # Build and execute plan locally
@@ -126,32 +124,29 @@ def test_search_plan_built_locally(hook):
 
 
 def test_search_plan_built_remotely(hook):
-    device_3 = sy.VirtualWorker(hook, id="device_3")
+    device_4 = sy.VirtualWorker(hook, id="device_4")
 
     @sy.func2plan
     def plan_mult_3(data):
         return data * 3
 
-    x_ptr = th.tensor([-1, 2, 3]).send(device_3)
+    x_ptr = th.tensor([-1, 2, 3]).send(device_4)
 
     # When you "send" a plan we don't actually send the
     # plan to the worker we just update the plan's location
-    plan_ptr = plan_mult_3.tag("#plan").send(device_3)
+    plan_ptr = plan_mult_3.tag("#plan").send(device_4)
 
-    assert len(device_3.search("#plan")) == 0
+    assert len(device_4.search("#plan")) == 0
 
     # When you execute the plan, we then send the plan to the
     # worker and build it
     _ = plan_ptr(x_ptr)
 
     # Search plan
-    search_results = device_3.search("#plan")
+    search_results = device_4.search("#plan")
     assert len(search_results) == 1
-
-    found_plan_wrapper = search_results[0]
-    assert isinstance(found_plan_wrapper, th.Tensor)
 
     # Build plan and execute it locally
     x_ptr = th.tensor([-1, 2, 3])
-    found_plan = found_plan_wrapper.get()
+    found_plan = search_results[0]
     assert (found_plan(x_ptr) == th.tensor([-3, 6, 9])).all()
