@@ -7,13 +7,11 @@ from syft.frameworks.torch.overload_torch import overloaded
 class FixedPrecisionTensor(AbstractTensor):
     def __init__(
         self,
-        parent: AbstractTensor = None,
         owner=None,
         id=None,
         field: int = (2 ** 31) - 1,
         base: int = 10,
         precision_fractional: int = 3,
-        precision_integral: int = 1,
         kappa: int = 1,
         tags: set = None,
         description: str = None,
@@ -29,19 +27,12 @@ class FixedPrecisionTensor(AbstractTensor):
         p decimals)
 
         Args:
-            parent: An optional AbstractTensor wrapper around the FixedPrecisionTensor
-                which makes it so that you can pass this FixedPrecisionTensor to all
-                the other methods/functions that PyTorch likes to use, although
-                it can also be other tensors which extend AbstractTensor, such
-                as custom tensors for Secure Multi-Party Computation or
-                Federated Learning.
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the FixedPrecisionTensor.
         """
         super().__init__(tags, description)
 
-        self.parent = parent
         self.owner = owner
         self.id = id
         self.child = None
@@ -49,7 +40,6 @@ class FixedPrecisionTensor(AbstractTensor):
         self.field = field
         self.base = base
         self.precision_fractional = precision_fractional
-        self.precision_integral = precision_integral
         self.kappa = kappa
         self.torch_max_value = torch.tensor([round(self.field / 2)])
 
@@ -59,7 +49,12 @@ class FixedPrecisionTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {"precision_fractional": self.precision_fractional}
+        return {
+            "field": self.field,
+            "base": self.base,
+            "precision_fractional": self.precision_fractional,
+            "kappa": self.kappa,
+        }
 
     def fix_precision(self):
         """This method encodes the .child object using fixed precision"""
@@ -231,21 +226,6 @@ class FixedPrecisionTensor(AbstractTensor):
         # Modules should be registered just like functions
         module.nn = nn
 
-    def get_class_attributes(self):
-        """
-        Specify all the attributes need to build a wrapper correctly when returning a response,
-        for example precision_fractional is important when wrapping the result of a method
-        on a self which is a fixed precision tensor with a non default precision_fractional.
-        """
-        return {
-            "owner": self.owner,
-            "field": self.field,
-            "base": self.base,
-            "precision_fractional": self.precision_fractional,
-            "precision_integral": self.precision_integral,
-            "kappa": self.kappa,
-        }
-
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -294,7 +274,14 @@ class FixedPrecisionTensor(AbstractTensor):
     def get(self):
         """Just a pass through. This is most commonly used when calling .get() on a
         FixedPrecisionTensor which has also been shared."""
-        return FixedPrecisionTensor().on(self.child.get())
+        class_attributes = self.get_class_attributes()
+        return FixedPrecisionTensor(
+            **class_attributes,
+            owner=self.owner,
+            tags=self.tags,
+            description=self.description,
+            id=self.id,
+        ).on(self.child.get())
 
     def share(self, *owners, field=None, crypto_provider=None):
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
