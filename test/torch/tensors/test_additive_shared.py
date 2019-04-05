@@ -148,6 +148,18 @@ def test_mul(workers):
     # assert (y == (t * t)).all()
 
 
+def test_stack(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([1.3, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    res = torch.stack([x, x]).get().float_prec()
+
+    expected = torch.tensor([[1.3000, 2.0000],
+                            [1.3000, 2.0000]])
+
+    assert (res == expected).all()
+
+
 def test_nn_linear(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
@@ -263,3 +275,54 @@ def test_comp(workers):
     assert not (x <= y).get().float_prec()
     assert (x > y).get().float_prec()
     assert not (x < y).get().float_prec()
+
+
+def test_max(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([3, 1., 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    max_value = x.max().get().float_prec()
+    assert max_value == torch.tensor([3.])
+
+    t = torch.tensor([3, 4.])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    max_value = x.max().get().float_prec()
+    assert max_value == torch.tensor([4.])
+
+    t = torch.tensor([3, 4., 5, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    max_value = x.max().get().float_prec()
+    assert max_value == torch.tensor([5.])
+
+
+def test_argmax(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([3, 1., 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    idx = x.argmax().get().float_prec()
+    assert idx == torch.tensor([0.])
+
+    t = torch.tensor([3, 4.])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    idx = x.argmax().get().float_prec()
+    assert idx == torch.tensor([1.])
+
+    t = torch.tensor([3, 4., 5, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    idx = x.argmax().get().float_prec()
+    assert idx == torch.tensor([2.])
+
+    # no dim=
+    t = torch.tensor([[1, 2., 4], [3, 9., 2.]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    ids = x.argmax().get().float_prec()
+    assert ids.long() == torch.argmax(t)  # TODO rm .long()
+
+    # dim=1
+    t = torch.tensor([[1, 2., 4], [3, 1., 2.]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    ids = x.argmax(dim=1).get().float_prec()
+    assert (ids.long() == torch.argmax(t, dim=1)).all()  # TODO rm .long()
+

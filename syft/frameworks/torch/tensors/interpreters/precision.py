@@ -70,6 +70,12 @@ class FixedPrecisionTensor(AbstractTensor):
         field_element = upscaled % self.field
         field_element.owner = rational.owner
 
+        # Handle neg values
+        gate = field_element.gt(self.torch_max_value).long()
+        neg_nums = (field_element - self.field) * gate
+        pos_nums = field_element * (1 - gate)
+        field_element = neg_nums + pos_nums
+
         self.child = field_element
         return self
 
@@ -78,10 +84,6 @@ class FixedPrecisionTensor(AbstractTensor):
         one, encoded with floating point precision"""
 
         value = self.child.long() % self.field
-
-        if len(value.size()) == 0:
-            # raise TypeError("Can't decode empty tensor")
-            return None
 
         gate = value.native_gt(self.torch_max_value).long()
         neg_nums = (value - self.field) * gate
@@ -101,9 +103,16 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         response = getattr(_self, "add")(*args, **kwargs)
 
-        return response % self.field
+        return response
 
     __add__ = add
+
+    def __iadd__(self, other):
+        """Add two fixed precision tensors together.
+        """
+        self.child = self.add(other).child
+
+        return self
 
     @overloaded.method
     def t(self, _self, *args, **kwargs):
@@ -262,7 +271,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
 
-        tensor = args[0]
+        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
 
         # Check that the function has not been overwritten
         try:
