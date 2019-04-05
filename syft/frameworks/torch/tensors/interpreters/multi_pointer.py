@@ -14,7 +14,6 @@ class MultiPointerTensor(AbstractTensor):
 
     def __init__(
         self,
-        parent: AbstractTensor = None,
         location: BaseWorker = None,
         id_at_location: Union[str, int] = None,
         register: bool = False,
