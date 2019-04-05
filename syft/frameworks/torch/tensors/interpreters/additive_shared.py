@@ -396,10 +396,7 @@ class AdditiveSharingTensor(AbstractTensor):
             for worker, share in tensor_shares.items():
                 share_results = torch.unbind(share, **kwargs)
                 if results is None:
-                    results = [
-                        {worker: share_result}
-                        for share_result in share_results
-                    ]
+                    results = [{worker: share_result} for share_result in share_results]
                 else:
                     for result, share_result in zip(results, share_results):
                         result[worker] = share_result
@@ -495,9 +492,12 @@ class AdditiveSharingTensor(AbstractTensor):
         if len(tensor.shape) == 1:
             max_value = tensor.max()
 
-            indices = torch.arange(0, tensor.shape[0]).fix_prec().share(
-                *tensor.locations,
-                crypto_provider=tensor.crypto_provider).child.child.child
+            indices = (
+                torch.arange(0, tensor.shape[0])
+                .fix_prec()
+                .share(*tensor.locations, crypto_provider=tensor.crypto_provider)
+                .child.child.child
+            )
             index_select = (tensor == max_value).long()
 
             cumsum = index_select.cumsum(0)

@@ -145,7 +145,7 @@ def test_torch_nn_functional_linear():
 
     result = F.linear(tensor, weight).float_prec()
 
-    expected = torch.tensor([[-3., -5], [11.0, 25.0]])
+    expected = torch.tensor([[-3.0, -5], [11.0, 25.0]])
 
     assert (result == expected).all()
 

@@ -87,8 +87,8 @@ def test_add(workers):
     assert (y == (t + t)).all()
 
     # with fixed precisions
-    t = torch.tensor([1., -2, 3])
-    x = torch.tensor([1., -2, 3]).fix_prec().share(bob, alice, james)
+    t = torch.tensor([1.0, -2, 3])
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james)
 
     y = (x + x).get().float_prec()
 
@@ -115,8 +115,8 @@ def test_sub(workers):
     assert (y == (t - t)).all()
 
     # with fixed precision
-    t = torch.tensor([1., -2, 3])
-    x = torch.tensor([1., -2, 3]).fix_prec().share(bob, alice, james)
+    t = torch.tensor([1.0, -2, 3])
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james)
 
     y = (x - x).get().float_prec()
 
@@ -154,8 +154,7 @@ def test_stack(workers):
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     res = torch.stack([x, x]).get().float_prec()
 
-    expected = torch.tensor([[1.3000, 2.0000],
-                            [1.3000, 2.0000]])
+    expected = torch.tensor([[1.3000, 2.0000], [1.3000, 2.0000]])
 
     assert (res == expected).all()
 
@@ -163,16 +162,16 @@ def test_stack(workers):
 def test_nn_linear(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
-    t = torch.tensor([[1., 2]])
+    t = torch.tensor([[1.0, 2]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     model = nn.Linear(2, 1)
-    model.weight = nn.Parameter(torch.tensor([[-1., 2]]))
-    model.bias = nn.Parameter(torch.tensor([[-1.]]))
+    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
+    model.bias = nn.Parameter(torch.tensor([[-1.0]]))
     model.fix_precision().share(bob, alice, crypto_provider=james)
 
     y = model(x)
 
-    assert y.get().float_prec() == torch.tensor([[2.]])
+    assert y.get().float_prec() == torch.tensor([[2.0]])
 
 
 def test_mul_with_no_crypto_provider(workers):
@@ -280,49 +279,48 @@ def test_comp(workers):
 def test_max(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    t = torch.tensor([3, 1., 2])
+    t = torch.tensor([3, 1.0, 2])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     max_value = x.max().get().float_prec()
-    assert max_value == torch.tensor([3.])
+    assert max_value == torch.tensor([3.0])
 
-    t = torch.tensor([3, 4.])
+    t = torch.tensor([3, 4.0])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     max_value = x.max().get().float_prec()
-    assert max_value == torch.tensor([4.])
+    assert max_value == torch.tensor([4.0])
 
-    t = torch.tensor([3, 4., 5, 2])
+    t = torch.tensor([3, 4.0, 5, 2])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     max_value = x.max().get().float_prec()
-    assert max_value == torch.tensor([5.])
+    assert max_value == torch.tensor([5.0])
 
 
 def test_argmax(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    t = torch.tensor([3, 1., 2])
+    t = torch.tensor([3, 1.0, 2])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     idx = x.argmax().get().float_prec()
-    assert idx == torch.tensor([0.])
+    assert idx == torch.tensor([0.0])
 
-    t = torch.tensor([3, 4.])
+    t = torch.tensor([3, 4.0])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     idx = x.argmax().get().float_prec()
-    assert idx == torch.tensor([1.])
+    assert idx == torch.tensor([1.0])
 
-    t = torch.tensor([3, 4., 5, 2])
+    t = torch.tensor([3, 4.0, 5, 2])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     idx = x.argmax().get().float_prec()
-    assert idx == torch.tensor([2.])
+    assert idx == torch.tensor([2.0])
 
     # no dim=
-    t = torch.tensor([[1, 2., 4], [3, 9., 2.]])
+    t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     ids = x.argmax().get().float_prec()
     assert ids.long() == torch.argmax(t)  # TODO rm .long()
 
     # dim=1
-    t = torch.tensor([[1, 2., 4], [3, 1., 2.]])
+    t = torch.tensor([[1, 2.0, 4], [3, 1.0, 2.0]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     ids = x.argmax(dim=1).get().float_prec()
     assert (ids.long() == torch.argmax(t, dim=1)).all()  # TODO rm .long()
-
