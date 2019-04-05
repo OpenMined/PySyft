@@ -332,6 +332,18 @@ class Plan(BaseWorker):
         self.ptr_plan = None
         return self
 
+    def describe(self, description):
+        self.description = description
+        return self
+
+    def tag(self, *_tags):
+        if self.tags is None:
+            self.tags = set()
+
+        for new_tag in _tags:
+            self.tags.add(new_tag)
+        return self
+
     def __str__(self):
         """Returns the string representation of PlanWorker.
 
