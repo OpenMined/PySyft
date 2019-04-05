@@ -2,9 +2,13 @@ import random
 
 import torch
 
+from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.workers.base import BaseWorker
 from syft.codes import MSGTYPE
 import syft as sy
+
+from typing import List
+from typing import Union
 
 
 def make_plan(plan_blueprint):
@@ -73,12 +77,66 @@ def method2plan(plan_blueprint):
     return method
 
 
-class PlanPointer:
-    def __init__(self, id, location, id_at_location, owner):
-        self.id = id
+class PlanPointer(AbstractTensor):
+    def __init__(
+        self,
+        parent=None,
+        location: "BaseWorker" = None,
+        id_at_location: Union[str, int] = None,
+        owner: "BaseWorker" = None,
+        id: Union[str, int] = None,
+        tags: List[str] = None,
+        description: str = None,
+    ):
+
+        super().__init__(id=id, owner=owner, tags=tags, description=description, parent=parent)
+
         self.location = location
         self.id_at_location = id_at_location
-        self.owner = owner
+
+    def get(self, deregister_ptr: bool = True):
+        # if the pointer happens to be pointing to a local object,
+        # just return that object (this is an edge case)
+        if self.location == self.owner:
+            tensor = self.owner.get_obj(self.id_at_location).child
+        else:
+            # get tensor from remote machine
+            tensor = self.owner.request_obj(self.id_at_location, self.location)
+
+        # Register the result
+        assigned_id = self.id_at_location
+        self.owner.register_obj(tensor, assigned_id)
+
+        # Remove this pointer by default
+        if deregister_ptr:
+            self.owner.de_register_obj(self)
+
+        return tensor
+
+    def __str__(self):
+        type_name = type(self).__name__
+        out = (
+            f"["
+            f"{type_name} | "
+            f"{str(self.owner.id)}:{self.id}"
+            " -> "
+            f"{str(self.location.id)}:{self.id_at_location}"
+            f"]"
+        )
+
+        big_str = False
+
+        if self.tags is not None and len(self.tags):
+            big_str = True
+            out += "\n\tTags: "
+            for tag in self.tags:
+                out += str(tag) + " "
+
+        if self.description is not None:
+            big_str = True
+            out += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
+
+        return out
 
 
 class Plan(BaseWorker):
