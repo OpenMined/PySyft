@@ -49,7 +49,16 @@ class FixedPrecisionTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {"precision_fractional": self.precision_fractional}
+        return {
+            "owner": self.owner,
+            "id": self.id,
+            "field": self.field,
+            "base": self.base,
+            "precision_fractional": self.precision_fractional,
+            "kappa": self.kappa,
+            "tags": self.tags,
+            "description": self.description,
+        }
 
     def fix_precision(self):
         """This method encodes the .child object using fixed precision"""
@@ -221,20 +230,6 @@ class FixedPrecisionTensor(AbstractTensor):
         # Modules should be registered just like functions
         module.nn = nn
 
-    def get_class_attributes(self):
-        """
-        Specify all the attributes need to build a wrapper correctly when returning a response,
-        for example precision_fractional is important when wrapping the result of a method
-        on a self which is a fixed precision tensor with a non default precision_fractional.
-        """
-        return {
-            "owner": self.owner,
-            "field": self.field,
-            "base": self.base,
-            "precision_fractional": self.precision_fractional,
-            "kappa": self.kappa,
-        }
-
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -283,16 +278,8 @@ class FixedPrecisionTensor(AbstractTensor):
     def get(self):
         """Just a pass through. This is most commonly used when calling .get() on a
         FixedPrecisionTensor which has also been shared."""
-        return FixedPrecisionTensor(
-            owner=self.owner,
-            id=self.id,
-            field=self.field,
-            base=self.base,
-            precision_fractional=self.precision_fractional,
-            kappa=self.kappa,
-            tags=self.tags,
-            description=self.description,
-        ).on(self.child.get())
+        class_attributes = self.get_class_attributes()
+        return FixedPrecisionTensor(**class_attributes).on(self.child.get())
 
     def share(self, *owners, field=None, crypto_provider=None):
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
