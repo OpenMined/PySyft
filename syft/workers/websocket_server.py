@@ -120,6 +120,6 @@ class WebsocketServerWorker(VirtualWorker):
     def start(self):
         """Start the server"""
 
-        start_server = websockets.serve(self._handler, self.host, self.port)
+        start_server = websockets.serve(self._handler, self.host, self.port, max_size=None)
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
