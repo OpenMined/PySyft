@@ -5,8 +5,8 @@ import sys
 from abc import abstractmethod
 import syft as sy
 
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
@@ -751,13 +751,17 @@ class BaseWorker(AbstractWorker):
                     found_something = False
 
             if found_something:
-                # set garbage_collect_data to False because if we're searching
-                # for a tensor we don't own, then it's probably someone else's
-                # decision to decide when to delete the tensor.
-                ptr = tensor.create_pointer(
-                    garbage_collect_data=False, owner=sy.local_worker
-                ).wrap()
-                results.append(ptr)
+                if isinstance(tensor, torch.Tensor):
+                    # set garbage_collect_data to False because if we're searching
+                    # for a tensor we don't own, then it's probably someone else's
+                    # decision to decide when to delete the tensor.
+                    ptr = tensor.create_pointer(
+                        garbage_collect_data=False, owner=sy.local_worker
+                    ).wrap()
+                    results.append(ptr)
+                else:
+                    tensor.owner = sy.local_worker
+                    results.append(tensor)
 
         return results
 

@@ -8,16 +8,30 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def test_plan_built_locally():
+def test_plan_built_locally(hook):
+    # To run a plan locally the local worker can't be a client worker,
+    # since it needs to register objects
+    hook.local_worker.is_client_worker = False
+
+    @sy.func2plan
+    def plan_abs(data):
+        return data.abs()
+
+    x = th.tensor([-1, 2, 3])
+    _ = plan_abs(x)
+
+    assert isinstance(plan_abs.__str__(), str)
+    assert len(plan_abs.readable_plan) > 0
+
+
+def test_plan_execute_locally(hook):
     @sy.func2plan
     def plan_abs(data):
         return data.abs()
 
     x = th.tensor([-1, 2, 3])
     x_abs = plan_abs(x)
-
-    assert isinstance(plan_abs.__str__(), str)
-    assert len(plan_abs.readable_plan) > 0
+    assert (x_abs == th.tensor([1, 2, 3])).all()
 
 
 def test_plan_built_remotely(workers):
@@ -85,3 +99,54 @@ def test_plan_built_on_method(hook):
     pointer_to_data = device_2.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
     pointer_to_result.get()
+
+
+def test_search_plan_built_locally(hook):
+    @sy.func2plan
+    def plan_mult_3(data):
+        return data * 3
+
+    x_ptr = th.tensor([-1, 2, 3])
+    plan_ptr = plan_mult_3.tag("#plan")
+    device_3 = sy.VirtualWorker(hook, id="device_3", data=(x_ptr, plan_ptr))
+
+    # Search plan
+    search_results = device_3.search("#plan")
+    assert len(search_results) == 1
+
+    found_plan = search_results[0]
+    assert isinstance(found_plan, sy.Plan)
+    assert found_plan.id == plan_ptr.id
+
+    # Build and execute plan locally
+    x_ptr = th.tensor([-1, 2, 3])
+    assert (found_plan(x_ptr) == th.tensor([-3, 6, 9])).all()
+
+
+def test_search_plan_built_remotely(hook):
+    device_4 = sy.VirtualWorker(hook, id="device_4")
+
+    @sy.func2plan
+    def plan_mult_3(data):
+        return data * 3
+
+    x_ptr = th.tensor([-1, 2, 3]).send(device_4)
+
+    # When you "send" a plan we don't actually send the
+    # plan to the worker we just update the plan's location
+    plan_ptr = plan_mult_3.tag("#plan").send(device_4)
+
+    assert len(device_4.search("#plan")) == 0
+
+    # When you execute the plan, we then send the plan to the
+    # worker and build it
+    _ = plan_ptr(x_ptr)
+
+    # Search plan
+    search_results = device_4.search("#plan")
+    assert len(search_results) == 1
+
+    # Build plan and execute it locally
+    x_ptr = th.tensor([-1, 2, 3])
+    found_plan = search_results[0]
+    assert (found_plan(x_ptr) == th.tensor([-3, 6, 9])).all()

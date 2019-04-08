@@ -2,9 +2,13 @@ import random
 
 import torch
 
+from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.workers.base import BaseWorker
 from syft.codes import MSGTYPE
 import syft as sy
+
+from typing import List
+from typing import Union
 
 
 def make_plan(plan_blueprint):
@@ -96,6 +100,7 @@ class Plan(BaseWorker):
         self.readable_plan = list()
         self.arg_ids = list()
         self.result_ids = list()
+        self.owner_when_built = None
         # Pointing info towards a remote plan
         self.location = None
         self.ptr_plan = None
@@ -141,7 +146,6 @@ class Plan(BaseWorker):
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
         self.arg_ids = list()
-
         local_args = list()
         for i, arg in enumerate(args):
             # Send only tensors (in particular don't send the "self" for methods)
@@ -157,6 +161,9 @@ class Plan(BaseWorker):
 
         # The id where the result should be stored
         self.result_ids = [res_ptr.id_at_location]
+
+        # Store owner that built the plan
+        self.owner_when_built = self.owner
 
     def replace_ids(self, from_ids, to_ids):
         """
@@ -232,43 +239,83 @@ class Plan(BaseWorker):
             args = [self.self] + list(args)
         return self.execute_plan(args, result_ids)
 
+    def _update_args(self, args, result_ids):
+        """Replace args and result_ids with the ones given.
+        Updates the arguments ids and result ids used to execute
+        the plan.
+        Args:
+            args: List of tensors.
+            result_ids: Ids where the plan output will be stored.
+        """
+        arg_ids = [arg.id for arg in args]
+        self.replace_ids(self.arg_ids, arg_ids)
+        self.arg_ids = arg_ids
+
+        self.replace_ids(self.result_ids, result_ids)
+        self.result_ids = result_ids
+
+    def _execute_plan(self):
+        for message in self.readable_plan:
+            bin_message = sy.serde.serialize(message, simplified=True)
+            x = self.owner.recv_msg(bin_message)
+
+    def _get_plan_output(self, result_ids, return_ptr=False):
+        responses = []
+        for return_id in result_ids:
+            response = sy.PointerTensor(
+                location=self.owner,
+                id_at_location=return_id,
+                owner=self,
+                id=int(10e10 * random.random()),
+            )
+            responses.append(response if return_ptr else response.get())
+
+        if len(responses) == 1:
+            return responses[0]
+
+        return responses
+
+    def _execute_plan_locally(self, result_ids, *args, **kwargs):
+        if self.owner != self.owner_when_built:
+            self.build_plan(args)
+        self._update_args(args, result_ids)
+        self._execute_plan()
+        responses = self._get_plan_output(result_ids)
+        return responses
+
     def execute_plan(self, args, result_ids):
         """
         Control local or remote plan execution.
-
         If the plan doesn't have the plan built, first build it using the blueprint.
-
         Then if it has a remote location, send the plan to the remote location only the
         first time, request a remote plan execution with specific pointers and ids for
         storing the result, and return a pointer to the result of the execution.
-
         If the plan is local: update the plan with the result_ids and args ids given,
         run the plan and return the None message serialized.
         """
+        # We build the plan only if needed
         first_run = self.readable_plan == []
         if first_run:
             self.build_plan(args)
 
+        # If there is a location we need to send the plan to
+        # we request the location to execute the plan
         if self.location:
             if self.ptr_plan is None:
                 self.ptr_plan = self._send(self.location)
             response = self.request_execute_plan(result_ids, *args)
             return response
 
+        # If the plan is local, we execute the plan and return the response
+        if not self.location and self.owner == sy.hook.local_worker:
+            return self._execute_plan_locally(result_ids, *args)
+
         # if the plan is not to be sent but is not local (ie owned by the local worker)
-        # then it has been request to execute, to we update the plan with the correct
+        # then it has been request to execute, so we update the plan with the correct
         # input and output ids and we run it
-        if not self.location and self.owner != sy.hook.local_worker:
-            arg_ids = [arg.id for arg in args]
-            self.replace_ids(self.arg_ids, arg_ids)
-            self.arg_ids = arg_ids
-
-            self.replace_ids(self.result_ids, result_ids)
-            self.result_ids = result_ids
-
-            for message in self.readable_plan:
-                bin_message = sy.serde.serialize(message, simplified=True)
-                self.owner.recv_msg(bin_message)
+        elif not self.location and self.owner != sy.hook.local_worker:
+            self._update_args(args, result_ids)
+            self._execute_plan()
 
         return sy.serde.serialize(None)
 
@@ -332,21 +379,40 @@ class Plan(BaseWorker):
         self.ptr_plan = None
         return self
 
+    def describe(self, description):
+        self.description = description
+        return self
+
+    def tag(self, *_tags):
+        if self.tags is None:
+            self.tags = set()
+
+        for new_tag in _tags:
+            self.tags.add(new_tag)
+        return self
+
     def __str__(self):
         """Returns the string representation of PlanWorker.
-
         Note:
             __repr__ calls this method by default.
         """
-
         out = "<"
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " " + str(self.name)
         out += " id:" + str(self.id)
         out += " owner:" + str(self.owner.id)
+
         if self.location:
             out += " location:" + str(self.location.id)
+
+        if self.tags is not None and len(self.tags):
+            out += " Tags:"
+            for tag in self.tags:
+                out += " " + str(tag)
+
         if len(self.readable_plan) > 0:
             out += " built"
+
         out += ">"
+
         return out
