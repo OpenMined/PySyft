@@ -1,26 +1,27 @@
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 import torch
+import syft as sy
 import numpy as np
 from typing import Callable, List, Union
 
 
 class PolynomialTensor(AbstractTensor):
 
-    """ 
+    """
        Tensor type to provide non-linear function approximations
-       
-       MPC and Homomorphic Encryption are capable of performing some addition and logical operations. 
-       Non-Linear functions could be approximated as a series of approximated functions of basic arithmetic 
+
+       MPC and Homomorphic Encryption are capable of performing some addition and logical operations.
+       Non-Linear functions could be approximated as a series of approximated functions of basic arithmetic
        operations using function approximations such as interpolation/Taylor series.
-       
-       The polynomial tensor provides flexibility to consider every non-linear function as piecewise linear function 
+
+       The polynomial tensor provides flexibility to consider every non-linear function as piecewise linear function
        and fit over different intervals.
-       
+
        Parameters:
-           
+
            function[callable,Optional]: Function to applied to function approximation coefficients. Used to encrypt coefficients.
            precision[integer]: Precision of approximated values
-           
+
     """
 
     def __init__(self, function=torch.tensor, precision=10):
@@ -60,14 +61,14 @@ class PolynomialTensor(AbstractTensor):
     def addfunction(self, name, degree, piecewise, function):
 
         """Add function to function_attr dictionary.
-        
+
         Parameters:
-            
+
             name[str]: Name of function
             degree[int]: Degree of function
             piecewise[List]: List of piecewise functions in format [min_val of fit,max_val of fit,step of fit,function to fit values]
             function[callable]: Base function
-            
+
         """
 
         self.function_attr[name + "_degree"] = degree
@@ -80,17 +81,17 @@ class PolynomialTensor(AbstractTensor):
 
     def get_val(self, name, x):
 
-        """Get value of given function approximation 
-        
+        """Get value of given function approximation
+
         Parameters:
-            
+
             name[str]: Name of function
             value[torch tensor,float,integer]: Value to be approximated
-        
+
         returns:
-            
+
             Approximated value using given function approximation
-        
+
         """
 
         value = x
@@ -106,23 +107,20 @@ class PolynomialTensor(AbstractTensor):
     ) -> np.poly1d:
 
         """Returns a interpolated version of given function using Numpy's polyfit method
-           
-        Args: 
-            
-            function (a lambda function): Base function to be approximated 
+
+           Args:
+
+            function (a lambda function): Base function to be approximated
             interval (list of floats/integers): Interval of values to be approximated
             degree (Integer): Degree of polynomial approximation
             precision(Integer): Precision of coefficients
-            
-        returns:
-            
-            f_interpolated (Numpy poly1d): Approximated Function 
-        
-        """
+
+          returns:
+
+            f_interpolated (Numpy poly1d): Approximated Function """
 
         # function we wish to approximate
         f_real = function
-
         # interval over which we wish to optimize
         f_interval = interval
 
@@ -142,28 +140,30 @@ class PolynomialTensor(AbstractTensor):
     def applycoefs(self, polyinstance, function):
 
         """Apply a given function over Numpy interpolation instances.This function could be used to encrypt coefficients of function approximations approximated using interpolation
-        
+
            Parameters:
-               
-           polyinstance (Numpy poly1d) : Interpolation instance 
+
+           polyinstance (Numpy poly1d) : Interpolation instance
            function (Callable) : Function to be applied"""
 
-        return function(polyinstance.coef)
+        val = torch.from_numpy(polyinstance.coef)
+        print(val)
+        return function(val)
 
     def piecewise_linear_fit(self, name, array):
 
         """Fit a piecewise linear function. This can be used to approximate a non-linear function as seperate linear functions valid for seperate ranges.
-           For , instance function approximations are more accurate for exponential when seperate instances  of interpolation are fit between 
-           -10 to 0 and 0 to 10. 
-           
+           For , instance function approximations are more accurate for exponential when seperate instances  of interpolation are fit between
+           -10 to 0 and 0 to 10.
+
            Parameters:
-           
+
               array[2D List]: Each instance of list must take four values [min_val,steps,max_val,function approximation method]
-           
+
            returns:
-               
+
               array[2D List]: Each instance of list with four values [min_val,max_val,Approximated function]
-           
+
            """
 
         arguments = []
@@ -187,12 +187,12 @@ class PolynomialTensor(AbstractTensor):
 
     def piecewise_linear_eval(self, data, x):
 
-        """Get approximated value for a given function. This takes only scalar value. 
-           If you have a Numpy array or torch tensor consider passing it using a 
+        """Get approximated value for a given function. This takes only scalar value.
+           If you have a Numpy array or torch tensor consider passing it using a
            lambda or torch.apply_ method.
-        
+
            Parameters:
-               
+
                data[2D List]: Instance of piecewise linear fit taking values [min_val,max_val,function approximation method]
                x[Float or Integer]: Value to be approximated     """
 
@@ -208,16 +208,16 @@ class PolynomialTensor(AbstractTensor):
 
     def fit_function(self, name, min_val=0, max_val=10, steps=100, degree=10) -> np.poly1d:
         """Interpolated approximation of given function
-        
+
         name: Name of function as defined in self.setting
         min_val: Minimum range of interpolation fit
         max_val: Maximum range of interpolation fit
         steps:   Steps of interpolation fit
         degree: Degree of interpolation fit
         function: The function used to encrypt function approximation coefficients
-        
+
         returns:
-            
+
             f_interpolated (Numpy Poly1d): Approximated function"""
 
         fitted_function = self.interpolate(
@@ -233,13 +233,13 @@ class PolynomialTensor(AbstractTensor):
     def sigmoid(self, x):
 
         """Parameters:
-           
+
            Method provides Sigmoid function approximation interms of Taylor Series
-           
+
            x: Torch tensor
-                  
-           return: 
-               
+
+           return:
+
            approximation of the sigmoid function as a torch tensor"""
 
         return (
@@ -253,13 +253,13 @@ class PolynomialTensor(AbstractTensor):
 
         """
             Method provides exponential function approximation interms of Taylor Series
-            
+
             Parameters:
-            
+
             x: Torch tensor
-           
-            return: 
-               
+
+            return:
+
             approximation of the sigmoid function as a torch tensor"""
 
         return (
