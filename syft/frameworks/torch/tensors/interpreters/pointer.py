@@ -316,3 +316,12 @@ class PointerTensor(AbstractTensor):
         ).wrap()
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
+
+    def share(self, *args, **kwargs):
+
+        # Send the command
+        command = ("share", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
