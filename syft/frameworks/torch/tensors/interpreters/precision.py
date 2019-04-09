@@ -10,7 +10,7 @@ class FixedPrecisionTensor(AbstractTensor):
         parent: AbstractTensor = None,
         owner=None,
         id=None,
-        field: int = (2 ** 31) - 1,
+        field: int = (2 ** 62) - 1,
         base: int = 10,
         precision_fractional: int = 3,
         precision_integral: int = 1,

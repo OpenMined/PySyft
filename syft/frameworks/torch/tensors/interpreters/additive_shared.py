@@ -1,3 +1,4 @@
+import math
 import torch
 import syft as sy
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
@@ -565,9 +566,10 @@ class AdditiveSharingTensor(AbstractTensor):
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
         except AttributeError:
             pass
+        if not isinstance(cmd, str):
+            return cmd(*args, **kwargs)
 
         # TODO: I can't manage the import issue, can you?
         # Replace all LoggingTensor with their child attribute
