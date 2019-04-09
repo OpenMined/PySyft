@@ -48,10 +48,14 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
 
-        self.field = (2 ** 31) if field is None else field  # < 63 bits
-        self.n_bits = 31 if n_bits is None else n_bits  # < 63 bits
-        assert 2 ** self.n_bits == self.field
-        self.crypto_provider = crypto_provider
+        self.field = (2 ** 62) if field is None else field  # < 63 bits
+        self.n_bits = (
+            n_bits if n_bits is not None else max(8, round(math.log(self.field, 2)))
+        )  # < 63 bits
+        # assert 2 ** self.n_bits == self.field
+        self.crypto_provider = (
+            crypto_provider if crypto_provider is not None else sy.hook.local_worker
+        )
 
     def __repr__(self):
         return self.__str__()

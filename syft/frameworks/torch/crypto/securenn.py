@@ -7,8 +7,10 @@ import torch
 
 import syft as sy
 
+p = 67
+
 # Q field
-Q_BITS = 31
+Q_BITS = 62
 
 
 def decompose(tensor):
@@ -111,11 +113,13 @@ def private_compare(x, r, BETA, j, alice, bob, crypto_provider):
     permuted_mask = mask[:, perm]
     # Send it to another worker
     remote_mask = permuted_mask.wrap().send(crypto_provider)
+
+    # 15)
     # transform remotely the AdditiveSharingTensor back to a torch tensor
     d_ptr = remote_mask.remote_get()
-    result_ptr = (d_ptr == 0).sum(1)
+    beta_prime = (d_ptr == 0).sum(1)
     # Get result back
-    return result_ptr.get()
+    return beta_prime.get()
 
 
 def msb(a_sh, alice, bob):
@@ -142,6 +146,7 @@ def msb(a_sh, alice, bob):
     # https://eprint.iacr.org/2018/442.pdf
 
     # 1)
+    # TODO: send to P2 (or is it the local worker?)
     x = torch.LongTensor(a_sh.shape).random_(L - 1)
     x_bit = decompose(x)
     x_sh = x.share(bob, alice, crypto_provider=crypto_provider).child
@@ -159,7 +164,7 @@ def msb(a_sh, alice, bob):
 
     # 3)
     r = r_sh.get()  # .send(bob, alice) #TODO: make this secure by exchanging shares remotely
-    r_0 = decompose(r)[..., -1].send(bob, alice).child
+    r_0 = decompose(r)[..., -1].send(bob, alice).child  # TODO: should not be needed
     r = r.send(bob, alice).child
 
     assert isinstance(r, sy.MultiPointerTensor)
@@ -207,10 +212,11 @@ def msb(a_sh, alice, bob):
 
 def relu_deriv(a_sh):
     assert isinstance(a_sh, sy.AdditiveSharingTensor)
-
+    # TODO Protocol is incorrect (refer to article)
     workers = [sy.hook.local_worker.get_worker(w_name) for w_name in list(a_sh.child.keys())]
     return msb(a_sh, *workers)
 
 
 def relu(a):
+    # TODO Protocol is incorrect (refer to article)
     return a * relu_deriv(a)

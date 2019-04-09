@@ -174,13 +174,6 @@ def test_nn_linear(workers):
     assert y.get().float_prec() == torch.tensor([[2.0]])
 
 
-def test_mul_with_no_crypto_provider(workers):
-    bob, alice = (workers["bob"], workers["alice"])
-    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice)
-    with pytest.raises(AttributeError):
-        y = (x * x).get().float_prec()
-
-
 def test_matmul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
