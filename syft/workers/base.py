@@ -238,7 +238,7 @@ class BaseWorker(AbstractWorker):
 
     def send(
         self,
-        tensor: Union[torch.Tensor, AbstractTensor],
+        obj: Union[torch.Tensor, AbstractTensor],
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
     ) -> PointerTensor:
@@ -289,12 +289,14 @@ class BaseWorker(AbstractWorker):
         if ptr_id is None:  # Define a remote id if not specified
             ptr_id = int(10e10 * random.random())
 
-        pointer = tensor.create_pointer(
-            owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
-        )
-
+        if isinstance(obj, torch.Tensor):
+            pointer = obj.create_pointer(
+                owner=self, location=worker, id_at_location=obj.id, register=True, ptr_id=ptr_id
+            )
+        else:
+            pointer = obj
         # Send the object
-        self.send_obj(tensor, worker)
+        self.send_obj(obj, worker)
         return pointer
 
     def execute_command(self, message):
@@ -727,7 +729,7 @@ class BaseWorker(AbstractWorker):
             me: a reference to the worker calling the search.
             """
         results = list()
-        for key, tensor in self._objects.items():
+        for key, obj in self._objects.items():
             found_something = True
             for query_item in query:
                 # If deserialization produced a bytes object instead of a string,
@@ -739,29 +741,29 @@ class BaseWorker(AbstractWorker):
                 if query_item == str(key):
                     match = True
 
-                if tensor.tags is not None:
-                    if query_item in tensor.tags:
+                if obj.tags:
+                    if query_item in obj.tags:
                         match = True
 
-                if tensor.description is not None:
-                    if query_item in tensor.description:
+                if obj.description:
+                    if query_item in obj.description:
                         match = True
 
                 if not match:
                     found_something = False
 
             if found_something:
-                if isinstance(tensor, torch.Tensor):
+                if isinstance(obj, torch.Tensor):
                     # set garbage_collect_data to False because if we're searching
                     # for a tensor we don't own, then it's probably someone else's
                     # decision to decide when to delete the tensor.
-                    ptr = tensor.create_pointer(
+                    ptr = obj.create_pointer(
                         garbage_collect_data=False, owner=sy.local_worker
                     ).wrap()
                     results.append(ptr)
                 else:
-                    tensor.owner = sy.local_worker
-                    results.append(tensor)
+                    obj.owner = sy.local_worker
+                    results.append(obj)
 
         return results
 
