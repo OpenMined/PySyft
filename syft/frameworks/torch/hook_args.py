@@ -42,10 +42,10 @@ forward_func = {
     PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
+    else (_ for _ in ()).throw(PureTorchTensorFoundError),
     torch.nn.Parameter: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
+    else (_ for _ in ()).throw(PureTorchTensorFoundError),
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,

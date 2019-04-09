@@ -800,12 +800,12 @@ class TorchHook:
                 self._is_wrapper = False
             return self._is_wrapper
 
-        tensor_type.is_wrapper = is_wrapper
-
         @is_wrapper.setter
         def is_wrapper(self, it_is_a_wrapper):
             self._is_wrapper = it_is_a_wrapper
             return self
+
+        tensor_type.is_wrapper = is_wrapper
 
         tensor_type.native_shape = tensor_type.shape
         tensor_type.native_data = tensor_type.data
