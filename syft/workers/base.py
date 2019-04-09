@@ -741,11 +741,11 @@ class BaseWorker(AbstractWorker):
                 if query_item == str(key):
                     match = True
 
-                if obj.tags:
+                if obj.tags is not None:
                     if query_item in obj.tags:
                         match = True
 
-                if obj.description:
+                if obj.description is not None:
                     if query_item in obj.description:
                         match = True
 
