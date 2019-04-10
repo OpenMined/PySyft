@@ -17,7 +17,6 @@ from syft.grid import VirtualGrid
 # Import Worker Types
 from syft.workers import VirtualWorker
 from syft.workers import Plan
-from syft.workers import PlanPointer
 from syft.workers import func2plan
 from syft.workers import method2plan
 from syft.workers import make_plan
