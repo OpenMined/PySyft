@@ -152,6 +152,9 @@ class TorchTensor(AbstractTensor):
         """
         return isinstance(self, syft.hook.torch.nn.Parameter)
 
+    def copy(self):
+        return self + 0
+
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -410,7 +413,6 @@ class TorchTensor(AbstractTensor):
 
         if previous_pointer is None:
             ptr = PointerTensor(
-                parent=self,
                 location=location,
                 id_at_location=id_at_location,
                 owner=owner,
