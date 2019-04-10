@@ -78,3 +78,10 @@ def test_size():
     assert tensor.size() == torch.Size([5, 3])
     assert tensor.size() == tensor.shape
     assert tensor.size(0) == tensor.shape[0]
+
+
+def test_copy():
+    tensor = torch.rand(5, 3)
+    coppied_tensor = tensor.copy()
+    assert (tensor == coppied_tensor).all()
+    assert tensor is not coppied_tensor

@@ -110,7 +110,7 @@ class TorchTensor(AbstractTensor):
 
             big_repr = False
 
-            if self.tags is not None:
+            if self.tags is not None and len(self.tags):
                 big_repr = True
                 out += "\n\tTags: "
                 for tag in self.tags:
@@ -124,6 +124,9 @@ class TorchTensor(AbstractTensor):
                 out += "\n\tShape: " + str(self.shape)
 
             return out
+
+    def __eq__(self, other):
+        return self.eq(other)
 
     @property
     def id(self):
@@ -148,6 +151,9 @@ class TorchTensor(AbstractTensor):
         Utility method to test if the tensor is in fact a Parameter
         """
         return isinstance(self, syft.hook.torch.nn.Parameter)
+
+    def copy(self):
+        return self + 0
 
     @classmethod
     def handle_func_command(cls, command):
@@ -407,10 +413,8 @@ class TorchTensor(AbstractTensor):
 
         if previous_pointer is None:
             ptr = PointerTensor(
-                parent=self,
                 location=location,
                 id_at_location=id_at_location,
-                register=register,
                 owner=owner,
                 id=ptr_id,
                 garbage_collect_data=garbage_collect_data,
@@ -426,7 +430,6 @@ class TorchTensor(AbstractTensor):
 
         child_id = self.child.id
         tensor = self.child.get()
-        del self.owner._objects[tensor.id]
         self.owner._objects[child_id] = tensor
 
     def remote_get(self):
@@ -563,7 +566,7 @@ class TorchTensor(AbstractTensor):
 
         return (
             syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
-                field=field, crypto_provider=crypto_provider
+                field=field, crypto_provider=crypto_provider, owner=self.owner
             )
             .on(self)
             .child.init_shares(*owners)

@@ -18,6 +18,9 @@ PySyft has also been explained in video form by [Siraj Raval](https://www.youtub
 ```bash
 pip install syft
 ```
+
+You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
+
 ## Run Local Notebook Server
 All the examples can be played with by running the command
 ```bash
@@ -45,9 +48,19 @@ We have written an installation example in [this colab notebook](https://colab.r
 
 We are very grateful for contributions to PySyft from the following organizations!
 
- <img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>  
+<table style="width:100%; border: none;">
+  <tr>
+    <td>
+    <a href="https://udacity.com/"><img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/></a>
+    </td>
+    <td>
+    <a href="https://github.com/coMindOrg/federated-averaging-tutorials"><img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/></a>
+    </td> 
 
- [coMind Website](https://comind.org/) & [coMind Github](https://github.com/coMindOrg/federated-averaging-tutorials)
+  </tr>
+</table>
+
+
 
 ## Disclaimer
 
