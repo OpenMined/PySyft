@@ -240,10 +240,12 @@ class TorchHook:
         is pointing at.
         """
 
+        boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
+
         tensor_type = self.torch.Tensor
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
-            if attr not in dir(PointerTensor):
+            if attr not in dir(PointerTensor) or attr in boolean_comparators:
                 new_method = self.get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
 
