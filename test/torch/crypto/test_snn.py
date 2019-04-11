@@ -20,6 +20,53 @@ def test_xor_implementation(workers):
     assert (w.virtual_get() == w_real).all()
 
 
+def test_private_compare(workers):
+    """
+    Should be  β′ = β ⊕ (x > r).
+    :param workers:
+    :return:
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x_bit_sh = decompose(torch.LongTensor([13])).share(alice, bob, crypto_provider=james).child
+    r = torch.LongTensor([12]).send(alice, bob).child
+
+    beta = torch.LongTensor([1]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta)
+    assert not beta_p
+
+    beta = torch.LongTensor([0]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta)
+
+    assert beta_p
+
+    # Big values
+    x_bit_sh = decompose(torch.LongTensor([2 ** 60])).share(alice, bob, crypto_provider=james).child
+    r = torch.LongTensor([2 ** 61]).send(alice, bob).child
+
+    beta = torch.LongTensor([1]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta)
+    assert beta_p
+
+    beta = torch.LongTensor([0]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta)
+
+    assert not beta_p
+
+    # Negative values
+    x_bit_sh = decompose(torch.LongTensor([-105])).share(alice, bob, crypto_provider=james).child
+    r = torch.LongTensor([-52]).send(alice, bob).child
+
+    beta = torch.LongTensor([1]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta)
+    assert beta_p
+
+    beta = torch.LongTensor([0]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta)
+
+    assert not beta_p
+
+
 def test_relu(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     x = th.tensor([1, -3]).share(alice, bob, crypto_provider=james)
