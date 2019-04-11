@@ -52,7 +52,6 @@ import syft as sy
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 from syft.workers import Plan
-from syft.workers import PlanPointer
 
 from syft.exceptions import CompressionNotFoundException
 
@@ -1071,10 +1070,16 @@ def _simplify_plan(plan: Plan) -> tuple:
         tuple: a tuple holding the unique attributes of the Plan object
 
     """
-
     readable_plan = _simplify(plan.readable_plan)
-
-    return (readable_plan, _simplify(plan.id), _simplify(plan.arg_ids), _simplify(plan.result_ids))
+    return (
+        readable_plan,
+        _simplify(plan.id),
+        _simplify(plan.arg_ids),
+        _simplify(plan.result_ids),
+        plan.name,
+        _simplify(plan.tags),
+        _simplify(plan.description),
+    )
 
 
 def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
@@ -1086,8 +1091,7 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
         Plan: a Plan object
     """
 
-    readable_plan, id, arg_ids, result_ids = plan_tuple
-
+    readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
     id = id
     if isinstance(id, bytes):
         id = id.decode("utf-8")
@@ -1097,7 +1101,10 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
     plan = syft.Plan(hook=sy.hook, owner=worker, id=id)
     plan.arg_ids = arg_ids
     plan.result_ids = result_ids
-
+    if isinstance(name, bytes):
+        plan.name = name.decode("utf-8")
+    plan.tags = _detail(worker, tags)
+    plan.description = _detail(worker, description)
     plan.readable_plan = _detail(worker, readable_plan)
 
     return plan
@@ -1241,7 +1248,6 @@ simplifiers = {
     AdditiveSharingTensor: [13, _simplify_additive_shared_tensor],
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
     Plan: [15, _simplify_plan],
-    PlanPointer: [16, _simplify_plan_pointer],
     VirtualWorker: [17, _simplify_worker],
 }
 
@@ -1288,6 +1294,5 @@ detailers = [
     _detail_additive_shared_tensor,
     _detail_multi_pointer_tensor,
     _detail_plan,
-    _detail_plan_pointer,
     _detail_worker,
 ]

@@ -21,7 +21,6 @@ class AbstractTensor(ABC):
         tags: List[str] = None,
         description: str = None,
         child=None,
-        parent=None,
     ):
         """Initializer for AbstractTensor
 
@@ -35,8 +34,6 @@ class AbstractTensor(ABC):
                 tensor
             child: an optional tensor to put in the .child attribute to build
                 a chain of tensors
-            parent: an optional tensor whose .child attribute is this tensor
-                defined here
         """
         self.owner = owner
         if id is None:
@@ -46,7 +43,6 @@ class AbstractTensor(ABC):
         self.tags = tags
         self.description = description
         self.child = child
-        self.parent = parent
 
     def __str__(self) -> str:
         if hasattr(self, "child"):

@@ -13,7 +13,6 @@ class AdditiveSharingTensor(AbstractTensor):
     def __init__(
         self,
         shares: dict = None,
-        parent: AbstractTensor = None,
         owner=None,
         id=None,
         field=None,
@@ -28,10 +27,8 @@ class AdditiveSharingTensor(AbstractTensor):
         functions.
 
         Args:
+
             shares: Optional dictionary with the shares already split
-            parent: An optional AbstractTensor wrapper around the AdditiveSharingTensor
-                which makes it so that you can pass this AdditiveSharingTensor to all
-                the other methods/functions that PyTorch likes to use
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the LoggingTensor.
@@ -44,7 +41,7 @@ class AdditiveSharingTensor(AbstractTensor):
             description: an optional string describing the purpose of the
                 tensor
         """
-        super().__init__(id=id, owner=owner, tags=tags, description=description, parent=parent)
+        super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         self.child = shares
 

@@ -174,3 +174,12 @@ def test_fixed_precision_and_sharing(workers):
 
     y = y.get().float_prec()
     assert (y == torch.tensor([2, 4, 6, 8.0])).all()
+
+
+def test_get_preserves_attributes(workers):
+    bob, alice = (workers["bob"], workers["alice"])
+
+    x = torch.tensor([1, 2, 3, 4.0]).fix_prec(precision_fractional=1).share(bob, alice)
+    out = x.get().float_prec()
+
+    assert (out == torch.tensor([1, 2, 3, 4.0])).all()
