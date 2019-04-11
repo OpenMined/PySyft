@@ -1,4 +1,5 @@
 import random
+from time import time
 
 import syft as sy
 from syft.workers.virtual import VirtualWorker
@@ -200,3 +201,15 @@ def test_obj_not_found(workers):
         y = x + x
     except KeyError as e:
         assert "If you think this tensor does exist" in str(e)
+
+
+def test_spinup_time(hook):
+    """Tests to ensure that virtual workers intialized with 10000 data points
+    load in under 0.01 seconds."""
+    data = []
+    for i in range(10000):
+        data.append(th.Tensor(5, 5).random_(100))
+    start_time = time()
+    dummy = sy.VirtualWorker(hook, id="dummy", data=data)
+    end_time = time()
+    assert (end_time - start_time) < 0.01
