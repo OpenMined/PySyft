@@ -96,7 +96,7 @@ class AdditiveSharingTensor(AbstractTensor):
         shares = list()
 
         for share in self.child.values():
-            if hasattr(share, 'child') and isinstance(share.child, sy.PointerTensor):
+            if hasattr(share, "child") and isinstance(share.child, sy.PointerTensor):
                 shares.append(share.get())
             else:
                 shares.append(share.child)
@@ -183,9 +183,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         pointers = [pointer]
         for worker in workers[1:]:
-            pointers.append(
-                pointer.send(worker).remote_get()
-            )
+            pointers.append(pointer.send(worker).remote_get())
 
         return sy.MultiPointerTensor(children=pointers)
 
@@ -546,11 +544,11 @@ class AdditiveSharingTensor(AbstractTensor):
 
         # Init max vals and idx to the first element
         max_value = values[0]
-        max_index = torch.tensor([0]).share(
-            *self.locations,
-            field=self.field,
-            crypto_provider=self.crypto_provider
-        ).child
+        max_index = (
+            torch.tensor([0])
+            .share(*self.locations, field=self.field, crypto_provider=self.crypto_provider)
+            .child
+        )
 
         for i in range(1, len(values)):
             a = values[i]

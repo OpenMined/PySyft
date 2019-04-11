@@ -41,25 +41,21 @@ def _random_common_bit(*workers):
     pointer = torch.LongTensor([1]).send(workers[0]).random_(2)
     pointers = [pointer]
     for worker in workers[1:]:
-        pointers.append(
-            (pointer * 1).move(worker)
-        )
+        pointers.append((pointer * 1).move(worker))
     bit = sy.MultiPointerTensor(children=pointers)
 
     return bit
+
 
 def _random_common_value(value, *workers):
 
     pointer = torch.LongTensor([1]).send(workers[0]).random_(value)
     pointers = [pointer]
     for worker in workers[1:]:
-        pointers.append(
-            (pointer * 1).move(worker)
-        )
+        pointers.append((pointer * 1).move(worker))
     common_value = sy.MultiPointerTensor(children=pointers)
 
     return common_value
-
 
 
 def private_compare(x, r, BETA):
@@ -82,7 +78,7 @@ def private_compare(x, r, BETA):
     alice, bob = x.locations
     crypto_provider = x.crypto_provider
     p = x.field
-    L = 2**Q_BITS  # 2**l
+    L = 2 ** Q_BITS  # 2**l
 
     # the commented out numbers below correspond to the
     # line numbers in Algorithm 3 of the SecureNN paper
@@ -178,18 +174,15 @@ def msb(a_sh):
 
     # Common Randomness
     BETA = _random_common_bit(alice, bob)
-    u = (
-        torch.zeros(1)
-            .long()
-            .share(alice, bob, field=L, crypto_provider=crypto_provider)
-            .child
-    )
+    u = torch.zeros(1).long().share(alice, bob, field=L, crypto_provider=crypto_provider).child
 
     # 1)
     x = torch.LongTensor(a_sh.shape).random_(L - 1)
     x_bit = decompose(x)
-    x_sh = x.share(bob, alice, field=L-1, crypto_provider=crypto_provider).child
-    x_bit_0 = x_bit[..., -1]  # Get last value as decompose reverts bits: 1st one is in last position
+    x_sh = x.share(bob, alice, field=L - 1, crypto_provider=crypto_provider).child
+    x_bit_0 = x_bit[
+        ..., -1
+    ]  # Get last value as decompose reverts bits: 1st one is in last position
     x_bit_sh_0 = x_bit_0.share(
         bob, alice, field=L, crypto_provider=crypto_provider
     ).child  # least -> greatest from left -> right
@@ -200,7 +193,7 @@ def msb(a_sh):
     r_sh = y_sh + x_sh
 
     # 3)
-    r = r_sh.reconstruct() # convert an additive sharing in multi pointer Tensor
+    r = r_sh.reconstruct()  # convert an additive sharing in multi pointer Tensor
     r_0 = decompose(r)[..., -1]
 
     # 4)
@@ -250,29 +243,53 @@ def share_convert(a_sh):
     r = _random_common_value(L, *workers)
 
     # Share remotely r
-    r_sh = (r*1).child[workers[0].id].share(*workers, field=L, crypto_provider=crypto_provider).get().child
+    r_sh = (
+        (r * 1)
+        .child[workers[0].id]
+        .share(*workers, field=L, crypto_provider=crypto_provider)
+        .get()
+        .child
+    )
     r_shares = r_sh.child
-    alpha = ((r_shares[workers[0].id] + (r_shares[workers[1].id] * 1).move(workers[0])).get() >= L).long().send(*workers).child #FIXME security
-    u_sh = torch.zeros(1).long().send(workers[0]).share(*workers, field=L - 1, crypto_provider=crypto_provider).get().child
+    alpha = (
+        ((r_shares[workers[0].id] + (r_shares[workers[1].id] * 1).move(workers[0])).get() >= L)
+        .long()
+        .send(*workers)
+        .child
+    )  # FIXME security
+    u_sh = (
+        torch.zeros(1)
+        .long()
+        .send(workers[0])
+        .share(*workers, field=L - 1, crypto_provider=crypto_provider)
+        .get()
+        .child
+    )
 
     # 2)
     a_tilde_sh = a_sh + r_sh
     a_shares = a_sh.child
-    ptr0 = (a_shares[workers[0].id] + r_shares[workers[0].id])
-    beta0 = ((a_shares[workers[0].id] + r_shares[workers[0].id]) >= L).long() - ((a_shares[workers[0].id] + r_shares[workers[0].id]) < 0).long()
-    ptr1 = (a_shares[workers[1].id] + r_shares[workers[1].id])
-    beta1 = ((a_shares[workers[1].id] + r_shares[workers[1].id]) >= L).long() - ((a_shares[workers[1].id] + r_shares[workers[1].id]) < 0).long()
+    ptr0 = a_shares[workers[0].id] + r_shares[workers[0].id]
+    beta0 = ((a_shares[workers[0].id] + r_shares[workers[0].id]) >= L).long() - (
+        (a_shares[workers[0].id] + r_shares[workers[0].id]) < 0
+    ).long()
+    ptr1 = a_shares[workers[1].id] + r_shares[workers[1].id]
+    beta1 = ((a_shares[workers[1].id] + r_shares[workers[1].id]) >= L).long() - (
+        (a_shares[workers[1].id] + r_shares[workers[1].id]) < 0
+    ).long()
     beta = sy.MultiPointerTensor(children=[beta0.long(), beta1.long()])
 
     # 4)
     a_tilde_shares = a_tilde_sh.child
-    delta = (((a_tilde_shares[workers[0].id]*1).get() + (a_tilde_shares[workers[1].id]*1).get()) >= L).long()
+    delta = (
+        ((a_tilde_shares[workers[0].id] * 1).get() + (a_tilde_shares[workers[1].id] * 1).get()) >= L
+    ).long()
     x = a_tilde_sh.get()
 
     # 5)
     x_bit = decompose(x)
     x_bit_sh = x_bit.share(*workers, field=p, crypto_provider=crypto_provider).child
-    delta_sh = delta.share(*workers, field=L-1, crypto_provider=crypto_provider).child
+    delta_sh = delta.share(*workers, field=L - 1, crypto_provider=crypto_provider).child
 
     # 6)
     eta_p = private_compare(x_bit_sh, r, eta_pp)
@@ -281,7 +298,9 @@ def share_convert(a_sh):
     eta_p_sh = eta_p.share(*workers, field=L - 1, crypto_provider=crypto_provider).child
 
     # 9)
-    j = sy.MultiPointerTensor(children=[torch.tensor([0]).send(workers[0]), torch.tensor([1]).send(workers[1])])
+    j = sy.MultiPointerTensor(
+        children=[torch.tensor([0]).send(workers[0]), torch.tensor([1]).send(workers[1])]
+    )
     eta_sh = eta_p_sh + (1 - j) * eta_pp - 2 * eta_pp * eta_p_sh
 
     # 10)
@@ -296,21 +315,28 @@ def share_convert(a_sh):
 def relu_deriv(a_sh):
     assert isinstance(a_sh, sy.AdditiveSharingTensor)
     # TODO Protocol is incorrect (refer to article)
-    #return msb(a_sh)
+    # return msb(a_sh)
 
     alice, bob = a_sh.locations
     crypto_provider = a_sh.crypto_provider
     L = a_sh.field
 
     # Common randomness
-    u = torch.zeros(1).long().send(alice).share(alice, bob, field=L, crypto_provider=crypto_provider).get().child
+    u = (
+        torch.zeros(1)
+        .long()
+        .send(alice)
+        .share(alice, bob, field=L, crypto_provider=crypto_provider)
+        .get()
+        .child
+    )
 
     # 1)
     y_sh = 2 * a_sh
 
     # 2) Not applicable with algebraic shares
     # y_sh = share_convert(y_sh)
-    y_sh.field = (L - 1)
+    y_sh.field = L - 1
 
     # 3)
     alpha_sh = msb(y_sh)
