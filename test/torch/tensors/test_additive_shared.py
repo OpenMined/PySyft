@@ -20,6 +20,12 @@ def test_wrap(workers):
     assert isinstance(x.child.child, torch.Tensor)
 
 
+def test__str__(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x_sh = th.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+    assert isinstance(x_sh.__str__(), str)
+
+
 def test_encode_decode(workers):
 
     t = torch.tensor([1, 2, 3])
@@ -317,3 +323,39 @@ def test_argmax(workers):
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     ids = x.argmax(dim=1).get().float_prec()
     assert (ids.long() == torch.argmax(t, dim=1)).all()  # TODO rm .long()
+
+
+def test_mod(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([21]).share(bob, alice, crypto_provider=james)
+    assert t.child.mod(8).get() % 8 == torch.tensor([5])
+    assert t.child.mod(-8).get() % -8 == torch.tensor([-3])
+
+    t = torch.tensor([-21]).share(bob, alice, crypto_provider=james)
+    assert t.child.mod(8).get() % 8 == torch.tensor([3])
+    assert t.child.mod(-8).get() % -8 == torch.tensor([-5])
+
+    assert (t.child % 8).get() % 8 == torch.tensor([3])
+
+
+def test_unbind(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([21, 17]).share(bob, alice, crypto_provider=james).child
+
+    x0, x1 = torch.unbind(x)
+
+    assert x0.get() == torch.tensor(21)
+    assert x1.get() == torch.tensor(17)
+
+
+def test_handle_func_command(workers):
+    """
+    Just to show that handle_func_command works
+    Even is torch.abs should be hooked to return a correct value
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([-21]).share(bob, alice, crypto_provider=james).child
+    _ = torch.abs(t).get()

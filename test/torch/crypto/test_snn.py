@@ -2,7 +2,7 @@ import torch
 import torch as th
 import syft
 
-from syft.frameworks.torch.crypto.securenn import relu_deriv, private_compare, relu, decompose
+from syft.frameworks.torch.crypto.securenn import private_compare, decompose, share_convert
 
 
 def test_xor_implementation(workers):
@@ -65,6 +65,16 @@ def test_private_compare(workers):
     beta_p = private_compare(x_bit_sh, r, beta)
 
     assert not beta_p
+
+
+def test_share_convert(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x_bit_sh = torch.LongTensor([13]).share(alice, bob, crypto_provider=james).child
+    field = x_bit_sh.field
+
+    res = share_convert(x_bit_sh)
+    assert res.field == field - 1
 
 
 def test_relu(workers):
