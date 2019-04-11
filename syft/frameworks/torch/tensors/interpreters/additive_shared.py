@@ -216,15 +216,35 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return selected_shares
 
+    @overloaded.overload_method
+    def _getitem_public(self, self_shares, *indices):
+        """
+        Support x[i] where x is an AdditiveSharingTensor and i a MultiPointerTensor
+
+        Args:
+            self_shares (dict): the dict of shares of x
+            indices_shares (tuples of ints): integers indices
+
+        Returns:
+            an AdditiveSharingTensor
+        """
+        selected_shares = {}
+        for worker, share in self_shares.items():
+            selected_shares[worker] = share[indices]
+
+        return selected_shares
+
     def __getitem__(self, indices):
         tensor_type = type(indices)
+        print(tensor_type)
+
         if isinstance(indices, tuple):
-            for index in indices:
-                if isinstance(index, AbstractTensor):
-                    tensor_type = type(index)
+            tensor_type = type(indices[-1])
 
         if tensor_type == sy.MultiPointerTensor:
             return self._getitem_multipointer(indices)
+        elif tensor_type == int:
+            return self._getitem_public(indices)
         else:
             raise NotImplementedError("Index type", type(indices), "not supported")
 
@@ -504,50 +524,50 @@ class AdditiveSharingTensor(AbstractTensor):
     def __eq__(self, other):
         return self.eq(other)
 
-    def max(self):
-        tensor = self
-        values = torch.unbind(tensor, dim=0)
+    def max(self, dim=None, return_idx=False):
+        """
+
+        :param return_indices:
+        :param dim:
+        :return:
+        """
+        values = self
+        n_dim = len(self.shape)
+
+        # Make checks and transformation
+        assert dim is None or (0 <= dim < n_dim), f"Dim overflow  0 <= {dim} < {n_dim}"
+        # FIXME make it cleaner and robust for more options
+        if n_dim == 2:
+            if dim == None:
+                values = values.view(-1)
+            elif dim == 1:
+                values = values.t()
+        assert n_dim <= 2, "Max on tensor with len(shape) > 2 is not supported."
+
+        # Init max vals and idx to the first element
         max_value = values[0]
+        max_index = torch.tensor([0]).share(
+            *self.locations,
+            field=self.field,
+            crypto_provider=self.crypto_provider
+        ).child
+
         for i in range(1, len(values)):
             a = values[i]
             beta = a >= max_value
+            max_index = i * beta - max_index * (beta - 1)
             max_value = a * beta - max_value * (beta - 1)
 
-        return max_value
+        if dim is None and return_idx is False:
+            return max_value
+        else:
+            return max_value, max_index * 1000
 
     def argmax(self, dim=None):
-        tensor = self
-        if len(tensor.shape) == 1:
-            max_value = tensor.max()
 
-            indices = (
-                torch.arange(0, tensor.shape[0])
-                .fix_prec()
-                .share(*tensor.locations, crypto_provider=tensor.crypto_provider)
-                .child.child.child
-            )
-            index_select = (tensor == max_value).long()
+        max_value, max_index = self.max(dim=dim, return_idx=True)
 
-            cumsum = index_select.cumsum(0)
-            index_select = index_select * (cumsum == 1).long()
-
-            return (indices * index_select).sum()
-        elif len(tensor.shape) == 2:
-            if dim is not None:
-                if dim == 1:
-                    items = torch.unbind(tensor, dim=0)
-
-                    res = tuple([item.argmax(dim=dim) for item in items])
-
-                    return torch.stack(res)
-                else:
-                    raise NotImplementedError(
-                        "Argmax on tensor with len(shape) == 2 and dim != 1 is not supported."
-                    )
-            else:
-                return tensor.view(-1).argmax(dim=dim)
-        else:
-            raise NotImplementedError("Argmax on tensor with len(shape) > 2 is not supported.")
+        return max_index
 
     ## STANDARD
 
