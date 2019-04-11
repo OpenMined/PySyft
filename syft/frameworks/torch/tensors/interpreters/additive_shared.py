@@ -48,7 +48,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
 
-        self.field = (2 ** 62) if field is None else field  # < 63 bits
+        self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 63 bits
         self.n_bits = (
             n_bits if n_bits is not None else max(8, round(math.log(self.field, 2)))
         )  # < 63 bits
@@ -95,9 +95,11 @@ class AdditiveSharingTensor(AbstractTensor):
 
         shares = list()
 
-        for v in self.child.values():
-            shares.append(v.get())
-
+        for share in self.child.values():
+            if hasattr(share, 'child') and isinstance(share.child, sy.PointerTensor):
+                shares.append(share.get())
+            else:
+                shares.append(share.child)
         return sum(shares)
 
     def virtual_get(self):
@@ -165,6 +167,27 @@ class AdditiveSharingTensor(AbstractTensor):
             shares.append(share)
 
         return shares
+
+    def reconstruct(self):
+        """
+        Reconstruct the shares of the AdditiveSharingTensor remotely without
+        its owner being able to see any sensitive value
+
+        Returns:
+            A MultiPointerTensor where all workers hold the reconstructed value
+        """
+        workers = self.locations
+
+        ptr_to_sh = self.wrap().send(workers[0])
+        pointer = ptr_to_sh.remote_get()
+
+        pointers = [pointer]
+        for worker in workers[1:]:
+            pointers.append(
+                pointer.send(worker).remote_get()
+            )
+
+        return sy.MultiPointerTensor(children=pointers)
 
     @overloaded.overload_method
     def _getitem_multipointer(self, self_shares, indices_shares):
