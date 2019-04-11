@@ -22,9 +22,7 @@ def test_xor_implementation(workers):
 
 def test_private_compare(workers):
     """
-    Should be  β′ = β ⊕ (x > r).
-    :param workers:
-    :return:
+    Test private compare which returns: β′ = β ⊕ (x > r).
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
@@ -68,6 +66,9 @@ def test_private_compare(workers):
 
 
 def test_share_convert(workers):
+    """
+    This is a light test as share_convert is not used for the moment
+    """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     x_bit_sh = torch.LongTensor([13]).share(alice, bob, crypto_provider=james).child

@@ -1,12 +1,18 @@
 """
 This is an implementation of the SecureNN paper
 https://eprint.iacr.org/2018/442.pdf
+
+Note that there is a difference here in that our shares can be
+negative numbers while they are always positive in the paper
 """
 
 import torch
 
 import syft as sy
 
+
+# p is introduced in the SecureNN paper https://eprint.iacr.org/2018/442.pdf
+# it is a small field for efficient additive sharing
 p = 67
 
 # Q field
@@ -28,6 +34,9 @@ def decompose(tensor):
 
 
 def flip(x, dim):
+    """
+    Reverse the order of the elements in a tensor
+    """
     indices = torch.arange(x.shape[dim] - 1, -1, -1).long()
 
     if hasattr(x, "child") and isinstance(x.child, dict):
@@ -37,7 +46,10 @@ def flip(x, dim):
 
 
 def _random_common_bit(*workers):
-
+    """
+    Return a bit chosen by a worker and sent to all workers,
+    in the form of a MultiPointerTensor
+    """
     pointer = torch.LongTensor([1]).send(workers[0]).random_(2)
     pointers = [pointer]
     for worker in workers[1:]:
@@ -47,9 +59,12 @@ def _random_common_bit(*workers):
     return bit
 
 
-def _random_common_value(value, *workers):
-
-    pointer = torch.LongTensor([1]).send(workers[0]).random_(value)
+def _random_common_value(max_value, *workers):
+    """
+    Return n in [0, max_value-1] chosen by a worker and sent to all workers,
+    in the form of a MultiPointerTensor
+    """
+    pointer = torch.LongTensor([1]).send(workers[0]).random_(max_value)
     pointers = [pointer]
     for worker in workers[1:]:
         pointers.append((pointer * 1).move(worker))
@@ -85,7 +100,7 @@ def private_compare(x, r, BETA):
     # https://eprint.iacr.org/2018/442.pdf
 
     # 1)
-    t = torch.fmod((r + 1), L)
+    t = (r + 1) % L
 
     # Mask for the case r == 2^l −1
     R_MASK = (r == (L - 1)).long()
@@ -152,7 +167,7 @@ def private_compare(x, r, BETA):
 
 def msb(a_sh):
     """
-    Compute the most significant bit in a_sh, this is an implemtation of the
+    Compute the most significant bit in a_sh, this is an implementation of the
     SecureNN paper https://eprint.iacr.org/2018/442.pdf
 
     Args:
@@ -223,7 +238,7 @@ def msb(a_sh):
 
 def share_convert(a_sh):
     """
-    Convert shares of a in field L to shares of a in field L -1
+    Convert shares of a in field L to shares of a in field L - 1
 
     Args:
         a_sh (AdditiveSharingTensor): the additive sharing tensor who owns
@@ -313,9 +328,17 @@ def share_convert(a_sh):
 
 
 def relu_deriv(a_sh):
-    assert isinstance(a_sh, sy.AdditiveSharingTensor)
-    # TODO Protocol is incorrect (refer to article)
-    # return msb(a_sh)
+    """
+    Compute the derivative of Relu
+
+    Args:
+        a_sh (AdditiveSharingTensor): the private tensor on which the op applies
+
+    Returns:
+        0 if Dec(a_sh) < 0
+        1 if Dec(a_sh) > 0
+        encrypted in an AdditiveSharingTensor
+    """
 
     alice, bob = a_sh.locations
     crypto_provider = a_sh.crypto_provider
@@ -349,6 +372,23 @@ def relu_deriv(a_sh):
     return gamma_sh
 
 
-def relu(a):
-    # TODO Protocol is incorrect (refer to article)
-    return a * relu_deriv(a)
+def relu(a_sh):
+    """
+    Compute Relu
+
+    Args:
+        a_sh (AdditiveSharingTensor): the private tensor on which the op applies
+
+    Returns:
+        Dec(a_sh) > 0
+        encrypted in an AdditiveSharingTensor
+    """
+
+    alice, bob = a_sh.locations
+    crypto_provider = a_sh.crypto_provider
+    L = a_sh.field
+
+    # Common Randomness
+    u = torch.zeros(1).long().share(alice, bob, field=L, crypto_provider=crypto_provider).child
+
+    return a_sh * relu_deriv(a_sh) + u

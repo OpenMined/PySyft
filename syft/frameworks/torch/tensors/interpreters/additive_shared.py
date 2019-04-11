@@ -234,7 +234,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def __getitem__(self, indices):
         tensor_type = type(indices)
-        print(tensor_type)
 
         if isinstance(indices, tuple):
             tensor_type = type(indices[-1])
@@ -453,6 +452,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         @overloaded.function
         def stack(tensors_shares, **kwargs):
+
             results = {}
 
             workers = tensors_shares[0].keys()
@@ -524,10 +524,18 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def max(self, dim=None, return_idx=False):
         """
+        Return the maximum value of an additive shared tensor
 
-        :param return_indices:
-        :param dim:
-        :return:
+        Args:
+            dim (None or int): if not None, the dimension on which
+                the comparison should be done
+            return_idx (bool): Return the index of the maximum value
+                Note the if dim is specified then the index is returned
+                anyway to match the Pytorch syntax.
+
+        return:
+            the maximum value (possibly across an axis)
+            and optionally the index of the maximum value (possibly across an axis)
         """
         values = self
         n_dim = len(self.shape)
