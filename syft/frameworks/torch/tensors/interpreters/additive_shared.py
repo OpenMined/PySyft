@@ -1,3 +1,4 @@
+import math
 import torch
 import syft as sy
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
@@ -44,10 +45,14 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
 
-        self.field = (2 ** 31) if field is None else field  # < 63 bits
-        self.n_bits = 31 if n_bits is None else n_bits  # < 63 bits
-        assert 2 ** self.n_bits == self.field
-        self.crypto_provider = crypto_provider
+        self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 63 bits
+        self.n_bits = (
+            n_bits if n_bits is not None else max(8, round(math.log(self.field, 2)))
+        )  # < 63 bits
+        # assert 2 ** self.n_bits == self.field
+        self.crypto_provider = (
+            crypto_provider if crypto_provider is not None else sy.hook.local_worker
+        )
 
     def __repr__(self):
         return self.__str__()
@@ -87,9 +92,11 @@ class AdditiveSharingTensor(AbstractTensor):
 
         shares = list()
 
-        for v in self.child.values():
-            shares.append(v.get())
-
+        for share in self.child.values():
+            if hasattr(share, "child") and isinstance(share.child, sy.PointerTensor):
+                shares.append(share.get())
+            else:
+                shares.append(share.child)
         return sum(shares)
 
     def virtual_get(self):
@@ -158,6 +165,25 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return shares
 
+    def reconstruct(self):
+        """
+        Reconstruct the shares of the AdditiveSharingTensor remotely without
+        its owner being able to see any sensitive value
+
+        Returns:
+            A MultiPointerTensor where all workers hold the reconstructed value
+        """
+        workers = self.locations
+
+        ptr_to_sh = self.wrap().send(workers[0])
+        pointer = ptr_to_sh.remote_get()
+
+        pointers = [pointer]
+        for worker in workers[1:]:
+            pointers.append(pointer.send(worker).remote_get())
+
+        return sy.MultiPointerTensor(children=pointers)
+
     @overloaded.overload_method
     def _getitem_multipointer(self, self_shares, indices_shares):
         """
@@ -185,15 +211,34 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return selected_shares
 
+    @overloaded.overload_method
+    def _getitem_public(self, self_shares, *indices):
+        """
+        Support x[i] where x is an AdditiveSharingTensor and i a MultiPointerTensor
+
+        Args:
+            self_shares (dict): the dict of shares of x
+            indices_shares (tuples of ints): integers indices
+
+        Returns:
+            an AdditiveSharingTensor
+        """
+        selected_shares = {}
+        for worker, share in self_shares.items():
+            selected_shares[worker] = share[indices]
+
+        return selected_shares
+
     def __getitem__(self, indices):
         tensor_type = type(indices)
+
         if isinstance(indices, tuple):
-            for index in indices:
-                if isinstance(index, AbstractTensor):
-                    tensor_type = type(index)
+            tensor_type = type(indices[-1])
 
         if tensor_type == sy.MultiPointerTensor:
             return self._getitem_multipointer(indices)
+        elif tensor_type == int:
+            return self._getitem_public(indices)
         else:
             raise NotImplementedError("Index type", type(indices), "not supported")
 
@@ -386,6 +431,51 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.matmul = matmul
 
+        @overloaded.function
+        def unbind(tensor_shares, **kwargs):
+            results = None
+
+            for worker, share in tensor_shares.items():
+                share_results = torch.unbind(share, **kwargs)
+                if results is None:
+                    results = [{worker: share_result} for share_result in share_results]
+                else:
+                    for result, share_result in zip(results, share_results):
+                        result[worker] = share_result
+
+            return results
+
+        module.unbind = unbind
+
+        @overloaded.function
+        def stack(tensors_shares, **kwargs):
+
+            results = {}
+
+            workers = tensors_shares[0].keys()
+
+            for worker in workers:
+                tensors_share = []
+                for tensor_shares in tensors_shares:
+                    tensor_share = tensor_shares[worker]
+                    tensors_share.append(tensor_share)
+                stacked_share = torch.stack(tensors_share, **kwargs)
+                results[worker] = stacked_share
+
+            return results
+
+        module.stack = stack
+
+        def max(tensor, **kwargs):
+            return tensor.max(**kwargs)
+
+        module.max = max
+
+        def argmax(tensor, **kwargs):
+            return tensor.argmax(**kwargs)
+
+        module.argmax = argmax
+
     ## SECTION SNN
 
     def relu(self):
@@ -429,6 +519,59 @@ class AdditiveSharingTensor(AbstractTensor):
     def __eq__(self, other):
         return self.eq(other)
 
+    def max(self, dim=None, return_idx=False):
+        """
+        Return the maximum value of an additive shared tensor
+
+        Args:
+            dim (None or int): if not None, the dimension on which
+                the comparison should be done
+            return_idx (bool): Return the index of the maximum value
+                Note the if dim is specified then the index is returned
+                anyway to match the Pytorch syntax.
+
+        return:
+            the maximum value (possibly across an axis)
+            and optionally the index of the maximum value (possibly across an axis)
+        """
+        values = self
+        n_dim = len(self.shape)
+
+        # Make checks and transformation
+        assert dim is None or (0 <= dim < n_dim), f"Dim overflow  0 <= {dim} < {n_dim}"
+        # FIXME make it cleaner and robust for more options
+        if n_dim == 2:
+            if dim == None:
+                values = values.view(-1)
+            elif dim == 1:
+                values = values.t()
+        assert n_dim <= 2, "Max on tensor with len(shape) > 2 is not supported."
+
+        # Init max vals and idx to the first element
+        max_value = values[0]
+        max_index = (
+            torch.tensor([0])
+            .share(*self.locations, field=self.field, crypto_provider=self.crypto_provider)
+            .child
+        )
+
+        for i in range(1, len(values)):
+            a = values[i]
+            beta = a >= max_value
+            max_index = i * beta - max_index * (beta - 1)
+            max_value = a * beta - max_value * (beta - 1)
+
+        if dim is None and return_idx is False:
+            return max_value
+        else:
+            return max_value, max_index * 1000
+
+    def argmax(self, dim=None):
+
+        max_value, max_index = self.max(dim=dim, return_idx=True)
+
+        return max_index
+
     ## STANDARD
 
     @staticmethod
@@ -467,15 +610,16 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
 
-        tensor = args[0]
+        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
         except AttributeError:
             pass
+        if not isinstance(cmd, str):
+            return cmd(*args, **kwargs)
 
         # TODO: I can't manage the import issue, can you?
         # Replace all LoggingTensor with their child attribute
