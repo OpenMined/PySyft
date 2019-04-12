@@ -633,3 +633,23 @@ class TorchTensor(AbstractTensor):
         return SensitivityTensor(
             values=self, max_ent_conts=max_ent_conts, min_ent_conts=min_ent_conts
         ).wrap()
+
+    @property
+    def sensitivity(self):
+        return self.child.sensitivity
+
+    @property
+    def entity_sensitivity(self):
+        return self.child.entity_sensitivity
+
+    @property
+    def min_vals(self):
+        return self.child.min_vals
+
+    @property
+    def max_vals(self):
+        return self.child.max_vals
+
+    @property
+    def entities(self):
+        return self.child.entities

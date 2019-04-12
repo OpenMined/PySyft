@@ -27,11 +27,12 @@ A function on these values might be
 
 z = x + y
 
-This tensor seeks to answer the question "what is the maximum amount z would change
+This tensor type seeks to answer the question "what is the maximum amount z would change
 if Bob or Alice were not included in the computation?". At first, one might say that
 "the max for Bob is 5 and the max for Alice is 6." However, this is incorrect. In fact,
 if we assume that Alice and Bob could have set their input variables to be *anything*
-then the sensitivity is actually infinite.
+then the sensitivity is actually infinite (aka - we don't look at the VALUE of x and y,
+we look at the MAXIMUM positive or negative value x or y could have taken on).
 
 Thus, by default, any value should have infinite sensitivity.
 
@@ -52,7 +53,7 @@ input is 10. Note that the max value z could actually take is 20, but this is di
 the max sensitivity.
 
 The goal of this tensor is to make this kind of logic automatically happen on tensor objects so
-that we can chan arbitrary tensor commands one after the other and always keep track of the
+that we can chain arbitrary tensor commands one after the other and always keep track of the
 maximum amount that the output would change if ANY user were removed. This means we keep track
 of the maximum positive and negative change any entity can have on any tensor value. In the case
 that only one entity contributes to a variable (i.e., they initialized the variable), then the
@@ -79,6 +80,7 @@ class SensitivityTensor(AbstractTensor):
         max_ent_conts: th.Tensor,
         min_ent_conts: th.Tensor,
         entities: th.Tensor = None,
+        skip_checks: bool = False,
     ):
         """Initializes sensitivity tensor.
 
@@ -107,15 +109,26 @@ class SensitivityTensor(AbstractTensor):
                 possible range within the tensors used to create it (it's "ancestry").
 
             entities (torch.Tensor): a matrix of 1s and 0s which corresponds to whether or not a given entity
-                was used to help encode a specific value. TODO: remove this tensor & sparsely encode max_ent_conts/min_ent_conts
-                TODO (cont): instead.
+                was used to help encode a specific value.
+                TODO: remove this tensor & sparsely encode max_ent_conts/min_ent_conts instead.
         """
-        _type = values.type()
+        self._type = values.type()
 
         self.child = values
 
+        if not skip_checks:
+            assert (max_ent_conts >= min_ent_conts).all()
+
+            if len(self.child.shape) != (len(min_ent_conts.shape) - 1):
+                print(len(self.child.shape))
+                print(len(min_ent_conts.shape))
+                raise MissingEntitiesDimensionException
+
+            if len(self.child.shape) != (len(max_ent_conts.shape) - 1):
+                raise MissingEntitiesDimensionException
+
         # to be clear, every entry in self.child has a list of corresponding entries, one for each entity.
-        # Thus, self.max_ent_conts and self.min_ent_conts are the same shape as self.child with on added dimension
+        # Thus, self.max_ent_conts and self.min_ent_conts are the same shape as self.child with one added dimension
         # at the end of length #num entities (number of known entities - which must be known a-prior ATM)
 
         self.max_ent_conts = max_ent_conts  # (self.child.shape..., #num entities)
@@ -123,9 +136,22 @@ class SensitivityTensor(AbstractTensor):
 
         if entities is None:
             entities = self.max_ent_conts != self.min_ent_conts
+        else:
+            if not skip_checks:
+                assert entities.type() == self._type
 
         # one hot encoding of entities in the ancestry of this tensor
+        # TODO: make this a function of (max_ent_conts != min_ent_conts) with smart caching where appropriate
         self.entities = entities  # (self.child.shape..., #num entities)
+
+        if not skip_checks:
+            t2c = sy.frameworks.torch.utils.tensortype2caster
+            minv = self.min_vals
+            maxv = self.max_vals
+            if not (t2c[minv.type()](self.child) >= self.min_vals).all():
+                raise ValuesOutOfSpecifiedMinMaxRangeException
+            if not (t2c[maxv.type()](self.child) <= self.max_vals).all():
+                raise ValuesOutOfSpecifiedMinMaxRangeException
 
     def __add__(self, other):
         """Adds the self tensor with a tensor or a scalar/tensor of equal shape, keeping track of sensitivity
@@ -316,7 +342,7 @@ class SensitivityTensor(AbstractTensor):
         if isinstance(other, SensitivityTensor):
 
             # just telling the data to do subtraction... nothing to see here
-            new_vals = self.child - other.values
+            new_vals = self.child - other.child
 
             # note that other.max/min values are reversed on purpose
             # because this functionality is equivalent to
@@ -525,7 +551,8 @@ class SensitivityTensor(AbstractTensor):
 
     @entities.setter
     def entities(self, x):
-        self._entities = x.float()
+        x = sy.frameworks.torch.utils.tensortype2caster[self.max_ent_conts.type()](x)
+        self._entities = x
 
     @property
     def id(self):
@@ -544,3 +571,25 @@ class SensitivityTensor(AbstractTensor):
 
     def hard_sigmoid_deriv(self, leak=0.01):
         return ((self < 1) * (self > 0)) + (self < 0) * leak - (self > 1) * leak
+
+
+class MissingEntitiesDimensionException(Exception):
+    def __init__(self):
+        message = (
+            "You must initialize min_ent_conts and max_ent_conts with an extra dimension"
+            "of length num_entities."
+        )
+
+        super().__init__(message)
+
+
+class ValuesOutOfSpecifiedMinMaxRangeException(Exception):
+    def __init__(self):
+
+        message = (
+            "You tried to initialize a SensitivityTensor whose values were outside"
+            "of the specified min and max range. Most likely this means your min and"
+            "max range are incorrect."
+        )
+
+        super().__init__(message)
