@@ -717,7 +717,7 @@ class BaseWorker(AbstractWorker):
         shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
         return sy.hook.torch.Size(shape)
 
-    def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":
+    def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
         Args:
