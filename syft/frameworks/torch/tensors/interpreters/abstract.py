@@ -59,7 +59,7 @@ class AbstractTensor(ABC):
     def __len__(self) -> int:
         """Alias .shape[0] with len(), helpful for pointers"""
         try:
-            if hasattr(self, "child"):
+            if hasattr(self, "child") and not isinstance(self.child, dict):
                 return self.child.shape[0]
             else:
                 return self.shape[0]

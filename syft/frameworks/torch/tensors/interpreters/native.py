@@ -554,10 +554,12 @@ class TorchTensor(AbstractTensor):
     fix_precision_ = fix_prec_
 
     def share(self, *owners, field=None, crypto_provider=None):
-        """This is a passthrough method which calls .share on the child.
+        """This is a pass through method which calls .share on the child.
 
         Args:
-            owners: a list of BaseWorker objects determining who to send shares to.
+            owners (list): a list of BaseWorker objects determining who to send shares to
+            field (int or None): the arithmetic field where live the shares
+            crypto_provider (BaseWorker or None): the worker providing the crypto primitives
         """
 
         if self.has_child():
@@ -573,13 +575,21 @@ class TorchTensor(AbstractTensor):
             .wrap()
         )
 
+    def share_(self, *args, **kwargs):
+        """
+        Allows to call .share() as an inplace operation
+        """
+        tensor = self.share(*args, **kwargs)
+        self.child = tensor.child
+        return self
+
     def combine(self, *pointers):
         """This method will combine the child pointer with another list of pointers
 
         Args:
             *pointers a list of pointers to be combined into a MultiPointerTensor
 
-            """
+        """
 
         assert isinstance(self.child, PointerTensor)
 

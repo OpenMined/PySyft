@@ -87,7 +87,7 @@ def test_torch_add():
 
 
 def test_torch_mul():
-
+    # mul with non standard fix precision
     x = torch.tensor([2.113]).fix_prec(precision_fractional=2)
 
     y = torch.mul(x, x)
@@ -98,6 +98,26 @@ def test_torch_mul():
     y = y.float_prec()
 
     assert y == torch.tensor([4.45])
+
+    # Mul with negative numbers
+    x = torch.tensor([2.113]).fix_prec()
+    y = torch.tensor([-0.113]).fix_prec()
+
+    z = torch.mul(x, y)
+
+    assert z.child.precision_fractional == 3
+
+    z = z.float_prec()
+    assert z == torch.tensor([-0.2380])
+
+    # mixing + and *
+    z = torch.mul(x, y + y)
+
+    assert z.child.precision_fractional == 3
+
+    z = z.float_prec()
+
+    assert z == torch.tensor([-0.4770])
 
 
 def test_torch_addmm():
@@ -117,6 +137,15 @@ def test_torch_nn_functional_linear():
     result = F.linear(tensor, weight).float_prec()
 
     expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
+
+    assert (result == expected).all()
+
+    tensor = nn.Parameter(torch.tensor([[1.0, -2], [3, 4]])).fix_prec()
+    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec()
+
+    result = F.linear(tensor, weight).float_prec()
+
+    expected = torch.tensor([[-3.0, -5], [11.0, 25.0]])
 
     assert (result == expected).all()
 
