@@ -59,7 +59,13 @@ class BaseWorker(AbstractWorker):
     """
 
     def __init__(
-        self, hook, id=0, data=None, is_client_worker=False, log_msgs=False, verbose=False
+        self,
+        hook: "sy.TorchHook",
+        id: Union[int, str] = 0,
+        data: Union[List, tuple] = None,
+        is_client_worker: bool = False,
+        log_msgs: bool = False,
+        verbose: bool = False,
     ):
         """Initializes a BaseWorker."""
 
@@ -157,8 +163,6 @@ class BaseWorker(AbstractWorker):
         Args:
 
             data: A list of tensors
-
-
         """
 
         if data:
@@ -298,11 +302,15 @@ class BaseWorker(AbstractWorker):
         self.send_obj(obj, worker)
         return pointer
 
-    def execute_command(self, message):
+    def execute_command(self, message: tuple) -> PointerTensor:
         """
-        Execute commands received from other workers
-        :param message: the message specifying the command and the args
-        :return: a pointer to the result
+        Executes commands received from other workers.
+
+        Args:
+            message: A tuple specifying the command and the args.
+
+        Returns:
+            A pointer to the result.
         """
 
         (command_name, _self, args, kwargs), return_ids = message
@@ -347,12 +355,20 @@ class BaseWorker(AbstractWorker):
                 )
                 raise ResponseSignatureError(return_ids.generated)
 
-    def send_command(self, recipient, message, return_ids=None):
+    def send_command(
+        self, recipient: "BaseWorker", message: str, return_ids: str = None
+    ) -> Union[List[PointerTensor], PointerTensor]:
         """
-        Send a command through a message to a recipient worker
-        :param recipient:
-        :param message:
-        :return:
+        Sends a command through a message to a recipient worker.
+
+        Args:
+            recipient: A recipient worker.
+            message: A string representing the message being sent.
+            return_ids: A list of strings indicating the ids of the
+                tensors that should be returned as response to the command execution.
+
+        Returns:
+            A list of PointerTensors or a single PointerTensor if just one response is expected.
         """
         if return_ids is None:
             return_ids = [int(10e10 * random.random())]
@@ -437,7 +453,7 @@ class BaseWorker(AbstractWorker):
 
         return obj
 
-    def respond_to_obj_req(self, obj_id):
+    def respond_to_obj_req(self, obj_id: Union[str, int]):
         """Returns the deregistered object from registry.
 
         Args:
@@ -448,7 +464,7 @@ class BaseWorker(AbstractWorker):
         self.de_register_obj(obj)
         return obj
 
-    def register_obj(self, obj, obj_id=None):
+    def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
 
         Selects an id for the object, assigns a list of owners, and establishes
@@ -465,7 +481,7 @@ class BaseWorker(AbstractWorker):
                 obj.id = obj_id
             self.set_obj(obj)
 
-    def de_register_obj(self, obj, _recurse_torch_objs=True):
+    def de_register_obj(self, obj: object, _recurse_torch_objs: bool = True):
         """Deregisters the specified object.
 
         Deregister and remove attributes which are indicative of registration.
@@ -482,7 +498,7 @@ class BaseWorker(AbstractWorker):
         if hasattr(obj, "_owner"):
             del obj._owner
 
-    def rm_obj(self, remote_key):
+    def rm_obj(self, remote_key: Union[str, int]):
         """Removes an object.
 
         Remove the object from the permanent object registry if it exists.
@@ -496,7 +512,7 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: convenience methods for constructing frequently used messages
 
-    def send_obj(self, obj, location):
+    def send_obj(self, obj: object, location: "BaseWorker"):
         """Send a torch object to a worker.
 
         Args:
@@ -506,7 +522,7 @@ class BaseWorker(AbstractWorker):
         """
         return self.send_msg(MSGTYPE.OBJ, obj, location)
 
-    def request_obj(self, obj_id, location):
+    def request_obj(self, obj_id: Union[str, int], location: "BaseWorker") -> object:
         """Returns the requested object from specified location.
 
         Args:
@@ -522,7 +538,9 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: Manage the workers network
 
-    def get_worker(self, id_or_worker, fail_hard=False):
+    def get_worker(
+        self, id_or_worker: Union[str, int, "BaseWorker"], fail_hard: bool = False
+    ) -> Union[str, int]:
         """Returns the worker id or instance.
 
         Allows for resolution of worker ids to workers to happen automatically
@@ -581,7 +599,7 @@ class BaseWorker(AbstractWorker):
 
         return id_or_worker
 
-    def add_worker(self, worker):
+    def add_worker(self, worker: "BaseWorker"):
         """Adds a single worker.
 
         Adds a worker to the list of _known_workers internal to the BaseWorker.
@@ -628,7 +646,7 @@ class BaseWorker(AbstractWorker):
             )
         self._known_workers[worker.id] = worker
 
-    def add_workers(self, workers):
+    def add_workers(self, workers: List["BaseWorker"]):
         """Adds several workers in a single call.
 
         Args:
@@ -680,39 +698,45 @@ class BaseWorker(AbstractWorker):
     def is_tensor_none(obj):
         return obj is None
 
-    def request_is_remote_tensor_none(self, pointer):
+    def request_is_remote_tensor_none(self, pointer: PointerTensor):
         """
-        Send a request to the remote worker that holds the target a pointer if
+        Sends a request to the remote worker that holds the target a pointer if
         the value of the remote tensor is None or not.
         Note that the pointer must be valid: if there is no target (which is
         different from having a target equal to None), it will return an error.
 
         Args:
-            :param pointer: the pointer on which we can to get information
+            pointer: The pointer on which we can to get information.
 
-        :return: a boolean stating if the remote value is None
+        Returns:
+            A boolean stating if the remote value is None.
         """
         return self.send_msg(MSGTYPE.IS_NONE, pointer, location=pointer.location)
 
     @staticmethod
-    def get_tensor_shape(obj):
+    def get_tensor_shape(tensor: torch.Tensor) -> List:
         """
-        Return the shape of a tensor casted into a list, to bypass the serialization of
+        Returns the shape of a tensor casted into a list, to bypass the serialization of
         a torch.Size object.
-        :param obj: torch.Tensor
-        :return: a list containing the tensor shape
-        """
-        return list(obj.shape)
 
-    def request_remote_tensor_shape(self, pointer):
+        Args:
+            tensor: A torch.Tensor.
+
+        Returns:
+            A list containing the tensor shape.
         """
-        Send a request to the remote worker that holds the target a pointer to
+        return list(tensor.shape)
+
+    def request_remote_tensor_shape(self, pointer: PointerTensor) -> "sy.hook.torch.Size":
+        """
+        Sends a request to the remote worker that holds the target a pointer to
         have its shape.
 
         Args:
-            :param pointer: the pointer on which we can to get the shape
+            pointer: A pointer on which we want to get the shape.
 
-        :return: a torch.Size object for the shape
+        Returns:
+            A torch.Size object for the shape.
         """
         shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
         return sy.hook.torch.Size(shape)
@@ -726,18 +750,16 @@ class BaseWorker(AbstractWorker):
         Returns:
             A plan if a plan with the given `plan_id` exists. Returns None otherwise.
         """
-        if plan_id not in self._objects:
-            return None
-
-        candidate = self._objects[plan_id]
-        if isinstance(candidate, sy.Plan):
-            plan = candidate.copy()
-            plan.owner = sy.local_worker
-            return plan
+        if plan_id in self._objects:
+            candidate = self._objects[plan_id]
+            if isinstance(candidate, sy.Plan):
+                plan = candidate.copy()
+                plan.owner = sy.local_worker
+                return plan
 
         return None
 
-    def search(self, *query):
+    def search(self, *query: List[str]) -> List[PointerTensor]:
         """Search for a match between the query terms and a tensor's Id, Tag, or Description.
 
         Note that the query is an AND query meaning that every item in the list of strings (query*)
@@ -787,7 +809,8 @@ class BaseWorker(AbstractWorker):
         return results
 
     def deserialized_search(self, query_items: Tuple[str]) -> List[PointerTensor]:
-        """Called when a message requesting a call to `search` is received.
+        """
+        Called when a message requesting a call to `search` is received.
         The serialized arguments will arrive as a `tuple` and it needs to be
         transformed to an arguments list.
 
@@ -803,17 +826,17 @@ class BaseWorker(AbstractWorker):
     def generate_triple(
         self, cmd: Callable, field: int, a_size: tuple, b_size: tuple, locations: list
     ):
-        """Generates a multiplication triple and sends it to all locations
+        """Generates a multiplication triple and sends it to all locations.
 
         Args:
-            cmd: equation in einsum notation
-            field: integer representing the field size
-            a_size: tuple which is the size that a should be
-            b_size: tuple which is the size that b should be
-            locations: a list of workers where the triple should be shared between
+            cmd: An equation in einsum notation.
+            field: An integer representing the field size.
+            a_size: A tuple which is the size that a should be.
+            b_size: A tuple which is the size that b should be.
+            locations: A list of workers where the triple should be shared between.
 
-        return:
-            a triple of AdditiveSharedTensors such that c_shared = cmd(a_shared, b_shared)
+        Returns:
+            A triple of AdditiveSharedTensors such that c_shared = cmd(a_shared, b_shared).
         """
         a = self.torch.randint(field, a_size)
         b = self.torch.randint(field, b_size)
