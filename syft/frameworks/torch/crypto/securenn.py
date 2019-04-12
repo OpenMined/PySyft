@@ -271,7 +271,7 @@ def share_convert(a_sh):
         .long()
         .send(*workers)
         .child
-    )  # FIXME security
+    )  # FIXME security issue: the local worker learns alpha while this should be avoided
     u_sh = (
         torch.zeros(1)
         .long()
