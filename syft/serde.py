@@ -50,12 +50,14 @@ import syft
 import syft as sy
 
 from syft.workers import AbstractWorker
+from syft.workers import VirtualWorker
 from syft.workers import Plan
 
 from syft.exceptions import CompressionNotFoundException
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 
@@ -979,7 +981,7 @@ def _simplify_additive_shared_tensor(tensor: AdditiveSharingTensor) -> tuple:
     """
     This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
     Args:
-        tensor (AdditiveSharingTensor): a LogTensor
+        tensor (AdditiveSharingTensor): a AdditiveSharingTensor
     Returns:
         tuple: a tuple holding the unique attributes of the additive shared tensor
     Examples:
@@ -1011,6 +1013,46 @@ def _detail_additive_shared_tensor(
     tensor = AdditiveSharingTensor(
         owner=worker, id=tensor_id, field=field, crypto_provider=worker.get_worker(crypto_provider)
     )
+
+    if chain is not None:
+        chain = _detail(worker, chain)
+        tensor.child = chain
+
+    return tensor
+
+
+def _simplify_multi_pointer_tensor(tensor: MultiPointerTensor) -> tuple:
+    """
+    This function takes the attributes of a MultiPointerTensor and saves them in a tuple
+    Args:
+        tensor (MultiPointerTensor): a MultiPointerTensor
+    Returns:
+        tuple: a tuple holding the unique attributes of the additive shared tensor
+    Examples:
+        data = _simplify_additive_shared_tensor(tensor)
+    """
+
+    chain = None
+    if hasattr(tensor, "child"):
+        chain = _simplify(tensor.child)
+    return (tensor.id, chain)
+
+
+def _detail_multi_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> MultiPointerTensor:
+    """
+        This function reconstructs a MultiPointerTensor given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the MultiPointerTensor
+        Returns:
+            MultiPointerTensor: a MultiPointerTensor
+        Examples:
+            multi_pointer_tensor = _detail_multi_pointer_tensor(data)
+        """
+
+    tensor_id, chain = tensor_tuple
+
+    tensor = MultiPointerTensor(owner=worker, id=tensor_id)
 
     if chain is not None:
         chain = _detail(worker, chain)
@@ -1066,6 +1108,33 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
     plan.readable_plan = _detail(worker, readable_plan)
 
     return plan
+
+
+def _simplify_worker(worker: AbstractWorker) -> tuple:
+    """
+
+    """
+
+    return (worker.id,)
+
+
+def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor:
+    """
+    This function reconstructs a PlanPointer given it's attributes in form of a tuple.
+
+    Args:
+        worker: the worker doing the deserialization
+        plan_pointer_tuple: a tuple holding the attributes of the PlanPointer
+    Returns:
+        PointerTensor: a PointerTensor
+    Examples:
+        ptr = _detail_pointer_tensor(data)
+    """
+    worker_id = worker_tuple[0]
+
+    referenced_worker = worker.get_worker(worker_id)
+
+    return referenced_worker
 
 
 # High Level Simplification Router
@@ -1129,7 +1198,9 @@ simplifiers = {
     PointerTensor: [11, _simplify_pointer_tensor],
     LoggingTensor: [12, _simplify_log_tensor],
     AdditiveSharingTensor: [13, _simplify_additive_shared_tensor],
-    Plan: [14, _simplify_plan],
+    MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
+    Plan: [15, _simplify_plan],
+    VirtualWorker: [16, _simplify_worker],
 }
 
 
@@ -1173,5 +1244,7 @@ detailers = [
     _detail_pointer_tensor,
     _detail_log_tensor,
     _detail_additive_shared_tensor,
+    _detail_multi_pointer_tensor,
     _detail_plan,
+    _detail_worker,
 ]
