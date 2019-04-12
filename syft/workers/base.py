@@ -719,21 +719,23 @@ class BaseWorker(AbstractWorker):
         shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
         return sy.hook.torch.Size(shape)
 
-    def fetch_plan(self, plan_id):
+    def fetch_plan(self, plan_id: str) -> object:
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
         Args:
             plan_id: A string indicating the plan id.
 
         Returns:
-            A plan if a plan with the given `plan_id` exists. Otherwhise returns None.
+            A plan if a plan with the given `plan_id` exists. Returns None otherwise.
         """
-        if plan_id in self._objects:
-            candidate = self._objects[plan_id]
-            if isinstance(candidate, sy.Plan):
-                plan = candidate.copy()
-                plan.owner = sy.local_worker
-                return plan
+        if plan_id not in self._objects:
+            return None
+
+        candidate = self._objects[plan_id]
+        if isinstance(candidate, sy.Plan):
+            plan = candidate.copy()
+            plan.owner = sy.local_worker
+            return plan
 
         return None
 
