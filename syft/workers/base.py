@@ -167,7 +167,6 @@ class BaseWorker(AbstractWorker):
                 tensor.owner = self
 
     def send_msg(self, msg_type: int, message: str, location: "BaseWorker") -> object:
-
         """Implements the logic to send messages.
 
         The message is serialized and sent to the specified location. The
@@ -381,7 +380,6 @@ class BaseWorker(AbstractWorker):
         return responses
 
     def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
-
         """Adds an object to the registry of objects.
 
         Args:
@@ -719,7 +717,7 @@ class BaseWorker(AbstractWorker):
         shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
         return sy.hook.torch.Size(shape)
 
-    def fetch_plan(self, plan_id: str) -> object:
+    def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
         Args:
