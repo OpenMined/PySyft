@@ -205,11 +205,11 @@ def test_obj_not_found(workers):
 
 def test_spinup_time(hook):
     """Tests to ensure that virtual workers intialized with 10000 data points
-    load in under 0.01 seconds."""
+    load in under 0.05 seconds."""
     data = []
     for i in range(10000):
         data.append(th.Tensor(5, 5).random_(100))
     start_time = time()
     dummy = sy.VirtualWorker(hook, id="dummy", data=data)
     end_time = time()
-    assert (end_time - start_time) < 0.01
+    assert (end_time - start_time) < 0.05
