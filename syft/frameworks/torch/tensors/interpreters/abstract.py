@@ -5,7 +5,7 @@ import torch
 from typing import List
 
 import syft as sy
-
+import weakref
 
 class AbstractTensor(ABC):
     """
@@ -111,7 +111,7 @@ class AbstractTensor(ABC):
         wrapper = torch.Tensor()
         wrapper.child = self
         wrapper.is_wrapper = True
-        # wrapper.child.parent = weakref.ref(wrapper)
+        wrapper.child.parent = weakref.ref(wrapper)
         return wrapper
 
     def serialize(self):  # check serde.py to see how to provide compression schemes

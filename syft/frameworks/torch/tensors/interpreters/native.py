@@ -297,7 +297,7 @@ class TorchTensor(AbstractTensor):
 
             if self.requires_grad:
                 # This is for AutogradTensor to work on Multipointer Tensors
-                # With prinitialized gradients, this should get it from autograd.grad
+                # With prinitialized gradients, this should get it from AutogradTensor.grad
                 if preinitialize_grad:
                     grad = output.child.grad
                 else:

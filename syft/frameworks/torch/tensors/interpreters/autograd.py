@@ -15,13 +15,14 @@ class AutogradTensor(AbstractTensor):
     """ A tensor that tracks operations to build a dynamic graph and backprops 
         through the graph to calculate gradients.
     """
-    def __init__(self, data=None, requires_grad=True, owner=None, id=None, preinitialize_grad=False, **kwargs):
+    def __init__(self, data=None, requires_grad=True, 
+                 owner=None, id=None, parent=None,
+                 preinitialize_grad=False, **kwargs):
         super().__init__()
-        
-        print(kwargs)
 
         self.owner = owner
         self.id = id
+        self.parent = parent
 
         self.child = data
         self.requires_grad = requires_grad
@@ -37,12 +38,6 @@ class AutogradTensor(AbstractTensor):
         if grad is None:
             grad = torch.ones_like(self)
 
-        # Calculating gradients doesn't currently work with wrapped tensors,
-        # so doing this to work my way down the chain to the base tensor. 
-        # TODO: figure out how to fix this so grad_fns use Syft Tensors
-        # while hasattr(grad, 'child'):
-        #     grad = grad.child
-
         backwards_grad(self.grad_fn, grad)
 
     @property
@@ -51,9 +46,15 @@ class AutogradTensor(AbstractTensor):
 
     @grad.setter
     def grad(self, value):
-        self.child.setattr("grad", value)
+        if value is not None:
+            self.child.setattr("grad", value)
+            self._grad = value.wrap()
+        else:
+            self._grad = value
         
-        self._grad = value
+        if self.parent is not None:
+            # self.parent is a weakref
+            self.parent().grad = self._grad
 
     def attr(self, attr_name):
        attr_val = self.child.attr(attr_name)
