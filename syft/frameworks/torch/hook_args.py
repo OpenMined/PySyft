@@ -211,9 +211,8 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     if not response_is_tuple:
         response = (response, 1)
 
-    attr_id = "{}@{}.{}.{}".format(
-        attr, wrap_type.__name__, response_is_tuple, hash(frozenset(wrap_args.items()))
-    )
+    hash_wrap_args = hash(frozenset(wrap_args.items()))
+    attr_id = f"{attr}@{wrap_type.__name__}.{response_is_tuple}.{hash_wrap_args}"
 
     try:
         assert attr not in exclude_functions

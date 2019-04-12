@@ -53,7 +53,7 @@ def _random_common_bit(*workers):
     pointer = torch.LongTensor([1]).send(workers[0]).random_(2)
     pointers = [pointer]
     for worker in workers[1:]:
-        pointers.append((pointer * 1).move(worker))
+        pointers.append(pointer.copy().move(worker))
     bit = sy.MultiPointerTensor(children=pointers)
 
     return bit
@@ -67,7 +67,7 @@ def _random_common_value(max_value, *workers):
     pointer = torch.LongTensor([1]).send(workers[0]).random_(max_value)
     pointers = [pointer]
     for worker in workers[1:]:
-        pointers.append((pointer * 1).move(worker))
+        pointers.append(pointer.copy().move(worker))
     common_value = sy.MultiPointerTensor(children=pointers)
 
     return common_value
