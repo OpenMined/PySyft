@@ -727,7 +727,7 @@ class BaseWorker(AbstractWorker):
         """
         return list(tensor.shape)
 
-    def request_remote_tensor_shape(self, pointer: PointerTensor) -> torch.Size:
+    def request_remote_tensor_shape(self, pointer: PointerTensor) -> "sy.hook.torch.Size":
         """
         Sends a request to the remote worker that holds the target a pointer to
         have its shape.
@@ -741,7 +741,7 @@ class BaseWorker(AbstractWorker):
         shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
         return sy.hook.torch.Size(shape)
 
-    def fetch_plan(self, plan_id):
+    def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
         Args:
@@ -759,7 +759,7 @@ class BaseWorker(AbstractWorker):
 
         return None
 
-    def search(self, *query):
+    def search(self, *query: List[str]) -> List[PointerTensor]:
         """Search for a match between the query terms and a tensor's Id, Tag, or Description.
 
         Note that the query is an AND query meaning that every item in the list of strings (query*)
@@ -809,7 +809,8 @@ class BaseWorker(AbstractWorker):
         return results
 
     def deserialized_search(self, query_items: Tuple[str]) -> List[PointerTensor]:
-        """Called when a message requesting a call to `search` is received.
+        """
+        Called when a message requesting a call to `search` is received.
         The serialized arguments will arrive as a `tuple` and it needs to be
         transformed to an arguments list.
 
@@ -825,17 +826,17 @@ class BaseWorker(AbstractWorker):
     def generate_triple(
         self, cmd: Callable, field: int, a_size: tuple, b_size: tuple, locations: list
     ):
-        """Generates a multiplication triple and sends it to all locations
+        """Generates a multiplication triple and sends it to all locations.
 
         Args:
-            cmd: equation in einsum notation
-            field: integer representing the field size
-            a_size: tuple which is the size that a should be
-            b_size: tuple which is the size that b should be
-            locations: a list of workers where the triple should be shared between
+            cmd: An equation in einsum notation.
+            field: An integer representing the field size.
+            a_size: A tuple which is the size that a should be.
+            b_size: A tuple which is the size that b should be.
+            locations: A list of workers where the triple should be shared between.
 
-        return:
-            a triple of AdditiveSharedTensors such that c_shared = cmd(a_shared, b_shared)
+        Returns:
+            A triple of AdditiveSharedTensors such that c_shared = cmd(a_shared, b_shared).
         """
         a = self.torch.randint(field, a_size)
         b = self.torch.randint(field, b_size)
