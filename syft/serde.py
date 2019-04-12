@@ -50,12 +50,14 @@ import syft
 import syft as sy
 
 from syft.workers import AbstractWorker
+from syft.workers import VirtualWorker
 from syft.workers import Plan
-from syft.workers import PlanPointer
 
 from syft.exceptions import CompressionNotFoundException
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 
@@ -660,16 +662,17 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
     pieces = {}
     # for dictionaries we want to detail both the key and the value
     for key, value in my_dict.items():
-
+        detailed_key = _detail(worker, key)
         try:
-            detailed_key = _detail(worker, key).decode("utf-8")
+            detailed_key = detailed_key.decode("utf-8")
         except AttributeError:
-            detailed_key = _detail(worker, key)
+            pass
 
+        detailed_value = _detail(worker, value)
         try:
-            detailed_value = _detail(worker, value).decode("utf-8")
+            detailed_value = detailed_value.decode("utf-8")
         except AttributeError:
-            detailed_value = _detail(worker, value)
+            pass
 
         pieces[detailed_key] = detailed_value
 
@@ -974,6 +977,90 @@ def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LoggingTe
     return tensor
 
 
+def _simplify_additive_shared_tensor(tensor: AdditiveSharingTensor) -> tuple:
+    """
+    This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
+    Args:
+        tensor (AdditiveSharingTensor): a AdditiveSharingTensor
+    Returns:
+        tuple: a tuple holding the unique attributes of the additive shared tensor
+    Examples:
+        data = _simplify_additive_shared_tensor(tensor)
+    """
+
+    chain = None
+    if hasattr(tensor, "child"):
+        chain = _simplify(tensor.child)
+    return (tensor.id, tensor.field, tensor.crypto_provider.id, chain)
+
+
+def _detail_additive_shared_tensor(
+    worker: AbstractWorker, tensor_tuple: tuple
+) -> AdditiveSharingTensor:
+    """
+        This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
+        Returns:
+            AdditiveSharingTensor: a AdditiveSharingTensor
+        Examples:
+            shared_tensor = _detail_additive_shared_tensor(data)
+        """
+
+    tensor_id, field, crypto_provider, chain = tensor_tuple
+
+    tensor = AdditiveSharingTensor(
+        owner=worker, id=tensor_id, field=field, crypto_provider=worker.get_worker(crypto_provider)
+    )
+
+    if chain is not None:
+        chain = _detail(worker, chain)
+        tensor.child = chain
+
+    return tensor
+
+
+def _simplify_multi_pointer_tensor(tensor: MultiPointerTensor) -> tuple:
+    """
+    This function takes the attributes of a MultiPointerTensor and saves them in a tuple
+    Args:
+        tensor (MultiPointerTensor): a MultiPointerTensor
+    Returns:
+        tuple: a tuple holding the unique attributes of the additive shared tensor
+    Examples:
+        data = _simplify_additive_shared_tensor(tensor)
+    """
+
+    chain = None
+    if hasattr(tensor, "child"):
+        chain = _simplify(tensor.child)
+    return (tensor.id, chain)
+
+
+def _detail_multi_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> MultiPointerTensor:
+    """
+        This function reconstructs a MultiPointerTensor given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the MultiPointerTensor
+        Returns:
+            MultiPointerTensor: a MultiPointerTensor
+        Examples:
+            multi_pointer_tensor = _detail_multi_pointer_tensor(data)
+        """
+
+    tensor_id, chain = tensor_tuple
+
+    tensor = MultiPointerTensor(owner=worker, id=tensor_id)
+
+    if chain is not None:
+        chain = _detail(worker, chain)
+        tensor.child = chain
+
+    return tensor
+
+
 def _simplify_plan(plan: Plan) -> tuple:
     """
     This function takes the attributes of a Plan and saves them in a tuple
@@ -983,10 +1070,16 @@ def _simplify_plan(plan: Plan) -> tuple:
         tuple: a tuple holding the unique attributes of the Plan object
 
     """
-
     readable_plan = _simplify(plan.readable_plan)
-
-    return (readable_plan, _simplify(plan.id), _simplify(plan.arg_ids), _simplify(plan.result_ids))
+    return (
+        readable_plan,
+        _simplify(plan.id),
+        _simplify(plan.arg_ids),
+        _simplify(plan.result_ids),
+        plan.name,
+        _simplify(plan.tags),
+        _simplify(plan.description),
+    )
 
 
 def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
@@ -998,8 +1091,7 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
         Plan: a Plan object
     """
 
-    readable_plan, id, arg_ids, result_ids = plan_tuple
-
+    readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
     id = id
     if isinstance(id, bytes):
         id = id.decode("utf-8")
@@ -1009,27 +1101,24 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
     plan = syft.Plan(hook=sy.hook, owner=worker, id=id)
     plan.arg_ids = arg_ids
     plan.result_ids = result_ids
-
+    if isinstance(name, bytes):
+        plan.name = name.decode("utf-8")
+    plan.tags = _detail(worker, tags)
+    plan.description = _detail(worker, description)
     plan.readable_plan = _detail(worker, readable_plan)
 
     return plan
 
 
-def _simplify_plan_pointer(ptr: PlanPointer) -> tuple:
-    """
-    This function takes the attributes of a PointerTensor and saves them in a dictionary
-    Args:
-        ptr (PointerTensor): a PointerTensor
-    Returns:
-        tuple: a tuple holding the unique attributes of the pointer
-    Examples:
-        data = _simplify_pointer_tensor(ptr)
+def _simplify_worker(worker: AbstractWorker) -> tuple:
     """
 
-    return (ptr.id, ptr.id_at_location, ptr.location.id)
+    """
+
+    return (worker.id,)
 
 
-def _detail_plan_pointer(worker: AbstractWorker, plan_pointer_tuple: tuple) -> PointerTensor:
+def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor:
     """
     This function reconstructs a PlanPointer given it's attributes in form of a tuple.
 
@@ -1041,26 +1130,11 @@ def _detail_plan_pointer(worker: AbstractWorker, plan_pointer_tuple: tuple) -> P
     Examples:
         ptr = _detail_pointer_tensor(data)
     """
-    # TODO: fix comment for this and simplifier
-    obj_id = plan_pointer_tuple[0]
-    id_at_location = plan_pointer_tuple[1]
-    if isinstance(id_at_location, bytes):
-        id_at_location = id_at_location.decode("utf-8")
-    worker_id = plan_pointer_tuple[2].decode("utf-8")
+    worker_id = worker_tuple[0]
 
-    # If the pointer received is pointing at the current worker, we load the tensor instead
-    if worker_id == worker.id:
+    referenced_worker = worker.get_worker(worker_id)
 
-        tensor = worker.get_obj(id_at_location)
-
-        return tensor
-    # Else we keep the same Pointer
-    else:
-        location = syft.torch.hook.local_worker.get_worker(worker_id)
-        ptr = PlanPointer(
-            location=location, id_at_location=id_at_location, owner=worker, id=obj_id, register=True
-        )
-        return ptr
+    return referenced_worker
 
 
 # High Level Simplification Router
@@ -1123,8 +1197,10 @@ simplifiers = {
     torch.device: [10, _simplify_torch_device],
     PointerTensor: [11, _simplify_pointer_tensor],
     LoggingTensor: [12, _simplify_log_tensor],
-    Plan: [13, _simplify_plan],
-    PlanPointer: [14, _simplify_plan_pointer],
+    AdditiveSharingTensor: [13, _simplify_additive_shared_tensor],
+    MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
+    Plan: [15, _simplify_plan],
+    VirtualWorker: [16, _simplify_worker],
 }
 
 
@@ -1147,7 +1223,7 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
 
     """
 
-    if type(obj) == list:
+    if type(obj) in (list, tuple):
         return detailers[obj[0]](worker, obj[1])
     else:
         return obj
@@ -1167,6 +1243,8 @@ detailers = [
     _detail_torch_device,
     _detail_pointer_tensor,
     _detail_log_tensor,
+    _detail_additive_shared_tensor,
+    _detail_multi_pointer_tensor,
     _detail_plan,
-    _detail_plan_pointer,
+    _detail_worker,
 ]

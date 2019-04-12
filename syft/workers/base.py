@@ -5,16 +5,17 @@ import sys
 from abc import abstractmethod
 import syft as sy
 
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
 from syft.workers import IdProvider
 from syft.codes import MSGTYPE
-from typing import Union
-from typing import List
 from typing import Callable
+from typing import List
+from typing import Tuple
+from typing import Union
 import torch
 
 
@@ -58,7 +59,13 @@ class BaseWorker(AbstractWorker):
     """
 
     def __init__(
-        self, hook, id=0, data=None, is_client_worker=False, log_msgs=False, verbose=False
+        self,
+        hook: "sy.TorchHook",
+        id: Union[int, str] = 0,
+        data: Union[List, tuple] = None,
+        is_client_worker: bool = False,
+        log_msgs: bool = False,
+        verbose: bool = False,
     ):
         """Initializes a BaseWorker."""
 
@@ -81,7 +88,7 @@ class BaseWorker(AbstractWorker):
             MSGTYPE.OBJ_DEL: self.rm_obj,
             MSGTYPE.IS_NONE: self.is_tensor_none,
             MSGTYPE.GET_SHAPE: self.get_tensor_shape,
-            MSGTYPE.SEARCH: self.search,
+            MSGTYPE.SEARCH: self.deserialized_search,
         }
 
         self.load_data(data)
@@ -156,8 +163,6 @@ class BaseWorker(AbstractWorker):
         Args:
 
             data: A list of tensors
-
-
         """
 
         if data:
@@ -166,7 +171,6 @@ class BaseWorker(AbstractWorker):
                 tensor.owner = self
 
     def send_msg(self, msg_type: int, message: str, location: "BaseWorker") -> object:
-
         """Implements the logic to send messages.
 
         The message is serialized and sent to the specified location. The
@@ -237,7 +241,7 @@ class BaseWorker(AbstractWorker):
 
     def send(
         self,
-        tensor: Union[torch.Tensor, AbstractTensor],
+        obj: Union[torch.Tensor, AbstractTensor],
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
     ) -> PointerTensor:
@@ -288,19 +292,25 @@ class BaseWorker(AbstractWorker):
         if ptr_id is None:  # Define a remote id if not specified
             ptr_id = int(10e10 * random.random())
 
-        pointer = tensor.create_pointer(
-            owner=self, location=worker, id_at_location=tensor.id, register=True, ptr_id=ptr_id
-        )
-
+        if isinstance(obj, torch.Tensor):
+            pointer = obj.create_pointer(
+                owner=self, location=worker, id_at_location=obj.id, register=True, ptr_id=ptr_id
+            )
+        else:
+            pointer = obj
         # Send the object
-        self.send_obj(tensor, worker)
+        self.send_obj(obj, worker)
         return pointer
 
-    def execute_command(self, message):
+    def execute_command(self, message: tuple) -> PointerTensor:
         """
-        Execute commands received from other workers
-        :param message: the message specifying the command and the args
-        :return: a pointer to the result
+        Executes commands received from other workers.
+
+        Args:
+            message: A tuple specifying the command and the args.
+
+        Returns:
+            A pointer to the result.
         """
 
         (command_name, _self, args, kwargs), return_ids = message
@@ -345,12 +355,20 @@ class BaseWorker(AbstractWorker):
                 )
                 raise ResponseSignatureError(return_ids.generated)
 
-    def send_command(self, recipient, message, return_ids=None):
+    def send_command(
+        self, recipient: "BaseWorker", message: str, return_ids: str = None
+    ) -> Union[List[PointerTensor], PointerTensor]:
         """
-        Send a command through a message to a recipient worker
-        :param recipient:
-        :param message:
-        :return:
+        Sends a command through a message to a recipient worker.
+
+        Args:
+            recipient: A recipient worker.
+            message: A string representing the message being sent.
+            return_ids: A list of strings indicating the ids of the
+                tensors that should be returned as response to the command execution.
+
+        Returns:
+            A list of PointerTensors or a single PointerTensor if just one response is expected.
         """
         if return_ids is None:
             return_ids = [int(10e10 * random.random())]
@@ -378,7 +396,6 @@ class BaseWorker(AbstractWorker):
         return responses
 
     def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
-
         """Adds an object to the registry of objects.
 
         Args:
@@ -426,12 +443,17 @@ class BaseWorker(AbstractWorker):
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
-        if hasattr(obj, "child") and isinstance(obj.child, PointerTensor):
-            obj.child.garbage_collect_data = False
+        if hasattr(obj, "child"):
+            if isinstance(obj.child, PointerTensor):
+                obj.child.garbage_collect_data = False
+            if isinstance(obj.child, (sy.AdditiveSharingTensor, sy.MultiPointerTensor)):
+                shares = obj.child.child
+                for worker, share in shares.items():
+                    share.child.garbage_collect_data = False
 
         return obj
 
-    def respond_to_obj_req(self, obj_id):
+    def respond_to_obj_req(self, obj_id: Union[str, int]):
         """Returns the deregistered object from registry.
 
         Args:
@@ -442,7 +464,7 @@ class BaseWorker(AbstractWorker):
         self.de_register_obj(obj)
         return obj
 
-    def register_obj(self, obj, obj_id=None):
+    def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
 
         Selects an id for the object, assigns a list of owners, and establishes
@@ -459,7 +481,7 @@ class BaseWorker(AbstractWorker):
                 obj.id = obj_id
             self.set_obj(obj)
 
-    def de_register_obj(self, obj, _recurse_torch_objs=True):
+    def de_register_obj(self, obj: object, _recurse_torch_objs: bool = True):
         """Deregisters the specified object.
 
         Deregister and remove attributes which are indicative of registration.
@@ -476,7 +498,7 @@ class BaseWorker(AbstractWorker):
         if hasattr(obj, "_owner"):
             del obj._owner
 
-    def rm_obj(self, remote_key):
+    def rm_obj(self, remote_key: Union[str, int]):
         """Removes an object.
 
         Remove the object from the permanent object registry if it exists.
@@ -490,7 +512,7 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: convenience methods for constructing frequently used messages
 
-    def send_obj(self, obj, location):
+    def send_obj(self, obj: object, location: "BaseWorker"):
         """Send a torch object to a worker.
 
         Args:
@@ -500,7 +522,7 @@ class BaseWorker(AbstractWorker):
         """
         return self.send_msg(MSGTYPE.OBJ, obj, location)
 
-    def request_obj(self, obj_id, location):
+    def request_obj(self, obj_id: Union[str, int], location: "BaseWorker") -> object:
         """Returns the requested object from specified location.
 
         Args:
@@ -516,7 +538,9 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: Manage the workers network
 
-    def get_worker(self, id_or_worker, fail_hard=False):
+    def get_worker(
+        self, id_or_worker: Union[str, int, "BaseWorker"], fail_hard: bool = False
+    ) -> Union[str, int]:
         """Returns the worker id or instance.
 
         Allows for resolution of worker ids to workers to happen automatically
@@ -575,7 +599,7 @@ class BaseWorker(AbstractWorker):
 
         return id_or_worker
 
-    def add_worker(self, worker):
+    def add_worker(self, worker: "BaseWorker"):
         """Adds a single worker.
 
         Adds a worker to the list of _known_workers internal to the BaseWorker.
@@ -622,7 +646,7 @@ class BaseWorker(AbstractWorker):
             )
         self._known_workers[worker.id] = worker
 
-    def add_workers(self, workers):
+    def add_workers(self, workers: List["BaseWorker"]):
         """Adds several workers in a single call.
 
         Args:
@@ -674,98 +698,150 @@ class BaseWorker(AbstractWorker):
     def is_tensor_none(obj):
         return obj is None
 
-    def request_is_remote_tensor_none(self, pointer):
+    def request_is_remote_tensor_none(self, pointer: PointerTensor):
         """
-        Send a request to the remote worker that holds the target a pointer if
+        Sends a request to the remote worker that holds the target a pointer if
         the value of the remote tensor is None or not.
         Note that the pointer must be valid: if there is no target (which is
         different from having a target equal to None), it will return an error.
 
         Args:
-            :param pointer: the pointer on which we can to get information
+            pointer: The pointer on which we can to get information.
 
-        :return: a boolean stating if the remote value is None
+        Returns:
+            A boolean stating if the remote value is None.
         """
         return self.send_msg(MSGTYPE.IS_NONE, pointer, location=pointer.location)
 
     @staticmethod
-    def get_tensor_shape(obj):
+    def get_tensor_shape(tensor: torch.Tensor) -> List:
         """
-        Return the shape of a tensor casted into a list, to bypass the serialization of
+        Returns the shape of a tensor casted into a list, to bypass the serialization of
         a torch.Size object.
-        :param obj: torch.Tensor
-        :return: a list containing the tensor shape
-        """
-        return list(obj.shape)
 
-    def request_remote_tensor_shape(self, pointer):
+        Args:
+            tensor: A torch.Tensor.
+
+        Returns:
+            A list containing the tensor shape.
         """
-        Send a request to the remote worker that holds the target a pointer to
+        return list(tensor.shape)
+
+    def request_remote_tensor_shape(self, pointer: PointerTensor) -> "sy.hook.torch.Size":
+        """
+        Sends a request to the remote worker that holds the target a pointer to
         have its shape.
 
         Args:
-            :param pointer: the pointer on which we can to get the shape
+            pointer: A pointer on which we want to get the shape.
 
-        :return: a torch.Size object for the shape
+        Returns:
+            A torch.Size object for the shape.
         """
         shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
         return sy.hook.torch.Size(shape)
 
-    def search(self, *query):
-        """Search for a match between the query terms and the tensor's Id, Tag, or Description.
+    def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
+        """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
+
+        Args:
+            plan_id: A string indicating the plan id.
+
+        Returns:
+            A plan if a plan with the given `plan_id` exists. Returns None otherwise.
+        """
+        if plan_id in self._objects:
+            candidate = self._objects[plan_id]
+            if isinstance(candidate, sy.Plan):
+                plan = candidate.copy()
+                plan.owner = sy.local_worker
+                return plan
+
+        return None
+
+    def search(self, *query: List[str]) -> List[PointerTensor]:
+        """Search for a match between the query terms and a tensor's Id, Tag, or Description.
+
         Note that the query is an AND query meaning that every item in the list of strings (query*)
         must be found somewhere on the tensor in order for it to be included in the results.
 
         Args:
-            query: a list of strings to match against.
-            me: a reference to the worker calling the search.
-            """
+            query: A list of strings to match against.
+            me: A reference to the worker calling the search.
+
+        Returns:
+            A list of PointerTensors.
+        """
         results = list()
-        for key, tensor in self._objects.items():
+        for key, obj in self._objects.items():
             found_something = True
             for query_item in query:
+                # If deserialization produced a bytes object instead of a string,
+                # make sure it's turned back to a string or a fair comparison.
+                if isinstance(query_item, bytes):
+                    query_item = query_item.decode("ascii")
+
                 match = False
                 if query_item == str(key):
                     match = True
 
-                if tensor.tags is not None:
-                    if query_item in tensor.tags:
+                if obj.tags is not None:
+                    if query_item in obj.tags:
                         match = True
 
-                if tensor.description is not None:
-                    if query_item in tensor.description:
+                if obj.description is not None:
+                    if query_item in obj.description:
                         match = True
 
                 if not match:
                     found_something = False
 
             if found_something:
-                # set garbage_collect_data to False because if we're searching
-                # for a tensor we don't own, then it's probably someone else's
-                # decision to decide when to delete the tensor.
-                ptr = tensor.create_pointer(
-                    garbage_collect_data=False, owner=sy.local_worker
-                ).wrap()
-                results.append(ptr)
+                if isinstance(obj, torch.Tensor):
+                    # set garbage_collect_data to False because if we're searching
+                    # for a tensor we don't own, then it's probably someone else's
+                    # decision to decide when to delete the tensor.
+                    ptr = obj.create_pointer(
+                        garbage_collect_data=False, owner=sy.local_worker
+                    ).wrap()
+                    results.append(ptr)
 
         return results
+
+    def deserialized_search(self, query_items: Tuple[str]) -> List[PointerTensor]:
+        """
+        Called when a message requesting a call to `search` is received.
+        The serialized arguments will arrive as a `tuple` and it needs to be
+        transformed to an arguments list.
+
+        Args:
+            query_items(tuple(str)): Tuple of items to search for. Should originate from the
+            deserialization of a message requesting a search operation.
+
+        Returns:
+            list(PointerTensor): List of matched tensors.
+        """
+        return self.search(*query_items)
 
     def generate_triple(
         self, cmd: Callable, field: int, a_size: tuple, b_size: tuple, locations: list
     ):
-        """Generates a multiplication triple and sends it to all locations
+        """Generates a multiplication triple and sends it to all locations.
 
         Args:
-            equation: string representation of the equation in einsum notation
-            field: integer representing the field size
-            a_size: tuple which is the size that a should be
-            b_size: tuple which is the size that b should be
-            locations: a list of workers where the triple should be shared between
+            cmd: An equation in einsum notation.
+            field: An integer representing the field size.
+            a_size: A tuple which is the size that a should be.
+            b_size: A tuple which is the size that b should be.
+            locations: A list of workers where the triple should be shared between.
+
+        Returns:
+            A triple of AdditiveSharedTensors such that c_shared = cmd(a_shared, b_shared).
         """
         a = self.torch.randint(field, a_size)
         b = self.torch.randint(field, b_size)
         c = cmd(a, b)
-        a_shared = a.share(*locations, field=field).child
-        b_shared = b.share(*locations, field=field).child
-        c_shared = c.share(*locations, field=field).child
-        return (a_shared, b_shared, c_shared)
+        a_shared = a.share(*locations, field=field, crypto_provider=self).child
+        b_shared = b.share(*locations, field=field, crypto_provider=self).child
+        c_shared = c.share(*locations, field=field, crypto_provider=self).child
+        return a_shared, b_shared, c_shared
