@@ -105,8 +105,3 @@ def test_multiple_workers(workers):
     p = plan_abs(x_ptr)
     x_abs = p.get()
     assert (x_abs == th.tensor([1, 9, 3])).all()
-
-def test_worker_get(workers):
-
-    assert False
-    # plan_abs.get(alice)

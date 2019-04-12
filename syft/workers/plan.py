@@ -155,8 +155,22 @@ class Plan(BaseWorker):
         res_ptr = self.plan_blueprint(*local_args)
         res_ptr.child.garbage_collect_data = False
 
+        worker = self.find_location(args)
+
+        self.replace_worker_ids(worker.id, self.owner.id)
+
         # The id where the result should be stored
         self.result_ids = [res_ptr.id_at_location]
+
+    def find_location(self, args):
+        """
+        Return location if args contain pointers else the local worker
+        """
+        for arg in args:
+            if isinstance(arg, torch.Tensor):
+                if hasattr(arg, "child") and isinstance(arg.child, sy.PointerTensor):
+                    return arg.location
+        return sy.hook.local_worker
 
     def replace_ids(self, from_ids, to_ids):
         """
@@ -250,15 +264,12 @@ class Plan(BaseWorker):
             self.build_plan(args)
 
         if len(self.locations) > 0:
-            worker = args[0].location  #FIXME
-
-
-            if worker not in self.ptr_plans.keys():
+            worker = self.find_location(args)
+            if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
 
-                response = self.request_execute_plan(worker, result_ids, *args)
-                print(response)
-                return response
+            response = self.request_execute_plan(worker, result_ids, *args)
+            return response
 
         # if the plan is not to be sent but is not local (ie owned by the local worker)
         # then it has been request to execute, to we update the plan with the correct
@@ -288,7 +299,6 @@ class Plan(BaseWorker):
         args = [args, response_ids]
         command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
 
-        print('sendinf command execute plan to ', location.id)
         response = self.owner.send_command(
             message=command, recipient=location, return_ids=response_ids
         )
@@ -323,7 +333,8 @@ class Plan(BaseWorker):
         to send it
         """
         readable_plan_original = copy.deepcopy(self.readable_plan)
-        self.replace_worker_ids(self.owner.id, location.id)
+        for worker_id in [self.owner.id] + self.locations:
+            self.replace_worker_ids(worker_id, location.id)
         pointer = self.owner.send(tensor=self, workers=location)
         self.readable_plan = readable_plan_original
         return pointer
