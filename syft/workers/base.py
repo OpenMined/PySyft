@@ -59,7 +59,13 @@ class BaseWorker(AbstractWorker):
     """
 
     def __init__(
-        self, hook, id=0, data=None, is_client_worker=False, log_msgs=False, verbose=False
+        self,
+        hook: "sy.TorchHook",
+        id: Union[int, str] = 0,
+        data: Union[List, tuple] = None,
+        is_client_worker: bool = False,
+        log_msgs: bool = False,
+        verbose: bool = False,
     ):
         """Initializes a BaseWorker."""
 
@@ -157,8 +163,6 @@ class BaseWorker(AbstractWorker):
         Args:
 
             data: A list of tensors
-
-
         """
 
         if data:
@@ -167,7 +171,6 @@ class BaseWorker(AbstractWorker):
                 tensor.owner = self
 
     def send_msg(self, msg_type: int, message: str, location: "BaseWorker") -> object:
-
         """Implements the logic to send messages.
 
         The message is serialized and sent to the specified location. The
@@ -299,11 +302,15 @@ class BaseWorker(AbstractWorker):
         self.send_obj(obj, worker)
         return pointer
 
-    def execute_command(self, message):
+    def execute_command(self, message: tuple) -> PointerTensor:
         """
-        Execute commands received from other workers
-        :param message: the message specifying the command and the args
-        :return: a pointer to the result
+        Executes commands received from other workers.
+
+        Args:
+            message: A tuple specifying the command and the args.
+
+        Returns:
+            A pointer to the result.
         """
 
         (command_name, _self, args, kwargs), return_ids = message
@@ -348,12 +355,20 @@ class BaseWorker(AbstractWorker):
                 )
                 raise ResponseSignatureError(return_ids.generated)
 
-    def send_command(self, recipient, message, return_ids=None):
+    def send_command(
+        self, recipient: "BaseWorker", message: str, return_ids: str = None
+    ) -> Union[List[PointerTensor], PointerTensor]:
         """
-        Send a command through a message to a recipient worker
-        :param recipient:
-        :param message:
-        :return:
+        Sends a command through a message to a recipient worker.
+
+        Args:
+            recipient: A recipient worker.
+            message: A string representing the message being sent.
+            return_ids: A list of strings indicating the ids of the
+                tensors that should be returned as response to the command execution.
+
+        Returns:
+            A list of PointerTensors or a single PointerTensor if just one response is expected.
         """
         if return_ids is None:
             return_ids = [int(10e10 * random.random())]
@@ -381,7 +396,6 @@ class BaseWorker(AbstractWorker):
         return responses
 
     def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
-
         """Adds an object to the registry of objects.
 
         Args:
@@ -439,7 +453,7 @@ class BaseWorker(AbstractWorker):
 
         return obj
 
-    def respond_to_obj_req(self, obj_id):
+    def respond_to_obj_req(self, obj_id: Union[str, int]):
         """Returns the deregistered object from registry.
 
         Args:
@@ -583,7 +597,7 @@ class BaseWorker(AbstractWorker):
 
         return id_or_worker
 
-    def add_worker(self, worker):
+    def add_worker(self, worker: "BaseWorker"):
         """Adds a single worker.
 
         Adds a worker to the list of _known_workers internal to the BaseWorker.
@@ -630,7 +644,7 @@ class BaseWorker(AbstractWorker):
             )
         self._known_workers[worker.id] = worker
 
-    def add_workers(self, workers):
+    def add_workers(self, workers: List["BaseWorker"]):
         """Adds several workers in a single call.
 
         Args:
@@ -719,7 +733,7 @@ class BaseWorker(AbstractWorker):
         shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
         return sy.hook.torch.Size(shape)
 
-    def fetch_plan(self, plan_id: str) -> object:
+    def fetch_plan(self, plan_id):
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
         Args:
@@ -728,14 +742,12 @@ class BaseWorker(AbstractWorker):
         Returns:
             A plan if a plan with the given `plan_id` exists. Returns None otherwise.
         """
-        if plan_id not in self._objects:
-            return None
-
-        candidate = self._objects[plan_id]
-        if isinstance(candidate, sy.Plan):
-            plan = candidate.copy()
-            plan.owner = sy.local_worker
-            return plan
+        if plan_id in self._objects:
+            candidate = self._objects[plan_id]
+            if isinstance(candidate, sy.Plan):
+                plan = candidate.copy()
+                plan.owner = sy.local_worker
+                return plan
 
         return None
 
