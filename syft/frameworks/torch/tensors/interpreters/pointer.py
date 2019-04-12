@@ -311,6 +311,12 @@ class PointerTensor(AbstractTensor):
         return attr_ptr
 
     def share(self, *args, **kwargs):
+        """
+        Send a command to remote worker to additively share a tensor
+
+        Returns:
+            A pointer to an AdditiveSharingTensor
+        """
 
         # Send the command
         command = ("share", self, args, kwargs)

@@ -146,12 +146,12 @@ def test_mul(workers):
 
     assert (y == (t * t)).all()
 
-    # # with non-default fixed precision
-    # t = torch.tensor([1, 2, 3, 4.0])
-    # x = t.fix_prec(precision_fractional=2).share(bob, alice, crypto_provider=james)
-    # y = (x * x).get().float_prec()
-    #
-    # assert (y == (t * t)).all()
+    # with non-default fixed precision
+    t = torch.tensor([1, 2, 3, 4.0])
+    x = t.fix_prec(precision_fractional=2).share(bob, alice, crypto_provider=james)
+    y = (x * x).get().float_prec()
+
+    assert (y == (t * t)).all()
 
 
 def test_stack(workers):
@@ -361,7 +361,7 @@ def test_handle_func_command(workers):
     _ = torch.abs(t).get()
 
 
-def test_mul_with_no_crypto_provider(workers):
+def test_init_with_no_crypto_provider(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     x = torch.tensor([21, 17]).share(bob, alice).child
