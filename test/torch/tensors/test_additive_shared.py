@@ -1,6 +1,7 @@
 import pytest
 import random
 import torch
+import torch.nn as nn
 import torch as th
 import syft
 
@@ -17,6 +18,12 @@ def test_wrap(workers):
     assert isinstance(x, torch.Tensor)
     assert isinstance(x.child, AdditiveSharingTensor)
     assert isinstance(x.child.child, torch.Tensor)
+
+
+def test__str__(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x_sh = th.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+    assert isinstance(x_sh.__str__(), str)
 
 
 def test_encode_decode(workers):
@@ -59,39 +66,118 @@ def test_send_get(workers):
 
 
 def test_add(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # 2 workers
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice)
+
+    y = (x + x).get()
+
+    # 3 workers
+    assert (y == (t + t)).all()
 
     t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james)
+
+    y = (x + x).get()
+
+    # negative numbers
+    assert (y == (t + t)).all()
+
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james)
 
     y = (x + x).get()
 
     assert (y == (t + t)).all()
 
+    # with fixed precisions
+    t = torch.tensor([1.0, -2, 3])
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james)
+
+    y = (x + x).get().float_prec()
+
+    assert (y == (t + t)).all()
+
 
 def test_sub(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
+    # 3 workers
     t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james)
 
     y = (x - x).get()
+
+    assert (y == (t - t)).all()
+
+    # negative numbers
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james)
+
+    y = (x - x).get()
+
+    assert (y == (t - t)).all()
+
+    # with fixed precision
+    t = torch.tensor([1.0, -2, 3])
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james)
+
+    y = (x - x).get().float_prec()
 
     assert (y == (t - t)).all()
 
 
 def test_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # 2 workers
+    t = torch.tensor([1, 2, 3, 4])
+    x = t.share(bob, alice, crypto_provider=james)
+    y = (x * x).get()
+
+    assert (y == (t * t)).all()
+
+    # with fixed precision
     t = torch.tensor([1, 2, 3, 4.0])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     y = (x * x).get().float_prec()
 
     assert (y == (t * t)).all()
 
+    # with non-default fixed precision
+    t = torch.tensor([1, 2, 3, 4.0])
+    x = t.fix_prec(precision_fractional=2).share(bob, alice, crypto_provider=james)
+    y = (x * x).get().float_prec()
 
-def test_mul_with_no_crypto_provider(workers):
-    bob, alice = (workers["bob"], workers["alice"])
-    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice)
-    with pytest.raises(AttributeError):
-        y = (x * x).get().float_prec()
+    assert (y == (t * t)).all()
+
+
+def test_stack(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([1.3, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    res = torch.stack([x, x]).get().float_prec()
+
+    expected = torch.tensor([[1.3000, 2.0000], [1.3000, 2.0000]])
+
+    assert (res == expected).all()
+
+
+def test_nn_linear(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([[1.0, 2]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    model = nn.Linear(2, 1)
+    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
+    model.bias = nn.Parameter(torch.tensor([[-1.0]]))
+    model.fix_precision().share(bob, alice, crypto_provider=james)
+
+    y = model(x)
+
+    assert y.get().float_prec() == torch.tensor([[2.0]])
 
 
 def test_matmul(workers):
@@ -187,3 +273,97 @@ def test_comp(workers):
     assert not (x <= y).get().float_prec()
     assert (x > y).get().float_prec()
     assert not (x < y).get().float_prec()
+
+
+def test_max(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([3, 1.0, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    max_value = x.max().get().float_prec()
+    assert max_value == torch.tensor([3.0])
+
+    t = torch.tensor([3, 4.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    max_value = x.max().get().float_prec()
+    assert max_value == torch.tensor([4.0])
+
+    t = torch.tensor([3, 4.0, 5, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    max_value = x.max().get().float_prec()
+    assert max_value == torch.tensor([5.0])
+
+
+def test_argmax(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([3, 1.0, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    idx = x.argmax().get().float_prec()
+    assert idx == torch.tensor([0.0])
+
+    t = torch.tensor([3, 4.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    idx = x.argmax().get().float_prec()
+    assert idx == torch.tensor([1.0])
+
+    t = torch.tensor([3, 4.0, 5, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    idx = x.argmax().get().float_prec()
+    assert idx == torch.tensor([2.0])
+
+    # no dim=
+    t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    ids = x.argmax().get().float_prec()
+    assert ids.long() == torch.argmax(t)  # TODO rm .long()
+
+    # dim=1
+    t = torch.tensor([[1, 2.0, 4], [3, 1.0, 2.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    ids = x.argmax(dim=1).get().float_prec()
+    assert (ids.long() == torch.argmax(t, dim=1)).all()  # TODO rm .long()
+
+
+def test_mod(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([21]).share(bob, alice, crypto_provider=james)
+    assert t.child.mod(8).get() % 8 == torch.tensor([5])
+    assert t.child.mod(-8).get() % -8 == torch.tensor([-3])
+
+    t = torch.tensor([-21]).share(bob, alice, crypto_provider=james)
+    assert t.child.mod(8).get() % 8 == torch.tensor([3])
+    assert t.child.mod(-8).get() % -8 == torch.tensor([-5])
+
+    assert (t.child % 8).get() % 8 == torch.tensor([3])
+
+
+def test_unbind(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([21, 17]).share(bob, alice, crypto_provider=james).child
+
+    x0, x1 = torch.unbind(x)
+
+    assert x0.get() == torch.tensor(21)
+    assert x1.get() == torch.tensor(17)
+
+
+def test_handle_func_command(workers):
+    """
+    Just to show that handle_func_command works
+    Even is torch.abs should be hooked to return a correct value
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([-21]).share(bob, alice, crypto_provider=james).child
+    _ = torch.abs(t).get()
+
+
+def test_init_with_no_crypto_provider(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([21, 17]).share(bob, alice).child
+
+    assert x.crypto_provider.id == syft.hook.local_worker.id
