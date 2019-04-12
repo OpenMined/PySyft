@@ -205,7 +205,8 @@ def test_obj_not_found(workers):
 
 def test_spinup_time(hook):
     """Tests to ensure that virtual workers intialized with 10000 data points
-    load in under 0.05 seconds."""
+    load in under 0.05 seconds. This is needed to ensure that virtual workers 
+    spun up inside web frameworks are created quickly enough to not cause timeout errors"""
     data = []
     for i in range(10000):
         data.append(th.Tensor(5, 5).random_(100))
