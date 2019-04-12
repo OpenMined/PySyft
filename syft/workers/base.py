@@ -464,7 +464,7 @@ class BaseWorker(AbstractWorker):
         self.de_register_obj(obj)
         return obj
 
-    def register_obj(self, obj, obj_id=None):
+    def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
 
         Selects an id for the object, assigns a list of owners, and establishes
@@ -481,7 +481,7 @@ class BaseWorker(AbstractWorker):
                 obj.id = obj_id
             self.set_obj(obj)
 
-    def de_register_obj(self, obj, _recurse_torch_objs=True):
+    def de_register_obj(self, obj: object, _recurse_torch_objs: bool = True):
         """Deregisters the specified object.
 
         Deregister and remove attributes which are indicative of registration.
@@ -498,7 +498,7 @@ class BaseWorker(AbstractWorker):
         if hasattr(obj, "_owner"):
             del obj._owner
 
-    def rm_obj(self, remote_key):
+    def rm_obj(self, remote_key: Union[str, int]):
         """Removes an object.
 
         Remove the object from the permanent object registry if it exists.
@@ -512,7 +512,7 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: convenience methods for constructing frequently used messages
 
-    def send_obj(self, obj, location):
+    def send_obj(self, obj: object, location: "BaseWorker"):
         """Send a torch object to a worker.
 
         Args:
@@ -522,7 +522,7 @@ class BaseWorker(AbstractWorker):
         """
         return self.send_msg(MSGTYPE.OBJ, obj, location)
 
-    def request_obj(self, obj_id, location):
+    def request_obj(self, obj_id: Union[str, int], location: "BaseWorker") -> object:
         """Returns the requested object from specified location.
 
         Args:
@@ -538,7 +538,9 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: Manage the workers network
 
-    def get_worker(self, id_or_worker, fail_hard=False):
+    def get_worker(
+        self, id_or_worker: Union[str, int, "BaseWorker"], fail_hard: bool = False
+    ) -> Union[str, int]:
         """Returns the worker id or instance.
 
         Allows for resolution of worker ids to workers to happen automatically
@@ -696,39 +698,45 @@ class BaseWorker(AbstractWorker):
     def is_tensor_none(obj):
         return obj is None
 
-    def request_is_remote_tensor_none(self, pointer):
+    def request_is_remote_tensor_none(self, pointer: PointerTensor):
         """
-        Send a request to the remote worker that holds the target a pointer if
+        Sends a request to the remote worker that holds the target a pointer if
         the value of the remote tensor is None or not.
         Note that the pointer must be valid: if there is no target (which is
         different from having a target equal to None), it will return an error.
 
         Args:
-            :param pointer: the pointer on which we can to get information
+            pointer: The pointer on which we can to get information.
 
-        :return: a boolean stating if the remote value is None
+        Returns:
+            A boolean stating if the remote value is None.
         """
         return self.send_msg(MSGTYPE.IS_NONE, pointer, location=pointer.location)
 
     @staticmethod
-    def get_tensor_shape(obj):
+    def get_tensor_shape(tensor: torch.Tensor) -> List:
         """
-        Return the shape of a tensor casted into a list, to bypass the serialization of
+        Returns the shape of a tensor casted into a list, to bypass the serialization of
         a torch.Size object.
-        :param obj: torch.Tensor
-        :return: a list containing the tensor shape
-        """
-        return list(obj.shape)
 
-    def request_remote_tensor_shape(self, pointer):
+        Args:
+            tensor: A torch.Tensor.
+
+        Returns:
+            A list containing the tensor shape.
         """
-        Send a request to the remote worker that holds the target a pointer to
+        return list(tensor.shape)
+
+    def request_remote_tensor_shape(self, pointer: PointerTensor) -> torch.Size:
+        """
+        Sends a request to the remote worker that holds the target a pointer to
         have its shape.
 
         Args:
-            :param pointer: the pointer on which we can to get the shape
+            pointer: A pointer on which we want to get the shape.
 
-        :return: a torch.Size object for the shape
+        Returns:
+            A torch.Size object for the shape.
         """
         shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
         return sy.hook.torch.Size(shape)
