@@ -719,15 +719,37 @@ class BaseWorker(AbstractWorker):
         shape = self.send_msg(MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
         return sy.hook.torch.Size(shape)
 
+    def fetch_plan(self, plan_id):
+        """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
+
+        Args:
+            plan_id: A string indicating the plan id.
+
+        Returns:
+            A plan if a plan with the given `plan_id` exists. Otherwhise returns None.
+        """
+        if plan_id in self._objects:
+            candidate = self._objects[plan_id]
+            if isinstance(candidate, sy.Plan):
+                plan = candidate.copy()
+                plan.owner = sy.local_worker
+                return plan
+
+        return None
+
     def search(self, *query):
-        """Search for a match between the query terms and the tensor's Id, Tag, or Description.
+        """Search for a match between the query terms and a tensor's Id, Tag, or Description.
+
         Note that the query is an AND query meaning that every item in the list of strings (query*)
         must be found somewhere on the tensor in order for it to be included in the results.
 
         Args:
-            query: a list of strings to match against.
-            me: a reference to the worker calling the search.
-            """
+            query: A list of strings to match against.
+            me: A reference to the worker calling the search.
+
+        Returns:
+            A list of PointerTensors.
+        """
         results = list()
         for key, obj in self._objects.items():
             found_something = True
@@ -761,9 +783,6 @@ class BaseWorker(AbstractWorker):
                         garbage_collect_data=False, owner=sy.local_worker
                     ).wrap()
                     results.append(ptr)
-                else:
-                    obj.owner = sy.local_worker
-                    results.append(obj)
 
         return results
 
