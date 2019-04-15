@@ -1,5 +1,4 @@
 import os
-import unittest
 
 from setuptools import find_packages
 from setuptools import setup
@@ -13,30 +12,24 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-def my_test_suite():
-    test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover('test', pattern='*_test.py')
-    return test_suite
+requirements = read("requirements.txt").split()
 
-
-requirements = read('requirements.txt').split()
 
 setup(
     name="syft",
-    version="0.1.0",
+    version="0.1.10a1",
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),
     license="Apache-2.0",
-    keywords="deep learning artificial intelligence homomorphic encryption",
-    packages=find_packages(exclude=['docs', 'examples', 'dist']),
+    keywords="deep learning artificial intelligence privacy secure multi-party computation",
+    packages=find_packages(exclude=["docs", "examples", "dist"]),
     include_package_data=True,
-    long_description=read('README.md'),
-    url='github.com/OpenMined/PySyft',
-    classifiers=[
-        "Development Status :: 1 - Alpha",
-    ],
+    long_description=read("README.md"),
+    long_description_content_type="text/markdown",
+    url="https://github.com/OpenMined/PySyft",
     install_requires=requirements,
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-flake8'],
+    setup_requires=["pytest-runner"],
+    tests_require=["pytest", "pytest-flake8"],
+    classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],
 )
