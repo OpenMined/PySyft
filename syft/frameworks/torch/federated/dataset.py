@@ -35,6 +35,25 @@ class BaseDataset:
         self.targets.get_()
         return self
 
+    def fix_prec(self, *args, **kwargs):
+        self.data.fix_prec_(*args, **kwargs)
+        self.targets.fix_prec_(*args, **kwargs)
+        return self
+
+    fix_precision = fix_prec
+
+    def float_prec(self, *args, **kwargs):
+        self.data.float_prec_(*args, **kwargs)
+        self.targets.float_prec_(*args, **kwargs)
+        return self
+
+    float_precision = float_prec
+
+    def share(self, *args, **kwargs):
+        self.data.share_(*args, **kwargs)
+        self.targets.share_(*args, **kwargs)
+        return self
+
     @property
     def location(self):
         return self.data.location
