@@ -77,14 +77,6 @@ def method2plan(plan_blueprint):
     return method
 
 
-class PlanPointer:
-    def __init__(self, id, location, id_at_location, owner):
-        self.id = id
-        self.location = location
-        self.id_at_location = id_at_location
-        self.owner = owner
-
-
 class Plan(BaseWorker):
     """This worker does not send messages or execute any commands. Instead,
     it simply records messages that are sent to it such that message batches
@@ -164,6 +156,11 @@ class Plan(BaseWorker):
 
         # Store owner that built the plan
         self.owner_when_built = self.owner
+
+    def copy(self):
+        plan = Plan(self.hook, self.owner, self.name, id=int(10e10 * random.random()))
+        plan.plan_blueprint = self.plan_blueprint
+        return plan
 
     def replace_ids(self, from_ids, to_ids):
         """
@@ -335,16 +332,6 @@ class Plan(BaseWorker):
         )
         return response
 
-    def create_pointer(
-        self,
-        location: BaseWorker = None,
-        id_at_location: (str or int) = None,
-        register: bool = False,
-        owner: BaseWorker = None,
-        ptr_id: (str or int) = None,
-    ) -> PlanPointer:
-        return PlanPointer(ptr_id, location, id_at_location, owner)
-
     def send(self, location):
         """
         Mock send function that only specify that the Plan will have to be sent to location.
@@ -367,7 +354,7 @@ class Plan(BaseWorker):
         to send it
         """
         self.replace_worker_ids(self.owner.id, self.location.id)
-        return self.owner.send(tensor=self, workers=location)
+        return self.owner.send(obj=self, workers=location)
 
     def get(self):
         """
