@@ -1124,7 +1124,7 @@ def _simplify_worker(worker: AbstractWorker) -> tuple:
 
     """
 
-    return (worker.id,)
+    return (_simplify(worker.id),)
 
 
 def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor:
@@ -1139,7 +1139,7 @@ def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor
     Examples:
         ptr = _detail_pointer_tensor(data)
     """
-    worker_id = worker_tuple[0]
+    worker_id = _detail(worker_tuple[0])
 
     referenced_worker = worker.get_worker(worker_id)
 
@@ -1150,10 +1150,11 @@ def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
 
     """
 
-    return (worker.id, _simplify(worker._objects))
+    return (_simplify(worker.id), _simplify(worker._objects))
 
 def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
     worker_id, _objects = worker_tuple
+    worker_id = _detail(worker, worker_id)
 
     result = sy.VirtualWorker(sy.hook, worker_id)
     _objects = _detail(worker, _objects)
