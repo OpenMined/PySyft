@@ -7,6 +7,9 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
+from syft.serde import deserialize
+from syft.serde import serialize
+
 
 def test_plan_built_locally(hook):
     # To run a plan locally the local worker can't be a client worker,
@@ -141,3 +144,17 @@ def test_fetch_plan_built_remotely(hook):
     # Build plan and execute it locally
     x = th.tensor([-1, 2, 3])
     assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
+
+
+def test_plan_serde(hook):
+    @sy.func2plan
+    def my_plan(data):
+        x = data * 2
+        y = (x - 2) * 10
+        return x + y
+
+    serialized_plan = serialize(my_plan)
+    deserialized_plan = deserialize(serialized_plan)
+
+    x = th.tensor([-1, 2, 3])
+    assert (deserialized_plan(x) == th.tensor([-42, 24, 46])).all()
