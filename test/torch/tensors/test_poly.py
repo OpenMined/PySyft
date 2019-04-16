@@ -5,8 +5,6 @@ import numpy as np
 
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 
-""" Test cases to ensure working of Polynomial Tensor. The tests under these ensure that the error implementation of function approximations work as expected"""
-
 
 def testSigmoid():
 
@@ -149,12 +147,3 @@ def testsigmoidtaylor():
 
     # allclose function to compare the expected values and approximations with fixed precision
     assert torch.allclose(expected, torch.tensor(result, dtype=torch.double), atol=1e-03)
-
-
-def testfixedprecision():
-
-    x_tensor = torch.Tensor([1, 2, 3])
-    x = FixedPrecisionTensor().on(x_tensor)
-
-
-testfixedprecision()
