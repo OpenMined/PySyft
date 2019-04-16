@@ -22,10 +22,7 @@ def test_create_already_existing_worker(hook):
     z = th.tensor([2, 2, 10]).send(bob)
 
     # Both workers should be the same, so the following operation should be valid
-    try:
-        _ = x + y * z
-    except KeyError:
-        assert False
+    _ = x + y * z
 
 
 def test_create_already_existing_worker_with_different_type(hook, start_proc):

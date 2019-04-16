@@ -16,6 +16,7 @@ from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
 from syft.serde import LZ4
+from syft.serde import NO_COMPRESSION
 from syft.serde import ZSTD
 
 
@@ -300,7 +301,7 @@ def test_ndarray_serde(compress):
     assert numpy.array_equal(arr, arr_serialized_deserialized)
 
 
-@pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD])
+@pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD, NO_COMPRESSION])
 def test_compress_decompress(compress_scheme):
     if compress_scheme == LZ4:
         syft.serde._apply_compress_scheme = apply_lz4_compression
@@ -316,7 +317,7 @@ def test_compress_decompress(compress_scheme):
     assert original == decompressed
 
 
-@pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD])
+@pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD, NO_COMPRESSION])
 def test_compressed_serde(compress_scheme):
     if compress_scheme == LZ4:
         syft.serde._apply_compress_scheme = apply_lz4_compression
@@ -517,7 +518,15 @@ def test_compressed_float():
 
 
 @pytest.mark.parametrize(
-    "compress, compress_scheme", [(True, LZ4), (False, LZ4), (True, ZSTD), (False, ZSTD)]
+    "compress, compress_scheme",
+    [
+        (True, LZ4),
+        (False, LZ4),
+        (True, ZSTD),
+        (False, ZSTD),
+        (True, NO_COMPRESSION),
+        (False, NO_COMPRESSION),
+    ],
 )
 def test_hooked_tensor(compress, compress_scheme):
     if compress:

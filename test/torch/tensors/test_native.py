@@ -71,3 +71,10 @@ def test_get(workers):
 
     assert type(pointer.child) == PointerTensor
     assert (pointer.get() == tensor).all()
+
+
+def test_copy():
+    tensor = torch.rand(5, 3)
+    coppied_tensor = tensor.copy()
+    assert (tensor == coppied_tensor).all()
+    assert tensor is not coppied_tensor

@@ -34,6 +34,8 @@ before_script:
 script:
   - coverage run --omit=*/virtualenv/*,setup.py,.eggs/*,*__init__.py,syft/workers/websocket_server.py setup.py test
   - coverage report --fail-under 95 -m
+  # ensuring coverage of tests stays at 100 until entire coverage can be 100
+  - coverage report --fail-under 100 -m --include="test/*"
   # - bash scripts/execute_notebooks.sh
   # - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
 notifications:

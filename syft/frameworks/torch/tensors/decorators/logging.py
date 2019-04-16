@@ -4,24 +4,16 @@ from syft.frameworks.torch.overload_torch import overloaded
 
 
 class LoggingTensor(AbstractTensor):
-    def __init__(
-        self, parent: AbstractTensor = None, owner=None, id=None, tags=None, description=None
-    ):
+    def __init__(self, owner=None, id=None, tags=None, description=None):
         """Initializes a LoggingTensor, whose behaviour is to log all operations
         applied on it.
 
         Args:
-            parent: An optional AbstractTensor wrapper around the LoggingTensor
-                which makes it so that you can pass this LoggingTensor to all
-                the other methods/functions that PyTorch likes to use, although
-                it can also be other tensors which extend AbstractTensor, such
-                as custom tensors for Secure Multi-Party Computation or
-                Federated Learning.
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the LoggingTensor.
         """
-        super().__init__(id=id, owner=owner, tags=tags, description=description, parent=parent)
+        super().__init__(id=id, owner=owner, tags=tags, description=description)
 
     # Method overloading
 

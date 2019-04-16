@@ -1,7 +1,10 @@
 import math
+import logging
 
 import torch
 from torch.utils.data import Dataset
+
+logger = logging.getLogger(__name__)
 
 
 class BaseDataset:
@@ -32,6 +35,25 @@ class BaseDataset:
         self.targets.get_()
         return self
 
+    def fix_prec(self, *args, **kwargs):
+        self.data.fix_prec_(*args, **kwargs)
+        self.targets.fix_prec_(*args, **kwargs)
+        return self
+
+    fix_precision = fix_prec
+
+    def float_prec(self, *args, **kwargs):
+        self.data.float_prec_(*args, **kwargs)
+        self.targets.float_prec_(*args, **kwargs)
+        return self
+
+    float_precision = float_prec
+
+    def share(self, *args, **kwargs):
+        self.data.share_(*args, **kwargs)
+        self.targets.share_(*args, **kwargs)
+        return self
+
     @property
     def location(self):
         return self.data.location
@@ -43,7 +65,7 @@ def dataset_federate(dataset, workers):
     into a sy.FederatedDataset. The dataset given is split in len(workers)
     part and sent to each workers
     """
-    print("Scanning and sending data to {}...".format(", ".join([w.id for w in workers])))
+    logger.info("Scanning and sending data to {}...".format(", ".join([w.id for w in workers])))
 
     # take ceil to have exactly len(workers) sets after splitting
     data_size = math.ceil(len(dataset) / len(workers))
@@ -68,11 +90,12 @@ def dataset_federate(dataset, workers):
     data_loader = torch.utils.data.DataLoader(dataset, batch_size=data_size)
     for dataset_idx, (data, targets) in enumerate(data_loader):
         worker = workers[dataset_idx % len(workers)]
+        logger.debug("Sending data to worker %s", worker.id)
         data = data.send(worker)
         targets = targets.send(worker)
         datasets.append(BaseDataset(data, targets))  # .send(worker)
 
-    print("Done!")
+    logger.debug("Done!")
     return FederatedDataset(datasets)
 
 

@@ -9,7 +9,6 @@ from syft.workers.base import BaseWorker  # noqa: F401
 from syft.workers.virtual import VirtualWorker  # noqa: F401
 
 from syft.workers.plan import Plan  # noqa: F401
-from syft.workers.plan import PlanPointer  # noqa: F401
 from syft.workers.plan import func2plan  # noqa: F401
 from syft.workers.plan import method2plan  # noqa: F401
 from syft.workers.plan import make_plan  # noqa: F401
