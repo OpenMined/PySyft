@@ -50,9 +50,7 @@ class WebsocketClientWorker(BaseWorker):
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
 
-
-
-    def _send_msg(self, message: bin, location) -> bin: # pragma: no cover
+    def _send_msg(self, message: bin, location) -> bin:  # pragma: no cover
         raise RuntimeError(
             "_send_msg should never get called on a ",
             "WebsocketClientWorker. Did you accidentally "

@@ -154,7 +154,6 @@ def test_mul(workers):
     assert (y == (t * t)).all()
 
 
-
 def test_mul_with_three_parties(workers):
     bob, alice, charlie, james = (
         workers["bob"],
@@ -167,6 +166,7 @@ def test_mul_with_three_parties(workers):
     y = (x * x).get().float_prec()
 
     assert ((y - (t * t)) <= (0.001 * torch.ones(4))).all()
+
 
 def test_stack(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -192,7 +192,6 @@ def test_nn_linear(workers):
     y = model(x)
 
     assert y.get().float_prec() == torch.tensor([[2.0]])
-
 
 
 def test_matmul(workers):
