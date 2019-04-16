@@ -316,7 +316,7 @@ class BaseWorker(AbstractWorker):
         (command_name, _self, args, kwargs), return_ids = message
 
         # TODO add kwargs
-        command_name = command_name.decode("utf-8")
+        command_name = command_name
         # Handle methods
         if _self is not None:
             if sy.torch.is_inplace_method(command_name):

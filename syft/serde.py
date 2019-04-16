@@ -69,7 +69,7 @@ ZSTD = 42
 
 
 # High Level Public Functions (these are the ones you use)
-def serialize(obj: object, simplified=False) -> bin:
+def serialize(obj: object, simplified=False, force_no_compression=False, force_no_serialization=False, force_full=False) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
     This is the high level function for serializing any object or collection
@@ -91,13 +91,19 @@ def serialize(obj: object, simplified=False) -> bin:
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
     if not simplified:
-        simple_objects = _simplify(obj)
+        if(force_full):
+            simple_objects = _force_full_simplify(obj)
+        else:
+            simple_objects = _simplify(obj)
     else:
         simple_objects = obj
 
     # 2) Serialize
     # serialize into a binary
-    binary = msgpack.dumps(simple_objects)
+    if(force_no_serialization):
+        return simple_objects
+    else:
+        binary = msgpack.dumps(simple_objects)
 
     # 3) Compress
     # optionally compress the binary and return the result
@@ -108,7 +114,10 @@ def serialize(obj: object, simplified=False) -> bin:
     # otherwise we output the compressed stream with header set to '1'
     # even if compressed flag is set to false by the caller we
     # output the input stream as it is with header set to '0'
-    return _compress(binary)
+    if(force_no_compression):
+        return binary
+    else:
+        return _compress(binary)
 
 
 def deserialize(binary: bin, worker: AbstractWorker = None, detail=True) -> object:
@@ -635,10 +644,10 @@ def _simplify_dictionary(my_dict: Dict) -> Dict:
             objects.
 
     """
-    pieces = {}
+    pieces = list()
     # for dictionaries we want to simplify both the key and the value
     for key, value in my_dict.items():
-        pieces[_simplify(key)] = _simplify(value)
+        pieces.append((_simplify(key), _simplify(value)))
 
     return pieces
 
@@ -661,7 +670,7 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
     """
     pieces = {}
     # for dictionaries we want to detail both the key and the value
-    for key, value in my_dict.items():
+    for key, value in my_dict:
         detailed_key = _detail(worker, key)
         try:
             detailed_key = detailed_key.decode("utf-8")
@@ -1136,6 +1145,32 @@ def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor
 
     return referenced_worker
 
+def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
+    """
+
+    """
+
+    return (worker.id, _simplify(worker._objects))
+
+def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
+    worker_id, _objects = worker_tuple
+
+    result = sy.VirtualWorker(sy.hook, worker_id)
+    _objects = _detail(worker, _objects)
+    result._objects = _objects
+
+    # make sure they weren't accidentally double registered
+    for _, obj in _objects.items():
+        if(obj.id in worker._objects):
+            del worker._objects[obj.id]
+
+    return result
+
+def _simplify_str(obj: str) -> tuple:
+    return (obj.encode("utf-8"),)
+
+def _detail_str(worker: AbstractWorker, str_tuple: tuple) -> str:
+    return str_tuple[0].decode("utf-8")
 
 # High Level Simplification Router
 
@@ -1182,6 +1217,23 @@ def _simplify(obj: object) -> object:
         # return it
         return obj
 
+def _force_full_simplify(obj: object) -> object:
+    current_type = type(obj)
+
+    if(current_type in forced_full_simplifiers):
+
+        left = forced_full_simplifiers[current_type][0]
+
+        right = forced_full_simplifiers[current_type][1]
+
+        right = right(obj)
+
+        result = (left, right)
+    else:
+        result = _simplify(obj)
+
+    return result
+
 
 simplifiers = {
     torch.Tensor: [0, _simplify_torch_tensor],
@@ -1201,6 +1253,11 @@ simplifiers = {
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
     Plan: [15, _simplify_plan],
     VirtualWorker: [16, _simplify_worker],
+    str: [18, _simplify_str]
+}
+
+forced_full_simplifiers = {
+    VirtualWorker: [17, _force_full_simplify_worker],
 }
 
 
@@ -1247,4 +1304,6 @@ detailers = [
     _detail_multi_pointer_tensor,
     _detail_plan,
     _detail_worker,
+    _force_full_detail_worker,
+    _detail_str
 ]
