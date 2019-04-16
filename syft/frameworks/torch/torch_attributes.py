@@ -98,6 +98,7 @@ class TorchAttributes(object):
             "rand",
             "randint",
             "randn_like",
+            "randn",
             "range",
             "save",
             "short",
