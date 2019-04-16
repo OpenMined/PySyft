@@ -69,7 +69,13 @@ ZSTD = 42
 
 
 # High Level Public Functions (these are the ones you use)
-def serialize(obj: object, simplified=False, force_no_compression=False, force_no_serialization=False, force_full=False) -> bin:
+def serialize(
+    obj: object,
+    simplified=False,
+    force_no_compression=False,
+    force_no_serialization=False,
+    force_full=False,
+) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
     This is the high level function for serializing any object or collection
@@ -91,7 +97,7 @@ def serialize(obj: object, simplified=False, force_no_compression=False, force_n
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
     if not simplified:
-        if(force_full):
+        if force_full:
             simple_objects = _force_full_simplify(obj)
         else:
             simple_objects = _simplify(obj)
@@ -100,7 +106,7 @@ def serialize(obj: object, simplified=False, force_no_compression=False, force_n
 
     # 2) Serialize
     # serialize into a binary
-    if(force_no_serialization):
+    if force_no_serialization:
         return simple_objects
     else:
         binary = msgpack.dumps(simple_objects)
@@ -114,7 +120,7 @@ def serialize(obj: object, simplified=False, force_no_compression=False, force_n
     # otherwise we output the compressed stream with header set to '1'
     # even if compressed flag is set to false by the caller we
     # output the input stream as it is with header set to '0'
-    if(force_no_compression):
+    if force_no_compression:
         return binary
     else:
         return _compress(binary)
@@ -1145,12 +1151,14 @@ def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor
 
     return referenced_worker
 
+
 def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
     """
 
     """
 
     return (_simplify(worker.id), _simplify(worker._objects))
+
 
 def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
     worker_id, _objects = worker_tuple
@@ -1162,16 +1170,19 @@ def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tu
 
     # make sure they weren't accidentally double registered
     for _, obj in _objects.items():
-        if(obj.id in worker._objects):
+        if obj.id in worker._objects:
             del worker._objects[obj.id]
 
     return result
 
+
 def _simplify_str(obj: str) -> tuple:
     return (obj.encode("utf-8"),)
 
+
 def _detail_str(worker: AbstractWorker, str_tuple: tuple) -> str:
     return str_tuple[0].decode("utf-8")
+
 
 # High Level Simplification Router
 
@@ -1218,10 +1229,11 @@ def _simplify(obj: object) -> object:
         # return it
         return obj
 
+
 def _force_full_simplify(obj: object) -> object:
     current_type = type(obj)
 
-    if(current_type in forced_full_simplifiers):
+    if current_type in forced_full_simplifiers:
 
         left = forced_full_simplifiers[current_type][0]
 
@@ -1254,12 +1266,10 @@ simplifiers = {
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
     Plan: [15, _simplify_plan],
     VirtualWorker: [16, _simplify_worker],
-    str: [18, _simplify_str]
+    str: [18, _simplify_str],
 }
 
-forced_full_simplifiers = {
-    VirtualWorker: [17, _force_full_simplify_worker],
-}
+forced_full_simplifiers = {VirtualWorker: [17, _force_full_simplify_worker]}
 
 
 def _detail(worker: AbstractWorker, obj: object) -> object:
@@ -1306,5 +1316,5 @@ detailers = [
     _detail_plan,
     _detail_worker,
     _force_full_detail_worker,
-    _detail_str
+    _detail_str,
 ]
