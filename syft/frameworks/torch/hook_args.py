@@ -66,8 +66,10 @@ backward_func = {
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
-# methods that we really don't want to hook
-exclude_methods = {"__getitem__"}
+# methods that we really don't want to hook, for example because they have an arbitrary
+# number of tensors in args signature response
+exclude_methods = {"__getitem__", "view"}
+exclude_functions = {"torch.unbind", "unbind"}
 
 
 def hook_method_args(attr, method_self, args, kwargs):
@@ -209,9 +211,12 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     if not response_is_tuple:
         response = (response, 1)
 
-    attr_id = "{}@{}.{}".format(attr, wrap_type.__name__, hash(frozenset(wrap_args.items())))
+    hash_wrap_args = hash(frozenset(wrap_args.items()))
+    attr_id = f"{attr}@{wrap_type.__name__}.{response_is_tuple}.{hash_wrap_args}"
 
     try:
+        assert attr not in exclude_functions
+
         # Load the utility function to transform the args
         response_hook_function = hook_method_response_functions[attr_id]
         # Try running it
@@ -614,6 +619,8 @@ def register_response(
     attr_id = "{}".format(attr)
 
     try:
+        assert attr not in exclude_functions
+
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]
         # Try running it

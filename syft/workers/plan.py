@@ -157,6 +157,11 @@ class Plan(BaseWorker):
         # Store owner that built the plan
         self.owner_when_built = self.owner
 
+    def copy(self):
+        plan = Plan(self.hook, self.owner, self.name, id=int(10e10 * random.random()))
+        plan.plan_blueprint = self.plan_blueprint
+        return plan
+
     def replace_ids(self, from_ids, to_ids):
         """
         Replace pairs of tensor ids in the plan stored

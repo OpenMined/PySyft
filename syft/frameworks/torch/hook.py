@@ -240,10 +240,12 @@ class TorchHook:
         is pointing at.
         """
 
+        boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
+
         tensor_type = self.torch.Tensor
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
-            if attr not in dir(PointerTensor):
+            if attr not in dir(PointerTensor) or attr in boolean_comparators:
                 new_method = self.get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
 
@@ -800,12 +802,12 @@ class TorchHook:
                 self._is_wrapper = False
             return self._is_wrapper
 
-        tensor_type.is_wrapper = is_wrapper
-
         @is_wrapper.setter
         def is_wrapper(self, it_is_a_wrapper):
             self._is_wrapper = it_is_a_wrapper
             return self
+
+        tensor_type.is_wrapper = is_wrapper
 
         tensor_type.native_shape = tensor_type.shape
         tensor_type.native_data = tensor_type.data
@@ -964,6 +966,19 @@ class TorchHook:
             return nn_self
 
         self.torch.nn.Module.get = module_get_
+
+        def module_share_(nn_self, *args, **kwargs):
+            """Overloads fix_precision for torch.nn.Module."""
+            # TODO: add .data and .grad to syft tensors
+            # if module_is_missing_grad(nn_self):
+            #    create_grad_objects(nn_self)
+
+            for p in nn_self.parameters():
+                p.share_(*args, **kwargs)
+
+            return nn_self
+
+        self.torch.nn.Module.share = module_share_
 
         def module_fix_precision_(nn_self, *args, **kwargs):
             """Overloads fix_precision for torch.nn.Module."""
