@@ -3,6 +3,13 @@ import torch
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.codes import MSGTYPE
 from syft.exceptions import RemoteTensorFoundError, CannotRequestTensorAttribute
+from typing import List
+from typing import Union
+from typing import TYPE_CHECKING
+
+# this if statement avoids circular imports between base.py and pointer.py
+if TYPE_CHECKING:
+    from syft.workers import BaseWorker
 
 
 class PointerTensor(AbstractTensor):
@@ -37,26 +44,20 @@ class PointerTensor(AbstractTensor):
 
     def __init__(
         self,
-        parent: AbstractTensor = None,
-        location=None,
-        id_at_location=None,
-        owner=None,
-        id=None,
-        garbage_collect_data=True,
-        shape=None,
-        point_to_attr=None,
-        tags=None,
-        description=None,
+        location: "BaseWorker" = None,
+        id_at_location: Union[str, int] = None,
+        owner: "BaseWorker" = None,
+        id: Union[str, int] = None,
+        garbage_collect_data: bool = True,
+        shape: torch.Size = None,
+        point_to_attr: str = None,
+        tags: List[str] = None,
+        description: str = None,
     ):
+
         """Initializes a PointerTensor.
 
         Args:
-            parent: An optional AbstractTensor wrapper around the PointerTensor
-                which makes it so that you can pass this PointerTensor to all
-                the other methods/functions that PyTorch likes to use, although
-                it can also be other tensors which extend AbstractTensor, such
-                as custom tensors for Secure Multi-Party Computation or
-                Federated Learning.
             location: An optional BaseWorker object which points to the worker
                 on which this pointer's object can be found.
             id_at_location: An optional string or integer id of the tensor
@@ -76,12 +77,10 @@ class PointerTensor(AbstractTensor):
                 to None, which meants don't point to any attr, just point to the
                 tensor corresponding to the id_at_location.
         """
-        super().__init__(tags, description)
+        super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         self.location = location
         self.id_at_location = id_at_location
-        self.owner = owner
-        self.id = id
         self.garbage_collect_data = garbage_collect_data
         self._shape = shape
         self.point_to_attr = point_to_attr
@@ -144,7 +143,7 @@ class PointerTensor(AbstractTensor):
 
         big_str = False
 
-        if self.tags is not None:
+        if self.tags is not None and len(self.tags):
             big_str = True
             out += "\n\tTags: "
             for tag in self.tags:
@@ -310,3 +309,18 @@ class PointerTensor(AbstractTensor):
         ).wrap()
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
+
+    def share(self, *args, **kwargs):
+        """
+        Send a command to remote worker to additively share a tensor
+
+        Returns:
+            A pointer to an AdditiveSharingTensor
+        """
+
+        # Send the command
+        command = ("share", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response

@@ -16,8 +16,7 @@ class PureTorchTensorFoundError(BaseException):
         message -- explanation of the error
     """
 
-    def __init__(self, tensor):
-        self.tensor = tensor
+    pass
 
 
 class RemoteTensorFoundError(BaseException):

@@ -217,7 +217,7 @@ def test_hook_args_and_cmd_signature_malleability():
     assert (r1 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
 
     r2 = a + 1
-    assert (r2 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
+    assert (r2 == syft.LoggingTensor().on(torch.tensor([2.0, 3]))).all()
 
     r3 = a + b
     assert (r3 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()

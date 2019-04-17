@@ -26,6 +26,8 @@ one = lambda _args: 1
 type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
+    dict: one,  # FIXME This is for additiveShareTensor.child, it can be confusing and AST.child
+    # should perhaps be of type ShareDict extending dict or something like this
     LoggingTensor: one,
     FixedPrecisionTensor: one,
     AdditiveSharingTensor: one,
@@ -40,10 +42,10 @@ forward_func = {
     PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
+    else (_ for _ in ()).throw(PureTorchTensorFoundError),
     torch.nn.Parameter: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError(i)),
+    else (_ for _ in ()).throw(PureTorchTensorFoundError),
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
@@ -59,10 +61,15 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
-    AdditiveSharingTensor: lambda i: i,
-    MultiPointerTensor: lambda i: i,
+    AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
+    MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
+
+# methods that we really don't want to hook, for example because they have an arbitrary
+# number of tensors in args signature response
+exclude_methods = {"__getitem__", "view"}
+exclude_functions = {"torch.unbind", "unbind"}
 
 
 def hook_method_args(attr, method_self, args, kwargs):
@@ -81,13 +88,17 @@ def hook_method_args(attr, method_self, args, kwargs):
     Args:
         attr (str): the name of the method being called
         method_self: the tensor on which the method is being called
-        args (list): the arguments being passed to the tensor
+        args (list): the arguments being passed to the method
+        kwargs (dict): the keyword arguments being passed to the function
+            (these are not hooked ie replace with their .child attr)
     """
     # Specify an id to distinguish methods from different classes
     # As they won't be used with the same arg types
     attr_id = type(method_self).__name__ + "." + attr
 
     try:
+        assert attr not in exclude_methods
+
         # Load the utility function to transform the args
         hook_args = hook_method_args_functions[attr_id]
         # Try running it
@@ -100,7 +111,7 @@ def hook_method_args(attr, method_self, args, kwargs):
         # Run it
         new_self, new_args = args_hook_function((method_self, args))
 
-    return (new_self, new_args, kwargs)
+    return new_self, new_args, kwargs
 
 
 def hook_function_args(attr, args, kwargs, return_args_type=False):
@@ -108,7 +119,9 @@ def hook_function_args(attr, args, kwargs, return_args_type=False):
 
     Args:
         attr (str): the name of the function being called
-        args (list): the arguments being passed to the tensor
+        args (list): the arguments being passed to the function
+        kwargs (dict): the keyword arguments being passed to the function
+            (these are not hooked ie replace with their .child attr)
         return_args_type (bool): return the type of the tensors in the
         original arguments
 
@@ -177,8 +190,11 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
 
     Args:
         attr (str): the name of the method being called
-        response (list): the arguments being passed to the tensor
+        response (list or dict): the arguments being passed to the tensor
         wrap_type (type): the type of wrapper we'd like to have
+        wrap_args (dict): options to give to the wrapper (for example the
+        precision for the precision tensor)
+        new_self: used for the can just below of inplace ops
     """
 
     # inline methods should just return new_self
@@ -195,9 +211,12 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     if not response_is_tuple:
         response = (response, 1)
 
-    attr_id = "{}@{}".format(attr, wrap_type.__name__)
+    hash_wrap_args = hash(frozenset(wrap_args.items()))
+    attr_id = f"{attr}@{wrap_type.__name__}.{response_is_tuple}.{hash_wrap_args}"
 
     try:
+        assert attr not in exclude_functions
+
         # Load the utility function to transform the args
         response_hook_function = hook_method_response_functions[attr_id]
         # Try running it
@@ -263,10 +282,15 @@ def build_args_hook(args, rules, return_tuple=False):
     numbers, bool, etc.
     Pointers trigger an error which can be caught to get the location for
     forwarding the call.
-    :param args:
-    :param rules:
-    :param return_tuple: force to return a tuple even with a single element
-    :return: a function that replace syft arg in args with arg.child
+
+    Args:
+        args (tuple): the arguments given to the function / method
+        rules (tuple): the same structure but with boolean, true when there is
+            a tensor
+        return_tuple (bool): force to return a tuple even with a single element
+
+    Return:
+        a function that replace syft arg in args with arg.child
     """
 
     # get the transformation lambda for each args
@@ -305,12 +329,16 @@ def build_get_tensor_type(rules, layer=None):
     """
     Build a function which uses some rules to find efficiently the first tensor in
     the args objects and return the type of its child.
-    :param rules: a skeleton object with the same structure as args but each tensor
-    is replaced with a 1 and other types (int, str) with a 0
-    :param layer: keep track of the path of inspection: each element in the list
-    stand for one layer of deepness into the object, and its value for the index
-    in the current layer. See example for details
-    :return: a function returning a type
+
+    Args:
+        rules (tuple): a skeleton object with the same structure as args but each tensor
+            is replaced with a 1 and other types (int, str) with a 0
+        layer (list or None): keep track of the path of inspection: each element in the list
+            stand for one layer of deepness into the object, and its value for the index
+            in the current layer. See example for details
+
+    Returns:
+        a function returning a type
 
     Example:
         *Understanding the layer parameter*
@@ -393,10 +421,15 @@ def build_response_hook(response, rules, wrap_type, wrap_args, return_tuple=Fals
     Build a function given some rules to efficiently replace in the response object
     syft or torch tensors with a wrapper, and do nothing for other types of object
     including , str, numbers, bool, etc.
-    :param response:
-    :param rules:
-    :param return_tuple: force to return a tuple even with a single element
-    :return:
+
+    Args:
+        response: a response used to build the hook function
+        rules: the same structure objects but with boolean, at true when is replaces
+            a tensor
+        return_tuple: force to return a tuple even with a single element
+
+    Response:
+        a function to "wrap" the response
     """
 
     # get the transformation lambda for each args
@@ -586,6 +619,8 @@ def register_response(
     attr_id = "{}".format(attr)
 
     try:
+        assert attr not in exclude_functions
+
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]
         # Try running it

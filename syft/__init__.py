@@ -18,10 +18,13 @@ from syft.grid import VirtualGrid
 from syft.workers import VirtualWorker
 from syft.workers import Plan
 from syft.workers import func2plan
+from syft.workers import method2plan
 from syft.workers import make_plan
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
 # Import serialization tools
