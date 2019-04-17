@@ -7,6 +7,9 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
+from syft.serde import deserialize
+from syft.serde import serialize
+
 
 def test_plan_built_locally(hook):
     # To run a plan locally the local worker can't be a client worker,
@@ -101,29 +104,24 @@ def test_plan_built_on_method(hook):
     pointer_to_result.get()
 
 
-def test_search_plan_built_locally(hook):
+def test_fetch_plan_built_locally(hook):
     @sy.func2plan
     def plan_mult_3(data):
         return data * 3
 
-    x_ptr = th.tensor([-1, 2, 3])
-    plan_ptr = plan_mult_3.tag("#plan")
-    device_3 = sy.VirtualWorker(hook, id="device_3", data=(x_ptr, plan_ptr))
+    x = th.tensor([-1, 2, 3])
+    device_3 = sy.VirtualWorker(hook, id="device_3", data=(x, plan_mult_3))
 
-    # Search plan
-    search_results = device_3.search("#plan")
-    assert len(search_results) == 1
-
-    found_plan = search_results[0]
-    assert isinstance(found_plan, sy.Plan)
-    assert found_plan.id == plan_ptr.id
+    # Fetch plan
+    fetched_plan = device_3.fetch_plan(plan_mult_3.id)
+    assert isinstance(fetched_plan, sy.Plan)
 
     # Build and execute plan locally
-    x_ptr = th.tensor([-1, 2, 3])
-    assert (found_plan(x_ptr) == th.tensor([-3, 6, 9])).all()
+    y = th.tensor([-1, 2, 3])
+    assert (fetched_plan(y) == th.tensor([-3, 6, 9])).all()
 
 
-def test_search_plan_built_remotely(hook):
+def test_fetch_plan_built_remotely(hook):
     device_4 = sy.VirtualWorker(hook, id="device_4")
 
     @sy.func2plan
@@ -134,19 +132,29 @@ def test_search_plan_built_remotely(hook):
 
     # When you "send" a plan we don't actually send the
     # plan to the worker we just update the plan's location
-    plan_ptr = plan_mult_3.tag("#plan").send(device_4)
-
-    assert len(device_4.search("#plan")) == 0
+    sent_plan = plan_mult_3.tag("#plan").send(device_4)
 
     # When you execute the plan, we then send the plan to the
     # worker and build it
-    _ = plan_ptr(x_ptr)
+    _ = sent_plan(x_ptr)
 
-    # Search plan
-    search_results = device_4.search("#plan")
-    assert len(search_results) == 1
+    # Fetch plan
+    fetched_plan = device_4.fetch_plan(sent_plan.id)
 
     # Build plan and execute it locally
-    x_ptr = th.tensor([-1, 2, 3])
-    found_plan = search_results[0]
-    assert (found_plan(x_ptr) == th.tensor([-3, 6, 9])).all()
+    x = th.tensor([-1, 2, 3])
+    assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
+
+
+def test_plan_serde(hook):
+    @sy.func2plan
+    def my_plan(data):
+        x = data * 2
+        y = (x - 2) * 10
+        return x + y
+
+    serialized_plan = serialize(my_plan)
+    deserialized_plan = deserialize(serialized_plan)
+
+    x = th.tensor([-1, 2, 3])
+    assert (deserialized_plan(x) == th.tensor([-42, 24, 46])).all()
