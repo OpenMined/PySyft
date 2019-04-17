@@ -1,76 +1,34 @@
-from syft.workers import WebsocketClientWorker
+import torch as th
+import syft as sy
+import binascii
 import requests
+from syft.workers import BaseWorker
 
+class GridClient(BaseWorker):
 
-class GridClient(WebsocketClientWorker):
-    def __init__(
-        self,
-        hook,
-        host,
-        port,
-        grid,
-        pid,
-        id=0,
-        log_msgs=False,
-        verbose=False,
-        data={},
-        flask_port=5000,
-    ):
-        """A client which will forward all messages to a remote worker running a
-        WebsocketServerWorker and receive all responses back from the server.
-        """
-        self.flask_port = flask_port
-        self.grid = grid
-        self.pid = pid
+    def __init__(self, hook, id, addr):
+        super().__init__(hook=hook, id=id)
 
-        super().__init__(
-            hook=hook,
-            host=host,
-            port=port,
-            id=id,
-            data=data,
-            log_msgs=log_msgs,
-            verbose=verbose,
-        )
+        self.addr = addr
 
-    @property
-    def known_workers(self):
-        url = "http://" + self.host + ":" + str(self.flask_port) + "/get_known_workers/"
+    def _send_msg(self, message: bin, location: BaseWorker) -> bin:
+        raise NotImplementException
 
-        response = requests.get(url)
+    def _recv_msg(self, message: bin) -> bin:
+        message = str(binascii.hexlify(message))
 
-        try:
-            response = response.json()
-        except:
-            return response.text
-        return response
+        # Try the message 10 times before quitting
+        for i in range(10):
+            r = requests.post(self.addr + '/cmd/', data={'message': message})
 
-    def add_known_worker(self, host, port):
-
-        url = (
-            "http://"
-            + self.host
-            + ":"
-            + str(self.flask_port)
-            + "/add_worker/"
-            + str(host)
-            + "/"
-            + str(port)
-        )
-
-        response = requests.get(url)
-
-        try:
-            response = response.json()
-            if "error" in response:
+            response = r.text
+            try:
+                response = binascii.unhexlify(response[2:-1])
+            except:
                 print(response)
-                return self.known_workers
+                response = None
+                continue
+
             return response
 
-        except:
-            return response.text
-
-        return response
-
-    def __del__(self):
-        self.grid.kill_worker(self)
+        

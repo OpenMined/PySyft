@@ -1,3 +1,0 @@
-flask
-flask-sqlalchemy
-syft>=0.1.5a1

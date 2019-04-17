@@ -1,1 +1,0 @@
-rm /tmp/openmined.grid.*

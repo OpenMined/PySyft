@@ -1,1 +1,0 @@
-python scripts/kill_flasks.py
