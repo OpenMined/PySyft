@@ -1157,14 +1157,14 @@ def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
 
     """
 
-    return (_simplify(worker.id), _simplify(worker._objects))
+    return (_simplify(worker.id), _simplify(worker._objects), worker.auto_add)
 
 
 def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
-    worker_id, _objects = worker_tuple
+    worker_id, _objects, auto_add = worker_tuple
     worker_id = _detail(worker, worker_id)
 
-    result = sy.VirtualWorker(sy.hook, worker_id)
+    result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
     _objects = _detail(worker, _objects)
     result._objects = _objects
 
