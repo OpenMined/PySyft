@@ -2,6 +2,7 @@ import torch as th
 import syft as sy
 import binascii
 import requests
+import os
 from syft.workers import BaseWorker
 
 class GridClient(BaseWorker):
@@ -31,4 +32,10 @@ class GridClient(BaseWorker):
 
             return response
 
-        
+
+    def destroy(self):
+        grid_name = self.addr.split("//")[1].split(".")[0]
+        res = os.popen("heroku destroy " + grid_name + " --confirm " + grid_name).read()
+        print("Destroyed node: " + str(grid_name))
+
+
