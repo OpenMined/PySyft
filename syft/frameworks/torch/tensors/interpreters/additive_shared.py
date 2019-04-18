@@ -476,6 +476,39 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.argmax = argmax
 
+        @overloaded.module
+        def functional(module):
+            @overloaded.function
+            def split(tensor_shares, *args, **kwargs):
+                results = None
+
+                for worker, share in tensor_shares.items():
+                    share_results = torch.split(share, *args, **kwargs)
+                    if results is None:
+                        results = [{worker: share_result} for share_result in share_results]
+                    else:
+                        for result, share_result in zip(results, share_results):
+                            result[worker] = share_result
+
+                return results
+
+            module.split = split
+
+        module.functional = functional
+
+        @overloaded.module
+        def nn(module):
+            @overloaded.module
+            def functional(module):
+                def relu(tensor_shares):
+                    return tensor_shares.relu()
+
+                module.relu = relu
+
+            module.functional = functional
+
+        module.nn = nn
+
     ## SECTION SNN
 
     def relu(self):
