@@ -64,7 +64,7 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
 
         check_dependency(lib="heroku",
                          check="CLI to interact with Heroku",
-                         error_msg="Missing Heroku command line dependency - please install it: https://toolbelt.heroku.com/",
+                         error_msg="Missing Heroku command line dependency (version >= 7.22.9) - please install it: https://toolbelt.heroku.com/",
                          verbose=verbose)
 
         check_dependency(lib="pip",
@@ -155,6 +155,9 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
     commands.append("git commit -am \"init\"")
 
     run_commands_in(commands, logs, cleanup=False, verbose=verbose)
+
+    logs = list()
+    commands = list()
 
     logs.append("\nStep 11: Pushing code to Heroku (this can take take a few seconds)...")
     commands.append("heroku create " + grid_name)
