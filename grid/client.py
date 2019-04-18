@@ -11,7 +11,7 @@ class GridClient(BaseWorker):
         super().__init__(hook=sy.hook, id="grid")
         print("WARNING: Grid nodes publish datasets online and are for EXPERIMENTAL use only."
               "Deploy nodes at your own risk. Do not use OpenGrid with any data/models you wish to "
-              "keep private.")
+              "keep private.\n")
         self.addr = addr
 
     def _send_msg(self, message: bin, location: BaseWorker) -> bin:
