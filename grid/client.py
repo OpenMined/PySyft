@@ -6,8 +6,8 @@ from syft.workers import BaseWorker
 
 class GridClient(BaseWorker):
 
-    def __init__(self, hook, id, addr):
-        super().__init__(hook=hook, id=id)
+    def __init__(self, addr):
+        super().__init__(hook=sy.hook, id="grid")
 
         self.addr = addr
 
