@@ -62,9 +62,9 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
                          error_msg="Missing Git command line dependency - please install it: https://gist.github.com/derhuerst/1b15ff4652a867391f03",
                          verbose=verbose)
 
-        check_dependency(lib="heroku",
-                         check="CLI to interact with Heroku",
-                         error_msg="Missing Heroku command line dependency (version >= 7.22.9) - please install it: https://toolbelt.heroku.com/",
+        check_dependency(lib="heroku --version",
+                         check="heroku/7",
+                         error_msg="Missing Heroku command line dependency - please install it: https://toolbelt.heroku.com/",
                          verbose=verbose)
 
         check_dependency(lib="pip",
@@ -114,14 +114,14 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
         except:
             print("ERROR: cleaning up... good chance Heroku still has the app or the tmp directory still exists")
 
-        msg = """Creating rediscloud on ⬢ """ + grid_name + """... ⣾ 
+        msg = """Creating rediscloud on ⬢ """ + grid_name + """... ⣾
         ⣽⣻⢿⡿⣟⣯⣷⣾⣽Creating rediscloud on ⬢ """ + grid_name + """... !
          ▸    Please verify your account to install this add-on plan (please enter a
          ▸    credit card) For more information, see
          ▸    https://devcenter.heroku.com/categories/billing Verify now at
          ▸    https://heroku.com/verify
 
-         NOTE: OpenMined's Grid nodes can be run on the FREE tier of Heroku, 
+         NOTE: OpenMined's Grid nodes can be run on the FREE tier of Heroku,
          but you still have to enter a credit card on Heroku to spin up FREE nodes."""
 
         raise Exception(msg)
