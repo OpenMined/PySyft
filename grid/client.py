@@ -9,7 +9,8 @@ class GridClient(BaseWorker):
 
     def __init__(self, addr):
         super().__init__(hook=sy.hook, id="grid")
-
+        print("WARNING: Grid nodes are for EXPERIMENTAL use only. Do not use them with "
+              "any data you wish to keep private. Only use them with PUBLIC data.")
         self.addr = addr
 
     def _send_msg(self, message: bin, location: BaseWorker) -> bin:
