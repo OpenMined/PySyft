@@ -327,6 +327,8 @@ def compute_q_noisy_max_torch(counts, noise_eps):
 
             count_normal.append(counts_normalized[i])
 
+    print(count_normal)
+
     counts_rest = torch.tensor(count_normal, dtype=torch.float)
     q = 0.0
 
