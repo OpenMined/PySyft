@@ -312,11 +312,23 @@ def tensors_to_literals(tensor_list):
 
     literal_list = []
 
-    for tensor in tensor_list:
+    if type(tensor_list) == list:
 
-        literal_list.append(tensor.item())
+        for tensor in tensor_list:
 
-    return literal_list
+            if type(tensor) == torch.tensor:
+
+                literal_list.append(tensor.item())
+
+            else:
+
+                literal_list.append(tensor)
+
+        return literal_list
+
+    else:
+
+        return tensor_list
 
 
 def compute_q_noisy_max_torch(counts, noise_eps):
