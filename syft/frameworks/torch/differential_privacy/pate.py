@@ -316,7 +316,7 @@ def tensors_to_literals(tensor_list):
 
         for tensor in tensor_list:
 
-            if type(tensor) == torch.tensor:
+            if type(tensor) == torch.Tensor:
 
                 literal_list.append(tensor.item())
 
