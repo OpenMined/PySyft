@@ -308,6 +308,16 @@ def logmgf_exact_torch(q, priv_eps, l):
     return min(0.5 * priv_eps * priv_eps * l * (l + 1), log_t, priv_eps * l)
 
 
+def tensors_to_literals(tensor_list):
+    
+    literal_list=[]
+    
+    for tensor in tensor_list:
+        
+        literal_list.append(tensor.item())
+        
+    return(literal_list)
+
 def compute_q_noisy_max_torch(counts, noise_eps):
 
     if type(counts) != torch.tensor:
@@ -318,18 +328,9 @@ def compute_q_noisy_max_torch(counts, noise_eps):
     counts_normalized = noise_eps * (
         torch.tensor(counts, dtype=torch.float) - torch.tensor(counts[winner], dtype=torch.float)
     )
-
-    count_normal = []
-
-    for i in range(len(counts)):
-
-        if i != winner:
-
-            count_normal.append(counts_normalized[i])
-
-    print(count_normal)
-
-    counts_rest = torch.tensor(count_normal, dtype=torch.float)
+    
+    counts_normalized=tensors_to_literals(counts_normalized)
+    counts_rest = torch.tensor([counts_normalized[i] for i in range(len(counts)) if i!=winner], dtype=torch.float)
     q = 0.0
 
     index = 0
@@ -439,3 +440,7 @@ def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8,
     data_ind_eps_list = (data_ind_log_mgf - math.log(delta)) / l_list
 
     return min(eps_list_nm), min(data_ind_eps_list)
+
+
+
+

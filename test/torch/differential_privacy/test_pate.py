@@ -25,7 +25,6 @@ def test_base_dataset():
 
 def test_base_dataset_torch():
 
-    torch.tensor([torch.tensor(1), torch.tensor(2), torch.tensor(3)])
     num_teachers, num_examples, num_labels = (100, 50, 10)
     preds = (np.random.rand(num_teachers, num_examples) * num_labels).astype(int)  # fake preds
 
