@@ -6,6 +6,7 @@ from syft.frameworks.torch.differential_privacy import pate
 
 np.random.seed(0)
 
+
 def test_base_dataset():
 
     num_teachers, num_examples, num_labels = (100, 50, 10)
@@ -36,5 +37,3 @@ def test_base_dataset_torch():
     )
 
     assert data_dep_eps < data_ind_eps
-    
-
