@@ -423,7 +423,7 @@ def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8,
         )
 
         total_ss_nm += torch.tensor(
-            [smooth_sens_torch(counts_mat[i].clone(), noise_eps, l, beta) for l in l_list],
+            [tensors_to_literals(smooth_sens_torch(counts_mat[i].clone(), noise_eps, l, beta)) for l in l_list],
             dtype=torch.float,
         )
 
@@ -443,3 +443,4 @@ def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8,
     data_ind_eps_list = (data_ind_log_mgf - math.log(delta)) / l_list
 
     return min(eps_list_nm), min(data_ind_eps_list)
+
