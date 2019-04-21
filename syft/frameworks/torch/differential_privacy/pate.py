@@ -437,7 +437,7 @@ def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8,
 
     data_ind_log_mgf = torch.tensor([0.0 for _ in l_list])
     data_ind_log_mgf += num_examples * torch.tensor(
-        [logmgf_exact_torch(1.0, 2.0 * noise_eps, l) for l in l_list]
+        tensors_to_literals([logmgf_exact_torch(1.0, 2.0 * noise_eps, l) for l in l_list])
     )
 
     data_ind_eps_list = (data_ind_log_mgf - math.log(delta)) / l_list
