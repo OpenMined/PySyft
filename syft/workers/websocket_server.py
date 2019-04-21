@@ -119,8 +119,8 @@ class WebsocketServerWorker(VirtualWorker):
 
     def start(self):
         """Start the server"""
-        # Daniele Gadler: Fixed a timeout issue occuring on raspberry PIs or low-power devices
-        # when wanting to train a model in a federated way via actual websockets
+
+        # Daniele Gadler: fix the timeout issues at the client side
         start_server = websockets.serve(
             self._handler,
             self.host,
@@ -129,5 +129,6 @@ class WebsocketServerWorker(VirtualWorker):
             ping_timeout=None,
             close_timeout=None,
         )
+
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
