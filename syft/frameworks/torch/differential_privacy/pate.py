@@ -24,6 +24,7 @@ the epsilon bounds for MNIST and SVHN students.
 import os
 import math
 import numpy as np
+import torch
 
 # import tensorflow as tf
 #
@@ -48,7 +49,6 @@ import numpy as np
 #
 # FLAGS = tf.flags.FLAGS
 
-import torch
 
 
 def compute_q_noisy_max(counts, noise_eps):
@@ -281,10 +281,8 @@ def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, b
     return min(eps_list_nm), min(data_ind_eps_list)
 
 
-import torch
-
-
 def logmgf_exact_torch(q, priv_eps, l):
+    
 
     if q < 0.5:
 
@@ -444,22 +442,3 @@ def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8,
 
     return min(eps_list_nm), min(data_ind_eps_list)
 
-
-def test_base_dataset_torch():
-
-    num_teachers, num_examples, num_labels = (100, 50, 10)
-    preds = (np.random.rand(num_teachers, num_examples) * num_labels).astype(int)  # fake preds
-
-    indices = (np.random.rand(num_examples) * num_labels).astype(int)  # true answers
-
-    preds[:, 0:10] *= 0
-
-    data_dep_eps, data_ind_eps = perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5)
-
-    print(data_dep_eps)
-    print(data_ind_eps)
-
-    assert data_dep_eps < data_ind_eps
-
-
-test_base_dataset_torch()
