@@ -38,8 +38,8 @@ class WebsocketClientWorker(BaseWorker):
 
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
-        # Daniele Gadler: Fix timeout issues on the server-side
-        self.ws = websocket.create_connection(self.uri, max_size=None, timeout=None)
+        # Daniele Gadler: Also avoid the server from timing out on the server-side
+        self.ws = websocket.create_connection(self.uri, max_size=None, timeout=9999999)
 
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
 
@@ -52,6 +52,7 @@ class WebsocketClientWorker(BaseWorker):
         return sy.serde.deserialize(response)
 
     def _send_msg(self, message: bin, location) -> bin:
+        self.ws.settimeout(9999999)
         raise RuntimeError(
             "_send_msg should never get called on a ",
             "WebsocketClientWorker. Did you accidentally "
@@ -72,7 +73,7 @@ class WebsocketClientWorker(BaseWorker):
             self.ws.shutdown()
             time.sleep(1)
             # Daniele Gadler: also avoid timing out on the server-side
-            self.ws = websocket.create_connection(self.uri, max_size=None, timeout=None)
+            self.ws = websocket.create_connection(self.uri, max_size=None, timeout=9999999)
             logger.warning("Created new websocket connection")
             time.sleep(0.1)
             response = self._receive_action(message)
