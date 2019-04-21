@@ -280,7 +280,45 @@ def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, b
     return min(eps_list_nm), min(data_ind_eps_list)
 
 
+def tensors_to_literals(tensor_list):
+
+    """Converts list of torch tensors to list of integers/floats. Fix for not having the functionality which converts list of tensors to tensors
+    
+       args:
+           
+           tensor_list[List]: List of torch tensors
+           
+       returns:
+           
+           literal_list[List]: List of floats/integers
+           
+    """
+
+    literal_list = []
+
+    for tensor in tensor_list:
+
+        literal_list.append(tensor.item())
+
+    return literal_list
+
+
 def logmgf_exact_torch(q, priv_eps, l):
+
+    """Computes the logmgf value given q and privacy eps.
+        The bound used is the min of three terms. The first term is from
+        https://arxiv.org/pdf/1605.02065.pdf.
+        The second term is based on the fact that when event has probability (1-q) for
+        q close to zero, q can only change by exp(eps), which corresponds to a
+        much smaller multiplicative change in (1-q)
+        The third term comes directly from the privacy guarantee.
+        Args:
+            q: pr of non-optimal outcome
+            priv_eps: eps parameter for DP
+            l: moment to compute.
+        Returns:
+            Upper bound on logmgf
+      """
 
     if q < 0.5:
 
@@ -304,18 +342,19 @@ def logmgf_exact_torch(q, priv_eps, l):
     return min(0.5 * priv_eps * priv_eps * l * (l + 1), log_t, priv_eps * l)
 
 
-def tensors_to_literals(tensor_list):
-
-    literal_list = []
-
-    for tensor in tensor_list:
-
-        literal_list.append(tensor.item())
-
-    return literal_list
-
-
 def compute_q_noisy_max_torch(counts, noise_eps):
+
+    """returns ~ Pr[outcome != winner].
+       Args:
+           
+          counts: a list of scores
+          noise_eps: privacy parameter for noisy_max
+          
+       Returns:
+           
+          q: the probability that outcome is different from true winner.
+          
+    """
 
     if type(counts) != torch.tensor:
 
@@ -345,12 +384,29 @@ def compute_q_noisy_max_torch(counts, noise_eps):
 
 def logmgf_from_counts_torch(counts, noise_eps, l):
 
+    """
+        ReportNoisyMax mechanism with noise_eps with 2*noise_eps-DP
+        in our setting where one count can go up by one and another
+        can go down by 1.
+    """
+
     q = compute_q_noisy_max_torch(counts, noise_eps)
 
     return logmgf_exact_torch(q, 2.0 * noise_eps, l)
 
 
 def sens_at_k_torch(counts, noise_eps, l, k):
+
+    """Return sensitivity at distane k.
+      Args:
+        
+          counts: an array of scores
+          noise_eps: noise parameter used
+          l: moment whose sensitivity is being computed
+          k: distance
+      Returns:
+         sensitivity: at distance k
+     """
 
     counts_sorted = sorted(counts, reverse=True)
 
@@ -374,6 +430,17 @@ def sens_at_k_torch(counts, noise_eps, l, k):
 
 def smooth_sens_torch(counts, noise_eps, l, beta):
 
+    """Compute beta-smooth sensitivity.
+    
+     Args:
+         counts: array of scors
+         noise_eps: noise parameter
+         l: moment of interest
+         beta: smoothness parameter
+     Returns:
+         smooth_sensitivity: a beta smooth upper bound
+     """
+
     k = 0
     smoothed_sensitivity = sens_at_k_torch(counts, noise_eps, l, k)
 
@@ -389,6 +456,20 @@ def smooth_sens_torch(counts, noise_eps, l, beta):
 
 
 def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8, beta=0.09):
+
+    """Performs PATE analysis on predictions from teachers and combined predictions for student.
+    Args:
+        teacher_preds: a torch tensor of dim (num_teachers x num_examples). Each value corresponds to the
+            index of the label which a teacher gave for a specific example
+        indices: a torch tensor of dim (num_examples) of aggregated examples which were aggregated using
+            the noisy max mechanism.
+        noise_eps: the epsilon level used to create the indices
+        delta: the desired level of delta
+        moments: the number of moments to track (see the paper)
+        beta: a smoothing parameter (see the paper)
+    Returns:
+        tuple: first value is the data dependent epsilon, then the data independent epsilon
+    """
 
     num_teachers, num_examples = preds.shape
     _num_examples = indices.shape[0]
