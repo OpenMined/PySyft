@@ -50,7 +50,6 @@ import torch
 # FLAGS = tf.flags.FLAGS
 
 
-
 def compute_q_noisy_max(counts, noise_eps):
     """returns ~ Pr[outcome != winner].
 
@@ -282,7 +281,6 @@ def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, b
 
 
 def logmgf_exact_torch(q, priv_eps, l):
-    
 
     if q < 0.5:
 
@@ -441,4 +439,3 @@ def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8,
     data_ind_eps_list = (data_ind_log_mgf - math.log(delta)) / l_list
 
     return min(eps_list_nm), min(data_ind_eps_list)
-
