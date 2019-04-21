@@ -39,6 +39,9 @@ class WebsocketClientWorker(BaseWorker):
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
         self.ws = websocket.create_connection(self.uri, max_size=None)
+        #Daniele Gadler: Also avoid the server from timing out
+        self.ws.settimeout(None)
+
 
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
 
@@ -71,6 +74,8 @@ class WebsocketClientWorker(BaseWorker):
             self.ws.shutdown()
             time.sleep(1)
             self.ws = websocket.create_connection(self.uri, max_size=None)
+            #Daniele: Also avoid the server from timing out
+            self.ws.settimeout(None)
             logger.warning("Created new websocket connection")
             time.sleep(0.1)
             response = self._receive_action(message)
@@ -79,3 +84,4 @@ class WebsocketClientWorker(BaseWorker):
                     "Websocket connection closed and creation of new connection failed."
                 )
         return response
+
