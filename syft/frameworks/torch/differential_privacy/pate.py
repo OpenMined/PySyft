@@ -312,23 +312,11 @@ def tensors_to_literals(tensor_list):
 
     literal_list = []
 
-    if type(tensor_list) == list:
+    for tensor in tensor_list:
 
-        for tensor in tensor_list:
+        literal_list.append(tensor.item())
 
-            if type(tensor) == torch.Tensor:
-
-                literal_list.append(tensor.item())
-
-            else:
-
-                literal_list.append(tensor)
-
-        return literal_list
-
-    else:
-
-        return tensor_list
+    return literal_list
 
 
 def compute_q_noisy_max_torch(counts, noise_eps):
@@ -435,10 +423,7 @@ def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8,
         )
 
         total_ss_nm += torch.tensor(
-            [
-                tensors_to_literals(smooth_sens_torch(counts_mat[i].clone(), noise_eps, l, beta))
-                for l in l_list
-            ],
+            [smooth_sens_torch(counts_mat[i].clone(), noise_eps, l, beta) for l in l_list],
             dtype=torch.float,
         )
 
@@ -458,3 +443,23 @@ def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8,
     data_ind_eps_list = (data_ind_log_mgf - math.log(delta)) / l_list
 
     return min(eps_list_nm), min(data_ind_eps_list)
+
+
+def test_base_dataset_torch():
+
+    num_teachers, num_examples, num_labels = (100, 50, 10)
+    preds = (np.random.rand(num_teachers, num_examples) * num_labels).astype(int)  # fake preds
+
+    indices = (np.random.rand(num_examples) * num_labels).astype(int)  # true answers
+
+    preds[:, 0:10] *= 0
+
+    data_dep_eps, data_ind_eps = perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5)
+
+    print(data_dep_eps)
+    print(data_ind_eps)
+
+    assert data_dep_eps < data_ind_eps
+
+
+test_base_dataset_torch()
