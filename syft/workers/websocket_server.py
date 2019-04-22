@@ -120,7 +120,7 @@ class WebsocketServerWorker(VirtualWorker):
     def start(self):
         """Start the server"""
 
-        # Daniele Gadler: fix the timeout issues at the client side
+        # Fix the timeout issues at the client side in case of slow clients
         start_server = websockets.serve(
             self._handler,
             self.host,
