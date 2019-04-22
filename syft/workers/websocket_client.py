@@ -55,7 +55,7 @@ class WebsocketClientWorker(BaseWorker):
         return sy.serde.deserialize(response)
 
     def _send_msg(self, message: bin, location) -> bin:
-        self.ws.settimeout(TIME_OUT_AMOUNT)
+        self.ws.settimeout(TIMEOUT_INTERVAL)
         raise RuntimeError(
             "_send_msg should never get called on a ",
             "WebsocketClientWorker. Did you accidentally "
