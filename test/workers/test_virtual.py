@@ -213,7 +213,7 @@ def test_get_not_permitted(workers):
         x = th.tensor([1, 2, 3, 4, 5]).send(bob)
         with pytest.raises(GetNotPermittedError):
             x.get()
-            mock_allowed_to_get.assert_called_once()
+        mock_allowed_to_get.assert_called_once()
 
 
 def test_spinup_time(hook):
