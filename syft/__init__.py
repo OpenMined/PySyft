@@ -3,6 +3,7 @@
 from syft import frameworks
 from syft import workers
 from syft import codes
+from syft import federated
 
 # The purpose of the following import section is to increase the convenience of using
 # PySyft by making it possible to import the most commonly used objects from syft
@@ -15,7 +16,8 @@ from syft.frameworks.torch import TorchHook
 # Import grids
 from syft.grid import VirtualGrid
 
-# Import federated objects
+# Import federate learning
+from syft.federated import TrainConfig
 from syft.federated import Plan
 from syft.federated import func2plan
 from syft.federated import method2plan
