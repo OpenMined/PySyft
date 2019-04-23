@@ -2,8 +2,8 @@ import torch
 import syft as sy
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
-from syft.exceptions import ResponseSignatureError
 
+from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
@@ -17,7 +17,6 @@ from typing import Callable
 from typing import Union
 from typing import Tuple
 from typing import List
-
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}

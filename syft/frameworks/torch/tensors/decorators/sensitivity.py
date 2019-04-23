@@ -231,7 +231,7 @@ class SensitivityTensor(AbstractTensor):
         else:
 
             # just multiplying the values... nothing to see here
-            new_vals = self.child * other.values
+            new_vals = self.child * other.child
 
             # Step 1: calculate the new maximum value for each entity in self's ancestry.
             # Since this could be the product of two large positive numbers
@@ -274,13 +274,18 @@ class SensitivityTensor(AbstractTensor):
             # symmetric.
 
             other_min_self_min = other.min_ent_conts * self.expanded_min_vals
+
             other_max_self_max = other.max_ent_conts * self.expanded_max_vals
+
             new_other_max_ent_conts = th.max(other_min_self_min, other_max_self_max)
 
             other_min_self_max = other.min_ent_conts * self.expanded_max_vals
+
             other_max_self_min = other.max_ent_conts * self.expanded_min_vals
+
+            first = th.max(other_max_self_min, other_min_self_min)
             new_other_min_ent_conts = th.max(
-                other_min_self_max, other_max_self_min, other_min_self_min
+                other_min_self_max, first
             )
 
             # Step 4: additively combine max values across entities from both self and other
@@ -302,7 +307,7 @@ class SensitivityTensor(AbstractTensor):
             # usage (where self has a different but overlapping ancestry from other) across self and other is
             # properly handled
             new_max_ent_conts = (
-                th.max(new_self_max_ent_conts, new_other_max_ent_conts) * entities_self_or_other
+                th.max(new_self_max_ent_conts, new_other_max_ent_conts) * entities_self_or_other.long() #TODO: cast to long earlier?
             )
 
             # Step 5: additively combine min values across entities from both self and other
@@ -321,7 +326,7 @@ class SensitivityTensor(AbstractTensor):
             # assymetric entitiy usage (where self has a different but overlapping ancestry from other) across self
             #  and other is properly handled
             new_min_ent_conts = (
-                th.min(new_self_min_ent_conts, new_other_min_ent_conts) * entities_self_or_other
+                th.min(new_self_min_ent_conts, new_other_min_ent_conts) * entities_self_or_other.long()#TODO: cast to long earlier?
             )
 
         return SensitivityTensor(new_vals, new_max_ent_conts, new_min_ent_conts)
@@ -404,7 +409,7 @@ class SensitivityTensor(AbstractTensor):
 
         if isinstance(other, SensitivityTensor):
 
-            new_vals = self.child > other.values
+            new_vals = self.child > other.child
 
             could_self_and_other_overlap = self._could_overlap_with(other)
 
@@ -445,7 +450,7 @@ class SensitivityTensor(AbstractTensor):
 
         if isinstance(other, SensitivityTensor):
 
-            new_vals = self.child == other.values
+            new_vals = self.child == other.child
 
             could_self_and_other_overlap = self._could_overlap_with(other)
 
