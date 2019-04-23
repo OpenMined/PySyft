@@ -15,6 +15,9 @@ from syft.workers import BaseWorker
 logger = logging.getLogger(__name__)
 
 
+TIMEOUT_INTERVAL = 9999999
+
+
 class WebsocketClientWorker(BaseWorker):
     def __init__(
         self,
@@ -38,7 +41,8 @@ class WebsocketClientWorker(BaseWorker):
 
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
-        self.ws = websocket.create_connection(self.uri, max_size=None)
+        # Also avoid the server from timing out on the server-side in case of slow clients
+        self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
 
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
 
@@ -70,7 +74,8 @@ class WebsocketClientWorker(BaseWorker):
             logger.warning("Websocket connection closed (worker: %s)", self.id)
             self.ws.shutdown()
             time.sleep(1)
-            self.ws = websocket.create_connection(self.uri, max_size=None)
+            # Avoid timing out on the server-side
+            self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
             logger.warning("Created new websocket connection")
             time.sleep(0.1)
             response = self._receive_action(message)
