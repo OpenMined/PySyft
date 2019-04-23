@@ -157,7 +157,7 @@ class Plan(BaseWorker):
 
         # The id where the result should be stored
         self.result_ids = [res_ptr.id_at_location]
-        
+
         # Store owner that built the plan
         self.owner_when_built = self.owner
 
@@ -342,7 +342,6 @@ class Plan(BaseWorker):
             self._update_args(args, result_ids)
             self._execute_plan()
 
-
         return sy.serde.serialize(None)
 
     def request_execute_plan(self, location, response_ids, *args, **kwargs):
@@ -360,16 +359,6 @@ class Plan(BaseWorker):
             message=command, recipient=location, return_ids=response_ids
         )
         return response
-
-    def create_pointer(
-        self,
-        location: BaseWorker = None,
-        id_at_location: (str or int) = None,
-        register: bool = False,
-        owner: BaseWorker = None,
-        ptr_id: (str or int) = None,
-    ) -> PlanPointer:
-        return PlanPointer(ptr_id, location, id_at_location, owner)
 
     def send(self, *locations):
 
@@ -406,14 +395,8 @@ class Plan(BaseWorker):
         """
         # self.replace_worker_ids(self.location.id, self.owner.id)
 
-        if location is None:
-            self.locations = []
-            self.ptr_plans = {}
-
-        else:
-            location_id = self.owner.get_worker(location).id
-            self.locations.remove(location_id)
-            del self.ptr_plans[location_id]
+        self.locations = []
+        self.ptr_plans = {}
 
         return self
 
