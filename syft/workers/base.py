@@ -341,7 +341,9 @@ class BaseWorker(AbstractWorker):
                     response = getattr(_self, command_name)(*args, **kwargs)
                 except TypeError:
                     # TODO Andrew thinks this is gross, please fix. Instead need to properly deserialize strings
-                    new_args = [arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args]
+                    new_args = [
+                        arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args
+                    ]
                     response = getattr(_self, command_name)(*new_args, **kwargs)
         # Handle functions
         else:

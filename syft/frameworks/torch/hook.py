@@ -225,7 +225,6 @@ class TorchHook:
                 new_method = self.get_hooked_method(attr)
                 setattr(tensor_type, attr, new_method)
 
-
     def _hook_syft_tensor_methods(self, syft_type: type):
         """
         Add hooked version of all methods of to_auto_overload[tensor_type]
@@ -833,7 +832,7 @@ class TorchHook:
                 return self.child.grad_fn
             else:
                 return self.native_grad_fn
-        
+
         tensor_type.grad_fn = grad_fn
 
     def _which_methods_should_we_auto_overload(self, tensor_type: type):

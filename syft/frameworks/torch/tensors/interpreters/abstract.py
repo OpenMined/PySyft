@@ -7,6 +7,7 @@ from typing import List
 import syft as sy
 import weakref
 
+
 class AbstractTensor(ABC):
     """
     This is the tensor abstraction.

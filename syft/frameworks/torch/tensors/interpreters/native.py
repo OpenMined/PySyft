@@ -227,7 +227,9 @@ class TorchTensor(AbstractTensor):
 
         return response
 
-    def send(self, *location, inplace: bool = False, local_autograd=False, preinitialize_grad=False):
+    def send(
+        self, *location, inplace: bool = False, local_autograd=False, preinitialize_grad=False
+    ):
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes
@@ -264,8 +266,9 @@ class TorchTensor(AbstractTensor):
                 if self._is_parameter():
                     self.data.child.garbage_collect_data = False
 
-            ptr = self.owner.send(self, location, local_autograd=local_autograd, 
-                                  preinitialize_grad=preinitialize_grad)
+            ptr = self.owner.send(
+                self, location, local_autograd=local_autograd, preinitialize_grad=preinitialize_grad
+            )
 
             ptr.description = self.description
             ptr.tags = self.tags
@@ -319,7 +322,6 @@ class TorchTensor(AbstractTensor):
                 # want it to keep. #HackAlert
                 output.backup_grad = grad
 
-                
         else:
 
             children = list()
@@ -354,7 +356,6 @@ class TorchTensor(AbstractTensor):
         shape=None,
         local_autograd=False,
         preinitialize_grad=False,
-
     ) -> PointerTensor:
         """Creates a pointer to the "self" torch.Tensor object.
 
@@ -441,9 +442,11 @@ class TorchTensor(AbstractTensor):
                 tags=self.tags,
                 description=self.description,
             )
-        
+
         if self.requires_grad and local_autograd:
-            ptr = sy.AutogradTensor(data=ptr.wrap(), preinitialize_grad=preinitialize_grad).on(ptr, wrap=False)
+            ptr = sy.AutogradTensor(data=ptr.wrap(), preinitialize_grad=preinitialize_grad).on(
+                ptr, wrap=False
+            )
 
         return ptr
 

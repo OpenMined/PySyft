@@ -39,7 +39,6 @@ type_rule = {
     PointerTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
-
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type

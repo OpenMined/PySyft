@@ -6,18 +6,28 @@ from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from . import gradients
 
+
 def backwards_grad(grad_fn, in_grad=None):
     back_grad = grad_fn(in_grad)
     for next_grad_fn, next_grad in zip(grad_fn.next_functions, back_grad):
         backwards_grad(next_grad_fn, next_grad)
 
+
 class AutogradTensor(AbstractTensor):
     """ A tensor that tracks operations to build a dynamic graph and backprops 
         through the graph to calculate gradients.
     """
-    def __init__(self, data=None, requires_grad=True, 
-                 owner=None, id=None, parent=None,
-                 preinitialize_grad=False, **kwargs):
+
+    def __init__(
+        self,
+        data=None,
+        requires_grad=True,
+        owner=None,
+        id=None,
+        parent=None,
+        preinitialize_grad=False,
+        **kwargs
+    ):
         super().__init__()
 
         self.owner = owner
@@ -27,7 +37,7 @@ class AutogradTensor(AbstractTensor):
         self.child = data
         self.requires_grad = requires_grad
         self.preinitialize_grad = preinitialize_grad
-        
+
         if preinitialize_grad:
             self.grad = data * 0
         else:
@@ -36,7 +46,7 @@ class AutogradTensor(AbstractTensor):
 
     def backward(self, grad=None):
         if grad is None:
-            grad = torch.ones_like(self)
+            grad = torch.ones(self.child.shape)
 
         backwards_grad(self.grad_fn, grad)
 
@@ -51,38 +61,39 @@ class AutogradTensor(AbstractTensor):
             self._grad = value.wrap()
         else:
             self._grad = value
-        
+
         if self.parent is not None:
             # self.parent is a weakref
             self.parent().grad = self._grad
 
     def attr(self, attr_name):
-       attr_val = self.child.attr(attr_name)
+        attr_val = self.child.attr(attr_name)
 
-       return attr_val
+        return attr_val
 
-    
     def __getattribute__(self, name):
         # Automatically attaching gradient functions if they are defined in the
         # gradients module.
-        grad_fn = getattr(gradients, name.capitalize() + 'Backward', None)
+        grad_fn = getattr(gradients, name.capitalize() + "Backward", None)
 
-        #print(f"getattribute {name}")
+        # print(f"getattribute {name}")
         if grad_fn is not None:
 
             def method_with_grad(*args, **kwargs):
-                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(name, self, args, kwargs)
-                
+                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                    name, self, args, kwargs
+                )
+
                 result = getattr(new_self, name)(*new_args, **new_kwargs)
-                
+
                 # Put back SyftTensor on the tensors found in the response
                 result = syft.frameworks.torch.hook_args.hook_response(
                     name, result, wrap_type=type(self)
                 )
-                
+
                 result.grad_fn = grad_fn(self, *args, **kwargs)
                 result.grad_fn.result = result
-                
+
                 return result
 
             return method_with_grad
@@ -126,4 +137,3 @@ class AutogradTensor(AbstractTensor):
         response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
-

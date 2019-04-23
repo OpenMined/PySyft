@@ -2,9 +2,10 @@
 
 __all__ = ["GradFunc"]
 
+
 def forward_grad(tensor):
     ## tensor here should be an AutogradTensor or a Tensor where we can set .grad
-    
+
     try:
         grad_fn = tensor.grad_fn
     except AttributeError:
@@ -23,8 +24,9 @@ class GradFunc:
         # This part builds our graph. It takes grad functions (if they exist)
         # from the input arguments and builds a tuple pointing to them. This way
         # we can use .next_functions to traverse through the entire graph.
-        self.next_functions = tuple(filter(lambda x: x is not None, 
-                                    [forward_grad(arg) for arg in args]))
+        self.next_functions = tuple(
+            filter(lambda x: x is not None, [forward_grad(arg) for arg in args])
+        )
         self.result = None
 
     def gradient(self, grad):
@@ -32,7 +34,7 @@ class GradFunc:
 
     def __setattr__(self, name, value):
         # Doing this because we want to pass in AutogradTensors so we can update
-        # tensor.grad in Accumulate, but we also need native looking tensors for 
+        # tensor.grad in Accumulate, but we also need native looking tensors for
         # the gradient operations in GradFuncs.
         try:
             value = value.child
@@ -55,7 +57,7 @@ class Accumulate:
         # .grad appropriately
         self.next_functions = []
         self.tensor = tensor
-        
+
     def __call__(self, grad):
         if self.tensor.grad is not None:
             self.tensor.grad += grad

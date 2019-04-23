@@ -312,8 +312,9 @@ class PointerTensor(AbstractTensor):
         return attr_ptr
 
     def setattr(self, name, value):
-        self.owner.send_command(message=("__setattr__", self, (name, value), {}), 
-                                recipient=self.location)
+        self.owner.send_command(
+            message=("__setattr__", self, (name, value), {}), recipient=self.location
+        )
 
     def share(self, *args, **kwargs):
         """
@@ -329,4 +330,3 @@ class PointerTensor(AbstractTensor):
         response = self.owner.send_command(self.location, command)
 
         return response
-
