@@ -16,8 +16,7 @@ class PureTorchTensorFoundError(BaseException):
         message -- explanation of the error
     """
 
-    def __init__(self, tensor):
-        self.tensor = tensor
+    pass
 
 
 class RemoteTensorFoundError(BaseException):
@@ -127,6 +126,13 @@ class ResponseSignatureError(Exception):
 
     def __init__(self, ids_generated=None):
         self.ids_generated = ids_generated
+
+
+class GetNotPermittedError(Exception):
+    """Raised when calling get on a pointer to a tensor which does not allow
+    get to be called on it. This can happen do to sensitivity being too high"""
+
+    pass
 
 
 def route_method_exception(exception, self, args, kwargs):

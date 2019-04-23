@@ -1,10 +1,14 @@
 import random
+from time import time
+from unittest.mock import patch
 
 import syft as sy
+from syft.exceptions import GetNotPermittedError
 from syft.workers.virtual import VirtualWorker
 from syft.codes import MSGTYPE
 from syft import serde
 
+import pytest
 import torch
 import torch as th
 
@@ -200,3 +204,26 @@ def test_obj_not_found(workers):
         y = x + x
     except KeyError as e:
         assert "If you think this tensor does exist" in str(e)
+
+
+def test_get_not_permitted(workers):
+    bob = workers["bob"]
+    with patch.object(th.Tensor, "allowed_to_get") as mock_allowed_to_get:
+        mock_allowed_to_get.return_value = False
+        x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+        with pytest.raises(GetNotPermittedError):
+            x.get()
+        mock_allowed_to_get.assert_called_once()
+
+
+def test_spinup_time(hook):
+    """Tests to ensure that virtual workers intialized with 10000 data points
+    load in under 0.05 seconds. This is needed to ensure that virtual workers
+    spun up inside web frameworks are created quickly enough to not cause timeout errors"""
+    data = []
+    for i in range(10000):
+        data.append(th.Tensor(5, 5).random_(100))
+    start_time = time()
+    dummy = sy.VirtualWorker(hook, id="dummy", data=data)
+    end_time = time()
+    assert (end_time - start_time) < 0.05

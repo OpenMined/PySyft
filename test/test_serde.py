@@ -16,6 +16,7 @@ from syft.serde import deserialize
 from syft.serde import _compress
 from syft.serde import _decompress
 from syft.serde import LZ4
+from syft.serde import NO_COMPRESSION
 from syft.serde import ZSTD
 
 
@@ -38,7 +39,7 @@ def test_tuple_simplify():
     for tuples so that the detailer knows how to interpret it."""
 
     input = ("hello", "world")
-    target = (2, ("hello", "world"))
+    target = (2, ((18, (b"hello",)), (18, (b"world",))))
     assert _simplify(input) == target
 
 
@@ -50,7 +51,7 @@ def test_list_simplify():
     for lists so that the detailer knows how to interpret it."""
 
     input = ["hello", "world"]
-    target = (3, ["hello", "world"])
+    target = (3, [(18, (b"hello",)), (18, (b"world",))])
     assert _simplify(input) == target
 
 
@@ -62,7 +63,7 @@ def test_set_simplify():
     for sets so that the detailer knows how to interpret it."""
 
     input = set(["hello", "world"])
-    target = (4, ["hello", "world"])
+    target = (4, [(18, (b"hello",)), (18, (b"world",))])
     assert _simplify(input)[0] == target[0]
     assert set(_simplify(input)[1]) == set(target[1])
 
@@ -96,7 +97,7 @@ def test_string_simplify():
     themselves, with no tuple/id necessary."""
 
     input = "hello"
-    target = "hello"
+    target = (18, (b"hello",))
     assert _simplify(input) == target
 
 
@@ -108,7 +109,7 @@ def test_dict_simplify():
     for dicts so that the detailer knows how to interpret it."""
 
     input = {"hello": "world"}
-    target = (5, {"hello": "world"})
+    target = (5, [((18, (b"hello",)), (18, (b"world",)))])
     assert _simplify(input) == target
 
 
@@ -300,7 +301,7 @@ def test_ndarray_serde(compress):
     assert numpy.array_equal(arr, arr_serialized_deserialized)
 
 
-@pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD])
+@pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD, NO_COMPRESSION])
 def test_compress_decompress(compress_scheme):
     if compress_scheme == LZ4:
         syft.serde._apply_compress_scheme = apply_lz4_compression
@@ -316,7 +317,7 @@ def test_compress_decompress(compress_scheme):
     assert original == decompressed
 
 
-@pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD])
+@pytest.mark.parametrize("compress_scheme", [LZ4, ZSTD, NO_COMPRESSION])
 def test_compressed_serde(compress_scheme):
     if compress_scheme == LZ4:
         syft.serde._apply_compress_scheme = apply_lz4_compression
@@ -517,7 +518,15 @@ def test_compressed_float():
 
 
 @pytest.mark.parametrize(
-    "compress, compress_scheme", [(True, LZ4), (False, LZ4), (True, ZSTD), (False, ZSTD)]
+    "compress, compress_scheme",
+    [
+        (True, LZ4),
+        (False, LZ4),
+        (True, ZSTD),
+        (False, ZSTD),
+        (True, NO_COMPRESSION),
+        (False, NO_COMPRESSION),
+    ],
 )
 def test_hooked_tensor(compress, compress_scheme):
     if compress:
@@ -574,3 +583,22 @@ def test_numpy_tensor_serde():
     syft.serde._deserialize_tensor = syft.serde.torch_tensor_deserializer
 
     assert torch.eq(tensor_deserialized, tensor).all()
+
+
+@pytest.mark.parametrize("compress", [True, False])
+def test_additive_sharing_tensor_serde(compress, workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    additive_sharing_tensor = x.child.child.child
+    data = syft.serde._simplify_additive_shared_tensor(additive_sharing_tensor)
+    additive_sharing_tensor_reconstructed = syft.serde._detail_additive_shared_tensor(
+        syft.hook.local_worker, data
+    )
+
+    assert additive_sharing_tensor_reconstructed.field == additive_sharing_tensor.field
+
+    assert (
+        additive_sharing_tensor_reconstructed.child.keys() == additive_sharing_tensor.child.keys()
+    )
