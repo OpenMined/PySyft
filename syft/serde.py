@@ -52,6 +52,8 @@ import zstd
 import syft
 import syft as sy
 
+from syft.federated import TrainConfig
+
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
@@ -1098,6 +1100,58 @@ def _detail_multi_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) ->
     return tensor
 
 
+def _simplify_train_config(train_config: TrainConfig) -> tuple:
+    """
+    This function takes the attributes of a TrainConfig and saves them in a tuple
+    Args:
+        train_config: a TrainConfig object
+    Returns:
+        tuple: a tuple holding the unique attributes of the TrainConfig object
+    """
+    return (
+        _simplify(train_config.loss_plan),
+        _simplify(train_config.forward_plan),
+        train_config.batch_size,
+        train_config.epochs,
+        _simplify(train_config.optimizer),
+        train_config.lr,
+        _simplify(train_config.id),
+    )
+
+
+def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> tuple:
+    """This function reconstructs a TrainConfig object given it's attributes in the form of a tuple.
+    Args:
+        worker: the worker doing the deserialization
+        train_config_tuple: a tuple holding the attributes of the TrainConfig
+    Returns:
+        Plan: a Plan object
+    """
+
+    loss_plan, forward_plan, batch_size, epochs, optimizer, lr, id = train_config_tuple
+    id = id
+    if isinstance(id, bytes):
+        id = id.decode("utf-8")
+
+    detailed_loss_plan = _detail(worker, loss_plan)
+    detailed_forward_plan = _detail(worker, forward_plan)
+    if isinstance(optimizer, bytes):
+        optimizer = optimizer.decode("utf-8")
+
+    train_config = syft.TrainConfig(
+        owner=worker,
+        id=id,
+        forward_plan=detailed_forward_plan,
+        loss_plan=detailed_loss_plan,
+        batch_size=batch_size,
+        epochs=epochs,
+        optimizer=optimizer,
+        lr=lr,
+    )
+
+    return train_config
+
+
 def _simplify_plan(plan: Plan) -> tuple:
     """
     This function takes the attributes of a Plan and saves them in a tuple
@@ -1363,6 +1417,7 @@ simplifiers = {
         21,
         _simplify_script_module,
     ],  # treat as torch.jit.ScriptModule
+    TrainConfig: [22, _simplify_train_config],
 }
 
 forced_full_simplifiers = {VirtualWorker: [17, _force_full_simplify_worker]}
@@ -1416,4 +1471,5 @@ detailers = [
     _detail_object_wrapper,
     _detail_exception,
     _detail_script_module,
+    _detail_train_config,
 ]
