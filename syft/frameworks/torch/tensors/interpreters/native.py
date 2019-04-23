@@ -112,7 +112,7 @@ class TorchTensor(AbstractTensor):
 
             big_repr = False
 
-            if self.tags is not None:
+            if self.tags is not None and len(self.tags):
                 big_repr = True
                 out += "\n\tTags: "
                 for tag in self.tags:
@@ -126,6 +126,9 @@ class TorchTensor(AbstractTensor):
                 out += "\n\tShape: " + str(self.shape)
 
             return out
+
+    def __eq__(self, other):
+        return self.eq(other)
 
     @property
     def id(self):
@@ -150,6 +153,9 @@ class TorchTensor(AbstractTensor):
         Utility method to test if the tensor is in fact a Parameter
         """
         return isinstance(self, syft.hook.torch.nn.Parameter)
+
+    def copy(self):
+        return self + 0
 
     @classmethod
     def handle_func_command(cls, command):
@@ -409,10 +415,8 @@ class TorchTensor(AbstractTensor):
 
         if previous_pointer is None:
             ptr = PointerTensor(
-                parent=self,
                 location=location,
                 id_at_location=id_at_location,
-                register=register,
                 owner=owner,
                 id=ptr_id,
                 garbage_collect_data=garbage_collect_data,
@@ -428,7 +432,6 @@ class TorchTensor(AbstractTensor):
 
         child_id = self.child.id
         tensor = self.child.get()
-        del self.owner._objects[tensor.id]
         self.owner._objects[child_id] = tensor
 
     def remote_get(self):
@@ -552,23 +555,35 @@ class TorchTensor(AbstractTensor):
 
     fix_precision_ = fix_prec_
 
-    def share(self, *owners):
-        """This is a passthrough method which calls .share on the child.
+    def share(self, *owners, field=None, crypto_provider=None):
+        """This is a pass through method which calls .share on the child.
 
         Args:
-            owners: a list of BaseWorker objects determining who to send shares to.
+            owners (list): a list of BaseWorker objects determining who to send shares to
+            field (int or None): the arithmetic field where live the shares
+            crypto_provider (BaseWorker or None): the worker providing the crypto primitives
         """
 
         if self.has_child():
-            self.child = self.child.share(*owners)
+            self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
             return self
 
         return (
-            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor()
+            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
+                field=field, crypto_provider=crypto_provider, owner=self.owner
+            )
             .on(self)
             .child.init_shares(*owners)
             .wrap()
         )
+
+    def share_(self, *args, **kwargs):
+        """
+        Allows to call .share() as an inplace operation
+        """
+        tensor = self.share(*args, **kwargs)
+        self.child = tensor.child
+        return self
 
     def combine(self, *pointers):
         """This method will combine the child pointer with another list of pointers
@@ -576,7 +591,7 @@ class TorchTensor(AbstractTensor):
         Args:
             *pointers a list of pointers to be combined into a MultiPointerTensor
 
-            """
+        """
 
         assert isinstance(self.child, PointerTensor)
 

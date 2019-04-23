@@ -26,8 +26,7 @@ class PureTorchTensorFoundError(BaseException):
         message -- explanation of the error
     """
 
-    def __init__(self, tensor):
-        self.tensor = tensor
+    pass
 
 
 class RemoteTensorFoundError(BaseException):
@@ -129,6 +128,14 @@ class TensorsNotCollocatedException(Exception):
 
         self.tensor_a = tensor_a
         self.tensor_b = tensor_b
+
+
+class ResponseSignatureError(Exception):
+    """Raised when the return of a hooked function is not correctly predicted
+    (when defining in advance ids for results)"""
+
+    def __init__(self, ids_generated=None):
+        self.ids_generated = ids_generated
 
 
 def route_method_exception(exception, self, args, kwargs):

@@ -17,15 +17,16 @@ requirements = read("requirements.txt").split()
 
 setup(
     name="syft",
-    version="0.1.4a1",
+    version="0.1.12a1",
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),
     license="Apache-2.0",
-    keywords="deep learning artificial intelligence privacy secure multi-party computation",
+    keywords="deep learning artificial intelligence privacy secure multi-party computation federated learning differential privacy",
     packages=find_packages(exclude=["docs", "examples", "dist"]),
     include_package_data=True,
     long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     url="https://github.com/OpenMined/PySyft",
     install_requires=requirements,
     setup_requires=["pytest-runner"],
