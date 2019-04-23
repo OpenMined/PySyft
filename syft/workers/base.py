@@ -68,7 +68,7 @@ class BaseWorker(AbstractWorker):
         is_client_worker: bool = False,
         log_msgs: bool = False,
         verbose: bool = False,
-        auto_add: bool = True
+        auto_add: bool = True,
     ):
         """Initializes a BaseWorker."""
 
@@ -99,7 +99,7 @@ class BaseWorker(AbstractWorker):
 
         # Declare workers as appropriate
         self._known_workers = {}
-        if(auto_add):
+        if auto_add:
             if hook.local_worker is not None:
                 known_workers = self.hook.local_worker._known_workers
                 if self.id in known_workers:
@@ -109,7 +109,9 @@ class BaseWorker(AbstractWorker):
                         # of the existing worker to this one.
                         self.__dict__.update(known_workers[self.id].__dict__)
                     else:
-                        raise RuntimeError("Worker initialized with the same id and different types.")
+                        raise RuntimeError(
+                            "Worker initialized with the same id and different types."
+                        )
                 else:
                     hook.local_worker.add_worker(self)
                     for worker_id, worker in hook.local_worker._known_workers.items():
