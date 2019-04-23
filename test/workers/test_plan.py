@@ -178,4 +178,3 @@ def test_plan_serde(hook):
 
     x = th.tensor([-1, 2, 3])
     assert (deserialized_plan(x) == th.tensor([-42, 24, 46])).all()
-
