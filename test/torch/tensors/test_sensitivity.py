@@ -223,8 +223,8 @@ def test_sub():
     # positive, non-negative, single entitiy, overlapping, symmetric add
     x = (
         th.tensor([1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[0, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
         )
     )
@@ -239,8 +239,8 @@ def test_sub():
     # negative, non-positive, single entitiy, overlapping, symmetric add
     x = (
         th.tensor([-1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[0, 0, 0, 0]])
         )
     )
@@ -255,8 +255,8 @@ def test_sub():
     # negative, positive, single entitiy, overlapping, symmetric add
     x = (
         th.tensor([-1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
         )
     )
@@ -271,8 +271,8 @@ def test_sub():
     # negative, positive, dual entitiy, overlapping, symmetric add
     x = (
         th.tensor([1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 1, 0, 0]])
         )
     )
@@ -284,6 +284,7 @@ def test_sub():
     assert y.min_vals == th.tensor([-3])
     assert (y.entities == th.tensor([[1, 1, 0, 0]])).all()
 
+
 def test_mult():
 
     # TODO: finish tests which test all failure modes
@@ -291,8 +292,8 @@ def test_mult():
     # positive, non-negative, single entitiy, overlapping, symmetric mult
     x = (
         th.tensor([1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[0, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
         )
     )
@@ -307,8 +308,8 @@ def test_mult():
     # negative, non-positive, single entitiy, overlapping, symmetric mult
     x = (
         th.tensor([-1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[0, 0, 0, 0]])
         )
     )
@@ -323,8 +324,8 @@ def test_mult():
     # negative, positive, single entitiy, overlapping, symmetric mult
     x = (
         th.tensor([-1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
         )
     )
@@ -339,8 +340,8 @@ def test_mult():
     # negative, positive, dual entitiy, overlapping, symmetric mult
     x = (
         th.tensor([1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 1, 0, 0]])
         )
     )
@@ -355,16 +356,16 @@ def test_mult():
     # negative, positive, dual entitiy, non-overlapping, non-symmetric add
     x = (
         th.tensor([1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 1, 0, 0]])
         )
     )
 
     y = (
         th.tensor([5])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[4, 0, 0, 0]]), max_ent_conts=th.tensor([[5, 5, 0, 0]])
         )
     )
@@ -376,12 +377,13 @@ def test_mult():
     assert z.min_vals == th.tensor([-10])
     assert (z.entities == th.tensor([[1, 1, 0, 0]])).all()
 
+
 def test_neg():
     # positive, non-negative, single entitiy, overlapping, symmetric mult
     x = (
         th.tensor([1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[0, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
         )
     )
@@ -396,8 +398,8 @@ def test_neg():
     # negative, non-positive, single entitiy, overlapping, symmetric mult
     x = (
         th.tensor([-1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[0, 0, 0, 0]])
         )
     )
@@ -412,8 +414,8 @@ def test_neg():
     # negative, positive, single entitiy, overlapping, symmetric mult
     x = (
         th.tensor([-1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
         )
     )
@@ -428,8 +430,8 @@ def test_neg():
     # negative, positive, dual entitiy, overlapping, symmetric mult
     x = (
         th.tensor([1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 1, 0, 0]])
         )
     )
