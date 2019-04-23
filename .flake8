@@ -1,4 +1,8 @@
 [flake8]
+select = E901,E999,F821,F822,F823
 max-line-length = 100
-exclude = .git,.eggs,__pycache__,build,dist
-max-complexity=11
+exclude = .git,.eggs,__pycache__,build,dist,venv
+max-complexity = 11
+show-source = true
+statistics = true
+count = true
