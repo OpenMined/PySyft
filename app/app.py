@@ -56,7 +56,7 @@ def cmd():
         response = str(binascii.hexlify(response))
 
         print("\t NEW WORKER STATE:" + str(worker._objects.keys()) + "\n\n")
-        db.set('worker', sy.serde.serialize(worker, force_full=True))
+        db.set('worker', sy.serde.serialize(worker, force_full_simplification=True))
 
         return response
     except Exception as e:
