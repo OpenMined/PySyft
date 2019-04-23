@@ -74,7 +74,7 @@ def serialize(
     simplified=False,
     force_no_compression=False,
     force_no_serialization=False,
-    force_full=False,
+    force_full_simplification=False,
 ) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
@@ -97,7 +97,7 @@ def serialize(
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
     if not simplified:
-        if force_full:
+        if force_full_simplification:
             simple_objects = _force_full_simplify(obj)
         else:
             simple_objects = _simplify(obj)
