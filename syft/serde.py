@@ -92,8 +92,9 @@ def serialize(
             expected use of this functionality is testing and/or experimentation.
         force_no_serialization (bool): Primarily a testing tool, this will force
             this method to return human-readable Python objects which is very useful
-            for testing and debugging (forceably overrides module compression, and
-            serialization. Only simplification is performed).
+            for testing and debugging (forceably overrides module compression,
+            serialization, and the 'force_no_compression' override)). In other words,
+            only simplification operations are performed.
         force_full_simplification (bool): Some objects are only partially serialized
             by default. For objects where this is the case, setting this flag to True
             will force the entire object to be serialized. For example, setting this
