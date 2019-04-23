@@ -54,6 +54,7 @@ from syft.workers import VirtualWorker
 from syft.workers import Plan
 
 from syft.exceptions import CompressionNotFoundException
+from syft.exceptions import GetNotPermittedError
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.decorators import SensitivityTensor
@@ -1191,6 +1192,26 @@ def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor
     return referenced_worker
 
 
+def _simplify_GetNotPermittedError(error: GetNotPermittedError) -> tuple:
+    """Simplifies a GetNotPermittedError into its message"""
+    return (getattr(error, "message", str(error)),)
+
+
+def _detail_GetNotPermittedError(
+    worker: AbstractWorker, error_tuple: tuple
+) -> GetNotPermittedError:
+    """Details and raises a GetNotPermittedError
+
+    Args:
+        worker: the worker doing the deserialization
+        error_tuple: a tuple holding the message of the GetNotPermittedError
+    Raises:
+        GetNotPermittedError: the error thrown when get is not permitted
+    """
+
+    raise GetNotPermittedError(error_tuple[0])
+
+
 def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
     """
 
@@ -1307,6 +1328,7 @@ simplifiers = {
     VirtualWorker: [16, _simplify_worker],
     SensitivityTensor: [17, _simplify_sensitivity_tensor],
     str: [18, _simplify_str],
+    GetNotPermittedError: [20, _simplify_GetNotPermittedError],  
 }
 
 forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
@@ -1360,4 +1382,5 @@ detailers = [
     _detail_sensitivity_tensor,
     _detail_str,
     _force_full_detail_worker,
+    _detail_GetNotPermittedError,  
 ]

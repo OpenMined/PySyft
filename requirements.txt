@@ -4,5 +4,5 @@ sklearn
 torch>=1.0.0
 torchvision
 websocket_client
-websockets
+websockets>=7.0
 zstd
