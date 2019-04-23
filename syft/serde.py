@@ -87,6 +87,19 @@ def serialize(
         simplified (bool): in some cases we want to pass in data which has
             already been simplified - in which case we must skip double
             simplification - which would be bad.... so bad... so... so bad
+        force_no_compression (bool): If true, this will override ANY module
+            settings and not compress the objects being serialized. The primary
+            expected use of this functionality is testing and/or experimentation.
+        force_no_serialization (bool): Primarily a testing tool, this will force
+            this method to return human-readable Python objects which is very useful
+            for testing and debugging (forceably overrides module compression, and
+            serialization. Only simplification is performed).
+        force_full_simplification (bool): Some objects are only partially serialized
+            by default. For objects where this is the case, setting this flag to True
+            will force the entire object to be serialized. For example, setting this
+            flag to True will cause a VirtualWorker to be serialized WITH all of its
+            tensors while by default VirtualWorker objects only serialize a small
+            amount of metadata.
 
     Returns:
         binary: the serialized form of the object.
