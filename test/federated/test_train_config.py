@@ -46,5 +46,5 @@ def test_send_train_config(hook):
     # Run forward pass and calculate loss
     pointer_to_pred = train_config.forward_plan(pointer_to_data)
     pointer_to_loss = train_config.loss_plan(pointer_to_pred.wrap(), pointer_to_target)
-    pointer_to_loss.get()
-    assert True
+    loss = pointer_to_loss.get()
+    assert loss > 0
