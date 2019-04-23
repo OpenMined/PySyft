@@ -7,6 +7,7 @@ import syft as sy
 
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
@@ -56,6 +57,8 @@ class BaseWorker(AbstractWorker):
         log_msgs: An optional boolean parameter to indicate whether all
             messages should be saved into a log for later review. This is
             primarily a development/testing feature.
+        auto_add: Determines whether to automatically add this worker to the
+            list of known workers.
     """
 
     def __init__(
@@ -66,6 +69,7 @@ class BaseWorker(AbstractWorker):
         is_client_worker: bool = False,
         log_msgs: bool = False,
         verbose: bool = False,
+        auto_add: bool = True,
     ):
         """Initializes a BaseWorker."""
 
@@ -75,6 +79,7 @@ class BaseWorker(AbstractWorker):
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
         self.verbose = verbose
+        self.auto_add = auto_add
         self.msg_history = list()
         # A core object in every BaseWorker instantiation. A Collection of
         # objects where all objects are stored using their IDs as keys.
@@ -95,23 +100,26 @@ class BaseWorker(AbstractWorker):
 
         # Declare workers as appropriate
         self._known_workers = {}
-        if hook.local_worker is not None:
-            known_workers = self.hook.local_worker._known_workers
-            if self.id in known_workers:
-                if isinstance(known_workers[self.id], type(self)):
-                    # If a worker with this id already exists and it has the
-                    # same type as the one being created, we copy all the attributes
-                    # of the existing worker to this one.
-                    self.__dict__.update(known_workers[self.id].__dict__)
+        if auto_add:
+            if hook.local_worker is not None:
+                known_workers = self.hook.local_worker._known_workers
+                if self.id in known_workers:
+                    if isinstance(known_workers[self.id], type(self)):
+                        # If a worker with this id already exists and it has the
+                        # same type as the one being created, we copy all the attributes
+                        # of the existing worker to this one.
+                        self.__dict__.update(known_workers[self.id].__dict__)
+                    else:
+                        raise RuntimeError(
+                            "Worker initialized with the same id and different types."
+                        )
                 else:
-                    raise RuntimeError("Worker initialized with the same id and different types.")
-            else:
-                hook.local_worker.add_worker(self)
-                for worker_id, worker in hook.local_worker._known_workers.items():
-                    if worker_id not in self._known_workers:
-                        self.add_worker(worker)
-                    if self.id not in worker._known_workers:
-                        worker.add_worker(self)
+                    hook.local_worker.add_worker(self)
+                    for worker_id, worker in hook.local_worker._known_workers.items():
+                        if worker_id not in self._known_workers:
+                            self.add_worker(worker)
+                        if self.id not in worker._known_workers:
+                            worker.add_worker(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -316,7 +324,7 @@ class BaseWorker(AbstractWorker):
         (command_name, _self, args, kwargs), return_ids = message
 
         # TODO add kwargs
-        command_name = command_name.decode("utf-8")
+        command_name = command_name
         # Handle methods
         if _self is not None:
             if sy.torch.is_inplace_method(command_name):
@@ -461,8 +469,10 @@ class BaseWorker(AbstractWorker):
         """
 
         obj = self.get_obj(obj_id)
-        self.de_register_obj(obj)
-        return obj
+        if obj.allowed_to_get():
+            self.de_register_obj(obj)
+            return obj
+        return GetNotPermittedError()
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
