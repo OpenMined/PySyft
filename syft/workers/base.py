@@ -7,6 +7,7 @@ import syft as sy
 
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
@@ -461,8 +462,10 @@ class BaseWorker(AbstractWorker):
         """
 
         obj = self.get_obj(obj_id)
-        self.de_register_obj(obj)
-        return obj
+        if obj.allowed_to_get():
+            self.de_register_obj(obj)
+            return obj
+        return GetNotPermittedError()
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
