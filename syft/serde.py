@@ -1145,7 +1145,7 @@ def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor
     Examples:
         ptr = _detail_pointer_tensor(data)
     """
-    worker_id = _detail(worker_tuple[0])
+    worker_id = _detail(worker, worker_tuple[0])
 
     referenced_worker = worker.get_worker(worker_id)
 
