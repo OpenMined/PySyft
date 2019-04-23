@@ -71,10 +71,10 @@ ZSTD = 42
 # High Level Public Functions (these are the ones you use)
 def serialize(
     obj: object,
-    simplified:bool =False,
-    force_no_compression: bool=False,
-    force_no_serialization: bool=False,
-    force_full_simplification: bool=False,
+    simplified: bool = False,
+    force_no_compression: bool = False,
+    force_no_serialization: bool = False,
+    force_full_simplification: bool = False,
 ) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
