@@ -978,7 +978,6 @@ def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LoggingTe
     return tensor
 
 
-<<<<<<< HEAD
 def _simplify_sensitivity_tensor(tensor: SensitivityTensor) -> tuple:
 
     _chain = _simplify(tensor.child)
@@ -1003,7 +1002,6 @@ def _detail_sensitivity_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> S
     )
 
 
-=======
 def _simplify_additive_shared_tensor(tensor: AdditiveSharingTensor) -> tuple:
     """
     This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple

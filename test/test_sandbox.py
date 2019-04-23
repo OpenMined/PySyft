@@ -30,5 +30,3 @@ def test_sandbox():
 
     assert grid == grid  # noqa: F821
     assert isinstance(grid, VirtualGrid)  # noqa: F821
-
-    assert workers == [bob, theo, jason, alice, andy, jon]  # noqa: F821
