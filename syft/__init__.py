@@ -29,8 +29,8 @@ from syft.workers import VirtualWorker
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.pointers import GenericPointer, PointerTensor
 
 # Import serialization tools
 from syft import serde
