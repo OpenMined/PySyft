@@ -48,15 +48,13 @@ class WebsocketClientWorker(BaseWorker):
         if secure:
             self.uri = f"wss://{self.host}:{self.port}"
             ssl_settings = {"cert_reqs": ssl.CERT_NONE}
-            self.ws = websocket.create_connection(self.uri,
-                                                  sslopt=ssl_settings,
-                                                  max_size=None,
-                                                  timeout=TIMEOUT_INTERVAL)
+            self.ws = websocket.create_connection(
+                self.uri, sslopt=ssl_settings, max_size=None, timeout=TIMEOUT_INTERVAL
+            )
         else:
             # Insecure flow
             # Also avoid the server from timing out on the server-side in case of slow clients
-            self.ws = websocket.create_connection(self.uri, max_size=None,
-                                                  timeout=TIMEOUT_INTERVAL)
+            self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
 
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
 
