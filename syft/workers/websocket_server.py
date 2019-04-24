@@ -128,23 +128,25 @@ class WebsocketServerWorker(VirtualWorker):
         if not (self.cert is None) and not (self.key is None):
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             ssl_context.load_cert_chain(self.cert, self.key)
-            start_server = websockets.serve(self._handler,
-                                            self.host,
-                                            self.port,
-                                            ssl=ssl_context,
-                                            max_size=None,
-                                            ping_timeout=None,
-                                            close_timeout=None
+            start_server = websockets.serve(
+                self._handler,
+                self.host,
+                self.port,
+                ssl=ssl_context,
+                max_size=None,
+                ping_timeout=None,
+                close_timeout=None,
             )
         else:
             # Insecure
-            start_server = websockets.serve(self._handler,
-                                            self.host,
-                                            self.port,
-                                            max_size=None,
-                                            ping_timeout=None,
-                                            close_timeout=None
-             )
+            start_server = websockets.serve(
+                self._handler,
+                self.host,
+                self.port,
+                max_size=None,
+                ping_timeout=None,
+                close_timeout=None,
+            )
 
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
