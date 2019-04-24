@@ -65,12 +65,8 @@ def compute_q_noisy_max(counts, noise_eps):
     # tight-bounds-on-probability-of-sum-of-laplace-random-variables
 
     winner = np.argmax(counts)
-    # print("winner")
-    # print(winner)
     counts_normalized = noise_eps * (counts - counts[winner])
 
-    # print("counts_normalized")
-    # print(counts_normalized)
     counts_rest = np.array([counts_normalized[i] for i in range(len(counts)) if i != winner])
     q = 0.0
     for c in counts_rest:
@@ -284,11 +280,11 @@ def tensors_to_literals(tensor_list):
 
     """Converts list of torch tensors to list of integers/floats. Fix for not having the functionality which converts list of tensors to tensors
     
-       args:
+       Args:
            
            tensor_list[List]: List of torch tensors
            
-       returns:
+       Returns:
            
            literal_list[List]: List of floats/integers
            
@@ -297,7 +293,6 @@ def tensors_to_literals(tensor_list):
     literal_list = []
 
     for tensor in tensor_list:
-
         literal_list.append(tensor.item())
 
     return literal_list
@@ -319,13 +314,10 @@ def logmgf_exact_torch(q, priv_eps, l):
         Returns:
             Upper bound on logmgf
       """
-
     if q < 0.5:
-
         t_one = (1 - q) * math.pow((1 - q) / (1 - math.exp(priv_eps) * q), l)
         t_two = q * math.exp(priv_eps * l)
         t = t_one + t_two
-
         try:
 
             log_t = math.log(t)
@@ -334,7 +326,6 @@ def logmgf_exact_torch(q, priv_eps, l):
 
             print("Got ValueError in math.log for values :" + str((q, priv_eps, l, t)))
             log_t = priv_eps * l
-
     else:
 
         log_t = priv_eps * l
@@ -344,7 +335,7 @@ def logmgf_exact_torch(q, priv_eps, l):
 
 def compute_q_noisy_max_torch(counts, noise_eps):
 
-    """returns ~ Pr[outcome != winner].
+    """Returns ~ Pr[outcome != winner].
        Args:
            
           counts: a list of scores
