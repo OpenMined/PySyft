@@ -51,7 +51,7 @@ import torch
 
 
 def compute_q_noisy_max(counts, noise_eps):
-    """returns ~ Pr[outcome != winner].
+    """Returns ~ Pr[outcome != winner].
 
   Args:
     counts: a list of scores
@@ -78,7 +78,7 @@ def compute_q_noisy_max(counts, noise_eps):
 
 
 def compute_q_noisy_max_approx(counts, noise_eps):
-    """returns ~ Pr[outcome != winner].
+    """Returns ~ Pr[outcome != winner].
 
   Args:
     counts: a list of scores
@@ -277,7 +277,6 @@ def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, b
 
 
 def tensors_to_literals(tensor_list):
-
     """Converts list of torch tensors to list of integers/floats. Fix for not having the functionality which converts list of tensors to tensors
     
        Args:
@@ -299,19 +298,18 @@ def tensors_to_literals(tensor_list):
 
 
 def logmgf_exact_torch(q, priv_eps, l):
-
     """Computes the logmgf value given q and privacy eps.
-        The bound used is the min of three terms. The first term is from
-        https://arxiv.org/pdf/1605.02065.pdf.
-        The second term is based on the fact that when event has probability (1-q) for
-        q close to zero, q can only change by exp(eps), which corresponds to a
-        much smaller multiplicative change in (1-q)
-        The third term comes directly from the privacy guarantee.
-        Args:
+       The bound used is the min of three terms. The first term is from
+       https://arxiv.org/pdf/1605.02065.pdf.
+       The second term is based on the fact that when event has probability (1-q) for
+       q close to zero, q can only change by exp(eps), which corresponds to a
+       much smaller multiplicative change in (1-q)
+       The third term comes directly from the privacy guarantee.
+       Args:
             q: pr of non-optimal outcome
             priv_eps: eps parameter for DP
             l: moment to compute.
-        Returns:
+       Returns:
             Upper bound on logmgf
       """
     if q < 0.5:
@@ -334,7 +332,6 @@ def logmgf_exact_torch(q, priv_eps, l):
 
 
 def compute_q_noisy_max_torch(counts, noise_eps):
-
     """Returns ~ Pr[outcome != winner].
        Args:
            
@@ -447,7 +444,6 @@ def smooth_sens_torch(counts, noise_eps, l, beta):
 
 
 def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8, beta=0.09):
-
     """Performs PATE analysis on predictions from teachers and combined predictions for student.
     Args:
         teacher_preds: a torch tensor of dim (num_teachers x num_examples). Each value corresponds to the
