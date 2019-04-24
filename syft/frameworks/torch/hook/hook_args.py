@@ -1,12 +1,12 @@
 import torch
 import syft as sy
-from syft.exceptions import RemoteTensorFoundError
+from syft.exceptions import RemoteObjectFoundError
 from syft.exceptions import PureTorchTensorFoundError
 
 from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -45,7 +45,7 @@ type_rule = {
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
 forward_func = {
-    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
+    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p)),
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureTorchTensorFoundError),

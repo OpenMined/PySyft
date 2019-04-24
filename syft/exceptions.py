@@ -19,7 +19,7 @@ class PureTorchTensorFoundError(BaseException):
     pass
 
 
-class RemoteTensorFoundError(BaseException):
+class RemoteObjectFoundError(BaseException):
     """Exception raised for errors in the input.
     This error is used in a context similar to PureTorchTensorFoundError but
     to indicate that a Pointer to a remote tensor was found  in the input

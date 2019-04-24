@@ -4,9 +4,8 @@ from abc import abstractmethod
 import syft as sy
 
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.generic import ObjectStorage
-from syft.generic import IdProvider
+from syft.frameworks.torch.pointers import PointerTensor
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError

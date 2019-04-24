@@ -2,7 +2,7 @@ import torch
 import torch as th
 import syft
 
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
 
 
 def test_init(workers):
