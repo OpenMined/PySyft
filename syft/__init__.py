@@ -14,6 +14,9 @@ from syft.frameworks.torch import TorchHook
 # Import grids
 from syft.grid import VirtualGrid
 
+# Import federate learning
+from syft.federated import TrainConfig
+
 # Import Worker Types
 from syft.workers import VirtualWorker
 from syft.workers import Plan
