@@ -69,11 +69,18 @@ def method2plan(plan_blueprint):
 
 
 class Plan(ObjectStorage):
-    """This worker does not send messages or execute any commands. Instead,
-    it simply records messages that are sent to it such that message batches
-    (called 'Plans') can be created and sent once."""
+    """A Plan store a sequence of torch operations, just like a function.
 
-    def __init__(self, id: Union[str, int], owner, name="", *args, **kwargs):
+    A Plan is intended to store a sequence of torch operations, just like a function,
+    but it allows to send this sequence of operations to remote workers and to keep a
+    reference to it. This way, to compute remotely this sequence of operations on some remote
+    input referenced through pointers, instead of sending multiple messages you need now to send a
+    single message with the references of the plan and the pointers.
+    """
+
+    def __init__(
+        self, id: Union[str, int], owner: "sy.workers.BaseWorker", name: str = "", *args, **kwargs
+    ):
         super().__init__()
 
         # Plan instance info
@@ -92,8 +99,6 @@ class Plan(ObjectStorage):
         self.location = None
         self.ptr_plan = None
 
-        # Planworkers are registered by other worker, they must have information
-        # to be retrieved by search functions
         self.tags = None
         self.description = None
         self.blueprint = None
@@ -111,12 +116,12 @@ class Plan(ObjectStorage):
     def request_obj(self, *args, **kwargs):
         return self.owner.request_obj(*args, **kwargs)
 
-    def _recv_msg(self, bin_message):
-        """
-        Upon reception, the PlanWorker store in the plan all commands which can be
-        executed lazily
-        :param bin_message: the message of a command received
-        :return: the None message serialized to specify the command was received
+    def _recv_msg(self, bin_message: bin):
+        """Upon reception, a Plan stores all commands which can be executed lazily.
+        Args:
+            bin_message: the message of a command received.
+        Returns:
+            The None message serialized to specify the command was received.
         """
         (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, detail=False)
 
@@ -131,13 +136,16 @@ class Plan(ObjectStorage):
 
         return sy.serde.serialize(None)
 
-    def build_plan(self, args):
-        """
-        The plan must be built with some input data, here args. When they
+    def build_plan(self, args: List):
+        """Builds a plan.
+
+        The plan must be built with some input data, here `args`. When they
         are provided, they are sent to the plan worker, which executes its
         blueprint: each command of the blueprint is catched by _recv_msg
-        and is used to fill the plan
-        :param args: the input data
+        and is used to fill the plan.
+
+        Args:
+            param: Input data.
         """
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
@@ -162,16 +170,18 @@ class Plan(ObjectStorage):
         self.owner_when_built = self.owner
 
     def copy(self):
+        """Creates a copy of a plan."""
         plan = Plan(int(10e10 * random.random()), self.owner, self.name)
         plan.blueprint = self.blueprint
         plan.readable_plan = self.readable_plan
         return plan
 
-    def replace_ids(self, from_ids, to_ids):
-        """
-        Replace pairs of tensor ids in the plan stored
-        :param from_ids: the left part of the pair: ids to change
-        :param to_ids: the right part of the pair: ids to replace with
+    def replace_ids(self, from_ids: List[Union[str, int]], to_ids: List[Union[str, int]]):
+        """Replaces pairs of tensor ids in the plan stored.
+
+        Args:
+            from_ids: the left part of the pair: ids to change.
+            to_ids: the right part of the pair: ids to replace with.
         """
         # for every pair of id
         for i in range(len(from_ids)):
@@ -187,10 +197,14 @@ class Plan(ObjectStorage):
                 )
         return self
 
-    def replace_worker_ids(self, from_worker_id, to_worker_id):
+    def replace_worker_ids(self, from_worker_id: Union[str, int], to_worker_id: Union[str, int]):
         """
         Replace occurrences of from_worker_id by to_worker_id in the plan stored
-        Works also if those ids are encoded in bytes (for string)
+        Works also if those ids are encoded in bytes (for string).
+
+        Args:
+            from_worker_id: Id of the the replaced worker.
+            to_worker_id: Id of the new worker.
         """
         for from_id, to_id in [
             (from_worker_id, to_worker_id),
@@ -228,11 +242,14 @@ class Plan(ObjectStorage):
         return _obj
 
     def __call__(self, *args, **kwargs):
-        """
-        Call a plan execution with some arguments, and specify the ids where the result
-        should be stored
-        :return: The pointer to the result of the execution if the plan was already sent,
-        else the None message serialized.
+        """Calls a plan.
+
+        Calls a plan execution with some arguments, and specify the ids where the result
+        should be stored.
+
+        Returns:
+            The pointer to the result of the execution if the plan was already sent,
+            else the None message serialized.
         """
         assert len(kwargs) == 0, "kwargs not supported for plan"
         result_ids = [random.randint(0, 1e10)]
@@ -241,7 +258,9 @@ class Plan(ObjectStorage):
             args = [self.self] + list(args)
         return self.execute_plan(args, result_ids)
 
-    def _update_args(self, args, result_ids):
+    def _update_args(
+        self, args: List[Union[torch.Tensor, AbstractTensor]], result_ids: List[Union[str, int]]
+    ):
         """Replace args and result_ids with the ones given.
         Updates the arguments ids and result ids used to execute
         the plan.
@@ -283,15 +302,19 @@ class Plan(ObjectStorage):
         responses = self._get_plan_output(result_ids)
         return responses
 
-    def execute_plan(self, args, result_ids):
-        """
-        Control local or remote plan execution.
+    def execute_plan(self, args: List, result_ids: List[Union[str, int]]):
+        """Controls local or remote plan execution.
+
         If the plan doesn't have the plan built, first build it using the blueprint.
         Then if it has a remote location, send the plan to the remote location only the
         first time, request a remote plan execution with specific pointers and ids for
         storing the result, and return a pointer to the result of the execution.
         If the plan is local: update the plan with the result_ids and args ids given,
         run the plan and return the None message serialized.
+
+        Args:
+            args: Arguments used to run plan.
+            result_ids: List of ids where the results will be stored.
         """
         # We build the plan only if needed
         first_run = self.readable_plan == []
@@ -319,12 +342,18 @@ class Plan(ObjectStorage):
 
         return sy.serde.serialize(None)
 
-    def request_execute_plan(self, response_ids, *args, **kwargs):
-        """
-        Send a request to execute the plan on the remote location
-        :param response_ids: where the plan result should be stored remotely
-        :param args: the arguments use as input data for the plan
-        :return:
+    def request_execute_plan(self, response_ids: List[Union[str, int]], *args, **kwargs) -> object:
+        """Requests plan execution.
+
+        Send a request to execute the plan on the remote location.
+
+        Args:
+            response_ids: Where the plan result should be stored remotely.
+            args: Arguments used as input data for the plan.
+            kwargs: Named arguments used as input data for the plan.
+
+        Returns:
+            Execution response.
         """
         args = [arg for arg in args if isinstance(arg, torch.Tensor)]
         args = [args, response_ids]
@@ -335,12 +364,15 @@ class Plan(ObjectStorage):
         )
         return response
 
-    def send(self, location):
-        """
-        Mock send function that only specify that the Plan will have to be sent to location.
-        In a way, when one calls .send(), this doesn't trigger a call to a remote worker, but
+    def send(self, location: "sy.workers.BaseWorker"):
+        """Mock send function that only specify that the Plan will have to be sent to location.
+
+        When one calls .send(), this doesn't trigger a call to a remote worker, but
         just stores "a promise" that it will be sent (with _send()) later when the plan in
         called (and built)
+
+        Args:
+            location: Worker where plan should be sent to.
         """
         if self.location is not None:
             raise NotImplementedError(
@@ -350,30 +382,37 @@ class Plan(ObjectStorage):
             self.location = location
         return self
 
-    def _send(self, location):
-        """
-        Real send function that sends the Plan instance with its plan to location, only
-        when the plan is built and that an execution is called, namely when it is necessary
-        to send it
+    def _send(self, location: "sy.workers.BaseWorker"):
+        """Real send function that sends the Plan instance with its plan to location.
+
+        Only called when the plan is built and that an execution is called, namely when it is
+        necessary to send it.
+
+        Args:
+            location: Worker where plan should be sent to.
         """
         self.replace_worker_ids(self.owner.id, self.location.id)
         return self.owner.send(obj=self, workers=location)
 
-    def get(self):
-        """
-        Mock get function: no call to remote worker is made, we just erase the information
-        linking this plan to that remote worker.
+    def get(self) -> "Plan":
+        """Mock get function.
+
+        No call to remote worker is done, we just erase the
+        information linking this plan to that remote worker.
+
+        Returns:
+            Plan.
         """
         self.replace_worker_ids(self.location.id, self.owner.id)
         self.location = None
         self.ptr_plan = None
         return self
 
-    def describe(self, description):
+    def describe(self, description: str) -> "Plan":
         self.description = description
         return self
 
-    def tag(self, *_tags):
+    def tag(self, *_tags: List) -> "Plan":
         if self.tags is None:
             self.tags = set()
 
