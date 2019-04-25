@@ -51,7 +51,8 @@ import syft as sy
 
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
-from syft.workers import Plan
+
+from syft.federated import Plan
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
