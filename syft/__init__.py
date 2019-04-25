@@ -53,7 +53,7 @@ local_worker = None
 torch = None
 
 if "ID_PROVIDER" not in globals():
-    from syft.workers.abstract import IdProvider
+    from syft.generic import IdProvider
 
     ID_PROVIDER = IdProvider()
 
