@@ -120,15 +120,15 @@ class AutogradTensor(AbstractTensor):
         <no self>, arguments[, kwargs])
         :return: the response of the function command
         """
-        # TODO: add kwargs in command
-        cmd, _, args = command
+        
+        cmd, _, args, kwargs = command
 
         # TODO: I can't manage the import issue, can you?
         # Replace all AutogradTensor with their child attribute
-        new_args, new_type = syft.frameworks.torch.hook_args.hook_function_args(cmd, args)
+        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_args(cmd, args, kwargs)
 
         # build the new command
-        new_command = (cmd, None, new_args)
+        new_command = (cmd, None, new_args, new_kwargs)
 
         # Send it to the appropriate class and get the response
         response = new_type.handle_func_command(new_command)

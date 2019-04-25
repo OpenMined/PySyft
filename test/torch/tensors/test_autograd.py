@@ -17,93 +17,133 @@ def test_wrap():
     assert isinstance(x.child.child, torch.Tensor)
 
 
-def test_add_backwards():
-    a1 = AutogradTensor().on(torch.tensor([3, 2.0, 0]))
-    b1 = AutogradTensor().on(torch.tensor([1, 2.0, 3]))
+def test_add_backwards(workers):
+    
+    alice = workers['alice']
+    a = torch.tensor([3, 2., 0], requires_grad=True)
+    b = torch.tensor([1, 2., 3], requires_grad=True)
 
-    a2 = torch.tensor([3, 2.0, 0], requires_grad=True)
-    b2 = torch.tensor([1, 2.0, 3], requires_grad=True)
+    a = a.send(alice, local_autograd=True)
+    b = b.send(alice, local_autograd=True)
 
-    c1 = a1 + b1
-    c2 = a2 + b2
+    a_torch = torch.tensor([3, 2.0, 0], requires_grad=True)
+    b_torch = torch.tensor([1, 2.0, 3], requires_grad=True)
 
-    c1.backward(torch.ones_like(c1))
-    c2.backward(torch.ones_like(c2))
+    c = a + b
+    c_torch = a_torch + b_torch
 
-    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
-    assert torch.all(a1.child.grad == a2.grad)
-    assert torch.all(b1.child.grad == b2.grad)
+    c.backward(torch.ones(c.shape).send(alice))
+    c_torch.backward(torch.ones(c_torch.shape))
 
-
-def test_mul_backwards():
-    a1 = AutogradTensor().on(torch.tensor([3, 2.0, 0]))
-    b1 = AutogradTensor().on(torch.tensor([1, 2.0, 3]))
-
-    a2 = torch.tensor([3, 2.0, 0], requires_grad=True)
-    b2 = torch.tensor([1, 2.0, 3], requires_grad=True)
-
-    c1 = a1 * b1
-    c2 = a2 * b2
-
-    c1.backward(torch.ones_like(c1))
-    c2.backward(torch.ones_like(c2))
-
-    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
-    assert torch.all(a1.child.grad == a2.grad)
-    assert torch.all(b1.child.grad == b2.grad)
+    assert (a.grad.get() == a_torch.grad).all()
+    assert (b.grad.get() == b_torch.grad).all()
 
 
-def test_sqrt_backwards():
-    a1 = AutogradTensor().on(torch.tensor([3, 2.0, 0]))
-    a2 = torch.tensor([3, 2.0, 0], requires_grad=True)
+def test_mul_backwards(workers):
+    
+    alice = workers['alice']
+    a = torch.tensor([3, 2., 0], requires_grad=True)
+    b = torch.tensor([1, 2., 3], requires_grad=True)
 
-    c1 = a1.sqrt()
-    c2 = a2.sqrt()
+    a = a.send(alice, local_autograd=True)
+    b = b.send(alice, local_autograd=True)
 
-    c1.backward(torch.ones_like(c1))
-    c2.backward(torch.ones_like(c2))
+    a_torch = torch.tensor([3, 2.0, 0], requires_grad=True)
+    b_torch = torch.tensor([1, 2.0, 3], requires_grad=True)
 
-    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
-    assert torch.all(a1.child.grad == a2.grad)
+    c = a * b
+    c_torch = a_torch * b_torch
 
+    c.backward(torch.ones(c.shape).send(alice))
+    c_torch.backward(torch.ones(c_torch.shape))
 
-def test_asin_backwards():
-    a1 = AutogradTensor().on(torch.tensor([0.3, 0.2, 0]))
-    a2 = torch.tensor([0.3, 0.2, 0], requires_grad=True)
-
-    c1 = a1.asin()
-    c2 = a2.asin()
-
-    c1.backward(torch.ones_like(c1))
-    c2.backward(torch.ones_like(c2))
-
-    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
-    assert torch.all(a1.child.grad == a2.grad)
+    assert (a.grad.get() == a_torch.grad).all()
+    assert (b.grad.get() == b_torch.grad).all()
+    
+    a.get();
+    b.get();
+    c.get();
 
 
-def test_sin_backwards():
-    a1 = AutogradTensor().on(torch.tensor([3, 2.0, 0]))
-    a2 = torch.tensor([3, 2.0, 0], requires_grad=True)
+def test_sqrt_backwards(workers):
+    alice = workers['alice']
+    
+    a = torch.tensor([3, 2., 0], requires_grad=True)
+    a = a.send(alice, local_autograd=True)
+    
+    a_torch = torch.tensor([3, 2.0, 0], requires_grad=True)
 
-    c1 = a1.sin()
-    c2 = a2.sin()
+    c = a.sqrt()
+    c_torch = a_torch.sqrt()
 
-    c1.backward(torch.ones_like(c1))
-    c2.backward(torch.ones_like(c2))
+    c.backward(torch.ones_like(c).send(alice))
+    c_torch.backward(torch.ones_like(c_torch))
 
     # Have to do .child.grad here because .grad doesn't work on Wrappers yet
-    assert torch.all(a1.child.grad == a2.grad)
+    assert (a.grad.get() == a_torch.grad).all()
+
+    a.get();
+    c.get();
 
 
-def test_sinh_backwards():
-    a1 = AutogradTensor().on(torch.tensor([3, 2.0, 0]))
-    a2 = torch.tensor([3, 2.0, 0], requires_grad=True)
+def test_asin_backwards(workers):
+    alice = workers['alice']
+    
+    a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+    a = a.send(alice, local_autograd=True)
+    
+    a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
 
-    c1 = a1.sinh()
-    c2 = a2.sinh()
+    c = a.asin()
+    c_torch = a_torch.asin()
 
-    c1.backward(torch.ones_like(c1))
-    c2.backward(torch.ones_like(c2))
+    c.backward(torch.ones(c.shape).send(alice))
+    c_torch.backward(torch.ones_like(c_torch))
 
     # Have to do .child.grad here because .grad doesn't work on Wrappers yet
-    assert torch.all(a1.child.grad == a2.grad)
+    assert (a.grad.get() == a_torch.grad).all()
+
+    a.get();
+    c.get();
+
+
+def test_sin_backwards(workers):
+    alice = workers['alice']
+    
+    a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+    a = a.send(alice, local_autograd=True)
+    
+    a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+
+    c = a.sin()
+    c_torch = a_torch.sin()
+
+    c.backward(torch.ones_like(c).send(alice))
+    c_torch.backward(torch.ones_like(c_torch))
+
+    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
+    assert (a.grad.get() == a_torch.grad).all()
+
+    a.get();
+    c.get();
+
+
+def test_sinh_backwards(workers):
+    alice = workers['alice']
+    
+    a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+    a = a.send(alice, local_autograd=True)
+    
+    a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+
+    c = a.sinh()
+    c_torch = a_torch.sinh()
+
+    c.backward(torch.ones_like(c).send(alice))
+    c_torch.backward(torch.ones_like(c_torch))
+
+    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
+    assert (a.grad.get() == a_torch.grad).all()
+
+    a.get();
+    c.get();
