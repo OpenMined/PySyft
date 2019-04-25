@@ -52,6 +52,11 @@ __all__ = [
 local_worker = None
 torch = None
 
+if "ID_PROVIDER" not in globals():
+    from syft.workers.abstract import IdProvider
+
+    ID_PROVIDER = IdProvider()
+
 
 def create_sandbox(gbs, verbose=True, download_data=True):
     """There's some boilerplate stuff that most people who are

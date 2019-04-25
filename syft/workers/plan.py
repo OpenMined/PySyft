@@ -1,4 +1,3 @@
-import random
 import copy
 import torch
 
@@ -6,9 +5,6 @@ from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.workers.base import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
-
-from typing import List
-from typing import Union
 
 
 def make_plan(plan_blueprint):
@@ -26,7 +22,7 @@ def func2plan(plan_blueprint):
     Converts a function containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
     """
-    plan = Plan(owner=sy.local_worker, id=random.randint(0, 1e10), name=plan_blueprint.__name__)
+    plan = Plan(owner=sy.local_worker, id=sy.ID_PROVIDER.pop(),, name=plan_blueprint.__name__)
     plan.blueprint = plan_blueprint
     return plan
 
@@ -37,7 +33,7 @@ def method2plan(plan_blueprint):
     Converts a method containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
     """
-    plan = Plan(owner=sy.local_worker, id=random.randint(0, 1e10), name=plan_blueprint.__name__)
+    plan = Plan(owner=sy.local_worker, id=sy.ID_PROVIDER.pop(), name=plan_blueprint.__name__)
     plan.blueprint = plan_blueprint
 
     @property
@@ -185,7 +181,7 @@ class Plan(ObjectStorage):
 
     def copy(self):
         """Creates a copy of a plan."""
-        plan = Plan(int(10e10 * random.random()), self.owner, self.name)
+        plan = Plan(sy.ID_PROVIDER.pop(), self.owner, self.name)
         plan.blueprint = self.blueprint
         plan.readable_plan = self.readable_plan
         return plan
@@ -266,7 +262,7 @@ class Plan(ObjectStorage):
             else the None message serialized.
         """
         assert len(kwargs) == 0, "kwargs not supported for plan"
-        result_ids = [random.randint(0, 1e10)]
+        result_ids = [sy.ID_PROVIDER.pop()]
         # Support for method hooked in plans
         if self.self is not None:
             args = [self.self] + list(args)
@@ -298,10 +294,7 @@ class Plan(ObjectStorage):
         responses = []
         for return_id in result_ids:
             response = sy.PointerTensor(
-                location=self.owner,
-                id_at_location=return_id,
-                owner=self,
-                id=int(10e10 * random.random()),
+                location=self.owner, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
             )
             responses.append(response if return_ptr else response.get())
 
