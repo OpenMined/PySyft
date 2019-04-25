@@ -136,9 +136,9 @@ class SensitivityTensor(AbstractTensor):
 
         if entities is None:
             entities = self.max_ent_conts != self.min_ent_conts
-        else:
-            if not skip_checks:
-                assert entities.type() == self._type
+        # else:
+        #     if not skip_checks:
+        #         assert entities.type() == self._type
 
         # one hot encoding of entities in the ancestry of this tensor
         # TODO: make this a function of (max_ent_conts != min_ent_conts) with smart caching where appropriate
@@ -475,24 +475,27 @@ class SensitivityTensor(AbstractTensor):
             values=new_vals, max_ent_conts=new_max_ent_conts, min_ent_conts=new_min_ent_conts
         )
 
-    def clamp_min(self, other):
+    # These are useless until we have a second bound on the "sum" of the min_ent_conts and max_ent_conts
+    # which is also waht is needed to get a tighter bound on gt and lt
 
-        if isinstance(other, SensitivityTensor):
-            raise Exception("Not implemented yet")
-
-        new_min_val = self.min_ent_conts.clamp_min(other)
-        new_max_val = self.max_ent_conts.clamp_min(other)
-
-        return SensitivityTensor(self.child.clamp_min(other), new_max_val, new_min_val)
-
-    def clamp_max(self, other):
-
-        if isinstance(other, SensitivityTensor):
-            raise Exception("Not implemented yet")
-
-        new_max_val = self.max_ent_conts.clamp_max(other)
-
-        return SensitivityTensor(self.child.clamp_max(other), new_max_val, self.min_ent_conts)
+    # def clamp_min(self, other):
+    #
+    #     if isinstance(other, SensitivityTensor):
+    #         raise Exception("Not implemented yet")
+    #
+    #     new_min_val = self.min_ent_conts.clamp_min(other) * self.entities
+    #     new_max_val = self.max_ent_conts.clamp_min(other) * self.entities
+    #
+    #     return SensitivityTensor(self.child.clamp_min(other), new_max_val, new_min_val, entities=self.entities)
+    #
+    # def clamp_max(self, other):
+    #
+    #     if isinstance(other, SensitivityTensor):
+    #         raise Exception("Not implemented yet")
+    #
+    #     new_max_val = self.max_ent_conts.clamp_max(other)
+    #
+    #     return SensitivityTensor(self.child.clamp_max(other), new_max_val, self.min_ent_conts)
 
     @property
     def max_vals(self):

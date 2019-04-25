@@ -103,7 +103,7 @@ def test_fail_init(workers):
         )
 
     # test when a tensor's value is outside of the range specified by min_ent_conts and max_ent_conts
-    sy.frameworks.torch.tensors.decorators.sensitivity.ValuesOutOfSpecifiedMinMaxRangeException
+    with pytest.raises(sy.frameworks.torch.tensors.decorators.sensitivity.ValuesOutOfSpecifiedMinMaxRangeException):
 
         # negative, non-positive, single entitiy, overlapping, symmetric add
         x = (
