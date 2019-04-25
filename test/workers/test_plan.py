@@ -102,3 +102,79 @@ def test_plan_built_on_method(hook):
     pointer_to_data = device_2.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
     pointer_to_result.get()
+
+# def test_multiple_workers(workers):
+#     bob = workers["bob"]
+#     alice = workers["alice"]
+
+#     @sy.func2plan
+#     def plan_abs(data):
+#         return data.abs()
+
+#     plan_abs.send(bob, alice)
+#     x_ptr = th.tensor([-1, 7, 3]).send(bob)
+#     p = plan_abs(x_ptr)
+#     x_abs = p.get()
+#     assert (x_abs == th.tensor([1, 7, 3])).all()
+
+#     x_ptr = th.tensor([-1, 9, 3]).send(alice)
+#     p = plan_abs(x_ptr)
+#     x_abs = p.get()
+#     assert (x_abs == th.tensor([1, 9, 3])).all()
+
+
+# def test_fetch_plan_built_locally(hook):
+#     @sy.func2plan
+#     def plan_mult_3(data):
+#         return data * 3
+
+#     x = th.tensor([-1, 2, 3])
+#     device_3 = sy.VirtualWorker(hook, id="device_3", data=(x, plan_mult_3))
+
+#     # Fetch plan
+#     fetched_plan = device_3.fetch_plan(plan_mult_3.id)
+#     assert isinstance(fetched_plan, sy.Plan)
+
+#     # Build and execute plan locally
+#     y = th.tensor([-1, 2, 3])
+#     assert (fetched_plan(y) == th.tensor([-3, 6, 9])).all()
+
+
+# def test_fetch_plan_built_remotely(hook):
+#     device_4 = sy.VirtualWorker(hook, id="device_4")
+
+#     @sy.func2plan
+#     def plan_mult_3(data):
+#         return data * 3
+
+#     x_ptr = th.tensor([-1, 2, 3]).send(device_4)
+
+#     # When you "send" a plan we don't actually send the
+#     # plan to the worker we just update the plan's location
+#     sent_plan = plan_mult_3.tag("#plan").send(device_4)
+
+#     # When you execute the plan, we then send the plan to the
+#     # worker and build it
+#     _ = sent_plan(x_ptr)
+
+#     # Fetch plan
+#     fetched_plan = device_4.fetch_plan(sent_plan.id)
+
+#     # Build plan and execute it locally
+#     x = th.tensor([-1, 2, 3])
+#     assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
+
+
+# def test_plan_serde(hook):
+#     @sy.func2plan
+#     def my_plan(data):
+#         x = data * 2
+#         y = (x - 2) * 10
+#         return x + y
+
+#     serialized_plan = serialize(my_plan)
+#     deserialized_plan = deserialize(serialized_plan)
+
+#     x = th.tensor([-1, 2, 3])
+#     assert (deserialized_plan(x) == th.tensor([-42, 24, 46])).all()
+

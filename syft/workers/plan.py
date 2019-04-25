@@ -1,5 +1,5 @@
 import random
-
+import copy
 import torch
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
@@ -96,8 +96,8 @@ class Plan(ObjectStorage):
         self.owner_when_built = None
 
         # Pointing info towards a remote plan
-        self.location = None
-        self.ptr_plan = None
+        self.locations = []
+        self.ptr_plans = {}
 
         self.tags = None
         self.description = None
@@ -163,11 +163,25 @@ class Plan(ObjectStorage):
         res_ptr = self.blueprint(*local_args)
         res_ptr.child.garbage_collect_data = False
 
+        worker = self.find_location(args)
+
+        self.replace_worker_ids(worker.id, self.owner.id)
+
         # The id where the result should be stored
         self.result_ids = [res_ptr.id_at_location]
 
         # Store owner that built the plan
         self.owner_when_built = self.owner
+
+    def find_location(self, args):
+        """
+        Return location if args contain pointers else the local worker
+        """
+        for arg in args:
+            if isinstance(arg, torch.Tensor):
+                if hasattr(arg, "child") and isinstance(arg.child, sy.PointerTensor):
+                    return arg.location
+        return sy.hook.local_worker
 
     def copy(self):
         """Creates a copy of a plan."""
@@ -321,22 +335,24 @@ class Plan(ObjectStorage):
         if first_run:
             self.build_plan(args)
 
-        # If there is a location we need to send the plan to
-        # we request the location to execute the plan
-        if self.location:
-            if self.ptr_plan is None:
-                self.ptr_plan = self._send(self.location)
-            response = self.request_execute_plan(result_ids, *args)
+        if len(self.locations) > 0:
+            worker = self.find_location(args)
+            if worker.id not in self.ptr_plans.keys():
+                self.ptr_plans[worker.id] = self._send(worker)
+
+            response = self.request_execute_plan(worker, result_ids, *args)
+
             return response
 
         # If the plan is local, we execute the plan and return the response
-        if not self.location and self.owner == sy.hook.local_worker:
+        if len(self.locations) == 0 and self.owner == sy.hook.local_worker:
             return self._execute_plan_locally(result_ids, *args)
 
         # if the plan is not to be sent but is not local (ie owned by the local worker)
-        # then it has been request to execute, so we update the plan with the correct
-        # input and output ids and we run it
-        elif not self.location and self.owner != sy.hook.local_worker:
+        # then it has been requested to be executed, so we update the plan with the
+        # correct input and output ids and we run it
+
+        elif len(self.locations) == 0 and self.owner != sy.hook.local_worker:
             self._update_args(args, result_ids)
             self._execute_plan()
 
@@ -354,13 +370,14 @@ class Plan(ObjectStorage):
 
         Returns:
             Execution response.
+
         """
         args = [arg for arg in args if isinstance(arg, torch.Tensor)]
         args = [args, response_ids]
-        command = ("execute_plan", self.ptr_plan, args, kwargs)
+        command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
 
         response = self.owner.send_command(
-            message=command, recipient=self.location, return_ids=response_ids
+            message=command, recipient=location, return_ids=response_ids
         )
         return response
 
@@ -374,12 +391,9 @@ class Plan(ObjectStorage):
         Args:
             location: Worker where plan should be sent to.
         """
-        if self.location is not None:
-            raise NotImplementedError(
-                "Can't send a Plan which already has a location, use .get() before"
-            )
-        else:
-            self.location = location
+        self.locations += [self.owner.get_worker(location).id for location in locations]
+        # rm duplicates
+        self.locations = list(set(self.locations))
         return self
 
     def _send(self, location: "sy.workers.BaseWorker"):
@@ -391,8 +405,18 @@ class Plan(ObjectStorage):
         Args:
             location: Worker where plan should be sent to.
         """
-        self.replace_worker_ids(self.owner.id, self.location.id)
-        return self.owner.send(obj=self, workers=location)
+
+        readable_plan_original = copy.deepcopy(self.readable_plan)
+        for worker_id in [self.owner.id] + self.locations:
+            self.replace_worker_ids(worker_id, location.id)
+        _ = self.owner.send(self, workers=location)
+
+        # Deep copy the plan without using deep copy
+        pointer = sy.serde._detail_plan(self.owner, sy.serde._simplify_plan(self))
+
+        # readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
+        self.readable_plan = readable_plan_original
+        return pointer
 
     def get(self) -> "Plan":
         """Mock get function.
@@ -403,9 +427,11 @@ class Plan(ObjectStorage):
         Returns:
             Plan.
         """
-        self.replace_worker_ids(self.location.id, self.owner.id)
-        self.location = None
-        self.ptr_plan = None
+        # self.replace_worker_ids(self.location.id, self.owner.id)
+
+        self.locations = []
+        self.ptr_plans = {}
+
         return self
 
     def describe(self, description: str) -> "Plan":
@@ -431,8 +457,9 @@ class Plan(ObjectStorage):
         out += " id:" + str(self.id)
         out += " owner:" + str(self.owner.id)
 
-        if self.location:
-            out += " location:" + str(self.location.id)
+        if len(self.locations):
+            for location in self.locations:
+                out += " location:" + str(location)
 
         if self.tags is not None and len(self.tags):
             out += " Tags:"
