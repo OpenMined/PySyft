@@ -1,9 +1,6 @@
-import random
-
 import pytest
 import torch
 import torch.nn.functional as F
-import syft
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
