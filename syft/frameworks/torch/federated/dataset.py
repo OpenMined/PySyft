@@ -136,6 +136,6 @@ class FederatedDataset:
 
     def __repr__(self):
         fmt_str = "FederatedDataset\n"
-        fmt_str += "    Distributed accross: {}\n".format(", ".join(self.workers))
+        fmt_str += "    Distributed accross: {}\n".format(", ".join(str(x) for x in self.workers))
         fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
         return fmt_str
