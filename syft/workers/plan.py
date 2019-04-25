@@ -1,14 +1,9 @@
-import random
 import copy
 import torch
 
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.workers.base import BaseWorker
 from syft.codes import MSGTYPE
 import syft as sy
-
-from typing import List
-from typing import Union
 
 
 def make_plan(plan_blueprint):
@@ -25,7 +20,7 @@ def func2plan(plan_blueprint):
     plan = Plan(
         hook=sy.local_worker.hook,
         owner=sy.local_worker,
-        id=random.randint(0, 1e10),
+        id=sy.ID_PROVIDER.pop(),
         name=plan_blueprint.__name__,
     )
 
@@ -43,7 +38,7 @@ def method2plan(plan_blueprint):
     plan = Plan(
         hook=sy.local_worker.hook,
         owner=sy.local_worker,
-        id=random.randint(0, 1e10),
+        id=sy.ID_PROVIDER.pop(),
         name=plan_blueprint.__name__,
     )
 
@@ -172,7 +167,7 @@ class Plan(BaseWorker):
         return sy.hook.local_worker
 
     def copy(self):
-        plan = Plan(self.hook, self.owner, self.name, id=int(10e10 * random.random()))
+        plan = Plan(self.hook, self.owner, self.name, id=sy.ID_PROVIDER.pop())
         plan.plan_blueprint = self.plan_blueprint
         return plan
 
@@ -244,7 +239,7 @@ class Plan(BaseWorker):
         else the None message serialized.
         """
         assert len(kwargs) == 0, "kwargs not supported for plan"
-        result_ids = [random.randint(0, 1e10)]
+        result_ids = [sy.ID_PROVIDER.pop()]
         # Support for method hooked in plans
         if self.self is not None:
             args = [self.self] + list(args)
@@ -274,10 +269,7 @@ class Plan(BaseWorker):
         responses = []
         for return_id in result_ids:
             response = sy.PointerTensor(
-                location=self.owner,
-                id_at_location=return_id,
-                owner=self,
-                id=int(10e10 * random.random()),
+                location=self.owner, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
             )
             responses.append(response if return_ptr else response.get())
 
@@ -349,7 +341,6 @@ class Plan(BaseWorker):
         return response
 
     def send(self, *locations):
-
         """
         Mock send function that only specify that the Plan will have to be sent to location.
         In a way, when one calls .send(), this doesn't trigger a call to a remote worker, but
@@ -381,7 +372,6 @@ class Plan(BaseWorker):
         return pointer
 
     def get(self):
-
         """
         Mock get function: no call to remote worker is made, we just erase the information
         linking this plan to that remote worker.

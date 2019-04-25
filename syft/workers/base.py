@@ -1,6 +1,4 @@
 import logging
-import random
-import sys
 
 from abc import abstractmethod
 import syft as sy
@@ -298,7 +296,7 @@ class BaseWorker(AbstractWorker):
         worker = self.get_worker(worker)
 
         if ptr_id is None:  # Define a remote id if not specified
-            ptr_id = int(10e10 * random.random())
+            ptr_id = sy.ID_PROVIDER.pop()
 
         if isinstance(obj, torch.Tensor):
             pointer = obj.create_pointer(
@@ -379,7 +377,7 @@ class BaseWorker(AbstractWorker):
             A list of PointerTensors or a single PointerTensor if just one response is expected.
         """
         if return_ids is None:
-            return_ids = [int(10e10 * random.random())]
+            return_ids = [sy.ID_PROVIDER.pop()]
 
         message = (message, return_ids)
 
@@ -391,10 +389,7 @@ class BaseWorker(AbstractWorker):
         responses = []
         for return_id in return_ids:
             response = sy.PointerTensor(
-                location=recipient,
-                id_at_location=return_id,
-                owner=self,
-                id=int(10e10 * random.random()),
+                location=recipient, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
             )
             responses.append(response)
 
