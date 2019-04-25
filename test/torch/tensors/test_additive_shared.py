@@ -1,5 +1,3 @@
-import pytest
-import random
 import torch
 import torch.nn as nn
 import torch as th

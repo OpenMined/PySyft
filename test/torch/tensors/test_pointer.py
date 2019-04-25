@@ -1,5 +1,3 @@
-import random
-
 import torch
 import torch as th
 import syft
