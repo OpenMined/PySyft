@@ -319,26 +319,14 @@ class Plan(BaseWorker):
             return response
 
         # If the plan is local, we execute the plan and return the response
-        if not self.location and self.owner == sy.hook.local_worker:
+        if len(self.locations) == 0 and self.owner == sy.hook.local_worker:
             return self._execute_plan_locally(result_ids, *args)
 
         # if the plan is not to be sent but is not local (ie owned by the local worker)
-        # then it has been request to execute, so we update the plan with the correct
-        # input and output ids and we run it
+        # then it has been requested to be executed, so we update the plan with the
+        # correct input and output ids and we run it
 
-        if len(self.locations) == 0 and self.owner != sy.hook.local_worker:
-            arg_ids = [arg.id for arg in args]
-            self.replace_ids(self.arg_ids, arg_ids)
-            self.arg_ids = arg_ids
-
-            self.replace_ids(self.result_ids, result_ids)
-            self.result_ids = result_ids
-
-            for message in self.readable_plan:
-                bin_message = sy.serde.serialize(message, simplified=True)
-                self.owner.recv_msg(bin_message)
-
-        elif not self.location and self.owner != sy.hook.local_worker:
+        elif len(self.locations) == 0 and self.owner != sy.hook.local_worker:
             self._update_args(args, result_ids)
             self._execute_plan()
 
@@ -383,7 +371,12 @@ class Plan(BaseWorker):
         readable_plan_original = copy.deepcopy(self.readable_plan)
         for worker_id in [self.owner.id] + self.locations:
             self.replace_worker_ids(worker_id, location.id)
-        pointer = self.owner.send(tensor=self, workers=location)
+        _ = self.owner.send(self, workers=location)
+
+        # Deep copy the plan without using deep copy
+        pointer = sy.serde._detail_plan(self.owner, sy.serde._simplify_plan(self))
+
+        # readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
         self.readable_plan = readable_plan_original
         return pointer
 
