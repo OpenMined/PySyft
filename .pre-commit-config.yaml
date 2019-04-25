@@ -11,12 +11,10 @@ repos:
     -   id: name-tests-test
     -   id: requirements-txt-fixer
     -   id: flake8
-        args: [., --count, --select=E901,E999,F821,F822,F823, --show-source, --statistics]
 -   repo: https://github.com/ambv/black
-    rev: stable
+    rev: 19.3b0
     hooks:
     -   id: black
-        language_version: python3.6
 -   repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.1.0
     hooks:

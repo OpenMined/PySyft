@@ -16,6 +16,12 @@ def test_toy_federated_learning(workers):
     data = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]], requires_grad=True)
     target = torch.tensor([[0], [0], [1], [1.0]], requires_grad=True)
 
+    instance_id = str(sy.ID_PROVIDER.pop())
+    bob = sy.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
+    alice = sy.VirtualWorker(id=f"alice{instance_id}", hook=hook, is_client_worker=False)
+    james = sy.VirtualWorker(id=f"james{instance_id}", hook=hook, is_client_worker=False)
+
+
     # get pointers to training data on each worker by
     # sending some training data to bob and alice
     data_bob = data[0:2]

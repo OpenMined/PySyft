@@ -1,6 +1,4 @@
 import torch
-import syft
-import random
 
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 
