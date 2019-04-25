@@ -209,6 +209,71 @@ def test_add():
     assert (z.entities == th.tensor([[1, 1, 0, 0]])).all()
 
 
+def test_scalar_add():
+    # positive, non-negative, single entitiy, overlapping, symmetric add
+    x = (
+        th.tensor([1])
+            .int()
+            .track_sensitivity(
+            min_ent_conts=th.tensor([[0, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
+        )
+    )
+
+    y = x + 1
+
+    assert y.sensitivity == th.tensor([1])
+    assert y.max_vals == th.tensor([2])
+    assert y.min_vals == th.tensor([1])
+    assert (y.entities == th.tensor([[1, 0, 0, 0]])).all()
+
+    # negative, non-positive, single entitiy, overlapping, symmetric add
+    x = (
+        th.tensor([-1])
+            .int()
+            .track_sensitivity(
+            min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[0, 0, 0, 0]])
+        )
+    )
+
+    y = x + 1
+
+    assert y.sensitivity == th.tensor([1])
+    assert y.max_vals == th.tensor([1])
+    assert y.min_vals == th.tensor([0])
+    assert (y.entities == th.tensor([[1, 0, 0, 0]])).all()
+
+    # negative, positive, single entitiy, overlapping, symmetric add
+    x = (
+        th.tensor([-1])
+            .int()
+            .track_sensitivity(
+            min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
+        )
+    )
+
+    y = x + 1
+
+    assert y.sensitivity == th.tensor([2])
+    assert y.max_vals == th.tensor([2])
+    assert y.min_vals == th.tensor([0])
+    assert (y.entities == th.tensor([[1, 0, 0, 0]])).all()
+
+    # negative, positive, dual entitiy, overlapping, symmetric add
+    x = (
+        th.tensor([1])
+            .int()
+            .track_sensitivity(
+            min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 1, 0, 0]])
+        )
+    )
+
+    y = x + 1
+
+    assert y.sensitivity == th.tensor([2])
+    # assert y.max_vals == th.tensor([3]) #TODO: fix
+    # assert y.min_vals == th.tensor([0]) #TODO: fix
+    assert (y.entities == th.tensor([[1, 1, 0, 0]])).all()
+
 def test_sub():
     # positive, non-negative, single entitiy, overlapping, symmetric add
     x = (
