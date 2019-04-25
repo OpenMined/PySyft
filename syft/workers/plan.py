@@ -3,7 +3,7 @@ import random
 import torch
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.workers.base import BaseWorker
+from syft.workers.base import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
 
@@ -22,12 +22,7 @@ def func2plan(plan_blueprint):
     which can be sent to any arbitrary worker.
     """
 
-    plan = Plan(
-        hook=sy.local_worker.hook,
-        owner=sy.local_worker,
-        id=random.randint(0, 1e10),
-        name=plan_blueprint.__name__,
-    )
+    plan = Plan(owner=sy.local_worker, id=random.randint(0, 1e10), name=plan_blueprint.__name__)
 
     plan.plan_blueprint = plan_blueprint
 
@@ -40,12 +35,7 @@ def method2plan(plan_blueprint):
     a plan object which can be sent to any arbitrary worker.
     """
 
-    plan = Plan(
-        hook=sy.local_worker.hook,
-        owner=sy.local_worker,
-        id=random.randint(0, 1e10),
-        name=plan_blueprint.__name__,
-    )
+    plan = Plan(owner=sy.local_worker, id=random.randint(0, 1e10), name=plan_blueprint.__name__)
 
     plan.plan_blueprint = plan_blueprint
 
@@ -77,22 +67,26 @@ def method2plan(plan_blueprint):
     return method
 
 
-class Plan(BaseWorker):
+class Plan(ObjectStorage):
     """This worker does not send messages or execute any commands. Instead,
     it simply records messages that are sent to it such that message batches
     (called 'Plans') can be created and sent once."""
 
-    def __init__(self, hook, owner, name="", *args, **kwargs):
-        super().__init__(hook=hook, *args, **kwargs)
+    def __init__(self, id: Union[str, int], owner, name="", *args, **kwargs):
+        super().__init__()
+
         # Plan instance info
+        self.id = id
         self.name = name
         self.owner = owner
+
         # Info about the plan stored
         self.plan = list()
         self.readable_plan = list()
         self.arg_ids = list()
         self.result_ids = list()
         self.owner_when_built = None
+
         # Pointing info towards a remote plan
         self.location = None
         self.ptr_plan = None
@@ -101,11 +95,20 @@ class Plan(BaseWorker):
         # to be retrieved by search functions
         self.tags = None
         self.description = None
+        self.plan_blueprint = None
+
         # For methods
         self.self = None
 
-    def _send_msg(self, message, location):
-        return location._recv_msg(message)
+    @property
+    def _known_workers(self):
+        return self.owner._known_workers
+
+    def send_msg(self, *args, **kwargs):
+        return self.owner.send_msg(*args, **kwargs)
+
+    def request_obj(self, *args, **kwargs):
+        return self.owner.request_obj(*args, **kwargs)
 
     def _recv_msg(self, bin_message):
         """
@@ -139,7 +142,7 @@ class Plan(BaseWorker):
         # the function is called with new args
         self.arg_ids = list()
         local_args = list()
-        for i, arg in enumerate(args):
+        for arg in args:
             # Send only tensors (in particular don't send the "self" for methods)
             if isinstance(arg, torch.Tensor):
                 self.owner.register_obj(arg)
@@ -158,8 +161,9 @@ class Plan(BaseWorker):
         self.owner_when_built = self.owner
 
     def copy(self):
-        plan = Plan(self.hook, self.owner, self.name, id=int(10e10 * random.random()))
+        plan = Plan(int(10e10 * random.random()), self.owner, self.name)
         plan.plan_blueprint = self.plan_blueprint
+        plan.readable_plan = self.readable_plan
         return plan
 
     def replace_ids(self, from_ids, to_ids):
@@ -273,8 +277,6 @@ class Plan(BaseWorker):
         return responses
 
     def _execute_plan_locally(self, result_ids, *args, **kwargs):
-        if self.owner != self.owner_when_built:
-            self.build_plan(args)
         self._update_args(args, result_ids)
         self._execute_plan()
         responses = self._get_plan_output(result_ids)
