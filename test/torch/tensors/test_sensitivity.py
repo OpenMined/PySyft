@@ -442,3 +442,20 @@ def test_neg():
     assert y.max_vals == th.tensor([1])
     assert y.min_vals == th.tensor([-2])
     assert (y.entities == th.tensor([[1, 1, 0, 0]])).all()
+
+def test_scalar_division():
+    # positive, non-negative, single entitiy, overlapping, symmetric mult
+    x = (
+        th.tensor([1])
+            .int()
+            .track_sensitivity(
+            min_ent_conts=th.tensor([[0., 0, 0, 0]]), max_ent_conts=th.tensor([[1., 0, 0, 0]])
+        )
+    )
+
+    y = x / 2
+
+    assert y.sensitivity == th.tensor([0.5])
+    assert y.max_vals == th.tensor([0.5])
+    assert y.min_vals == th.tensor([0.])
+    assert (y.entities == th.tensor([[1., 0, 0, 0]])).all()

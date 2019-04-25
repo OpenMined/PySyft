@@ -392,10 +392,10 @@ class SensitivityTensor(AbstractTensor):
         # maximum possible boundaries
         could_self_top_overlap_with_other_bottom = (
             self.expanded_max_vals
-            < other.expanded_min_vals  # TODO: expand later for better efficiency
+            > other.expanded_min_vals  # TODO: expand later for better efficiency
         )
 
-        could_self_bottom_overlap_with_other_top = self.expanded_min_vals > other.expanded_max_vals
+        could_self_bottom_overlap_with_other_top = self.expanded_min_vals < other.expanded_max_vals
 
         # we calculate this because if they cannot overlap - then sensitivity is 0 - otherwise
         # sensitivity is 1
