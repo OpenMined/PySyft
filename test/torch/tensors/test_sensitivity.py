@@ -1,6 +1,7 @@
 import torch as th
 import syft as sy
 
+import pytest
 
 def test_init(workers):
 
@@ -67,7 +68,8 @@ def test_fail_init(workers):
     # Initialization Test B: test the initialization failure modes
 
     # test when min_ent_conts are greater than max_ent_conts
-    try:
+    with pytest.raises(AssertionError):
+
         x = (
             th.tensor([1])
             .int()
@@ -75,12 +77,9 @@ def test_fail_init(workers):
                 min_ent_conts=th.tensor([[1, 1, 0, 0]]), max_ent_conts=th.tensor([[-1, -1, 0, 0]])
             )
         )
-        assert False
 
-    except AssertionError:
-        assert True
 
-    try:
+    with pytest.raises(RuntimeError):
         # test when min_ent_conts don't match max_ent_conts
         x = (
             th.tensor([1])
@@ -90,14 +89,10 @@ def test_fail_init(workers):
             )
         )
 
-        assert False
 
-    except RuntimeError as e:
-        print(str(e))
-        assert "size of tensor" in str(e)
 
     # test when min_ent_conts and max_ent_conts are missing an outer dimension
-    try:
+    with pytest.raises(sy.frameworks.torch.tensors.decorators.sensitivity.MissingEntitiesDimensionException):
 
         x = (
             th.tensor([1])
@@ -107,12 +102,8 @@ def test_fail_init(workers):
             )
         )
 
-        assert False
-    except sy.frameworks.torch.tensors.decorators.sensitivity.MissingEntitiesDimensionException as e:
-        assert True
-
     # test when a tensor's value is outside of the range specified by min_ent_conts and max_ent_conts
-    try:
+    sy.frameworks.torch.tensors.decorators.sensitivity.ValuesOutOfSpecifiedMinMaxRangeException
 
         # negative, non-positive, single entitiy, overlapping, symmetric add
         x = (
@@ -122,9 +113,6 @@ def test_fail_init(workers):
                 min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[0, 0, 0, 0]])
             )
         )
-        assert False
-    except sy.frameworks.torch.tensors.decorators.sensitivity.ValuesOutOfSpecifiedMinMaxRangeException as e:
-        assert True
 
 
 def test_add():
