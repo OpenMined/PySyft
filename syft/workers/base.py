@@ -20,7 +20,110 @@ from typing import Union
 import torch
 
 
-class BaseWorker(AbstractWorker):
+class ObjectStorage:
+    """A storage of objects identifiable by their id.
+
+    A wrapper object to a collection of objects where all objects
+    are stored using their IDs as keys.
+    """
+
+    def __init__(self):
+        self._objects = {}
+
+    def register_obj(self, obj: object, obj_id: Union[str, int] = None):
+        """Registers the specified object with the current worker node.
+
+        Selects an id for the object, assigns a list of owners, and establishes
+        whether it's a pointer or not. This method is generally not used by the
+        client and is instead used by internal processes (hooks and workers).
+
+        Args:
+            obj: A torch Tensor or Variable object to be registered.
+            obj_id (int or string): random integer between 0 and 1e10 or
+            string uniquely identifying the object.
+        """
+        if obj_id is not None:
+            obj.id = obj_id
+        self.set_obj(obj)
+
+    def de_register_obj(self, obj: object, _recurse_torch_objs: bool = True):
+        """Deregisters the specified object.
+
+        Deregister and remove attributes which are indicative of registration.
+
+        Args:
+            obj: A torch Tensor or Variable object to be deregistered.
+            _recurse_torch_objs: A boolean indicating whether the object is
+                more complex and needs to be explored. Is not supported at the
+                moment.
+        """
+        if hasattr(obj, "id"):
+            self.rm_obj(obj.id)
+        if hasattr(obj, "_owner"):
+            del obj._owner
+
+    def get_obj(self, obj_id: Union[str, int]) -> object:
+        """Returns the object from registry.
+
+        Look up an object from the registry using its ID.
+
+        Args:
+            obj_id: A string or integer id of an object to look up.
+
+        Returns:
+            Object with id equals to `obj_id`.
+        """
+
+        try:
+            obj = self._objects[obj_id]
+        except KeyError as e:
+            if obj_id not in self._objects:
+                msg = 'Object "' + str(obj_id) + '" not found on worker "' + str(self.id) + '"!!! '
+                msg += (
+                    "You just tried to interact with an object ID:"
+                    + str(obj_id)
+                    + " on "
+                    + str(self)
+                    + " which does not exist!!! "
+                )
+                msg += (
+                    "Use .send() and .get() on all your tensors to make sure they're"
+                    "on the same machines. "
+                    "If you think this tensor does exist, check the ._objects dictionary"
+                    "on the worker and see for yourself!!! "
+                    "The most common reason this error happens is because someone calls"
+                    ".get() on the object's pointer without realizing it (which deletes "
+                    "the remote object and sends it to the pointer). Check your code to "
+                    "make sure you haven't already called .get() on this pointer!!!"
+                )
+                raise KeyError(msg)
+            else:
+                raise e
+
+        return obj
+
+    def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
+        """Adds an object to the registry of objects.
+
+        Args:
+            obj: A torch or syft tensor with an id.
+        """
+        self._objects[obj.id] = obj
+
+    def rm_obj(self, remote_key: Union[str, int]):
+        """Removes an object.
+
+        Remove the object from the permanent object registry if it exists.
+
+        Args:
+            remote_key: A string or integer representing id of the object to be
+                removed.
+        """
+        if remote_key in self._objects:
+            del self._objects[remote_key]
+
+
+class BaseWorker(AbstractWorker, ObjectStorage):
     """Contains functionality to all workers.
 
     Other workers will extend this class to inherit all functionality necessary
@@ -72,7 +175,7 @@ class BaseWorker(AbstractWorker):
         auto_add: bool = True,
     ):
         """Initializes a BaseWorker."""
-
+        super().__init__()
         self.hook = hook
         self.torch = None if hook is None else hook.torch
         self.id = id
@@ -81,9 +184,6 @@ class BaseWorker(AbstractWorker):
         self.verbose = verbose
         self.auto_add = auto_add
         self.msg_history = list()
-        # A core object in every BaseWorker instantiation. A Collection of
-        # objects where all objects are stored using their IDs as keys.
-        self._objects = {}
 
         # For performance, we cache each
         self._message_router = {
@@ -403,14 +503,6 @@ class BaseWorker(AbstractWorker):
 
         return responses
 
-    def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
-        """Adds an object to the registry of objects.
-
-        Args:
-            obj: A torch or syft tensor with an id
-        """
-        self._objects[obj.id] = obj
-
     def get_obj(self, obj_id: Union[str, int]) -> object:
         """Returns the object from registry.
 
@@ -419,35 +511,7 @@ class BaseWorker(AbstractWorker):
         Args:
             obj_id: A string or integer id of an object to look up.
         """
-
-        try:
-            obj = self._objects[obj_id]
-
-        except KeyError as e:
-
-            if obj_id not in self._objects:
-                msg = 'Tensor "' + str(obj_id) + '" not found on worker "' + str(self.id) + '"!!! '
-                msg += (
-                    "You just tried to interact with an object ID:"
-                    + str(obj_id)
-                    + " on worker "
-                    + str(self.id)
-                    + " which does not exist!!! "
-                )
-                msg += (
-                    "Use .send() and .get() on all your tensors to make sure they're"
-                    "on the same machines. "
-                    "If you think this tensor does exist, check the ._objects dictionary"
-                    "on the worker and see for yourself!!! "
-                    "The most common reason this error happens is because someone calls"
-                    ".get() on the object's pointer without realizing it (which deletes "
-                    "the remote object and sends it to the pointer). Check your code to "
-                    "make sure you haven't already called .get() on this pointer!!!"
-                )
-                raise KeyError(msg)
-            else:
-                raise e
-
+        obj = super().get_obj(obj_id)
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
@@ -456,7 +520,7 @@ class BaseWorker(AbstractWorker):
                 obj.child.garbage_collect_data = False
             if isinstance(obj.child, (sy.AdditiveSharingTensor, sy.MultiPointerTensor)):
                 shares = obj.child.child
-                for worker, share in shares.items():
+                for _, share in shares.items():
                     share.child.garbage_collect_data = False
 
         return obj
@@ -487,38 +551,7 @@ class BaseWorker(AbstractWorker):
             string uniquely identifying the object.
         """
         if not self.is_client_worker:
-            if obj_id is not None:
-                obj.id = obj_id
-            self.set_obj(obj)
-
-    def de_register_obj(self, obj: object, _recurse_torch_objs: bool = True):
-        """Deregisters the specified object.
-
-        Deregister and remove attributes which are indicative of registration.
-
-        Args:
-            obj: A torch Tensor or Variable object to be deregistered.
-            _recurse_torch_objs: A boolean indicating whether the object is
-                more complex and needs to be explored. Is not supported at the
-                moment.
-        """
-
-        if hasattr(obj, "id"):
-            self.rm_obj(obj.id)
-        if hasattr(obj, "_owner"):
-            del obj._owner
-
-    def rm_obj(self, remote_key: Union[str, int]):
-        """Removes an object.
-
-        Remove the object from the permanent object registry if it exists.
-
-        Args:
-            remote_key: A string or integer representing id of the object to be
-                removed.
-        """
-        if remote_key in self._objects:
-            del self._objects[remote_key]
+            super().register_obj(obj, obj_id=obj_id)
 
     # SECTION: convenience methods for constructing frequently used messages
 
