@@ -213,8 +213,8 @@ def test_scalar_add():
     # positive, non-negative, single entitiy, overlapping, symmetric add
     x = (
         th.tensor([1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[0, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
         )
     )
@@ -229,8 +229,8 @@ def test_scalar_add():
     # negative, non-positive, single entitiy, overlapping, symmetric add
     x = (
         th.tensor([-1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[0, 0, 0, 0]])
         )
     )
@@ -245,8 +245,8 @@ def test_scalar_add():
     # negative, positive, single entitiy, overlapping, symmetric add
     x = (
         th.tensor([-1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 0, 0, 0]])
         )
     )
@@ -261,8 +261,8 @@ def test_scalar_add():
     # negative, positive, dual entitiy, overlapping, symmetric add
     x = (
         th.tensor([1])
-            .int()
-            .track_sensitivity(
+        .int()
+        .track_sensitivity(
             min_ent_conts=th.tensor([[-1, 0, 0, 0]]), max_ent_conts=th.tensor([[1, 1, 0, 0]])
         )
     )
@@ -273,6 +273,7 @@ def test_scalar_add():
     # assert y.max_vals == th.tensor([3]) #TODO: fix
     # assert y.min_vals == th.tensor([0]) #TODO: fix
     assert (y.entities == th.tensor([[1, 1, 0, 0]])).all()
+
 
 def test_sub():
     # positive, non-negative, single entitiy, overlapping, symmetric add
