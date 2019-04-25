@@ -104,6 +104,26 @@ def test_plan_built_on_method(hook):
     pointer_to_result.get()
 
 
+def test_multiple_workers(workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    @sy.func2plan
+    def plan_abs(data):
+        return data.abs()
+
+    plan_abs.send(bob, alice)
+    x_ptr = th.tensor([-1, 7, 3]).send(bob)
+    p = plan_abs(x_ptr)
+    x_abs = p.get()
+    assert (x_abs == th.tensor([1, 7, 3])).all()
+
+    x_ptr = th.tensor([-1, 9, 3]).send(alice)
+    p = plan_abs(x_ptr)
+    x_abs = p.get()
+    assert (x_abs == th.tensor([1, 9, 3])).all()
+
+
 def test_fetch_plan_built_locally(hook):
     @sy.func2plan
     def plan_mult_3(data):
