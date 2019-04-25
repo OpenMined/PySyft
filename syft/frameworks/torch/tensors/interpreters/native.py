@@ -448,10 +448,12 @@ class TorchTensor(AbstractTensor):
 
     def get(self, *args, inplace: bool = False, **kwargs):
         """Requests the tensor/chain being pointed to, be serialized and return
-            args:
+            Args:
                 args: args to forward to worker
                 inplace: if true, return the same object instance, else a new wrapper
                 kwargs: kwargs to forward to worker
+            Raises:
+                GetNotPermittedError: Raised if get is not permitted on this tensor
         """
         # Transfer the get() to the child attribute which is a pointer
 
@@ -496,6 +498,12 @@ class TorchTensor(AbstractTensor):
         Calls get() with inplace option set to True
         """
         return self.get(*args, inplace=True, **kwargs)
+
+    def allowed_to_get(self) -> bool:
+        """This function returns true always currently. Will return false in the future
+        if get is not allowed to be called on this tensor
+        """
+        return True
 
     def move(self, location):
         ptr = self.send(location)
