@@ -1,6 +1,5 @@
 from abc import ABC
 import functools
-import random
 import torch
 from typing import List
 
@@ -38,7 +37,7 @@ class AbstractTensor(ABC):
         """
         self.owner = owner
         if id is None:
-            self.id = int(10e10 * random.random())
+            self.id = sy.ID_PROVIDER.pop()
         else:
             self.id = id
         self.tags = tags
@@ -114,7 +113,7 @@ class AbstractTensor(ABC):
         wrapper.child.parent = weakref.ref(wrapper)
 
         if self.id is None:
-            self.id = int(10e10 * random.random())
+            self.id = sy.ID_PROVIDER.pop()
 
         return wrapper
 
@@ -265,7 +264,7 @@ def _apply_args(hook_self, new_tensor, owner=None, id=None):
         owner = hook_self.local_worker
 
     if id is None:
-        id = int(10e10 * random.random())
+        id = sy.ID_PROVIDER.pop()
 
     new_tensor.id = id
     new_tensor.owner = owner

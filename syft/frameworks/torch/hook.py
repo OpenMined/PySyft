@@ -1,6 +1,5 @@
 import inspect
 import re
-import random
 import logging
 import types
 import copy
@@ -11,6 +10,7 @@ from functools import wraps
 
 import syft
 from syft import workers
+
 from syft.workers import BaseWorker
 from .tensors.interpreters import TorchTensor
 from .tensors.interpreters import PointerTensor
@@ -785,7 +785,7 @@ class TorchHook:
         @property
         def id(self):
             if not hasattr(self, "_id"):
-                self._id = int(10e10 * random.random())
+                self._id = syft.ID_PROVIDER.pop()
             return self._id
 
         @id.setter

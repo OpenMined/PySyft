@@ -1,4 +1,3 @@
-import random
 import weakref
 import torch
 
@@ -139,7 +138,7 @@ class TorchTensor(AbstractTensor):
             try:
                 return self._id
             except:
-                self._id = int(10e10 * random.random())
+                self._id = sy.ID_PROVIDER.pop()
                 return self._id
 
     @id.setter
@@ -423,7 +422,7 @@ class TorchTensor(AbstractTensor):
             if location.id != self.owner.id:
                 ptr_id = self.id
             else:
-                ptr_id = int(10e10 * random.random())
+                ptr_id = sy.ID_PROVIDER.pop()
 
         if shape is None:
             shape = self.shape
