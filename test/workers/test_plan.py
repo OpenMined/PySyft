@@ -103,6 +103,7 @@ def test_plan_built_on_method(hook):
     pointer_to_result = net(pointer_to_data)
     pointer_to_result.get()
 
+
 # def test_multiple_workers(workers):
 #     bob = workers["bob"]
 #     alice = workers["alice"]
@@ -177,4 +178,3 @@ def test_plan_built_on_method(hook):
 
 #     x = th.tensor([-1, 2, 3])
 #     assert (deserialized_plan(x) == th.tensor([-42, 24, 46])).all()
-
