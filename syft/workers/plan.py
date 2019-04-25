@@ -358,12 +358,19 @@ class Plan(ObjectStorage):
 
         return sy.serde.serialize(None)
 
-    def request_execute_plan(self, response_ids: List[Union[str, int]], *args, **kwargs) -> object:
+    def request_execute_plan(
+        self,
+        location: "sy.workers.BaseWorker",
+        response_ids: List[Union[str, int]],
+        *args,
+        **kwargs,
+    ) -> object:
         """Requests plan execution.
 
         Send a request to execute the plan on the remote location.
 
         Args:
+            location: to which worker the request should be sent
             response_ids: Where the plan result should be stored remotely.
             args: Arguments used as input data for the plan.
             kwargs: Named arguments used as input data for the plan.
@@ -381,15 +388,15 @@ class Plan(ObjectStorage):
         )
         return response
 
-    def send(self, location: "sy.workers.BaseWorker"):
+    def send(self, *locations):
         """Mock send function that only specify that the Plan will have to be sent to location.
 
-        When one calls .send(), this doesn't trigger a call to a remote worker, but
+        When one calls .send(), this doesn't trigger a call to remote workers, but
         just stores "a promise" that it will be sent (with _send()) later when the plan in
         called (and built)
 
         Args:
-            location: Worker where plan should be sent to.
+            location: Workers where plan should be sent to.
         """
         self.locations += [self.owner.get_worker(location).id for location in locations]
         # rm duplicates
