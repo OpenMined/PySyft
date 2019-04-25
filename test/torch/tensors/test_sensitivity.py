@@ -3,6 +3,7 @@ import syft as sy
 
 import pytest
 
+
 def test_init(workers):
 
     # Initialization Test A: making sure sensitivity, max_vals, min_vals, and entities
@@ -78,7 +79,6 @@ def test_fail_init(workers):
             )
         )
 
-
     with pytest.raises(RuntimeError):
         # test when min_ent_conts don't match max_ent_conts
         x = (
@@ -89,10 +89,10 @@ def test_fail_init(workers):
             )
         )
 
-
-
     # test when min_ent_conts and max_ent_conts are missing an outer dimension
-    with pytest.raises(sy.frameworks.torch.tensors.decorators.sensitivity.MissingEntitiesDimensionException):
+    with pytest.raises(
+        sy.frameworks.torch.tensors.decorators.sensitivity.MissingEntitiesDimensionException
+    ):
 
         x = (
             th.tensor([1])
@@ -103,7 +103,9 @@ def test_fail_init(workers):
         )
 
     # test when a tensor's value is outside of the range specified by min_ent_conts and max_ent_conts
-    with pytest.raises(sy.frameworks.torch.tensors.decorators.sensitivity.ValuesOutOfSpecifiedMinMaxRangeException):
+    with pytest.raises(
+        sy.frameworks.torch.tensors.decorators.sensitivity.ValuesOutOfSpecifiedMinMaxRangeException
+    ):
 
         # negative, non-positive, single entitiy, overlapping, symmetric add
         x = (
