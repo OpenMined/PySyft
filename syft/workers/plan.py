@@ -7,6 +7,10 @@ from syft.codes import MSGTYPE
 import syft as sy
 
 
+from typing import List
+from typing import Union
+
+
 def make_plan(plan_blueprint):
     """Creates a plan from a function.
 
@@ -22,7 +26,7 @@ def func2plan(plan_blueprint):
     Converts a function containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
     """
-    plan = Plan(owner=sy.local_worker, id=sy.ID_PROVIDER.pop(),, name=plan_blueprint.__name__)
+    plan = Plan(owner=sy.local_worker, id=sy.ID_PROVIDER.pop(), name=plan_blueprint.__name__)
     plan.blueprint = plan_blueprint
     return plan
 
