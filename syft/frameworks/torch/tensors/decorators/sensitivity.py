@@ -440,6 +440,9 @@ class SensitivityTensor(AbstractTensor):
             """
         return other.__gt__(self)
 
+    def eq(self, other):
+        return self.__eq__(other)
+
     def __eq__(self, other):
         """returns a binary tensor indicating whether values are equal to each other - tracking sensitivity
 
@@ -452,7 +455,7 @@ class SensitivityTensor(AbstractTensor):
 
             new_vals = self.child == other.child
 
-            could_self_and_other_overlap = self._could_overlap_with(other)
+            could_self_and_other_overlap = self._could_overlap_with(other) * self.entities.byte()
 
             new_max_ent_conts = could_self_and_other_overlap
             new_min_ent_conts = could_self_and_other_overlap * 0

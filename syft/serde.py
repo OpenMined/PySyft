@@ -1329,7 +1329,7 @@ simplifiers = {
     VirtualWorker: [16, _simplify_worker],
     SensitivityTensor: [17, _simplify_sensitivity_tensor],
     str: [18, _simplify_str],
-    GetNotPermittedError: [20, _simplify_GetNotPermittedError],  
+    GetNotPermittedError: [20, _simplify_GetNotPermittedError],
 }
 
 forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
@@ -1383,5 +1383,5 @@ detailers = [
     _detail_sensitivity_tensor,
     _detail_str,
     _force_full_detail_worker,
-    _detail_GetNotPermittedError,  
+    _detail_GetNotPermittedError,
 ]
