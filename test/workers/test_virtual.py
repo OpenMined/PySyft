@@ -1,4 +1,3 @@
-import random
 from time import time
 from unittest.mock import patch
 
@@ -24,7 +23,7 @@ def test_send_msg():
     me = sy.torch.hook.local_worker
 
     # create a new worker (to send the object to)
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
 
     # initialize the object and save it's id
@@ -46,7 +45,7 @@ def test_send_msg_using_tensor_api():
     """
 
     # create worker to send object to
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
 
     # create a tensor to send (default on local_worker)
@@ -73,7 +72,7 @@ def test_recv_msg():
     # TEST 1: send tensor to alice
 
     # create a worker to send data to
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     alice = VirtualWorker(sy.torch.hook, id=f"alice{worker_id}")
 
     # create object to send
@@ -121,9 +120,9 @@ def tests_worker_convenience_methods():
     """
 
     me = sy.torch.hook.local_worker
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     alice = VirtualWorker(sy.torch.hook, id=f"alice{worker_id}")
     obj = torch.Tensor([100, 100])
 
@@ -152,7 +151,7 @@ def tests_worker_convenience_methods():
 
 
 def test_search():
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
 
     x = (
