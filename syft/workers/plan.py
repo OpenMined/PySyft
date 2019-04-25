@@ -12,32 +12,33 @@ from typing import Union
 
 
 def make_plan(plan_blueprint):
-    """For folks who would prefer to not use a decorator, they can use this function"""
+    """Creates a plan from a function.
+
+    For folks who would prefer to not use a decorator, they can use this function
+    to create a plan.
+    """
     return func2plan(plan_blueprint)
 
 
 def func2plan(plan_blueprint):
-    """
-    the @func2plan decorator - converts a function of pytorch code into a plan object
-    which can be sent to any arbitrary worker.
-    """
+    """Converts a function to a plan.
 
+    Converts a function containing sequential pytorch code into
+    a plan object which can be sent to any arbitrary worker.
+    """
     plan = Plan(owner=sy.local_worker, id=random.randint(0, 1e10), name=plan_blueprint.__name__)
-
-    plan.plan_blueprint = plan_blueprint
-
+    plan.blueprint = plan_blueprint
     return plan
 
 
 def method2plan(plan_blueprint):
-    """
-    the @method2plan decorator - converts a method containing sequential pytorch code into
+    """Converts a method to a plan.
+
+    Converts a method containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
     """
-
     plan = Plan(owner=sy.local_worker, id=random.randint(0, 1e10), name=plan_blueprint.__name__)
-
-    plan.plan_blueprint = plan_blueprint
+    plan.blueprint = plan_blueprint
 
     @property
     def method(self: object) -> Plan:
@@ -95,7 +96,7 @@ class Plan(ObjectStorage):
         # to be retrieved by search functions
         self.tags = None
         self.description = None
-        self.plan_blueprint = None
+        self.blueprint = None
 
         # For methods
         self.self = None
@@ -151,7 +152,7 @@ class Plan(ObjectStorage):
                 self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
-        res_ptr = self.plan_blueprint(*local_args)
+        res_ptr = self.blueprint(*local_args)
         res_ptr.child.garbage_collect_data = False
 
         # The id where the result should be stored
@@ -162,7 +163,7 @@ class Plan(ObjectStorage):
 
     def copy(self):
         plan = Plan(int(10e10 * random.random()), self.owner, self.name)
-        plan.plan_blueprint = self.plan_blueprint
+        plan.blueprint = self.blueprint
         plan.readable_plan = self.readable_plan
         return plan
 
