@@ -1129,7 +1129,7 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
     arg_ids = _detail(worker, arg_ids)
     result_ids = _detail(worker, result_ids)
 
-    plan = syft.Plan(hook=sy.hook, owner=worker, id=id)
+    plan = syft.Plan(owner=worker, id=id)
     plan.arg_ids = arg_ids
     plan.result_ids = result_ids
     if isinstance(name, bytes):

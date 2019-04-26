@@ -188,6 +188,8 @@ class Plan(ObjectStorage):
         plan = Plan(sy.ID_PROVIDER.pop(), self.owner, self.name)
         plan.blueprint = self.blueprint
         plan.readable_plan = self.readable_plan
+        plan.arg_ids = self.arg_ids
+        plan.result_ids = self.result_ids
         return plan
 
     def replace_ids(self, from_ids: List[Union[str, int]], to_ids: List[Union[str, int]]):
@@ -292,7 +294,7 @@ class Plan(ObjectStorage):
     def _execute_plan(self):
         for message in self.readable_plan:
             bin_message = sy.serde.serialize(message, simplified=True)
-            x = self.owner.recv_msg(bin_message)
+            _ = self.owner.recv_msg(bin_message)
 
     def _get_plan_output(self, result_ids, return_ptr=False):
         responses = []
@@ -348,7 +350,6 @@ class Plan(ObjectStorage):
         # if the plan is not to be sent but is not local (ie owned by the local worker)
         # then it has been requested to be executed, so we update the plan with the
         # correct input and output ids and we run it
-
         elif len(self.locations) == 0 and self.owner != sy.hook.local_worker:
             self._update_args(args, result_ids)
             self._execute_plan()
