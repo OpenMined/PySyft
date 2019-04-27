@@ -1,53 +1,44 @@
-import random
-
+import copy
 import torch
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.workers.base import BaseWorker
+from syft.workers.base import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
+
 
 from typing import List
 from typing import Union
 
 
 def make_plan(plan_blueprint):
-    """For folks who would prefer to not use a decorator, they can use this function"""
+    """Creates a plan from a function.
+
+    For folks who would prefer to not use a decorator, they can use this function
+    to create a plan.
+    """
     return func2plan(plan_blueprint)
 
 
 def func2plan(plan_blueprint):
+    """Converts a function to a plan.
+
+    Converts a function containing sequential pytorch code into
+    a plan object which can be sent to any arbitrary worker.
     """
-    the @func2plan decorator - converts a function of pytorch code into a plan object
-    which can be sent to any arbitrary worker.
-    """
-
-    plan = Plan(
-        hook=sy.local_worker.hook,
-        owner=sy.local_worker,
-        id=random.randint(0, 1e10),
-        name=plan_blueprint.__name__,
-    )
-
-    plan.plan_blueprint = plan_blueprint
-
+    plan = Plan(owner=sy.local_worker, id=sy.ID_PROVIDER.pop(), name=plan_blueprint.__name__)
+    plan.blueprint = plan_blueprint
     return plan
 
 
 def method2plan(plan_blueprint):
-    """
-    the @method2plan decorator - converts a method containing sequential pytorch code into
+    """Converts a method to a plan.
+
+    Converts a method containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
     """
-
-    plan = Plan(
-        hook=sy.local_worker.hook,
-        owner=sy.local_worker,
-        id=random.randint(0, 1e10),
-        name=plan_blueprint.__name__,
-    )
-
-    plan.plan_blueprint = plan_blueprint
+    plan = Plan(owner=sy.local_worker, id=sy.ID_PROVIDER.pop(), name=plan_blueprint.__name__)
+    plan.blueprint = plan_blueprint
 
     @property
     def method(self: object) -> Plan:
@@ -77,42 +68,60 @@ def method2plan(plan_blueprint):
     return method
 
 
-class Plan(BaseWorker):
-    """This worker does not send messages or execute any commands. Instead,
-    it simply records messages that are sent to it such that message batches
-    (called 'Plans') can be created and sent once."""
+class Plan(ObjectStorage):
+    """A Plan store a sequence of torch operations, just like a function.
 
-    def __init__(self, hook, owner, name="", *args, **kwargs):
-        super().__init__(hook=hook, *args, **kwargs)
+    A Plan is intended to store a sequence of torch operations, just like a function,
+    but it allows to send this sequence of operations to remote workers and to keep a
+    reference to it. This way, to compute remotely this sequence of operations on some remote
+    input referenced through pointers, instead of sending multiple messages you need now to send a
+    single message with the references of the plan and the pointers.
+    """
+
+    def __init__(
+        self, id: Union[str, int], owner: "sy.workers.BaseWorker", name: str = "", *args, **kwargs
+    ):
+        super().__init__()
+
         # Plan instance info
+        self.id = id
         self.name = name
         self.owner = owner
+
         # Info about the plan stored
         self.plan = list()
         self.readable_plan = list()
         self.arg_ids = list()
         self.result_ids = list()
         self.owner_when_built = None
-        # Pointing info towards a remote plan
-        self.location = None
-        self.ptr_plan = None
 
-        # Planworkers are registered by other worker, they must have information
-        # to be retrieved by search functions
+        # Pointing info towards a remote plan
+        self.locations = []
+        self.ptr_plans = {}
+
         self.tags = None
         self.description = None
+        self.blueprint = None
+
         # For methods
         self.self = None
 
-    def _send_msg(self, message, location):
-        return location._recv_msg(message)
+    @property
+    def _known_workers(self):
+        return self.owner._known_workers
 
-    def _recv_msg(self, bin_message):
-        """
-        Upon reception, the PlanWorker store in the plan all commands which can be
-        executed lazily
-        :param bin_message: the message of a command received
-        :return: the None message serialized to specify the command was received
+    def send_msg(self, *args, **kwargs):
+        return self.owner.send_msg(*args, **kwargs)
+
+    def request_obj(self, *args, **kwargs):
+        return self.owner.request_obj(*args, **kwargs)
+
+    def _recv_msg(self, bin_message: bin):
+        """Upon reception, a Plan stores all commands which can be executed lazily.
+        Args:
+            bin_message: the message of a command received.
+        Returns:
+            The None message serialized to specify the command was received.
         """
         (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, detail=False)
 
@@ -127,19 +136,22 @@ class Plan(BaseWorker):
 
         return sy.serde.serialize(None)
 
-    def build_plan(self, args):
-        """
-        The plan must be built with some input data, here args. When they
+    def build_plan(self, args: List):
+        """Builds a plan.
+
+        The plan must be built with some input data, here `args`. When they
         are provided, they are sent to the plan worker, which executes its
         blueprint: each command of the blueprint is catched by _recv_msg
-        and is used to fill the plan
-        :param args: the input data
+        and is used to fill the plan.
+
+        Args:
+            param: Input data.
         """
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
         self.arg_ids = list()
         local_args = list()
-        for i, arg in enumerate(args):
+        for arg in args:
             # Send only tensors (in particular don't send the "self" for methods)
             if isinstance(arg, torch.Tensor):
                 self.owner.register_obj(arg)
@@ -148,8 +160,12 @@ class Plan(BaseWorker):
                 self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
-        res_ptr = self.plan_blueprint(*local_args)
+        res_ptr = self.blueprint(*local_args)
         res_ptr.child.garbage_collect_data = False
+
+        worker = self.find_location(args)
+
+        self.replace_worker_ids(worker.id, self.owner.id)
 
         # The id where the result should be stored
         self.result_ids = [res_ptr.id_at_location]
@@ -157,16 +173,29 @@ class Plan(BaseWorker):
         # Store owner that built the plan
         self.owner_when_built = self.owner
 
+    def find_location(self, args):
+        """
+        Return location if args contain pointers else the local worker
+        """
+        for arg in args:
+            if isinstance(arg, torch.Tensor):
+                if hasattr(arg, "child") and isinstance(arg.child, sy.PointerTensor):
+                    return arg.location
+        return sy.hook.local_worker
+
     def copy(self):
-        plan = Plan(self.hook, self.owner, self.name, id=int(10e10 * random.random()))
-        plan.plan_blueprint = self.plan_blueprint
+        """Creates a copy of a plan."""
+        plan = Plan(sy.ID_PROVIDER.pop(), self.owner, self.name)
+        plan.blueprint = self.blueprint
+        plan.readable_plan = self.readable_plan
         return plan
 
-    def replace_ids(self, from_ids, to_ids):
-        """
-        Replace pairs of tensor ids in the plan stored
-        :param from_ids: the left part of the pair: ids to change
-        :param to_ids: the right part of the pair: ids to replace with
+    def replace_ids(self, from_ids: List[Union[str, int]], to_ids: List[Union[str, int]]):
+        """Replaces pairs of tensor ids in the plan stored.
+
+        Args:
+            from_ids: the left part of the pair: ids to change.
+            to_ids: the right part of the pair: ids to replace with.
         """
         # for every pair of id
         for i in range(len(from_ids)):
@@ -182,10 +211,14 @@ class Plan(BaseWorker):
                 )
         return self
 
-    def replace_worker_ids(self, from_worker_id, to_worker_id):
+    def replace_worker_ids(self, from_worker_id: Union[str, int], to_worker_id: Union[str, int]):
         """
         Replace occurrences of from_worker_id by to_worker_id in the plan stored
-        Works also if those ids are encoded in bytes (for string)
+        Works also if those ids are encoded in bytes (for string).
+
+        Args:
+            from_worker_id: Id of the the replaced worker.
+            to_worker_id: Id of the new worker.
         """
         for from_id, to_id in [
             (from_worker_id, to_worker_id),
@@ -223,20 +256,25 @@ class Plan(BaseWorker):
         return _obj
 
     def __call__(self, *args, **kwargs):
-        """
-        Call a plan execution with some arguments, and specify the ids where the result
-        should be stored
-        :return: The pointer to the result of the execution if the plan was already sent,
-        else the None message serialized.
+        """Calls a plan.
+
+        Calls a plan execution with some arguments, and specify the ids where the result
+        should be stored.
+
+        Returns:
+            The pointer to the result of the execution if the plan was already sent,
+            else the None message serialized.
         """
         assert len(kwargs) == 0, "kwargs not supported for plan"
-        result_ids = [random.randint(0, 1e10)]
+        result_ids = [sy.ID_PROVIDER.pop()]
         # Support for method hooked in plans
         if self.self is not None:
             args = [self.self] + list(args)
         return self.execute_plan(args, result_ids)
 
-    def _update_args(self, args, result_ids):
+    def _update_args(
+        self, args: List[Union[torch.Tensor, AbstractTensor]], result_ids: List[Union[str, int]]
+    ):
         """Replace args and result_ids with the ones given.
         Updates the arguments ids and result ids used to execute
         the plan.
@@ -260,10 +298,7 @@ class Plan(BaseWorker):
         responses = []
         for return_id in result_ids:
             response = sy.PointerTensor(
-                location=self.owner,
-                id_at_location=return_id,
-                owner=self,
-                id=int(10e10 * random.random()),
+                location=self.owner, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
             )
             responses.append(response if return_ptr else response.get())
 
@@ -273,104 +308,141 @@ class Plan(BaseWorker):
         return responses
 
     def _execute_plan_locally(self, result_ids, *args, **kwargs):
-        if self.owner != self.owner_when_built:
-            self.build_plan(args)
         self._update_args(args, result_ids)
         self._execute_plan()
         responses = self._get_plan_output(result_ids)
         return responses
 
-    def execute_plan(self, args, result_ids):
-        """
-        Control local or remote plan execution.
+    def execute_plan(self, args: List, result_ids: List[Union[str, int]]):
+        """Controls local or remote plan execution.
+
         If the plan doesn't have the plan built, first build it using the blueprint.
         Then if it has a remote location, send the plan to the remote location only the
         first time, request a remote plan execution with specific pointers and ids for
         storing the result, and return a pointer to the result of the execution.
         If the plan is local: update the plan with the result_ids and args ids given,
         run the plan and return the None message serialized.
+
+        Args:
+            args: Arguments used to run plan.
+            result_ids: List of ids where the results will be stored.
         """
         # We build the plan only if needed
         first_run = self.readable_plan == []
         if first_run:
             self.build_plan(args)
 
-        # If there is a location we need to send the plan to
-        # we request the location to execute the plan
-        if self.location:
-            if self.ptr_plan is None:
-                self.ptr_plan = self._send(self.location)
-            response = self.request_execute_plan(result_ids, *args)
+        if len(self.locations) > 0:
+            worker = self.find_location(args)
+            if worker.id not in self.ptr_plans.keys():
+                self.ptr_plans[worker.id] = self._send(worker)
+
+            response = self.request_execute_plan(worker, result_ids, *args)
+
             return response
 
         # If the plan is local, we execute the plan and return the response
-        if not self.location and self.owner == sy.hook.local_worker:
+        if len(self.locations) == 0 and self.owner == sy.hook.local_worker:
             return self._execute_plan_locally(result_ids, *args)
 
         # if the plan is not to be sent but is not local (ie owned by the local worker)
-        # then it has been request to execute, so we update the plan with the correct
-        # input and output ids and we run it
-        elif not self.location and self.owner != sy.hook.local_worker:
+        # then it has been requested to be executed, so we update the plan with the
+        # correct input and output ids and we run it
+
+        elif len(self.locations) == 0 and self.owner != sy.hook.local_worker:
             self._update_args(args, result_ids)
             self._execute_plan()
 
         return sy.serde.serialize(None)
 
-    def request_execute_plan(self, response_ids, *args, **kwargs):
-        """
-        Send a request to execute the plan on the remote location
-        :param response_ids: where the plan result should be stored remotely
-        :param args: the arguments use as input data for the plan
-        :return:
+    def request_execute_plan(
+        self,
+        location: "sy.workers.BaseWorker",
+        response_ids: List[Union[str, int]],
+        *args,
+        **kwargs,
+    ) -> object:
+        """Requests plan execution.
+
+        Send a request to execute the plan on the remote location.
+
+        Args:
+            location: to which worker the request should be sent
+            response_ids: Where the plan result should be stored remotely.
+            args: Arguments used as input data for the plan.
+            kwargs: Named arguments used as input data for the plan.
+
+        Returns:
+            Execution response.
+
         """
         args = [arg for arg in args if isinstance(arg, torch.Tensor)]
         args = [args, response_ids]
-        command = ("execute_plan", self.ptr_plan, args, kwargs)
+        command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
 
         response = self.owner.send_command(
-            message=command, recipient=self.location, return_ids=response_ids
+            message=command, recipient=location, return_ids=response_ids
         )
         return response
 
-    def send(self, location):
-        """
-        Mock send function that only specify that the Plan will have to be sent to location.
-        In a way, when one calls .send(), this doesn't trigger a call to a remote worker, but
+    def send(self, *locations):
+        """Mock send function that only specify that the Plan will have to be sent to location.
+
+        When one calls .send(), this doesn't trigger a call to remote workers, but
         just stores "a promise" that it will be sent (with _send()) later when the plan in
         called (and built)
+
+        Args:
+            location: Workers where plan should be sent to.
         """
-        if self.location is not None:
-            raise NotImplementedError(
-                "Can't send a Plan which already has a location, use .get() before"
-            )
-        else:
-            self.location = location
+        self.locations += [self.owner.get_worker(location).id for location in locations]
+        # rm duplicates
+        self.locations = list(set(self.locations))
         return self
 
-    def _send(self, location):
-        """
-        Real send function that sends the Plan instance with its plan to location, only
-        when the plan is built and that an execution is called, namely when it is necessary
-        to send it
-        """
-        self.replace_worker_ids(self.owner.id, self.location.id)
-        return self.owner.send(obj=self, workers=location)
+    def _send(self, location: "sy.workers.BaseWorker"):
+        """Real send function that sends the Plan instance with its plan to location.
 
-    def get(self):
+        Only called when the plan is built and that an execution is called, namely when it is
+        necessary to send it.
+
+        Args:
+            location: Worker where plan should be sent to.
         """
-        Mock get function: no call to remote worker is made, we just erase the information
-        linking this plan to that remote worker.
+
+        readable_plan_original = copy.deepcopy(self.readable_plan)
+        for worker_id in [self.owner.id] + self.locations:
+            self.replace_worker_ids(worker_id, location.id)
+        _ = self.owner.send(self, workers=location)
+
+        # Deep copy the plan without using deep copy
+        pointer = sy.serde._detail_plan(self.owner, sy.serde._simplify_plan(self))
+
+        # readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
+        self.readable_plan = readable_plan_original
+        return pointer
+
+    def get(self) -> "Plan":
+        """Mock get function.
+
+        No call to remote worker is done, we just erase the
+        information linking this plan to that remote worker.
+
+        Returns:
+            Plan.
         """
-        self.replace_worker_ids(self.location.id, self.owner.id)
-        self.location = None
-        self.ptr_plan = None
+        # self.replace_worker_ids(self.location.id, self.owner.id)
+
+        self.locations = []
+        self.ptr_plans = {}
+
         return self
 
-    def describe(self, description):
+    def describe(self, description: str) -> "Plan":
         self.description = description
         return self
 
-    def tag(self, *_tags):
+    def tag(self, *_tags: List) -> "Plan":
         if self.tags is None:
             self.tags = set()
 
@@ -389,8 +461,9 @@ class Plan(BaseWorker):
         out += " id:" + str(self.id)
         out += " owner:" + str(self.owner.id)
 
-        if self.location:
-            out += " location:" + str(self.location.id)
+        if len(self.locations):
+            for location in self.locations:
+                out += " location:" + str(location)
 
         if self.tags is not None and len(self.tags):
             out += " Tags:"
