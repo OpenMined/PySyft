@@ -1129,14 +1129,17 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
     arg_ids = _detail(worker, arg_ids)
     result_ids = _detail(worker, result_ids)
 
-    plan = syft.Plan(owner=worker, id=id)
-    plan.arg_ids = arg_ids
-    plan.result_ids = result_ids
+    plan = syft.Plan(
+        owner=worker,
+        id=id,
+        arg_ids=arg_ids,
+        result_ids=result_ids,
+        readable_plan=_detail(worker, readable_plan),
+    )
     if isinstance(name, bytes):
         plan.name = name.decode("utf-8")
     plan.tags = _detail(worker, tags)
     plan.description = _detail(worker, description)
-    plan.readable_plan = _detail(worker, readable_plan)
 
     return plan
 

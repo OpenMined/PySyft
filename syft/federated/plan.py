@@ -79,7 +79,16 @@ class Plan(ObjectStorage):
     """
 
     def __init__(
-        self, id: Union[str, int], owner: "sy.workers.BaseWorker", name: str = "", *args, **kwargs
+        self,
+        id: Union[str, int],
+        owner: "sy.workers.BaseWorker",
+        name: str = "",
+        arg_ids: List[Union[str, int]] = None,
+        result_ids: List[Union[str, int]] = None,
+        blueprint: callable = None,
+        readable_plan: List = None,
+        *args,
+        **kwargs,
     ):
         super().__init__()
 
@@ -90,9 +99,9 @@ class Plan(ObjectStorage):
 
         # Info about the plan stored
         self.plan = list()
-        self.readable_plan = list()
-        self.arg_ids = list()
-        self.result_ids = list()
+        self.readable_plan = readable_plan if readable_plan else []
+        self.arg_ids = arg_ids if arg_ids else []
+        self.result_ids = result_ids if result_ids else []
         self.owner_when_built = None
 
         # Pointing info towards a remote plan
@@ -101,7 +110,7 @@ class Plan(ObjectStorage):
 
         self.tags = None
         self.description = None
-        self.blueprint = None
+        self.blueprint = blueprint
 
         # For methods
         self.self = None
@@ -185,20 +194,43 @@ class Plan(ObjectStorage):
 
     def copy(self):
         """Creates a copy of a plan."""
-        plan = Plan(sy.ID_PROVIDER.pop(), self.owner, self.name)
-        plan.blueprint = self.blueprint
-        plan.readable_plan = self.readable_plan
-        plan.arg_ids = self.arg_ids
-        plan.result_ids = self.result_ids
+        plan = Plan(
+            sy.ID_PROVIDER.pop(),
+            self.owner,
+            self.name,
+            arg_ids=self.arg_ids,
+            result_ids=self.result_ids,
+            readable_plan=self.readable_plan,
+            blueprint=self.blueprint,
+        )
+        plan.replace_ids(
+            from_ids=plan.arg_ids, to_ids=plan.arg_ids, from_worker=self.id, to_worker=plan.id
+        )
+        plan.replace_ids(
+            from_ids=plan.result_ids, to_ids=plan.result_ids, from_worker=self.id, to_worker=plan.id
+        )
         return plan
 
-    def replace_ids(self, from_ids: List[Union[str, int]], to_ids: List[Union[str, int]]):
+    def replace_ids(
+        self,
+        from_ids: List[Union[str, int]],
+        to_ids: List[Union[str, int]],
+        from_worker: Union[str, int] = None,
+        to_worker: Union[str, int] = None,
+    ):
         """Replaces pairs of tensor ids in the plan stored.
 
         Args:
-            from_ids: the left part of the pair: ids to change.
-            to_ids: the right part of the pair: ids to replace with.
+            from_ids: The left part of the pair: ids to change.
+            to_ids: The right part of the pair: ids to replace with.
+            from_worker: The previous worker that built the plan.
+            to_worker: The new worker that is running the plan.
         """
+        if not from_worker:
+            from_worker = self.id
+        if not to_worker:
+            to_worker = self.owner.id
+
         # for every pair of id
         for i in range(len(from_ids)):
             # for every message of the plan
@@ -208,8 +240,8 @@ class Plan(ObjectStorage):
                     obj=msg,
                     change_id=from_ids[i],
                     to_id=to_ids[i],
-                    from_worker=self.id,
-                    to_worker=self.owner.id,
+                    from_worker=from_worker,
+                    to_worker=to_worker,
                 )
         return self
 
