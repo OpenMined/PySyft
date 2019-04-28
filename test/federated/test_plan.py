@@ -215,7 +215,7 @@ def test_plan_execute_remotelly(hook, start_proc):
     x = th.tensor([-1, 2, 3])
     my_plan(x)
 
-    kwargs = {"id": "fed1", "host": "localhost", "port": 8765, "hook": hook}
+    kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8767, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
