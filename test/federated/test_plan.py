@@ -10,6 +10,15 @@ import torch.nn.functional as F
 from syft.serde import deserialize
 from syft.serde import serialize
 
+from multiprocessing import Process
+import time
+
+import torch
+
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.workers import WebsocketClientWorker
+from syft.workers import WebsocketServerWorker
+
 
 def test_plan_built_locally(hook):
     # To run a plan locally the local worker can't be a client worker,
@@ -189,3 +198,33 @@ def test_plan_serde(hook):
 
     x = th.tensor([-1, 2, 3])
     assert (deserialized_plan(x) == th.tensor([-42, 24, 46])).all()
+
+
+def test_plan_execute_remotelly(hook, start_proc):
+    """Test plan execution remotelly."""
+    hook.local_worker.is_client_worker = False
+
+    @sy.func2plan
+    def my_plan(data):
+        x = data * 2
+        y = (x - 2) * 10
+        return x + y
+
+    # TODO: remove this line when issue #2062 is fixed
+    # Force to build plan
+    x = th.tensor([-1, 2, 3])
+    my_plan(x)
+
+    kwargs = {"id": "fed1", "host": "localhost", "port": 8765, "hook": hook}
+    server = start_proc(WebsocketServerWorker, kwargs)
+
+    time.sleep(0.1)
+    socket_pipe = WebsocketClientWorker(**kwargs)
+
+    plan_ptr = my_plan.send(socket_pipe)
+    x_ptr = x.send(socket_pipe)
+    plan_res = plan_ptr(x_ptr).get()
+
+    assert (plan_res == th.tensor([-42, 24, 46])).all()
+
+    server.terminate()
