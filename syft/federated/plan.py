@@ -2,7 +2,7 @@ import copy
 import torch
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.workers.base import ObjectStorage
+from syft.generic import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
 

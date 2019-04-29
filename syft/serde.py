@@ -1139,7 +1139,7 @@ def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> t
         loss_plan=detailed_loss_plan,
         batch_size=batch_size,
         epochs=epochs,
-        optimizer=optimizer,
+        optimizer=_detail(worker, optimizer),
         lr=lr,
     )
 

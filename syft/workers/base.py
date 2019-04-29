@@ -5,6 +5,7 @@ import syft as sy
 
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.federated import FederatedClient
 from syft.generic import ObjectStorage
 from syft.generic import IdProvider
 from syft.exceptions import GetNotPermittedError
@@ -19,7 +20,7 @@ from typing import Union
 import torch
 
 
-class BaseWorker(AbstractWorker, ObjectStorage):
+class BaseWorker(AbstractWorker, FederatedClient):
     """Contains functionality to all workers.
 
     Other workers will extend this class to inherit all functionality necessary
@@ -72,6 +73,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     ):
         """Initializes a BaseWorker."""
         super().__init__()
+
         self.hook = hook
         self.torch = None if hook is None else hook.torch
         self.id = id
@@ -244,10 +246,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Each method corresponds to a MsgType enum.
 
     def send(
-        self,
-        obj: Union[torch.Tensor, AbstractTensor],
-        workers: "BaseWorker",
-        ptr_id: Union[str, int] = None,
+        self, obj: object, workers: "BaseWorker", ptr_id: Union[str, int] = None
     ) -> PointerTensor:
         """Sends tensor to the worker(s).
 
@@ -256,7 +255,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         remote storage address.
 
         Args:
-            tensor: A syft/torch tensor/object object to send.
+            obj: An object to send.
             workers: A BaseWorker object representing the worker(s) that will
                 receive the object.
             ptr_id: An optional string or integer indicating the remote id of

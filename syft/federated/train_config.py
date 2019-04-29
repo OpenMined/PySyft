@@ -12,7 +12,6 @@ from syft.federated import Plan
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.workers import AbstractWorker
-from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
 
@@ -55,7 +54,7 @@ class TrainConfig:
         self.owner = owner if owner else sy.hook.local_worker
         self.id = id if id is not None else sy.ID_PROVIDER.pop()
 
-        self._model = model
+        self.model = model
         self.forward_plan = model.forward if model else forward_plan
         self.loss_plan = loss_plan
         self.batch_size = 32
@@ -77,7 +76,7 @@ class TrainConfig:
         out += ">"
         return out
 
-    def send(self, location: syft.workers.BaseWorker) -> weakref:
+    def send(self, location: "syft.workers.BaseWorker") -> weakref:
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes
@@ -95,10 +94,10 @@ class TrainConfig:
         """
 
         # Send Model
-        self._model.send(location)
+        self.model.send(location)
         # Send plans and cache them so they can be reused
         # when this trainConfig instance is sent to location
-        self.forward_plan = self._model.forward.send(location)
+        self.forward_plan = self.model.forward.send(location)
         self.loss_plan = self.loss_plan.send(location)
 
         # Send train configuration itself
