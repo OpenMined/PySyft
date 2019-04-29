@@ -200,8 +200,8 @@ def test_plan_serde(hook):
     assert (deserialized_plan(x) == th.tensor([-42, 24, 46])).all()
 
 
-def test_plan_execute_remotelly(hook, start_proc):
-    """Test plan execution remotelly."""
+def test_plan_execute_remotely(hook, start_proc):
+    """Test plan execution remotely."""
     hook.local_worker.is_client_worker = False
 
     @sy.func2plan
