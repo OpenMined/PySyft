@@ -19,6 +19,7 @@ from syft.federated import Plan
 from syft.federated import func2plan
 from syft.federated import method2plan
 from syft.federated import make_plan
+from syft.federated import TrainConfig
 
 # Import Worker Types
 from syft.workers import VirtualWorker
