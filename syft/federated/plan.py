@@ -99,9 +99,9 @@ class Plan(ObjectStorage):
 
         # Info about the plan stored
         self.plan = list()
-        self.readable_plan = readable_plan if readable_plan else []
-        self.arg_ids = arg_ids if arg_ids else []
-        self.result_ids = result_ids if result_ids else []
+        self.readable_plan = readable_plan if readable_plan is not None else []
+        self.arg_ids = arg_ids if arg_ids is not None else []
+        self.result_ids = result_ids if result_ids is not None else []
         self.owner_when_built = None
 
         # Pointing info towards a remote plan
@@ -221,14 +221,14 @@ class Plan(ObjectStorage):
         """Replaces pairs of tensor ids in the plan stored.
 
         Args:
-            from_ids: The left part of the pair: ids to change.
-            to_ids: The right part of the pair: ids to replace with.
+            from_ids: Ids to change.
+            to_ids: Ids to replace with.
             from_worker: The previous worker that built the plan.
             to_worker: The new worker that is running the plan.
         """
-        if not from_worker:
+        if from_worker is None:
             from_worker = self.id
-        if not to_worker:
+        if to_worker is None:
             to_worker = self.owner.id
 
         # for every pair of id
