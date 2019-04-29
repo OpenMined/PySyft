@@ -53,10 +53,7 @@ class TrainConfig:
             id: An optional string or integer id of the tensor.
         """
         self.owner = owner if owner else sy.hook.local_worker
-        if id is None:
-            self.id = sy.ID_PROVIDER.pop()
-        else:
-            self.id = id
+        self.id = id if id is not None else sy.ID_PROVIDER.pop()
 
         self._model = model
         self.forward_plan = model.forward if model else forward_plan
@@ -65,12 +62,6 @@ class TrainConfig:
         self.epochs = epochs
         self.optimizer = optimizer
         self.lr = lr
-
-        # TODO: remove this by checking if these attributes exist
-        # in the search method at base.py.
-        self.tags = None
-        self.description = None
-
         self.location = None
 
     def __str__(self) -> str:
