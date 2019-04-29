@@ -770,26 +770,24 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 if query_item == str(key):
                     match = True
 
-                if obj.tags is not None:
-                    if query_item in obj.tags:
-                        match = True
+                if isinstance(obj, torch.Tensor):
+                    if obj.tags is not None:
+                        if query_item in obj.tags:
+                            match = True
 
-                if obj.description is not None:
-                    if query_item in obj.description:
-                        match = True
+                    if obj.description is not None:
+                        if query_item in obj.description:
+                            match = True
 
                 if not match:
                     found_something = False
 
             if found_something:
-                if isinstance(obj, torch.Tensor):
-                    # set garbage_collect_data to False because if we're searching
-                    # for a tensor we don't own, then it's probably someone else's
-                    # decision to decide when to delete the tensor.
-                    ptr = obj.create_pointer(
-                        garbage_collect_data=False, owner=sy.local_worker
-                    ).wrap()
-                    results.append(ptr)
+                # set garbage_collect_data to False because if we're searching
+                # for a tensor we don't own, then it's probably someone else's
+                # decision to decide when to delete the tensor.
+                ptr = obj.create_pointer(garbage_collect_data=False, owner=sy.local_worker).wrap()
+                results.append(ptr)
 
         return results
 
