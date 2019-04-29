@@ -8,8 +8,10 @@ import torch.nn as nn
 
 import syft
 import syft as sy
+from syft.federated import Plan
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.workers import AbstractWorker
 from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
@@ -24,14 +26,14 @@ class TrainConfig:
 
     def __init__(
         self,
-        loss_plan: sy.workers.Plan,
+        loss_plan: Plan,
         model: nn.Module = None,
-        forward_plan: sy.workers.Plan = None,
+        forward_plan: Plan = None,
         batch_size: int = 32,
         epochs: int = 1,
         optimizer: str = "sgd",
         lr: float = 0.1,
-        owner: sy.workers.AbstractWorker = None,
+        owner: AbstractWorker = None,
         id: Union[int, str] = None,
     ):
         """Initializer for TrainConfig.
@@ -51,10 +53,7 @@ class TrainConfig:
             id: An optional string or integer id of the tensor.
         """
         self.owner = owner if owner else sy.hook.local_worker
-        if id is None:
-            self.id = int(10e10 * random.random())
-        else:
-            self.id = id
+        self.id = id if id is not None else sy.ID_PROVIDER.pop()
 
         self._model = model
         self.forward_plan = model.forward if model else forward_plan
@@ -63,12 +62,6 @@ class TrainConfig:
         self.epochs = epochs
         self.optimizer = optimizer
         self.lr = lr
-
-        # TODO: remove this by checking if these attributes exist
-        # in the search method at base.py.
-        self.tags = None
-        self.description = None
-
         self.location = None
 
     def __str__(self) -> str:
