@@ -52,6 +52,7 @@ def test_send_train_config(hook):
 
 def test_run_train_config(hook):
     hook.local_worker.is_client_worker = False
+    me = hook.local_worker
 
     # Send data and target to federated device
     data = th.tensor([[-1, 2.0]])
@@ -85,7 +86,7 @@ def test_run_train_config(hook):
     loss_fn(th.tensor([1.0]), th.tensor([1.0]))
 
     model = Net()
-    model.send(hook.local_worker)
+    model.send(me)
     model(th.tensor([1.0, 2]))
 
     # Create and send train config
@@ -93,4 +94,4 @@ def test_run_train_config(hook):
     train_config.send(federated_device)
 
     # TODO: uncomment this line
-    # federated_device.fit()
+    # me.run_training(federated_device)

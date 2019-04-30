@@ -85,6 +85,7 @@ class BaseWorker(AbstractWorker, FederatedClient):
 
         # For performance, we cache each
         self._message_router = {
+            MSGTYPE.FIT: self.fit,
             MSGTYPE.CMD: self.execute_command,
             MSGTYPE.OBJ: self.set_obj,
             MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
@@ -778,3 +779,7 @@ class BaseWorker(AbstractWorker, FederatedClient):
         b_shared = b.share(*locations, field=field, crypto_provider=self).child
         c_shared = c.share(*locations, field=field, crypto_provider=self).child
         return a_shared, b_shared, c_shared
+
+    # SECTION: convenience methods for federated learning
+    def run_training(self, location: "BaseWorker"):
+        self.send_msg(MSGTYPE.FIT, "", location=location)

@@ -50,7 +50,7 @@ class FederatedClient(ObjectStorage):
             raise ValueError("Unknown optimizer: {}".format(optimizer_name))
         return self.optimizer
 
-    def fit(self):
+    def fit(self, *args, **kwargs):
         if self.train_config is None:
             raise ValueError("TrainConfig not defined.")
 

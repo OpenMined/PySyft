@@ -7,6 +7,7 @@ class MSGTYPE(object):
     IS_NONE = 6
     GET_SHAPE = 7
     SEARCH = 8
+    FIT = 9
 
 
 # Build automatically the reverse map from codes to msg types
