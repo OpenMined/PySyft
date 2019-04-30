@@ -162,6 +162,7 @@ class Plan(ObjectStorage):
         local_args = list()
         for arg in args:
             # Send only tensors (in particular don't send the "self" for methods)
+            # in the case of a method.
             if isinstance(arg, torch.Tensor):
                 self.owner.register_obj(arg)
                 arg = arg.send(self)
@@ -351,10 +352,19 @@ class Plan(ObjectStorage):
         return responses
 
     def _execute_plan_locally(self, result_ids, *args, **kwargs):
+        args = self._keep_only_tensor_args(args)
         self._update_args(args, result_ids)
         self._execute_plan()
         responses = self._get_plan_output(result_ids)
         return responses
+
+    def _keep_only_tensor_args(self, args):
+        """Keeps only Tensors in args. This step is needed for method plans."""
+        tensor_args = []
+        for arg in args:
+            if isinstance(arg, torch.Tensor):
+                tensor_args.append(arg)
+        return tensor_args
 
     def execute_plan(self, args: List, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.

@@ -84,14 +84,11 @@ def test_run_train_config(hook):
     # Force build
     loss_fn(th.tensor([1.0]), th.tensor([1.0]))
 
-    # TODO: force forward build
-    # x = th.tensor([1., 2])
-    # print(model(x))
-    # >       if input.dim() == 2 and bias is not None:
-    # E   TypeError: __bool__ should return bool, returned Tensor
+    model = Net()
+    model.send(hook.local_worker)
+    model(th.tensor([1.0, 2]))
 
     # Create and send train config
-    model = Net()
     train_config = sy.TrainConfig(model=model, loss_plan=loss_fn)
     train_config.send(federated_device)
 
