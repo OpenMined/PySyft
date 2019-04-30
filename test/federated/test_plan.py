@@ -41,6 +41,28 @@ def test_plan_execute_locally(hook):
     assert (x_abs == th.tensor([1, 2, 3])).all()
 
 
+def test_plan_method_execute_locally(hook):
+    hook.local_worker.is_client_worker = False
+
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.fc3 = nn.Linear(2, 1)
+
+        @sy.method2plan
+        def forward(self, x):
+            x = F.relu(self.fc1(x))
+            x = self.fc2(x)
+            x = self.fc3(x)
+            return F.log_softmax(x)
+
+    model = Net()
+    model.send(hook.local_worker)
+    assert model(th.tensor([1.0, 2])) == 0
+
+
 def test_plan_built_remotely(workers):
     bob = workers["bob"]
     alice = workers["alice"]
