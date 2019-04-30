@@ -14,9 +14,12 @@ from syft.workers.virtual import VirtualWorker
 
 
 class WebsocketIOServerWorker(VirtualWorker):
-    """
-    Objects of this class can act as a worker when they have a payload to execute or as a plain socket IO that will
-    forward the messages to the participants in the setup.
+    """ Objects of this class can act as a remote worker or as a plain socket IO.
+
+    By adding a payload to the object it will execute it forwarding the messages to the participants in the setup.
+
+    If no payload is added, this object will be a plain socketIO sitting between two clients that implement the
+    protocol.
     """
 
     def __init__(
@@ -30,7 +33,20 @@ class WebsocketIOServerWorker(VirtualWorker):
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
     ):
-
+        """
+        Args:
+            hook (sy.TorchHook): a normal TorchHook object
+            host (str): the host on which the server should be run
+            port (int): the port on which the server should be run
+            payload (function): a function containing a list of operations
+            id (str or id): the unique id of the worker (string or int)
+            log_msgs (bool): whether or not all messages should be
+                saved locally for later inspection.
+            verbose (bool): a verbose option - will print all messages
+                sent/received to stdout
+            data (dict): any initial tensors the server should be
+                initialized with (such as datasets)
+        """
         self.port = port
         self.host = host
         self.app = Flask(__name__)
@@ -45,7 +61,8 @@ class WebsocketIOServerWorker(VirtualWorker):
 
         @self.socketio.on("connect")
         def on_client_connect():
-            print("New client established connection")
+            if self.verbose:
+                print("New client established connection")
 
         @self.socketio.on("client_id")
         def on_client_id(args):
@@ -54,12 +71,12 @@ class WebsocketIOServerWorker(VirtualWorker):
                 self.clients.append(args)
                 # If this server has been created with a payload, execute it
                 if self._payload is not None:
-                    print(f"Client {args} connected. Start executing payload")
+                    if self.verbose:
+                        print(f"Client {args} connected. Start executing payload")
                     self._start_payload()
 
         @self.socketio.on("message")
         def send_command(args):
-            print("Sending command to whoever is listening {}".format(args))
             self.socketio.emit("message", args)
 
         @self.socketio.on("client_ack")
@@ -74,7 +91,6 @@ class WebsocketIOServerWorker(VirtualWorker):
 
         @self.socketio.on("client_send_result")
         def on_client_result(args):
-            print("Receiving result§ from client {}".format(args))
             if self._payload is not None:
                 # The client sent the results
                 self.response_from_client = args
@@ -95,9 +111,7 @@ class WebsocketIOServerWorker(VirtualWorker):
 
     def _recv_msg(self, message: bin) -> bin:
         """Forwards a message to the WebsocketIOClientWorker"""
-        print("_recv_msg in Web socket Server")
         self.socketio.emit("message", message)  # Block and wait for the response
-        print("Message sent to client. Waiting for its response")
         # This Event will wait until its `set()` is invoked.
         # This will be done when a message from the client is received
         # Ideally this should be done with semaphores or events

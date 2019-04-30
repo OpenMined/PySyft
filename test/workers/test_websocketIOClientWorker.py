@@ -39,4 +39,3 @@ def test_send_tensor(hook, start_proc):
     android.disconnect()
     time.sleep(0.1)
     server_worker.terminate()
-    server_worker.join()

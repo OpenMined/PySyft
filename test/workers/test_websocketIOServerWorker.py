@@ -8,9 +8,7 @@ from syft.workers import WebsocketIOServerWorker
 
 def _payload(location):
     x = torch.tensor([10, 20, 30, 40, 50.0])
-    print("About to send x")
     x.send(location)
-    print("End of payload")
 
 
 hook = sy.TorchHook(torch)

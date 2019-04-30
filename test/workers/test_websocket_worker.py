@@ -1,9 +1,7 @@
-from multiprocessing import Process
 import time
 
 import torch
 
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
 
@@ -31,7 +29,6 @@ def test_websocket_worker(hook, start_proc):
     socket_pipe.ws.shutdown()
     time.sleep(0.1)
     server.terminate()
-    server.join()
 
 
 def test_websocket_workers_search(hook, start_proc):
@@ -61,4 +58,3 @@ def test_websocket_workers_search(hook, start_proc):
     client_worker.ws.close()
     time.sleep(0.1)
     server.terminate()
-    server.join()

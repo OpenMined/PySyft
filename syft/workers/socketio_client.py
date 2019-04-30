@@ -11,10 +11,10 @@ from syft.workers.virtual import VirtualWorker
 
 
 class WebsocketIOClientWorker(VirtualWorker):
-    """A client which will send a message to a WebsocketIOServerWorker when it receives
-    a message from another worker via _recv_msg
-    This client then waits until the server returns with a result or an ACK at which point
-    it finishes the _recv_msg operation
+    """A worker that forwards a message to a SocketIO server and wait for its response.
+
+    This client then waits until the server returns with a result or an ACK at which point it finishes the
+    _recv_msg operation.
     """
 
     def __init__(
@@ -28,6 +28,20 @@ class WebsocketIOClientWorker(VirtualWorker):
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
     ):
+        """
+        Args:
+            hook (sy.TorchHook): a normal TorchHook object
+            host (str): the host this client connects to
+            port (int): the port this client connects to
+            id (str or id): the unique id of the worker (string or int)
+            log_msgs (bool): whether or not all messages should be
+                saved locally for later inspection.
+            verbose (bool): a verbose option - will print all messages
+                sent/received to stdout
+            data (dict): any initial tensors the server should be
+                initialized with (such as datasets)
+        """
+
         self.port = port
         self.host = host
         self.uri = f"http://{self.host}:{self.port}"
