@@ -150,3 +150,9 @@ class WebsocketServerWorker(VirtualWorker):
 
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
+
+    def list_objects(self, *args):
+        return str(self._objects)
+
+    def objects_count(self, *args):
+        return len(self._objects)
