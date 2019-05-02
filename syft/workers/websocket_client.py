@@ -6,6 +6,7 @@ import torch
 import websocket
 import time
 import logging
+import ssl
 
 import syft as sy
 from syft.codes import MSGTYPE
@@ -15,7 +16,7 @@ from syft.workers import BaseWorker
 logger = logging.getLogger(__name__)
 
 
-TIMEOUT_INTERVAL = 9999999
+TIMEOUT_INTERVAL = 9_999_999
 
 
 class WebsocketClientWorker(BaseWorker):
@@ -24,6 +25,7 @@ class WebsocketClientWorker(BaseWorker):
         hook,
         host: str,
         port: int,
+        secure: bool = False,
         id: Union[int, str] = 0,
         is_client_worker: bool = False,
         log_msgs: bool = False,
@@ -37,12 +39,22 @@ class WebsocketClientWorker(BaseWorker):
         # TODO get angry when we have no connection params
         self.port = port
         self.host = host
-        self.uri = f"ws://{self.host}:{self.port}"
 
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
-        # Also avoid the server from timing out on the server-side in case of slow clients
-        self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
+
+        # Secure flag adds a secure layer applying cryptography and authentication
+        self.uri = f"ws://{self.host}:{self.port}"
+        if secure:
+            self.uri = f"wss://{self.host}:{self.port}"
+            ssl_settings = {"cert_reqs": ssl.CERT_NONE}
+            self.ws = websocket.create_connection(
+                self.uri, sslopt=ssl_settings, max_size=None, timeout=TIMEOUT_INTERVAL
+            )
+        else:
+            # Insecure flow
+            # Also avoid the server from timing out on the server-side in case of slow clients
+            self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
 
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
 
