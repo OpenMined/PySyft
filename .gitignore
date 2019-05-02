@@ -3,6 +3,7 @@ build/
 _build/
 dist/
 .cache/
+.coverage
 .eggs/
 .idea/
 .python-version
@@ -17,4 +18,5 @@ venv/
 docs/_modules
 .coverage
 .vscode/
+**/pip-wheel-metadata
 

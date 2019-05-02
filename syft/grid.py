@@ -18,25 +18,27 @@ class VirtualGrid:
             worker_tag_ctr = Counter()
 
             worker_results = worker.search(*query)
-            results[worker.id] = worker_results
 
-            for result in worker_results:
-                for tag in result.tags:
-                    tag_counter[tag] += 1
-                    worker_tag_ctr[tag] += 1
+            if len(worker_results) > 0:
+                results[worker.id] = worker_results
 
-            if verbose:
-                tags = str(worker_tag_ctr.most_common(3))
-                print(
-                    "Found "
-                    + str(len(worker_results))
-                    + " results on "
-                    + str(worker)
-                    + " - "
-                    + tags
-                )
+                for result in worker_results:
+                    for tag in result.tags:
+                        tag_counter[tag] += 1
+                        worker_tag_ctr[tag] += 1
 
-            result_counter += len(worker_results)
+                if verbose:
+                    tags = str(worker_tag_ctr.most_common(3))
+                    print(
+                        "Found "
+                        + str(len(worker_results))
+                        + " results on "
+                        + str(worker)
+                        + " - "
+                        + tags
+                    )
+
+                result_counter += len(worker_results)
 
         if verbose:
             print("\nFound " + str(result_counter) + " results in total.")

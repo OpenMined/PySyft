@@ -6,7 +6,6 @@ import torch
 hook = sy.TorchHook(torch)
 from torch import nn
 from torch import optim
-import random
 
 
 class TestFederatedLearning(object):
@@ -16,7 +15,7 @@ class TestFederatedLearning(object):
         self.me = hook.local_worker
         self.me.is_client_worker = True
 
-        instance_id = str(int(10e10 * random.random()))
+        instance_id = str(sy.ID_PROVIDER.pop())
         bob = sy.VirtualWorker(id=f"bob{instance_id}", hook=hook, is_client_worker=False)
         alice = sy.VirtualWorker(id=f"alice{instance_id}", hook=hook, is_client_worker=False)
         james = sy.VirtualWorker(id=f"james{instance_id}", hook=hook, is_client_worker=False)

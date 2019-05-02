@@ -1,9 +1,13 @@
-import syft as sy
+from time import time
+from unittest.mock import patch
 
+import syft as sy
+from syft.exceptions import GetNotPermittedError
 from syft.workers.virtual import VirtualWorker
 from syft.codes import MSGTYPE
 from syft import serde
 
+import pytest
 import torch
 import torch as th
 
@@ -19,7 +23,8 @@ def test_send_msg():
     me = sy.torch.hook.local_worker
 
     # create a new worker (to send the object to)
-    bob = VirtualWorker(sy.torch.hook)
+    worker_id = sy.ID_PROVIDER.pop()
+    bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
 
     # initialize the object and save it's id
     obj = torch.Tensor([100, 100])
@@ -40,7 +45,8 @@ def test_send_msg_using_tensor_api():
     """
 
     # create worker to send object to
-    bob = VirtualWorker(sy.torch.hook)
+    worker_id = sy.ID_PROVIDER.pop()
+    bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
 
     # create a tensor to send (default on local_worker)
     obj = torch.Tensor([100, 100])
@@ -66,7 +72,8 @@ def test_recv_msg():
     # TEST 1: send tensor to alice
 
     # create a worker to send data to
-    alice = VirtualWorker(sy.torch.hook)
+    worker_id = sy.ID_PROVIDER.pop()
+    alice = VirtualWorker(sy.torch.hook, id=f"alice{worker_id}")
 
     # create object to send
     obj = torch.Tensor([100, 100])
@@ -113,8 +120,10 @@ def tests_worker_convenience_methods():
     """
 
     me = sy.torch.hook.local_worker
-    bob = VirtualWorker(sy.torch.hook)
-    alice = VirtualWorker(sy.torch.hook)
+    worker_id = sy.ID_PROVIDER.pop()
+    bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
+    worker_id = sy.ID_PROVIDER.pop()
+    alice = VirtualWorker(sy.torch.hook, id=f"alice{worker_id}")
     obj = torch.Tensor([100, 100])
 
     # Send data to alice
@@ -142,7 +151,8 @@ def tests_worker_convenience_methods():
 
 
 def test_search():
-    bob = VirtualWorker(sy.torch.hook)
+    worker_id = sy.ID_PROVIDER.pop()
+    bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
 
     x = (
         torch.tensor([1, 2, 3, 4, 5])
@@ -193,3 +203,26 @@ def test_obj_not_found(workers):
         y = x + x
     except KeyError as e:
         assert "If you think this tensor does exist" in str(e)
+
+
+def test_get_not_permitted(workers):
+    bob = workers["bob"]
+    with patch.object(th.Tensor, "allowed_to_get") as mock_allowed_to_get:
+        mock_allowed_to_get.return_value = False
+        x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+        with pytest.raises(GetNotPermittedError):
+            x.get()
+        mock_allowed_to_get.assert_called_once()
+
+
+def test_spinup_time(hook):
+    """Tests to ensure that virtual workers intialized with 10000 data points
+    load in under 0.05 seconds. This is needed to ensure that virtual workers
+    spun up inside web frameworks are created quickly enough to not cause timeout errors"""
+    data = []
+    for i in range(10000):
+        data.append(th.Tensor(5, 5).random_(100))
+    start_time = time()
+    dummy = sy.VirtualWorker(hook, id="dummy", data=data)
+    end_time = time()
+    assert (end_time - start_time) < 0.05

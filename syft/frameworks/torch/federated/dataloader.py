@@ -2,8 +2,8 @@ import torch
 from torch.utils.data import SequentialSampler, RandomSampler, BatchSampler
 from torch._six import string_classes, int_classes, container_abcs
 
-import copy
-import random
+import logging
+import math
 
 numpy_type_map = {
     "float64": torch.DoubleTensor,
@@ -18,7 +18,7 @@ numpy_type_map = {
 
 
 def default_collate(batch):
-    r"""Puts each data field into a tensor with outer dimension batch size"""
+    """Puts each data field into a tensor with outer dimension batch size"""
 
     error_msg = "batch must contain tensors, numbers, dicts or lists; found {}"
     elem_type = type(batch[0])
@@ -51,13 +51,11 @@ def default_collate(batch):
 
 
 class _DataLoaderIter(object):
-    r"""Iterates once over the DataLoader's dataset, as specified by the samplers"""
+    """Iterates once over the DataLoader's dataset, as specified by the samplers"""
 
     def __init__(self, loader, worker_idx):
         self.loader = loader
-        self.dataset = loader.dataset
-        self.worker2inputs = loader.dataset.worker2inputs
-        self.worker2targets = loader.dataset.worker2targets
+        self.federated_dataset = loader.federated_dataset
 
         # Assign the first worker to invoke
         self.worker_idx = worker_idx
@@ -73,7 +71,7 @@ class _DataLoaderIter(object):
         }
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.federated_dataset)
 
     def _get_batch(self):
         # If all workers have been used, end the iterator
@@ -84,9 +82,8 @@ class _DataLoaderIter(object):
 
         try:
             indices = next(self.sample_iter[worker])
-            input_batch = self.collate_fn([self.worker2inputs[worker][i] for i in indices])
-            target_batch = self.collate_fn([self.worker2targets[worker][i] for i in indices])
-            return input_batch, target_batch
+            batch = self.collate_fn([self.federated_dataset[worker][i] for i in indices])
+            return batch
         # All the data for this worker has been used
         except StopIteration:
             # Forget this worker
@@ -113,13 +110,59 @@ class _DataLoaderIter(object):
         raise StopIteration
 
 
+class _DataLoaderOneWorkerIter(object):
+    """Iterates once over the worker's dataset, as specified by its sampler"""
+
+    def __init__(self, loader, worker_idx):
+        self.loader = loader
+        self.federated_dataset = loader.federated_dataset
+
+        # Assign the worker to invoke
+        self.worker = loader.workers[worker_idx]
+
+        # The function used to stack all samples together
+        self.collate_fn = loader.collate_fn
+
+        # Create a sample iterator for each worker
+        self.sample_iter = iter(loader.batch_samplers[self.worker])
+
+    def _get_batch(self):
+        # If all workers have been used, end the iterator
+        if not self.worker:
+            self.stop()
+
+        try:
+            indices = next(self.sample_iter)
+            batch = self.collate_fn([self.federated_dataset[self.worker][i] for i in indices])
+            return batch
+        # All the data for this worker has been used
+        except StopIteration:
+            # If nothing is found, stop the iterator
+            self.stop()
+
+    # TODO: implement a length function. It should return the number of elements of the federated dataset that are
+    #       located at this worker
+    # def __len__(self):
+    #    return len(self.federated_dataset)
+
+    def __next__(self):
+        return self._get_batch()
+
+    def __iter__(self):
+        return self
+
+    def stop(self):
+        self.worker = None
+        raise StopIteration
+
+
 class FederatedDataLoader(object):
-    r"""
+    """
     Data loader. Combines a dataset and a sampler, and provides
     single or several iterators over the dataset.
 
     Arguments:
-        dataset (Dataset): dataset from which to load the data.
+        federated_dataset (FederatedDataset): dataset from which to load the data.
         batch_size (int, optional): how many samples per batch to load
             (default: ``1``).
         shuffle (bool, optional): set to ``True`` to have the data reshuffled
@@ -129,51 +172,66 @@ class FederatedDataLoader(object):
             if the dataset size is not divisible by the batch size. If ``False`` and
             the size of dataset is not divisible by the batch size, then the last batch
             will be smaller. (default: ``False``)
+        num_iterators (int): number of workers from which to retrieve data in parallel.
+            num_iterators <= len(federated_dataset.workers) - 1
+            the effect is to retrieve num_iterators epochs of data but at each step data from num_iterators distinct
+            workers is returned.
+        iter_per_worker (bool): if set to true, __next__() will return a dictionary containing one batch per worker
     """
 
     __initialized = False
 
     def __init__(
         self,
-        dataset,
+        federated_dataset,
         batch_size=8,
         shuffle=False,
         num_iterators=1,
         drop_last=False,
         collate_fn=default_collate,
+        iter_per_worker=False,
+        **kwargs,
     ):
+        if len(kwargs) > 0:
+            options = ", ".join([f"{k}: {v}" for k, v in kwargs.items()])
+            logging.warning(f"The following options are not supported: {options}")
 
         try:
-            self.workers = dataset.workers
+            self.workers = federated_dataset.workers
         except AttributeError:
             raise Exception(
                 "Your dataset is not a FederatedDataset, please use "
                 "torch.utils.data.DataLoader instead."
             )
 
-        self.dataset = dataset
+        self.federated_dataset = federated_dataset
         self.batch_size = batch_size
         self.drop_last = drop_last
         self.collate_fn = collate_fn
+        self.iter_class = _DataLoaderOneWorkerIter if iter_per_worker else _DataLoaderIter
 
         # Build a batch sampler per worker
         self.batch_samplers = {}
         for worker in self.workers:
+            data_range = range(len(federated_dataset[worker]))
             if shuffle:
-                sampler = RandomSampler(range(dataset.worker2num_rows[worker]))
+                sampler = RandomSampler(data_range)
             else:
-                sampler = SequentialSampler(range(dataset.worker2num_rows[worker]))
+                sampler = SequentialSampler(data_range)
             batch_sampler = BatchSampler(sampler, batch_size, drop_last)
             self.batch_samplers[worker] = batch_sampler
 
-        # You can't have more iterators than n - 1 workers, because you always
-        # need a worker idle in the worker switch process made by iterators
-        self.num_iterators = min(num_iterators, len(self.workers) - 1)
+        if iter_per_worker:
+            self.num_iterators = len(self.workers)
+        else:
+            # You can't have more iterators than n - 1 workers, because you always
+            # need a worker idle in the worker switch process made by iterators
+            self.num_iterators = min(num_iterators, len(self.workers) - 1)
 
     def __iter__(self):
         self.iterators = list()
         for idx in range(self.num_iterators):
-            self.iterators.append(_DataLoaderIter(self, worker_idx=idx))
+            self.iterators.append(self.iter_class(self, worker_idx=idx))
         return self
 
     def __next__(self):
@@ -189,4 +247,8 @@ class FederatedDataLoader(object):
             return data, target
 
     def __len__(self):
-        return int(len(self.dataset) / self.batch_size) + 1 - self.drop_last
+        length = len(self.federated_dataset) / self.batch_size
+        if self.drop_last:
+            return int(length)
+        else:
+            return math.ceil(length)
