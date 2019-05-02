@@ -85,7 +85,7 @@ class WebsocketClientWorker(BaseWorker):
         if not self.ws.connected:
             logger.warning("Websocket connection closed (worker: %s)", self.id)
             self.ws.shutdown()
-            time.sleep(1)
+            time.sleep(0.1)
             # Avoid timing out on the server-side
             self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
             logger.warning("Created new websocket connection")
@@ -96,3 +96,39 @@ class WebsocketClientWorker(BaseWorker):
                     "Websocket connection closed and creation of new connection failed."
                 )
         return response
+
+    def _send_msg_and_deserialize(self, command_name: str):
+        message = self.create_message_execute_command(
+            command_name=command_name, command_owner="self"
+        )
+
+        # Send the message and return the deserialized response.
+        serialized_message = sy.serde.serialize(message)
+        response = self._recv_msg(serialized_message)
+        return sy.serde.deserialize(response)
+
+    def list_objects_remote(self):
+        return self._send_msg_and_deserialize("list_objects")
+
+    def fit_batch_remote(self):
+        return self._send_msg_and_deserialize("fit_batch")
+
+    def objects_count_remote(self):
+        return self._send_msg_and_deserialize("objects_count")
+
+    def __str__(self):
+        """Returns the string representation of a Websocket worker.
+
+        A to-string method for websocket workers that includes information from the websocket server
+
+        Returns:
+            The Type and ID of the worker
+
+        """
+        out = "<"
+        out += str(type(self)).split("'")[1].split(".")[-1]
+        out += " id:" + str(self.id)
+        out += " #objects local:" + str(len(self._objects))
+        out += " #objects remote: " + self.list_objects_remote()
+        out += ">"
+        return out

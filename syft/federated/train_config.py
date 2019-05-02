@@ -3,9 +3,9 @@ import weakref
 
 import torch.nn as nn
 
-import syft
 import syft as sy
 from syft.federated import Plan
+from syft import workers
 
 
 class TrainConfig:
@@ -24,7 +24,7 @@ class TrainConfig:
         epochs: int = 1,
         optimizer: str = "sgd",
         lr: float = 0.1,
-        owner: sy.workers.AbstractWorker = None,
+        owner: workers.AbstractWorker = None,
         id: Union[int, str] = None,
     ):
         """Initializer for TrainConfig.
@@ -68,7 +68,7 @@ class TrainConfig:
         out += ">"
         return out
 
-    def send(self, location: syft.workers.BaseWorker) -> weakref:
+    def send(self, location: workers.BaseWorker) -> weakref:
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes
