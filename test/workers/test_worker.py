@@ -1,6 +1,5 @@
 import pytest
 
-import random
 import torch
 import syft as sy
 from syft.exceptions import WorkerNotFoundException
@@ -12,14 +11,14 @@ def test___init__():
 
     tensor = torch.tensor([1, 2, 3, 4])
 
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     alice_id = f"alice{worker_id}"
     alice = VirtualWorker(hook, id=alice_id)
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     bob = VirtualWorker(hook, id=f"bob{worker_id}")
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     charlie = VirtualWorker(hook, id=f"charlie{worker_id}")
-    worker_id = int(10e10 * random.random())
+    worker_id = sy.ID_PROVIDER.pop()
     dawson = VirtualWorker(hook, id=f"dawson{worker_id}", data=[tensor])
 
     # Ensure adding data on signup functionality works as expected

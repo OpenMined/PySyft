@@ -4,5 +4,7 @@ sklearn
 torch==1.0.1
 torchvision
 websocket_client
-websockets
+websockets>=7.0
 zstd
+Flask
+flask_socketio
