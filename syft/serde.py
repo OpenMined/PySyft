@@ -1129,14 +1129,11 @@ def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> t
     """
 
     loss_plan, forward_plan, batch_size, epochs, optimizer, lr, id = train_config_tuple
-    id = id
-    if isinstance(id, bytes):
-        id = id.decode("utf-8")
 
+    id = _detail(worker, id)
     detailed_loss_plan = _detail(worker, loss_plan)
     detailed_forward_plan = _detail(worker, forward_plan)
-    if isinstance(optimizer, bytes):
-        optimizer = optimizer.decode("utf-8")
+    detailed_optimizer = _detail(worker, optimizer)
 
     train_config = syft.TrainConfig(
         owner=worker,
@@ -1145,7 +1142,7 @@ def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> t
         loss_plan=detailed_loss_plan,
         batch_size=batch_size,
         epochs=epochs,
-        optimizer=optimizer,
+        optimizer=detailed_optimizer,
         lr=lr,
     )
 
@@ -1167,7 +1164,7 @@ def _simplify_plan(plan: Plan) -> tuple:
         _simplify(plan.id),
         _simplify(plan.arg_ids),
         _simplify(plan.result_ids),
-        plan.name,
+        _simplify(plan.name),
         _simplify(plan.tags),
         _simplify(plan.description),
     )
@@ -1183,9 +1180,7 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
     """
 
     readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
-    id = id
-    if isinstance(id, bytes):
-        id = id.decode("utf-8")
+    id = _detail(worker, id)
     arg_ids = _detail(worker, arg_ids)
     result_ids = _detail(worker, result_ids)
 
@@ -1196,8 +1191,8 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
         result_ids=result_ids,
         readable_plan=_detail(worker, readable_plan),
     )
-    if isinstance(name, bytes):
-        plan.name = name.decode("utf-8")
+
+    plan.name = _detail(worker, name)
     plan.tags = _detail(worker, tags)
     plan.description = _detail(worker, description)
 
