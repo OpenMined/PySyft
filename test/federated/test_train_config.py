@@ -58,9 +58,15 @@ def test_run_train_config(hook):
     data = th.tensor([[-1, 2.0]])
     target = th.tensor([[1.0]])
 
-    federated_device = sy.VirtualWorker(hook, id="run_train_config")
-    ptr_data, ptr_target = data.send(federated_device), target.send(federated_device)
-    dataset = sy.BaseDataset(ptr_data, ptr_target)
+    federated_device = sy.VirtualWorker(hook, id="run_train_config", verbose=False)
+    _ = data.send(federated_device)
+    _ = target.send(federated_device)
+
+    data.owner = federated_device
+    target.owner = federated_device
+
+    dataset = sy.BaseDataset(data, target)
+    dataset.owner = federated_device
     federated_device.dataset = dataset
 
     # Loss function and model definition
@@ -94,4 +100,6 @@ def test_run_train_config(hook):
     train_config.send(federated_device)
 
     # TODO: uncomment this line
+    # Currently you can do this in two different ways:
     # me.run_training(federated_device)
+    # federated_device.fit()

@@ -880,7 +880,6 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     Examples:
         data = _simplify_pointer_tensor(ptr)
     """
-
     return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr, ptr._shape)
 
     # a more general but slower/more verbose option

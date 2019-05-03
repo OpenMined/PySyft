@@ -88,11 +88,11 @@ class ObjectStorage:
 
         return obj
 
-    def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
+    def set_obj(self, obj: object) -> None:
         """Adds an object to the registry of objects.
 
         Args:
-            obj: A torch or syft tensor with an id.
+            obj: An object with an id.
         """
         self._objects[obj.id] = obj
 

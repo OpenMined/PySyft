@@ -92,9 +92,9 @@ class TrainConfig:
         Returns:
             A weakref instance.
         """
-
         # Send Model
         self.model.send(location)
+
         # Send plans and cache them so they can be reused
         # when this trainConfig instance is sent to location
         self.forward_plan = self.model.forward.send(location)

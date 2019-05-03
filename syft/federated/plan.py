@@ -343,8 +343,8 @@ class Plan(ObjectStorage):
         return responses
 
     def _execute_plan_locally(self, result_ids, *args, **kwargs):
-        args = self._keep_only_tensor_args(args)
-        self._update_args(args, result_ids)
+        tensor_args = self._keep_only_tensor_args(args)
+        self._update_args(tensor_args, result_ids)
         self._execute_plan()
         responses = self._get_plan_output(result_ids)
         return responses
