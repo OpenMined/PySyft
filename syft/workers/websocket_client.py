@@ -14,7 +14,7 @@ from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers import BaseWorker
 
 logger = logging.getLogger(__name__)
-TIMEOUT_INTERVAL = 9999999
+TIMEOUT_INTERVAL = 9_999_999
 
 
 class WebsocketClientWorker(BaseWorker):

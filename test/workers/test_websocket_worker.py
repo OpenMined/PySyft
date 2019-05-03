@@ -1,4 +1,3 @@
-from multiprocessing import Process
 import time
 
 import torch
@@ -28,6 +27,8 @@ def test_websocket_worker(hook, start_proc):
     del x
 
     local_worker.remove_worker_from_local_worker_registry()
+    local_worker.ws.shutdown()
+    time.sleep(0.1)
     process_remote_worker.terminate()
 
 
@@ -55,6 +56,8 @@ def test_websocket_workers_search(hook, start_proc):
     assert results[0].location.id == "fed2"
 
     local_worker.remove_worker_from_local_worker_registry()
+    local_worker.ws.shutdown()
+    time.sleep(0.1)
     process_remote_worker.terminate()
 
 
@@ -66,16 +69,16 @@ def test_list_objects_remote(hook, start_proc):
     time.sleep(0.1)
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
-    local_fed1 = WebsocketClientWorker(**kwargs)
+    local_worker = WebsocketClientWorker(**kwargs)
 
-    x = torch.tensor([1, 2, 3]).send(local_fed1)
+    x = torch.tensor([1, 2, 3]).send(local_worker)
 
-    res = local_fed1.list_objects_remote()
+    res = local_worker.list_objects_remote()
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 1
 
-    y = torch.tensor([4, 5, 6]).send(local_fed1)
-    res = local_fed1.list_objects_remote()
+    y = torch.tensor([4, 5, 6]).send(local_worker)
+    res = local_worker.list_objects_remote()
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 2
 
@@ -83,7 +86,9 @@ def test_list_objects_remote(hook, start_proc):
     del x
     del y
     time.sleep(0.1)
-    local_fed1.remove_worker_from_local_worker_registry()
+    local_worker.ws.shutdown()
+    time.sleep(0.1)
+    local_worker.remove_worker_from_local_worker_registry()
     process_remote_fed1.terminate()
 
 
@@ -112,6 +117,8 @@ def test_objects_count_remote(hook, start_proc):
 
     # delete remote object before terminating the websocket connection
     del y
+    time.sleep(0.1)
+    local_worker.ws.shutdown()
     time.sleep(0.1)
     local_worker.remove_worker_from_local_worker_registry()
     process_remote_worker.terminate()
