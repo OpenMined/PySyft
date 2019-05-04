@@ -97,8 +97,8 @@ class TrainConfig:
 
         # Send plans and cache them so they can be reused
         # when this trainConfig instance is sent to location
-        self.forward_plan = self.model.forward.send(location)
-        self.loss_plan = self.loss_plan.send(location)
+        self.forward_plan = self.model.forward._send(location)
+        self.loss_plan = self.loss_plan._send(location)
 
         # Send train configuration itself
         ptr = self.owner.send(self, location)
