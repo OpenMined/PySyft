@@ -31,6 +31,9 @@ class BaseDataset:
         if transform:
 
             self.data = transform(self.data)
+            
+    def __len__(self):
+        return len(self.data)
 
     def __getitem__(self, index):
 
