@@ -5,7 +5,6 @@ import syft as sy
 
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
-from syft.federated import FederatedClient
 from syft.generic import ObjectStorage
 from syft.generic import IdProvider
 from syft.exceptions import GetNotPermittedError
@@ -22,7 +21,7 @@ import torch
 logger = logging.getLogger(__name__)
 
 
-class BaseWorker(AbstractWorker, FederatedClient):
+class BaseWorker(AbstractWorker, ObjectStorage):
     """Contains functionality to all workers.
 
     Other workers will extend this class to inherit all functionality necessary
@@ -94,7 +93,6 @@ class BaseWorker(AbstractWorker, FederatedClient):
             codes.MSGTYPE.IS_NONE: self.is_tensor_none,
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
-            codes.MSGTYPE.FIT: self.fit,
         }
 
         self.load_data(data)
@@ -826,7 +824,3 @@ class BaseWorker(AbstractWorker, FederatedClient):
         if return_ids is None:
             return_ids = []
         return tuple([codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]])
-
-    # SECTION: convenience methods for federated learning
-    def run_training(self, location: "BaseWorker"):
-        self.send_msg(codes.MSGTYPE.FIT, "", location=location)

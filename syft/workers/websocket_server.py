@@ -9,9 +9,10 @@ import ssl
 
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers.virtual import VirtualWorker
+from syft.federated import FederatedClient
 
 
-class WebsocketServerWorker(VirtualWorker):
+class WebsocketServerWorker(VirtualWorker, FederatedClient):
     def __init__(
         self,
         hook,
