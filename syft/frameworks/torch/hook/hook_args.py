@@ -678,27 +678,37 @@ def build_register_response_function(response: object) -> Callable:
 
 def register_tensor(
     tensor: Union[torch.Tensor, AbstractTensor],
+    owner: sy.workers.AbstractWorker,
     response_ids: List = list(),
-    owner: sy.workers.AbstractWorker = None,
-) -> None:
+) -> Union[torch.Tensor, AbstractTensor]:
     """
-    Register a tensor
+    Register a tensor.
 
     Args:
-        tensor: the tensor
-        response_ids: list of ids where the tensor should be stored
+        tensor: A tensor.
+        response_ids: List of ids where the tensor should be stored
             and each id is pop out when needed
-        owner: the owner that makes the registration
+        owner: The owner that makes the registration.
     Returns:
-        the pointer
+        The registered tensor.
     """
-    assert owner is not None
+    # TODO: uncomment these lines.
+    # This is currently need so we can return a tensor
+    # remotely.
+    # tensor.owner = owner
+    # try:
+    #     tensor.id = response_ids.pop(-1)
+    # except IndexError:
+    #     raise ResponseSignatureError
+    # owner.register_obj(tensor)
+
     tensor.owner = owner
-    try:
+    if response_ids:
         tensor.id = response_ids.pop(-1)
-    except IndexError:
-        raise ResponseSignatureError
+    else:
+        tensor.id = sy.ID_PROVIDER.pop()
     owner.register_obj(tensor)
+    return tensor
 
 
 def build_register_response(response: object, rules: Tuple, return_tuple: bool = False) -> Callable:
