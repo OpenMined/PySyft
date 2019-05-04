@@ -1,15 +1,11 @@
+import argparse
 from multiprocessing import Process
-
 import sys
 
-sys.path.insert(0, "/home/marianne/myPySyft/")
-print(sys.path)
+import torch as th
 
 import syft as sy
-
 from syft.workers import WebsocketServerWorker
-import torch as th
-import argparse
 
 hook = sy.TorchHook(th)
 hook.local_worker = sy.VirtualWorker(id="me, port: 8777", is_client_worker=True, hook=hook)
