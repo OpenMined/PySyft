@@ -31,7 +31,7 @@ class BaseDataset:
         if transform:
 
             self.data = transform(self.data)
-            
+
     def __len__(self):
         return len(self.data)
 
