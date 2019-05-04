@@ -2,7 +2,7 @@ import copy
 import torch
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.workers.base import ObjectStorage
+from syft.generic import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
 
@@ -389,7 +389,6 @@ class Plan(ObjectStorage):
             worker = self.find_location(args)
             if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
-
             response = self.request_execute_plan(worker, result_ids, *args)
 
             return response
@@ -404,6 +403,8 @@ class Plan(ObjectStorage):
         elif len(self.locations) == 0 and self.owner != sy.hook.local_worker:
             self._update_args(args, result_ids)
             self._execute_plan()
+            responses = self._get_plan_output(result_ids)
+            return responses
 
         return sy.serde.serialize(None)
 
@@ -461,7 +462,6 @@ class Plan(ObjectStorage):
         Args:
             location: Worker where plan should be sent to.
         """
-
         readable_plan_original = copy.deepcopy(self.readable_plan)
         for worker_id in [self.owner.id] + self.locations:
             self.replace_worker_ids(worker_id, location.id)
