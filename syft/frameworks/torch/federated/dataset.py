@@ -35,7 +35,6 @@ class BaseDataset:
     def __getitem__(self, index):
 
         """
-        
         Args:
             
             index[integer]: index of item of to get 
@@ -44,7 +43,6 @@ class BaseDataset:
             
             data: Data points corresponding to the given index
             targets: Targets correspoding to given datapoint
-                
         """
 
         return self.data[index], self.targets[index]
@@ -53,11 +51,9 @@ class BaseDataset:
 
         """
          Allows a transform to be applied on given dataset.
-         
          Args:
             
             transform: The transform to be applied on the data
-            
         """
 
         # Transforms cannot be applied to Pointer  , Fixed Precision or Float Precision tensors.
@@ -71,7 +67,6 @@ class BaseDataset:
 
     def send(self, worker):
         """
-        
         Args:
             
             worker[worker class]: worker to which the data must be sent
@@ -88,9 +83,7 @@ class BaseDataset:
 
     def get(self):
         """
-        
-        Gets the data back from respective workers
-        
+        Gets the data back from respective workers.
         Returns:
             
             self: Return the object instance with data got back from workers
