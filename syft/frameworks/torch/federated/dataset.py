@@ -32,26 +32,15 @@ class BaseDataset:
 
             self.data = transform(self.data)
 
-    def __len__(self):
-
-        """
-        returns:
-            
-            len[integer]: Length of the dataset
-            
-        """
-
-        return len(self.data)
-
     def __getitem__(self, index):
 
         """
         
-        args:
+        Args:
             
             index[integer]: index of item of to get 
         
-        returns:
+        Returns:
             
             data: Data points corresponding to the given index
             targets: Targets correspoding to given datapoint
@@ -65,7 +54,7 @@ class BaseDataset:
         """
          Allows a transform to be applied on given dataset.
          
-         args:
+         Args:
             
             transform: The transform to be applied on the data
             
@@ -83,11 +72,11 @@ class BaseDataset:
     def send(self, worker):
         """
         
-        args:
+        Args:
             
             worker[worker class]: worker to which the data must be sent
                 
-        return:
+        Return:
             
             self: Return the object instance with data sent to corresponding worker
             
@@ -102,7 +91,7 @@ class BaseDataset:
         
         Gets the data back from respective workers
         
-        returns:
+        Returns:
             
             self: Return the object instance with data got back from workers
         """
@@ -215,32 +204,26 @@ class FederatedDataset:
     @property
     def workers(self):
         """
-           return: list of workers
+           Return: list of workers
         """
 
         return list(self.datasets.keys())
 
     def __getitem__(self, worker_id):
         """
-           args:
+           Args:
                    worker_id[str,int]: ID of respective worker
                    
-           return: Get Datasets from the respective worker 
+           Return: Get Datasets from the respective worker 
         """
 
         return self.datasets[worker_id]
 
     def __len__(self):
-        """
-           return: return length of entire dataset
-        """
 
         return sum([len(dataset) for w, dataset in self.datasets.items()])
 
     def __repr__(self):
-        """
-           return:
-        """
 
         fmt_str = "FederatedDataset\n"
         fmt_str += "    Distributed accross: {}\n".format(", ".join(str(x) for x in self.workers))
