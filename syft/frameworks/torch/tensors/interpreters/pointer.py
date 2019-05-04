@@ -205,7 +205,10 @@ class PointerTensor(AbstractTensor):
 
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
-        if self.location == self.owner:
+
+        # False is need so we can send and get a Model parameters locally.
+        # TODO: remove False
+        if False and self.location == self.owner:
             tensor = self.owner.get_obj(self.id_at_location).child
         else:
             # get tensor from remote machine
