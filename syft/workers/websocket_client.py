@@ -95,25 +95,24 @@ class WebsocketClientWorker(BaseWorker):
                 )
         return response
 
-    def list_objects_remote(self):
+    def _send_msg_and_deserialize(self, command_name: str):
         message = self.create_message_execute_command(
-            command_name="list_objects", command_owner="self"
+            command_name=command_name, command_owner="self"
         )
-        serialized_message = sy.serde.serialize(message)
-        # Send the message and return the deserialized response.
 
+        # Send the message and return the deserialized response.
+        serialized_message = sy.serde.serialize(message)
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
+
+    def list_objects_remote(self):
+        return self._send_msg_and_deserialize("list_objects")
+
+    def fit_batch_remote(self):
+        return self._send_msg_and_deserialize("fit_batch")
 
     def objects_count_remote(self):
-        message = self.create_message_execute_command(
-            command_name="objects_count", command_owner="self"
-        )
-        serialized_message = sy.serde.serialize(message)
-        # Send the message and return the deserialized response.
-
-        response = self._recv_msg(serialized_message)
-        return sy.serde.deserialize(response)
+        return self._send_msg_and_deserialize("objects_count")
 
     def __str__(self):
         """Returns the string representation of a Websocket worker.
