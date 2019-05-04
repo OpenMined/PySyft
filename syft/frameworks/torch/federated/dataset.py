@@ -59,9 +59,9 @@ class BaseDataset:
         """
 
         return self.data[index], self.targets[index]
-    
-    def transform(self,transform):
-        
+
+    def transform(self, transform):
+
         """
          Allows a transform to be applied on given dataset.
          
@@ -70,15 +70,15 @@ class BaseDataset:
             transform: The transform to be applied on the data
             
         """
-        
-        #Transforms cannot be applied to Pointer  , Fixed Precision or Float Precision tensors.
-        if(type(self.data)==torch.tensor):
-            
-             self.data = transform(self.data)
-             
+
+        # Transforms cannot be applied to Pointer  , Fixed Precision or Float Precision tensors.
+        if type(self.data) == torch.tensor:
+
+            self.data = transform(self.data)
+
         else:
-            
-             raise TypeError("Transforms can be applied only on torch tensors")
+
+            raise TypeError("Transforms can be applied only on torch tensors")
 
     def send(self, worker):
         """
