@@ -59,6 +59,26 @@ class BaseDataset:
         """
 
         return self.data[index], self.targets[index]
+    
+    def transform(self,transform):
+        
+        """
+         Allows a transform to be applied on given dataset.
+         
+         args:
+            
+            transform: The transform to be applied on the data
+            
+        """
+        
+        #Transforms cannot be applied to Pointer  , Fixed Precision or Float Precision tensors.
+        if(type(self.data)==torch.tensor):
+            
+             self.data = transform(self.data)
+             
+        else:
+            
+             raise TypeError("Transforms can be applied only on torch tensors")
 
     def send(self, worker):
         """
@@ -67,7 +87,7 @@ class BaseDataset:
             
             worker[worker class]: worker to which the data must be sent
                 
-        Return:
+        return:
             
             self: Return the object instance with data sent to corresponding worker
             
@@ -194,43 +214,32 @@ class FederatedDataset:
 
     @property
     def workers(self):
-
         """
-        
            return: list of workers
-               
         """
 
         return list(self.datasets.keys())
 
     def __getitem__(self, worker_id):
-
         """
-           
            args:
                    worker_id[str,int]: ID of respective worker
                    
            return: Get Datasets from the respective worker 
-               
         """
 
         return self.datasets[worker_id]
 
     def __len__(self):
         """
-        
            return: return length of entire dataset
-               
         """
 
         return sum([len(dataset) for w, dataset in self.datasets.items()])
 
     def __repr__(self):
-
         """
-        
-           Return:
-               
+           return:
         """
 
         fmt_str = "FederatedDataset\n"
