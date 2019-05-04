@@ -255,13 +255,18 @@ class Plan(ObjectStorage):
             from_worker_id: Id of the the replaced worker.
             to_worker_id: Id of the new worker.
         """
-        for from_id, to_id in [
-            (from_worker_id, to_worker_id),
-            (from_worker_id.encode(), to_worker_id.encode()),
-        ]:
-            self.readable_plan = Plan._replace_message_ids(
-                obj=self.readable_plan, change_id=-1, to_id=-1, from_worker=from_id, to_worker=to_id
-            )
+        self._replace_worker_ids(from_worker_id, to_worker_id)
+        if type(from_worker_id) == str and type(to_worker_id) == str:
+            self._replace_worker_ids(from_worker_id.encode(), to_worker_id.encode())
+        if type(from_worker_id) == str:
+            self._replace_worker_ids(from_worker_id.encode(), to_worker_id)
+        if type(to_worker_id) == str:
+            self._replace_worker_ids(from_worker_id, to_worker_id.encode())
+
+    def _replace_worker_ids(self, from_id, to_id):
+        self.readable_plan = Plan._replace_message_ids(
+            obj=self.readable_plan, change_id=-1, to_id=-1, from_worker=from_id, to_worker=to_id
+        )
 
     @staticmethod
     def _replace_message_ids(obj, change_id, to_id, from_worker, to_worker):
@@ -380,7 +385,6 @@ class Plan(ObjectStorage):
             worker = self.find_location(args)
             if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
-
             response = self.request_execute_plan(worker, result_ids, *args)
 
             return response
@@ -395,6 +399,8 @@ class Plan(ObjectStorage):
         elif len(self.locations) == 0 and self.owner != sy.hook.local_worker:
             self._update_args(args, result_ids)
             self._execute_plan()
+            responses = self._get_plan_output(result_ids)
+            return responses
 
         return sy.serde.serialize(None)
 
@@ -452,7 +458,6 @@ class Plan(ObjectStorage):
         Args:
             location: Worker where plan should be sent to.
         """
-
         readable_plan_original = copy.deepcopy(self.readable_plan)
         for worker_id in [self.owner.id] + self.locations:
             self.replace_worker_ids(worker_id, location.id)
