@@ -28,7 +28,7 @@ def test_base_dataset(workers):
 
         ten.append(i[0].item())
 
-    assert expected_val.equal(th.tensor(ten))
+    assert expected_val.equal(th.tensor(ten).long())
 
     assert len(dataset) == 4
     assert dataset[2] == (3, 3)
