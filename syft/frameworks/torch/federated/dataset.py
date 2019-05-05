@@ -60,7 +60,7 @@ class BaseDataset:
         """
 
         # Transforms cannot be applied to Pointer  , Fixed Precision or Float Precision tensors.
-        if type(self.data) == torch.tensor:
+        if type(self.data) == torch.Tensor:
 
             self.data = transform(self.data)
 
