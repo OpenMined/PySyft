@@ -8,7 +8,7 @@ import argparse
 import sys
 
 import syft as sy
-from syft.workers import WebsocketClientWorker
+from syft.workers import WebsocketClientProxy
 from syft.workers import VirtualWorker
 from syft.frameworks.torch.federated import utils
 
@@ -166,7 +166,7 @@ def test(model, device, test_loader):
 
 def define_and_get_arguments(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(
-        description="Run federated learning using websocket client workers."
+        description="Run federated learning using websocket client proxies and workers."
     )
     parser.add_argument("--batch_size", type=int, default=64, help="batch size of the training")
     parser.add_argument(
@@ -187,7 +187,7 @@ def define_and_get_arguments(args=sys.argv[1:]):
         "--verbose",
         "-v",
         action="store_true",
-        help="if set, websocket client workers will be started in verbose mode",
+        help="if set, websocket client proxies will be started in verbose mode",
     )
     parser.add_argument(
         "--use_virtual", action="store_true", help="if set, virtual workers will be used"
@@ -208,9 +208,9 @@ def main():
         charlie = VirtualWorker(id="charlie", hook=hook, verbose=args.verbose)
     else:
         kwargs_websocket = {"host": "localhost", "hook": hook, "verbose": args.verbose}
-        alice = WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
-        bob = WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
-        charlie = WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
+        alice = WebsocketClientProxy(id="alice", port=8777, **kwargs_websocket)
+        bob = WebsocketClientProxy(id="bob", port=8778, **kwargs_websocket)
+        charlie = WebsocketClientProxy(id="charlie", port=8779, **kwargs_websocket)
 
     workers = [alice, bob, charlie]
 

@@ -661,7 +661,7 @@ Bases: `syft.workers.base.BaseWorker`
 ## syft.workers.websocket_client module
 
 
-#### class syft.workers.websocket_client.WebsocketClientWorker(hook, host: str, port: int, id: Union[int, str] = 0, is_client_worker: bool = False, log_msgs: bool = False, verbose: bool = False, data: List[Union[torch.Tensor, syft.frameworks.torch.tensors.interpreters.abstract.AbstractTensor]] = None)
+#### class syft.workers.websocket_client.WebsocketClientProxy(hook, host: str, port: int, id: Union[int, str] = 0, is_client_worker: bool = False, log_msgs: bool = False, verbose: bool = False, data: List[Union[torch.Tensor, syft.frameworks.torch.tensors.interpreters.abstract.AbstractTensor]] = None)
 Bases: `syft.workers.base.BaseWorker`
 
 
@@ -688,7 +688,7 @@ must be found somewhere on the tensor in order for it to be included in the resu
 ## syft.workers.websocket_server module
 
 
-#### class syft.workers.websocket_server.WebsocketServerWorker(hook, host: str, port: int, id: Union[int, str] = 0, log_msgs: bool = False, verbose: bool = False, data: List[Union[torch.Tensor, syft.frameworks.torch.tensors.interpreters.abstract.AbstractTensor]] = None, loop=None)
+#### class syft.workers.websocket_server.WebsocketClientWorker(hook, host: str, port: int, id: Union[int, str] = 0, log_msgs: bool = False, verbose: bool = False, data: List[Union[torch.Tensor, syft.frameworks.torch.tensors.interpreters.abstract.AbstractTensor]] = None, loop=None)
 Bases: `syft.workers.virtual.VirtualWorker`
 
 

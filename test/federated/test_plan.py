@@ -15,9 +15,8 @@ import time
 
 import torch
 
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.workers import WebsocketClientWorker
-from syft.workers import WebsocketServerWorker
+from syft.workers import WebsocketClientProxy
 
 
 def test_plan_built_locally(hook):
@@ -216,15 +215,15 @@ def test_plan_execute_remotely(hook, start_proc):
     my_plan(x)
 
     kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8767, "hook": hook}
-    server = start_proc(WebsocketServerWorker, kwargs)
+    websocket_client_process = start_proc(WebsocketClientWorker, kwargs)
 
     time.sleep(0.1)
-    socket_pipe = WebsocketClientWorker(**kwargs)
+    websocket_proxy = WebsocketClientProxy(**kwargs)
 
-    plan_ptr = my_plan.send(socket_pipe)
-    x_ptr = x.send(socket_pipe)
+    plan_ptr = my_plan.send(websocket_proxy)
+    x_ptr = x.send(websocket_proxy)
     plan_res = plan_ptr(x_ptr).get()
 
     assert (plan_res == th.tensor([-42, 24, 46])).all()
 
-    server.terminate()
+    websocket_client_process.terminate()

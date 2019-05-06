@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 TIMEOUT_INTERVAL = 9_999_999
 
 
-class WebsocketClientWorker(BaseWorker):
+class WebsocketClientProxy(BaseWorker):
     def __init__(
         self,
         hook,
@@ -33,7 +33,7 @@ class WebsocketClientWorker(BaseWorker):
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
     ):
         """A client which will forward all messages to a remote worker running a
-        WebsocketServerWorker and receive all responses back from the server.
+        WebsocketClientWorker and receive all responses back from the server.
         """
 
         # TODO get angry when we have no connection params
@@ -41,7 +41,7 @@ class WebsocketClientWorker(BaseWorker):
         self.host = host
 
         # creates the connection with the server which gets held open until the
-        # WebsocketClientWorker is garbage collected.
+        # WebsocketClientProxy is garbage collected.
 
         # Secure flag adds a secure layer applying cryptography and authentication
         self.uri = f"ws://{self.host}:{self.port}"
@@ -69,8 +69,8 @@ class WebsocketClientWorker(BaseWorker):
     def _send_msg(self, message: bin, location) -> bin:
         raise RuntimeError(
             "_send_msg should never get called on a ",
-            "WebsocketClientWorker. Did you accidentally "
-            "make hook.local_worker a WebsocketClientWorker?",
+            "WebsocketClientProxy. Did you accidentally "
+            "make hook.local_worker a WebsocketClientProxy?",
         )
 
     def _receive_action(self, message: bin) -> bin:
@@ -79,7 +79,7 @@ class WebsocketClientWorker(BaseWorker):
         return response
 
     def _recv_msg(self, message: bin) -> bin:
-        """Forwards a message to the WebsocketServerWorker"""
+        """Forwards a message to the WebsocketClientWorker"""
 
         response = self._receive_action(message)
         if not self.ws.connected:

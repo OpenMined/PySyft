@@ -2,21 +2,21 @@ import time
 
 import torch
 
+from syft.workers import WebsocketClientProxy
 from syft.workers import WebsocketClientWorker
-from syft.workers import WebsocketServerWorker
 
 
 def test_websocket_worker(hook, start_proc):
     """Evaluates that you can do basic tensor operations using
-    WebsocketServerWorker"""
+    WebsocketClientWorker"""
 
-    kwargs = {"id": "fed1", "host": "localhost", "port": 8765, "hook": hook}
-    server = start_proc(WebsocketServerWorker, kwargs)
+    kwargs = {"id": "fed1", "host": "localhost", "port": 8765, "hook": hook, "verbose": True}
+    server = start_proc(WebsocketClientWorker, kwargs)
 
     time.sleep(0.1)
     x = torch.ones(5)
 
-    socket_pipe = WebsocketClientWorker(**kwargs)
+    socket_pipe = WebsocketClientProxy(**kwargs)
 
     x = x.send(socket_pipe)
     y = x + x
@@ -41,11 +41,11 @@ def test_websocket_workers_search(hook, start_proc):
     base_kwargs = {"id": "fed2", "host": "localhost", "port": 8766, "hook": hook}
     server_kwargs = base_kwargs
     server_kwargs["data"] = [sample_data]
-    server = start_proc(WebsocketServerWorker, server_kwargs)
+    server = start_proc(WebsocketClientWorker, server_kwargs)
 
     time.sleep(0.1)
 
-    client_worker = WebsocketClientWorker(**base_kwargs)
+    client_worker = WebsocketClientProxy(**base_kwargs)
 
     # Search for the tensor located on the server by using its tag
     results = client_worker.search("#sample_data", "#another_tag")

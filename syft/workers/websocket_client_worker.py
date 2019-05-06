@@ -8,10 +8,10 @@ import websockets
 import ssl
 
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.workers.virtual import VirtualWorker
+from syft.workers.virtual import BaseWorker
 
 
-class WebsocketServerWorker(VirtualWorker):
+class WebsocketClientWorker(BaseWorker):
     def __init__(
         self,
         hook,
@@ -64,7 +64,7 @@ class WebsocketServerWorker(VirtualWorker):
         super().__init__(hook=hook, id=id, data=data, log_msgs=log_msgs, verbose=verbose)
 
     async def _consumer_handler(self, websocket: websockets.WebSocketCommonProtocol):
-        """This handler listens for messages from WebsocketClientWorker
+        """This handler listens for messages from WebsocketClientProxy
         objects.
 
         Args:
@@ -150,3 +150,13 @@ class WebsocketServerWorker(VirtualWorker):
 
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
+
+    def _send_msg(self, message: bin, location) -> bin:
+        raise RuntimeError(
+            "_send_msg should never get called on a ",
+            "WebsocketClientWorker. Did you accidentally "
+            "make hook.local_worker a WebsocketClientWorker?",
+        )
+
+    def _recv_msg(self, message: bin) -> bin:
+        return self.recv_msg(message)
