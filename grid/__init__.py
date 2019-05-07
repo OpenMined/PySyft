@@ -137,7 +137,7 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
     commands.append("rm -rf .git")
 
     logs.append("Step 5: cloning heroku app code from Github")
-    commands.append("git clone git@github.com:OpenMined/Grid.git")
+    commands.append("git clone https://github.com/OpenMined/Grid")
 
     logs.append("Step 6: copying app code from cloned repo")
     commands.append("cp Grid/app/* ./")
