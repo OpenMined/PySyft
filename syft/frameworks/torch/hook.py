@@ -1,6 +1,5 @@
 import inspect
 import re
-import random
 import logging
 import types
 import copy
@@ -11,6 +10,7 @@ from functools import wraps
 
 import syft
 from syft import workers
+
 from syft.workers import BaseWorker
 from .tensors.interpreters import TorchTensor
 from .tensors.interpreters import PointerTensor
@@ -713,7 +713,6 @@ class TorchHook:
             tensor_type.native___init__ = tensor_type.__init__
 
         def new___init__(cls, *args, owner=None, id=None, register=True, **kwargs):
-
             initialize_tensor(
                 hook_self=hook_self,
                 cls=cls,
@@ -722,9 +721,6 @@ class TorchHook:
                 init_args=args,
                 init_kwargs=kwargs,
             )
-
-            # if register:
-            #     owner.register_object(cls, id=id)
 
         tensor_type.__init__ = new___init__
 
@@ -742,6 +738,9 @@ class TorchHook:
         def new_tensor(*args, owner=None, id=None, register=True, **kwargs):
             current_tensor = hook_self.torch.native_tensor(*args, **kwargs)
             _apply_args(hook_self, current_tensor, owner, id)
+            if register:
+                current_tensor.owner.register_obj(current_tensor)
+
             return current_tensor
 
         hook_self.torch.tensor = new_tensor
@@ -773,7 +772,7 @@ class TorchHook:
         @property
         def id(self):
             if not hasattr(self, "_id"):
-                self._id = int(10e10 * random.random())
+                self._id = syft.ID_PROVIDER.pop()
             return self._id
 
         @id.setter

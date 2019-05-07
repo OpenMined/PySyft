@@ -3,12 +3,13 @@ target-version = ['py36']
 line-length = 100
 exclude = '''
 (
-    | \.git
+    \.git
     | \.mypy_cache
     | \.tox
     | \.venv
-    | \.eggs
+    | \.eggs\/
     | build
     | dist
+    | venv\/
 )
 '''

@@ -1,7 +1,5 @@
 """All the tests relative to garbage collection of all kinds of remote or local tensors"""
 
-import random
-
 import torch
 import syft
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
