@@ -1,44 +1,43 @@
 from __future__ import print_function  # Only Python 2.x
 
-from .client import GridClient
-
-import os
 import sys
 import subprocess
 
+from grid.client import GridClient
+from grid import utils as gr_utils
 
 
 def run_commands_in(commands, logs, tmp_dir="tmp", cleanup=True, verbose=False):
-    os.popen("mkdir " + tmp_dir).read()
+    gr_utils.exec_os_cmd("mkdir " + tmp_dir)
 
     outputs = list()
 
     cmd = ""
     for i in range(len(commands)):
 
-        if (verbose):
+        if verbose:
             print(logs[i] + "...")
 
         cmd = "cd " + str(tmp_dir) + "; " + commands[i] + "; cd ..;"
-        o = os.popen(cmd).read()
+        o = gr_utils.exec_os_cmd(cmd)
         outputs.append(str(o))
 
-        if (verbose):
+        if verbose:
             print("\t" + str(o).replace("\n", "\n\t"))
 
-    if (cleanup):
-        os.popen("rm -rf " + tmp_dir).read()
+    if cleanup:
+        gr_utils.exec_os_cmd("rm -rf " + tmp_dir)
 
     return outputs
 
 
 def check_dependency(lib="git", check="usage:", error_msg="Error: please install git.", verbose=False):
-    if (verbose):
+    if verbose:
         sys.stdout.write("\tChecking for " + str(lib) + " dependency...")
-    o = os.popen(lib).read()
+    o = gr_utils.exec_os_cmd(lib)
     if check not in o:
         raise Exception(error_msg)
-    if (verbose):
+    if verbose:
         print("DONE!")
 
 def execute(cmd):
@@ -53,8 +52,8 @@ def execute(cmd):
 
 def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
     app_addr = "https://" + str(grid_name) + ".herokuapp.com"
-    if (check_deps):
-        if (verbose):
+    if check_deps:
+        if verbose:
             print("Step 0: Checking Dependencies")
 
         check_dependency(lib="git",
@@ -72,9 +71,9 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
                          error_msg="Missing Pip command line dependency - please install it: https://www.makeuseof.com/tag/install-pip-for-python/",
                          verbose=verbose)
 
-        if (verbose):
+        if verbose:
             sys.stdout.write("\tChecking to see if heroku is logged in...")
-        res = os.popen("heroku create app").read()
+        res = gr_utils.exec_os_cmd("heroku create app")
         if res == 'Enter your Heroku credentials:\n':
             raise Exception("You are not logged in to Heroku. Run 'heroku login'"
                             " from the command line and follow the instructions. "
@@ -82,14 +81,14 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
                             " your credit card. Even though you can use Grid on the"
                             " FREE tier, it won't let you activate a Redis database "
                             "without adding your credit card information to your account.")
-        if (verbose):
+        if verbose:
             print("DONE!")
 
-    if (verbose):
+    if verbose:
         print("\nStep 1: Making sure app name '" + grid_name + "' is available")
     try:
         output = list(execute(("heroku create " + grid_name).split(" ")))
-        if (verbose):
+        if verbose:
             print("\t" + str(output))
     except:
         output = list(execute(("rm -rf tmp").split(" ")))
@@ -98,11 +97,11 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
 
     commands = list()
     logs = list()
-    if (verbose):
+    if verbose:
         print("\nStep 2: Making Sure Redis Database Can Be Spun Up on Heroku (this can take a couple seconds)...")
     try:
         output = list(execute(("heroku addons:create rediscloud -a " + grid_name).split(" ")))
-        if (verbose):
+        if verbose:
             print("\t" + str(output))
     except:
 
@@ -126,7 +125,7 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
 
         raise Exception(msg)
 
-    if (verbose):
+    if verbose:
         print("\nStep 3: Cleaning up heroku/redis checks...")
     output = list(execute(("heroku destroy " + grid_name + " --confirm " + grid_name).split(" ")))
 
