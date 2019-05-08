@@ -222,14 +222,11 @@ def test_hook_args_and_cmd_signature_malleability():
     assert (r3 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
 
 
-def test_RNN_grad_set_backpropagation():
+def test_RNN_grad_set_backpropagation(workers):
     """Perform backpropagation at a remote worker and check if the gradient updates
     and properly computed within the model"""
 
-    import syft as sy
-
-    hook = sy.TorchHook(torch)
-    alice = sy.VirtualWorker(hook, id="alice")
+    alice = workers["alice"]
 
     class RNN(nn.Module):
         def __init__(self, input_size, hidden_size, output_size):
