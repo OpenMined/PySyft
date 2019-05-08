@@ -34,7 +34,6 @@ def test_websocket_worker(hook, start_proc):
 def test_websocket_workers_search(hook, start_proc):
     """Evaluates that a client can search and find tensors that belong
     to another party"""
-
     # Sample tensor to store on the server
     sample_data = torch.tensor([1, 2, 3, 4]).tag("#sample_data", "#another_tag")
     # Args for initializing the websocket server and client
@@ -45,9 +44,16 @@ def test_websocket_workers_search(hook, start_proc):
 
     time.sleep(0.1)
 
-    client_worker = WebsocketClientWorker(**base_kwargs)
+    client_worker = WebsocketClientWorker(**base_kwargs, verbose=True)
 
     # Search for the tensor located on the server by using its tag
+    results = client_worker.search("#sample_data", "#another_tag")
+
+    assert results
+    assert results[0].owner.id == "me"
+    assert results[0].location.id == "fed2"
+
+    # Search multiple times should still work
     results = client_worker.search("#sample_data", "#another_tag")
 
     assert results
