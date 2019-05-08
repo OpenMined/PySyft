@@ -281,5 +281,7 @@ def test_RNN_grad_set_backpropagation(workers):
 
     # If the gradients are there, then the backpropagation did indeed complete successfully
     for param in model_got.parameters():
+        # param.grad.data would raise an exception in case it is none,
+        # so we better check it beforehand
         assert param.grad.data is not None
         param.data.add_(-learning_rate, param.grad.data)
