@@ -16,6 +16,13 @@ def test_create_pointer(workers):
     x.create_pointer(location=workers["james"])
 
 
+def test_send_default_garbage_collector_true(workers):
+    """Pointer tensor should be garbage collected by default."""
+    x = torch.Tensor([-1, 2])
+    x_ptr = x.send(workers["alice"])
+    assert x_ptr.child.garbage_collect_data
+
+
 def test_send_get(workers):
     """Test several send get usages"""
     bob = workers["bob"]
