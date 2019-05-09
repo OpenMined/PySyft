@@ -112,7 +112,7 @@ class ObjectStorage:
         """Forces object removal.
 
         Besides removing the object from the permanent object registry if it exists.
-        Explictly forces removall of the object modifying the `garbage_collect_data` attribute.
+        Explicitly forces removal of the object modifying the `garbage_collect_data` attribute.
 
         Args:
             remote_key: A string or integer representing id of the object to be
