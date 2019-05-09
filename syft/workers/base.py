@@ -90,7 +90,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             MSGTYPE.IS_NONE: self.is_tensor_none,
             MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             MSGTYPE.SEARCH: self.deserialized_search,
-            MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
         }
 
         self.load_data(data)

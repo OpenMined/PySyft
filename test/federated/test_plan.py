@@ -1,5 +1,6 @@
 import syft as sy
 
+import torch
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,8 +9,9 @@ from syft.serde import deserialize
 from syft.serde import serialize
 import time
 
+import torch
+import mock
 import pytest
-import unittest.mock as mock
 
 from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
@@ -70,10 +72,10 @@ def test_plan_built_on_method(hook):
     """
     Test @sy.meth2plan and plan send / get / send
     """
-    x11 = th.tensor([-1, 2.0]).tag("input_data")
-    x12 = th.tensor([1, -2.0]).tag("input_data2")
-    x21 = th.tensor([-1, 2.0]).tag("input_data")
-    x22 = th.tensor([1, -2.0]).tag("input_data2")
+    x11 = torch.tensor([-1, 2.0]).tag("input_data")
+    x12 = torch.tensor([1, -2.0]).tag("input_data2")
+    x21 = torch.tensor([-1, 2.0]).tag("input_data")
+    x22 = torch.tensor([1, -2.0]).tag("input_data2")
 
     device_1 = sy.VirtualWorker(hook, id="device_1", data=(x11, x12))
     device_2 = sy.VirtualWorker(hook, id="device_2", data=(x21, x22))
