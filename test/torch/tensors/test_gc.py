@@ -1,9 +1,11 @@
 """All the tests relative to garbage collection of all kinds of remote or local tensors"""
+import time
 
 import torch
-import syft
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.workers import WebsocketServerWorker
+from syft.workers import WebsocketClientWorker
 
 # TESTING POINTERS
 
@@ -177,3 +179,19 @@ def test_implicit_garbage_collect_logging_on_pointer(workers):
     x = "open-source"
 
     assert x_id not in workers["bob"]._objects
+
+
+def test_websocket_garbage_collection(hook, start_proc):
+    # Args for initializing the websocket server and client
+    base_kwargs = {"id": "fed2", "host": "localhost", "port": 8777, "hook": hook}
+    server_kwargs = base_kwargs
+    _ = start_proc(WebsocketServerWorker, server_kwargs)
+
+    time.sleep(0.1)
+    client_worker = WebsocketClientWorker(**base_kwargs)
+
+    sample_data = torch.tensor([1, 2, 3, 4])
+    sample_ptr = sample_data.send(client_worker)
+
+    y = sample_ptr.get()
+    assert sample_data not in client_worker._objects
