@@ -44,7 +44,7 @@ def test_websocket_workers_search(hook, start_proc):
 
     time.sleep(0.1)
 
-    client_worker = WebsocketClientWorker(**base_kwargs, verbose=True)
+    client_worker = WebsocketClientWorker(**base_kwargs)
 
     # Search for the tensor located on the server by using its tag
     results = client_worker.search("#sample_data", "#another_tag")
