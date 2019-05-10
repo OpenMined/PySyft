@@ -119,6 +119,9 @@ class WebsocketClientWorker(BaseWorker):
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
 
+    def fit(self, dataset_key):
+        return self._send_msg_and_deserialize("fit", dataset=dataset_key)
+
     def __str__(self):
         """Returns the string representation of a Websocket worker.
 
