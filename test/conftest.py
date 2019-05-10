@@ -30,6 +30,10 @@ def hook():
 
 @pytest.fixture(scope="session", autouse=True)
 def workers(hook):
+    # To run a plan locally the local worker can't be a client worker,
+    # since it needs to register objects
+    hook.local_worker.is_client_worker = False
+
     # Define 3 virtual workers
     alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
     bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
