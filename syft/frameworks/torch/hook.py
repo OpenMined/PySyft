@@ -725,7 +725,6 @@ class TorchHook:
             tensor_type.native___init__ = tensor_type.__init__
 
         def new___init__(cls, *args, owner=None, id=None, register=True, **kwargs):
-
             initialize_tensor(
                 hook_self=hook_self,
                 cls=cls,
@@ -734,9 +733,6 @@ class TorchHook:
                 init_args=args,
                 init_kwargs=kwargs,
             )
-
-            # if register:
-            #     owner.register_object(cls, id=id)
 
         tensor_type.__init__ = new___init__
 
@@ -754,6 +750,9 @@ class TorchHook:
         def new_tensor(*args, owner=None, id=None, register=True, **kwargs):
             current_tensor = hook_self.torch.native_tensor(*args, **kwargs)
             _apply_args(hook_self, current_tensor, owner, id)
+            if register:
+                current_tensor.owner.register_obj(current_tensor)
+
             return current_tensor
 
         hook_self.torch.tensor = new_tensor
@@ -938,10 +937,10 @@ class TorchHook:
 
         def create_grad_objects(model):
             """Assigns gradient to model parameters if not assigned"""
-            # for p in model.parameters():
-            #     o = p.sum()
-            #     o.backward()
-            #     p.grad -= p.grad
+            for p in model.parameters():
+                o = p.sum()
+                o.backward()
+                p.grad -= p.grad
 
         def module_send_(nn_self, dest):
             """Overloads torch.nn instances so that they could be sent to other workers"""
