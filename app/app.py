@@ -16,7 +16,7 @@ app.secret_key = b'keepmesecret'
 try:
     db = redis.from_url(os.environ['REDISCLOUD_URL'])
 except:
-    db = redis.from_url('http://127.0.0.1:6379')
+    db = redis.from_url('redis://localhost:6379')
 
 def _maybe_create_worker(worker_name: str = 'worker', virtual_worker_id: str = 'grid'):
     worker = db.get(worker_name)
@@ -64,7 +64,7 @@ def cmd():
         worker.verbose = True
         sy.torch.hook.local_worker.add_worker(worker)
 
-        response = self._request_message()
+        response = _request_message(worker)
 
         print("\t NEW WORKER STATE:" + str(worker._objects.keys()) + "\n\n")
 

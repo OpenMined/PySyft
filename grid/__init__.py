@@ -8,6 +8,7 @@ from grid import utils as gr_utils
 
 
 def run_commands_in(commands, logs, tmp_dir="tmp", cleanup=True, verbose=False):
+    assert len(commands) == len(logs)
     gr_utils.exec_os_cmd("mkdir " + tmp_dir)
 
     outputs = list()
@@ -50,7 +51,7 @@ def execute(cmd):
         raise subprocess.CalledProcessError(return_code, cmd)
 
 
-def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
+def launch_on_heroku(grid_name: str, verbose=True, check_deps=True, dev_user=None):
     app_addr = "https://" + str(grid_name) + ".herokuapp.com"
     if check_deps:
         if verbose:
@@ -136,7 +137,14 @@ def launch_on_heroku(grid_name="opengrid5", verbose=True, check_deps=True):
     commands.append("rm -rf .git")
 
     logs.append("Step 5: cloning heroku app code from Github")
-    commands.append("git clone https://github.com/OpenMined/Grid")
+    if dev_user:
+        commands.append("git clone -b dev https://github.com/{}/Grid".format(dev_user))
+
+        logs.append("Checking out dev version...")
+        commands.append("git checkout origin/dev")
+
+    else:
+        commands.append("git clone https://github.com/OpenMined/Grid")
 
     logs.append("Step 6: copying app code from cloned repo")
     commands.append("cp Grid/app/* ./")
