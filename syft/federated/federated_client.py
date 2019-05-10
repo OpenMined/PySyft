@@ -1,9 +1,7 @@
-import logging
-from typing import Union
-
 import torch as th
-from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
 from torch import nn
+from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
+import logging
 
 from syft.generic import ObjectStorage
 from syft.federated.train_config import TrainConfig
@@ -109,12 +107,33 @@ class FederatedClient(ObjectStorage):
         batch_sampler = BatchSampler(sampler, self.train_config.batch_size, drop_last)
         return batch_sampler
 
-    def _fit(self, ds_key: str):
+    def _fit(self, key):
+        # TODO: how to get the actual model?
+        # self.model.train()
+        logger.setLevel(logging.DEBUG)
+        logger.debug("train_config = %s", self.train_config)
+        logger.debug("datasets[%s] = %s", key, self.datasets[key])
+        logger.debug("nr objects = %s", len(self._objects))
+        for id in self._objects:
+            logger.debug("id: %s, obj: %s", id, self._objects[id])
+        batch_sampler = self._create_batch_sampler(key)
         loss = -1.0
-        batch_sampler = self._create_batch_sampler(ds_key)
         for data_indices in batch_sampler:
-            data, target = self.datasets[ds_key][data_indices]
-            loss = self.fit_batch(data, target)
-            if self.verbose:
-                logger.info("loss: %s", loss)
+            logger.debug("data_indices = %s", data_indices)
+            data, target = self.datasets[key][data_indices]
+            logger.debug("data = %s", data)
+            logger.debug("target = %s", target)
+            self.register_obj(data)
+            self.register_obj(target)
+            self.optimizer.zero_grad()
+            output = self.train_config.forward_plan(data)
+            self.register_obj(output)
+            loss = self.train_config.loss_plan(output, target)
+            loss.backward()
+            self.optimizer.step()
+            self.de_register_obj(output)
+            self.de_register_obj(data)
+            self.de_register_obj(target)
+            logger.info("loss: %s", loss)
+
         return loss

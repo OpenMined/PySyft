@@ -21,7 +21,6 @@ def start_proc(participant, kwargs):  # pragma: no cover
     """ helper function for spinning up a websocket participant """
 
     def target():
-
         server = participant(**kwargs)
 
         # data = AutogradTensor().on(th.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True))
