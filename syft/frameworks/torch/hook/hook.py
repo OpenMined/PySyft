@@ -12,14 +12,15 @@ import syft
 from syft import workers
 
 from syft.workers import BaseWorker
-from .tensors.interpreters import TorchTensor
-from .tensors.interpreters import PointerTensor
-from .tensors.decorators import LoggingTensor
-from .tensors.interpreters import FixedPrecisionTensor
-from .tensors.interpreters import AdditiveSharingTensor
-from .tensors.interpreters import MultiPointerTensor
-from .torch_attributes import TorchAttributes
-from .tensors.interpreters.abstract import initialize_tensor, _apply_args
+from syft.frameworks.torch.tensors.interpreters import TorchTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.torch_attributes import TorchAttributes
+from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
+from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
