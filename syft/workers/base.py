@@ -304,9 +304,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         if isinstance(obj, torch.Tensor):
             pointer = obj.create_pointer(
-                owner=self, location=worker, id_at_location=obj.id, register=True, 
-                ptr_id=ptr_id, local_autograd=local_autograd, 
-                preinitialize_grad=preinitialize_grad
+                owner=self,
+                location=worker,
+                id_at_location=obj.id,
+                register=True,
+                ptr_id=ptr_id,
+                local_autograd=local_autograd,
+                preinitialize_grad=preinitialize_grad,
             )
         else:
             pointer = obj
