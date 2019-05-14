@@ -14,7 +14,7 @@ def backwards_grad(grad_fn, in_grad=None):
 
 
 class AutogradTensor(AbstractTensor):
-    """ A tensor that tracks operations to build a dynamic graph and backprops 
+    """ A tensor that tracks operations to build a dynamic graph and backprops
         through the graph to calculate gradients.
     """
 
@@ -26,7 +26,7 @@ class AutogradTensor(AbstractTensor):
         id=None,
         parent=None,
         preinitialize_grad=False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
 
@@ -120,12 +120,14 @@ class AutogradTensor(AbstractTensor):
         <no self>, arguments[, kwargs])
         :return: the response of the function command
         """
-        
+
         cmd, _, args, kwargs = command
 
         # TODO: I can't manage the import issue, can you?
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_args(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_args(
+            cmd, args, kwargs
+        )
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
