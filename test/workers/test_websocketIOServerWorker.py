@@ -3,7 +3,7 @@ import time
 import torch
 
 import syft as sy
-from syft.workers import WebsocketIOServerWorker
+from grid.workers import WebsocketIOServerWorker
 
 
 def _payload(location):

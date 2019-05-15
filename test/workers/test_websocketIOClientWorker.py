@@ -3,7 +3,7 @@ import time
 import socketio
 import torch
 
-from syft.workers import WebsocketIOServerWorker, WebsocketIOClientWorker
+from grid.workers import WebsocketIOServerWorker, WebsocketIOClientWorker
 
 
 def create_dummy_client():
