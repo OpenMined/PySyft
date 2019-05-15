@@ -1,6 +1,10 @@
 import random
 
 
+def create_random_id():
+    return int(10e10 * random.random())
+
+
 class IdProvider:
     """Provides Id to all syft objects.
 
@@ -13,7 +17,9 @@ class IdProvider:
 
     def __init__(self, given_ids=list()):
         self.given_ids = given_ids
-        self.generated = []
+        self.generated = (
+            []
+        )  # TODO: use sorted container to quickly check whether a value is contained
 
     def pop(self, *args) -> int:
         """Provides random ids and store them.
@@ -27,6 +33,8 @@ class IdProvider:
         if len(self.given_ids):
             random_id = self.given_ids.pop(-1)
         else:
-            random_id = int(10e10 * random.random())
+            random_id = create_random_id()
+            while random_id in self.generated:
+                random_id = create_random_id()
         self.generated.append(random_id)
         return random_id
