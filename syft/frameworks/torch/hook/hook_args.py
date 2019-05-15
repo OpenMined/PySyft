@@ -278,7 +278,7 @@ def build_rule(args):
         return 0
     else:
         # New kind of return with pytorch 1.1
-        if 'torch.return_types' in str(type_args):
+        if "torch.return_types" in str(type_args):
             return type_rule[tuple](args)
         # Still remain ellipsis, slices, etc.
         return 0

@@ -398,7 +398,7 @@ class TorchHook:
             else:
                 if self.native_param_grad is not None:
                     with torch.no_grad():
-                        self.set_(new_grad)
+                        self.native_param_grad = new_grad
                 elif new_grad is not None:
                     self.native_param_grad = new_grad
             return self
