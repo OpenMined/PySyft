@@ -20,6 +20,8 @@ hook_method_args_functions = {}
 hook_method_response_functions = {}
 get_tensor_type_functions = {}
 
+base_types = {int, float, str, bool, bytes, bytearray, complex}
+
 one = lambda _args: 1
 
 # dict to specify the action depending of the type found
@@ -268,9 +270,17 @@ def build_rule(args):
     """
 
     type_args = type(args)
+    # for list, tuple but also tensors and syft tensors
     if type_args in type_rule:
         return type_rule[type_args](args)
+    # for int, float, str, etc
+    elif type_args in base_types:
+        return 0
     else:
+        # New kind of return with pytorch 1.1
+        if 'torch.return_types' in str(type_args):
+            return type_rule[tuple](args)
+        # Still remain ellipsis, slices, etc.
         return 0
 
 
