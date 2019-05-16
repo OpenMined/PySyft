@@ -160,6 +160,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         raise NotImplementedError  # pragma: no cover
 
+    def remove_worker_from_registry(self, worker_id):
+        """Removes a worker from the dictionary of known workers.
+        Args:
+            worker_id: id to be removed
+        """
+        del self._known_workers[worker_id]
+
+    def remove_worker_from_local_worker_registry(self):
+        """Removes itself from the registry of hook.local_worker.
+        """
+        self.hook.local_worker.remove_worker_from_registry(worker_id=self.id)
+
     def load_data(self, data: List[Union[torch.Tensor, AbstractTensor]]) -> None:
         """Allows workers to be initialized with data when created
 
@@ -354,11 +366,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 )
                 return response
             except ResponseSignatureError:
-                return_ids = IdProvider(return_ids)
+                return_id_provider = sy.ID_PROVIDER
+                return_id_provider.set_next_ids(return_ids, check_ids=False)
+                return_id_provider.start_recording_ids()
                 response = sy.frameworks.torch.hook_args.register_response(
-                    command_name, response, return_ids, self
+                    command_name, response, return_id_provider, self
                 )
-                raise ResponseSignatureError(return_ids.generated)
+                new_ids = return_id_provider.get_recorded_ids()
+                raise ResponseSignatureError(new_ids)
 
     def send_command(
         self, recipient: "BaseWorker", message: str, return_ids: str = None
@@ -528,7 +543,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             else:
                 if fail_hard:
                     raise WorkerNotFoundException
-                logging.warning("Worker", self.id, "couldn't recognize worker", id_or_worker)
+                logging.warning("Worker %s couldn't recognize worker %s", self.id, id_or_worker)
                 return id_or_worker
         else:
             if id_or_worker.id not in self._known_workers:
