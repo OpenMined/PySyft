@@ -76,3 +76,52 @@ def test_given_ids_side_effect(hook):
 
     provider.pop()
     assert len(given_ids) == 0
+
+
+def test_set_next_ids(hook):
+    initial_given_ids = [2, 3]
+    provider = id_provider.IdProvider(given_ids=initial_given_ids.copy())
+
+    next_ids = [4, 5]
+    provider.set_next_ids(next_ids.copy())
+
+    val = provider.pop()
+    assert val == next_ids[-1]
+    val = provider.pop()
+    assert val == next_ids[-2]
+
+    val = provider.pop()
+    assert val == initial_given_ids[-1]
+    val = provider.pop()
+    assert val == initial_given_ids[-2]
+
+
+def test_start_recording_ids():
+    initial_given_ids = [2, 3]
+    provider = id_provider.IdProvider(given_ids=initial_given_ids.copy())
+    provider.pop()
+    provider.start_recording_ids()
+    provider.pop()
+
+    ids = provider.get_recorded_ids()
+    assert len(ids) == 1
+    assert ids[0] == initial_given_ids[-2]
+
+
+def test_get_recorded_ids():
+    initial_given_ids = [2, 3, 4]
+    provider = id_provider.IdProvider(given_ids=initial_given_ids.copy())
+    provider.pop()
+    provider.start_recording_ids()
+    provider.pop()
+
+    ids = provider.get_recorded_ids(continue_recording=True)
+    assert len(ids) == 1
+    assert ids[0] == initial_given_ids[-2]
+
+    provider.pop()
+
+    ids = provider.get_recorded_ids()
+    assert len(ids) == 2
+    assert ids[0] == initial_given_ids[-2]
+    assert ids[1] == initial_given_ids[-3]

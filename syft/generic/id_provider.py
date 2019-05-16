@@ -1,4 +1,5 @@
 import random
+from typing import List
 
 
 def create_random_id():
@@ -15,11 +16,11 @@ class IdProvider:
     An instance of IdProvider is accessbile via sy.ID_PROVIDER.
     """
 
-    def __init__(self, given_ids=list()):
-        self.given_ids = given_ids
-        self.generated = (
-            []
-        )  # TODO: use sorted container to quickly check whether a value is contained
+    def __init__(self, given_ids=None):
+        self.given_ids = given_ids if given_ids is not None else list()
+        self.generated = set()
+        self.record_ids = False
+        self.recorded_ids = []
 
     def pop(self, *args) -> int:
         """Provides random ids and store them.
@@ -36,5 +37,41 @@ class IdProvider:
             random_id = create_random_id()
             while random_id in self.generated:
                 random_id = create_random_id()
-        self.generated.append(random_id)
+        self.generated.add(random_id)
+        if self.record_ids:
+            self.recorded_ids.append(random_id)
+
         return random_id
+
+    def set_next_ids(self, given_ids: List):
+        """Sets the next ids returned by the id provider
+
+        Note that the ids are returned in reverse order of the list, as a pop() operation is applied
+
+        Args:
+            given_ids: List, next ids returned by the id provider
+
+        """
+        # TODO: should we check whether these ids conflict with the content of self.generated?
+        self.given_ids += given_ids
+
+    def start_recording_ids(self):
+        """Starts the recording in form of a list of the generated ids
+        """
+        self.record_ids = True
+        self.recorded_ids = list()
+
+    def get_recorded_ids(self, continue_recording=False):
+        """Returns the generated ids since the last call to start_recording_ids
+
+        Args:
+            continue_recording: if False, the recording is stopped and the list of recorded ids is reset
+
+        Returns:
+            list of recorded ids
+        """
+        ret_val = self.recorded_ids
+        if not continue_recording:
+            self.record_ids = False
+            self.recorded_ids = list()
+        return ret_val
