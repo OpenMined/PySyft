@@ -1,5 +1,6 @@
 import random
 from typing import List
+from syft import exceptions
 
 
 def create_random_id():
@@ -13,7 +14,7 @@ class IdProvider:
     Can take a pre set list in input and will complete
     when it's empty.
 
-    An instance of IdProvider is accessbile via sy.ID_PROVIDER.
+    An instance of IdProvider is accessible via sy.ID_PROVIDER.
     """
 
     def __init__(self, given_ids=None):
@@ -43,26 +44,32 @@ class IdProvider:
 
         return random_id
 
-    def set_next_ids(self, given_ids: List):
+    def set_next_ids(self, given_ids: List, check_ids: bool = True):
         """Sets the next ids returned by the id provider
 
-        Note that the ids are returned in reverse order of the list, as a pop() operation is applied
+        Note that the ids are returned in reverse order of the list, as a pop() operation is applied.
 
         Args:
             given_ids: List, next ids returned by the id provider
+            check_ids: bool, check whether these ids conflict with already generated ids
 
         """
-        # TODO: should we check whether these ids conflict with the content of self.generated?
+        if check_ids:
+            intersect = self.generated.intersection(set(given_ids))
+            if len(intersect) > 0:
+                message = "Provided IDs {} are contained in already generated IDs".format(intersect)
+                raise exceptions.IdNotUniqueError(message)
+
         self.given_ids += given_ids
 
     def start_recording_ids(self):
-        """Starts the recording in form of a list of the generated ids
+        """Starts the recording in form of a list of the generated ids.
         """
         self.record_ids = True
         self.recorded_ids = list()
 
     def get_recorded_ids(self, continue_recording=False):
-        """Returns the generated ids since the last call to start_recording_ids
+        """Returns the generated ids since the last call to start_recording_ids.
 
         Args:
             continue_recording: if False, the recording is stopped and the list of recorded ids is reset

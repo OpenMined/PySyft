@@ -1,5 +1,7 @@
 import unittest.mock as mock
+import pytest
 
+from syft import exceptions
 from syft.generic import id_provider
 
 
@@ -94,6 +96,25 @@ def test_set_next_ids(hook):
     assert val == initial_given_ids[-1]
     val = provider.pop()
     assert val == initial_given_ids[-2]
+
+
+def test_set_next_ids_with_id_checking(hook):
+    initial_given_ids = [2, 3]
+    provider = id_provider.IdProvider()
+    provider.set_next_ids(initial_given_ids.copy(), check_ids=False)
+
+    # generated the initial 3 ids
+    provider.pop()
+    provider.pop()
+    provider.pop()
+
+    next_ids = [1, 2, 5]
+    with pytest.raises(exceptions.IdNotUniqueError, match=r"\{2\}"):
+        provider.set_next_ids(next_ids.copy(), check_ids=True)
+
+    next_ids = [2, 3, 5]
+    with pytest.raises(exceptions.IdNotUniqueError, match=r"\{2, 3\}"):
+        provider.set_next_ids(next_ids.copy(), check_ids=True)
 
 
 def test_start_recording_ids():
