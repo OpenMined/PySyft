@@ -385,11 +385,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 )
                 return response
             except ResponseSignatureError:
-                return_ids = IdProvider(return_ids)
+                return_id_provider = sy.ID_PROVIDER
+                return_id_provider.set_next_ids(return_ids, check_ids=False)
+                return_id_provider.start_recording_ids()
                 response = sy.frameworks.torch.hook_args.register_response(
-                    command_name, response, return_ids, self
+                    command_name, response, return_id_provider, self
                 )
-                raise ResponseSignatureError(return_ids.generated)
+                new_ids = return_id_provider.get_recorded_ids()
+                raise ResponseSignatureError(new_ids)
 
     def send_command(
         self, recipient: "BaseWorker", message: str, return_ids: str = None
