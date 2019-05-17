@@ -261,6 +261,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         obj: Union[torch.Tensor, AbstractTensor],
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
+        local_autograd=False,
+        preinitialize_grad=False,
     ) -> PointerTensor:
         """Sends tensor to the worker(s).
 
@@ -274,6 +276,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 receive the object.
             ptr_id: An optional string or integer indicating the remote id of
                 the object on the remote worker(s).
+            local_autograd: Use autograd system on the local machine instead of PyTorch's
+                autograd on the workers.
+            preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
 
         Example:
             >>> import torch
@@ -311,12 +316,19 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         if isinstance(obj, torch.Tensor):
             pointer = obj.create_pointer(
-                owner=self, location=worker, id_at_location=obj.id, register=True, ptr_id=ptr_id
+                owner=self,
+                location=worker,
+                id_at_location=obj.id,
+                register=True,
+                ptr_id=ptr_id,
+                local_autograd=local_autograd,
+                preinitialize_grad=preinitialize_grad,
             )
         else:
             pointer = obj
         # Send the object
         self.send_obj(obj, worker)
+
         return pointer
 
     def execute_command(self, message: tuple) -> PointerTensor:
@@ -340,7 +352,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 getattr(_self, command_name)(*args, **kwargs)
                 return
             else:
-                response = getattr(_self, command_name)(*args, **kwargs)
+                try:
+                    response = getattr(_self, command_name)(*args, **kwargs)
+                except TypeError:
+                    # TODO Andrew thinks this is gross, please fix. Instead need to properly deserialize strings
+                    new_args = [
+                        arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args
+                    ]
+                    response = getattr(_self, command_name)(*new_args, **kwargs)
         # Handle functions
         else:
             # At this point, the command is ALWAYS a path to a
