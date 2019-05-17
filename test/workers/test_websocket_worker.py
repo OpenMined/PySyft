@@ -11,7 +11,7 @@ def test_websocket_worker(hook, start_proc):
     WebsocketServerWorker"""
 
     kwargs = {"id": "fed1", "host": "localhost", "port": 8766, "hook": hook}
-    server = start_proc(WebsocketServerWorker, kwargs)
+    process_remote_worker = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
     x = torch.ones(5)
@@ -100,12 +100,12 @@ def test_list_objects_remote(hook, start_proc):
 
 def test_objects_count_remote(hook, start_proc):
 
-    kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
+    kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
 
-    kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
+    kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
     local_worker = WebsocketClientWorker(**kwargs)
 
     x = torch.tensor([1, 2, 3]).send(local_worker)

@@ -3,7 +3,7 @@ import time
 
 import syft as sy
 import torch as th
-import mock
+from unittest import mock
 from types import MethodType
 
 from syft.workers import WebsocketClientWorker
