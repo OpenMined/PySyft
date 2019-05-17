@@ -131,3 +131,39 @@ def test_sinh_backwards(workers):
 
     # Have to do .child.grad here because .grad doesn't work on Wrappers yet
     assert (a.grad.get() == a_torch.grad).all()
+
+
+def test_tanh_backwards(workers):
+    alice = workers["alice"]
+
+    a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+    a = a.send(alice, local_autograd=True)
+
+    a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+
+    c = a.tanh()
+    c_torch = a_torch.tanh()
+
+    c.backward(torch.ones(c.shape).send(alice))
+    c_torch.backward(torch.ones_like(c_torch))
+
+    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
+    assert (a.grad.get() == a_torch.grad).all()
+
+
+def test_sigmoid_backwards(workers):
+    alice = workers["alice"]
+
+    a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+    a = a.send(alice, local_autograd=True)
+
+    a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+
+    c = a.sigmoid()
+    c_torch = a_torch.sigmoid()
+
+    c.backward(torch.ones(c.shape).send(alice))
+    c_torch.backward(torch.ones_like(c_torch))
+
+    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
+    assert (a.grad.get() == a_torch.grad).all()
