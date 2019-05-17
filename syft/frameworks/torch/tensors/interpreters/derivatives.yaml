@@ -1,5 +1,5 @@
-# This file contains definitions for gradient functions used for backprop in 
-# AutogradTensor. The definitions are read by build_gradients.py, converted to 
+# This file contains definitions for gradient functions used for backprop in
+# AutogradTensor. The definitions are read by build_gradients.py, converted to
 # GradFunc classes as strings, then written to gradients.py.
 #
 # Each entry consists of:
@@ -12,18 +12,25 @@
   self: grad
   other: grad if type(self) == type(other) else None
 
+- name: asin(self)
+  self: grad * (-self * self + 1).rsqrt()
+
 - name: mul(self, other)
   self: grad * other
   other: grad * self if type(self) == type(other) else None
 
-- name: sqrt(self)
-  self: grad / (2 * result)
-
-- name: asin(self)
-  self: grad * (-self * self + 1).rsqrt()
+- name: sigmoid(self)
+  self: self.sigmoid() * (1 - self.sigmoid())
 
 - name: sin(self)
   self: grad * self.cos()
 
 - name: sinh(self)
   self: grad * self.cosh()
+
+- name: sqrt(self)
+  self: grad / (2 * result)
+
+- name: tanh(self)
+  self: 1 - self.tanh() ** 2
+
