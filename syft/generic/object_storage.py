@@ -107,3 +107,19 @@ class ObjectStorage:
         """
         if remote_key in self._objects:
             del self._objects[remote_key]
+
+    def force_rm_obj(self, remote_key: Union[str, int]):
+        """Forces object removal.
+
+        Besides removing the object from the permanent object registry if it exists.
+        Explicitly forces removal of the object modifying the `garbage_collect_data` attribute.
+
+        Args:
+            remote_key: A string or integer representing id of the object to be
+                removed.
+        """
+        if remote_key in self._objects:
+            obj = self._objects[remote_key]
+            if hasattr(obj, "child"):
+                obj.child.garbage_collect_data = True
+            del self._objects[remote_key]

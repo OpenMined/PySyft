@@ -17,7 +17,7 @@ requirements = read("requirements.txt").split()
 
 setup(
     name="syft",
-    version="0.1.13a1",
+    version="0.1.14a1",
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),

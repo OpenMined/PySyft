@@ -1,4 +1,5 @@
 black
+bumpversion
 coverage
 ipykernel
 pre-commit

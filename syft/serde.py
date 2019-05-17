@@ -880,7 +880,15 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     Examples:
         data = _simplify_pointer_tensor(ptr)
     """
-    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr, ptr._shape)
+
+    return (
+        ptr.id,
+        ptr.id_at_location,
+        ptr.location.id,
+        ptr.point_to_attr,
+        ptr._shape,
+        ptr.garbage_collect_data,
+    )
 
     # a more general but slower/more verbose option
 
@@ -905,20 +913,16 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
         ptr = _detail_pointer_tensor(data)
     """
     # TODO: fix comment for this and simplifier
-    obj_id = tensor_tuple[0]
-    id_at_location = tensor_tuple[1]
-    worker_id = tensor_tuple[2]
+    obj_id, id_at_location, worker_id, point_to_attr, shape, garbage_collect_data = tensor_tuple
+
     if isinstance(worker_id, bytes):
         worker_id = worker_id.decode()
-    point_to_attr = tensor_tuple[3]
-    shape = tensor_tuple[4]
 
     if shape is not None:
         shape = torch.Size(shape)
 
     # If the pointer received is pointing at the current worker, we load the tensor instead
     if worker_id == worker.id:
-
         tensor = worker.get_obj(id_at_location)
 
         if point_to_attr is not None and tensor is not None:
@@ -951,7 +955,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
             owner=worker,
             id=obj_id,
             shape=shape,
-            garbage_collect_data=True,
+            garbage_collect_data=garbage_collect_data,
         )
 
         return ptr

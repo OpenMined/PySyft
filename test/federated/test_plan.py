@@ -1,21 +1,16 @@
-import random
-
 import syft as sy
 
-import torch
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
 from syft.serde import deserialize
 from syft.serde import serialize
-
-from multiprocessing import Process
 import time
 
-import torch
+import pytest
+import unittest.mock as mock
 
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
 
@@ -97,10 +92,10 @@ def test_plan_built_on_method(hook):
     """
     Test @sy.meth2plan and plan send / get / send
     """
-    x11 = torch.tensor([-1, 2.0]).tag("input_data")
-    x12 = torch.tensor([1, -2.0]).tag("input_data2")
-    x21 = torch.tensor([-1, 2.0]).tag("input_data")
-    x22 = torch.tensor([1, -2.0]).tag("input_data2")
+    x11 = th.tensor([-1, 2.0]).tag("input_data")
+    x12 = th.tensor([1, -2.0]).tag("input_data2")
+    x21 = th.tensor([-1, 2.0]).tag("input_data")
+    x22 = th.tensor([1, -2.0]).tag("input_data2")
 
     device_1 = sy.VirtualWorker(hook, id="device_1", data=(x11, x12))
     device_2 = sy.VirtualWorker(hook, id="device_2", data=(x21, x22))
@@ -237,7 +232,7 @@ def test_plan_execute_remotely(hook, start_proc):
     x = th.tensor([-1, 2, 3])
     my_plan(x)
 
-    kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8767, "hook": hook}
+    kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8768, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
@@ -249,4 +244,129 @@ def test_plan_execute_remotely(hook, start_proc):
 
     assert (plan_res == th.tensor([-42, 24, 46])).all()
 
+    # delete remote object before websocket connection termination
+    del x_ptr
+
     server.terminate()
+
+
+def test_replace_worker_ids_two_strings(hook):
+    plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
+    _replace_message_ids_orig = sy.federated.Plan._replace_message_ids
+    mock_fun = mock.Mock(return_value=[])
+    sy.federated.Plan._replace_message_ids = mock_fun
+    plan.replace_worker_ids("me", "you")
+    args = {"change_id": -1, "obj": [], "to_id": -1}
+    calls = [
+        mock.call(from_worker="me", to_worker="you", **args),
+        mock.call(from_worker=b"me", to_worker=b"you", **args),
+    ]
+    assert len(mock_fun.mock_calls) == 2
+    mock_fun.assert_has_calls(calls, any_order=True)
+    sy.federated.Plan._replace_message_ids = _replace_message_ids_orig
+
+
+def test_replace_worker_ids_one_string_one_int(hook):
+    plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
+    _replace_message_ids_orig = sy.federated.Plan._replace_message_ids
+
+    mock_fun = mock.Mock(return_value=[])
+    sy.federated.Plan._replace_message_ids = mock_fun
+    plan.replace_worker_ids(100, "you")
+
+    args = {"change_id": -1, "obj": [], "to_id": -1}
+    calls = [mock.call(from_worker=100, to_worker="you", **args)]
+    assert len(mock_fun.mock_calls) == 1
+    mock_fun.assert_has_calls(calls, any_order=True)
+
+    mock_fun = mock.Mock(return_value=[])
+    sy.federated.Plan._replace_message_ids = mock_fun
+    plan.replace_worker_ids("me", 200)
+    calls = [
+        mock.call(from_worker="me", to_worker=200, **args),
+        mock.call(from_worker=b"me", to_worker=200, **args),
+    ]
+    assert len(mock_fun.mock_calls) == 2
+    mock_fun.assert_has_calls(calls, any_order=True)
+    sy.federated.Plan._replace_message_ids = _replace_message_ids_orig
+
+
+def test_replace_worker_ids_two_ints(hook):
+    plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
+    _replace_message_ids_orig = sy.federated.Plan._replace_message_ids
+    mock_fun = mock.Mock(return_value=[])
+    sy.federated.Plan._replace_message_ids = mock_fun
+    plan.replace_worker_ids(300, 400)
+    args = {"change_id": -1, "obj": [], "to_id": -1}
+    calls = [mock.call(from_worker=300, to_worker=400, **args)]
+    mock_fun.assert_called_once()
+    mock_fun.assert_has_calls(calls, any_order=True)
+    sy.federated.Plan._replace_message_ids = _replace_message_ids_orig
+
+
+def test__replace_message_ids():
+    messages = [10, ("worker", "me"), "you", 20, 10, b"you", (30, ["you", "me", "bla"])]
+
+    replaced = sy.federated.plan.Plan._replace_message_ids(
+        obj=messages, change_id=10, to_id=100, from_worker="me", to_worker="another"
+    )
+
+    # note that tuples are converted to lists
+    expected = [100, ["worker", "another"], "you", 20, 100, b"you", [30, ["you", "another", "bla"]]]
+
+    assert replaced == expected
+
+
+def test___call__function(hook):
+    plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
+
+    with pytest.raises(AssertionError):
+        plan(kwarg1="hello", kwarg2=None)
+
+    result_id = 444
+
+    pop_function_original = sy.ID_PROVIDER.pop
+    sy.ID_PROVIDER.pop = mock.Mock(return_value=result_id)
+
+    return_value = "return value"
+    plan.execute_plan = mock.Mock(return_value=return_value)
+
+    arg_list = (100, 200, 356)
+    ret_val = plan(*arg_list)
+
+    plan.execute_plan.assert_called_with(arg_list, [result_id])
+
+    assert ret_val == return_value
+
+    # reset function
+    sy.ID_PROVIDER.pop = pop_function_original
+
+
+def test___call__method(hook):
+    plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
+
+    with pytest.raises(AssertionError):
+        plan(kwarg1="hello", kwarg2=None)
+
+    result_id = 444
+
+    pop_function_original = sy.ID_PROVIDER.pop
+    sy.ID_PROVIDER.pop = mock.Mock(return_value=result_id)
+
+    return_value = "return value"
+    plan.execute_plan = mock.Mock(return_value=return_value)
+
+    # test the method case
+    self_value = "my_self"
+    plan.self = self_value
+
+    arg_list = (100, 200, 356)
+    ret_val = plan(*arg_list)
+
+    expected_args = [self_value] + list(arg_list)
+    plan.execute_plan.assert_called_with(expected_args, [result_id])
+
+    assert ret_val == return_value
+
+    # reset function
+    sy.ID_PROVIDER.pop = pop_function_original
