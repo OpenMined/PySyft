@@ -2,7 +2,9 @@ import torch
 import syft as sy
 from syft.exceptions import RemoteTensorFoundError
 from syft.exceptions import PureTorchTensorFoundError
+
 from syft.exceptions import ResponseSignatureError
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
@@ -15,6 +17,7 @@ from typing import Callable
 from typing import Union
 from typing import Tuple
 from typing import List
+
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -32,6 +35,7 @@ type_rule = {
     # should perhaps be of type ShareDict extending dict or something like this
     LoggingTensor: one,
     FixedPrecisionTensor: one,
+    AutogradTensor: one,
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
     PointerTensor: one,
@@ -50,6 +54,7 @@ forward_func = {
     else (_ for _ in ()).throw(PureTorchTensorFoundError),
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
+    AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
@@ -63,6 +68,7 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
+    AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
