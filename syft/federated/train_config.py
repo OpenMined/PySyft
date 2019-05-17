@@ -57,7 +57,7 @@ class TrainConfig:
         self.model = model
         self.forward_plan = model.forward if model else forward_plan
         self.loss_plan = loss_plan
-        self.batch_size = 32
+        self.batch_size = batch_size
         self.epochs = epochs
         self.optimizer = optimizer
         self.lr = lr
@@ -72,6 +72,10 @@ class TrainConfig:
 
         if self.location:
             out += " location:" + str(self.location.id)
+
+        out += " epochs: " + str(self.epochs)
+        out += " batch_size: " + str(self.batch_size)
+        out += " lr: " + str(self.lr)
 
         out += ">"
         return out

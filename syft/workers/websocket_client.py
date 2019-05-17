@@ -95,9 +95,9 @@ class WebsocketClientWorker(BaseWorker):
                 )
         return response
 
-    def _send_msg_and_deserialize(self, command_name: str):
+    def _send_msg_and_deserialize(self, command_name: str, *args, **kwargs):
         message = self.create_message_execute_command(
-            command_name=command_name, command_owner="self"
+            command_name=command_name, command_owner="self", *args, **kwargs
         )
 
         # Send the message and return the deserialized response.
@@ -107,6 +107,9 @@ class WebsocketClientWorker(BaseWorker):
 
     def list_objects_remote(self):
         return self._send_msg_and_deserialize("list_objects")
+
+    def fit(self, dataset_key):
+        return self._send_msg_and_deserialize("fit", dataset=dataset_key)
 
     def fit_batch_remote(self):
         return self._send_msg_and_deserialize("fit_batch")
