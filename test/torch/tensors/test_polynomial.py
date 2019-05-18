@@ -1,14 +1,12 @@
-import syft as sy
-from syft.frameworks.torch.tensors.interpreters.Polynomial import PolynomialTensor
 import torch
 import numpy as np
 
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.polynomial import PolynomialTensor
 
 
-def testSigmoid():
+def test_sigmoid():
 
-    Ptensor = PolynomialTensor()
+    poly_tensor = PolynomialTensor()
 
     x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
 
@@ -18,13 +16,13 @@ def testSigmoid():
     )
 
     # allclose function to compare the expected values and approximations with fixed precision
-    result = Ptensor.get_val("sigmoid", x)
+    result = poly_tensor.get_val("sigmoid", x)
     assert torch.allclose(expected, result, atol=1e-03)
 
 
-def testExp():
+def test_exp():
 
-    Ptensor = PolynomialTensor()
+    poly_tensor = PolynomialTensor()
 
     x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
 
@@ -34,15 +32,15 @@ def testExp():
     )
 
     # allclose function to compare the expected values and approximations with fixed precision
-    result = Ptensor.get_val("exp", x)
+    result = poly_tensor.get_val("exp", x)
     assert torch.allclose(expected, result, atol=1e-03)
 
 
-def testtanh():
+def test_tanh():
 
     # Test if tanh approximation works as expected
 
-    Ptensor = PolynomialTensor()
+    poly_tensor = PolynomialTensor()
 
     x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
 
@@ -51,51 +49,50 @@ def testtanh():
         dtype=torch.double,
     )
 
-    result = Ptensor.get_val("tanh", x)
+    result = poly_tensor.get_val("tanh", x)
 
     # allclose function to compare the expected values and approximations with fixed precision
-    assert torch.allclose(expected, torch.tensor(result, dtype=torch.double), atol=1e-03)
+    assert torch.allclose(expected, result, atol=1e-03)
 
 
-def testinterpolate():
+def test_interpolate():
 
     # Test if interpolation function works as expected by verifying an approximation of exponential function
 
     expected = torch.tensor([1.2220, 2.9582, 7.1763, 20.3064, 54.4606], dtype=torch.double)
 
-    Ptensor = PolynomialTensor()
+    poly_tensor = PolynomialTensor()
 
-    f1 = Ptensor.interpolate((lambda x: np.exp(x)), np.linspace(0, 10, 50))
+    f1 = poly_tensor.interpolate((lambda x: np.exp(x)), np.linspace(0, 10, 50))
 
     assert torch.allclose(expected, torch.tensor(f1(torch.tensor([0, 1, 2, 3, 4]))), 1e-04)
 
 
-def testcustomfunction():
+def test_custom_function():
+    poly_tensor = PolynomialTensor()
+    poly_tensor.add_function("Custom", 10, [[0, 10, 100, 10, poly_tensor.fit_function]], lambda x: x + 2)
 
-    P = PolynomialTensor()
-    P.addfunction("Custom", 10, [[0, 10, 100, 10, P.fit_function]], lambda x: x + 2)
-
-    assert round(P.get_val("Custom", 3)) == 5
-    assert round(P.get_val("Custom", 6)) == 8
+    assert round(poly_tensor.get_val("Custom", 3)) == 5
+    assert round(poly_tensor.get_val("Custom", 6)) == 8
 
 
-def testrandomfunction():
+def test_random_function():
 
     x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
-    P = PolynomialTensor(function=lambda x: x * 2)
-    scaled_result = P.get_val("exp", x.clone())
+    poly_tensor = PolynomialTensor(function=lambda x: x * 2)
+    scaled_result = poly_tensor.get_val("exp", x.clone())
 
-    Ptensor = PolynomialTensor()
-    original_result = Ptensor.get_val("exp", x)
+    poly_tensor = PolynomialTensor()
+    original_result = poly_tensor.get_val("exp", x)
 
     assert torch.all(torch.eq(scaled_result, torch.mul(original_result, 2)))
 
 
-def testlogfunction():
+def test_log_function():
 
     # Test if log approximation works as expected
 
-    Ptensor = PolynomialTensor()
+    poly_tensor = PolynomialTensor()
 
     x = torch.tensor(np.linspace(1, 10, 10), dtype=torch.double)
 
@@ -115,35 +112,35 @@ def testlogfunction():
         dtype=torch.double,
     )
 
-    result = Ptensor.get_val("log", x.clone())
+    result = poly_tensor.get_val("log", x.clone())
 
     # allclose function to compare the expected values and approximations with fixed precision
-    assert torch.allclose(expected, torch.tensor(result, dtype=torch.double), atol=1e-03)
+    assert torch.allclose(expected, result, atol=1e-03)
 
 
-def testexptaylor():
+def test_exp_taylor():
 
     expected = torch.tensor(
         [-0.1076, 0.0664, 0.1852, 0.3677, 0.7165, 1.3956, 2.7180, 5.2867, 10.2325, 19.5933],
         dtype=torch.double,
     )
-    P = PolynomialTensor()
+    poly_tensor = PolynomialTensor()
     x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
-    result = P.exp(x)
+    result = poly_tensor.exp(x)
 
     # allclose function to compare the expected values and approximations with fixed precision
-    assert torch.allclose(expected, torch.tensor(result, dtype=torch.double), atol=1e-03)
+    assert torch.allclose(expected, result, atol=1e-03)
 
 
-def testsigmoidtaylor():
+def test_sigmoid_taylor():
 
     expected = torch.tensor(
         [0.1000, 0.1706, 0.2473, 0.3392, 0.4447, 0.5553, 0.6608, 0.7527, 0.8294, 0.9000],
         dtype=torch.double,
     )
-    P = PolynomialTensor()
+    poly_tensor = PolynomialTensor()
     x = torch.tensor(np.linspace(-2, 2, 10), dtype=torch.double)
-    result = P.sigmoid(x)
+    result = poly_tensor.sigmoid(x)
 
     # allclose function to compare the expected values and approximations with fixed precision
-    assert torch.allclose(expected, torch.tensor(result, dtype=torch.double), atol=1e-03)
+    assert torch.allclose(expected, result, atol=1e-03)
