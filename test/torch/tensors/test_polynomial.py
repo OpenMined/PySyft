@@ -70,7 +70,9 @@ def test_interpolate():
 
 def test_custom_function():
     poly_tensor = PolynomialTensor()
-    poly_tensor.add_function("Custom", 10, [[0, 10, 100, 10, poly_tensor.fit_function]], lambda x: x + 2)
+    poly_tensor.add_function(
+        "Custom", 10, [[0, 10, 100, 10, poly_tensor.fit_function]], lambda x: x + 2
+    )
 
     assert round(poly_tensor.get_val("Custom", 3)) == 5
     assert round(poly_tensor.get_val("Custom", 6)) == 8

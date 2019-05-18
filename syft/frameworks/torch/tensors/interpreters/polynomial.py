@@ -16,7 +16,7 @@ class PolynomialTensor(AbstractTensor):
     and fit over different intervals.
     """
 
-    def __init__(self, function=lambda x:x, precision=10):
+    def __init__(self, function=lambda x: x, precision=10):
         """
         Args:
             function[callable,Optional]: Function to applied to function approximation coefficients.
@@ -38,12 +38,22 @@ class PolynomialTensor(AbstractTensor):
     def default_functions(self):
         """Initializes default function approximations exp, log, sigmoid and tanh"""
 
-        self.add_function("exp", 10, [[0, 10, 100, 10, self.fit_function], [-10, 0, 100, 10, self.fit_function]],
-                          lambda x: np.exp(x))
+        self.add_function(
+            "exp",
+            10,
+            [[0, 10, 100, 10, self.fit_function], [-10, 0, 100, 10, self.fit_function]],
+            lambda x: np.exp(x),
+        )
         self.add_function("log", 10, [[1, 10, 100, 10, self.fit_function]], lambda x: np.log(x))
-        self.add_function("sigmoid", 10, [[-10, 10, 100, 10, self.fit_function]], (lambda x: 1 / (1 + np.exp(-x))))
-        self.add_function("tanh", 10, [[0, 10, 1000, 10, self.fit_function], [-10, 0, 1000, 10, self.fit_function]],
-                          lambda x: np.tanh(x))
+        self.add_function(
+            "sigmoid", 10, [[-10, 10, 100, 10, self.fit_function]], (lambda x: 1 / (1 + np.exp(-x)))
+        )
+        self.add_function(
+            "tanh",
+            10,
+            [[0, 10, 1000, 10, self.fit_function], [-10, 0, 1000, 10, self.fit_function]],
+            lambda x: np.tanh(x),
+        )
 
     def add_function(self, name, degree, piecewise, function):
         """Add function to function_attr dictionary.
