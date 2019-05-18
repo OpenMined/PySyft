@@ -167,3 +167,28 @@ def test_sigmoid_backwards(workers):
 
     # Have to do .child.grad here because .grad doesn't work on Wrappers yet
     assert (a.grad.get() == a_torch.grad).all()
+
+
+# def test_multi_add_sigmoid_backwards(workers):
+#     alice = workers["alice"]
+
+#     a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+#     b = torch.tensor([1, 2.0, 3], requires_grad=True)
+#     c = torch.tensor([-1, -1, 2.0], requires_grad=True)
+
+#     a = a.send(alice, local_autograd=True)
+#     b = b.send(alice, local_autograd=True)
+#     c = c.send(alice, local_autograd=True)
+
+#     a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+#     b_torch = torch.tensor([1, 2.0, 3], requires_grad=True)
+#     c_torch = torch.tensor([-1, -1, 2.0], requires_grad=True)
+
+#     res = ((a * b) + c).sigmoid()
+#     res = ((a_torch * b_torch) + c_torch).sigmoid()
+
+#     res.backward(torch.ones(res.shape).send(alice))
+#     res_torch.backward(torch.ones_like(res_torch))
+
+#     # Have to do .child.grad here because .grad doesn't work on Wrappers yet
+#     assert (a.grad.get() == a_torch.grad).all()
