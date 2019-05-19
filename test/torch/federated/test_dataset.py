@@ -15,7 +15,22 @@ def test_base_dataset(workers):
 
     # Test for transforms
 
-    """transform_dataset = BaseDataset(inputs, targets)
+    assert len(dataset) == 4
+    assert dataset[2] == (3, 3)
+
+    dataset.send(bob)
+    assert dataset.data.location.id == "bob"
+    assert dataset.targets.location.id == "bob"
+    assert dataset.location.id == "bob"
+
+    dataset.get()
+    with pytest.raises(AttributeError):
+        assert dataset.data.location.id == 0
+    with pytest.raises(AttributeError):
+        assert dataset.targets.location.id == 0
+
+    transform_dataset = BaseDataset(inputs, targets)
+
     def func(x):
 
         return x * 2
@@ -30,21 +45,7 @@ def test_base_dataset(workers):
 
         ten.append(i[0].item())
 
-    assert expected_val.equal(th.tensor(ten).long())"""
-
-    assert len(dataset) == 4
-    assert dataset[2] == (3, 3)
-
-    dataset.send(bob)
-    assert dataset.data.location.id == "bob"
-    assert dataset.targets.location.id == "bob"
-    assert dataset.location.id == "bob"
-
-    dataset.get()
-    with pytest.raises(AttributeError):
-        assert dataset.data.location.id == 0
-    with pytest.raises(AttributeError):
-        assert dataset.targets.location.id == 0
+    assert expected_val.equal(th.tensor(ten).long())
 
 
 def test_federated_dataset(workers):
