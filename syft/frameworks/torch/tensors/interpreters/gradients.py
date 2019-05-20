@@ -43,7 +43,7 @@ class SigmoidBackward(GradFunc):
         self.self_ = self_
 
     def gradient(self, grad):
-        grad_self_ = self.self_.sigmoid() * (1 - self.self_.sigmoid())
+        grad_self_ = grad * self.self_.sigmoid() * (1 - self.self_.sigmoid())
         return (grad_self_,)
 
 
@@ -83,5 +83,5 @@ class TanhBackward(GradFunc):
         self.self_ = self_
 
     def gradient(self, grad):
-        grad_self_ = 1 - self.self_.tanh() ** 2
+        grad_self_ = grad * (1 - self.self_.tanh() ** 2)
         return (grad_self_,)
