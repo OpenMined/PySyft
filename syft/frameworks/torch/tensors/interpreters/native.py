@@ -286,13 +286,15 @@ class TorchTensor(AbstractTensor):
 
             if self._is_parameter():
                 if inplace:
-                    self.data.set_()
+                    with torch.no_grad():
+                        self.set_()
                     self.data = ptr
                     output = self
                 else:
                     wrapper = torch.Tensor()
                     param_wrapper = torch.nn.Parameter(wrapper)
-                    param_wrapper.data.set_()
+                    with torch.no_grad():
+                        param_wrapper.set_()
                     param_wrapper.data = ptr
                     output = param_wrapper
             else:

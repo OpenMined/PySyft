@@ -365,7 +365,8 @@ class TorchHook:
                 if hasattr(self, "child"):
                     del self.child
 
-                self.native_param_data.set_(new_data)  # .wrap()
+                with torch.no_grad():
+                    self.set_(new_data)
             return self
 
         torch.nn.Parameter.data = data
@@ -408,7 +409,8 @@ class TorchHook:
                 self.child.grad = new_grad  # .wrap()
             else:
                 if self.native_param_grad is not None:
-                    self.native_param_grad.set_(new_grad)  # .wrap()
+                    with torch.no_grad():
+                        self.native_param_grad = new_grad
                 elif new_grad is not None:
                     self.native_param_grad = new_grad
             return self
