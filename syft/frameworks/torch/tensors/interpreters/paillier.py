@@ -213,7 +213,7 @@ class PaillierTensor(AbstractTensor):
     def div(self, other, public_key_ls): # performs scalar division of matrices
         if isinstance(other, th.Tensor):
             raise NotImplemented("Only scalar operations are supported.")
-        other = 1./other
+        other = int(1./other)
         # if not isinstance(other, int):
         #     other = self.fix_prec(other, 'div')
         res = self.mul(other, public_key_ls)
