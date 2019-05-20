@@ -588,6 +588,11 @@ class TorchTensor(AbstractTensor):
 
     fix_precision_ = fix_prec_
 
+    def paillier(self, *args, **kwargs): # adds paillier encryption functionality to all 
+                                         # native tensors
+        return(syft.frameworks.torch.tensors.interpreters.PaillierTensor(*args, **kwargs)
+            .on(self))
+
     def share(self, *owners, field=None, crypto_provider=None):
         """This is a pass through method which calls .share on the child.
 

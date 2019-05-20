@@ -20,11 +20,8 @@ class PaillierTensor(AbstractTensor):
         of decryption of negative numbers please refer to _neg_decrypt method and for
         decimal numbers refer to _to_fix_prec method.
 
-        Returns
-        -------
-        type
-            Description of returned object.
-
+        Args:
+            public_key: This is the public that will be used for encrypting the tensor
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.is_prec = False # if it is fixed precision type
@@ -43,15 +40,11 @@ class PaillierTensor(AbstractTensor):
         which can solve this problem.
         https://github.com/OpenMined/PySyft/pull/2147
 
-        Parameters
-        ----------
-        num : int
-            Number to be encrypted.
+        Args:
+            num (int): Number to be encrypted.
 
-        Returns
-        -------
-        encrypted_num : int
-            Encrypted number.
+        Returns:
+            encrypted_num (int): Encrypted number.
 
         """
 
@@ -67,16 +60,8 @@ class PaillierTensor(AbstractTensor):
         also adds the current tensor to the list of tensors encrypted by this
         public key.
 
-        Parameters
-        ----------
-        encrypted_tensors : list
-            Description of parameter `encrypted_tensors`.
-
-        Returns
-        -------
-        type
-            Description of returned object.
-
+        Args:
+            encrypted_tensors (int): Description of parameter `encrypted_tensors`.
         """
         # encrypts a tensor using the public key
         encrypted_tensors.append(self.getTensorID(self.child)) # firstly we add the tensor's id
@@ -94,20 +79,15 @@ class PaillierTensor(AbstractTensor):
         are stored in the overflowing field (aka if a number is negative, its decrypted
         value is the limit of the encryption or public_key.n + value of the number)
 
-        Parameters
-        ----------
-        num : int
-            The number to be decrypted using the private_key provided by the
-            user/virtualworker
+        Args:
+            private_key(phe.paillier.PaillierPrivateKey): The number to be decrypted using 
+            the private_key provided by the user/virtualworker
 
-        private_key : phe.paillier.PaillierPrivateKey
-            Private key to be used for decryption of provided numbers.
+            num (int): Private key to be used for decryption of provided numbers.
 
 
-        Returns
-        -------
-        int
-            Decrypted number.
+        Returns:
+            int: Decrypted number.
 
         """
         if private_key.raw_decrypt(num) > self.public_key.max_int: # check to see if the
@@ -123,15 +103,11 @@ class PaillierTensor(AbstractTensor):
         """Given a tensor it returns its ID which is unique, and represents its
         memory location
 
-        Parameters
-        ----------
-        tensor : th.Tensor
-            Pyth Tensor which we want to get its ID
+        Args:
+            tensor (th.Tensor): Python Tensor which we want to get its ID
 
-        Returns
-        -------
-        tensor_id : int
-            A unique ID for the tensor, which stays the same until it is deleted
+        Returns:
+            tensor_id (int): A unique ID for the tensor, which stays the same until it is deleted
 
         """
         tensor_id = tensor.data_ptr() # each tensor has a pointer, which is unique.
@@ -235,8 +211,7 @@ class PaillierTensor(AbstractTensor):
                                  # is to needed to be taken.
             if op == 'mult':
                 self.prec +=  prec
-                warnings.warn("May cause overflow, make sure you are not working with float/double\
-                                \ numbers\n since paillier cryptosystem does not support them.")
+                warnings.warn("May cause overflow, make sure you are not working with float/double numbers since paillier cryptosystem does not support them.")
             if op == 'div':
                 self.prec -= prec
         self.is_prec = True

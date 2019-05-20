@@ -20,26 +20,23 @@ def test_public_key():
 
 def test_private_key():
     p = PaillierEncryption()
-    assert isinstance(p.public_key, phe.paillier.PrivateKey)
+    assert isinstance(p.private_key, phe.paillier.PaillierPrivateKey)
 
 def test_encryption_type():
     p = PaillierEncryption()
-    encrypted_num = p.public_key.encrypt()
+    encrypted_num = p.public_key.encrypt(123)
     assert isinstance(encrypted_num, phe.paillier.EncryptedNumber)
 
-def test_encryption_decryption():
-    p = PaillierTensor()
-    num = int(10e5 * random.random())
+def test_positive_int_encryption_decryption():
+    p = PaillierEncryption()
+    num = int(1e4 * random.random())
     encrypted = p.public_key.encrypt(num)
-    decrypted = p.private_key.decrypt(num)
+    decrypted = p.private_key.decrypt(encrypted)
     assert decrypted == num
 
-    num = int(10e5 * random.random()) * -1
+def test_negative_int_encryption_decryption():
+    p = PaillierEncryption()
+    num = int(1e4 * random.random()) * -1
     encrypted = p.public_key.encrypt(num)
-    decrypted = p.private_key.decrypt(num)
-    assert decrypted == num
-
-    num = round(random.random()),5)
-    encrypted = p.public_key.encrypt(num)
-    decrypted = p.private_key.decrypt(num)
+    decrypted = p.private_key.decrypt(encrypted)
     assert decrypted == num

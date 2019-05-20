@@ -1,37 +1,36 @@
 import random # to generate ids
 import warnings
-import phe as paillier
 import torch
+import syft as sy
+import phe as paillier
 from phe.util import powmod
+
 
 class PaillierEncryption():
     """ A PaillierEncryption class, that holds the private and public keys for paillier
     encryption. It also holds the id of tensors encrypted using this public keys generated
     by this class.
 
-    Parameters
-    ----------
-    length : int
-        Length of the key to be generated for the private and public key. We recommend
+    Args:
+        length (int): Length of the key to be generated for the private and public key. We recommend
         a length of 22-24, due to the overflowing issues with LongTensors in PyTorch.
-    owner : sy.VirtualWorker
-        Owner of the private key, on default it is set to local.
-    private_key_string : phe.paillier.PaillierPrivateKey
-        If you already have a Paillier Private key, you can give it as a parameter,
-        and can generate a new public key corresponding to that private key.
+        
+        owner(sy.VirtualWorker): Owner of the private key, on default it is set to local.
+        
+        private_key_string(phe.paillier.PaillierPrivateKey): If you already have a Paillier Private key, 
+        you can give it as a parameter, and can generate a new public key corresponding to that private key.
 
-    Attributes
-    ----------
-    public_key : phe.paillier.PaillierPublicKey
-        Public key used for encrypting data.
-    private_key : phe.paillier.PaillierPrivateKey
-        Private key used to decrypt data.
-    tensors_encrypted : list
-        An array of tensors encrypted using this public key.
-    id : int
-        ID of the pair of keys
-    owner : sy.VirtualWorker
-        Owner of the private key.
+    
+    Attributes:
+        public_key(phe.paillier.PaillierPublicKey): Public key used for encrypting data.
+        
+        private_key(phe.paillier.PaillierPrivateKey): Private key used to decrypt data.
+        
+        tensors_encrypted(list): An array of tensors encrypted using this public key.
+        
+        id(int): ID of the pair of keys
+
+        owner(sy.VirtualWorker): Owner of the private key.
 
     """
 
@@ -51,11 +50,8 @@ class PaillierEncryption():
     def __repr__(self):
         """Representation of the KeyPair.
 
-        Returns
-        -------
-        rep : string
-            Description of the object
-
+        Returns:
+            rep(string): Description of the object
         """
         rep = f"<Paillier Encryption with ID of {self.id} and owner of {self.owner}>"
         return rep
@@ -64,10 +60,8 @@ class PaillierEncryption():
     def _tensors(self):
         """Return a list of tensors that are encrypted using this object
 
-        Returns
-        -------
-        res : string
-            A list of tensors that have used the public key from this object for
+        Returns:
+            res(string): A list of tensors that have used the public key from this object for
             encryption
 
         """
@@ -90,15 +84,11 @@ class PaillierEncryption():
         """Given a tensor it returns its ID which is unique, and represents its
         memory location
 
-        Parameters
-        ----------
-        tensor : torch.Tensor
-            PyTorch Tensor which we want to get its ID
+        Args:
+            tensor(torch.Tensor): PyTorch Tensor which we want to get its ID
 
-        Returns
-        -------
-        tensor_id : int
-            A unique ID for the tensor, which stays the same until it is deleted
+        Returns:
+            tensor_id(int): A unique ID for the tensor, which stays the same until it is deleted
 
         """
         tensor_id = tensor.data_ptr() # each tensor has a pointer, which is unique.
@@ -111,10 +101,8 @@ class PaillierEncryption():
         is used for PaillierTensors to check if they share the same public key or
         not, and also to be added to the list if they use this public key.
 
-        Returns
-        -------
-        type
-            Description of returned object.
+        Returns:
+            list(list): Description of returned object.
 
         """
         return self.tensors_encrypted
