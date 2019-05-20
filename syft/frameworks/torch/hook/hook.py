@@ -19,6 +19,7 @@ from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import PaillierTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
@@ -141,6 +142,12 @@ class TorchHook:
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
+
+        # Add all hooked tensor methods to PaillierTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(PaillierTensor)
+
 
         # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
