@@ -1,6 +1,5 @@
 import inspect
 import re
-import random
 import logging
 import types
 import copy
@@ -11,15 +10,19 @@ from functools import wraps
 
 import syft
 from syft import workers
+
 from syft.workers import BaseWorker
-from .tensors.interpreters import TorchTensor
-from .tensors.interpreters import PointerTensor
-from .tensors.decorators import LoggingTensor
-from .tensors.interpreters import FixedPrecisionTensor
-from .tensors.interpreters import AdditiveSharingTensor
-from .tensors.interpreters import MultiPointerTensor
-from .torch_attributes import TorchAttributes
-from .tensors.interpreters.abstract import initialize_tensor, _apply_args
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters import TorchTensor
+from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import PaillierTensor
+from syft.frameworks.torch.torch_attributes import TorchAttributes
+from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
+from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
@@ -139,6 +142,22 @@ class TorchHook:
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
+
+        # Add all hooked tensor methods to PaillierTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(PaillierTensor)
+
+
+        # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(AutogradTensor)
+
+        # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(AdditiveSharingTensor)
 
         # Hook the tensor constructor function
         self._hook_tensor()
@@ -370,6 +389,7 @@ class TorchHook:
                 if isinstance(to_return.child, syft.PointerTensor):
                     if to_return.child.is_none():
                         to_return = None
+
             else:
                 to_return = self.native_param_grad
 
@@ -713,7 +733,6 @@ class TorchHook:
             tensor_type.native___init__ = tensor_type.__init__
 
         def new___init__(cls, *args, owner=None, id=None, register=True, **kwargs):
-
             initialize_tensor(
                 hook_self=hook_self,
                 cls=cls,
@@ -722,9 +741,6 @@ class TorchHook:
                 init_args=args,
                 init_kwargs=kwargs,
             )
-
-            # if register:
-            #     owner.register_object(cls, id=id)
 
         tensor_type.__init__ = new___init__
 
@@ -742,6 +758,9 @@ class TorchHook:
         def new_tensor(*args, owner=None, id=None, register=True, **kwargs):
             current_tensor = hook_self.torch.native_tensor(*args, **kwargs)
             _apply_args(hook_self, current_tensor, owner, id)
+            if register:
+                current_tensor.owner.register_obj(current_tensor)
+
             return current_tensor
 
         hook_self.torch.tensor = new_tensor
@@ -773,7 +792,7 @@ class TorchHook:
         @property
         def id(self):
             if not hasattr(self, "_id"):
-                self._id = int(10e10 * random.random())
+                self._id = syft.ID_PROVIDER.pop()
             return self._id
 
         @id.setter
@@ -811,6 +830,17 @@ class TorchHook:
 
         tensor_type.native_shape = tensor_type.shape
         tensor_type.native_data = tensor_type.data
+
+        tensor_type.native_grad_fn = tensor_type.grad_fn
+
+        @property
+        def grad_fn(self):
+            if self.has_child():
+                return self.child.grad_fn
+            else:
+                return self.native_grad_fn
+
+        tensor_type.grad_fn = grad_fn
 
     def _which_methods_should_we_auto_overload(self, tensor_type: type):
         """Creates a list of Torch methods to auto overload.
@@ -915,10 +945,10 @@ class TorchHook:
 
         def create_grad_objects(model):
             """Assigns gradient to model parameters if not assigned"""
-            # for p in model.parameters():
-            #     o = p.sum()
-            #     o.backward()
-            #     p.grad -= p.grad
+            for p in model.parameters():
+                o = p.sum()
+                o.backward()
+                p.grad -= p.grad
 
         def module_send_(nn_self, dest):
             """Overloads torch.nn instances so that they could be sent to other workers"""

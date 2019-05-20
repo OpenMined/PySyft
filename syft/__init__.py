@@ -14,18 +14,21 @@ from syft.frameworks.torch import TorchHook
 # Import grids
 from syft.grid import VirtualGrid
 
+# Import federated objects
+from syft.federated import Plan
+from syft.federated import func2plan
+from syft.federated import method2plan
+from syft.federated import make_plan
+
 # Import Worker Types
 from syft.workers import VirtualWorker
-from syft.workers import Plan
-from syft.workers import func2plan
-from syft.workers import method2plan
-from syft.workers import make_plan
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 
 # Import serialization tools
 from syft import serde
@@ -51,6 +54,11 @@ __all__ = [
 
 local_worker = None
 torch = None
+
+if "ID_PROVIDER" not in globals():
+    from syft.generic import IdProvider
+
+    ID_PROVIDER = IdProvider()
 
 
 def create_sandbox(gbs, verbose=True, download_data=True):

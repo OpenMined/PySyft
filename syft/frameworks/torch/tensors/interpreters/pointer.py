@@ -241,10 +241,9 @@ class PointerTensor(AbstractTensor):
         # first here and not try to call self.owner.anything if self doesn't have
         # .owner anymore.
         if hasattr(self, "owner") and self.garbage_collect_data:
-
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
-                self.owner.send_msg(MSGTYPE.OBJ_DEL, self.id_at_location, self.location)
+                self.owner.send_msg(MSGTYPE.FORCE_OBJ_DEL, self.id_at_location, self.location)
 
     @property
     def grad(self):
@@ -279,11 +278,12 @@ class PointerTensor(AbstractTensor):
 
     @property
     def shape(self):
-        """This method returns the shape of the data being pointed to.
+        """ This method returns the shape of the data being pointed to.
         This shape information SHOULD be cached on self._shape, but
         occasionally this information may not be present. If this is the
         case, then it requests the shape information from the remote object
-        directly (which is inefficient and should be avoided)."""
+        directly (which is inefficient and should be avoided).
+        """
 
         if self._shape is None:
             self._shape = self.get_shape()
@@ -309,6 +309,11 @@ class PointerTensor(AbstractTensor):
         ).wrap()
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
+
+    def setattr(self, name, value):
+        self.owner.send_command(
+            message=("__setattr__", self, (name, value), {}), recipient=self.location
+        )
 
     def share(self, *args, **kwargs):
         """

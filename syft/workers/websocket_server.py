@@ -5,6 +5,7 @@ from typing import List
 import asyncio
 import torch
 import websockets
+import ssl
 
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers.virtual import VirtualWorker
@@ -21,6 +22,8 @@ class WebsocketServerWorker(VirtualWorker):
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
         loop=None,
+        cert_path: str = None,
+        key_path: str = None,
     ):
         """This is a simple extension to normal workers wherein
         all messages are passed over websockets. Note that because
@@ -44,6 +47,8 @@ class WebsocketServerWorker(VirtualWorker):
 
         self.port = port
         self.host = host
+        self.cert = cert_path
+        self.key = key_path
 
         if loop is None:
             loop = asyncio.new_event_loop()
@@ -119,7 +124,29 @@ class WebsocketServerWorker(VirtualWorker):
 
     def start(self):
         """Start the server"""
+        # Secure behavior: adds a secure layer applying cryptography and authentication
+        if not (self.cert is None) and not (self.key is None):
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ssl_context.load_cert_chain(self.cert, self.key)
+            start_server = websockets.serve(
+                self._handler,
+                self.host,
+                self.port,
+                ssl=ssl_context,
+                max_size=None,
+                ping_timeout=None,
+                close_timeout=None,
+            )
+        else:
+            # Insecure
+            start_server = websockets.serve(
+                self._handler,
+                self.host,
+                self.port,
+                max_size=None,
+                ping_timeout=None,
+                close_timeout=None,
+            )
 
-        start_server = websockets.serve(self._handler, self.host, self.port, max_size=None)
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()

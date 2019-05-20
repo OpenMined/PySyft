@@ -16,6 +16,7 @@ install:
   - sudo apt-get update
   - hash -r
   - pip3 install -r requirements.txt >build.log
+  - pip3 install -r requirements_dev.txt >build.log
   - pip3 install flake8
   - pip3 install flake8-docstrings
   - pip3 install flake8-comprehensions
@@ -24,13 +25,13 @@ install:
 before_script:
   # stop the build if there are Python syntax errors or undefined
   # names
-  - flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics
-  - black --check --verbose --exclude="\.eggs\/|build\/" .
+  - flake8 --config=.flake8 .
+  - black --check --verbose .
   # exit-zero treats all errors as warnings.
   # diverting from the standard 79 character line length in
   # accordance with this:
   # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
-  - flake8 . --count --exit-zero --statistics
+  - flake8 . --count --exit-zero --statistics --select=E,F,W,C90
 script:
   - coverage run --omit=*/virtualenv/*,setup.py,.eggs/*,*__init__.py,syft/workers/websocket_server.py setup.py test
   - coverage report --fail-under 95 -m

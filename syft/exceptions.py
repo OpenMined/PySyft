@@ -128,6 +128,19 @@ class ResponseSignatureError(Exception):
         self.ids_generated = ids_generated
 
 
+class GetNotPermittedError(Exception):
+    """Raised when calling get on a pointer to a tensor which does not allow
+    get to be called on it. This can happen do to sensitivity being too high"""
+
+    pass
+
+
+class IdNotUniqueError(Exception):
+    """Raised by the ID Provider when setting ids that have already been generated"""
+
+    pass
+
+
 def route_method_exception(exception, self, args, kwargs):
     try:
         if self.is_wrapper:

@@ -51,9 +51,11 @@ import syft as sy
 
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
-from syft.workers import Plan
+
+from syft.federated import Plan
 
 from syft.exceptions import CompressionNotFoundException
+from syft.exceptions import GetNotPermittedError
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -69,7 +71,13 @@ ZSTD = 42
 
 
 # High Level Public Functions (these are the ones you use)
-def serialize(obj: object, simplified=False) -> bin:
+def serialize(
+    obj: object,
+    simplified: bool = False,
+    force_no_compression: bool = False,
+    force_no_serialization: bool = False,
+    force_full_simplification: bool = False,
+) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
     This is the high level function for serializing any object or collection
@@ -81,6 +89,20 @@ def serialize(obj: object, simplified=False) -> bin:
         simplified (bool): in some cases we want to pass in data which has
             already been simplified - in which case we must skip double
             simplification - which would be bad.... so bad... so... so bad
+        force_no_compression (bool): If true, this will override ANY module
+            settings and not compress the objects being serialized. The primary
+            expected use of this functionality is testing and/or experimentation.
+        force_no_serialization (bool): Primarily a testing tool, this will force
+            this method to return human-readable Python objects which is very useful
+            for testing and debugging (forceably overrides module compression,
+            serialization, and the 'force_no_compression' override)). In other words,
+            only simplification operations are performed.
+        force_full_simplification (bool): Some objects are only partially serialized
+            by default. For objects where this is the case, setting this flag to True
+            will force the entire object to be serialized. For example, setting this
+            flag to True will cause a VirtualWorker to be serialized WITH all of its
+            tensors while by default VirtualWorker objects only serialize a small
+            amount of metadata.
 
     Returns:
         binary: the serialized form of the object.
@@ -91,13 +113,19 @@ def serialize(obj: object, simplified=False) -> bin:
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
     if not simplified:
-        simple_objects = _simplify(obj)
+        if force_full_simplification:
+            simple_objects = _force_full_simplify(obj)
+        else:
+            simple_objects = _simplify(obj)
     else:
         simple_objects = obj
 
     # 2) Serialize
     # serialize into a binary
-    binary = msgpack.dumps(simple_objects)
+    if force_no_serialization:
+        return simple_objects
+    else:
+        binary = msgpack.dumps(simple_objects)
 
     # 3) Compress
     # optionally compress the binary and return the result
@@ -108,7 +136,10 @@ def serialize(obj: object, simplified=False) -> bin:
     # otherwise we output the compressed stream with header set to '1'
     # even if compressed flag is set to false by the caller we
     # output the input stream as it is with header set to '0'
-    return _compress(binary)
+    if force_no_compression:
+        return binary
+    else:
+        return _compress(binary)
 
 
 def deserialize(binary: bin, worker: AbstractWorker = None, detail=True) -> object:
@@ -635,10 +666,10 @@ def _simplify_dictionary(my_dict: Dict) -> Dict:
             objects.
 
     """
-    pieces = {}
+    pieces = list()
     # for dictionaries we want to simplify both the key and the value
     for key, value in my_dict.items():
-        pieces[_simplify(key)] = _simplify(value)
+        pieces.append((_simplify(key), _simplify(value)))
 
     return pieces
 
@@ -661,7 +692,7 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
     """
     pieces = {}
     # for dictionaries we want to detail both the key and the value
-    for key, value in my_dict.items():
+    for key, value in my_dict:
         detailed_key = _detail(worker, key)
         try:
             detailed_key = detailed_key.decode("utf-8")
@@ -848,7 +879,14 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
         data = _simplify_pointer_tensor(ptr)
     """
 
-    return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.point_to_attr, ptr._shape)
+    return (
+        ptr.id,
+        ptr.id_at_location,
+        ptr.location.id,
+        ptr.point_to_attr,
+        ptr._shape,
+        ptr.garbage_collect_data,
+    )
 
     # a more general but slower/more verbose option
 
@@ -873,20 +911,16 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
         ptr = _detail_pointer_tensor(data)
     """
     # TODO: fix comment for this and simplifier
-    obj_id = tensor_tuple[0]
-    id_at_location = tensor_tuple[1]
-    worker_id = tensor_tuple[2]
+    obj_id, id_at_location, worker_id, point_to_attr, shape, garbage_collect_data = tensor_tuple
+
     if isinstance(worker_id, bytes):
         worker_id = worker_id.decode()
-    point_to_attr = tensor_tuple[3]
-    shape = tensor_tuple[4]
 
     if shape is not None:
         shape = torch.Size(shape)
 
     # If the pointer received is pointing at the current worker, we load the tensor instead
     if worker_id == worker.id:
-
         tensor = worker.get_obj(id_at_location)
 
         if point_to_attr is not None and tensor is not None:
@@ -919,7 +953,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
             owner=worker,
             id=obj_id,
             shape=shape,
-            garbage_collect_data=True,
+            garbage_collect_data=garbage_collect_data,
         )
 
         return ptr
@@ -1098,14 +1132,17 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
     arg_ids = _detail(worker, arg_ids)
     result_ids = _detail(worker, result_ids)
 
-    plan = syft.Plan(hook=sy.hook, owner=worker, id=id)
-    plan.arg_ids = arg_ids
-    plan.result_ids = result_ids
+    plan = syft.Plan(
+        owner=worker,
+        id=id,
+        arg_ids=arg_ids,
+        result_ids=result_ids,
+        readable_plan=_detail(worker, readable_plan),
+    )
     if isinstance(name, bytes):
         plan.name = name.decode("utf-8")
     plan.tags = _detail(worker, tags)
     plan.description = _detail(worker, description)
-    plan.readable_plan = _detail(worker, readable_plan)
 
     return plan
 
@@ -1115,7 +1152,7 @@ def _simplify_worker(worker: AbstractWorker) -> tuple:
 
     """
 
-    return (worker.id,)
+    return (_simplify(worker.id),)
 
 
 def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor:
@@ -1130,11 +1167,63 @@ def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor
     Examples:
         ptr = _detail_pointer_tensor(data)
     """
-    worker_id = worker_tuple[0]
+    worker_id = _detail(worker, worker_tuple[0])
 
     referenced_worker = worker.get_worker(worker_id)
 
     return referenced_worker
+
+
+def _simplify_GetNotPermittedError(error: GetNotPermittedError) -> tuple:
+    """Simplifies a GetNotPermittedError into its message"""
+    return (getattr(error, "message", str(error)),)
+
+
+def _detail_GetNotPermittedError(
+    worker: AbstractWorker, error_tuple: tuple
+) -> GetNotPermittedError:
+    """Details and raises a GetNotPermittedError
+
+    Args:
+        worker: the worker doing the deserialization
+        error_tuple: a tuple holding the message of the GetNotPermittedError
+    Raises:
+        GetNotPermittedError: the error thrown when get is not permitted
+    """
+
+    raise GetNotPermittedError(error_tuple[0])
+
+
+def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
+    """
+
+    """
+
+    return (_simplify(worker.id), _simplify(worker._objects), worker.auto_add)
+
+
+def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
+    worker_id, _objects, auto_add = worker_tuple
+    worker_id = _detail(worker, worker_id)
+
+    result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
+    _objects = _detail(worker, _objects)
+    result._objects = _objects
+
+    # make sure they weren't accidentally double registered
+    for _, obj in _objects.items():
+        if obj.id in worker._objects:
+            del worker._objects[obj.id]
+
+    return result
+
+
+def _simplify_str(obj: str) -> tuple:
+    return (obj.encode("utf-8"),)
+
+
+def _detail_str(worker: AbstractWorker, str_tuple: tuple) -> str:
+    return str_tuple[0].decode("utf-8")
 
 
 # High Level Simplification Router
@@ -1183,6 +1272,24 @@ def _simplify(obj: object) -> object:
         return obj
 
 
+def _force_full_simplify(obj: object) -> object:
+    current_type = type(obj)
+
+    if current_type in forced_full_simplifiers:
+
+        left = forced_full_simplifiers[current_type][0]
+
+        right = forced_full_simplifiers[current_type][1]
+
+        right = right(obj)
+
+        result = (left, right)
+    else:
+        result = _simplify(obj)
+
+    return result
+
+
 simplifiers = {
     torch.Tensor: [0, _simplify_torch_tensor],
     torch.nn.Parameter: [1, _simplify_torch_parameter],
@@ -1201,7 +1308,11 @@ simplifiers = {
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
     Plan: [15, _simplify_plan],
     VirtualWorker: [16, _simplify_worker],
+    GetNotPermittedError: [17, _simplify_GetNotPermittedError],
+    str: [18, _simplify_str],
 }
+
+forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
 
 
 def _detail(worker: AbstractWorker, obj: object) -> object:
@@ -1247,4 +1358,7 @@ detailers = [
     _detail_multi_pointer_tensor,
     _detail_plan,
     _detail_worker,
+    _detail_GetNotPermittedError,
+    _detail_str,
+    _force_full_detail_worker,
 ]

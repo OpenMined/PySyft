@@ -1,10 +1,10 @@
 from abc import ABC
 import functools
-import random
 import torch
 from typing import List
 
 import syft as sy
+import weakref
 
 
 class AbstractTensor(ABC):
@@ -37,7 +37,7 @@ class AbstractTensor(ABC):
         """
         self.owner = owner
         if id is None:
-            self.id = int(10e10 * random.random())
+            self.id = sy.ID_PROVIDER.pop()
         else:
             self.id = id
         self.tags = tags
@@ -110,8 +110,11 @@ class AbstractTensor(ABC):
         wrapper = torch.Tensor()
         wrapper.child = self
         wrapper.is_wrapper = True
+        wrapper.child.parent = weakref.ref(wrapper)
+
         if self.id is None:
-            self.id = int(10e10 * random.random())
+            self.id = sy.ID_PROVIDER.pop()
+
         return wrapper
 
     def serialize(self):  # check serde.py to see how to provide compression schemes
@@ -202,10 +205,14 @@ class AbstractTensor(ABC):
 
         return response
 
+    def setattr(self, name, value):
+        self.child.setattr(name, value.child)
+
     @classmethod
     def rgetattr(cls, obj, attr, *args):
         """
         Get an attribute recursively
+
 
         Args:
             obj: the object holding the attribute
@@ -257,7 +264,7 @@ def _apply_args(hook_self, new_tensor, owner=None, id=None):
         owner = hook_self.local_worker
 
     if id is None:
-        id = int(10e10 * random.random())
+        id = sy.ID_PROVIDER.pop()
 
     new_tensor.id = id
     new_tensor.owner = owner

@@ -1,0 +1,10 @@
+black
+bumpversion
+coverage
+ipykernel
+pre-commit
+pytest
+Sphinx
+sphinx_markdown_builder
+sphinx_rtd_theme
+
