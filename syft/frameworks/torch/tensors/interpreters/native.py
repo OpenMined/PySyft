@@ -634,3 +634,11 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return sy.combine_pointers(*ps)
+
+    def large_prec(self, *args, **kwargs):
+        return (
+            syft.frameworks.torch.tensors.interpreters.LargePrecisionTensor(*args, **kwargs)
+                .on(self)
+        )
+
+    large_precision = large_prec

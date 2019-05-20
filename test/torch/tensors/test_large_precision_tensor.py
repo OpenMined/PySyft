@@ -1,3 +1,4 @@
+import torch
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 
 
@@ -18,3 +19,16 @@ def test_split_restore():
     )
     assert LargePrecisionTensor._restore_number(result_64, bits) == 4755382571665082714
     assert LargePrecisionTensor._restore_number(result_32, bits) == 1107198784
+
+
+def test_add():
+    bits = 16
+    t0 = torch.tensor([0.])
+    expected = LargePrecisionTensor([9510765143330165428], to_bits=bits).on(t0)
+    t1 = torch.tensor([0.])
+    lpt1 = LargePrecisionTensor([4755382571665082714], to_bits=bits).on(t1)
+    t2 = torch.tensor([0.])
+    lpt2 = LargePrecisionTensor([4755382571665082714], to_bits=bits).on(t2)
+    result = lpt1.add(lpt2)
+    print(result)
+    assert torch.eq(expected.child._internal, result)

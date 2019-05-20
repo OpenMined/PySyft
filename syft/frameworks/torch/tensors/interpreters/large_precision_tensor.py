@@ -1,4 +1,5 @@
-from syft.frameworks.torch.overload_torch import overloaded
+import torch
+
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 
 
@@ -8,10 +9,9 @@ class LargePrecisionTensor(AbstractTensor):
     Some systems using Syft require larger types than those supported natively. This tensor type supports arbitrarily
     large values by packing them in smaller ones.
 
-
     """
 
-    def __init__(self, owner=None, id=None, tags=None, description=None, to_bits=32):
+    def __init__(self, tensor, owner=None, id=None, tags=None, description=None, to_bits=32):
         """Initializes a LargePrecisionTensor.
 
         Args:
@@ -23,10 +23,17 @@ class LargePrecisionTensor(AbstractTensor):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         assert to_bits % 2 == 0, "%r is not power of two" % to_bits
         self.precision = to_bits
+        # TODO Start with a single dim
+        self._internal = torch.IntTensor(self._split_number(tensor[0], to_bits))
 
-    @overloaded.method
-    def add(self, _self, *args, **kwargs):
-        pass
+    def __eq__(self, other):
+        return self._internal == other._internal
+
+    # TODO Having issues with the hook
+    # @overloaded.method
+    def add(self, other, **kwargs):
+        # TODO Check types, precision
+        return self._internal + other._internal
 
     @staticmethod
     def _split_number(number, bits):

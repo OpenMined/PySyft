@@ -29,6 +29,7 @@ from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 
 # Import serialization tools
 from syft import serde
@@ -50,6 +51,7 @@ __all__ = [
     "LoggingTensor",
     "PointerTensor",
     "VirtualGrid",
+    "LargePrecisionTensor"
 ]
 
 local_worker = None
