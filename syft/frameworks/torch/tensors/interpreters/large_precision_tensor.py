@@ -24,16 +24,16 @@ class LargePrecisionTensor(AbstractTensor):
         assert to_bits % 2 == 0, "%r is not power of two" % to_bits
         self.precision = to_bits
         # TODO Start with a single dim
-        self._internal = torch.IntTensor(self._split_number(tensor[0], to_bits))
+        self.child = torch.IntTensor(self._split_number(tensor[0], to_bits))
 
     def __eq__(self, other):
-        return self._internal == other._internal
+        return self.child == other.child
 
     # TODO Having issues with the hook
     # @overloaded.method
     def add(self, other, **kwargs):
         # TODO Check types, precision
-        return self._internal + other._internal
+        return self.child + other.child
 
     @staticmethod
     def _split_number(number, bits):

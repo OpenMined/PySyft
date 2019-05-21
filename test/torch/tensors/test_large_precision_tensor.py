@@ -23,12 +23,9 @@ def test_split_restore():
 
 def test_add():
     bits = 16
-    t0 = torch.tensor([0.])
-    expected = LargePrecisionTensor([9510765143330165428], to_bits=bits).on(t0)
-    t1 = torch.tensor([0.])
-    lpt1 = LargePrecisionTensor([4755382571665082714], to_bits=bits).on(t1)
-    t2 = torch.tensor([0.])
-    lpt2 = LargePrecisionTensor([4755382571665082714], to_bits=bits).on(t2)
+    expected = LargePrecisionTensor([9510765143330165428], to_bits=bits)
+    lpt1 = LargePrecisionTensor([4755382571665082714], to_bits=bits)
+    lpt2 = LargePrecisionTensor([4755382571665082714], to_bits=bits)
     result = lpt1.add(lpt2)
     print(result)
-    assert torch.eq(expected.child._internal, result)
+    assert torch.all(torch.eq(expected.child, result))
