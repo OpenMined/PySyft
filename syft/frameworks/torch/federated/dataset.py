@@ -74,7 +74,7 @@ class BaseDataset:
             
             worker[worker class]: worker to which the data must be sent
                 
-        Return:
+        Returns:
             
             self: Return the object instance with data sent to corresponding worker
             
@@ -87,9 +87,6 @@ class BaseDataset:
     def get(self):
         """
         Gets the data back from respective workers.
-        Returns:
-            
-            self: Return the object instance with data got back from workers
         """
 
         self.data.get_()
@@ -182,7 +179,7 @@ class FederatedDataset:
         to be already sent to a remote worker (they have a location), and
         acts like a dictionary based on the worker ids.
         It serves like an input for the FederatedDataLoader.
-        args:
+        Args:
             datasets (list): list of remote Datasets
         """
         self.datasets = {}
@@ -200,7 +197,7 @@ class FederatedDataset:
     @property
     def workers(self):
         """
-           Return: list of workers
+           Returns: list of workers
         """
 
         return list(self.datasets.keys())
@@ -210,7 +207,7 @@ class FederatedDataset:
            Args:
                    worker_id[str,int]: ID of respective worker
                    
-           Return: Get Datasets from the respective worker 
+           Returns: Get Datasets from the respective worker 
         """
 
         return self.datasets[worker_id]
