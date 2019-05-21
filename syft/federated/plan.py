@@ -254,12 +254,21 @@ class Plan(ObjectStorage):
             from_worker_id: Id of the the replaced worker.
             to_worker_id: Id of the new worker.
         """
-        for from_id, to_id in [
-            (from_worker_id, to_worker_id),
-            (from_worker_id.encode(), to_worker_id.encode()),
-        ]:
+
+        id_pairs = [(from_worker_id, to_worker_id)]
+        if type(from_worker_id) == str:
+            to_worker_id_encoded = (
+                to_worker_id.encode() if type(to_worker_id) == str else to_worker_id
+            )
+            id_pairs.append((from_worker_id.encode(), to_worker_id_encoded))
+
+        for id_pair in id_pairs:
             self.readable_plan = Plan._replace_message_ids(
-                obj=self.readable_plan, change_id=-1, to_id=-1, from_worker=from_id, to_worker=to_id
+                obj=self.readable_plan,
+                change_id=-1,
+                to_id=-1,
+                from_worker=id_pair[0],
+                to_worker=id_pair[1],
             )
 
     @staticmethod
