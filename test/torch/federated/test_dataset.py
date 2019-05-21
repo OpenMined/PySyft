@@ -39,13 +39,11 @@ def test_base_dataset(workers):
 
     expected_val = th.tensor([2, 4, 6, 8])
 
-    ten = []
+    transformed_val = []
 
-    for i in transform_dataset:
+    transformed_val = [val[0].item() for val in transform_dataset]
 
-        ten.append(i[0].item())
-
-    assert expected_val.equal(th.tensor(ten).long())
+    assert expected_val.equal(th.tensor(transformed_val).long())
 
 
 def test_federated_dataset(workers):
