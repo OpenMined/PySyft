@@ -323,6 +323,17 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 local_autograd=local_autograd,
                 preinitialize_grad=preinitialize_grad,
             )
+        elif isinstance(obj, torch.jit.ScriptModule):
+            tags = obj.tags if hasattr(obj, "tags") else ""
+            description = obj.description if hasattr(obj, "description") else ""
+            pointer = pointers.create_callable_pointer(
+                owner=self,
+                location=worker,
+                id=ptr_id,
+                id_at_location=obj.id,
+                tags=tags,
+                description=description,
+            )
         else:
             pointer = obj
         # Send the object
