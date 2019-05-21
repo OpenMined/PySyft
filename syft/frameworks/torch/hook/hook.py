@@ -4,7 +4,7 @@ import logging
 import types
 import copy
 import torch
-import torch.nn as nn
+from torch import nn
 from functools import wraps
 
 
@@ -815,6 +815,8 @@ class TorchHook:
             if not hasattr(self, "_is_wrapper"):
                 self._is_wrapper = False
             return self._is_wrapper
+        
+        
 
         @is_wrapper.setter
         def is_wrapper(self, it_is_a_wrapper):
@@ -827,6 +829,32 @@ class TorchHook:
         tensor_type.native_data = tensor_type.data
 
         tensor_type.native_grad_fn = tensor_type.grad_fn
+        
+
+        #Daniele, add change by Theo for .size() command
+        def size(self, dim=None):
+            """Hook the size to return the shape with a callable syntax"""
+            if dim is None:
+                return self.shape
+            return self.shape[dim]
+
+        torch.Tensor.native_size = torch.Tensor.size
+        torch.Tensor.size = size
+        
+        #Daniele, add change by Theo for the size.
+        def flip_hook_native_size(self):
+            #print("In this method")
+            """
+            torch.save & torch.load need .size() to be applied on the wrapper to save and load it
+            So for these operations (only) we need to put in wrapper.size the native size func back.
+            """
+            self.size, self.native_size = self.native_size, self.size
+            return self
+        
+        torch.Tensor.flip_hook_native_size = flip_hook_native_size
+
+        
+        
 
         @property
         def grad_fn(self):
@@ -841,7 +869,6 @@ class TorchHook:
         """Creates a list of Torch methods to auto overload.
 
         By default, it looks for the intersection between the methods of
-        tensor_type and torch_type minus those in the exception list
         (syft.torch.exclude).
 
         Args:
@@ -1031,7 +1058,40 @@ class TorchHook:
 
         self.torch.nn.Module.float_precision = module_float_precision_
 
-        def module_copy_(nn_self):
+        #Daniele: apply Theo's fix from here downwards
+        def module_copy(nn_self):
+            """Returns a copy of a torch.nn.Module"""
             return copy.deepcopy(nn_self)
 
-        self.torch.nn.Module.copy = module_copy_
+        self.torch.nn.Module.copy = module_copy
+        
+        
+        @property
+        def owner(nn_self):
+            for p in nn_self.parameters():
+                return p.owner
+
+        self.torch.nn.Module.owner = owner
+        
+        @property
+        def location(nn_self):
+            try:
+                for p in nn_self.parameters():
+                    return p.location
+            except AttributeError:
+                raise AttributeError(
+                    "Module has no attribute location, did you already send it to some location?"
+                )
+
+        self.torch.nn.Module.location = location
+        
+        #Make sure PySyft uses the Python version
+        self.torch.nn.modules.rnn._rnn_impls["LSTM"] = self.torch.lstm
+        
+        #Daniele: added GRUs
+        self.torch.nn.modules.rnn._rnn_impls["GRU"] = self.torch.gru
+
+        ##Daniele:override _VF.LSTM_Cell and _VF.GRU_Cell with torch.LSTM_Cell and torch.GRU_Cell
+        self.torch.nn.modules.rnn._VF = self.torch
+        
+

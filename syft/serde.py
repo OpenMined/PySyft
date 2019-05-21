@@ -243,8 +243,11 @@ def numpy_tensor_deserializer(tensor_bin) -> torch.Tensor:
 
 def torch_tensor_serializer(tensor) -> bin:
     """Strategy to serialize a tensor using Torch saver"""
+    #Daniele, add in the flip_hook by Theo
+    tensor.flip_hook_native_size()
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
+    tensor.flip_hook_native_size()
     return binary_stream.getvalue()
 
 

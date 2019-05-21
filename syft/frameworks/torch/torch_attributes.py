@@ -111,6 +111,8 @@ class TorchAttributes(object):
             "is_tensor",
             "isfinite",
             "randperm",
+            "randn",
+            "flip_hook_native_size",
         ]
 
         # SECTION: List all torch tensor methods we want to overload
