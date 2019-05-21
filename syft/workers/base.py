@@ -323,17 +323,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 local_autograd=local_autograd,
                 preinitialize_grad=preinitialize_grad,
             )
-        elif isinstance(obj, torch.jit.ScriptModule):
-            tags = obj.tags if hasattr(obj, "tags") else ""
-            description = obj.description if hasattr(obj, "description") else ""
-            pointer = pointers.create_generic_pointer(
-                owner=self,
-                location=worker,
-                id=ptr_id,
-                id_at_location=obj.id,
-                tags=tags,
-                description=description,
-            )
         else:
             pointer = obj
         # Send the object
@@ -358,6 +347,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         command_name = command_name
         # Handle methods
         if _self is not None:
+            if type(_self) == int:
+                _self = self._objects[_self]
             if sy.torch.is_inplace_method(command_name):
                 getattr(_self, command_name)(*args, **kwargs)
                 return
@@ -425,20 +416,26 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         message = (message, return_ids)
 
         try:
-            _ = self.send_msg(MSGTYPE.CMD, message, location=recipient)
+            ret_val = self.send_msg(MSGTYPE.CMD, message, location=recipient)
         except ResponseSignatureError as e:
+            ret_val = None
             return_ids = e.ids_generated
 
-        responses = []
-        for return_id in return_ids:
-            response = sy.PointerTensor(
-                location=recipient, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
-            )
-            responses.append(response)
+        if ret_val is None or type(ret_val) == bytes:
+            responses = []
+            for return_id in return_ids:
+                response = sy.PointerTensor(
+                    location=recipient,
+                    id_at_location=return_id,
+                    owner=self,
+                    id=sy.ID_PROVIDER.pop(),
+                )
+                responses.append(response)
 
-        if len(return_ids) == 1:
-            return responses[0]
-
+            if len(return_ids) == 1:
+                responses = responses[0]
+        else:
+            responses = ret_val
         return responses
 
     def get_obj(self, obj_id: Union[str, int]) -> object:

@@ -19,29 +19,16 @@ class GenericPointer(abstract.AbstractObject):
 
     A GenericPointer forwards all API calls to the remote. GenericPointer objects
     point to objects. They exist to mimic the entire
-    API of a normal tensor, but instead of computing a tensor function locally
+    API of an object, but instead of computing a function locally
     (such as addition, subtraction, etc.) they forward the computation to a
     remote machine as specified by self.location. Specifically, every
-    PointerTensor has a tensor located somewhere that it points to (they should
-    never exist by themselves). Note that PointerTensor objects can point to
-    both torch.Tensor objects AND to other PointerTensor objects. Furthermore,
-    the objects being pointed to can be on the same machine or (more commonly)
-    on a different one. Note further that a PointerTensor does not know the
-    nature how it sends messages to the tensor it points to (whether over
+    GenericPointer has a object located somewhere that it points to (they should
+    never exist by themselves).
+    The objects being pointed to can be on the same machine or (more commonly)
+    on a different one. Note further that a GenericPointer does not know the
+    nature how it sends messages to the object it points to (whether over
     socket, http, or some other protocol) as that functionality is abstracted
     in the BaseWorker object in self.location.
-
-    Example:
-
-     >>> import syft as sy
-     >>> hook = sy.TorchHook()
-     >>> bob = sy.VirtualWorker(id="bob")
-     >>> x = sy.Tensor([1,2,3,4,5])
-     >>> y = sy.Tensor([1,1,1,1,1])
-     >>> x_ptr = x.send(bob) # returns a PointerTensor, sends tensor to Bob
-     >>> y_ptr = y.send(bob) # returns a PointerTensor, sends tensor to Bob
-     >>> # executes command on Bob's machine
-     >>> z_ptr = x_ptr + y_ptr
     """
 
     def __init__(
@@ -51,7 +38,6 @@ class GenericPointer(abstract.AbstractObject):
         owner: "BaseWorker" = None,
         id: Union[str, int] = None,
         garbage_collect_data: bool = True,
-        shape: torch.Size = None,
         point_to_attr: str = None,
         tags: List[str] = None,
         description: str = None,
@@ -62,7 +48,7 @@ class GenericPointer(abstract.AbstractObject):
         Args:
             location: An optional BaseWorker object which points to the worker
                 on which this pointer's object can be found.
-            id_at_location: An optional string or integer id of the tensor
+            id_at_location: An optional string or integer id of the object
                 being pointed to.
             owner: An optional BaseWorker object to specify the worker on which
                 the pointer is located. It is also where the pointer is
@@ -70,21 +56,19 @@ class GenericPointer(abstract.AbstractObject):
                 different from the location parameter that specifies where the
                 pointer points to.
             id: An optional string or integer id of the PointerTensor.
-            garbage_collect_data: If true (default), delete the remote tensor when the
+            garbage_collect_data: If true (default), delete the remote object when the
                 pointer is deleted.
             point_to_attr: string which can tell a pointer to not point directly to\
-                an object, but to point to an attribute of that object (which must
-                also be a tensor) such as .child or .grad. Note the string can be
-                a chain (i.e., .child.child.child or .grad.child.child). Defaults
-                to None, which meants don't point to any attr, just point to the
-                tensor corresponding to the id_at_location.
+                an object, but to point to an attribute of that object such as .child or
+                .grad. Note the string can be a chain (i.e., .child.child.child or
+                .grad.child.child). Defaults yo None, which means don't point to any attr,
+                just point to then object corresponding to the id_at_location.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         self.location = location
         self.id_at_location = id_at_location
         self.garbage_collect_data = garbage_collect_data
-        self._shape = shape
         self.point_to_attr = point_to_attr
 
     @classmethod
@@ -126,7 +110,7 @@ class GenericPointer(abstract.AbstractObject):
     def __str__(self):
         """Returns a string version of this pointer.
 
-        This is primarily for end users to quickly see things about the tensor.
+        This is primarily for end users to quickly see things about the object.
         This tostring shouldn't be used for anything else though as it's likely
         to change. (aka, don't try to parse it to extract information. Read the
         attribute you need directly). Also, don't use this to-string as a
@@ -154,7 +138,7 @@ class GenericPointer(abstract.AbstractObject):
             for tag in self.tags:
                 out += str(tag) + " "
 
-        if big_str:
+        if big_str and hasattr(self, "shape"):
             out += "\n\tShape: " + str(self.shape)
 
         if self.description is not None:
@@ -215,28 +199,6 @@ class GenericPointer(abstract.AbstractObject):
     def is_none(self):
         return self.owner.request_is_remote_tensor_none(self)
 
-    def get_shape(self):
-        """Request information about the shape to the remote worker"""
-        return self.owner.request_remote_tensor_shape(self)
-
-    @property
-    def shape(self):
-        """ This method returns the shape of the data being pointed to.
-        This shape information SHOULD be cached on self._shape, but
-        occasionally this information may not be present. If this is the
-        case, then it requests the shape information from the remote object
-        directly (which is inefficient and should be avoided).
-        """
-
-        if self._shape is None:
-            self._shape = self.get_shape()
-
-        return self._shape
-
-    @shape.setter
-    def shape(self, new_shape):
-        self._shape = new_shape
-
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:
             point_to_attr = "{}.{}".format(self.point_to_attr, attr_name)
@@ -259,46 +221,3 @@ class GenericPointer(abstract.AbstractObject):
         self.owner.send_command(
             message=("__setattr__", self, (name, value), {}), recipient=self.location
         )
-
-    def share(self, *args, **kwargs):
-        """
-        Send a command to remote worker to additively share a tensor
-
-        Returns:
-            A pointer to an AdditiveSharingTensor
-        """
-
-        # Send the command
-        command = ("share", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
-        return response
-
-
-def create_generic_pointer(
-    location,  #: BaseWorker,
-    id: (str or int),
-    id_at_location: (str or int),
-    owner,  #: BaseWorker,
-    tags,
-    description,
-    garbage_collect_data: bool = True,
-) -> GenericPointer:
-    """Creates a pointer to the "obj"
-    """
-
-    if id is None:
-        id = sy.ID_PROVIDER.pop()
-
-    ptr = GenericPointer(
-        location=location,
-        id_at_location=id_at_location,
-        owner=owner,
-        id=id,
-        garbage_collect_data=garbage_collect_data,
-        tags=tags,
-        description=description,
-    )
-
-    return ptr
