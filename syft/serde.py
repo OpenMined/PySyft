@@ -690,6 +690,8 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
         tuple: a collection of the same type as the input where the objects
             in the collection have been detailed.
     """
+    # TODO: remove hack return
+    return my_dict
     pieces = {}
     # for dictionaries we want to detail both the key and the value
     for key, value in my_dict:
@@ -1331,9 +1333,7 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
     Returns:
         obj: a more complex Python object which msgpack would have had trouble
             deserializing directly.
-
     """
-
     if type(obj) in (list, tuple):
         return detailers[obj[0]](worker, obj[1])
     else:

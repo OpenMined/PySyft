@@ -73,6 +73,16 @@ class WebsocketClientWorker(BaseWorker):
             "make hook.local_worker a WebsocketClientWorker?",
         )
 
+    def run_script_remote(self, *args, **kwargs):
+        message = self.create_message_execute_command(
+            command_name="run_script_module", command_owner="self", *args, **kwargs
+        )
+        serialized_message = sy.serde.serialize(message)
+        # Send the message and return the deserialized response.
+
+        response = self._recv_msg(serialized_message)
+        return sy.serde.deserialize(response)
+
     def _receive_action(self, message: bin) -> bin:
         self.ws.send(str(binascii.hexlify(message)))
         response = binascii.unhexlify(self.ws.recv()[2:-1])

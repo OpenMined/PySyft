@@ -1,8 +1,9 @@
 import logging
 
 from abc import abstractmethod
-import syft as sy
+import io
 
+import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.generic import ObjectStorage
@@ -117,6 +118,47 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                             self.add_worker(worker)
                         if self.id not in worker._known_workers:
                             worker.add_worker(self)
+
+    def run_script_module(self, serialized_buffer: bin):
+        """Hacky function to try serializing a jit model."""
+        buffer = io.BytesIO(serialized_buffer)
+        model = torch.jit.load(buffer)
+        optimizer = torch.optim.SGD(params=model.parameters(), lr=0.01)
+
+        epochs = 10
+        for epoch in range(1, epochs + 1):
+            loss_accum = 0
+            optimizer.zero_grad()
+            pred = model(torch.ones(1, 10))
+            loss = ((pred - torch.ones(1, 1)) ** 2).sum()
+            loss.backward()
+            optimizer.step()
+
+            loss_accum += float(loss)
+
+            print("Train Epoch: {}\tLoss: {:.6f}".format(epoch, loss.item()))
+
+        print("Total loss", loss_accum)
+
+    @staticmethod
+    def create_message_execute_command(
+        command_name: MSGTYPE, command_owner=None, return_ids=None, *args, **kwargs
+    ):
+        """helper function creating a message tuple for the execute_command call
+         Args:
+            command_name: name of the command that shall be called
+            command_owner: owner of the function (None for torch functions, "self" for classes derived from
+                           workers.base or ptr_id for remote objects
+            return_ids: optionally set the ids of the return values (for remote objects)
+            *args:  will be passed to the call of command_name
+            **kwargs:  will be passed to the call of command_name
+         Returns:
+            tuple: (command_name, command_owner, args, kwargs), return_ids
+         """
+        print(args, kwargs)
+        if return_ids is None:
+            return_ids = []
+        return tuple([MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]])
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -343,23 +385,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
 
         (command_name, _self, args, kwargs), return_ids = message
-
         # TODO add kwargs
         command_name = command_name
         # Handle methods
         if _self is not None:
-            if sy.torch.is_inplace_method(command_name):
-                getattr(_self, command_name)(*args, **kwargs)
-                return
+
+            if type(_self) == str and _self == "self":
+                # TODO: remove hack to get the correct kwargs param
+                response = getattr(self, command_name)(kwargs[0][1])
             else:
-                try:
-                    response = getattr(_self, command_name)(*args, **kwargs)
-                except TypeError:
-                    # TODO Andrew thinks this is gross, please fix. Instead need to properly deserialize strings
-                    new_args = [
-                        arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args
-                    ]
-                    response = getattr(_self, command_name)(*new_args, **kwargs)
+                if sy.torch.is_inplace_method(command_name):
+                    getattr(_self, command_name)(*args, **kwargs)
+                    return
+                else:
+                    try:
+                        response = getattr(_self, command_name)(*args, **kwargs)
+                    except TypeError:
+                        # TODO Andrew thinks this is gross, please fix. Instead need to properly deserialize strings
+                        new_args = [
+                            arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args
+                        ]
+                        response = getattr(_self, command_name)(*new_args, **kwargs)
         # Handle functions
         else:
             # At this point, the command is ALWAYS a path to a
