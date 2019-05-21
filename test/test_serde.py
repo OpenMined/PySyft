@@ -531,7 +531,7 @@ def test_hooked_tensor(compress, compress_scheme):
     assert (t == t_serialized_deserialized).all()
 
 
-def test_PointerTensor(hook, workers):
+def test_pointer_tensor(hook, workers):
     syft.serde._apply_compress_scheme = serde.apply_no_compression
     t = PointerTensor(
         id=1000, location=workers["alice"], owner=workers["alice"], id_at_location=12345
@@ -588,3 +588,25 @@ def test_additive_sharing_tensor_serde(compress, workers):
     assert (
         additive_sharing_tensor_reconstructed.child.keys() == additive_sharing_tensor.child.keys()
     )
+
+
+def test_serialize_and_deserialize_torch_scriptmodule():
+    @torch.jit.script
+    def foo(x):
+        return x + 2
+
+    bin_message = serde.serialize_torch_scriptmodule(foo)
+    foo_loaded = serde.deserialize_torch_scriptmodule(bin_message)
+
+    assert foo.code == foo_loaded.code
+
+
+def test_torch_jit_script_module_serde():
+    @torch.jit.script
+    def foo(x):
+        return x + 2
+
+    msg = serde.serialize(foo)
+    foo_received = serde.deserialize(msg)
+
+    assert foo.code == foo_received.code

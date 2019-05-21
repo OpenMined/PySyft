@@ -254,6 +254,17 @@ def torch_tensor_deserializer(tensor_bin) -> torch.Tensor:
     return torch.load(bin_tensor_stream)
 
 
+def serialize_torch_scriptmodule(script_module) -> bin:
+    """Strategy to serialize a script module using Torch.jit"""
+    return script_module.save_to_buffer()
+
+
+def deserialize_torch_scriptmodule(script_module_bin) -> torch.jit.ScriptModule:
+    """"Strategy to deserialize a binary input using Torch load"""
+    script_module_stream = io.BytesIO(script_module_bin)
+    return torch.jit.load(script_module_stream)
+
+
 # Chosen Compression Algorithm
 
 
@@ -1226,6 +1237,14 @@ def _detail_str(worker: AbstractWorker, str_tuple: tuple) -> str:
     return str_tuple[0].decode("utf-8")
 
 
+def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
+    return serialize_torch_scriptmodule(obj)
+
+
+def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> torch.jit.ScriptModule:
+    return deserialize_torch_scriptmodule(script_module_bin)
+
+
 # High Level Simplification Router
 
 
@@ -1310,6 +1329,7 @@ simplifiers = {
     VirtualWorker: [16, _simplify_worker],
     GetNotPermittedError: [17, _simplify_GetNotPermittedError],
     str: [18, _simplify_str],
+    torch.jit.ScriptModule: [20, _simplify_script_module],
 }
 
 forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
@@ -1361,4 +1381,5 @@ detailers = [
     _detail_GetNotPermittedError,
     _detail_str,
     _force_full_detail_worker,
+    _detail_script_module,
 ]
