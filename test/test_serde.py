@@ -599,3 +599,53 @@ def test_serde_object_wrapper_int():
 
     assert obj_wrapper.obj == obj_wrapper_received.obj
     assert obj_wrapper.id == obj_wrapper_received.id
+
+
+def test_serialize_and_deserialize_torch_scriptmodule():
+    @torch.jit.script
+    def foo(x):
+        return x + 2
+
+    bin_message = serde._simplify_script_module(foo)
+    foo_loaded = serde._detail_script_module(None, bin_message)
+
+    assert foo.code == foo_loaded.code
+
+
+def test_torch_jit_script_module_serde():
+    @torch.jit.script
+    def foo(x):
+        return x + 2
+
+    msg = serde.serialize(foo)
+    foo_received = serde.deserialize(msg)
+
+    assert foo.code == foo_received.code
+
+
+def test_serde_object_wrapper_traced_module():
+
+    data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]])
+
+    class Net(torch.nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = torch.nn.Linear(2, 3)
+
+        def forward(self, x):
+            x = torch.nn.functional.relu(self.fc1(x))
+            return x
+
+    obj = torch.jit.trace(Net(), data)
+
+    obj_wrapper = pointers.ObjectWrapper(obj, id=200)
+    msg = serde.serialize(obj_wrapper)
+
+    obj_wrapper_received = serde.deserialize(msg)
+
+    pred_before = obj(data)
+
+    pred_after = obj_wrapper_received.obj(data)
+
+    assert (pred_before == pred_after).all()
+    assert obj_wrapper.id == obj_wrapper_received.id
