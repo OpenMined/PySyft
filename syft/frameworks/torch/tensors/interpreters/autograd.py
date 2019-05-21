@@ -3,7 +3,6 @@ import torch
 
 import syft
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.pointers.pointer import PointerTensor
 from . import gradients
 
 

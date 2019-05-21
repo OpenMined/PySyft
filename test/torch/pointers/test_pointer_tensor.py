@@ -13,7 +13,6 @@ def test_init(workers):
 def test_create_pointer(workers):
     x = torch.Tensor([1, 2])
     x.create_pointer()
-    x.create_pointer(location=workers["james"])
 
 
 def test_send_default_garbage_collector_true(workers):
@@ -194,7 +193,7 @@ def test_method_on_attribute(workers):
     x.child.point_to_attr = "child"
     try:
         x.get()
-    except syft.exceptions.CannotRequestTensorAttribute as e:
+    except syft.exceptions.CannotRequestObjectAttribute as e:
         assert True
 
 

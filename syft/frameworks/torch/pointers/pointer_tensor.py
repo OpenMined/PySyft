@@ -1,8 +1,16 @@
 import syft
 import torch
 from syft.frameworks.torch.tensors.interpreters import abstract
-from syft.exceptions import CannotRequestTensorAttribute
+from syft.exceptions import CannotRequestObjectAttribute
 from syft.frameworks.torch import pointers
+
+from typing import List
+from typing import Union
+from typing import TYPE_CHECKING
+
+# this if statement avoids circular imports between base.py and pointer.py
+if TYPE_CHECKING:
+    from syft.workers import BaseWorker
 
 
 class PointerTensor(pointers.GenericPointer, abstract.AbstractTensor):
@@ -35,6 +43,52 @@ class PointerTensor(pointers.GenericPointer, abstract.AbstractTensor):
      >>> z_ptr = x_ptr + y_ptr
     """
 
+    def __init__(
+        self,
+        location: "BaseWorker" = None,
+        id_at_location: Union[str, int] = None,
+        owner: "BaseWorker" = None,
+        id: Union[str, int] = None,
+        garbage_collect_data: bool = True,
+        shape: torch.Size = None,
+        point_to_attr: str = None,
+        tags: List[str] = None,
+        description: str = None,
+    ):
+        super().__init__(
+            location=location,
+            id_at_location=id_at_location,
+            owner=owner,
+            id=id,
+            garbage_collect_data=garbage_collect_data,
+            point_to_attr=point_to_attr,
+            tags=tags,
+            description=description,
+        )
+        self._shape = shape
+
+    def get_shape(self):
+        """Request information about the shape to the remote worker"""
+        return self.owner.request_remote_tensor_shape(self)
+
+    @property
+    def shape(self):
+        """ This method returns the shape of the data being pointed to.
+        This shape information SHOULD be cached on self._shape, but
+        occasionally this information may not be present. If this is the
+        case, then it requests the shape information from the remote object
+        directly (which is inefficient and should be avoided).
+        """
+
+        if self._shape is None:
+            self._shape = self.get_shape()
+
+        return self._shape
+
+    @shape.setter
+    def shape(self, new_shape):
+        self._shape = new_shape
+
     def get(self, deregister_ptr: bool = True):
         """Requests the tensor/chain being pointed to, be serialized and return
 
@@ -66,7 +120,7 @@ class PointerTensor(pointers.GenericPointer, abstract.AbstractTensor):
 
         if self.point_to_attr is not None:
 
-            raise CannotRequestTensorAttribute(
+            raise CannotRequestObjectAttribute(
                 "You called .get() on a pointer to"
                 " a tensor attribute. This is not yet"
                 " supported. Call .clone().get() instead."
@@ -107,3 +161,18 @@ class PointerTensor(pointers.GenericPointer, abstract.AbstractTensor):
         ).wrap()
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
+
+    def share(self, *args, **kwargs):
+        """
+        Send a command to remote worker to additively share a tensor
+
+        Returns:
+            A pointer to an AdditiveSharingTensor
+        """
+
+        # Send the command
+        command = ("share", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
