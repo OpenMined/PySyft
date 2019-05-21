@@ -595,10 +595,13 @@ def test_serialize_and_deserialize_torch_scriptmodule():
     def foo(x):
         return x + 2
 
+    foo.id = 1
+
     bin_message = serde.serialize_torch_scriptmodule(foo)
     foo_loaded = serde.deserialize_torch_scriptmodule(bin_message)
 
     assert foo.code == foo_loaded.code
+    assert foo.id == foo_loaded.id
 
 
 def test_torch_jit_script_module_serde():
@@ -606,7 +609,10 @@ def test_torch_jit_script_module_serde():
     def foo(x):
         return x + 2
 
+    foo.id = 1
+
     msg = serde.serialize(foo)
     foo_received = serde.deserialize(msg)
 
     assert foo.code == foo_received.code
+    assert foo.id == foo_received.id

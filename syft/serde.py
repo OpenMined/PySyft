@@ -256,13 +256,15 @@ def torch_tensor_deserializer(tensor_bin) -> torch.Tensor:
 
 def serialize_torch_scriptmodule(script_module) -> bin:
     """Strategy to serialize a script module using Torch.jit"""
-    return script_module.save_to_buffer()
+    return (script_module.id, script_module.save_to_buffer())
 
 
-def deserialize_torch_scriptmodule(script_module_bin) -> torch.jit.ScriptModule:
+def deserialize_torch_scriptmodule(script_module_tuple) -> torch.jit.ScriptModule:
     """"Strategy to deserialize a binary input using Torch load"""
-    script_module_stream = io.BytesIO(script_module_bin)
-    return torch.jit.load(script_module_stream)
+    script_module_stream = io.BytesIO(script_module_tuple[1])
+    loaded_module = torch.jit.load(script_module_stream)
+    loaded_module.id = script_module_tuple[0]
+    return loaded_module
 
 
 # Chosen Compression Algorithm

@@ -226,3 +226,18 @@ def test_spinup_time(hook):
     dummy = sy.VirtualWorker(hook, id="dummy", data=data)
     end_time = time()
     assert (end_time - start_time) < 0.05
+
+
+def test_send_jit_scriptmodule(hook, workers):
+    bob = workers["bob"]
+
+    @torch.jit.script
+    def foo(x):
+        return x + 2
+
+    # hack unhooked object
+    foo.id = 2
+    foo_ptr = hook.local_worker.send(foo, bob)
+
+    res = foo_ptr(torch.tensor(4))
+    assert res == torch.tensor(6)
