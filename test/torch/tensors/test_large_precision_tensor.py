@@ -1,4 +1,3 @@
-import torch
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 
 
@@ -23,9 +22,10 @@ def test_split_restore():
 
 def test_add():
     bits = 16
-    expected = LargePrecisionTensor([9510765143330165428], to_bits=bits)
+    expected = 9510765143330165428
     lpt1 = LargePrecisionTensor([4755382571665082714], to_bits=bits)
     lpt2 = LargePrecisionTensor([4755382571665082714], to_bits=bits)
     result = lpt1.add(lpt2)
-    print(result)
-    assert torch.all(torch.eq(expected.child, result))
+    # The same number can be factorized in different ways. The sum of two matrices can be different to the
+    # factorisation of the number the sum represents
+    assert LargePrecisionTensor._restore_number(result.tolist(), bits) == expected
