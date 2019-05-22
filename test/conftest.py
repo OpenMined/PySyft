@@ -32,7 +32,9 @@ def hook():
 def workers(hook):
     # To run a plan locally the local worker can't be a client worker,
     # since it needs to register objects
-    hook.local_worker.is_client_worker = False
+    # LaRiffle edit: doing this increases the reference count on pointers and
+    # breaks the auto garbage collection for pointer of pointers, see #2150
+    # hook.local_worker.is_client_worker = False
 
     # reset the hook and the local worker
     syft.local_worker.clear_objects()
