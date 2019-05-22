@@ -3,6 +3,7 @@
 from syft import frameworks
 from syft import workers
 from syft import codes
+from syft import tfe
 
 # The purpose of the following import section is to increase the convenience of using
 # PySyft by making it possible to import the most commonly used objects from syft
@@ -49,6 +50,7 @@ __all__ = [
     "LoggingTensor",
     "PointerTensor",
     "VirtualGrid",
+    "tfe",
 ]
 
 local_worker = None
