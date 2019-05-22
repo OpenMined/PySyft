@@ -1,4 +1,5 @@
 .cache
+.coverage
 *__pycache__*
 .eggs/
 build/
