@@ -692,23 +692,12 @@ def register_tensor(
     Returns:
         The registered tensor.
     """
-    # TODO: uncomment these lines.
-    # This is currently need so we can return a tensor
-    # remotely.
-    # tensor.owner = owner
-    # try:
-    #     tensor.id = response_ids.pop(-1)
-    # except IndexError:
-    #     raise ResponseSignatureError
-    # owner.register_obj(tensor)
-
     tensor.owner = owner
-    if response_ids:
+    try:
         tensor.id = response_ids.pop(-1)
-    else:
-        tensor.id = sy.ID_PROVIDER.pop()
+    except IndexError:
+        raise ResponseSignatureError
     owner.register_obj(tensor)
-    return tensor
 
 
 def build_register_response(response: object, rules: Tuple, return_tuple: bool = False) -> Callable:

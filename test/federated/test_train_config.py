@@ -6,92 +6,65 @@ import torch.nn.functional as F
 import syft as sy
 
 
-def test_send_train_config(hook):
-    # To run a plan locally the local worker can't be a client worker,
-    # since it needs to register objects
-    hook.local_worker.is_client_worker = False
+def test_train_config_with_jit(workers):
+    alice = workers["alice"]
+    me = workers["me"]
 
-    # Send data and target to federated device
-    data = th.tensor([[-1, 2.0]]).tag("data")
-    target = th.tensor([[1.0]]).tag("target")
-    federated_device = sy.VirtualWorker(hook, id="send_train_config", data=(data, target))
+    data = th.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
+    target = th.tensor([[1.0], [0.0], [1.0], [0.0]], requires_grad=True)
 
-    # Loss function and model definition
-    @sy.func2plan
+    dataset = sy.BaseDataset(data, target)
+    alice.add_dataset(dataset, key="vectors")
+
+    @th.jit.script
     def loss_fn(real, pred):
         return ((real - pred) ** 2).mean()
 
-    class Net(nn.Module):
+    # Model
+    class Net(th.jit.ScriptModule):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
             self.fc3 = nn.Linear(2, 1)
 
-        @sy.method2plan
+        @th.jit.script_method
         def forward(self, x):
             x = F.relu(self.fc1(x))
-            x = self.fc2(x)
+            x = F.relu(self.fc2(x))
             x = self.fc3(x)
             return x
-
-    # Create and send train config
-    train_config = sy.TrainConfig(model=Net(), loss_plan=loss_fn)
-    train_config.send(federated_device)
-
-    # Get a pointer to federated device data
-    pointer_to_data = federated_device.search("data")[0]
-    pointer_to_target = federated_device.search("target")[0]
-
-    # Run forward pass and calculate loss
-    pointer_to_pred = train_config.forward_plan(pointer_to_data)
-    pointer_to_loss = train_config.loss_plan(pointer_to_pred.wrap(), pointer_to_target)
-    loss = pointer_to_loss.get()
-    assert loss > 0
-
-
-def test_run_train_config(hook):
-    hook.local_worker.is_client_worker = False
-    me = hook.local_worker
-
-    # Send data and target to federated device
-    data = th.tensor([[-1, 2.0]])
-    target = th.tensor([[1.0]])
-
-    federated_device = sy.VirtualWorker(hook, id="run_train_config")
-    ptr_data, ptr_target = data.send(federated_device), target.send(federated_device)
-    dataset = sy.BaseDataset(ptr_data, ptr_target)
-    federated_device.dataset = dataset
-
-    # Loss function and model definition
-    @sy.func2plan
-    def loss_fn(real, pred):
-        return ((real - pred) ** 2).mean()
-
-    class Net(nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
-            self.fc3 = nn.Linear(2, 1)
-
-        @sy.method2plan
-        def forward(self, x):
-            x = F.relu(self.fc1(x))
-            x = self.fc2(x)
-            x = self.fc3(x)
-            return x
-
-    # Force build
-    loss_fn(th.tensor([1.0]), th.tensor([1.0]))
 
     model = Net()
-    model.send(me)
-    model(th.tensor([1.0, 2]))
+    model.id = sy.ID_PROVIDER.pop()
+
+    loss_fn.id = sy.ID_PROVIDER.pop()
+
+    model_ptr = me.send(model, alice)
+    loss_fn_ptr = me.send(loss_fn, alice)
 
     # Create and send train config
-    train_config = sy.TrainConfig(model=model, loss_plan=loss_fn)
-    train_config.send(federated_device)
+    train_config = sy.TrainConfig(
+        model_id=model_ptr.id_at_location, loss_plan_id=loss_fn_ptr.id_at_location, batch_size=2
+    )
+    train_config.send(alice)
 
-    # TODO: uncomment this line
-    # me.run_training(federated_device)
+    for epoch in range(5):
+        loss = alice.fit(dataset_key="vectors")
+        print("-" * 50)
+        print("Iteration %s: alice's loss: %s" % (epoch, loss))
+
+    print(alice)
+    new_model = model_ptr.get()
+    data = th.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
+    target = th.tensor([[1.0], [0.0], [1.0], [0.0]], requires_grad=True)
+
+    print("Evaluation before training")
+    pred = model(data)
+    loss = loss_fn(real=target, pred=pred)
+    print("Loss: {}".format(loss))
+
+    print("Evaluation after training:")
+    pred = new_model(data)
+    loss = loss_fn(real=target, pred=pred)
+    print("Loss: {}".format(loss))
