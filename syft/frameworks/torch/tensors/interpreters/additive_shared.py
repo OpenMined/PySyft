@@ -237,8 +237,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
         if tensor_type == sy.MultiPointerTensor:
             return self._getitem_multipointer(indices)
-        elif tensor_type == int:
+        elif tensor_type == int or tensor_type == slice:
             return self._getitem_public(indices)
+        elif tensor_type == list:
+            return self._getitem_public(*indices)
         else:
             raise NotImplementedError("Index type", type(indices), "not supported")
 
@@ -475,6 +477,74 @@ class AdditiveSharingTensor(AbstractTensor):
             return tensor.argmax(**kwargs)
 
         module.argmax = argmax
+        
+        def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1, padding_mode='zeros'):
+            """
+            Overloads torch.conv2d to be able to use MPC on convolutional networks.
+            The idea is to build new tensors from input and weight to compute a matrix multiplication
+            equivalent to the convolution.
+
+            Args:
+                input: input image
+                weight: convolution kernels
+                bias: optional additive bias
+                stride: stride of the convolution kernels
+                padding:
+                dilation: spacing between kernel elements
+                groups:
+                padding_mode: type of padding
+            Returns:
+                the result of the convolution as a AdditiveSharingTensor
+            """
+            # Not everything is implemented yet so:
+            if bias is not None or padding != 0 \
+                                or dilation != 1 \
+                                or groups != 1 \
+                                or padding_mode != 'zeros':
+                raise NotImplementedError
+            
+            assert len(input.shape) == 4
+            assert len(weight.shape) == 4
+            
+            # Extract a few useful values
+            batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
+            nb_channels_out, nb_channels_in_, nb_rows_kernels, nb_cols_kernels = weight.shape
+            assert nb_channels_in == nb_channels_in_
+
+            nb_rows_out = int((nb_rows_in - nb_rows_kernels + stride[0]) / stride[0])
+            nb_cols_out = int((nb_cols_in - nb_cols_kernels + stride[1]) / stride[1])
+            
+            # We want to get relative positions of values in the input tensor that are used by one filter convolution.
+            pattern_ind = []
+            for r in range(nb_rows_kernels):
+                ind_start = r * nb_cols_in * nb_channels_in
+                ind_end = ind_start + nb_cols_kernels * nb_channels_in
+                pattern_ind.extend(list(range(ind_start, ind_end)))
+            
+            # The image tensor is reshaped for the matrix multiplication:
+            # on each row of the new tensor will be the input values used for each filter convolution
+            im_flat = input.view(batch_size, -1)
+            im_reshaped = []
+            for cur_row_out in range(nb_rows_out):
+                offset = cur_row_out * stride[1] * nb_channels_in * nb_cols_in
+                for cur_col_out in range(nb_cols_out):
+                    tmp = [ind + offset for ind in pattern_ind]
+                    im_reshaped.append(im_flat[:, tmp].wrap())
+                    offset += stride[0] * nb_channels_in
+
+            im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
+            
+            # The convolution kernels are also reshaped for the matrix multiplication
+            weight_reshaped = weight.view(nb_channels_out, -1).t().wrap()
+
+            # Now that everything is set up, we can compute the result
+            res = torch.matmul(im_reshaped, weight_reshaped).child  # I neded to unwrap here
+
+            # ... And reshape it back to an image
+            res = res.permute(0, 2, 1).view(batch_size, nb_channels_out, nb_rows_out, nb_cols_out).contiguous()
+            return res
+
+        module.conv2d = conv2d
 
         @overloaded.module
         def functional(module):
