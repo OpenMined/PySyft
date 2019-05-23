@@ -375,11 +375,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
             response = command(*args, **kwargs)
 
-            # Daniele: turn the tuple into a tensor instead! To be used with websockets.
+            #Temporary fix for websockets when returning a tuple of tensors from an LSTM cell
             if command_name == "torch.lstm_cell":
                 response = torch.stack(response)
 
-            # Daniele: same bug fix as above over here for websockets' usage
+            #Temporary fix for websockets when returning a tuple of tensors from torch.sort()
             if command_name == "torch.sort":
                 Alpha_Tensor_Fixed = (response[0].float(), response[1].float())
                 response = torch.stack(Alpha_Tensor_Fixed)

@@ -828,7 +828,7 @@ class TorchHook:
 
         tensor_type.native_grad_fn = tensor_type.grad_fn
 
-        # Daniele, add change by Theo for .size() command
+        #Added support for the torch.size() command
         def size(self, dim=None):
             """Hook the size to return the shape with a callable syntax"""
             if dim is None:
@@ -838,9 +838,7 @@ class TorchHook:
         torch.Tensor.native_size = torch.Tensor.size
         torch.Tensor.size = size
 
-        # Daniele, add change by Theo for the size.
         def flip_hook_native_size(self):
-            # print("In this method")
             """
             torch.save & torch.load need .size() to be applied on the wrapper to save and load it
             So for these operations (only) we need to put in wrapper.size the native size func back.
@@ -1052,7 +1050,6 @@ class TorchHook:
 
         self.torch.nn.Module.float_precision = module_float_precision_
 
-        # Daniele: apply Theo's fix from here downwards
         def module_copy(nn_self):
             """Returns a copy of a torch.nn.Module"""
             return copy.deepcopy(nn_self)
@@ -1078,11 +1075,12 @@ class TorchHook:
 
         self.torch.nn.Module.location = location
 
-        # Make sure PySyft uses the Python version
+        # Make sure PySyft uses the PyTorch version
         self.torch.nn.modules.rnn._rnn_impls["LSTM"] = self.torch.lstm
 
-        # Daniele: added GRUs
+        #Add support for GRUs
         self.torch.nn.modules.rnn._rnn_impls["GRU"] = self.torch.gru
 
-        ##Daniele:override _VF.LSTM_Cell and _VF.GRU_Cell with torch.LSTM_Cell and torch.GRU_Cell
+        #Override _VF.LSTM_Cell and _VF.GRU_Cell with torch.LSTM_Cell and torch.GRU_Cell
+        #With the pytorch-based version
         self.torch.nn.modules.rnn._VF = self.torch
