@@ -295,8 +295,8 @@ def test_remote_function_with_multi_ouput(workers):
 
     assert max_value.get().item() == 4.0
     assert argmax_idx.get().item() == 3
-    
-    
+
+
 def test_remote_shape_and_size(workers):
     """
     Test that we can query shape of a remote tensor and that .size()
