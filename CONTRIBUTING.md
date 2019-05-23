@@ -37,7 +37,7 @@ To sync your fork with the OpenMined/PySyft repository please see this [Guide](h
 
 ### Beginner Issues
 
-If you are new to the project and want to get into the code, we recommend picking an issue with the label "good first issue". These issues should ony require general programming knowledge and little to none insights into the project.
+If you are new to the project and want to get into the code, we recommend picking an issue with the label "good first issue". These issues should only require general programming knowledge and little to none insights into the project.
 
 ### Issue Allocation
 
@@ -49,7 +49,7 @@ If you want to work on an open issue, please post a comment telling that you wil
 
 ### Writing Test Cases
 
-Always make sure to create the necessary tests and keep test coverage at 100%. You can always ask for help in slack or via github if you don't feel confidant about your tests.
+Always make sure to create the necessary tests and keep test coverage at 100%. You can always ask for help in slack or via github if you don't feel confident about your tests.
 
 We aim to have a 100% test coverage, and the Travis CI will fail if the coverage is below this value. You can evaluate your coverage using the following commands.
 
