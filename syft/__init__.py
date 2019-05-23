@@ -30,7 +30,9 @@ from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.pointers import GenericPointer, PointerTensor
+from syft.frameworks.torch.pointers import ObjectPointer
+from syft.frameworks.torch.pointers import CallablePointer
+from syft.frameworks.torch.pointers import PointerTensor
 
 # Import serialization tools
 from syft import serde

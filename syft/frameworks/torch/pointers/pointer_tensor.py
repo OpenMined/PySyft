@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from syft.workers import BaseWorker
 
 
-class PointerTensor(pointers.GenericPointer, abstract.AbstractTensor):
+class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
     """A pointer to another tensor.
 
     A PointerTensor forwards all API calls to the remote.PointerTensor objects
@@ -113,34 +113,9 @@ class PointerTensor(pointers.GenericPointer, abstract.AbstractTensor):
 
         Returns:
             An AbstractTensor object which is the tensor (or chain) that this
-            object used to point to on a remote machine.
-
-        TODO: add param get_copy which doesn't destroy remote if true.
+            object used to point to #on a remote machine.
         """
-
-        if self.point_to_attr is not None:
-
-            raise CannotRequestObjectAttribute(
-                "You called .get() on a pointer to"
-                " a tensor attribute. This is not yet"
-                " supported. Call .clone().get() instead."
-            )
-
-        # if the pointer happens to be pointing to a local object,
-        # just return that object (this is an edge case)
-        if self.location == self.owner:
-            tensor = self.owner.get_obj(self.id_at_location).child
-        else:
-            # get tensor from remote machine
-            tensor = self.owner.request_obj(self.id_at_location, self.location)
-
-        # Register the result
-        assigned_id = self.id_at_location
-        self.owner.register_obj(tensor, assigned_id)
-
-        # Remove this pointer by default
-        if deregister_ptr:
-            self.owner.de_register_obj(self)
+        tensor = pointers.ObjectPointer.get(self, deregister_ptr=deregister_ptr)
 
         # TODO: remove these 3 lines
         # The fact we have to check this means
