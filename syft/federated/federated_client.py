@@ -41,7 +41,7 @@ class FederatedClient(ObjectStorage):
 
         super().set_obj(obj)
 
-    def _build_optimizer(self, optimizer_name: str, lr: float) -> th.optim.Optimizer:
+    def _build_optimizer(self, optimizer_name: str, model, lr: float) -> th.optim.Optimizer:
         """Build an optimizer if needed.
 
         Args:
@@ -55,7 +55,8 @@ class FederatedClient(ObjectStorage):
 
         optimizer_name = optimizer_name.lower()
         if optimizer_name == "sgd":
-            self.optimizer = th.optim.SGD(self.parameters, lr=lr)
+            logger.debug("sgd parameters = %s, lr = %s", model.parameters(), lr)
+            self.optimizer = th.optim.SGD(model.parameters(), lr=lr)
         else:
             raise ValueError("Unknown optimizer: {}".format(optimizer_name))
         return self.optimizer
@@ -94,8 +95,10 @@ class FederatedClient(ObjectStorage):
                 logger.warning("Available datasets: %s", list(self.datasets.keys()))
                 return None, -1
 
-        self._build_optimizer(self.train_config.optimizer, self.train_config.lr)
-        return self._fit(key)
+        model = self.get_obj(self.train_config.model_id)
+
+        self._build_optimizer(self.train_config.optimizer, model, self.train_config.lr)
+        return self._fit(model=model, key=key)
 
     def _create_batch_sampler(self, ds_key: str, shuffle: bool = False, drop_last: bool = True):
         data_range = range(len(self.datasets[ds_key]))
@@ -107,15 +110,12 @@ class FederatedClient(ObjectStorage):
         batch_sampler = BatchSampler(sampler, self.train_config.batch_size, drop_last)
         return batch_sampler
 
-    def _fit(self, key):
-        # TODO: how to get the actual model?
-        # self.model.train()
+    def _fit(self, model, key):
+        loss_fn = self.get_obj(self.train_config.loss_plan_id)
+        model.train()
         logger.setLevel(logging.DEBUG)
         logger.debug("train_config = %s", self.train_config)
         logger.debug("datasets[%s] = %s", key, self.datasets[key])
-        logger.debug("nr objects = %s", len(self._objects))
-        for id in self._objects:
-            logger.debug("id: %s, obj: %s", id, self._objects[id])
         batch_sampler = self._create_batch_sampler(key)
         loss = -1.0
         for data_indices in batch_sampler:
@@ -123,17 +123,14 @@ class FederatedClient(ObjectStorage):
             data, target = self.datasets[key][data_indices]
             logger.debug("data = %s", data)
             logger.debug("target = %s", target)
-            self.register_obj(data)
-            self.register_obj(target)
             self.optimizer.zero_grad()
-            output = self.train_config.forward_plan(data)
-            self.register_obj(output)
-            loss = self.train_config.loss_plan(output, target)
+            output = model.forward(data)
+            loss = loss_fn(output, target)
             loss.backward()
             self.optimizer.step()
-            self.de_register_obj(output)
-            self.de_register_obj(data)
-            self.de_register_obj(target)
             logger.info("loss: %s", loss)
 
         return loss
+
+
+#

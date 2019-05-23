@@ -5,7 +5,8 @@ import logging
 import torch as th
 
 import syft as sy
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+
+# from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.workers import WebsocketServerWorker
 
 logger = logging.getLogger("run_websocket_server")

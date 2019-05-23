@@ -1109,8 +1109,10 @@ def _simplify_train_config(train_config: TrainConfig) -> tuple:
         tuple: a tuple holding the unique attributes of the TrainConfig object
     """
     return (
-        _simplify(train_config.loss_plan),
-        _simplify(train_config.forward_plan),
+        # _simplify(train_config.loss_plan),
+        # _simplify(train_config.forward_plan),
+        train_config.model_id,
+        train_config.loss_plan_id,
         train_config.batch_size,
         train_config.epochs,
         _simplify(train_config.optimizer),
@@ -1128,18 +1130,20 @@ def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> t
         Plan: a Plan object
     """
 
-    loss_plan, forward_plan, batch_size, epochs, optimizer, lr, id = train_config_tuple
+    model_id, loss_plan_id, batch_size, epochs, optimizer, lr, id = train_config_tuple
 
     id = _detail(worker, id)
-    detailed_loss_plan = _detail(worker, loss_plan)
-    detailed_forward_plan = _detail(worker, forward_plan)
+    # detailed_loss_plan = _detail(worker, loss_plan)
+    # detailed_forward_plan = _detail(worker, forward_plan)
     detailed_optimizer = _detail(worker, optimizer)
 
     train_config = syft.TrainConfig(
         owner=worker,
         id=id,
-        forward_plan=detailed_forward_plan,
-        loss_plan=detailed_loss_plan,
+        model_id=model_id,
+        loss_plan_id=loss_plan_id,
+        # forward_plan=detailed_forward_plan,
+        # loss_plan=detailed_loss_plan,
         batch_size=batch_size,
         epochs=epochs,
         optimizer=detailed_optimizer,
@@ -1353,6 +1357,8 @@ def _simplify(obj: object) -> object:
         # for this type. If there is, run return
         # the simplified object
         current_type = type(obj)
+        if isinstance(obj, torch.jit.ScriptModule):
+            current_type = torch.jit.ScriptModule
 
         result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
 

@@ -1,10 +1,7 @@
 from typing import Union
 import weakref
 
-import torch.nn as nn
-
 import syft as sy
-from syft.federated import Plan
 from syft import workers
 
 
@@ -17,14 +14,14 @@ class TrainConfig:
 
     def __init__(
         self,
-        loss_plan: Plan,
-        model: nn.Module = None,
-        forward_plan: Plan = None,
+        loss_plan_id: int,
+        model_id: int,
+        # forward_plan: int = None,
+        owner: workers.AbstractWorker = None,
         batch_size: int = 32,
         epochs: int = 1,
         optimizer: str = "sgd",
         lr: float = 0.1,
-        owner: workers.AbstractWorker = None,
         id: Union[int, str] = None,
     ):
         """Initializer for TrainConfig.
@@ -32,9 +29,6 @@ class TrainConfig:
         Args:
             loss_plan: A plan containing how the loss should be calculated.
             model: A torch nn.Module instance.
-            forward_plan: A plan containg how to perform the model forward computation.
-                If the model is provided this argument is ignored and `model.forward`
-                is used instead.
             batch_size: Batch size used for training.
             epochs: Epochs used for training.
             optimizer: A string indicating which optimizer should be used.
@@ -46,9 +40,8 @@ class TrainConfig:
         self.owner = owner if owner else sy.hook.local_worker
         self.id = id if id is not None else sy.ID_PROVIDER.pop()
 
-        self.model = model
-        self.forward_plan = model.forward if model else forward_plan
-        self.loss_plan = loss_plan
+        self.model_id = model_id
+        self.loss_plan_id = loss_plan_id
         self.batch_size = batch_size
         self.epochs = epochs
         self.optimizer = optimizer
@@ -89,12 +82,12 @@ class TrainConfig:
             A weakref instance.
         """
         # Send Model
-        self.model.send(location)
+        # self.model.send(location)
 
         # Send plans and cache them so they can be reused
         # when this trainConfig instance is sent to location
-        self.forward_plan = self.model.forward._send(location)
-        self.loss_plan = self.loss_plan._send(location)
+        # self.forward_plan = self.model.forward._send(location)
+        # self.loss_plan = self.loss_plan._send(location)
 
         # Send train configuration itself
         ptr = self.owner.send(self, location)
