@@ -94,18 +94,11 @@ def test_lstm(workers):
     bob, alice = workers["bob"], workers["alice"]
 
                 # 5) change those weights
-                opt.step()
     lstm = nn.LSTM(3, 3)
     inputs = torch.randn(5, 1, 3)
     hidden = (torch.randn(1, 1, 3), torch.randn(1, 1, 3))  # clean out hidden state
     out, hidden = lstm(inputs, hidden)
     assert out.shape == torch.Size([5, 1, 3])
-
-                # get model (with gradients)
-                model.get()
-
-                # 6) print our progress
-                print(loss.get())  # NEW) slight edit... need to call .get() on loss
     lstm = nn.LSTM(3, 3)
     lstm.send(bob)
     inputs = torch.randn(5, 1, 3).send(bob)
