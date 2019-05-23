@@ -1,10 +1,8 @@
 import syft
-import torch
 from syft.frameworks.torch.tensors.interpreters import abstract
 from syft.codes import MSGTYPE
-from syft.exceptions import RemoteObjectFoundError
+from syft import exceptions
 
-import syft as sy
 from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
@@ -14,18 +12,18 @@ if TYPE_CHECKING:
     from syft.workers import BaseWorker
 
 
-class GenericPointer(abstract.AbstractObject):
+class ObjectPointer(abstract.AbstractObject):
     """A pointer to a remote object.
 
-    A GenericPointer forwards all API calls to the remote. GenericPointer objects
+    An ObjectPointer forwards all API calls to the remote. ObjectPointer objects
     point to objects. They exist to mimic the entire
     API of an object, but instead of computing a function locally
     (such as addition, subtraction, etc.) they forward the computation to a
     remote machine as specified by self.location. Specifically, every
-    GenericPointer has a object located somewhere that it points to (they should
+    ObjectPointer has a object located somewhere that it points to (they should
     never exist by themselves).
     The objects being pointed to can be on the same machine or (more commonly)
-    on a different one. Note further that a GenericPointer does not know the
+    on a different one. Note further that a ObjectPointer does not know the
     nature how it sends messages to the object it points to (whether over
     socket, http, or some other protocol) as that functionality is abstracted
     in the BaseWorker object in self.location.
@@ -43,7 +41,7 @@ class GenericPointer(abstract.AbstractObject):
         description: str = None,
     ):
 
-        """Initializes a GenericPointer.
+        """Initializes a ObjectPointer.
 
         Args:
             location: An optional BaseWorker object which points to the worker
@@ -100,12 +98,56 @@ class GenericPointer(abstract.AbstractObject):
         try:
             cmd, _, args, kwargs = command
             _ = syft.frameworks.torch.hook_args.hook_function_args(cmd, args, kwargs)
-        except RemoteObjectFoundError as err:
+        except exceptions.RemoteObjectFoundError as err:
             pointer = err.pointer
             return pointer
 
     def get(self, deregister_ptr: bool = True):
-        raise NotImplementedError("get function of GenericPointer is not implemented")
+        """Requests the object being pointed to, be serialized and return
+
+        Note:
+            This will typically mean that the remote object will be
+            removed/destroyed.
+
+        Args:
+            deregister_ptr (bool, optional): this determines whether to
+                deregister this pointer from the pointer's owner during this
+                method. This defaults to True because the main reason people use
+                this method is to move the tensor from the remote machine to the
+                local one, at which time the pointer has no use.
+
+        Returns:
+            An AbstractObject object which is the tensor (or chain) that this
+            object used to point to on a remote machine.
+
+        TODO: add param get_copy which doesn't destroy remote if true.
+        """
+
+        if self.point_to_attr is not None:
+
+            raise exceptions.CannotRequestObjectAttribute(
+                "You called .get() on a pointer to"
+                " a tensor attribute. This is not yet"
+                " supported. Call .clone().get() instead."
+            )
+
+        # if the pointer happens to be pointing to a local object,
+        # just return that object (this is an edge case)
+        if self.location == self.owner:
+            obj = self.owner.get_obj(self.id_at_location).child
+        else:
+            # get tensor from remote machine
+            obj = self.owner.request_obj(self.id_at_location, self.location)
+
+        # Register the result
+        assigned_id = self.id_at_location
+        self.owner.register_obj(obj, assigned_id)
+
+        # Remove this pointer by default
+        if deregister_ptr:
+            self.owner.de_register_obj(self)
+
+        return obj
 
     def __str__(self):
         """Returns a string version of this pointer.
@@ -207,7 +249,7 @@ class GenericPointer(abstract.AbstractObject):
         return point_to_attr
 
     def attr(self, attr_name):
-        attr_ptr = syft.GenericPointer(
+        attr_ptr = syft.ObjectPointer(
             id=self.id,
             owner=self.owner,
             location=self.location,

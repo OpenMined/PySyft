@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from syft.workers import BaseWorker
 
 
-class PointerTensor(pointers.GenericPointer, abstract.AbstractTensor):
+class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
     """A pointer to another tensor.
 
     A PointerTensor forwards all API calls to the remote.PointerTensor objects

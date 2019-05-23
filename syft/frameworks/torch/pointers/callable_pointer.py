@@ -1,7 +1,5 @@
 import syft as sy
-from syft.frameworks.torch.pointers import generic_pointer
-from syft import exceptions
-import torch
+from syft.frameworks.torch.pointers import object_pointer
 
 from typing import List
 from typing import Union
@@ -12,7 +10,7 @@ if TYPE_CHECKING:
     from syft.workers import BaseWorker
 
 
-class CallablePointer(generic_pointer.GenericPointer):
+class CallablePointer(object_pointer.ObjectPointer):
     """ A class of pointers that are callable
     """
 
@@ -47,53 +45,6 @@ class CallablePointer(generic_pointer.GenericPointer):
         )
         return response
 
-    def get(self, deregister_ptr: bool = True):
-        """Requests the object being pointed to, be serialized and return
-
-        Note:
-            This will typically mean that the remote object will be
-            removed/destroyed.
-
-        Args:
-            deregister_ptr (bool, optional): this determines whether to
-                deregister this pointer from the pointer's owner during this
-                method. This defaults to True because the main reason people use
-                this method is to move the tensor from the remote machine to the
-                local one, at which time the pointer has no use.
-
-        Returns:
-            An AbstractObject object which is the tensor (or chain) that this
-            object used to point to on a remote machine.
-
-        TODO: add param get_copy which doesn't destroy remote if true.
-        """
-
-        if self.point_to_attr is not None:
-
-            raise exceptions.CannotRequestObjectAttribute(
-                "You called .get() on a pointer to"
-                " a tensor attribute. This is not yet"
-                " supported. Call .clone().get() instead."
-            )
-
-        # if the pointer happens to be pointing to a local object,
-        # just return that object (this is an edge case)
-        if self.location == self.owner:
-            obj = self.owner.get_obj(self.id_at_location).child
-        else:
-            # get tensor from remote machine
-            obj = self.owner.request_obj(self.id_at_location, self.location)
-
-        # Register the result
-        assigned_id = self.id_at_location
-        self.owner.register_obj(obj, assigned_id)
-
-        # Remove this pointer by default
-        if deregister_ptr:
-            self.owner.de_register_obj(self)
-
-        return obj
-
 
 def create_callable_pointer(
     location,  #: BaseWorker,
@@ -104,8 +55,10 @@ def create_callable_pointer(
     description,
     garbage_collect_data: bool = True,
     register_pointer: bool = True,
-) -> generic_pointer.GenericPointer:
-    """Creates a pointer to the "obj"
+) -> object_pointer.ObjectPointer:
+    """Creates a callable pointer to the object, identified by the pair (location, id_at_location).
+
+    Note, that there is no check whether an object with this id exists at the location.
     """
 
     if id is None:
