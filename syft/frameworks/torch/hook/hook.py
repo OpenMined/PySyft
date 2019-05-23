@@ -828,7 +828,7 @@ class TorchHook:
 
         tensor_type.native_grad_fn = tensor_type.grad_fn
 
-        #Added support for the torch.size() command
+        # Added support for the torch.size() command
         def size(self, dim=None):
             """Hook the size to return the shape with a callable syntax"""
             if dim is None:
@@ -1078,9 +1078,9 @@ class TorchHook:
         # Make sure PySyft uses the PyTorch version
         self.torch.nn.modules.rnn._rnn_impls["LSTM"] = self.torch.lstm
 
-        #Add support for GRUs
+        # Add support for GRUs
         self.torch.nn.modules.rnn._rnn_impls["GRU"] = self.torch.gru
 
-        #Override _VF.LSTM_Cell and _VF.GRU_Cell with torch.LSTM_Cell and torch.GRU_Cell
-        #With the pytorch-based version
+        # Override _VF.LSTM_Cell and _VF.GRU_Cell with torch.LSTM_Cell and torch.GRU_Cell
+        # With the pytorch-based version
         self.torch.nn.modules.rnn._VF = self.torch
