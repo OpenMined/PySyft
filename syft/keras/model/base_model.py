@@ -1,5 +1,8 @@
+import tf_encrypted as tfe
 import tensorflow as tf
 from keras.models import Sequential
+from tf_encrypted.keras.engine.sequential import Sequential as tfe_Sequential
+from tf_encrypted.keras.engine.input_layer import InputLayer as tfe_InputLayer
 
 
 
@@ -13,18 +16,19 @@ class Sequential(Sequential):
         self.tfe_layers = []
 
         # NOTE[Yann]: run with keras until tfe is ready
-        # With prot:
-        for keras_layer in self._layers:
-            # Don't need to instantiate 'InputLayer'. Will be automatically
-            # created when `mode.predict()`.
-            if _get_layer_name(keras_layer) != 'InputLayer':
+        with prot:
+            for keras_layer in self._layers:
+                print(keras_layer)
+                # Don't need to instantiate 'InputLayer'. Will be automatically
+                # created when `mode.predict()`.
+                if _get_layer_name(keras_layer) != 'InputLayer':
+                    
+                    tfe_layer  = _instantiate_tfe_layer(keras_layer)
 
-                tfe_layer  = _instantiate_tfe_layer(keras_layer)
+                    self.tfe_layers.append(tfe_layer)
 
-                self.tfe_layers.append(tfe_layer)
-
-        # Create tfe.keras model
-        tfe_model = tf.keras.Sequential(self.tfe_layers)
+            # Create tfe.keras model
+            tfe_model = tfe_Sequential(self.tfe_layers)
 
         return tfe_model
 
@@ -37,13 +41,14 @@ def _instantiate_tfe_layer(keras_layer):
     keras_layer_name = _get_layer_name(keras_layer)
     
     # Identify the TFE layer corresponding to the Keras layer
-    tfe_layer_cls = getattr(tf.keras.layers, keras_layer_name)
+    tfe_layer_cls = getattr(tfe.keras.layers, keras_layer_name)
     
     # Extract argument list expected by layer __init__
     tfe_arg_list = list(tfe_layer_cls.__dict__['__init__'].__code__.co_varnames)
-    
+
     tfe_arg_list.remove('self')
     tfe_arg_list.remove('kwargs')
+    #tfe_arg_list.remove('dilation_rate')
 
     # Load weights from Keras layer into TFE layer
     if 'kernel_initializer' in tfe_arg_list:
@@ -70,4 +75,3 @@ def _instantiate_tfe_layer(keras_layer):
 
 def _get_layer_name(keras_layer_cls):
     return keras_layer_cls.__class__.__name__
-
