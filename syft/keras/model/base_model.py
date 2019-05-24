@@ -1,43 +1,69 @@
 import tensorflow as tf
+from keras.models import Sequential
 
 
-class Sequential(object):
-    def __init__(self, layers=None):
 
-        self._layers = []
-        self.weights = None
-        
-        if layers:
-            for layer in layers:
-                self.add(layer)
+class Sequential(Sequential):
+    def __init__(self, *args, **kargs):
+        super(Sequential, self).__init__(*args, **kargs)
 
-    def add(self, layer):
-        self._layers.append(layer)
-
-    def set_weights(self, weights):
-        self.weights = weights
 
     def share(self, prot=None):
         
-        tfe_layers = []
+        self.tfe_layers = []
 
-        # Once tfe.keras is ready will have to specify the protocol
-        # when instantiating the model
-        # with prot:
-        for layer in self._layers:
-            tfe_layer_cls = getattr(tf.keras.layers, layer.name)
-            tfe_layers.append(tfe_layer_cls(*layer.args, **layer.kargs))
+        # NOTE[Yann]: run with keras until tfe is ready
+        # With prot:
+        for keras_layer in self._layers:
+            # Don't need to instantiate 'InputLayer'. Will be automatically
+            # created when `mode.predict()`.
+            if _get_layer_name(keras_layer) != 'InputLayer':
 
-        tfe_model = tf.keras.Sequential(tfe_layers)
+                tfe_layer  = _instantiate_tfe_layer(keras_layer)
 
-        if not self.weights:
-            raise ValueError("Please make sure to set the weights before sharing" 
-                             "the model using the method `set_weights`")
-        else:
-            tfe_model.set_weights(self.weights)
+                self.tfe_layers.append(tfe_layer)
+
+        # Create tfe.keras model
+        tfe_model = tf.keras.Sequential(self.tfe_layers)
 
         return tfe_model
+
+
+# [NOTE] If the activation function is specified within the layer
+# e.g. Dense(10, activation='relu') this will break because the 
+# layer attributes dictionary will contain the activation function 
+# class
+def _instantiate_tfe_layer(keras_layer):
+    
+    # Get dictionary with layer attributes
+    keras_layer_attr = keras_layer.__dict__
+    
+    keras_layer_name = _get_layer_name(keras_layer)
+    
+    # Identify the TFE layer corresponding to the Keras layer
+    tfe_layer_cls = getattr(tf.keras.layers, keras_layer_name)
+    
+    # Extract argument list expected by layer __init__
+    tfe_arg_list = list(tfe_layer_cls.__dict__['__init__'].__code__.co_varnames)
+    
+    tfe_arg_list.remove('self')
+    tfe_arg_list.remove('kwargs')
+
+    # Load weights from Keras layer into TFE layer
+    if 'kernel_initializer' in tfe_arg_list:
+        k_initializer = tf.keras.initializers.Constant(keras_layer.get_weights()[0])
+        keras_layer_attr['kernel_initializer'] = k_initializer
+    
+    # [NOTE] This might break if use_bias=False
+    if 'bias_initializer' in tfe_arg_list:
+        b_initializer = tf.keras.initializers.Constant(keras_layer.get_weights()[1])
+        keras_layer_attr['bias_initializer'] = b_initializer
+    
+    tfe_kwargs = {k: keras_layer_attr[k] for k in tfe_arg_list}
+    
+    return tfe_layer_cls(**tfe_kwargs)
         
 
-
+def _get_layer_name(keras_layer_cls):
+    return keras_layer_cls.__class__.__name__
 
