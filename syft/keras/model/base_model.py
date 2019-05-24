@@ -29,10 +29,6 @@ class Sequential(Sequential):
         return tfe_model
 
 
-# [NOTE] If the activation function is specified within the layer
-# e.g. Dense(10, activation='relu') this will break because the 
-# layer attributes dictionary will contain the activation function 
-# class
 def _instantiate_tfe_layer(keras_layer):
     
     # Get dictionary with layer attributes
@@ -58,6 +54,14 @@ def _instantiate_tfe_layer(keras_layer):
     if 'bias_initializer' in tfe_arg_list:
         b_initializer = tf.keras.initializers.Constant(keras_layer.get_weights()[1])
         keras_layer_attr['bias_initializer'] = b_initializer
+
+    # When the keras layer has been instantiated, the activation attribute 
+    # gets assigned an activation function (e.g. keras.activations.relu())
+    # Needs to be converted back to activation name (e.g. `relu`), so it
+    # uses TFE activation.
+    if 'activation' in tfe_arg_list:
+        activation_name = keras_layer_attr['activation'].__name__
+        keras_layer_attr['activation'] = activation_name
     
     tfe_kwargs = {k: keras_layer_attr[k] for k in tfe_arg_list}
     
