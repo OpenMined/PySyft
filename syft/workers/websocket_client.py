@@ -110,17 +110,21 @@ class WebsocketClientWorker(BaseWorker):
     def list_objects_remote(self):
         return self._send_msg_and_deserialize("list_objects")
 
-    def fit(self, dataset_key):
-        return self._send_msg_and_deserialize("fit", dataset=dataset_key)
-
     def fit_batch_remote(self):
         return self._send_msg_and_deserialize("fit_batch")
 
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
 
-    def fit(self, dataset_key):
-        return self._send_msg_and_deserialize("fit", dataset=dataset_key)
+    def fit(self, dataset_key, return_id=None):
+        if return_id is None:
+            return_id = sy.ID_PROVIDER.pop()
+        self._send_msg_and_deserialize("fit", dataset=dataset_key, return_ids=[return_id])
+        msg = (MSGTYPE.OBJ_REQ, return_id)
+        # Send the message and return the deserialized response.
+        serialized_message = sy.serde.serialize(msg)
+        response = self._recv_msg(serialized_message)
+        return sy.serde.deserialize(response)
 
     def __str__(self):
         """Returns the string representation of a Websocket worker.
