@@ -20,7 +20,7 @@
   other: grad * self if type(self) == type(other) else None
 
 - name: sigmoid(self)
-  self: self.sigmoid() * (1 - self.sigmoid())
+  self: grad * self.sigmoid() * (1 - self.sigmoid())
 
 - name: sin(self)
   self: grad * self.cos()
@@ -32,5 +32,5 @@
   self: grad / (2 * result)
 
 - name: tanh(self)
-  self: 1 - self.tanh() ** 2
+  self: grad * (1 - self.tanh() ** 2)
 
