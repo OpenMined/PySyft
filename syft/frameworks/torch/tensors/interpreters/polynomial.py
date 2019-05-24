@@ -80,7 +80,7 @@ class PolynomialTensor(AbstractTensor):
             name[str]: Name of function
             value[torch tensor,float,integer]: Value to be approximated
 
-        returns:
+        Returns:
             Approximated value using given function approximation
         """
 
@@ -104,7 +104,7 @@ class PolynomialTensor(AbstractTensor):
             degree (Integer): Degree of polynomial approximation
             precision (Integer): Precision of coefficients
 
-        returns:
+        Returns:
             f_interpolated (Numpy poly1d): Approximated Function
         """
 
@@ -148,7 +148,7 @@ class PolynomialTensor(AbstractTensor):
             array[2D List]: Each instance of list must take four values [min_val, steps, max_val,
                 function approximation method]
 
-        returns:
+        Returns:
             array[2D List]: Each instance of list with four values [min_val,max_val,Approximated function]
         """
 
@@ -203,7 +203,7 @@ class PolynomialTensor(AbstractTensor):
             degree: Degree of interpolation fit
             function: The function used to encrypt function approximation coefficients
 
-        returns:
+        Returns:
             f_interpolated (Numpy Poly1d): Approximated function
         """
 
@@ -223,7 +223,7 @@ class PolynomialTensor(AbstractTensor):
         Args:
             x: Torch tensor
 
-        return:
+        Returns:
             approximation of the sigmoid function as a torch tensor
         """
 
@@ -241,7 +241,7 @@ class PolynomialTensor(AbstractTensor):
         Args:
             x: Torch tensor
 
-        return:
+        Returns:
             approximation of the sigmoid function as a torch tensor
         """
 
