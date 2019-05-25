@@ -69,7 +69,7 @@ def _instantiate_tfe_layer(keras_layer, batch_input_shape):
         keras_layer_attr['kernel_initializer'] = k_initializer
 
     # [NOTE] This might break if use_bias=False
-    if 'bias_initializer' in tfe_arg_list:
+    if 'bias_initializer' in tfe_arg_list and keras_layer_attr['use_bias']:
         b_initializer = tf.keras.initializers.Constant(keras_layer.get_weights()[1])
         keras_layer_attr['bias_initializer'] = b_initializer
 
