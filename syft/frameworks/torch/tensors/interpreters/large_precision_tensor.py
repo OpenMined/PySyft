@@ -1,6 +1,6 @@
-import torch
 import numpy as np
-from syft.frameworks.torch.overload_torch import overloaded
+import torch
+
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 
 
@@ -12,20 +12,22 @@ class LargePrecisionTensor(AbstractTensor):
     Note that the original tensor cannot be a PyTorch tensor as it would cause a RuntimeError if the number is too large
     """
 
-    def __init__(self, tensor, owner=None, id=None, tags=None, description=None, precision=32):
+    def __init__(self, tensor, owner=None, id=None, tags=None, description=None, precision=16):
         """Initializes a LargePrecisionTensor.
 
         Args:
+            tensor: a numpy array
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the LargePrecisionTensor.
             precision: The objective precision for this tensor
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
-        assert precision % 2 == 0, "%r is not power of two" % precision
         self.precision = precision
-        # torch.IntTensor(self._split_number(tensor[0], precision))
-        self.child = self._create_internal_tensor(tensor, precision)
+        if isinstance(tensor, torch.Tensor):
+            self.child = tensor
+        else:
+            self.child = self._create_internal_tensor(tensor, precision)
 
     @staticmethod
     def _create_internal_tensor(tensor, precision):
@@ -36,7 +38,6 @@ class LargePrecisionTensor(AbstractTensor):
             result.append(LargePrecisionTensor._split_number(x.item(), precision))
         new_shape = tensor.shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
-        # TODO Note Assuming all results are of the same shape. This would be hardly the case
         return torch.IntTensor(result)
 
     def get_class_attributes(self):
@@ -54,9 +55,26 @@ class LargePrecisionTensor(AbstractTensor):
     # @overloaded.method
     def add(self, other):
         assert isinstance(other, LargePrecisionTensor), "LargePrecisionTensor cannot be added to %r" % type(other)
-        assert self.child.shape == other.child.shape,\
-            "Original numbers generated tensors of different shapes %r %r" % self.child.shape % other.child.shape
-        return self.child + other.child
+        if self.shape[-1] != other.shape[-1]:
+            if self.shape[-1] < other.shape[-1]:
+                result = self._adjust_to_shape(other.shape) + other.child
+            else:
+                result = other._adjust_to_shape(self.shape) + self.child
+        else:
+            result = self.child + other.child
+        return LargePrecisionTensor(tensor=result, precision=self.precision)
+
+    def _adjust_to_shape(self, shape, fill_value=0) -> torch.Tensor:
+        # We assume only the last dimension needs to be adjusted
+        # Original input tensors should have the same dimensions
+        diff_dim = shape[-1] - self.shape[-1]
+        new_shape = self.shape[:-1] + (diff_dim,)
+        if not fill_value:
+            filler = torch.zeros(size=new_shape, dtype=self.child.dtype)
+        else:
+            filler = torch.ones(size=new_shape, dtype=self.child.dtype)
+        result = torch.cat([filler, self.child], len(shape) - 1)
+        return result
 
     @staticmethod
     def _split_number(number, bits):
@@ -66,6 +84,8 @@ class LargePrecisionTensor(AbstractTensor):
         :param bits: the bits to use in the split
         :return: a list of numbers representing the original one
         """
+        if not number:
+            return [number]
         base = 2 ** bits
         number_parts = []
         while number:
