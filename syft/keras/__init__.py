@@ -1,8 +1,6 @@
-from syft.keras import model
-from keras import layers
+from syft.keras import model, layers
 
 __all__ = [
-           'model',
-           'layers'
-           ]
-
+    'model',
+    'layers',
+]
