@@ -8,7 +8,6 @@ from syft.frameworks.torch.federated import BaseDataset
 def test_base_dataset(workers):
 
     bob = workers["bob"]
-
     inputs = th.tensor([1, 2, 3, 4.0])
     targets = th.tensor([1, 2, 3, 4.0])
     dataset = BaseDataset(inputs, targets)
@@ -28,6 +27,12 @@ def test_base_dataset(workers):
         assert dataset.data.location.id == 0
     with pytest.raises(AttributeError):
         assert dataset.targets.location.id == 0
+
+
+def test_base_dataset_transform():
+
+    inputs = th.tensor([1, 2, 3, 4.0])
+    targets = th.tensor([1, 2, 3, 4.0])
 
     transform_dataset = BaseDataset(inputs, targets)
 
