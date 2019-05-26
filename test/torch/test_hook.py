@@ -47,7 +47,8 @@ def test_pointer_found_exception(workers):
 
 
 def test_build_get_child_type():
-    from syft.frameworks.torch.hook_args import build_rule, build_get_tensor_type
+    from syft.frameworks.torch.hook.hook_args import build_rule
+    from syft.frameworks.torch.hook.hook_args import build_get_tensor_type
 
     x = torch.Tensor([1, 2, 3])
     args = (x, [[1, x]])
@@ -220,3 +221,68 @@ def test_hook_args_and_cmd_signature_malleability():
 
     r3 = a + b
     assert (r3 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
+
+
+def test_RNN_grad_set_backpropagation(workers):
+    """Perform backpropagation at a remote worker and check if the gradient updates
+    and properly computed within the model"""
+
+    alice = workers["alice"]
+
+    class RNN(nn.Module):
+        def __init__(self, input_size, hidden_size, output_size):
+            super(RNN, self).__init__()
+            self.hidden_size = hidden_size
+            self.i2h = nn.Linear(input_size + hidden_size, hidden_size)
+            self.i2o = nn.Linear(input_size + hidden_size, output_size)
+            self.softmax = nn.LogSoftmax(dim=1)
+
+        def forward(self, input, hidden):
+            combined = torch.cat((input, hidden), 1)
+            hidden = self.i2h(combined)
+            output = self.i2o(combined)
+            output = self.softmax(output)
+            return output, hidden
+
+        def initHidden(self):
+            return torch.zeros(1, self.hidden_size)
+
+    # let's initialize a simple RNN
+    n_hidden = 128
+    n_letters = 57
+    n_categories = 18
+
+    rnn = RNN(n_letters, n_hidden, n_categories)
+
+    # Let's send the model to alice, who will be responsible for the tiny computation
+    alice_model = rnn.copy().send(alice)
+
+    # Simple input for the Recurrent Neural Network
+    input_tensor = torch.zeros(size=(1, 57))
+    # Just set a random category for it
+    input_tensor[0][20] = 1
+    alice_input = input_tensor.copy().send(alice)
+
+    label_tensor = torch.randint(low=0, high=(n_categories - 1), size=(1,))
+    alice_label = label_tensor.send(alice)
+
+    hidden_layer = alice_model.initHidden()
+    alice_hidden_layer = hidden_layer.send(alice)
+    # Forward pass into the NN and its hidden layers, notice how it goes sequentially
+    output, alice_hidden_layer = alice_model(alice_input, alice_hidden_layer)
+    criterion = nn.NLLLoss()
+    loss = criterion(output, alice_label)
+    # time to backpropagate...
+    loss.backward()
+
+    # now let's get the model and check if its parameters are indeed there
+    model_got = alice_model.get()
+
+    learning_rate = 0.005
+
+    # If the gradients are there, then the backpropagation did indeed complete successfully
+    for param in model_got.parameters():
+        # param.grad.data would raise an exception in case it is none,
+        # so we better check it beforehand
+        assert param.grad.data is not None
+        param.data.add_(-learning_rate, param.grad.data)
