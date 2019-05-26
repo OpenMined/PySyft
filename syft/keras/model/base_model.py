@@ -21,9 +21,18 @@ class Sequential(Sequential):
 
     def share(self, prot=None):
 
+        # Store Keras weights before loading them in the TFE layers.
+        stored_keras_weights = dict()
+
+        for keras_layer in self._layers:
+            stored_keras_weights[keras_layer.name] = keras_layer.get_weights()
+        
+        # TODO[Morten, Yann] instead of reseting the graph, we should create 
+        # a sperate graph with the TFE model different from the plaintext graph
+        tf.reset_default_graph()
+
         tfe_model = tfe_Sequential()
 
-        # NOTE[Yann]: run with keras until tfe is ready
         with prot:
             for keras_layer in self._layers:
                 # Don't need to instantiate 'InputLayer'. Will be automatically
@@ -37,17 +46,17 @@ class Sequential(Sequential):
                                                   "model")
                     continue
                 if supply_next:
-                    tfe_layer  = _instantiate_tfe_layer(keras_layer, batch_input_shape)
+                    tfe_layer  = _instantiate_tfe_layer(keras_layer, batch_input_shape, stored_keras_weights)
                     supply_next = False
                 else:
-                    tfe_layer  = _instantiate_tfe_layer(keras_layer, None)
+                    tfe_layer  = _instantiate_tfe_layer(keras_layer, None, stored_keras_weights)
 
                 tfe_model.add(tfe_layer)
 
         return tfe_model
 
 
-def _instantiate_tfe_layer(keras_layer, batch_input_shape):
+def _instantiate_tfe_layer(keras_layer, batch_input_shape, stored_keras_weights):
 
     # Get dictionary with layer attributes
     keras_layer_attr = keras_layer.__dict__
@@ -65,12 +74,13 @@ def _instantiate_tfe_layer(keras_layer, batch_input_shape):
 
     # Load weights from Keras layer into TFE layer
     if 'kernel_initializer' in tfe_arg_list:
-        k_initializer = tf.keras.initializers.Constant(keras_layer.get_weights()[0])
+        kernel_weights = stored_keras_weights[keras_layer_attr['_name']][0]
+        k_initializer = tf.keras.initializers.Constant(kernel_weights)
         keras_layer_attr['kernel_initializer'] = k_initializer
 
-    # [NOTE] This might break if use_bias=False
     if 'bias_initializer' in tfe_arg_list and keras_layer_attr['use_bias']:
-        b_initializer = tf.keras.initializers.Constant(keras_layer.get_weights()[1])
+        bias_weights = stored_keras_weights[keras_layer_attr['_name']][1]
+        b_initializer = tf.keras.initializers.Constant(bias_weights)
         keras_layer_attr['bias_initializer'] = b_initializer
 
     # When the keras layer has been instantiated, the activation attribute
