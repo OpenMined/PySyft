@@ -34,25 +34,67 @@ class Sequential(Sequential):
         if prot is None:
             # If no protocol is specified we use the default
             prot = tfe.get_protocol()
+        elif prot == 'securenn':
+            prot = tfe.protocol.SecureNN()
+        elif prot == 'pond':
+            prot = tfe.protocol.Pond()
+
+        # NOTE If protocol not set, getting errors with
+        # tfe.define_private_placeholder in tfe.keras.Sequential
+        # TODO[jason]: investigate
+        tfe.set_protocol(prot)
 
         if target_graph is None:
             # By default we create a new graph for the shared model
             target_graph = tf.Graph()
 
         with target_graph.as_default():
+            tfe_model, batch_input_shape = _rebuild_tfe_model(self, stored_keras_weights)
 
-            with prot:
+        # Set up a new tfe.serving.QueueServer for the shared TFE model
+        q_input_shape = batch_input_shape
+        q_output_shape = self.output_shape
 
-                tfe_model = tfe_Sequential()
-                for keras_layer in self.layers:
-                    # Don't need to instantiate 'InputLayer'. Will be automatically
-                    # created when `mode.predict()`.
-                    tfe_layer = _instantiate_tfe_layer(keras_layer, stored_keras_weights)
-                    tfe_model.add(tfe_layer)
+        with target_graph.as_default():
+            server = tfe.serving.QueueServer(
+                input_shape=q_input_shape,
+                output_shape=q_output_shape,
+                computation_fn=tfe_model,
+            )
 
-        # TODO(Morten) we should keep a reference to the graph instead of returning it
-        return target_graph, tfe_model
+            initializer = tf.global_variables_initializer()
 
+        self._server = server
+
+        sess = tfe.Session(graph=target_graph)
+        tf.Session.reset(sess.target)
+        sess.run(initializer, tag='init')
+
+        self._tfe_session = sess
+
+
+    def serve(self, num_steps=5):
+
+        def step_fn():
+            print("Served")
+
+        self._server.run(
+            self._tfe_session,
+            num_steps=num_steps,
+            step_fn=step_fn)
+
+
+def _rebuild_tfe_model(keras_model, stored_keras_weights):
+    tfe_model = tfe_Sequential()
+
+    for keras_layer in keras_model.layers:
+        tfe_layer = _instantiate_tfe_layer(keras_layer, stored_keras_weights)
+        tfe_model.add(tfe_layer)
+
+        if hasattr(tfe_layer, '_batch_input_shape'):
+            batch_input_shape = tfe_layer._batch_input_shape
+
+    return tfe_model, batch_input_shape
 
 def _instantiate_tfe_layer(keras_layer, stored_keras_weights):
 
