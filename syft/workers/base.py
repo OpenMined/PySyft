@@ -323,6 +323,17 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 local_autograd=local_autograd,
                 preinitialize_grad=preinitialize_grad,
             )
+        elif isinstance(obj, pointers.ObjectWrapper):
+            tags = obj.tags if hasattr(obj, "tags") else ""
+            description = obj.description if hasattr(obj, "description") else ""
+            pointer = pointers.create_callable_pointer(
+                owner=self,
+                location=worker,
+                id=ptr_id,
+                id_at_location=obj.id,
+                tags=tags,
+                description=description,
+            )
         else:
             pointer = obj
         # Send the object
@@ -468,10 +479,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
 
         obj = self.get_obj(obj_id)
-        if obj.allowed_to_get():
+        if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
+            return GetNotPermittedError()
+        else:
             self.de_register_obj(obj)
             return obj
-        return GetNotPermittedError()
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.

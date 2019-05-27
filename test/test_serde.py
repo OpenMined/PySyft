@@ -3,8 +3,7 @@ This file tests the ability for serde.py to convert complex types into
 simple python types which are serializable by standard serialization tools.
 For more on how/why this works, see serde.py directly.
 """
-import warnings
-
+from syft import serde
 from syft.serde import (
     _simplify,
     apply_lz4_compression,
@@ -22,7 +21,7 @@ from syft.serde import ZSTD
 
 import syft
 from syft.exceptions import CompressionNotFoundException
-from syft.frameworks.torch.pointers import PointerTensor
+from syft.frameworks.torch import pointers
 
 import msgpack
 import numpy
@@ -202,7 +201,7 @@ def test_pointer_tensor_simplify():
     """Test the simplification of PointerTensor"""
 
     alice = syft.VirtualWorker(syft.torch.hook, id="alice")
-    input_tensor = PointerTensor(id=1000, location=alice, owner=alice)
+    input_tensor = pointers.PointerTensor(id=1000, location=alice, owner=alice)
 
     output = _simplify(input_tensor)
 
@@ -545,9 +544,9 @@ def test_hooked_tensor(compress, compress_scheme):
     assert (t == t_serialized_deserialized).all()
 
 
-def test_PointerTensor(hook, workers):
-    syft.serde._apply_compress_scheme = apply_no_compression
-    t = PointerTensor(
+def test_pointer_tensor(hook, workers):
+    syft.serde._apply_compress_scheme = serde.apply_no_compression
+    t = pointers.PointerTensor(
         id=1000, location=workers["alice"], owner=workers["alice"], id_at_location=12345
     )
     t_serialized = serialize(t)
@@ -602,3 +601,14 @@ def test_additive_sharing_tensor_serde(compress, workers):
     assert (
         additive_sharing_tensor_reconstructed.child.keys() == additive_sharing_tensor.child.keys()
     )
+
+
+def test_serde_object_wrapper_int():
+    obj = 4
+    obj_wrapper = pointers.ObjectWrapper(obj, id=100)
+    msg = serde.serialize(obj_wrapper)
+
+    obj_wrapper_received = serde.deserialize(msg)
+
+    assert obj_wrapper.obj == obj_wrapper_received.obj
+    assert obj_wrapper.id == obj_wrapper_received.id
