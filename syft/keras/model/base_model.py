@@ -6,10 +6,10 @@ from tf_encrypted.keras.engine.input_layer import InputLayer as tfe_InputLayer
 
 
 
-# When instantiating tfe layers, exclude not supported arguments in TFE. 
-args_not_supported_by_tfe = ['self', 'kwargs', 
-                            'activity_regularizer', 'kernel_regularizer', 
-                            'bias_regularizer', 'kernel_constraint', 
+# When instantiating tfe layers, exclude not supported arguments in TFE.
+args_not_supported_by_tfe = ['self', 'kwargs',
+                            'activity_regularizer', 'kernel_regularizer',
+                            'bias_regularizer', 'kernel_constraint',
                             'bias_constraint','dilation_rate']
 
 
@@ -27,7 +27,7 @@ class Sequential(Sequential):
         # TODO(Morten) we could optimize runtime by running a single model.get_weights instead
         for keras_layer in self._layers:
             stored_keras_weights[keras_layer.name] = keras_layer.get_weights()
-        
+
         if prot is None:
             # If no protocol is specified we use the default
             prot = tfe.get_protocol()
@@ -48,15 +48,15 @@ class Sequential(Sequential):
                     print(keras_layer.name, _get_layer_type(keras_layer))
                     if _get_layer_type(keras_layer) == 'InputLayer':
                         batch_input_shape = keras_layer._batch_input_shape
-                        supply_next = True
+                        supply_shape_next = True
                         if not any(batch_input_shape):
                             raise NotImplementedError("Please provide batch_size or batch_input_shape "
                                                     "keyword arguments when creating your syft.keras "
                                                     "model")
                         continue
-                    if supply_next:
+                    if supply_shape_next:
                         tfe_layer  = _instantiate_tfe_layer(keras_layer, batch_input_shape, stored_keras_weights)
-                        supply_next = False
+                        supply_shape_next = False
                     else:
                         tfe_layer  = _instantiate_tfe_layer(keras_layer, None, stored_keras_weights)
 
@@ -70,6 +70,8 @@ def _instantiate_tfe_layer(keras_layer, batch_input_shape, stored_keras_weights)
 
     # Get dictionary with layer attributes
     keras_layer_attr = keras_layer.__dict__
+    keras_layer_args = keras_layer._syft_args_store
+    keras_layer_kwargs = keras_layer._syft_kwargs_store
 
     keras_layer_name = _get_layer_type(keras_layer)
 
@@ -77,7 +79,11 @@ def _instantiate_tfe_layer(keras_layer, batch_input_shape, stored_keras_weights)
     tfe_layer_cls = getattr(tfe.keras.layers, keras_layer_name)
 
     # Extract argument list expected by layer __init__
+    import inspect
+    print(inspect.getfullargspec(tfe_layer_cls.__init__))
     tfe_arg_list = list(tfe_layer_cls.__dict__['__init__'].__code__.co_varnames)
+    print("parameters", list(inspect.signature(tfe_layer_cls.__init__).parameters.keys()))
+    print("arg_list", tfe_arg_list)
 
     # Remove arguments currenlty not supported by TFE layers
     tfe_arg_list = trim_tfe_args(tfe_arg_list, args_not_supported_by_tfe)
