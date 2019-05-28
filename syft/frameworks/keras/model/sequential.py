@@ -109,7 +109,11 @@ def _instantiate_tfe_layer(keras_layer, stored_keras_weights):
     keras_layer_attr = keras_layer.__dict__
 
     # Identify the corresponding tfe.keras layer
-    tfe_layer_cls = getattr(tfe.keras.layers, keras_layer_name)
+    try:
+        tfe_layer_cls = getattr(tfe.keras.layers, keras_layer_name)
+    except AttributeError:
+        raise RuntimeError("TF Encrypted doesn't yet support the "
+                           "{lname} layer.".format(lname=keras_layer_name))
 
     # Extract argument list expected by layer __init__
     tfe_arg_list = list(inspect.signature(tfe_layer_cls.__init__).parameters.keys())
