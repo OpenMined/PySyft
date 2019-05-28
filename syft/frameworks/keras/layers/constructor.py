@@ -15,9 +15,9 @@ def add_constructor_registration(layer_cls):
     setattr(layer_cls, "__init__", syft_keras_constructor)
 
 
-def filter_nonlayers(layers_module, tfe_layers_module):
+def filter_layers(layers_module, tfe_layers_module):
     # We recognize Layer classes based on their compliance with PEP8.
-    pattern = re.compile('[A-Z_][a-zA-Z0-9]+$')
+    pattern = re.compile("[A-Z_][a-zA-Z0-9]+$")
     for attr_name in dir(layers_module):
         match_result = pattern.match(attr_name)
         if match_result is None:
