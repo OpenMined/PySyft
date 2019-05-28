@@ -613,18 +613,18 @@ class AdditiveSharingTensor(AbstractTensor):
                 chunks_im = torch.chunk(im_reshaped, groups, dim=2)
                 chunks_weights = torch.chunk(weight_reshaped, groups, dim=0)
                 for g in range(groups):
-                    tmp = torch.matmul(chunks_im[g], chunks_weights[g])
+                    tmp = chunks_im[g].matmul(chunks_weights[g])
                     res.append(tmp)
                 res = torch.cat(res, dim=2).child
             else:
-                res = torch.matmul(im_reshaped, weight_reshaped).child
+                res = im_reshaped.matmul(weight_reshaped).child
 
             # Add a bias if needed
             if bias is not None:
                 if bias.is_wrapper:
                     res = res + bias.child  # += does not work
                 else:
-                    res = res + bias.child  # += does not work
+                    res = res + bias
 
             # ... And reshape it back to an image
             res = (

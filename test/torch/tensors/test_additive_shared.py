@@ -218,7 +218,7 @@ def test_matmul(workers):
     assert (y == (m @ m)).all()
 
 
-def test_conv2d(workers):
+def test_torch_conv2d(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     im = torch.Tensor(
