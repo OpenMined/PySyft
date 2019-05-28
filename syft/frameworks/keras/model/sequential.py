@@ -78,6 +78,17 @@ def serve(model, num_steps=5):
     )
 
 
+def shutdown(model):
+    subprocesses = getattr(model, '_subprocess_calls', None)
+    if subprocesses is None:
+        return
+
+    for subprocess in subprocesses.values():
+        subprocess.kill()
+        subprocess.communicate()
+
+
+
 _protocol_map = defaultdict(
     tfe.get_protocol,
     {'securenn': tfe.protocol.SecureNN, 'pond': tfe.protocol.Pond},

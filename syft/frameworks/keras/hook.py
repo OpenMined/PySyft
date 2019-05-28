@@ -1,6 +1,6 @@
 import tf_encrypted as tfe
 
-from syft.frameworks.keras.model import serve, share
+from syft.frameworks.keras.model import serve, share, shutdown
 from syft.frameworks.keras.layers import add_constructor_registration, filter_nonlayers
 
 
@@ -19,3 +19,4 @@ class KerasHook:
         seq_cls = getattr(self.keras, 'Sequential')
         setattr(seq_cls, 'share', share)
         setattr(seq_cls, 'serve', serve)
+        setattr(seq_cls, 'shutdown', shutdown)
