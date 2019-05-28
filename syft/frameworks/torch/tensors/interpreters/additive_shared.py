@@ -621,7 +621,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
             # Add a bias if needed
             if bias is not None:
-                res = res + bias  # += does not work
+                if bias.is_wrapper:
+                    res = res + bias.child  # += does not work
+                else:
+                    res = res + bias.child  # += does not work
 
             # ... And reshape it back to an image
             res = (
