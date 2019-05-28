@@ -1,11 +1,11 @@
+Flask
+flask_socketio
 lz4
 msgpack
 sklearn
-torch==1.0.1
+tf_encrypted>=0.5.3
+torch>=1.0.1
 torchvision
 websocket_client
 websockets>=7.0
 zstd
-Flask
-flask_socketio
-tf_encrypted>=0.5.3

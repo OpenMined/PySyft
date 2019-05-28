@@ -24,3 +24,5 @@ In this step-by-step tutorial series, you'll learn about all the ways PySyft can
 - [Part 6: Welcome to the Sandbox](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%206%20-%20Welcome%20to%20the%20Sandbox.ipynb)
 - [Part 7: Federate Learning with Federated Dataset](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%207%20-%20Federated%20Learning%20with%20Federated%20Dataset.ipynb)
 - [Part 8: Federated Learning on MNIST using a CNN](https://github.com/OpenMined/PySyft/blob/master/examples/tutorials/Part%208%20-%20Federated%20Learning%20on%20MNIST%20using%20a%20CNN.ipynb)
+- [Part 9: Introduction to Plan](https://github.com/OpenMined/PySyft/blob/dev/examples/tutorials/Part%209%20-%20Introduction%20to%20Plan.ipynb)
+- [Part 10: Secure Deep Learning Classification](https://github.com/OpenMined/PySyft/blob/dev/examples/tutorials/Part%2010%20-%20Secure%20Deep%20Learning%20Classification.ipynb)

@@ -12,6 +12,7 @@ import syft
 from syft import workers
 
 from syft.workers import BaseWorker
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
@@ -140,6 +141,16 @@ class TorchHook:
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
+
+        # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(AutogradTensor)
+
+        # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(AdditiveSharingTensor)
 
         # Hook the tensor constructor function
         self._hook_tensor()
@@ -354,7 +365,8 @@ class TorchHook:
                 if hasattr(self, "child"):
                     del self.child
 
-                self.native_param_data.set_(new_data)  # .wrap()
+                with torch.no_grad():
+                    self.set_(new_data)
             return self
 
         torch.nn.Parameter.data = data
@@ -371,6 +383,7 @@ class TorchHook:
                 if isinstance(to_return.child, syft.PointerTensor):
                     if to_return.child.is_none():
                         to_return = None
+
             else:
                 to_return = self.native_param_grad
 
@@ -396,7 +409,8 @@ class TorchHook:
                 self.child.grad = new_grad  # .wrap()
             else:
                 if self.native_param_grad is not None:
-                    self.native_param_grad.set_(new_grad)  # .wrap()
+                    with torch.no_grad():
+                        self.native_param_grad = new_grad
                 elif new_grad is not None:
                     self.native_param_grad = new_grad
             return self
@@ -811,6 +825,17 @@ class TorchHook:
 
         tensor_type.native_shape = tensor_type.shape
         tensor_type.native_data = tensor_type.data
+
+        tensor_type.native_grad_fn = tensor_type.grad_fn
+
+        @property
+        def grad_fn(self):
+            if self.has_child():
+                return self.child.grad_fn
+            else:
+                return self.native_grad_fn
+
+        tensor_type.grad_fn = grad_fn
 
     def _which_methods_should_we_auto_overload(self, tensor_type: type):
         """Creates a list of Torch methods to auto overload.

@@ -12,7 +12,7 @@ PySyft has also been explained in video form by [Siraj Raval](https://www.youtub
 
 ## Installation
 
-> PySyft supports Python >= 3.6 and PyTorch 1.0.0
+> PySyft supports Python >= 3.6 and PyTorch 1.1.0
 
 ```bash
 pip install syft
@@ -40,7 +40,7 @@ These tutorials cover how to perform techniques such as federated learning and d
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
 
-Also join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
+Also join the rapidly growing community of 3700+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
 ## Troubleshooting
 

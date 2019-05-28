@@ -4,6 +4,7 @@ import torch
 from typing import List
 
 import syft as sy
+import weakref
 
 
 class AbstractTensor(ABC):
@@ -109,8 +110,11 @@ class AbstractTensor(ABC):
         wrapper = torch.Tensor()
         wrapper.child = self
         wrapper.is_wrapper = True
+        wrapper.child.parent = weakref.ref(wrapper)
+
         if self.id is None:
             self.id = sy.ID_PROVIDER.pop()
+
         return wrapper
 
     def serialize(self):  # check serde.py to see how to provide compression schemes
@@ -201,10 +205,14 @@ class AbstractTensor(ABC):
 
         return response
 
+    def setattr(self, name, value):
+        self.child.setattr(name, value.child)
+
     @classmethod
     def rgetattr(cls, obj, attr, *args):
         """
         Get an attribute recursively
+
 
         Args:
             obj: the object holding the attribute
