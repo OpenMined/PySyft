@@ -17,7 +17,7 @@ _args_not_supported_by_tfe = [
 ]
 
 
-def share(model, *workers, prot=None, target_graph=None):
+def share(model, *workers, prot=None, target_graph=None, init_run_tag=None):
 
     # Handle input combinations to produce protocol
     prot = _sanitize_share_argspec(workers, prot)
@@ -27,13 +27,6 @@ def share(model, *workers, prot=None, target_graph=None):
     # TODO[jason]: investigate
     tfe.set_protocol(prot)
 
-    # Launch tf servers and store the subprocess results on the model
-    _launch_tfserver_subprocesses(model)
-
-    if target_graph is None:
-        # By default we create a new graph for the shared model
-        target_graph = tf.Graph()
-
     # Store Keras weights before loading them in the TFE layers.
     stored_keras_weights = {}
 
@@ -41,14 +34,17 @@ def share(model, *workers, prot=None, target_graph=None):
     for keras_layer in model.layers:
         stored_keras_weights[keras_layer.name] = keras_layer.get_weights()
 
+    if target_graph is None:
+        # By default we create a new graph for the shared model
+        target_graph = tf.Graph()
+
     with target_graph.as_default():
         tfe_model, batch_input_shape = _rebuild_tfe_model(model, stored_keras_weights)
 
-    # Set up a new tfe.serving.QueueServer for the shared TFE model
-    q_input_shape = batch_input_shape
-    q_output_shape = model.output_shape
+        # Set up a new tfe.serving.QueueServer for the shared TFE model
+        q_input_shape = batch_input_shape
+        q_output_shape = model.output_shape
 
-    with target_graph.as_default():
         server = tfe.serving.QueueServer(
             input_shape=q_input_shape,
             output_shape=q_output_shape,
@@ -59,9 +55,13 @@ def share(model, *workers, prot=None, target_graph=None):
 
     model._server = server
 
+    # Launch TF servers and store the subprocesses on the model
+    _launch_tfserver_subprocesses(model)
+
+    # Push and initialize shared model on servers
     sess = tfe.Session(graph=target_graph)
     tf.Session.reset(sess.target)
-    sess.run(initializer, tag='init')
+    sess.run(initializer, tag=init_run_tag)
 
     model._tfe_session = sess
 
@@ -161,7 +161,7 @@ def _instantiate_tfe_layer(keras_layer, stored_keras_weights):
     except AttributeError:
         # TODO: rethink how we warn the user about this, maybe codegen a list of
         #       supported layers in a doc somewhere
-        raise RuntimeError("TF Encrypted doesn't yet support the "
+        raise RuntimeError("TF Encrypted does not yet support the "
                            "{lcls} layer.".format(lcls=keras_layer_type))
 
     # Extract argument list expected by layer __init__

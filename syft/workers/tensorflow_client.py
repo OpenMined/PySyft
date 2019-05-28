@@ -3,8 +3,10 @@ import tf_encrypted as tfe
 
 
 class TensorflowClientWorker:
-    def connect_to_model(self, config_filename, input_shape, output_shape):
+    def connect_to_model(self, input_shape, output_shape, config_filename=None):
 
+        if config_filename is None:
+            config_filename = "/tmp/tfe.config"
         config = tfe.RemoteConfig.load(config_filename)
         tfe.set_config(config)
 
