@@ -265,3 +265,572 @@ def test_section_1_differential_privacy():
     print("Data Dependent Epsilon:", data_dep_eps)
 
     assert True
+
+def test_section_2_federated_learning(hook):
+
+    import torch as th
+
+    x = th.tensor([1, 2, 3, 4, 5])
+    x
+
+    y = x + x
+
+    print(y)
+
+    import syft as sy
+
+    # commented out because the test needs to use the global one
+    # hook = sy.TorchHook(th)
+
+    th.tensor([1, 2, 3, 4, 5])
+
+    bob = sy.VirtualWorker(hook, id="bob_udacity")
+
+    bob._objects
+
+    x = th.tensor([1, 2, 3, 4, 5])
+
+    x = x.send(bob)
+
+    bob._objects
+
+    assert len(bob._objects) == 1
+
+    x.location
+
+    x.id_at_location
+
+    x.id
+
+    x.owner
+
+    hook.local_worker
+
+    x
+
+    x = x.get()
+    x
+
+    bob._objects
+
+    assert len(bob._objects) == 0
+
+    alice = sy.VirtualWorker(hook, id="alice_udacity")
+
+    x = th.tensor([1, 2, 3, 4, 5])
+
+    x_ptr = x.send(bob, alice)
+
+    x_ptr.get()
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob, alice)
+
+    x.get(sum_results=True)
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    y = th.tensor([1, 1, 1, 1, 1]).send(bob)
+
+    x
+    y
+
+    z = x + y
+
+    z
+
+    z = z.get()
+    z
+
+    z = th.add(x, y)
+    z
+
+    z = z.get()
+    z
+
+    x = th.tensor([1., 2, 3, 4, 5], requires_grad=True).send(bob)
+    y = th.tensor([1., 1, 1, 1, 1], requires_grad=True).send(bob)
+
+    z = (x + y).sum()
+
+    z.backward()
+
+    x = x.get()
+
+    x
+
+    x.grad
+
+    input = th.tensor([[1., 1], [0, 1, ], [1, 0], [0, 0]], requires_grad=True).send(bob)
+    target = th.tensor([[1.], [1], [0], [0]], requires_grad=True).send(bob)
+
+    weights = th.tensor([[0.], [0.]], requires_grad=True).send(bob)
+
+    for i in range(10):
+        pred = input.mm(weights)
+
+        loss = ((pred - target) ** 2).sum()
+
+        loss.backward()
+
+        weights.data.sub_(weights.grad * 0.1)
+        weights.grad *= 0
+
+        print(loss.get().data)
+
+    bob = bob.clear_objects()
+
+    assert len(bob._objects) == 0
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+
+    assert len(bob._objects) == 1
+
+    del x
+
+    assert len(bob._objects) == 0
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+
+    assert len(bob._objects) == 1
+
+    x = "asdf"
+
+    assert len(bob._objects) == 0
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+
+    bob._objects
+
+    x = "asdf"
+
+    bob._objects
+
+    del x
+
+    bob._objects
+
+    bob = bob.clear_objects()
+    bob._objects
+
+    for i in range(1000):
+        x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+
+    assert len(bob._objects) == 1
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    y = th.tensor([1, 1, 1, 1, 1])
+
+    # throws error
+    # z = x + y
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    y = th.tensor([1, 1, 1, 1, 1]).send(alice)
+
+    # throws error
+    # z = x + y
+
+    from torch import nn, optim
+
+    # A Toy Dataset
+    data = th.tensor([[1., 1], [0, 1], [1, 0], [0, 0]], requires_grad=True)
+    target = th.tensor([[1.], [1], [0], [0]], requires_grad=True)
+
+    # A Toy Model
+    model = nn.Linear(2, 1)
+
+    opt = optim.SGD(params=model.parameters(), lr=0.1)
+
+    def train(iterations=20):
+        for iter in range(iterations):
+            opt.zero_grad()
+
+            pred = model(data)
+
+            loss = ((pred - target) ** 2).sum()
+
+            loss.backward()
+
+            opt.step()
+
+            print(loss.data)
+
+    train()
+
+    data_bob = data[0:2].send(bob)
+    target_bob = target[0:2].send(bob)
+
+    data_alice = data[2:4].send(alice)
+    target_alice = target[2:4].send(alice)
+
+    datasets = [(data_bob, target_bob), (data_alice, target_alice)]
+
+    def train(iterations=20):
+
+        model = nn.Linear(2, 1)
+        opt = optim.SGD(params=model.parameters(), lr=0.1)
+
+        for iter in range(iterations):
+
+            for _data, _target in datasets:
+                # send model to the data
+                model = model.send(_data.location)
+
+                # do normal training
+                opt.zero_grad()
+                pred = model(_data)
+                loss = ((pred - _target) ** 2).sum()
+                loss.backward()
+                opt.step()
+
+                # get smarter model back
+                model = model.get()
+
+                print(loss.get())
+
+    train()
+
+    bob.clear_objects()
+    alice.clear_objects()
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+
+    x = x.send(alice)
+
+    bob._objects
+
+    alice._objects
+
+    y = x + x
+
+    y
+
+    bob._objects
+
+    alice._objects
+
+    jon = sy.VirtualWorker(hook, id="jon")
+
+    bob.clear_objects()
+    alice.clear_objects()
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob).send(alice)
+
+    bob._objects
+
+    alice._objects
+
+    x = x.get()
+    x
+
+    bob._objects
+
+    alice._objects
+
+    x = x.get()
+    x
+
+    bob._objects
+
+    bob.clear_objects()
+    alice.clear_objects()
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob).send(alice)
+
+    bob._objects
+
+    alice._objects
+
+    del x
+
+    bob._objects
+
+    alice._objects
+
+    bob.clear_objects()
+    alice.clear_objects()
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+
+    bob._objects
+
+    alice._objects
+
+    x.move(alice)
+
+    bob._objects
+
+    alice._objects
+
+    x = th.tensor([1, 2, 3, 4, 5]).send(bob).send(alice)
+
+    bob._objects
+
+    alice._objects
+
+    x.remote_get()
+
+    bob._objects
+
+    alice._objects
+
+    x.move(bob)
+
+    x
+
+    bob._objects
+
+    alice._objects
+
+    assert True
+
+
+def test_section_3_securing_fl(hook):
+    import syft as sy
+    import torch as th
+    # hook = sy.TorchHook(th)
+    from torch import nn, optim
+
+    # create a couple workers
+
+    bob = sy.VirtualWorker(hook, id="bob_udacity_3")
+    alice = sy.VirtualWorker(hook, id="alice_udacity_3")
+    secure_worker = sy.VirtualWorker(hook, id="secure_worker_udacity_3")
+
+    bob.add_workers([alice, secure_worker])
+    alice.add_workers([bob, secure_worker])
+    secure_worker.add_workers([alice, bob])
+
+    # A Toy Dataset
+    data = th.tensor([[0, 0], [0, 1], [1, 0], [1, 1.]], requires_grad=True)
+    target = th.tensor([[0], [0], [1], [1.]], requires_grad=True)
+
+    # get pointers to training data on each worker by
+    # sending some training data to bob and alice
+    bobs_data = data[0:2].send(bob)
+    bobs_target = target[0:2].send(bob)
+
+    alices_data = data[2:].send(alice)
+    alices_target = target[2:].send(alice)
+
+    # Iniitalize A Toy Model
+    model = nn.Linear(2, 1)
+
+    bobs_model = model.copy().send(bob)
+    alices_model = model.copy().send(alice)
+
+    bobs_opt = optim.SGD(params=bobs_model.parameters(), lr=0.1)
+    alices_opt = optim.SGD(params=alices_model.parameters(), lr=0.1)
+
+    for i in range(10):
+        # Train Bob's Model
+        bobs_opt.zero_grad()
+        bobs_pred = bobs_model(bobs_data)
+        bobs_loss = ((bobs_pred - bobs_target) ** 2).sum()
+        bobs_loss.backward()
+
+        bobs_opt.step()
+        bobs_loss = bobs_loss.get().data
+
+        # Train Alice's Model
+        alices_opt.zero_grad()
+        alices_pred = alices_model(alices_data)
+        alices_loss = ((alices_pred - alices_target) ** 2).sum()
+        alices_loss.backward()
+
+        alices_opt.step()
+        alices_loss = alices_loss.get().data
+        alices_loss
+
+    alices_model.move(secure_worker)
+    bobs_model.move(secure_worker)
+
+    with th.no_grad():
+
+        model.weight.set_(((alices_model.weight.data + bobs_model.weight.data) / 2).get())
+        model.bias.set_(((alices_model.bias.data + bobs_model.bias.data) / 2).get())
+
+    iterations = 10
+    worker_iters = 5
+
+    for a_iter in range(iterations):
+
+        bobs_model = model.copy().send(bob)
+        alices_model = model.copy().send(alice)
+
+        bobs_opt = optim.SGD(params=bobs_model.parameters(), lr=0.1)
+        alices_opt = optim.SGD(params=alices_model.parameters(), lr=0.1)
+
+        for wi in range(worker_iters):
+            # Train Bob's Model
+            bobs_opt.zero_grad()
+            bobs_pred = bobs_model(bobs_data)
+            bobs_loss = ((bobs_pred - bobs_target) ** 2).sum()
+            bobs_loss.backward()
+
+            bobs_opt.step()
+            bobs_loss = bobs_loss.get().data
+
+            # Train Alice's Model
+            alices_opt.zero_grad()
+            alices_pred = alices_model(alices_data)
+            alices_loss = ((alices_pred - alices_target) ** 2).sum()
+            alices_loss.backward()
+
+            alices_opt.step()
+            alices_loss = alices_loss.get().data
+
+        alices_model.move(secure_worker)
+        bobs_model.move(secure_worker)
+
+        with th.no_grad():
+
+            model.weight.set_(((alices_model.weight.data + bobs_model.weight.data) / 2).get())
+            model.bias.set_(((alices_model.bias.data + bobs_model.bias.data) / 2).get())
+
+        print("Bob:" + str(bobs_loss) + " Alice:" + str(alices_loss))
+
+    preds = model(data)
+    loss = ((preds - target) ** 2).sum()
+
+    print(preds)
+    print(target)
+    print(loss.data)
+
+    x = 5
+
+    bob_x_share = 2
+    alice_x_share = 3
+
+    decrypted_x = bob_x_share + alice_x_share
+    decrypted_x
+
+    bob_x_share = 2 * 2
+    alice_x_share = 3 * 2
+
+    decrypted_x = bob_x_share + alice_x_share
+    decrypted_x
+
+    # encrypted "5"
+    bob_x_share = 2
+    alice_x_share = 3
+
+    # encrypted "7"
+    bob_y_share = 5
+    alice_y_share = 2
+
+    # encrypted 5 + 7
+    bob_z_share = bob_x_share + bob_y_share
+    alice_z_share = alice_x_share + alice_y_share
+
+    decrypted_z = bob_z_share + alice_z_share
+    decrypted_z
+
+    x = 5
+
+    Q = 23740629843760239486723
+
+    bob_x_share = 23552870267  # <- a random number
+    alice_x_share = Q - bob_x_share + x
+    alice_x_share
+
+    (bob_x_share + alice_x_share) % Q
+
+    x_share = (2, 5, 7)
+
+    import random
+
+    Q = 23740629843760239486723
+
+    def encrypt(x, n_share=3):
+
+        shares = list()
+
+        for i in range(n_share - 1):
+            shares.append(random.randint(0, Q))
+
+        shares.append(Q - (sum(shares) % Q) + x)
+
+        return tuple(shares)
+
+    def decrypt(shares):
+        return sum(shares) % Q
+
+    shares = encrypt(3)
+    shares
+
+    decrypt(shares)
+
+    def add(a, b):
+        c = list()
+        for i in range(len(a)):
+            c.append((a[i] + b[i]) % Q)
+        return tuple(c)
+
+    x = encrypt(5)
+    y = encrypt(7)
+    z = add(x, y)
+    decrypt(z)
+
+    BASE = 10
+    PRECISION = 4
+
+    def encode(x):
+        return int((x * (BASE ** PRECISION)) % Q)
+
+    def decode(x):
+        return (x if x <= Q / 2 else x - Q) / BASE ** PRECISION
+
+    encode(3.5)
+
+    decode(35000)
+
+    x = encrypt(encode(5.5))
+    y = encrypt(encode(2.3))
+    z = add(x, y)
+    decode(decrypt(z))
+
+    bob = bob.clear_objects()
+    alice = alice.clear_objects()
+    secure_worker = secure_worker.clear_objects()
+
+    x = th.tensor([1, 2, 3, 4, 5])
+
+    x = x.share(bob, alice, secure_worker)
+
+    bob._objects
+
+    y = x + x
+
+    y
+
+    y.get()
+
+    x = th.tensor([0.1, 0.2, 0.3])
+
+    x = x.fix_prec()
+
+    x.child.child
+
+    y = x + x
+
+    y = y.float_prec()
+    y
+
+    x = th.tensor([0.1, 0.2, 0.3])
+
+    x = x.fix_prec().share(bob, alice, secure_worker)
+
+    y = x + x
+
+    y.get().float_prec()
+
+
+
+
+
+
+
+
+
+
+
+
