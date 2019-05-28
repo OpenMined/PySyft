@@ -112,7 +112,8 @@ class TorchAttributes(object):
             "isfinite",
             "randperm",
             "randn",
-            "flip_hook_native_size",
+            # Daniele, test for adding support to dim
+            "dim",
         ]
 
         # SECTION: List all torch tensor methods we want to overload

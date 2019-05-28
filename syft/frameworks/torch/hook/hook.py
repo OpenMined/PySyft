@@ -838,15 +838,10 @@ class TorchHook:
         torch.Tensor.native_size = torch.Tensor.size
         torch.Tensor.size = size
 
-        def flip_hook_native_size(self):
-            """
-            torch.save & torch.load need .size() to be applied on the wrapper to save and load it
-            So for these operations (only) we need to put in wrapper.size the native size func back.
-            """
-            self.size, self.native_size = self.native_size, self.size
-            return self
+        def dim(self):
+            return len(self.shape)
 
-        torch.Tensor.flip_hook_native_size = flip_hook_native_size
+        torch.Tensor.dim = dim
 
         @property
         def grad_fn(self):
