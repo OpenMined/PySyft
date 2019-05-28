@@ -828,20 +828,10 @@ class TorchHook:
 
         tensor_type.native_grad_fn = tensor_type.grad_fn
 
-        # Added support for the torch.size() command
-        def size(self, dim=None):
-            """Hook the size to return the shape with a callable syntax"""
-            if dim is None:
-                return self.shape
-            return self.shape[dim]
-
-        torch.Tensor.native_size = torch.Tensor.size
-        torch.Tensor.size = size
-
         def dim(self):
             return len(self.shape)
 
-        torch.Tensor.dim = dim
+        tensor_type.dim = dim
 
         @property
         def grad_fn(self):

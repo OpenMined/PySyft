@@ -112,7 +112,6 @@ class TorchAttributes(object):
             "isfinite",
             "randperm",
             "randn",
-            # Daniele, test for adding support to dim
             "dim",
         ]
 
