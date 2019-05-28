@@ -1,9 +1,10 @@
-from syft.keras import model, layers
-from syft.keras.hook import KerasHook
+from . import model, layers
+from syft.frameworks.keras.hook import KerasHook
 
 
 def get_hooks(torch=None, keras=None):
-    # TODO[jason]: this is currently very ugly, sync on this with Andrew & Theo
+    # TODO[jason]: this is currently very ugly, in preparation for merging keras with existing workers
+    #              for now, we ignore this in favor of TFWorker; sync on this with the team
     from syft.frameworks.torch import TorchHook
     if torch is None:
         import torch
@@ -14,6 +15,6 @@ def get_hooks(torch=None, keras=None):
     return k_hook, t_hook
 
 __all__ = [
-    'model',
-    'layers',
+    'get_hooks'
+    'KerasHook',
 ]

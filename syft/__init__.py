@@ -3,13 +3,13 @@
 from syft import frameworks
 from syft import workers
 from syft import codes
-from syft import keras
 
 # The purpose of the following import section is to increase the convenience of using
 # PySyft by making it possible to import the most commonly used objects from syft
 # directly (i.e., syft.TorchHook or syft.VirtualWorker or syft.LoggingTensor)
 
-# Import Hook
+# Import Hooks
+from syft.frameworks.keras import KerasHook
 from syft.frameworks.torch import TorchHook
 
 # Import grids

@@ -1,18 +1,6 @@
-from tensorflow.keras.layers import (Dense,
-                                     Activation,
-                                     Conv2D,
-                                     MaxPooling2D,
-                                     AveragePooling2D,
-                                     Flatten,
-                                     ReLU)
-
+from syft.frameworks.keras.layers.constructor import add_constructor_registration, filter_nonlayers
 
 __all__ = [
-    'Dense',
-    'Activation',
-    'Conv2D',
-    'MaxPooling2D',
-    'AveragePooling2D',
-    'Flatten',
-    'ReLU',
+    'add_constructor_registration',
+    'filter_nonlayers',
 ]

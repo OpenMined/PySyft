@@ -1,5 +1,6 @@
-from syft.keras.model.base_model import  Sequential
+from syft.frameworks.keras.model.sequential import serve, share
 
 __all__ = [
-    'Sequential',
+    'serve',
+    'share',
 ]
