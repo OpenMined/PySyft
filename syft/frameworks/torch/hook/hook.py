@@ -856,6 +856,7 @@ class TorchHook:
         """Creates a list of Torch methods to auto overload.
 
         By default, it looks for the intersection between the methods of
+        tensor_type and torch_type minus those in the exception list
         (syft.torch.exclude).
 
         Args:
