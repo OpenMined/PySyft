@@ -1,6 +1,5 @@
 from collections import defaultdict, OrderedDict
 import inspect
-import subprocess
 
 import tensorflow as tf
 
@@ -17,22 +16,17 @@ _args_not_supported_by_tfe = [
 ]
 
 
-def share(model, *workers, prot=None, target_graph=None, init_run_tag=None):
-
-    # Handle input combinations to produce protocol
-    prot = _sanitize_share_argspec(workers, prot)
-
-    # NOTE If protocol not set, getting errors with
-    # tfe.define_private_placeholder in tfe.keras.Sequential
-    # TODO[jason]: investigate
-    tfe.set_protocol(prot)
+def share(model, *workers, target_graph=None, init_run_tag=None):
 
     # Store Keras weights before loading them in the TFE layers.
-    stored_keras_weights = {}
-
     # TODO(Morten) we could optimize runtime by running a single model.get_weights instead
-    for keras_layer in model.layers:
-        stored_keras_weights[keras_layer.name] = keras_layer.get_weights()
+    stored_keras_weights = {
+        keras_layer.name: keras_layer.get_weights()
+        for keras_layer in model.layers
+    }
+
+    # Handle input combinations to configure TFE
+    player_to_worker_mapping = _configure_tfe(workers)
 
     if target_graph is None:
         # By default we create a new graph for the shared model
@@ -54,9 +48,11 @@ def share(model, *workers, prot=None, target_graph=None, init_run_tag=None):
         initializer = tf.global_variables_initializer()
 
     model._server = server
+    model._workers = workers
 
-    # Launch TF servers and store the subprocesses on the model
-    _launch_tfserver_subprocesses(model)
+    # Tell the TFE workers to launch TF servers
+    for player_name, worker in player_to_worker_mapping.items():
+        worker.start(player_name, *workers)
 
     # Push and initialize shared model on servers
     sess = tfe.Session(graph=target_graph)
@@ -79,58 +75,35 @@ def serve(model, num_steps=5):
 
 
 def shutdown(model):
-    subprocesses = getattr(model, '_subprocess_calls', None)
-    if subprocesses is None:
-        return
-
-    for subprocess in subprocesses.values():
-        subprocess.kill()
-        subprocess.communicate()
+    for worker in model._workers:
+        worker.stop()
 
 
+def _configure_tfe(workers):
 
-_protocol_map = defaultdict(
-    tfe.get_protocol,
-    {'securenn': tfe.protocol.SecureNN, 'pond': tfe.protocol.Pond},
-)
+    if not workers or len(workers) != 3:
+        raise RuntimeError("TF Encrypted expects three parties for its sharing protocols.")
 
+    player_to_worker_mapping = OrderedDict()
+    player_to_worker_mapping['server0'] = workers[0]
+    player_to_worker_mapping['server1'] = workers[1]
+    player_to_worker_mapping['server2'] = workers[2]
 
-def _sanitize_share_argspec(workers, prot):
-    if not workers and prot is None:
-        raise RuntimeError("Invalid arguments supplied to model.share(): "
-                           "must supply TensorflowServerWorkers or a protocol object that corresponds")
+    hostmap = OrderedDict([
+        (player_name, worker.host)
+        for player_name, worker in player_to_worker_mapping.items()
+    ])
+    config = tfe.RemoteConfig(hostmap)
+    tfe.set_config(config)
 
-    if workers:
-        if len(workers) != 3:
-            raise RuntimeError("TF Encrypted expects three parties for its sharing protocols.")
+    prot = tfe.protocol.SecureNN(
+        config.get_player('server0'),
+        config.get_player('server1'),
+        config.get_player('server2'),
+    )
+    tfe.set_protocol(prot)
 
-        players = OrderedDict([('server{}'.format(i), workers[i].host) for i in range(len(workers))])
-        config = tfe.RemoteConfig(players)
-        config.save('/tmp/tfe.config')
-        tfe.set_config(config)
-
-
-    if prot is None:
-        # Default is SecureNN
-        prot = 'securenn'
-    if isinstance(prot, str):
-        # here lies the dumbest, sneakiest bug of my life, so far...
-        # if you move this constructor call into _protocol_map,
-        # the protocol objects will be initialized before set_config above is called,
-        # which means any direct calls to prot will use the default device names
-        # (which come from LocalConfig). so we return the class from _protocol_map
-        # and instantiate it here
-        prot = _protocol_map[prot]()
-    return prot
-
-
-def _launch_tfserver_subprocesses(model):
-    subprocess_calls = {}
-    cmd = "python -m tf_encrypted.player --config /tmp/tfe.config {}"
-    hostmap = tfe.get_config().hostmap
-    for player_name in hostmap.keys():
-        subprocess_calls[player_name] = subprocess.Popen(cmd.format(player_name).split(' '))
-    setattr(model, '_subprocess_calls', subprocess_calls)
+    return player_to_worker_mapping
 
 
 def _rebuild_tfe_model(keras_model, stored_keras_weights):
