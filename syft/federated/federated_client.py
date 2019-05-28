@@ -62,20 +62,15 @@ class FederatedClient(ObjectStorage):
         return self.optimizer
 
     def fit_batch(self, data, target, *args, **kwargs):
-        if self.verbose:
-            logger.debug("data = %s", data)
-            logger.debug("target = %s", target)
-        self.register_obj(data)
-        self.register_obj(target)
+
+        model = self.get_obj(self.train_config.model_id).obj
+        model.train()
         self.optimizer.zero_grad()
-        output = self.train_config.forward_plan(data)
-        self.register_obj(output)
-        loss = self.train_config.loss_plan(output, target)
+        output = model.forward(data)
+        loss_fn = self.get_obj(self.train_config.loss_fn_id).obj
+        loss = loss_fn(output, target)
         loss.backward()
         self.optimizer.step()
-        self.de_register_obj(output)
-        self.de_register_obj(data)
-        self.de_register_obj(target)
         return loss
 
     def fit(self, *args, **kwargs):
@@ -111,25 +106,17 @@ class FederatedClient(ObjectStorage):
         return batch_sampler
 
     def _fit(self, model, key):
-        loss_fn = self.get_obj(self.train_config.loss_plan_id).obj
+        loss_fn = self.get_obj(self.train_config.loss_fn_id).obj
         model.train()
-        logger.setLevel(logging.DEBUG)
-        logger.debug("train_config = %s", self.train_config)
-        logger.debug("datasets[%s] = %s", key, self.datasets[key])
         batch_sampler = self._create_batch_sampler(key)
         loss = -1.0
         for data_indices in batch_sampler:
-            logger.debug("data_indices = %s", data_indices)
             data, target = self.datasets[key][data_indices]
-            logger.debug("data = %s", data)
-            logger.debug("target = %s", target)
             self.optimizer.zero_grad()
             output = model.forward(data)
             loss = loss_fn(output, target)
             loss.backward()
             self.optimizer.step()
-            logger.info("loss: %s", loss)
-
         return loss
 
 
