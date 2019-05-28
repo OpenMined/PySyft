@@ -1,6 +1,7 @@
 import pytest
 import torch
 
+
 def test_section_1_differential_privacy():
     """This tests the Udacity course content found at
     https://github.com/Udacity/private-ai
@@ -14,8 +15,7 @@ def test_section_1_differential_privacy():
     db = torch.rand(num_entries) > 0.5
 
     def get_parallel_db(db, remove_index):
-        return torch.cat((db[0:remove_index],
-                          db[remove_index + 1:]))
+        return torch.cat((db[0:remove_index], db[remove_index + 1 :]))
 
     get_parallel_db(db, 52352)
 
@@ -51,7 +51,7 @@ def test_section_1_differential_privacy():
 
         db_distance = torch.abs(pdb_result - full_db_result)
 
-        if (db_distance > sensitivity):
+        if db_distance > sensitivity:
             sensitivity = db_distance
 
     def sensitivity(query, n_entries=1000):
@@ -66,7 +66,7 @@ def test_section_1_differential_privacy():
 
             db_distance = torch.abs(pdb_result - full_db_result)
 
-            if (db_distance > max_distance):
+            if db_distance > max_distance:
                 max_distance = db_distance
 
         return max_distance
@@ -219,7 +219,9 @@ def test_section_1_differential_privacy():
     num_examples = 10000  # the size of OUR dataset
     num_labels = 10  # number of lablels for our classifier
 
-    preds = (np.random.rand(num_teachers, num_examples) * num_labels).astype(int).transpose(1, 0)  # fake predictions
+    preds = (
+        (np.random.rand(num_teachers, num_examples) * num_labels).astype(int).transpose(1, 0)
+    )  # fake predictions
 
     new_labels = list()
     for an_image in preds:
@@ -249,22 +251,28 @@ def test_section_1_differential_privacy():
 
     preds[:, 0:10] *= 0
 
-    data_dep_eps, data_ind_eps = pate.perform_analysis(teacher_preds=preds, indices=indices, noise_eps=0.1, delta=1e-5)
+    data_dep_eps, data_ind_eps = pate.perform_analysis(
+        teacher_preds=preds, indices=indices, noise_eps=0.1, delta=1e-5
+    )
 
     assert data_dep_eps < data_ind_eps
 
-    data_dep_eps, data_ind_eps = pate.perform_analysis(teacher_preds=preds, indices=indices, noise_eps=0.1, delta=1e-5)
+    data_dep_eps, data_ind_eps = pate.perform_analysis(
+        teacher_preds=preds, indices=indices, noise_eps=0.1, delta=1e-5
+    )
     print("Data Independent Epsilon:", data_ind_eps)
     print("Data Dependent Epsilon:", data_dep_eps)
 
     preds[:, 0:50] *= 0
 
-    data_dep_eps, data_ind_eps = pate.perform_analysis(teacher_preds=preds, indices=indices, noise_eps=0.1, delta=1e-5,
-                                                       moments=20)
+    data_dep_eps, data_ind_eps = pate.perform_analysis(
+        teacher_preds=preds, indices=indices, noise_eps=0.1, delta=1e-5, moments=20
+    )
     print("Data Independent Epsilon:", data_ind_eps)
     print("Data Dependent Epsilon:", data_dep_eps)
 
     assert True
+
 
 def test_section_2_federated_learning(hook):
 
@@ -346,8 +354,8 @@ def test_section_2_federated_learning(hook):
     z = z.get()
     z
 
-    x = th.tensor([1., 2, 3, 4, 5], requires_grad=True).send(bob)
-    y = th.tensor([1., 1, 1, 1, 1], requires_grad=True).send(bob)
+    x = th.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(bob)
+    y = th.tensor([1.0, 1, 1, 1, 1], requires_grad=True).send(bob)
 
     z = (x + y).sum()
 
@@ -359,10 +367,10 @@ def test_section_2_federated_learning(hook):
 
     x.grad
 
-    input = th.tensor([[1., 1], [0, 1, ], [1, 0], [0, 0]], requires_grad=True).send(bob)
-    target = th.tensor([[1.], [1], [0], [0]], requires_grad=True).send(bob)
+    input = th.tensor([[1.0, 1], [0, 1], [1, 0], [0, 0]], requires_grad=True).send(bob)
+    target = th.tensor([[1.0], [1], [0], [0]], requires_grad=True).send(bob)
 
-    weights = th.tensor([[0.], [0.]], requires_grad=True).send(bob)
+    weights = th.tensor([[0.0], [0.0]], requires_grad=True).send(bob)
 
     for i in range(10):
         pred = input.mm(weights)
@@ -431,8 +439,8 @@ def test_section_2_federated_learning(hook):
     from torch import nn, optim
 
     # A Toy Dataset
-    data = th.tensor([[1., 1], [0, 1], [1, 0], [0, 0]], requires_grad=True)
-    target = th.tensor([[1.], [1], [0], [0]], requires_grad=True)
+    data = th.tensor([[1.0, 1], [0, 1], [1, 0], [0, 0]], requires_grad=True)
+    target = th.tensor([[1.0], [1], [0], [0]], requires_grad=True)
 
     # A Toy Model
     model = nn.Linear(2, 1)
@@ -586,6 +594,7 @@ def test_section_2_federated_learning(hook):
 def test_section_3_securing_fl(hook):
     import syft as sy
     import torch as th
+
     # hook = sy.TorchHook(th)
     from torch import nn, optim
 
@@ -600,8 +609,8 @@ def test_section_3_securing_fl(hook):
     secure_worker.add_workers([alice, bob])
 
     # A Toy Dataset
-    data = th.tensor([[0, 0], [0, 1], [1, 0], [1, 1.]], requires_grad=True)
-    target = th.tensor([[0], [0], [1], [1.]], requires_grad=True)
+    data = th.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]], requires_grad=True)
+    target = th.tensor([[0], [0], [1], [1.0]], requires_grad=True)
 
     # get pointers to training data on each worker by
     # sending some training data to bob and alice
@@ -822,15 +831,3 @@ def test_section_3_securing_fl(hook):
     y = x + x
 
     y.get().float_prec()
-
-
-
-
-
-
-
-
-
-
-
-
