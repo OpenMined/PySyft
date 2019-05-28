@@ -4,6 +4,7 @@ import sys
 import subprocess
 
 from grid.client import GridClient
+from grid.websocket_client import WebsocketGridClient
 from grid import utils as gr_utils
 
 __all__ = [
@@ -54,7 +55,12 @@ def execute(cmd):
         raise subprocess.CalledProcessError(return_code, cmd)
 
 
-def launch_on_heroku(grid_name: str, verbose=True, check_deps=True, dev_user=None):
+def launch_on_heroku(grid_name: str,
+                     app_type:str,
+                     verbose=True,
+                     check_deps=True,
+                     dev_user=None,
+                     branch=None):
     app_addr = "https://" + str(grid_name) + ".herokuapp.com"
     if check_deps:
         if verbose:
@@ -141,16 +147,17 @@ def launch_on_heroku(grid_name: str, verbose=True, check_deps=True, dev_user=Non
 
     logs.append("Step 5: cloning heroku app code from Github")
     if dev_user:
-        commands.append("git clone -b dev https://github.com/{}/Grid".format(dev_user))
-
-        logs.append("Checking out dev version...")
-        commands.append("git checkout origin/dev")
-
+        if branch:
+            commands.append("git clone -b {} https://github.com/{}/Grid".format(branch,dev_user))
+        else:
+            commands.append("git clone -b dev https://github.com/{}/Grid".format(dev_user))
+            logs.append("Checking out dev version...")
+            commands.append("git checkout origin/dev")
     else:
         commands.append("git clone https://github.com/OpenMined/Grid")
 
     logs.append("Step 6: copying app code from cloned repo")
-    commands.append("cp Grid/app/* ./")
+    commands.append("cp Grid/app/{}/* ./".format(app_type))
 
     logs.append("Step 7: removing the rest of the cloned code")
     commands.append("rm -rf Grid")
