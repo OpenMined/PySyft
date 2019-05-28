@@ -6,5 +6,6 @@ from syft.workers.websocket_client import WebsocketClientWorker  # noqa: F401
 from syft.workers.websocket_server import WebsocketServerWorker  # noqa: F401
 from syft.workers.socketio_server import WebsocketIOServerWorker
 from syft.workers.socketio_client import WebsocketIOClientWorker
+from syft.workers.tensorflow_client import TensorflowClientWorker
 
-__all__ = ["base", "virtual", "websocket_client", "socketio_client"]
+__all__ = ["base", "virtual", "websocket_client", "socketio_client", "TensorflowClientWorker"]
