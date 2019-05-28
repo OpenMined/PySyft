@@ -275,6 +275,9 @@ def test_section_1_differential_privacy():
 
 
 def test_section_2_federated_learning(hook):
+    """This tests the Udacity course content found at
+    https://github.com/Udacity/private-ai
+    """
 
     import torch as th
 
@@ -592,6 +595,10 @@ def test_section_2_federated_learning(hook):
 
 
 def test_section_3_securing_fl(hook):
+    """This tests the Udacity course content found at
+    https://github.com/Udacity/private-ai
+    """
+
     import syft as sy
     import torch as th
 
