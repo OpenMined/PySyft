@@ -42,24 +42,16 @@ data = th.tensor(th.tensor([[-10, -2.0], [1, 1.1], [11, 22.1], [-10, 1.2]]))
 
 traced_model = th.jit.trace(model, data)
 
-model_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=traced_model)
-loss_fn_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=loss_fn)
-
-model_ptr = me.send(model_with_id, alice)
-loss_fn_ptr = me.send(loss_fn_with_id, alice)
-
 # Create and send train config
-train_config = sy.TrainConfig(
-    model_id=model_ptr.id_at_location, loss_plan_id=loss_fn_ptr.id_at_location, batch_size=2
-)
-train_config.send(alice)
+train_config = sy.TrainConfig(batch_size=2)
+train_config.send(alice, traced_loss_fn=loss_fn, traced_model=traced_model)
 
 for epoch in range(5):
     loss = alice.fit(dataset_key="vectors", return_id=88 + epoch)
     print("-" * 50)
     print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
-new_model = model_ptr.get()
+new_model = train_config.model_ptr.get()
 data = th.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
 target = th.tensor([[1.0], [0.0], [1.0], [0.0]], requires_grad=True)
 
