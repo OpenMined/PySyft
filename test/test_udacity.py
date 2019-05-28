@@ -271,8 +271,6 @@ def test_section_1_differential_privacy():
     print("Data Independent Epsilon:", data_ind_eps)
     print("Data Dependent Epsilon:", data_dep_eps)
 
-    assert True
-
 
 def test_section_2_federated_learning(hook):
     """This tests the Udacity course content found at
@@ -590,8 +588,6 @@ def test_section_2_federated_learning(hook):
     bob._objects
 
     alice._objects
-
-    assert True
 
 
 def test_section_3_securing_fl(hook):
