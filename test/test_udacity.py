@@ -186,7 +186,7 @@ def test_section_1_differential_privacy():
         return torch.sum(db.float())
 
     def M(db):
-        query(db)# + noise
+        query(db)  # + noise
 
     query(db)
 
