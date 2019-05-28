@@ -59,7 +59,7 @@ class ObjectPointer(abstract.AbstractObject):
             point_to_attr: string which can tell a pointer to not point directly to\
                 an object, but to point to an attribute of that object such as .child or
                 .grad. Note the string can be a chain (i.e., .child.child.child or
-                .grad.child.child). Defaults yo None, which means don't point to any attr,
+                .grad.child.child). Defaults to None, which means don't point to any attr,
                 just point to then object corresponding to the id_at_location.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
@@ -103,7 +103,9 @@ class ObjectPointer(abstract.AbstractObject):
             return pointer
 
     def get(self, deregister_ptr: bool = True):
-        """Requests the object being pointed to, be serialized and return
+        """Requests the object being pointed to.
+
+        The object to which the pointer points will be requested, serialized and returned.
 
         Note:
             This will typically mean that the remote object will be
@@ -113,12 +115,12 @@ class ObjectPointer(abstract.AbstractObject):
             deregister_ptr (bool, optional): this determines whether to
                 deregister this pointer from the pointer's owner during this
                 method. This defaults to True because the main reason people use
-                this method is to move the tensor from the remote machine to the
+                this method is to move the tensor from the location to the
                 local one, at which time the pointer has no use.
 
         Returns:
             An AbstractObject object which is the tensor (or chain) that this
-            object used to point to on a remote machine.
+            object used to point to on a location.
 
         TODO: add param get_copy which doesn't destroy remote if true.
         """
@@ -136,7 +138,7 @@ class ObjectPointer(abstract.AbstractObject):
         if self.location == self.owner:
             obj = self.owner.get_obj(self.id_at_location).child
         else:
-            # get tensor from remote machine
+            # get tensor from location
             obj = self.owner.request_obj(self.id_at_location, self.location)
 
         # Register the result

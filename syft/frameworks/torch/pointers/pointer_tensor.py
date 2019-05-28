@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.workers import BaseWorker
+    from syft.workers import AbstractWorker
 
 
 class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
@@ -45,9 +45,9 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
 
     def __init__(
         self,
-        location: "BaseWorker" = None,
+        location: "AbstractWorker" = None,
         id_at_location: Union[str, int] = None,
-        owner: "BaseWorker" = None,
+        owner: "AbstractWorker" = None,
         id: Union[str, int] = None,
         garbage_collect_data: bool = True,
         shape: torch.Size = None,
@@ -55,6 +55,32 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         tags: List[str] = None,
         description: str = None,
     ):
+        """Initializes a PointerTensor.
+
+        Args:
+            location: An optional BaseWorker object which points to the worker
+                on which this pointer's object can be found.
+            id_at_location: An optional string or integer id of the object
+                being pointed to.
+            owner: An optional BaseWorker object to specify the worker on which
+                the pointer is located. It is also where the pointer is
+                registered if register is set to True. Note that this is
+                different from the location parameter that specifies where the
+                pointer points to.
+            id: An optional string or integer id of the PointerTensor.
+            garbage_collect_data: If true (default), delete the remote object when the
+                pointer is deleted.
+            shape: size of the tensor the pointer points to
+            point_to_attr: string which can tell a pointer to not point directly to\
+                an object, but to point to an attribute of that object such as .child or
+                .grad. Note the string can be a chain (i.e., .child.child.child or
+                .grad.child.child). Defaults to None, which means don't point to any attr,
+                just point to then object corresponding to the id_at_location.
+            tags: an optional set of strings corresponding to this tensor
+                which this tensor should be searchable for.
+            description: an optional string describing the purpose of the tensor.
+        """
+
         super().__init__(
             location=location,
             id_at_location=id_at_location,
@@ -151,3 +177,6 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         response = self.owner.send_command(self.location, command)
 
         return response
+
+    def set_garbage_collect_data(self, value):
+        self.garbage_collect_data = value

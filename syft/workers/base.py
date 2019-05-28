@@ -5,7 +5,6 @@ import syft as sy
 
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.generic import ObjectStorage
-from syft.frameworks.torch import pointers
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
@@ -15,7 +14,12 @@ from typing import Callable
 from typing import List
 from typing import Tuple
 from typing import Union
+from typing import TYPE_CHECKING
 import torch
+
+# this if statement avoids circular imports between base.py and pointer.py
+if TYPE_CHECKING:
+    from syft.frameworks.torch import pointers
 
 
 class BaseWorker(AbstractWorker, ObjectStorage):
@@ -262,7 +266,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         ptr_id: Union[str, int] = None,
         local_autograd=False,
         preinitialize_grad=False,
-    ) -> pointers.PointerTensor:
+    ) -> "pointers.ObjectPointer":
         """Sends tensor to the worker(s).
 
         Send a syft or torch tensor/object and its child, sub-child, etc (all the
@@ -313,7 +317,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if ptr_id is None:  # Define a remote id if not specified
             ptr_id = sy.ID_PROVIDER.pop()
 
-        if isinstance(obj, torch.Tensor):
+        if hasattr(obj, "create_pointer"):
             pointer = obj.create_pointer(
                 owner=self,
                 location=worker,
@@ -323,17 +327,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 local_autograd=local_autograd,
                 preinitialize_grad=preinitialize_grad,
             )
-        elif isinstance(obj, pointers.ObjectWrapper):
-            tags = obj.tags if hasattr(obj, "tags") else ""
-            description = obj.description if hasattr(obj, "description") else ""
-            pointer = pointers.create_callable_pointer(
-                owner=self,
-                location=worker,
-                id=ptr_id,
-                id_at_location=obj.id,
-                tags=tags,
-                description=description,
-            )
         else:
             pointer = obj
         # Send the object
@@ -341,7 +334,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return pointer
 
-    def execute_command(self, message: tuple) -> pointers.PointerTensor:
+    def execute_command(self, message: tuple) -> "pointers.PointerTensor":
         """
         Executes commands received from other workers.
 
@@ -408,7 +401,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def send_command(
         self, recipient: "BaseWorker", message: str, return_ids: str = None
-    ) -> Union[List[pointers.PointerTensor], pointers.PointerTensor]:
+    ) -> Union[List["pointers.PointerTensor"], "pointers.PointerTensor"]:
         """
         Sends a command through a message to a recipient worker.
 
@@ -461,13 +454,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
-        if hasattr(obj, "child"):
-            if isinstance(obj.child, pointers.PointerTensor):
-                obj.child.garbage_collect_data = False
-            if isinstance(obj.child, (sy.AdditiveSharingTensor, sy.MultiPointerTensor)):
-                shares = obj.child.child
-                for _, share in shares.items():
-                    share.child.garbage_collect_data = False
+        if hasattr(obj, "child") and hasattr(obj.child, "set_garbage_collect_data"):
+            obj.child.set_garbage_collect_data(value=False)
 
         return obj
 
@@ -489,6 +477,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Registers the specified object with the current worker node.
 
         Selects an id for the object, assigns a list of owners, and establishes
+        whether it's a pointer or not. This method is generally not used by the
         whether it's a pointer or not. This method is generally not used by the
         client and is instead used by internal processes (hooks and workers).
 
@@ -688,7 +677,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def is_tensor_none(obj):
         return obj is None
 
-    def request_is_remote_tensor_none(self, pointer: pointers.PointerTensor):
+    def request_is_remote_tensor_none(self, pointer: "pointers.PointerTensor"):
         """
         Sends a request to the remote worker that holds the target a pointer if
         the value of the remote tensor is None or not.
@@ -717,7 +706,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         return list(tensor.shape)
 
-    def request_remote_tensor_shape(self, pointer: pointers.PointerTensor) -> "sy.hook.torch.Size":
+    def request_remote_tensor_shape(
+        self, pointer: "pointers.PointerTensor"
+    ) -> "sy.hook.torch.Size":
         """
         Sends a request to the remote worker that holds the target a pointer to
         have its shape.
@@ -749,7 +740,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return None
 
-    def search(self, *query: List[str]) -> List[pointers.PointerTensor]:
+    def search(self, *query: List[str]) -> List["pointers.PointerTensor"]:
         """Search for a match between the query terms and a tensor's Id, Tag, or Description.
 
         Note that the query is an AND query meaning that every item in the list of strings (query*)
@@ -798,7 +789,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return results
 
-    def deserialized_search(self, query_items: Tuple[str]) -> List[pointers.PointerTensor]:
+    def deserialized_search(self, query_items: Tuple[str]) -> List["pointers.PointerTensor"]:
         """
         Called when a message requesting a call to `search` is received.
         The serialized arguments will arrive as a `tuple` and it needs to be
