@@ -22,7 +22,7 @@ from syft.federated import method2plan
 from syft.federated import make_plan
 
 # Import Worker Types
-from syft.workers import VirtualWorker
+from syft.workers import VirtualWorker, TensorflowServerWorker
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor

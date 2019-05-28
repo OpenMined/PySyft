@@ -2,12 +2,9 @@ import tf_encrypted as tfe
 
 
 
-class TensorflowClientWorker(object):
-    def __init__(self):
-        pass
-
+class TensorflowClientWorker:
     def connect_to_model(self, config_filename, input_shape, output_shape):
-        
+
         config = tfe.RemoteConfig.load(config_filename)
         tfe.set_config(config)
 
@@ -23,6 +20,6 @@ class TensorflowClientWorker(object):
         self._tf_session = sess
 
 
-    def querry_model(self, data):
+    def query_model(self, data):
 
         return self._tf_client.run(self._tf_session, data)
