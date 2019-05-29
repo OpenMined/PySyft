@@ -36,8 +36,7 @@ before_script:
   # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
   - flake8 . --count --exit-zero --statistics --select=E,F,W,C90
 script:
-  - coverage run --omit=$OMIT_FROM_COVERAGE -m pytest -k "not keras"
-  - coverage run --omit=$OMIT_FROM_COVERAGE -am pytest -k keras
+  - coverage run --omit=$OMIT_FROM_COVERAGE -m pytest
   - coverage report --fail-under 95 -m
   # ensuring coverage of tests stays at 100 until entire coverage can be 100
   - coverage report --fail-under 100 -m --include="test/*"
