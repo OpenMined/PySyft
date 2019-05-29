@@ -7,62 +7,57 @@ import tf_encrypted as tfe
 
 
 logger = logging.getLogger("tf_encrypted")
-__WORKER_COUNT__ = 0
 
 
 class TFEWorker:
     # TODO(Morten) this should be turned into a proxy, with existing code
     # extracted into a new component that's launched via a script
 
-    def __init__(self, host=None, autolaunch=True):
+    def __init__(self, host=None, auto_managed=True):
         self.host = host
         self._server_process = None
-
-        if host is not None:
-            # this is not a client worker
-            global __WORKER_COUNT__
-            if __WORKER_COUNT__ >= 3:
-                raise RuntimeError(
-                    "TF Encrypted currently only requires three hosted TFE workers "
-                    "for its MPC protocols."
-                )
-            __WORKER_COUNT__ += 1
-
-        self.autolaunch = autolaunch
-        if not autolaunch:
-            self._player_name = "server{}"
-            logger.info(
-                "Please launch the following command in a terminal owned by this worker:\n"
-                "`python -m tf_encrypted.player --config /tmp/tfe.config server%s`\n"
-                "This can be done automatically in a local subprocess by setting the "
-                "`autolaunch` kwarg to True when instantiating a TFEWorker.",
-                __WORKER_COUNT__ - 1,
-            )
+        self._auto_managed = auto_managed
 
     def start(self, player_name, *workers):
-
         config_filename = "/tmp/tfe.config"
 
         config, _ = self.config_from_workers(workers)
         config.save(config_filename)
 
-        cmd = "python -m tf_encrypted.player --config {} {}".format(config_filename, player_name)
-        self._server_process = subprocess.Popen(cmd.split(" "))
+        if self._auto_managed:
+            cmd = "python -m tf_encrypted.player --config {} {}".format(config_filename, player_name)
+            self._server_process = subprocess.Popen(cmd.split(" "))
+        else:
+            logger.info(
+                "If not done already, please launch the following "
+                "command in a terminal on host '%s':\n"
+                "'python -m tf_encrypted.player --config %s %s'\n"
+                "This can be done automatically in a local subprocess by "
+                "setting `auto_managed=True` when instantiating a TFEWorker.",
+                self.host, config_filename, player_name,
+            )
 
     def stop(self):
-        if self._server_process is None:
-            return
-
-        self._server_process.kill()
-        self._server_process.communicate()
-        self._server_process = None
+        if self._auto_managed:
+            if self._server_process is None:
+                return
+            self._server_process.kill()
+            self._server_process.communicate()
+            self._server_process = None
+        else:
+            logger.info(
+                "Please terminate the process on host '%s'.",
+                self.host
+            )
 
     def connect_to_model(self, input_shape, output_shape, *workers):
         config, _ = self.config_from_workers(workers)
         tfe.set_config(config)
 
         prot = tfe.protocol.SecureNN(
-            config.get_player("server0"), config.get_player("server1"), config.get_player("server2")
+            config.get_player("server0"),
+            config.get_player("server1"),
+            config.get_player("server2"),
         )
         tfe.set_protocol(prot)
 

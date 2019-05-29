@@ -54,8 +54,7 @@ def share(model, *workers, target_graph=None):
 
     # Tell the TFE workers to launch TF servers
     for player_name, worker in player_to_worker_mapping.items():
-        if worker.autolaunch:
-            worker.start(player_name, *workers)
+        worker.start(player_name, *workers)
 
     # Push and initialize shared model on servers
     sess = tfe.Session(graph=target_graph)
@@ -74,8 +73,7 @@ def serve(model, num_steps=5):
 
 def shutdown_workers(model):
     for worker in model._workers:
-        if worker.autolaunch:
-            worker.stop()
+        worker.stop()
 
 
 def _configure_tfe(workers):
