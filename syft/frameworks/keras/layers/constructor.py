@@ -5,6 +5,9 @@ import tf_encrypted as tfe
 
 
 def add_constructor_registration(layer_cls):
+    """
+    This method rewires the layer's constructor to record arguments passed to it.
+    """
     layer_cls._native_keras_constructor = layer_cls.__init__
     sig = inspect.signature(layer_cls.__init__)
 
@@ -16,6 +19,9 @@ def add_constructor_registration(layer_cls):
 
 
 def filter_layers(layers_module, tfe_layers_module):
+    """
+    Returns all layer types in module.
+    """
     # We recognize Layer classes based on their compliance with PEP8.
     pattern = re.compile("[A-Z_][a-zA-Z0-9]+$")
     for attr_name in dir(layers_module):

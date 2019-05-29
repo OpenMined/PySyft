@@ -22,7 +22,8 @@ from syft.federated import method2plan
 from syft.federated import make_plan
 
 # Import Worker Types
-from syft.workers import VirtualWorker, TFEWorker
+from syft.workers import TFEWorker
+from syft.workers import VirtualWorker
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
@@ -51,7 +52,6 @@ __all__ = [
     "LoggingTensor",
     "PointerTensor",
     "VirtualGrid",
-    "keras",
 ]
 
 local_worker = None

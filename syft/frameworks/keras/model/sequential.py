@@ -2,7 +2,6 @@ from collections import defaultdict, OrderedDict
 import inspect
 
 import tensorflow as tf
-
 import tf_encrypted as tfe
 
 # When instantiating tfe layers, exclude not supported arguments in TFE.
@@ -16,7 +15,13 @@ _args_not_supported_by_tfe = [
 ]
 
 
-def share(model, *workers, target_graph=None, init_run_tag=None):
+def share(model, *workers, target_graph=None):
+    """
+    Secret share the model between `workers`.
+
+    This is done by rebuilding the model as a TF Encrypted model inside `target_graph`
+    and pushing this graph to TensorFlow servers running on the workers. 
+    """
 
     # Store Keras weights before loading them in the TFE layers.
     # TODO(Morten) we could optimize runtime by running a single model.get_weights instead
@@ -55,7 +60,7 @@ def share(model, *workers, target_graph=None, init_run_tag=None):
     # Push and initialize shared model on servers
     sess = tfe.Session(graph=target_graph)
     tf.Session.reset(sess.target)
-    sess.run(initializer, tag=init_run_tag)
+    sess.run(initializer)
 
     model._tfe_session = sess
 
@@ -91,6 +96,13 @@ def _configure_tfe(workers):
 
 
 def _rebuild_tfe_model(keras_model, stored_keras_weights):
+    """
+    Rebuild the plaintext Keras model as a TF Encrypted Keras model
+    from the plaintext weights in `stored_keras_weights` using the
+    current TensorFlow graph, and the current TF Encrypted protocol
+    and configuration.
+    """
+
     tfe_model = tfe.keras.Sequential()
 
     for keras_layer in keras_model.layers:
