@@ -2,6 +2,7 @@ black
 requests
 pre-commit
 pytest
+python-socketio>=4.0.3
 websocket_client
 websockets>=7.0
 Flask
