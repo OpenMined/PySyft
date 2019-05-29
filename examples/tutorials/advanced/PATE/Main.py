@@ -14,8 +14,8 @@ class Arguments():
         
         self.batchsize = 64
         self.test_batchsize = 10
-        self.epochs=50
-        self.student_epochs=10
+        self.epochs=1
+        self.student_epochs=1
         self.lr = 0.01
         self.momentum = 0.5
         self.no_cuda = False
@@ -32,11 +32,9 @@ test_loader=load_data(False,args.test_batchsize)
 
 #Declare and train teachers on MNIST training data
 teacher=Teacher(args,Model,n_teachers=args.n_teachers)
-#teacher.load_models()
 teacher.train(train_loader)
-#teacher.save_models()
-#Label public unlabelled data
 
+#Evaluate Teacher accuracy
 targets=[]
 predict=[]
 
@@ -55,10 +53,11 @@ print("Training Student")
 print("\n")
 print("\n")
 
+#Split the test data further into training and validation data for student
 train,val=split(test_loader,args.batchsize)
 
 student=Student(args,Model())
-N=NoisyDataset(train,teacher.predict)
+N=NoisyDataset(test_loader,teacher.predict)
 student.train(N)
 
 results=[]
