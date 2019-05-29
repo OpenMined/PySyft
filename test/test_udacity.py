@@ -184,9 +184,9 @@ def test_section_1_differential_privacy():
     def query(db):
         return torch.sum(db.float())
 
-    def M(db):
-        query(db)  # + noise
-
+    # def M(db):
+    #     query(db)  # + noise
+#
     query(db)
 
     epsilon = 0.0001
