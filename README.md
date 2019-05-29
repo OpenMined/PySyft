@@ -50,8 +50,8 @@ We have written an installation example in [this colab notebook](https://colab.r
 
 We are very grateful for contributions to PySyft from the following organizations!
 
-[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>](https://github.com/coMindOrg/federated-averaging-tutorials)
--------------------------------------------------------------- | ---------------------------------------------------------------------------
+[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://arkhn.org/img/arkhn_logo_black.svg" alt="Arkhn" width="200" height="130"/>](http://ark.hn)
+-------------------------------------------------------------- | ---------------------------------------------------------------------------| ---------------------------------------------------------------------------
 
 ## Disclaimer
 
