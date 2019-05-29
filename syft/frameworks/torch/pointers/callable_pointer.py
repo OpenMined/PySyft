@@ -80,7 +80,7 @@ def create_callable_pointer(
     garbage_collect_data: bool = True,
     register_pointer: bool = True,
 ) -> object_pointer.ObjectPointer:
-    """Creates a callable pointer to the object, identified by the pair (location, id_at_location).
+    """Creates a callable pointer to the object identified by the pair (location, id_at_location).
 
     Note, that there is no check whether an object with this id exists at the location.
 
