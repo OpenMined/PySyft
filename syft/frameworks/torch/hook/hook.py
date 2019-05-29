@@ -828,6 +828,7 @@ class TorchHook:
 
         tensor_type.native_grad_fn = tensor_type.grad_fn
 
+      
         def dim(self):
             return len(self.shape)
 

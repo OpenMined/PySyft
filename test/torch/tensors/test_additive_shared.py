@@ -165,6 +165,11 @@ def test_stack(workers):
 
 def test_nn_linear(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    import syft as sy
+    hook = sy.TorchHook(torch)
+    alice = sy.VirtualWorker(hook, id="alice")
+    bob = sy.VirtualWorker(hook, id="bob")
+    james = sy.VirtualWorker(hook, id="james")
 
     t = torch.tensor([[1.0, 2]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
