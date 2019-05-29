@@ -12,7 +12,7 @@ PySyft has also been explained in video form by [Siraj Raval](https://www.youtub
 
 ## Installation
 
-> PySyft supports Python >= 3.6 and PyTorch 1.0.0
+> PySyft supports Python >= 3.6 and PyTorch 1.1.0
 
 ```bash
 pip install syft
@@ -40,7 +40,7 @@ These tutorials cover how to perform techniques such as federated learning and d
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
 
-Also join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
+Also join the rapidly growing community of 3700+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
 ## Troubleshooting
 
@@ -50,12 +50,12 @@ We have written an installation example in [this colab notebook](https://colab.r
 
 We are very grateful for contributions to PySyft from the following organizations!
 
-[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>](https://github.com/coMindOrg/federated-averaging-tutorials)
--------------------------------------------------------------- | ---------------------------------------------------------------------------
+[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://arkhn.org/img/arkhn_logo_black.svg" alt="Arkhn" width="200" height="130"/>](http://ark.hn)
+-------------------------------------------------------------- | ---------------------------------------------------------------------------| ---------------------------------------------------------------------------
 
 ## Disclaimer
 
-Do NOT use this code to protect data (private or otherwise) - at present it is very insecure.
+Do NOT use this code to protect data (private or otherwise) - at present it is very insecure. Come back in a couple months.
 
 ## License
 

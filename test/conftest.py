@@ -28,13 +28,29 @@ def hook():
     return hook
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def workers(hook):
+    # To run a plan locally the local worker can't be a client worker,
+    # since it needs to register objects
+    # LaRiffle edit: doing this increases the reference count on pointers and
+    # breaks the auto garbage collection for pointer of pointers, see #2150
+    # hook.local_worker.is_client_worker = False
+
+    # reset the hook and the local worker
+    syft.local_worker.clear_objects()
+    syft.frameworks.torch.hook.hook_args.hook_method_args_functions = {}
+    syft.frameworks.torch.hook.hook_args.hook_method_response_functions = {}
+    syft.frameworks.torch.hook.hook_args.get_tensor_type_functions = {}
+
     # Define 3 virtual workers
     alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
     bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
     james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
 
-    output = {"me": hook.local_worker, "alice": alice, "bob": bob, "james": james}
+    workers = {"me": hook.local_worker, "alice": alice, "bob": bob, "james": james}
 
-    return output
+    yield workers
+
+    alice.remove_worker_from_local_worker_registry()
+    bob.remove_worker_from_local_worker_registry()
+    james.remove_worker_from_local_worker_registry()

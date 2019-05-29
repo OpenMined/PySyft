@@ -135,6 +135,12 @@ class GetNotPermittedError(Exception):
     pass
 
 
+class IdNotUniqueError(Exception):
+    """Raised by the ID Provider when setting ids that have already been generated"""
+
+    pass
+
+
 def route_method_exception(exception, self, args, kwargs):
     try:
         if self.is_wrapper:
