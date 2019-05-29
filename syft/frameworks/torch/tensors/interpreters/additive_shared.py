@@ -212,7 +212,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return selected_shares
 
     @overloaded.overload_method
-    def _getitem_public(self, self_shares, *indices):
+    def _getitem_public(self, self_shares, indices):
         """
         Support x[i] where x is an AdditiveSharingTensor and i a MultiPointerTensor
 
@@ -222,6 +222,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         Returns:
             an AdditiveSharingTensor
+            
         """
         selected_shares = {}
         for worker, share in self_shares.items():
@@ -230,17 +231,13 @@ class AdditiveSharingTensor(AbstractTensor):
         return selected_shares
 
     def __getitem__(self, indices):
-        tensor_type = type(indices)
-
-        if isinstance(indices, tuple):
-            tensor_type = type(indices[-1])
-
+        if not isinstance(indices, tuple):
+            indices = (indices,)
+        tensor_type = type(indices[-1])
         if tensor_type == sy.MultiPointerTensor:
             return self._getitem_multipointer(indices)
-        elif tensor_type == int:
-            return self._getitem_public(indices)
         else:
-            raise NotImplementedError("Index type", type(indices), "not supported")
+            return self._getitem_public(indices)
 
     ## SECTION SPDZ
 
@@ -466,6 +463,45 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.stack = stack
 
+        @overloaded.function
+        def cat(tensors_shares, **kwargs):
+            # The code is the same for cat and stack, maybe we could factorize
+
+            results = {}
+
+            workers = tensors_shares[0].keys()
+
+            for worker in workers:
+                cat_share = []
+                for tensor_shares in tensors_shares:
+                    tensor_share = tensor_shares[worker]
+                    cat_share.append(tensor_share)
+                results[worker] = torch.cat(cat_share, **kwargs)
+
+            return results
+
+        module.cat = cat
+
+        @overloaded.function
+        def chunk(tensor_shares, *args, **kwargs):
+            worker_chunks = {}
+            results = []
+
+            for worker, share in tensor_shares.items():
+                chunked_share = torch.chunk(share, *args, **kwargs)
+                worker_chunks[worker] = chunked_share
+
+            for c in range(len(worker_chunks[worker])):
+                shared_chunk = {}
+                for worker in tensor_shares.keys():
+                    shared_chunk[worker] = worker_chunks[worker][c]
+
+                results.append(shared_chunk)
+
+            return results
+
+        module.chunk = chunk
+
         def max(tensor, **kwargs):
             return tensor.max(**kwargs)
 
@@ -475,6 +511,130 @@ class AdditiveSharingTensor(AbstractTensor):
             return tensor.argmax(**kwargs)
 
         module.argmax = argmax
+
+        def conv2d(
+            input,
+            weight,
+            bias=None,
+            stride=1,
+            padding=0,
+            dilation=1,
+            groups=1,
+            padding_mode="zeros",
+        ):
+            """
+            Overloads torch.conv2d to be able to use MPC on convolutional networks.
+            The idea is to build new tensors from input and weight to compute a matrix multiplication
+            equivalent to the convolution.
+
+            Args:
+                input: input image
+                weight: convolution kernels
+                bias: optional additive bias
+                stride: stride of the convolution kernels
+                padding:
+                dilation: spacing between kernel elements
+                groups:
+                padding_mode: type of padding, should be either 'zeros' or 'circular' but 'reflect' and 'replicate' accepted
+            Returns:
+                the result of the convolution as an AdditiveSharingTensor
+            """
+            assert len(input.shape) == 4
+            assert len(weight.shape) == 4
+
+            # We could make a util function for these, as PyTorch's _pair
+            if isinstance(stride, int):
+                stride = (stride, stride)
+            if isinstance(padding, int):
+                padding = (padding, padding)
+            if isinstance(dilation, int):
+                dilation = (dilation, dilation)
+
+            # Extract a few useful values
+            batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
+            nb_channels_out, nb_channels_in_, nb_rows_kernel, nb_cols_kernel = weight.shape
+
+            if bias is not None:
+                assert len(bias) == nb_channels_out
+
+            # Check if inputs are coherent
+            assert nb_channels_in == nb_channels_in_ * groups
+            assert nb_channels_in % groups == 0
+            assert nb_channels_out % groups == 0
+
+            # Compute output shape
+            nb_rows_out = int(
+                ((nb_rows_in + 2 * padding[0] - dilation[0] * (nb_rows_kernel - 1) - 1) / stride[0])
+                + 1
+            )
+            nb_cols_out = int(
+                ((nb_cols_in + 2 * padding[1] - dilation[1] * (nb_cols_kernel - 1) - 1) / stride[1])
+                + 1
+            )
+
+            # Apply padding to the input
+            if padding != (0, 0):
+                padding_mode = "constant" if padding_mode == "zeros" else padding_mode
+                input = torch.nn.functional.pad(
+                    input, (padding[1], padding[1], padding[0], padding[0]), padding_mode
+                )
+                # Update shape after padding
+                nb_rows_in += 2 * padding[0]
+                nb_cols_in += 2 * padding[1]
+
+            # We want to get relative positions of values in the input tensor that are used by one filter convolution.
+            pattern_ind = []
+            for ch in range(nb_channels_in):
+                for r in range(nb_rows_kernel):
+                    for c in range(nb_cols_kernel):
+                        pixel = r * nb_cols_in * dilation[0] + (c % nb_cols_kernel) * dilation[1]
+                        pattern_ind.extend([pixel + ch * nb_rows_in * nb_cols_in])
+
+            # The image tensor is reshaped for the matrix multiplication:
+            # on each row of the new tensor will be the input values used for each filter convolution
+            im_flat = input.view(batch_size, -1)
+            im_reshaped = []
+            for cur_row_out in range(nb_rows_out):
+                for cur_col_out in range(nb_cols_out):
+                    offset = (
+                        cur_row_out * stride[0] * nb_cols_in
+                        + (cur_col_out % nb_cols_out) * stride[1]
+                    )
+                    tmp = [ind + offset for ind in pattern_ind]
+                    im_reshaped.append(im_flat[:, tmp].wrap())
+            im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
+
+            # The convolution kernels are also reshaped for the matrix multiplication
+            weight_reshaped = weight.view(nb_channels_out // groups, -1).t().wrap()
+
+            # Now that everything is set up, we can compute the result
+            if groups > 1:
+                res = []
+                chunks_im = torch.chunk(im_reshaped, groups, dim=2)
+                chunks_weights = torch.chunk(weight_reshaped, groups, dim=0)
+                for g in range(groups):
+                    tmp = chunks_im[g].matmul(chunks_weights[g])
+                    res.append(tmp)
+                res = torch.cat(res, dim=2).child
+            else:
+                res = im_reshaped.matmul(weight_reshaped).child
+
+            # Add a bias if needed
+            if bias is not None:
+                if bias.is_wrapper:
+                    res = res + bias.child  # += does not work
+                else:
+                    res = res + bias
+
+            # ... And reshape it back to an image
+            res = (
+                res.permute(0, 2, 1)
+                .view(batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
+                .contiguous()
+            )
+            return res
+
+        module.conv2d = conv2d
 
         @overloaded.module
         def functional(module):
@@ -504,6 +664,16 @@ class AdditiveSharingTensor(AbstractTensor):
                     return tensor_shares.relu()
 
                 module.relu = relu
+
+                def pad(input, pad, mode="constant", value=0):
+                    padded_shares = {}
+                    shares_dict = input.child.child if input.is_wrapper else input.child
+                    for location, shares in shares_dict.items():
+                        padded_shares[location] = torch.nn.functional.pad(shares, pad, mode, value)
+
+                    return AdditiveSharingTensor(padded_shares)
+
+                module.pad = pad
 
             module.functional = functional
 
