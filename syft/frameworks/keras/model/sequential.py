@@ -64,9 +64,11 @@ def share(model, *workers, target_graph=None):
     model._tfe_session = sess
 
 
+global request_ix
+request_ix = 1
+
+
 def serve(model, num_requests=5):
-    global request_ix
-    request_ix = 1
 
     def step_fn():
         global request_ix
