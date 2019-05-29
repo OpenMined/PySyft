@@ -58,7 +58,7 @@ print("\n")
 train, val = split(test_loader, args.batchsize)
 
 student = Student(args, Model())
-N = NoisyDataset(test_loader, teacher.predict)
+N = NoisyDataset(train, teacher.predict)
 student.train(N)
 
 results = []
