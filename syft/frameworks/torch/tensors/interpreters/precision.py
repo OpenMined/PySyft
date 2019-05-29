@@ -121,6 +121,11 @@ class FixedPrecisionTensor(AbstractTensor):
         Hook manually mul to add the truncation part which is inherent to multiplication
         in the fixed precision setting
         """
+
+        other = args[0]
+        if isinstance(other, float):
+            self = self.float_precision().wrap()
+
         # Replace all syft tensor with their child attribute
         new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
             "mul", self, args, kwargs
@@ -134,13 +139,15 @@ class FixedPrecisionTensor(AbstractTensor):
             "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        other = args[0]
+        if isinstance(other, float):
+            return response.fix_precision().child
+        
+        else:
+            assert (
+                self.precision_fractional == other.precision_fractional
+            ), "In mul, all args should have the same precision_fractional"
 
-        assert (
-            self.precision_fractional == other.precision_fractional
-        ), "In mul, all args should have the same precision_fractional"
-
-        return response.truncate(other.precision_fractional)
+            return response.truncate(other.precision_fractional)
 
     __mul__ = mul
 
