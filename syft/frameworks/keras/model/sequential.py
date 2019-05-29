@@ -20,7 +20,7 @@ def share(model, *workers, target_graph=None):
     Secret share the model between `workers`.
 
     This is done by rebuilding the model as a TF Encrypted model inside `target_graph`
-    and pushing this graph to TensorFlow servers running on the workers. 
+    and pushing this graph to TensorFlow servers running on the workers.
     """
 
     # Store Keras weights before loading them in the TFE layers.
@@ -64,11 +64,14 @@ def share(model, *workers, target_graph=None):
     model._tfe_session = sess
 
 
-def serve(model, num_steps=5):
-    def step_fn():
-        print("Served")
+def serve(model, num_requests=5):
+    request_ix = 0
 
-    model._server.run(model._tfe_session, num_steps=num_steps, step_fn=step_fn)
+    def step_fn():
+        global request_ix
+        print("Served encrypted prediction {i} to client.".format(i=request_ix))
+
+    model._server.run(model._tfe_session, num_steps=num_requests, step_fn=step_fn)
 
 
 def shutdown_workers(model):

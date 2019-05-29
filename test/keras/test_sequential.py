@@ -68,6 +68,6 @@ def test_share():
 
     model.share(alice, bob, carol)
 
-    model.serve(num_steps=0)
+    model.serve(num_requests=0)
 
     model.shutdown_workers()
