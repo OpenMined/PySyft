@@ -68,7 +68,14 @@ class TFEWorker:
         self._tf_session = sess
 
     def query_model(self, data):
-        return self._tf_client.run(self._tf_session, data)
+        self.query_model_async(data)
+        return self.query_model_join()
+
+    def query_model_async(self, data):
+        self._tf_client.send_input(self._tf_session, data)
+
+    def query_model_join(self):
+        return self._tf_client.receive_output(self._tf_session)
 
     @classmethod
     def config_from_workers(cls, workers):
