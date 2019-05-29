@@ -12,8 +12,6 @@ def test_base_dataset(workers):
     targets = th.tensor([1, 2, 3, 4.0])
     dataset = BaseDataset(inputs, targets)
 
-    # Test for transforms
-
     assert len(dataset) == 4
     assert dataset[2] == (3, 3)
 
@@ -43,9 +41,6 @@ def test_base_dataset_transform():
     transform_dataset.transform(func)
 
     expected_val = th.tensor([2, 4, 6, 8])
-
-    transformed_val = []
-
     transformed_val = [val[0].item() for val in transform_dataset]
 
     assert expected_val.equal(th.tensor(transformed_val).long())
