@@ -62,9 +62,9 @@ def test_share():
     )
 
     AUTO = True
-    alice = sy.TFEWorker(host="localhost:4000", autolaunch=AUTO)
-    bob = sy.TFEWorker(host="localhost:4001", autolaunch=AUTO)
-    carol = sy.TFEWorker(host="localhost:4002", autolaunch=AUTO)
+    alice = sy.TFEWorker(host="localhost:4000", auto_managed=AUTO)
+    bob = sy.TFEWorker(host="localhost:4001", auto_managed=AUTO)
+    carol = sy.TFEWorker(host="localhost:4002", auto_managed=AUTO)
 
     model.share(alice, bob, carol)
 
