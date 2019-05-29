@@ -17,7 +17,7 @@ class KerasHook:
 
     def _hook_layers(self):
         for layer_cls in filter_layers(self.keras.layers, tfe.keras.layers):
-            add_constructor_registration(layer_cls)
+            layer_cls = add_constructor_registration(layer_cls)
 
     def _hook_sequential(self):
         seq_cls = getattr(self.keras, "Sequential")
