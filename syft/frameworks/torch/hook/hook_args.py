@@ -76,8 +76,8 @@ backward_func = {
 
 # methods that we really don't want to hook, for example because they have an arbitrary
 # number of tensors in args signature response
-exclude_methods = {"__getitem__", "view"}
-exclude_functions = {"torch.unbind", "unbind"}
+exclude_methods = {"__getitem__", "_getitem_public", "view", "permute"}
+exclude_functions = {"torch.unbind", "unbind", "torch.stack", "stack"}
 
 
 def hook_method_args(attr, method_self, args, kwargs):
@@ -139,6 +139,7 @@ def hook_function_args(attr, args, kwargs, return_args_type=False):
         (- the type of the tensors in the arguments)
     """
     try:
+        assert attr not in exclude_functions
         # Load the utility function to transform the args
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
