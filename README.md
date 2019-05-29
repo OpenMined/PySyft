@@ -55,7 +55,7 @@ We are very grateful for contributions to PySyft from the following organization
 
 ## Disclaimer
 
-Do NOT use this code to protect data (private or otherwise) - at present it is very insecure.
+Do NOT use this code to protect data (private or otherwise) - at present it is very insecure. Come back in a couple months.
 
 ## License
 
