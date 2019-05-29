@@ -65,11 +65,13 @@ def share(model, *workers, target_graph=None):
 
 
 def serve(model, num_requests=5):
-    request_ix = 0
+    global request_ix
+    request_ix = 1
 
     def step_fn():
         global request_ix
         print("Served encrypted prediction {i} to client.".format(i=request_ix))
+        request_ix += 1
 
     model._server.run(model._tfe_session, num_steps=num_requests, step_fn=step_fn)
 
