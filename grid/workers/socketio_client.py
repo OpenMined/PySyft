@@ -9,6 +9,7 @@ from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 import socketio
 
+
 class WebsocketIOClientWorker(VirtualWorker):
     """A worker that forwards a message to a SocketIO server and wait for its response.
 

@@ -12,7 +12,9 @@ def _payload(location):
 
 
 hook = sy.TorchHook(torch)
-server_worker = WebsocketIOServerWorker(hook, "localhost", 5000, log_msgs=True, payload=_payload)
+server_worker = WebsocketIOServerWorker(
+    hook, "localhost", 5000, log_msgs=True, payload=_payload
+)
 
 
 def test_client_id():

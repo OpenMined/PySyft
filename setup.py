@@ -21,20 +21,23 @@ setup(
     version="0.1.0a1",
     author="OpenMined",
     author_email="contact@openmined.org",
-    description=(("A machine learning framework backed by an "
-                 "on-demand, parallel compute grid.")),
+    description=(
+        (
+            "A machine learning framework backed by an "
+            "on-demand, parallel compute grid."
+        )
+    ),
     license="Apache-2.0",
     keywords="deep learning artificial intelligence homomorphic encryption",
-    packages=find_packages(exclude=['notebooks', 'test*', 'dist']),
+    packages=find_packages(exclude=["notebooks", "test*", "dist"]),
     include_package_data=True,
-    long_description=read('README.md'),
-    url='github.com/OpenMined/Grid',
-    classifiers=[
-        "Development Status :: 1 - Alpha",
-    ],
-    install_requires=read('requirements.txt').split(),
+    long_description=read("README.md"),
+    url="github.com/OpenMined/Grid",
+    classifiers=["Development Status :: 1 - Alpha"],
+    install_requires=read("requirements.txt").split(),
     # setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-flake8'],
+    tests_require=["pytest", "pytest-flake8"],
     # cmdclass={'install': PostInstallCommand,
     #           'develop': PostDevelopCommand},
-    scripts=[])
+    scripts=[],
+)

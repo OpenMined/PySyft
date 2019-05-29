@@ -13,9 +13,11 @@ class GridClient(BaseWorker):
 
     def __init__(self, addr: str, verbose: bool = True):
         super().__init__(hook=sy.hook, id="grid", verbose=verbose)
-        print("WARNING: Grid nodes publish datasets online and are for EXPERIMENTAL use only."
-              "Deploy nodes at your own risk. Do not use OpenGrid with any data/models you wish to "
-              "keep private.\n")
+        print(
+            "WARNING: Grid nodes publish datasets online and are for EXPERIMENTAL use only."
+            "Deploy nodes at your own risk. Do not use OpenGrid with any data/models you wish to "
+            "keep private.\n"
+        )
         self.addr = addr
         self._verify_identity()
 
@@ -45,11 +47,8 @@ class GridClient(BaseWorker):
 
             return response
 
-
     def destroy(self):
         grid_name = self.addr.split("//")[1].split(".")[0]
         gr_utils.exec_os_cmd("heroku destroy " + grid_name + " --confirm " + grid_name)
         if self.verbose:
             print("Destroyed node: " + str(grid_name))
-
-

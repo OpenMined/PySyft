@@ -24,7 +24,9 @@ def test_send_tensor(hook, start_proc):
 
     android = create_dummy_client()
 
-    juan = WebsocketIOClientWorker(hook, host="localhost", port=5000, id="juan", log_msgs=True)
+    juan = WebsocketIOClientWorker(
+        hook, host="localhost", port=5000, id="juan", log_msgs=True
+    )
     juan.connect()
 
     x = torch.tensor([1.0])

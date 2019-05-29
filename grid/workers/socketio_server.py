@@ -12,6 +12,7 @@ from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 from flask_socketio import SocketIO
 
+
 class WebsocketIOServerWorker(VirtualWorker):
     """ Objects of this class can act as a remote worker or as a plain socket IO.
 
@@ -57,7 +58,9 @@ class WebsocketIOServerWorker(VirtualWorker):
         self.wait_for_client_event = True
         self._payload = payload
 
-        super().__init__(hook=hook, id=id, data=data, log_msgs=log_msgs, verbose=verbose)
+        super().__init__(
+            hook=hook, id=id, data=data, log_msgs=log_msgs, verbose=verbose
+        )
 
         @self.socketio.on("connect")
         def on_client_connect():

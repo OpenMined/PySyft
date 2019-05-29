@@ -44,9 +44,7 @@ class WebsocketGridClient(BaseWorker):
         self.sio = socketio.Client()
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
 
-
-
-        @self.sio.on('/identity/')
+        @self.sio.on("/identity/")
         def check_identity(msg):
             if msg != "OpenGrid":
                 raise PermissionError("App is not an OpenGrid app")
@@ -63,11 +61,10 @@ class WebsocketGridClient(BaseWorker):
     def _send_msg(self, message: bin) -> bin:
         raise NotImplementedError
 
-
     def _recv_msg(self, message: bin) -> bin:
         message = str(binascii.hexlify(message))
         # Sends the message to the server
-        self.sio.emit("/cmd", {"message" : message} )
+        self.sio.emit("/cmd", {"message": message})
 
         self.wait_for_client_event = True
         # Wait until the server gets back with a result or an ACK

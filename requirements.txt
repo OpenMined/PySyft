@@ -1,9 +1,11 @@
 black
-requests
+coverage
+Flask
+flask_socketio
 pre-commit
 pytest
 python-socketio>=4.0.3
+requests
+syft
 websocket_client
 websockets>=7.0
-Flask
-flask_socketio

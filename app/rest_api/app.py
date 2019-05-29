@@ -11,14 +11,15 @@ import torch as th
 hook = sy.TorchHook(th)
 
 app = Flask(__name__)
-app.secret_key = b'keepmesecret'
+app.secret_key = b"keepmesecret"
 
 try:
-    db = redis.from_url(os.environ['REDISCLOUD_URL'])
+    db = redis.from_url(os.environ["REDISCLOUD_URL"])
 except:
-    db = redis.from_url('redis://localhost:6379')
+    db = redis.from_url("redis://localhost:6379")
 
-def _maybe_create_worker(worker_name: str = 'worker', virtual_worker_id: str = 'grid'):
+
+def _maybe_create_worker(worker_name: str = "worker", virtual_worker_id: str = "grid"):
     worker = db.get(worker_name)
 
     if worker is None:
@@ -27,24 +28,28 @@ def _maybe_create_worker(worker_name: str = 'worker', virtual_worker_id: str = '
     else:
         worker = sy.serde.deserialize(worker)
         print("\t \nFOUND OLD WORKER!! " + str(worker._objects.keys()))
-    
+
     return worker
 
+
 def _request_message(worker):
-    message = request.form['message']
+    message = request.form["message"]
     message = binascii.unhexlify(message[2:-1])
     response = worker._recv_msg(message)
     response = str(binascii.hexlify(response))
     return response
 
-def _store_worker(worker, worker_name: str = 'worker'):
+
+def _store_worker(worker, worker_name: str = "worker"):
     db.set(worker_name, sy.serde.serialize(worker, force_full_simplification=True))
 
-@app.route('/')
+
+@app.route("/")
 def hello_world():
-    name = db.get('name') or'World'
-    db.set('del_ctr', 0)
-    return 'Howdy %s!' % str(name)
+    name = db.get("name") or "World"
+    db.set("del_ctr", 0)
+    return "Howdy %s!" % str(name)
+
 
 @app.route("/identity/")
 def is_this_an_opengrid_node():
@@ -55,7 +60,8 @@ def is_this_an_opengrid_node():
     server."""
     return "OpenGrid"
 
-@app.route('/cmd/', methods=['POST'])
+
+@app.route("/cmd/", methods=["POST"])
 def cmd():
     try:
         worker = _maybe_create_worker("worker", "grid")
@@ -72,6 +78,7 @@ def cmd():
         return response
     except Exception as e:
         return str(e)
+
 
 #
 # @app.route('/createworker/<name>')
@@ -98,5 +105,5 @@ def cmd():
 #     db.set('name',str(worker.id))
 #     return 'Name updated to ' + str(worker.id) + ' or ' + str(name)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run()
