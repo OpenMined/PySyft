@@ -13,29 +13,90 @@ class BaseDataset:
     of a .data attribute for inputs and a .targets one for labels. It is to
     be used like the MNIST Dataset object, and is useful to avoid handling
     the two inputs and label tensors separately.
+    
+    Args: 
+        
+        data[list,torch tensors]: the data points
+        targets: Corresponding labels of the data points
+        transform: Function to transform the datapoints 
+            
     """
 
-    def __init__(self, data, targets):
+    def __init__(self, data, targets, transform=None):
+
         self.data = data
         self.targets = targets
+
+        # Perform required transform on the dataset
+        if transform:
+
+            self.data = transform(self.data)
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
+
+        """
+        Args:
+            
+            index[integer]: index of item of to get 
+        
+        Returns:
+            
+            data: Data points corresponding to the given index
+            targets: Targets correspoding to given datapoint
+        """
+
         return self.data[index], self.targets[index]
 
+    def transform(self, transform):
+
+        """
+         Allows a transform to be applied on given dataset.
+         Args:
+            
+            transform: The transform to be applied on the data
+        """
+
+        # Transforms cannot be applied to Pointer  , Fixed Precision or Float Precision tensors.
+        if type(self.data) == torch.Tensor:
+
+            self.data = transform(self.data)
+
+        else:
+
+            raise TypeError("Transforms can be applied only on torch tensors")
+
     def send(self, worker):
+        """
+        Args:
+            
+            worker[worker class]: worker to which the data must be sent
+                
+        Returns:
+            
+            self: Return the object instance with data sent to corresponding worker
+            
+        """
+
         self.data.send_(worker)
         self.targets.send_(worker)
         return self
 
     def get(self):
+        """
+        Gets the data back from respective workers.
+        """
+
         self.data.get_()
         self.targets.get_()
         return self
 
     def fix_prec(self, *args, **kwargs):
+        """
+            Converts data of BaseDataset into fixed precision
+        """
         self.data.fix_prec_(*args, **kwargs)
         self.targets.fix_prec_(*args, **kwargs)
         return self
@@ -43,6 +104,9 @@ class BaseDataset:
     fix_precision = fix_prec
 
     def float_prec(self, *args, **kwargs):
+        """
+            Converts data of BaseDataset into float precision
+        """
         self.data.float_prec_(*args, **kwargs)
         self.targets.float_prec_(*args, **kwargs)
         return self
@@ -50,12 +114,18 @@ class BaseDataset:
     float_precision = float_prec
 
     def share(self, *args, **kwargs):
+        """
+            Share the data with the respective workers
+        """
         self.data.share_(*args, **kwargs)
         self.targets.share_(*args, **kwargs)
         return self
 
     @property
     def location(self):
+        """
+            Get location of the data
+        """
         return self.data.location
 
 
@@ -126,15 +196,28 @@ class FederatedDataset:
 
     @property
     def workers(self):
+        """
+           Returns: list of workers
+        """
+
         return list(self.datasets.keys())
 
     def __getitem__(self, worker_id):
+        """
+           Args:
+                   worker_id[str,int]: ID of respective worker
+                   
+           Returns: Get Datasets from the respective worker 
+        """
+
         return self.datasets[worker_id]
 
     def __len__(self):
+
         return sum([len(dataset) for w, dataset in self.datasets.items()])
 
     def __repr__(self):
+
         fmt_str = "FederatedDataset\n"
         fmt_str += "    Distributed accross: {}\n".format(", ".join(str(x) for x in self.workers))
         fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
