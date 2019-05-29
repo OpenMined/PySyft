@@ -25,7 +25,9 @@ class TFEWorker:
         config.save(config_filename)
 
         if self._auto_managed:
-            cmd = "python -m tf_encrypted.player --config {} {}".format(config_filename, player_name)
+            cmd = "python -m tf_encrypted.player --config {} {}".format(
+                config_filename, player_name
+            )
             self._server_process = subprocess.Popen(cmd.split(" "))
         else:
             logger.info(
@@ -34,7 +36,9 @@ class TFEWorker:
                 "'python -m tf_encrypted.player --config %s %s'\n"
                 "This can be done automatically in a local subprocess by "
                 "setting `auto_managed=True` when instantiating a TFEWorker.",
-                self.host, config_filename, player_name,
+                self.host,
+                config_filename,
+                player_name,
             )
 
     def stop(self):
@@ -45,19 +49,14 @@ class TFEWorker:
             self._server_process.communicate()
             self._server_process = None
         else:
-            logger.info(
-                "Please terminate the process on host '%s'.",
-                self.host
-            )
+            logger.info("Please terminate the process on host '%s'.", self.host)
 
     def connect_to_model(self, input_shape, output_shape, *workers):
         config, _ = self.config_from_workers(workers)
         tfe.set_config(config)
 
         prot = tfe.protocol.SecureNN(
-            config.get_player("server0"),
-            config.get_player("server1"),
-            config.get_player("server2"),
+            config.get_player("server0"), config.get_player("server1"), config.get_player("server2")
         )
         tfe.set_protocol(prot)
 
