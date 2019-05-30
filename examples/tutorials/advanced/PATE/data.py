@@ -6,9 +6,11 @@ import numpy as np
 
 
 def load_data(train, batch_size):
-
-    """Helper function used to load the train/test data"""
-
+    """Helper function used to load the train/test data.
+       Args:
+           train[boolean]: Indicates whether its train/test data.
+           batch_size[int]: Batch size
+    """
     loader = torch.utils.data.DataLoader(
         datasets.MNIST(
             "../data",
@@ -25,51 +27,31 @@ def load_data(train, batch_size):
     return loader
 
 
-def split(dataset, batch_size, split=0.2):
-
-    index = 0
-    length = len(dataset)
-
-    train_set = []
-    val_set = []
-
-    for data, target in dataset:
-
-        if index <= (length * split):
-
-            train_set.append([data, target])
-
-        else:
-
-            val_set.append([data, target])
-
-        index += 1
-
-    return train_set, val_set
-
-
 class NoisyDataset(Dataset):
-    """Face Landmarks dataset."""
+    """Dataset with targets predicted by ensemble of teachers.
+       Args:
+            dataloader (torch dataloader): The original torch dataloader.
+            model(torch model): Teacher model to make predictions.
+            transform (callable, optional): Optional transform to be applied on a sample.
+    """
 
     def __init__(self, dataloader, model, transform=None):
-        """
-        Args:
-            csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with all the images.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
         self.dataloader = dataloader
         self.model = model
         self.transform = transform
         self.noisy_data = self.process_data()
 
     def process_data(self):
+        """
+        Replaces original targets with targets predicted by ensemble of teachers.
+        Returns:
+            noisy_data[torch tensor]: Dataset with labels predicted by teachers
+            
+        """
 
         noisy_data = []
 
         for data, _ in self.dataloader:
-
             noisy_data.append([data, torch.tensor(self.model(data))])
 
         return noisy_data

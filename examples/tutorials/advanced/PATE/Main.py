@@ -2,8 +2,8 @@
 import torch
 from Teacher import Teacher
 from Model import Model
-from data import load_data, NoisyDataset, split
-from util import accuracy
+from data import load_data, NoisyDataset
+from util import accuracy, split
 from Student import Student
 import syft as sy
 
