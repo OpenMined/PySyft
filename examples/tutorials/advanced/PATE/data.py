@@ -27,30 +27,25 @@ def load_data(train, batch_size):
 
 def split(dataset, batch_size, split=0.2):
 
-    shuffle_dataset = True
-    random_seed = 42
+    index = 0
+    length = len(dataset)
 
-    # Creating data indices for training and validation splits:
-    dataset_size = len(dataset)
-    indices = list(range(dataset_size))
-    split = int(np.floor(split * dataset_size))
-    if shuffle_dataset:
-        np.random.seed(random_seed)
-        np.random.shuffle(indices)
-    train_indices, val_indices = indices[split:], indices[:split]
+    train_set = []
+    val_set = []
 
-    # Creating PT data samplers and loaders:
-    train_sampler = SubsetRandomSampler(train_indices)
-    valid_sampler = SubsetRandomSampler(val_indices)
+    for data, target in dataset:
 
-    train_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, sampler=train_sampler
-    )
-    validation_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, sampler=valid_sampler
-    )
+        if index <= (length * split):
 
-    return train_loader, validation_loader
+            train_set.append([data, target])
+
+        else:
+
+            val_set.append([data, target])
+
+        index += 1
+
+    return train_set, val_set
 
 
 class NoisyDataset(Dataset):

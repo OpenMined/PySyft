@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions.laplace import Laplace
 from util import accuracy
+from syft.diffrential_privacy import pate as syft_dp
 
 
 class Teacher:
@@ -199,6 +200,12 @@ class Teacher:
             modelA = self.model()
             self.models[path_name + str(i)] = torch.load("models/" + path_name + str(i))
             self.models[path_name + str(i)] = modelA.load_state_dict()
+
+    def analyze(self, preds, indices):
+
+        syft_dp.perform_analysis_torch(
+            preds, indices, noise_eps=0.1, delta=1e-5, moments=8, beta=0.09
+        )
 
     def predict(self, data):
 

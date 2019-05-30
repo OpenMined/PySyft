@@ -15,8 +15,8 @@ class Arguments:
 
         self.batchsize = 64
         self.test_batchsize = 10
-        self.epochs = 1
-        self.student_epochs = 1
+        self.epochs = 50
+        self.student_epochs = 15
         self.lr = 0.01
         self.momentum = 0.5
         self.no_cuda = False
@@ -73,4 +73,4 @@ for data, target in val:
     correct += float((predict_lol == (target)).sum().item())
     total += float(target.size(0))
 
-print((correct / total) * 100)
+print("Private Baseline: ", (correct / total) * 100)
