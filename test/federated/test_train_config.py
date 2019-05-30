@@ -16,14 +16,14 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
     me = workers["me"]
 
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1.0], [0.0], [1.0], [0.0]], requires_grad=True)
+    target = torch.tensor([[1], [0], [1], [0]], requires_grad=True)
 
     dataset = sy.BaseDataset(data, target)
     alice.add_dataset(dataset, key="vectors")
 
     @hook.torch.jit.script
     def loss_fn(real, pred):
-        return ((real - pred) ** 2).mean()
+        return ((real.float() - pred.float()) ** 2).mean()
 
     # Model
     class Net(torch.jit.ScriptModule):
@@ -55,14 +55,14 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
     train_config.send(alice)
 
     for epoch in range(5):
-        loss = alice.fit(dataset_key="vectors")
+        loss = alice.fit(dataset="vectors")
         print("-" * 50)
         print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
     print(alice)
     new_model = model_ptr.get()
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1.0], [0.0], [1.0], [0.0]], requires_grad=True)
+    target = torch.tensor([[1], [0], [1], [0]])
 
     print("Evaluation before training")
     pred = model(data)
@@ -83,14 +83,14 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     me = workers["me"]
 
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1.0], [0.0], [1.0], [0.0]], requires_grad=True)
+    target = torch.tensor([[1], [0], [1], [0]])
 
     dataset = sy.BaseDataset(data, target)
     alice.add_dataset(dataset, key="vectors")
 
     @hook.torch.jit.script
     def loss_fn(real, pred):
-        return ((real - pred) ** 2).mean()
+        return ((real.float() - pred.float()) ** 2).mean()
 
     class Net(torch.nn.Module):
         def __init__(self):
@@ -127,7 +127,7 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     train_config.send(alice)
 
     for epoch in range(5):
-        loss = alice.fit(dataset_key="vectors")
+        loss = alice.fit(dataset="vectors")
         print("-" * 50)
         print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
@@ -146,14 +146,14 @@ def test_train_config_send_with_traced_fns(hook, workers):  # pragma: no cover
     me = workers["me"]
 
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1.0], [0.0], [1.0], [0.0]], requires_grad=True)
+    target = torch.tensor([[1], [0], [1], [0]])
 
     dataset = sy.BaseDataset(data, target)
     alice.add_dataset(dataset, key="vectors")
 
     @hook.torch.jit.script
     def loss_fn(real, pred):
-        return ((real - pred) ** 2).mean()
+        return ((real.float() - pred.float()) ** 2).mean()
 
     class Net(torch.nn.Module):
         def __init__(self):
@@ -183,7 +183,7 @@ def test_train_config_send_with_traced_fns(hook, workers):  # pragma: no cover
     train_config.send(alice, traced_loss_fn=loss_fn, traced_model=traced_model)
 
     for epoch in range(5):
-        loss = alice.fit(dataset_key="vectors")
+        loss = alice.fit(dataset="vectors")
         print("-" * 50)
         print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
