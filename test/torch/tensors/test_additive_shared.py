@@ -163,6 +163,36 @@ def test_stack(workers):
     assert (res == expected).all()
 
 
+def test_cat(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    x = t.share(bob, alice, crypto_provider=james)
+
+    res0 = torch.cat([x, x], dim=0).get()
+    res1 = torch.cat([x, x], dim=1).get()
+
+    expected0 = torch.tensor([[1, 2, 3], [4, 5, 6], [1, 2, 3], [4, 5, 6]])
+    expected1 = torch.tensor([[1, 2, 3, 1, 2, 3], [4, 5, 6, 4, 5, 6]])
+
+    assert (res0 == expected0).all()
+    assert (res1 == expected1).all()
+
+
+def test_chunk(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1, 2, 3, 4], [5, 6, 7, 8]])
+    x = t.share(bob, alice, crypto_provider=james)
+
+    res0 = torch.chunk(x, 2, dim=0)
+    res1 = torch.chunk(x, 2, dim=1)
+
+    expected0 = [torch.tensor([[1, 2, 3, 4]]), torch.tensor([[5, 6, 7, 8]])]
+    expected1 = [torch.tensor([[1, 2], [5, 6]]), torch.tensor([[3, 4], [7, 8]])]
+
+    assert all([(res0[i].get() == expected0[i]).all() for i in range(2)])
+    assert all([(res1[i].get() == expected1[i]).all() for i in range(2)])
+
+
 def test_nn_linear(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     import syft as sy
@@ -191,6 +221,49 @@ def test_matmul(workers):
     y = (x @ x).get().float_prec()
 
     assert (y == (m @ m)).all()
+
+
+def test_torch_conv2d(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    im = torch.Tensor(
+        [
+            [
+                [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
+                [[10.0, 11.0, 12.0], [13.0, 14.0, 15.0], [16.0, 17.0, 18.0]],
+            ]
+        ]
+    )
+    w = torch.Tensor(
+        [
+            [[[1.0, 1.0], [1.0, 1.0]], [[2.0, 2.0], [2.0, 2.0]]],
+            [[[-1.0, -2.0], [-3.0, -4.0]], [[0.0, 0.0], [0.0, 0.0]]],
+        ]
+    )
+    bias = torch.Tensor([0.0, 5.0])
+
+    im_shared = im.share(bob, alice, crypto_provider=james)
+    w_shared = w.share(bob, alice, crypto_provider=james)
+    bias_shared = bias.share(bob, alice, crypto_provider=james)
+
+    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get()
+    res1 = torch.conv2d(
+        im_shared,
+        w_shared[:, 0:1].contiguous(),
+        bias=bias_shared,
+        stride=2,
+        padding=3,
+        dilation=2,
+        groups=2,
+    ).get()
+
+    expected0 = torch.conv2d(im, w, bias=bias, stride=1).type(torch.LongTensor)
+    expected1 = torch.conv2d(
+        im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
+    ).type(torch.LongTensor)
+
+    assert (res0 == expected0).all()
+    assert (res1 == expected1).all()
 
 
 def test_fixed_precision_and_sharing(workers):
