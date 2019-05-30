@@ -15,14 +15,14 @@ class Arguments:
 
         self.batchsize = 64
         self.test_batchsize = 10
-        self.epochs = 50
-        self.student_epochs = 15
+        self.epochs = 1
+        self.student_epochs = 1
         self.lr = 0.01
         self.momentum = 0.5
         self.no_cuda = False
         self.seed = 1
         self.log_interval = 30
-        self.n_teachers = 50
+        self.n_teachers = 5
         self.save_model = False
 
 
@@ -33,16 +33,19 @@ test_loader = load_data(False, args.test_batchsize)
 
 # Declare and train teachers on MNIST training data
 teacher = Teacher(args, Model, n_teachers=args.n_teachers)
-teacher.train(train_loader)
+teacher.train(test_loader)
 
 # Evaluate Teacher accuracy
 targets = []
 predict = []
+counts=[]
 
 for data, target in test_loader:
-
+    
+    output=teacher.predict(data)
     targets.append(target)
-    predict.append(teacher.predict(data))
+    predict.append(output['predictions'])
+    counts.append(output['counts'])
 
 print("Accuracy: ", accuracy(torch.tensor(predict), targets))
 

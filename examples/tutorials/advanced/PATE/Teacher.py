@@ -195,5 +195,7 @@ class Teacher:
         for batch in counts:
 
             predictions.append(torch.tensor(batch.max(dim=0)[1].long()).clone().detach())
+            
+        output={'predictions':predictions,'counts':counts}
 
-        return predictions
+        return output

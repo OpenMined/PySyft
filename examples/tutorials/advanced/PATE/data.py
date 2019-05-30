@@ -35,9 +35,9 @@ class NoisyDataset(Dataset):
             transform (callable, optional): Optional transform to be applied on a sample.
     """
 
-    def __init__(self, dataloader, model, transform=None):
+    def __init__(self, dataloader,predictionfn, transform=None):
         self.dataloader = dataloader
-        self.model = model
+        self.predictionfn = predictionfn
         self.transform = transform
         self.noisy_data = self.process_data()
 
@@ -52,7 +52,7 @@ class NoisyDataset(Dataset):
         noisy_data = []
 
         for data, _ in self.dataloader:
-            noisy_data.append([data, torch.tensor(self.model(data))])
+            noisy_data.append([data, torch.tensor(self.predictionfn(data)['predictions'])])
 
         return noisy_data
 
