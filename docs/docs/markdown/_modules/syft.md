@@ -140,11 +140,11 @@ Bases: `object`
 Specific Pysyft exceptions.
 
 
-#### exception syft.exceptions.CannotRequestTensorAttribute()
+#### exception syft.exceptions.CannotRequestObjectAttribute()
 Bases: `Exception`
 
 Raised when .get() is called on a pointer which points to an attribute of
-another tensor.
+another object.
 
 
 #### exception syft.exceptions.CompressionNotFoundException()
