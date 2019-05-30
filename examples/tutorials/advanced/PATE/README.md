@@ -1,25 +1,19 @@
-# Federated learning using websockets - MNIST example
+# PATE Example
 
-The scripts in this folder let you execute a federated training via three websocket connections.
+The scripts in the folder allow you to train a MNIST model using PATE diffrential privacy framework.
 
-The script start_websocket_servers.py will start the Websocket server workers for Alice, Bob and Charlie.
 ```
-$ python start_websocket_servers.py
+$ python Main.py
 ```
 
-The training is then started by running the script run_websocket_client.py:
-```
-$ python run_websocket_client.py
-```
-This script
- * loads the MNIST dataset,
- * distributes it onto the three workers
- * starts a federated training.
+Scripts present
+ * data: Consists of functions for loading datasets
+ * Main: The file to be run for a complete PATE model
+ * Model: PyTorch model definition. The same model is used for student and teacher.
+ * Student: Class to handle student functionality such as training and making predictions
+ * Teacher: Class to handle teacher functionality such as training and making noisy predictions. All the Teacher ensembles are handled in this Class
+ * util: Functions
 
- The federated training loop contains the following steps
- * the current model is sent to the workers
- * the workers train on a fixed number of batches
- * the three models from Alice, Bob and Charlie are then averaged (federated averaging)
 
  This training loop is then executed for a given number of epochs.
  The performance on the test set of MNIST is shown after each epoch.
