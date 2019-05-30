@@ -198,7 +198,7 @@ def test_implicit_garbage_collect_logging_on_pointer(workers):
 def test_websocket_garbage_collection(hook, start_proc):
     # Args for initializing the websocket server and client
     base_kwargs = {"id": "ws_gc", "host": "localhost", "port": 8777, "hook": hook}
-    _ = start_proc(WebsocketServerWorker, base_kwargs)
+    server = start_proc(WebsocketServerWorker, base_kwargs)
 
     time.sleep(0.1)
     client_worker = WebsocketClientWorker(**base_kwargs)
@@ -208,3 +208,8 @@ def test_websocket_garbage_collection(hook, start_proc):
 
     _ = sample_ptr.get()
     assert sample_data not in client_worker._objects
+    
+    client_worker.ws.shutdown()
+    client_worker.ws.close()
+    time.sleep(0.1)
+    server.terminate()
