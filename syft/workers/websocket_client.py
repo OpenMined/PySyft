@@ -116,11 +116,14 @@ class WebsocketClientWorker(BaseWorker):
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
 
-    def fit(self, dataset_key, return_id=None):
-        if return_id is None:
-            return_id = sy.ID_PROVIDER.pop()
-        self._send_msg_and_deserialize("fit", dataset=dataset_key, return_ids=[return_id])
-        msg = (MSGTYPE.OBJ_REQ, return_id)
+    def fit(self, **kwargs):
+        # arguments provided as kwargs as otherwise miss-match with signature in FederatedClient.fit()
+        dataset = kwargs["dataset"]
+        return_ids = kwargs["return_ids"]
+        if return_ids is None:
+            return_ids = [sy.ID_PROVIDER.pop()]
+        self._send_msg_and_deserialize("fit", return_ids=return_ids, dataset=dataset)
+        msg = (MSGTYPE.OBJ_REQ, return_ids[0])
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
@@ -139,6 +142,6 @@ class WebsocketClientWorker(BaseWorker):
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
         out += " #objects local:" + str(len(self._objects))
-        out += " #objects remote: " + self.list_objects_remote()
+        out += " #objects remote: " + str(self.objects_count_remote())
         out += ">"
         return out

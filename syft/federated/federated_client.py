@@ -73,7 +73,7 @@ class FederatedClient(ObjectStorage):
         self.optimizer.step()
         return loss
 
-    def fit(self, *args, **kwargs):
+    def fit(self, **kwargs):
         if self.train_config is None:
             raise ValueError("TrainConfig not defined.")
         if self.datasets is None:
