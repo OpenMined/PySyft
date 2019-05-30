@@ -208,7 +208,7 @@ def test_websocket_garbage_collection(hook, start_proc):
 
     _ = sample_ptr.get()
     assert sample_data not in client_worker._objects
-    
+
     client_worker.ws.shutdown()
     client_worker.ws.close()
     time.sleep(0.1)
