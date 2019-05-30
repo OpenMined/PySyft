@@ -617,6 +617,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             )
         self._known_workers[worker.id] = worker
 
+        return self
+
     def add_workers(self, workers: List["BaseWorker"]):
         """Adds several workers in a single call.
 
@@ -625,6 +627,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         for worker in workers:
             self.add_worker(worker)
+
+        return self
 
     def __str__(self):
         """Returns the string representation of BaseWorker.
