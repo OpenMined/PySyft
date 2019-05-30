@@ -4,7 +4,7 @@ import torch
 import syft
 import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
 from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
@@ -286,13 +286,15 @@ class TorchTensor(AbstractTensor):
 
             if self._is_parameter():
                 if inplace:
-                    self.data.set_()
+                    with torch.no_grad():
+                        self.set_()
                     self.data = ptr
                     output = self
                 else:
                     wrapper = torch.Tensor()
                     param_wrapper = torch.nn.Parameter(wrapper)
-                    param_wrapper.data.set_()
+                    with torch.no_grad():
+                        param_wrapper.set_()
                     param_wrapper.data = ptr
                     output = param_wrapper
             else:

@@ -131,3 +131,64 @@ def test_sinh_backwards(workers):
 
     # Have to do .child.grad here because .grad doesn't work on Wrappers yet
     assert (a.grad.get() == a_torch.grad).all()
+
+
+def test_tanh_backwards(workers):
+    alice = workers["alice"]
+
+    a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+    a = a.send(alice, local_autograd=True)
+
+    a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+
+    c = a.tanh()
+    c_torch = a_torch.tanh()
+
+    c.backward(torch.ones(c.shape).send(alice))
+    c_torch.backward(torch.ones_like(c_torch))
+
+    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
+    assert (a.grad.get() == a_torch.grad).all()
+
+
+def test_sigmoid_backwards(workers):
+    alice = workers["alice"]
+
+    a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+    a = a.send(alice, local_autograd=True)
+
+    a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+
+    c = a.sigmoid()
+    c_torch = a_torch.sigmoid()
+
+    c.backward(torch.ones(c.shape).send(alice))
+    c_torch.backward(torch.ones_like(c_torch))
+
+    # Have to do .child.grad here because .grad doesn't work on Wrappers yet
+    assert (a.grad.get() == a_torch.grad).all()
+
+
+# def test_multi_add_sigmoid_backwards(workers):
+#     alice = workers["alice"]
+
+#     a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+#     b = torch.tensor([1, 2.0, 3], requires_grad=True)
+#     c = torch.tensor([-1, -1, 2.0], requires_grad=True)
+
+#     a = a.send(alice, local_autograd=True)
+#     b = b.send(alice, local_autograd=True)
+#     c = c.send(alice, local_autograd=True)
+
+#     a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
+#     b_torch = torch.tensor([1, 2.0, 3], requires_grad=True)
+#     c_torch = torch.tensor([-1, -1, 2.0], requires_grad=True)
+
+#     res = ((a * b) + c).sigmoid()
+#     res = ((a_torch * b_torch) + c_torch).sigmoid()
+
+#     res.backward(torch.ones(res.shape).send(alice))
+#     res_torch.backward(torch.ones_like(res_torch))
+
+#     # Have to do .child.grad here because .grad doesn't work on Wrappers yet
+#     assert (a.grad.get() == a_torch.grad).all()

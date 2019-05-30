@@ -176,3 +176,8 @@ class MultiPointerTensor(AbstractTensor):
         )
 
         return response
+
+    def set_garbage_collect_data(self, value):
+        shares = self.child
+        for _, share in shares.items():
+            share.child.garbage_collect_data = value
