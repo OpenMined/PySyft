@@ -24,6 +24,8 @@ class TrainConfig:
         id: Union[int, str] = None,
         loss_fn_id: int = None,
         model_id: int = None,
+        max_nr_batches: int = -1,
+        shuffle: bool = True,
     ):
         """Initializer for TrainConfig.
 
@@ -38,6 +40,9 @@ class TrainConfig:
             loss_fn_id: The id_at_location of (the ObjectWrapper of) a loss function which
                         shall be used to calculate the loss.
             model_id: id_at_location of a traced torch nn.Module instance (objectwrapper).
+            max_nr_batches: maximum number of training steps that will be performed. For large datasets
+                            this can be used to run for less than the number of epochs provided.
+            shuffle: boolean, whether to access the dataset randomly (shuffle) or sequentially (no shuffle).
         """
         self.owner = owner if owner else sy.hook.local_worker
         self.id = id if id is not None else sy.ID_PROVIDER.pop()
@@ -51,6 +56,8 @@ class TrainConfig:
         self.location = None
         self.model_ptr = None
         self.loss_fn_ptr = None
+        self.max_nr_batches = max_nr_batches
+        self.shuffle = shuffle
 
     def __str__(self) -> str:
         """Returns the string representation of a TrainConfig."""
@@ -110,3 +117,6 @@ class TrainConfig:
         # the same pointer which was previously created
         self.ptr = weakref.ref(ptr)
         return self.ptr
+
+    def get(self, location):
+        return self.owner.request_obj(self, location)

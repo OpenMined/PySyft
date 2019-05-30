@@ -1109,8 +1109,6 @@ def _simplify_train_config(train_config: TrainConfig) -> tuple:
         tuple: a tuple holding the unique attributes of the TrainConfig object
     """
     return (
-        # _simplify(train_config.loss_plan),
-        # _simplify(train_config.forward_plan),
         train_config.model_id,
         train_config.loss_fn_id,
         train_config.batch_size,
@@ -1118,6 +1116,8 @@ def _simplify_train_config(train_config: TrainConfig) -> tuple:
         _simplify(train_config.optimizer),
         train_config.lr,
         _simplify(train_config.id),
+        train_config.max_nr_batches,
+        train_config.shuffle,
     )
 
 
@@ -1130,7 +1130,9 @@ def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> t
         Plan: a Plan object
     """
 
-    model_id, loss_fn_id, batch_size, epochs, optimizer, lr, id = train_config_tuple
+    model_id, loss_fn_id, batch_size, epochs, optimizer, lr, id, max_nr_batches, shuffle = (
+        train_config_tuple
+    )
 
     id = _detail(worker, id)
     # detailed_loss_plan = _detail(worker, loss_plan)
@@ -1142,12 +1144,12 @@ def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> t
         id=id,
         model_id=model_id,
         loss_fn_id=loss_fn_id,
-        # forward_plan=detailed_forward_plan,
-        # loss_plan=detailed_loss_plan,
         batch_size=batch_size,
         epochs=epochs,
         optimizer=detailed_optimizer,
         lr=lr,
+        max_nr_batches=max_nr_batches,
+        shuffle=shuffle,
     )
 
     return train_config
