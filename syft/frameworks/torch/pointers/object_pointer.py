@@ -141,10 +141,6 @@ class ObjectPointer(abstract.AbstractObject):
             # get tensor from location
             obj = self.owner.request_obj(self.id_at_location, self.location)
 
-        # Register the result
-        assigned_id = self.id_at_location
-        self.owner.register_obj(obj, assigned_id)
-
         # Remove this pointer by default
         if deregister_ptr:
             self.owner.de_register_obj(self)
