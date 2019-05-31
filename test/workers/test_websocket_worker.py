@@ -131,6 +131,40 @@ def test_objects_count_remote(hook, start_proc):
     process_remote_worker.terminate()
 
 
+def test_connect_close(hook, start_proc):
+    kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
+    process_remote_worker = start_proc(WebsocketServerWorker, kwargs)
+
+    time.sleep(0.1)
+
+    kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
+    local_worker = WebsocketClientWorker(**kwargs)
+
+    x = torch.tensor([1, 2, 3])
+    x_ptr = x.send(local_worker)
+
+    assert local_worker.objects_count_remote() == 1
+
+    local_worker.close()
+
+    time.sleep(0.1)
+
+    local_worker.connect()
+
+    assert local_worker.objects_count_remote() == 1
+    print(local_worker.list_objects_remote())
+
+    x_val = x_ptr.get()
+    print(x)
+    assert (x_val == x).all()
+
+    local_worker.ws.shutdown()
+
+    time.sleep(0.1)
+
+    process_remote_worker.terminate()
+
+
 def test_websocket_worker_multiple_output_response(hook, start_proc):
     """Evaluates that you can do basic tensor operations using
     WebsocketServerWorker"""
