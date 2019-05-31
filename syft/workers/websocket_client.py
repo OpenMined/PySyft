@@ -113,7 +113,7 @@ class WebsocketClientWorker(BaseWorker):
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
 
-    def fit(self, dataset_key, **kwargs):
+    async def fit(self, dataset_key, **kwargs):
         # Arguments provided as kwargs as otherwise miss-match
         # with signature in FederatedClient.fit()
         return_ids = kwargs["return_ids"] if "return_ids" in kwargs else [sy.ID_PROVIDER.pop()]

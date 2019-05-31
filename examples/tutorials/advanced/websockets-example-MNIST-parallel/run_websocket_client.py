@@ -5,9 +5,10 @@ from torchvision import transforms, datasets
 import logging
 import argparse
 import sys
+import asyncio
 
 FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d) - %(message)s"
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 logging.basicConfig(format=FORMAT, level=LOG_LEVEL)
 
 import syft as sy
@@ -54,7 +55,7 @@ def define_and_get_arguments(args=sys.argv[1:]):
     parser.add_argument(
         "--test_batch_size", type=int, default=32, help="batch size used for the test data"
     )
-    parser.add_argument("--epochs", type=int, default=50, help="number of epochs to train")
+    parser.add_argument("--epochs", type=int, default=10, help="number of epochs to train")
     parser.add_argument(
         "--federate_after_n_batches",
         type=int,
@@ -87,7 +88,25 @@ def accuracy(pred_softmax, target):
     return (pred == target).sum().numpy() / float(nr_elems)
 
 
-def main():
+async def fit_model_on_worker(worker, traced_model, batch_size, curr_epoch, max_nr_batches):
+    # Create and send train config
+    train_config = sy.TrainConfig(
+        batch_size=batch_size, shuffle=True, max_nr_batches=max_nr_batches, epochs=1
+    )
+    train_config.send(worker, traced_model=traced_model, traced_loss_fn=loss_fn)
+    logger.info("Training round %s, calling fit on worker: %s", curr_epoch, worker.id)
+    loss = await worker.fit(dataset="mnist", return_ids=[0])
+    logger.info("Training round: %s, worker: %s, avg_loss: %s", curr_epoch, worker.id, loss.mean())
+    # logger.debug("Worker state: %s", worker)
+    # logger.debug("Worker objects: \n%s", worker.list_objects_remote())
+    # logger.debug("loss: mean %s, max %s, min %s", loss.mean(), loss.max(), loss.min())
+    model = None
+    if not torch.isnan(loss).any():
+        model = train_config.model_ptr.get().obj
+    return worker.id, model, loss
+
+
+async def main():
     args = define_and_get_arguments()
     # args.use_virtual = True
 
@@ -98,17 +117,7 @@ def main():
         alice = sy.workers.VirtualWorker(id="alice", hook=hook, verbose=args.verbose)
         bob = sy.workers.VirtualWorker(id="bob", hook=hook, verbose=args.verbose)
         charlie = sy.workers.VirtualWorker(id="charlie", hook=hook, verbose=args.verbose)
-        # train_loader = torch.utils.data.DataLoader(
-        #    datasets.MNIST(
-        #        "../data",
-        #        train=True,
-        #        transform=transforms.Compose(
-        #            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-        #        ),
-        #    ),
-        #    batch_size=args.#batch_size,
-        #    shuffle=True,
-        # )
+
         mnist_trainset = datasets.MNIST(
             root="./data",
             train=True,
@@ -123,6 +132,7 @@ def main():
             targets=mnist_trainset.train_labels,
             transform=mnist_trainset.transform,
         )
+        # Note, that using virtual workers, all workers have all numbers.
         alice.add_dataset(dataset, key="mnist")
         bob.add_dataset(dataset, key="mnist")
         charlie.add_dataset(dataset, key="mnist")
@@ -132,8 +142,7 @@ def main():
         bob = sy.workers.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
         charlie = sy.workers.WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
 
-    # worker_instances = [alice, bob, charlie]
-    worker_instances = [charlie, alice, bob]
+    worker_instances = [alice, bob, charlie]
 
     use_cuda = args.cuda and torch.cuda.is_available()
 
@@ -156,79 +165,50 @@ def main():
         **kwargs,
     )
 
-    # dataset = datasets.MNIST(
-    #        "../data",
-    #        train=False,
-    #        transform=transforms.Compose(
-    #            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-    #        ),
-    #    )
-
     model = Net().to(device)
-    #    (data, target) = test_loader.__iter__().next()
-    # sampler = torch.utils.data.SequentialSampler(len(dataset))
 
-    # train_config = sy.TrainConfig(batch_size=32, shuffle=True, max_nr_batches=10)
-    # batch_sampler = torch.utils.data.BatchSampler(sampler, train_config.batch_size, drop_last=True)
     (data, target) = test_loader.__iter__().next()
     traced_model = torch.jit.trace(model, data)
-
-    # model_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=traced_model)
-    # loss_fn_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=loss_fn)
 
     for epoch in range(1, args.epochs + 1):
         logger.info("Starting epoch %s/%s", epoch, args.epochs)
 
+        results = await asyncio.gather(
+            *[
+                fit_model_on_worker(
+                    worker=worker,
+                    traced_model=traced_model,
+                    batch_size=args.batch_size,
+                    curr_epoch=epoch,
+                    max_nr_batches=args.federate_after_n_batches,
+                )
+                for worker in worker_instances
+            ]
+        )
         models = {}
         loss_values = {}
-        for worker in worker_instances:
-            # model_ptr = me.send(model_with_id, worker)
-            # loss_fn_ptr = me.send(loss_fn_with_id, worker)
-
-            # Create and send train config
-            train_config = sy.TrainConfig(
-                batch_size=args.batch_size, shuffle=True, max_nr_batches=50, epochs=1
-            )
-            train_config.send(worker, traced_model=traced_model, traced_loss_fn=loss_fn)
-            # pred = train_config.model_ptr(data)
-            # shape = data.shape
-            # logger.debug("Training round %s, calling fit on worker: %s", epoch, worker.id)
-            loss = worker.fit(dataset="mnist", return_ids=[0])
-            logger.debug(
-                "Training round: %s, worker: %s, avg_loss: %s", epoch, worker.id, loss.mean()
-            )
-            # logger.debug("Worker state: %s", worker)
-            # logger.debug("Worker objects: \n%s", worker.list_objects_remote())
-            # logger.debug("loss: mean %s, max %s, min %s", loss.mean(), loss.max(), loss.min())
-            if not torch.isnan(loss).any():
-                models[worker.id] = train_config.model_ptr.get().obj
-            else:
-                if worker.id in models:
-                    del models[worker.id]
-            loss_values[worker.id] = loss
-            # logger.debug("Remote objects: %s", worker.list_objects_remote())
-            # train_config.get(worker)
-            # pred_test = traced_model(data)
-            # loss = loss_fn(output=pred_test, target=target)
-            # logger.debug("Traced model should not have changed: loss: %s, accuracy = %s", loss, accuracy(pred_test, target))
+        for worker_id, worker_model, worker_loss in results:
+            if worker_model is not None:
+                models[worker_id] = worker_model
+                loss_values[worker_id] = worker_loss
 
         traced_model = utils.federated_avg(models)
         data, target = test_loader.__iter__().next()
         pred_test = traced_model(data)
         loss = loss_fn(output=pred_test, target=target)
-        logger.debug("loss: %s, accuracy = %s", loss, accuracy(pred_test, target))
+        logger.info("Test dataset: Loss: %s, accuracy = %s", loss, accuracy(pred_test, target))
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
 
 
 if __name__ == "__main__":
-    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d) - %(message)s"
-    LOG_LEVEL = logging.DEBUG
-    logging.basicConfig(format=FORMAT, level=LOG_LEVEL)
+    # FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d) - %(message)s"
+    # LOG_LEVEL = logging.DEBUG
+    # logging.basicConfig(format=FORMAT, level=LOG_LEVEL)
 
     websockets_logger = logging.getLogger("websockets")
-    websockets_logger.setLevel(logging.DEBUG)
+    websockets_logger.setLevel(logging.INFO)
     websockets_logger.addHandler(logging.StreamHandler())
 
-    main()
+    asyncio.get_event_loop().run_until_complete(main())
