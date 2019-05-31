@@ -131,9 +131,9 @@ class Teacher:
            """
 
         counts = torch.zeros([batch_size, 10])
-        model_counts=torch.zeros([self.args.n_teachers,batch_size])
-        model_index=0
-        
+        model_counts = torch.zeros([self.args.n_teachers, batch_size])
+        model_index = 0
+
         for model in model_votes:
 
             index = 0
@@ -142,12 +142,12 @@ class Teacher:
                 for val in tensor:
 
                     counts[index][val] += 1
-                    model_counts[model_index][index]=val
+                    model_counts[model_index][index] = val
                     index += 1
-                    
-            model_index+=1
 
-        return counts,model_counts
+            model_index += 1
+
+        return counts, model_counts
 
     def save_models(self):
         no = 0
@@ -170,10 +170,12 @@ class Teacher:
             self.models[path_name + str(i)] = torch.load("models/" + path_name + str(i))
             self.models[path_name + str(i)] = modelA.load_state_dict()
 
-    def analyze(self, preds, indices,moments=8):
+    def analyze(self, preds, indices, moments=8):
 
-        datadepeps,dataindeps=pate.perform_analysis_torch(preds, indices, noise_eps=0.1, delta=self.epsilon, moments=moments, beta=0.09)
-        return datadepeps,dataindeps
+        datadepeps, dataindeps = pate.perform_analysis_torch(
+            preds, indices, noise_eps=0.1, delta=self.epsilon, moments=moments, beta=0.09
+        )
+        return datadepeps, dataindeps
 
     def predict(self, data):
         """Make predictions using Noisy-max using Laplace mechanism.
@@ -194,7 +196,7 @@ class Teacher:
 
             model_predictions[model] = out
 
-        counts,model_counts = self.aggregate(model_predictions, len(data))
+        counts, model_counts = self.aggregate(model_predictions, len(data))
         counts = counts.apply_(self.addnoise)
 
         predictions = []
@@ -202,7 +204,7 @@ class Teacher:
         for batch in counts:
 
             predictions.append(torch.tensor(batch.max(dim=0)[1].long()).clone().detach())
-            
-        output={'predictions':predictions,'counts':counts,'model_counts':model_counts}
+
+        output = {"predictions": predictions, "counts": counts, "model_counts": model_counts}
 
         return output
