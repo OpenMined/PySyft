@@ -111,8 +111,6 @@ class TorchAttributes(object):
             "is_tensor",
             "isfinite",
             "randperm",
-            "randn",
-            "dim",
         ]
 
         # SECTION: List all torch tensor methods we want to overload

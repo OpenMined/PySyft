@@ -207,7 +207,6 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     """
 
     # inline methods should just return new_self
-    print(attr)
     if "__i" == attr[0:3]:
         return new_self
 
