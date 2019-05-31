@@ -12,7 +12,7 @@ PySyft has also been explained in video form by [Siraj Raval](https://www.youtub
 
 ## Pre-Installation
 
-Optionally, we recommend that you install PySyft within a virtual environment.
+Optionally, we recommend that you install PySyft within the [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/overview.html) virtual environment. If you are using Windows, I suggest installing [Anaconda and using the Anaconda Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to work from the command line. 
 
 ```bash
 conda create -n pysyft python=3
