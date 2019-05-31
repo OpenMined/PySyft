@@ -28,6 +28,12 @@ conda install jupyter notebook
 pip install syft
 ```
 
+If you have an installation error regarding zstd, run this command and then re-try installing syft.
+
+```bash
+pip install --upgrade --force-reinstall zstd
+```
+
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
 
 ## Run Local Notebook Server
