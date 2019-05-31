@@ -12,7 +12,7 @@ PySyft has also been explained in video form by [Siraj Raval](https://www.youtub
 
 ## Pre-Installation
 
-Optionally, we recommend that you install PySyft within a virtual environment.
+Optionally, we recommend that you install PySyft within the [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/overview.html) virtual environment. If you are using Windows, I suggest installing [Anaconda and using the Anaconda Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to work from the command line. 
 
 ```bash
 conda create -n pysyft python=3
@@ -33,6 +33,7 @@ If you have an installation error regarding zstd, run this command and then re-t
 ```bash
 pip install --upgrade --force-reinstall zstd
 ```
+If this still doesn't work, and you happen to be on OSX, make sure you have [OSX command line tools](https://railsapps.github.io/xcode-command-line-tools.html) installed and try again.
 
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
 
