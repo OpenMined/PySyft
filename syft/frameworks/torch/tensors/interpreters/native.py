@@ -1,8 +1,11 @@
+from typing import List
+from typing import Union
 import weakref
+
 import torch
 
 import syft
-import syft as sy
+from syft.exceptions import InvalidTensorForRemoteGet
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.pointers import PointerTensor
 from syft.workers import BaseWorker
@@ -138,7 +141,7 @@ class TorchTensor(AbstractTensor):
             try:
                 return self._id
             except:
-                self._id = sy.ID_PROVIDER.pop()
+                self._id = syft.ID_PROVIDER.pop()
                 return self._id
 
     @id.setter
@@ -424,7 +427,7 @@ class TorchTensor(AbstractTensor):
             if location.id != self.owner.id:
                 ptr_id = self.id
             else:
-                ptr_id = sy.ID_PROVIDER.pop()
+                ptr_id = syft.ID_PROVIDER.pop()
 
         if shape is None:
             shape = self.shape
@@ -445,7 +448,7 @@ class TorchTensor(AbstractTensor):
             )
 
         if self.requires_grad and local_autograd:
-            ptr = sy.AutogradTensor(data=ptr.wrap(), preinitialize_grad=preinitialize_grad).on(
+            ptr = syft.AutogradTensor(data=ptr.wrap(), preinitialize_grad=preinitialize_grad).on(
                 ptr, wrap=False
             )
 
@@ -453,10 +456,13 @@ class TorchTensor(AbstractTensor):
 
     def mid_get(self):
         """This method calls .get() on a child pointer and correctly registers the results"""
+        if not hasattr(self, "child"):
+            raise InvalidTensorForRemoteGet(self)
 
         child_id = self.child.id
         tensor = self.child.get()
-        self.owner._objects[child_id] = tensor
+        tensor.id = child_id
+        self.owner.register_obj(tensor)
 
     def remote_get(self):
         """Assuming .child is a PointerTensor, this method calls .get() on the tensor
@@ -464,6 +470,8 @@ class TorchTensor(AbstractTensor):
 
         TODO: make this kind of message forwarding generic?
         """
+        if not hasattr(self, "child"):
+            raise InvalidTensorForRemoteGet(self)
 
         location = self.child.location
         self.owner.send_command(message=("mid_get", self.child, (), {}), recipient=location)
@@ -590,13 +598,18 @@ class TorchTensor(AbstractTensor):
 
     fix_precision_ = fix_prec_
 
-    def share(self, *owners, field=None, crypto_provider=None):
+    def share(
+        self,
+        *owners: List[BaseWorker],
+        field: Union[int, None] = None,
+        crypto_provider: Union[BaseWorker, None] = None,
+    ):
         """This is a pass through method which calls .share on the child.
 
         Args:
-            owners (list): a list of BaseWorker objects determining who to send shares to
-            field (int or None): the arithmetic field where live the shares
-            crypto_provider (BaseWorker or None): the worker providing the crypto primitives
+            owners (list): A list of BaseWorker objects determining who to send shares to.
+            field (int or None): The arithmetic field where live the shares.
+            crypto_provider (BaseWorker or None): The worker providing the crypto primitives.
         """
 
         if self.has_child():
@@ -633,4 +646,4 @@ class TorchTensor(AbstractTensor):
         ps = list(pointers)
         ps.append(self)
 
-        return sy.combine_pointers(*ps)
+        return syft.combine_pointers(*ps)
