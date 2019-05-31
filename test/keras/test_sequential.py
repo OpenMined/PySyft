@@ -44,7 +44,7 @@ def test_instantiate_tfe_layer():
 
 
 @pytest.mark.skip(reason="Currently breaks on macos")
-def test_share():
+def test_share():  # pragma: no cover
 
     from tensorflow.keras import Sequential
     from tensorflow.keras.layers import Dense
