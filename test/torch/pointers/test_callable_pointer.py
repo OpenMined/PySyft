@@ -56,7 +56,7 @@ def test_get_obj_callable_pointer(workers):
     x_get = obj_ptr.get()
 
     assert len(alice._objects) == 0
-    assert len(bob._objects) == 1
+    assert len(bob._objects) == 0
     assert x_get == x
 
 
