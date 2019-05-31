@@ -180,7 +180,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         pointers = [pointer]
         for worker in workers[1:]:
-            pointers.append(pointer.send(worker).remote_get())
+            pointers.append(pointer.copy().move(worker))
 
         return sy.MultiPointerTensor(children=pointers)
 
