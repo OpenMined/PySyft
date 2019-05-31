@@ -4,7 +4,6 @@ import logging
 import types
 import copy
 import torch
-from torch import nn
 from functools import wraps
 
 
@@ -828,10 +827,10 @@ class TorchHook:
 
         tensor_type.native_grad_fn = tensor_type.grad_fn
 
-        def dim(self):
-            return len(self.shape)
-
-        tensor_type.dim = dim
+#        def dim(self):
+#            return len(self.shape)
+#
+#        tensor_type.dim = dim
 
         @property
         def grad_fn(self):
