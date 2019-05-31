@@ -43,6 +43,7 @@ def test_instantiate_tfe_layer():
     np.testing.assert_allclose(actual, expected, rtol=0.001)
 
 
+@pytest.mark.skip(reason="Currently breaks on macos")
 def test_share():
 
     from tensorflow.keras import Sequential
