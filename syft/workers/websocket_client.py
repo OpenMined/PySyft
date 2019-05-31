@@ -4,9 +4,10 @@ from typing import List
 
 import torch
 import websocket
-import time
+import websockets
 import logging
 import ssl
+import time
 
 import syft as sy
 from syft.codes import MSGTYPE
@@ -44,19 +45,25 @@ class WebsocketClientWorker(BaseWorker):
         # WebsocketClientWorker is garbage collected.
 
         # Secure flag adds a secure layer applying cryptography and authentication
-        self.uri = f"ws://{self.host}:{self.port}"
-        if secure:
-            self.uri = f"wss://{self.host}:{self.port}"
-            ssl_settings = {"cert_reqs": ssl.CERT_NONE}
-            self.ws = websocket.create_connection(
-                self.uri, sslopt=ssl_settings, max_size=None, timeout=TIMEOUT_INTERVAL
-            )
-        else:
-            # Insecure flow
-            # Also avoid the server from timing out on the server-side in case of slow clients
-            self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
-
+        self.uri = ""
+        self.secure = secure
+        self.ws = None
+        self.connect()
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
+
+    def connect(self):
+        args = dict()
+        args["url"] = f"ws://{self.host}:{self.port}"
+        args["max_size"] = None
+        args["timeout"] = TIMEOUT_INTERVAL
+        if self.secure:
+            args["uri"] = f"wss://{self.host}:{self.port}"
+            args["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
+        self.uri = args["url"]
+        self.ws = websocket.create_connection(**args)
+
+    def close(self):
+        self.ws.shutdown()
 
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
@@ -118,7 +125,20 @@ class WebsocketClientWorker(BaseWorker):
         # with signature in FederatedClient.fit()
         return_ids = kwargs["return_ids"] if "return_ids" in kwargs else [sy.ID_PROVIDER.pop()]
 
-        self._send_msg_and_deserialize("fit", return_ids=return_ids, dataset_key=dataset_key)
+        self.close()
+        url = f"ws://{self.host}:{self.port}"
+        async with websockets.connect(
+                url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
+        ) as websocket:
+            message = self.create_message_execute_command(
+                command_name="fit", command_owner="self", return_ids=return_ids, dataset_key=dataset_key
+            )
+
+            # Send the message and return the deserialized response.
+            serialized_message = sy.serde.serialize(message)
+            await websocket.send(str(binascii.hexlify(serialized_message)))
+            await websocket.recv()  # returned value will be None, so don't care
+        self.connect()
         msg = (MSGTYPE.OBJ_REQ, return_ids[0])
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(msg)
