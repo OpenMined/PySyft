@@ -10,12 +10,28 @@ A more detailed explanation of PySyft can be found in the [paper on arxiv](https
 
 PySyft has also been explained in video form by [Siraj Raval](https://www.youtube.com/watch?v=39hNjnhY7cY&feature=youtu.be&a=)
 
+## Pre-Installation
+
+Optionally, we recommend that you install PySyft within a virtual environment.
+
+```bash
+conda create -n pysyft python=3
+conda activate pysyft # some older version of conda require "source activate pysyft" instead.
+conda install jupyter notebook 
+```
+
 ## Installation
 
 > PySyft supports Python >= 3.6 and PyTorch 1.1.0
 
 ```bash
 pip install syft
+```
+
+If you have an installation error regarding zstd, run this command and then re-try installing syft.
+
+```bash
+pip install --upgrade --force-reinstall zstd
 ```
 
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
