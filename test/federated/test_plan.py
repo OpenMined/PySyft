@@ -93,16 +93,13 @@ def test_plan_built_on_method(hook):
     net = Net()
 
     net.send(device_1)
-    net.forward.send(device_1)
     pointer_to_data = device_1.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
     pointer_to_result.get()
-
+    
     net.get()
-    net.forward.get()
-
     net.send(device_2)
-    net.forward.send(device_2)
+
     pointer_to_data = device_2.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
     pointer_to_result.get()
