@@ -33,6 +33,7 @@ If you have an installation error regarding zstd, run this command and then re-t
 ```bash
 pip install --upgrade --force-reinstall zstd
 ```
+If this still doesn't work, and you happen to be on OSX, make sure you have [OSX command line tools](https://railsapps.github.io/xcode-command-line-tools.html) installed and try again.
 
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
 
