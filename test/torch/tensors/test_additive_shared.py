@@ -196,6 +196,7 @@ def test_chunk(workers):
 def test_nn_linear(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     import syft as sy
+
     hook = sy.TorchHook(torch)
     alice = sy.VirtualWorker(hook, id="alice")
     bob = sy.VirtualWorker(hook, id="bob")

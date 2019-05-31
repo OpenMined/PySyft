@@ -139,7 +139,6 @@ class AbstractTensor(ABC):
     @property
     def shape(self):
         return self.child.shape
-    
 
     def get_class_attributes(self):
         """

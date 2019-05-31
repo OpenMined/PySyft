@@ -78,12 +78,10 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         for share in self.child.values():
             return share.shape
- 
-    
+
     def dim(self):
         for share in self.child.values():
             return len(share.shape)
-
 
     def get_class_attributes(self):
         """
