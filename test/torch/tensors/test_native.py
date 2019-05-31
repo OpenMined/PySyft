@@ -84,8 +84,8 @@ def test_size():
     assert tensor.size() == tensor.shape
     assert tensor.size(0) == tensor.shape[0]
 
-
-def test_remote_local_dim(workers):
+#Compare local dim with the remote one
+def test_dim(workers):
     tensor_local = torch.randn(5, 3)
     tensor_remote = tensor_local.send(workers["alice"])
 
