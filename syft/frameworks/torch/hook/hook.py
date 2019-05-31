@@ -4,6 +4,7 @@ import logging
 import types
 import copy
 import torch
+from torch import nn
 from functools import wraps
 
 
@@ -827,6 +828,11 @@ class TorchHook:
 
         tensor_type.native_grad_fn = tensor_type.grad_fn
 
+        def dim(self):
+            return len(self.shape)
+
+        tensor_type.dim = dim
+
         @property
         def grad_fn(self):
             if self.has_child():
@@ -1030,7 +1036,37 @@ class TorchHook:
 
         self.torch.nn.Module.float_precision = module_float_precision_
 
-        def module_copy_(nn_self):
+        def module_copy(nn_self):
+            """Returns a copy of a torch.nn.Module"""
             return copy.deepcopy(nn_self)
 
-        self.torch.nn.Module.copy = module_copy_
+        self.torch.nn.Module.copy = module_copy
+
+        @property
+        def owner(nn_self):
+            for p in nn_self.parameters():
+                return p.owner
+
+        self.torch.nn.Module.owner = owner
+
+        @property
+        def location(nn_self):
+            try:
+                for p in nn_self.parameters():
+                    return p.location
+            except AttributeError:
+                raise AttributeError(
+                    "Module has no attribute location, did you already send it to some location?"
+                )
+
+        self.torch.nn.Module.location = location
+
+        # Make sure PySyft uses the PyTorch version
+        self.torch.nn.modules.rnn._rnn_impls["LSTM"] = self.torch.lstm
+
+        # Add support for GRUs
+        self.torch.nn.modules.rnn._rnn_impls["GRU"] = self.torch.gru
+
+        # Override _VF.LSTM_Cell and _VF.GRU_Cell with torch.LSTM_Cell and torch.GRU_Cell
+        # With the pytorch-based version
+        self.torch.nn.modules.rnn._VF = self.torch
