@@ -14,7 +14,7 @@ from syft import workers
 from syft.workers import BaseWorker
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor

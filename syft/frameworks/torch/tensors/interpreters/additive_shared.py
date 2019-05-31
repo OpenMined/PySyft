@@ -192,11 +192,11 @@ class AdditiveSharingTensor(AbstractTensor):
     def _getitem_multipointer(self, self_shares, indices_shares):
         """
         Support x[i] where x is an AdditiveSharingTensor and i a MultiPointerTensor
-        
+
         Args:
             self_shares (dict): the dict of shares of x
             indices_shares (dict): the dict of shares of i
-        
+
         Returns:
             an AdditiveSharingTensor
         """
@@ -851,3 +851,8 @@ class AdditiveSharingTensor(AbstractTensor):
         )
 
         return response
+
+    def set_garbage_collect_data(self, value):
+        shares = self.child
+        for _, share in shares.items():
+            share.child.garbage_collect_data = value

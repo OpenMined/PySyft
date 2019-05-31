@@ -1,6 +1,6 @@
 import torch
 
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
 
 
 def test___str__(workers):
