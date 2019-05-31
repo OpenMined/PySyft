@@ -6,7 +6,7 @@ from data import load_data, NoisyDataset
 from util import accuracy, split
 from Student import Student
 import syft as sy
-
+from syft.frameworks.torch.differential_privacy import pate
 
 class Arguments:
 
@@ -15,14 +15,14 @@ class Arguments:
 
         self.batchsize = 64
         self.test_batchsize = 10
-        self.epochs = 1
-        self.student_epochs = 1
+        self.epochs = 50
+        self.student_epochs = 15
         self.lr = 0.01
         self.momentum = 0.5
         self.no_cuda = False
         self.seed = 1
         self.log_interval = 30
-        self.n_teachers = 5
+        self.n_teachers = 50
         self.save_model = False
 
 
@@ -33,21 +33,27 @@ test_loader = load_data(False, args.test_batchsize)
 
 # Declare and train teachers on MNIST training data
 teacher = Teacher(args, Model, n_teachers=args.n_teachers)
-teacher.train(test_loader)
+teacher.train(train_loader)
 
 # Evaluate Teacher accuracy
-targets = []
+teacher_targets = []
 predict = []
+
 counts=[]
+original_targets=[]
+
 
 for data, target in test_loader:
     
     output=teacher.predict(data)
-    targets.append(target)
+    
+    arr_target=[]
+    teacher_targets.append(target)
+    original_targets.append(target)
     predict.append(output['predictions'])
-    counts.append(output['counts'])
+    counts.append(output['model_counts'])
 
-print("Accuracy: ", accuracy(torch.tensor(predict), targets))
+print("Accuracy: ", accuracy(torch.tensor(predict),teacher_targets))
 
 print("\n")
 print("\n")
@@ -77,3 +83,9 @@ for data, target in val:
     total += float(target.size(0))
 
 print("Private Baseline: ", (correct / total) * 100)
+
+counts_lol=torch.stack(counts).contiguous().view(50,10000)
+predict_lol=torch.tensor(predict).view(10000)
+
+data_dep_eps,data_ind_eps=teacher.analyze(counts_lol,predict_lol,moments=20)
+print("Epsilon: ",teacher.analyze(counts_lol,predict_lol))

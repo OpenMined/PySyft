@@ -29,6 +29,9 @@ def test_base_dataset_torch():
     preds = (np.random.rand(num_teachers, num_examples) * num_labels).astype(int)  # fake preds
 
     indices = (np.random.rand(num_examples) * num_labels).astype(int)  # true answers
+    
+    print(indices)
+    print(preds[0])
 
     preds[:, 0:10] *= 0
 
@@ -45,7 +48,7 @@ def test_torch_ref_match():
 
     num_teachers, num_examples, num_labels = (100, 50, 10)
     preds = (np.random.rand(num_teachers, num_examples) * num_labels).astype(int)  # fake preds
-
+    
     indices = (np.random.rand(num_examples) * num_labels).astype(int)  # true answers
 
     preds[:, 0:10] *= 0
@@ -60,3 +63,5 @@ def test_torch_ref_match():
 
     assert torch.isclose(data_dep_eps, torch.tensor(data_dep_eps_ref.item()))
     assert torch.isclose(data_ind_eps, torch.tensor(data_ind_eps_ref.item()))
+
+test_base_dataset_torch()
