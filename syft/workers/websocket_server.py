@@ -6,9 +6,15 @@ import asyncio
 import torch
 import websockets
 import ssl
+import sys
+import tblib.pickling_support
 
+tblib.pickling_support.install()
+
+import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers.virtual import VirtualWorker
+from syft.exceptions import ResponseSignatureError
 
 
 class WebsocketServerWorker(VirtualWorker):
@@ -94,7 +100,7 @@ class WebsocketServerWorker(VirtualWorker):
             message = binascii.unhexlify(message[2:-1])
 
             # process the message
-            response = self.recv_msg(message)
+            response = self._recv_msg(message)
 
             # convert the binary to a string representation
             # (this is needed for the websocket library)
@@ -102,6 +108,12 @@ class WebsocketServerWorker(VirtualWorker):
 
             # send the response
             await websocket.send(response)
+
+    def _recv_msg(self, message: bin) -> bin:
+        try:
+            return self.recv_msg(message)
+        except ResponseSignatureError as e:
+            return sy.serde.serialize(e)
 
     async def _handler(self, websocket: websockets.WebSocketCommonProtocol, *unused_args):
         """Setup the consumer and producer response handlers with asyncio.

@@ -45,6 +45,11 @@ import io
 import numpy
 import warnings
 import zstd
+import tblib.pickling_support
+
+tblib.pickling_support.install()
+import pickle, sys
+from six import reraise
 
 import syft
 import syft as sy
@@ -56,6 +61,7 @@ from syft.federated import Plan
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ResponseSignatureError
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -1238,6 +1244,16 @@ def _detail_object_wrapper(
     return obj_wrapper
 
 
+def _simplify_exception(e):
+    error_message = sys.exc_info()
+    return pickle.dumps(error_message)
+
+
+def _detail_exception(worker: AbstractWorker, error_tuple: tuple):
+    error = pickle.loads(error_tuple)
+    reraise(*error)
+
+
 # High Level Simplification Router
 
 
@@ -1323,6 +1339,7 @@ simplifiers = {
     GetNotPermittedError: [17, _simplify_GetNotPermittedError],
     str: [18, _simplify_str],
     pointers.ObjectWrapper: [20, _simplify_object_wrapper],
+    ResponseSignatureError: [21, _simplify_exception],
 }
 
 forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
@@ -1375,4 +1392,5 @@ detailers = [
     _detail_str,
     _force_full_detail_worker,
     _detail_object_wrapper,
+    _detail_exception,
 ]
