@@ -211,26 +211,34 @@ def test_grad_pointer(workers):
 
 
 def test_move(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    x = torch.tensor([1, 2, 3, 4, 5]).send(workers["bob"])
+    x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    assert x.id_at_location in workers["bob"]._objects
-    assert x.id_at_location not in workers["alice"]._objects
+    assert x.id_at_location in bob._objects
+    assert x.id_at_location not in alice._objects
 
-    x.move(workers["alice"])
+    x.move(alice)
 
-    assert x.id_at_location not in workers["bob"]._objects
-    assert x.id_at_location in workers["alice"]._objects
+    assert x.id_at_location not in bob._objects
+    assert x.id_at_location in alice._objects
 
-    x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(workers["bob"])
+    x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(bob)
 
-    assert x.id_at_location in workers["bob"]._objects
-    assert x.id_at_location not in workers["alice"]._objects
+    assert x.id_at_location in bob._objects
+    assert x.id_at_location not in alice._objects
 
-    x.move(workers["alice"])
+    x.move(alice)
 
-    assert x.id_at_location not in workers["bob"]._objects
-    assert x.id_at_location in workers["alice"]._objects
+    assert x.id_at_location not in bob._objects
+    assert x.id_at_location in alice._objects
+
+    alice.clear_objects()
+    bob.clear_objects()
+    x = torch.tensor([1.0, 2, 3, 4, 5]).send(bob)
+    x.move(alice)
+
+    assert len(alice._objects) == 1
 
 
 def test_combine_pointers(workers):

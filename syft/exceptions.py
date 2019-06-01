@@ -35,6 +35,16 @@ class RemoteObjectFoundError(BaseException):
         self.pointer = pointer
 
 
+class InvalidTensorForRemoteGet(Exception):
+    """Raised when a chain of pointer tensors is not provided for `remote_get`."""
+
+    def __init__(self, tensor: object):
+        message = "Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {}.".format(
+            tensor
+        )
+        super().__init__(message)
+
+
 class WorkerNotFoundException(Exception):
     """Raised when a non-existent worker is requested."""
 
