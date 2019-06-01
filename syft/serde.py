@@ -1254,6 +1254,18 @@ def _detail_exception(worker: AbstractWorker, error_tuple: tuple):
     reraise(*error)
 
 
+def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
+    """Strategy to serialize a script module using Torch.jit"""
+    return obj.save_to_buffer()
+
+
+def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> torch.jit.ScriptModule:
+    """"Strategy to deserialize a binary input using Torch load"""
+    script_module_stream = io.BytesIO(script_module_bin)
+    loaded_module = torch.jit.load(script_module_stream)
+    return loaded_module
+
+
 # High Level Simplification Router
 
 
@@ -1340,6 +1352,11 @@ simplifiers = {
     str: [18, _simplify_str],
     pointers.ObjectWrapper: [20, _simplify_object_wrapper],
     ResponseSignatureError: [21, _simplify_exception],
+    torch.jit.ScriptModule: [21, _simplify_script_module],
+    torch.jit.TopLevelTracedModule: [
+        21,
+        _simplify_script_module,
+    ],  # treat as torch.jit.ScriptModule
 }
 
 forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
@@ -1393,4 +1410,5 @@ detailers = [
     _force_full_detail_worker,
     _detail_object_wrapper,
     _detail_exception,
+    _detail_script_module,
 ]
