@@ -237,11 +237,11 @@ def test_torch_conv2d(workers):
     )
     bias = torch.Tensor([0.0, 5.0])
 
-    im_shared = im.share(bob, alice, crypto_provider=james)
-    w_shared = w.share(bob, alice, crypto_provider=james)
-    bias_shared = bias.share(bob, alice, crypto_provider=james)
+    im_shared = im.fix_precision().share(bob, alice, crypto_provider=james)
+    w_shared = w.fix_precision().share(bob, alice, crypto_provider=james)
+    bias_shared = bias.fix_precision().share(bob, alice, crypto_provider=james)
 
-    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get()
+    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get().float_precision()
     res1 = torch.conv2d(
         im_shared,
         w_shared[:, 0:1].contiguous(),
@@ -250,12 +250,12 @@ def test_torch_conv2d(workers):
         padding=3,
         dilation=2,
         groups=2,
-    ).get()
+    ).get().float_precision()
 
-    expected0 = torch.conv2d(im, w, bias=bias, stride=1).type(torch.LongTensor)
+    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
     expected1 = torch.conv2d(
         im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
-    ).type(torch.LongTensor)
+    )
 
     assert (res0 == expected0).all()
     assert (res1 == expected1).all()

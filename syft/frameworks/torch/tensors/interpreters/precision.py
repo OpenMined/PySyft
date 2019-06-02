@@ -242,14 +242,11 @@ class FixedPrecisionTensor(AbstractTensor):
             assert len(input.shape) == 4
             assert len(weight.shape) == 4
 
-            # We could make a util function for these, as PyTorch's _pair
-            if isinstance(stride, int):
-                stride = (stride, stride)
-            if isinstance(padding, int):
-                padding = (padding, padding)
-            if isinstance(dilation, int):
-                dilation = (dilation, dilation)
-
+            # Change to tuple if not one
+            stride = torch.nn.modules.utils._pair(stride)
+            padding = torch.nn.modules.utils._pair(padding)
+            dilation = torch.nn.modules.utils._pair(dilation)
+            
             # Extract a few useful values
             batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
             nb_channels_out, nb_channels_in_, nb_rows_kernel, nb_cols_kernel = weight.shape
@@ -283,28 +280,35 @@ class FixedPrecisionTensor(AbstractTensor):
                 nb_cols_in += 2 * padding[1]
 
             # We want to get relative positions of values in the input tensor that are used by one filter convolution.
+            # It basically is the position of the values used for the top left convolution.
             pattern_ind = []
             for ch in range(nb_channels_in):
                 for r in range(nb_rows_kernel):
                     for c in range(nb_cols_kernel):
-                        pixel = r * nb_cols_in * dilation[0] + (c % nb_cols_kernel) * dilation[1]
-                        pattern_ind.extend([pixel + ch * nb_rows_in * nb_cols_in])
+                        pixel = r * nb_cols_in * dilation[0] + c * dilation[1]
+                        pattern_ind.append(pixel + ch * nb_rows_in * nb_cols_in)
 
             # The image tensor is reshaped for the matrix multiplication:
             # on each row of the new tensor will be the input values used for each filter convolution
+            # We will get a matrix [[in values to compute out value 0],
+            #                       [in values to compute out value 1],
+            #                       ...
+            #                       [in values to compute out value nb_rows_out*nb_cols_out]]
             im_flat = input.view(batch_size, -1)
             im_reshaped = []
             for cur_row_out in range(nb_rows_out):
                 for cur_col_out in range(nb_cols_out):
-                    offset = (
-                        cur_row_out * stride[0] * nb_cols_in
-                        + (cur_col_out % nb_cols_out) * stride[1]
-                    )
+                    # For each new output value, we just need to shift the receptive field
+                    offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
                     tmp = [ind + offset for ind in pattern_ind]
                     im_reshaped.append(im_flat[:, tmp].wrap())
             im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
 
             # The convolution kernels are also reshaped for the matrix multiplication
+            # We will get a matrix [[weights for out channel 0],
+            #                       [weights for out channel 1],
+            #                       ...
+            #                       [weights for out channel nb_channels_out]].TRANSPOSE()
             weight_reshaped = weight.view(nb_channels_out // groups, -1).t().wrap()
 
             # Now that everything is set up, we can compute the result
@@ -315,16 +319,13 @@ class FixedPrecisionTensor(AbstractTensor):
                 for g in range(groups):
                     tmp = chunks_im[g].matmul(chunks_weights[g])
                     res.append(tmp)
-                res = torch.cat(res, dim=2).child
+                res = torch.cat(res, dim=2)
             else:
-                res = im_reshaped.matmul(weight_reshaped).child
+                res = im_reshaped.matmul(weight_reshaped)
 
             # Add a bias if needed
             if bias is not None:
-                if bias.is_wrapper:
-                    res = res + bias.child  # += does not work
-                else:
-                    res = res + bias
+                res += bias
 
             # ... And reshape it back to an image
             res = (
@@ -332,7 +333,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 .view(batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
                 .contiguous()
             )
-            return res
+            return res.child
 
         module.conv2d = conv2d
 
