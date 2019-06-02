@@ -1,7 +1,33 @@
 import numpy as np
+import pytest
 import torch
+from torch import nn
 
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+
+
+def test_wrap(workers):
+    """
+    Test the .on() wrap functionality for LoggingTensor
+    """
+
+    x_tensor = torch.Tensor([1, 2, 3])
+    x = LargePrecisionTensor().on(x_tensor)
+    assert isinstance(x, torch.Tensor)
+    assert isinstance(x.child, LargePrecisionTensor)
+    assert isinstance(x.child.child, torch.Tensor)
+
+
+@pytest.mark.parametrize("parameter", [False, True])
+def test_large_prec(workers, parameter):
+    x = torch.tensor([1, 2, 3])
+    if parameter:
+        x = nn.Parameter(x)
+    x = x.large_prec()
+    assert (x.child.child == torch.LongTensor([100, 200, 300])).all()
+    x = x.float_prec()
+
+    assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
 
 
 def test_split_restore():

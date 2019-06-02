@@ -9,10 +9,10 @@ class LargePrecisionTensor(AbstractTensor):
 
     Some systems using Syft require larger types than those supported natively. This tensor type supports arbitrarily
     large values by packing them in smaller ones.
-    Note that the original tensor cannot be a PyTorch tensor as it would cause a RuntimeError if the number is too large
+    If the original tensor is a PyTorch tensor it is not processed
     """
 
-    def __init__(self, tensor, owner=None, id=None, tags=None, description=None, precision=16):
+    def __init__(self, tensor=None, owner=None, id=None, tags=None, description=None, precision=16):
         """Initializes a LargePrecisionTensor.
 
         Args:
@@ -24,10 +24,13 @@ class LargePrecisionTensor(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.precision = precision
-        if isinstance(tensor, torch.Tensor):
-            self.child = tensor
+        if tensor is not None:
+            if isinstance(tensor, torch.Tensor):
+                self.child = tensor
+            else:
+                self.child = self._create_internal_tensor(tensor, precision)
         else:
-            self.child = self._create_internal_tensor(tensor, precision)
+            self.child = None
 
     @staticmethod
     def _create_internal_tensor(tensor, precision):
