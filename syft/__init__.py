@@ -8,7 +8,8 @@ from syft import codes
 # PySyft by making it possible to import the most commonly used objects from syft
 # directly (i.e., syft.TorchHook or syft.VirtualWorker or syft.LoggingTensor)
 
-# Import Hook
+# Import Hooks
+from syft.frameworks.keras import KerasHook
 from syft.frameworks.torch import TorchHook
 
 # Import grids
@@ -21,15 +22,18 @@ from syft.federated import method2plan
 from syft.federated import make_plan
 
 # Import Worker Types
+from syft.workers import TFEWorker
 from syft.workers import VirtualWorker
 
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+from syft.frameworks.torch.pointers import ObjectPointer
+from syft.frameworks.torch.pointers import CallablePointer
+from syft.frameworks.torch.pointers import PointerTensor
 
 # Import serialization tools
 from syft import serde

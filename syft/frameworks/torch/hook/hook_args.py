@@ -1,12 +1,12 @@
 import torch
 import syft as sy
-from syft.exceptions import RemoteTensorFoundError
+from syft.exceptions import RemoteObjectFoundError
 from syft.exceptions import PureTorchTensorFoundError
 
 from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -47,7 +47,7 @@ type_rule = {
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
 forward_func = {
-    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
+    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p)),
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureTorchTensorFoundError),
@@ -80,8 +80,8 @@ backward_func = {
 
 # methods that we really don't want to hook, for example because they have an arbitrary
 # number of tensors in args signature response
-exclude_methods = {"__getitem__", "view"}
-exclude_functions = {"torch.unbind", "unbind"}
+exclude_methods = {"__getitem__", "_getitem_public", "view", "permute"}
+exclude_functions = {"torch.unbind", "unbind", "torch.stack", "stack"}
 
 
 def hook_method_args(attr, method_self, args, kwargs):
@@ -143,6 +143,7 @@ def hook_function_args(attr, args, kwargs, return_args_type=False):
         (- the type of the tensors in the arguments)
     """
     try:
+        assert attr not in exclude_functions
         # Load the utility function to transform the args
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
