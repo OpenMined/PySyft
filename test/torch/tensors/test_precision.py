@@ -153,18 +153,9 @@ def test_torch_conv2d(workers):
     bias_fp = bias.fix_precision()
 
     res0 = torch.conv2d(im_fp, w_fp, bias=bias_fp, stride=1).float_precision()
-    res1 = (
-        torch.conv2d(
-            im_fp,
-            w_fp[:, 0:1].contiguous(),
-            bias=bias_fp,
-            stride=2,
-            padding=3,
-            dilation=2,
-            groups=2,
-        )
-        .float_precision()
-    )
+    res1 = torch.conv2d(
+        im_fp, w_fp[:, 0:1].contiguous(), bias=bias_fp, stride=2, padding=3, dilation=2, groups=2
+    ).float_precision()
 
     expected0 = torch.conv2d(im, w, bias=bias, stride=1)
     expected1 = torch.conv2d(
