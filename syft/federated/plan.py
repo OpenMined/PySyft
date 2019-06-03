@@ -450,7 +450,7 @@ class Plan(ObjectStorage):
         """
         self.locations += [self.owner.get_worker(location).id for location in locations]
         # rm duplicates
-        self.locations = list(set(self.locations))
+        self.locations = list(set(self.locations) - set([sy.hook.local_worker.id]))
         return self
 
     def _send(self, location: "sy.workers.BaseWorker"):
