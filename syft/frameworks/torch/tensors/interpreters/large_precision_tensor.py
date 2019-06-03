@@ -12,33 +12,30 @@ class LargePrecisionTensor(AbstractTensor):
     If the original tensor is a PyTorch tensor it is not processed
     """
 
-    def __init__(self, tensor=None, owner=None, id=None, tags=None, description=None, precision=16):
+    def __init__(self, owner=None, id=None, tags=None, description=None, precision=16, virtual_prec=0):
         """Initializes a LargePrecisionTensor.
 
         Args:
-            tensor: a numpy array
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the LargePrecisionTensor.
-            precision: The objective precision for this tensor
+            precision: The precision this tensor will be transformed to internally. In bits.
+            virtual_prec: The virtual precision required by the caller. In bits.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.precision = precision
-        if tensor is not None:
-            if isinstance(tensor, torch.Tensor):
-                self.child = tensor
-            else:
-                self.child = self._create_internal_tensor(tensor, precision)
-        else:
-            self.child = None
+        self.virtual_prec = virtual_prec
 
     @staticmethod
-    def _create_internal_tensor(tensor, precision):
+    def _create_internal_tensor(tensor, precision, virtual_prec):
+        # TODO refs_ok might not be needed as we are passing now torch.tensors here
         # refs_ok is necessary to enable iterations of reference types.
         # These big numbers are stored as objects in np
         result = []
         for x in np.nditer(tensor, flags=["refs_ok"]):
-            result.append(LargePrecisionTensor._split_number(x.item(), precision))
+            n = int(x.item() * 2 ** virtual_prec)
+            print(f"\nAdding number {n} for item {x.item()}\n")
+            result.append(LargePrecisionTensor._split_number(n, precision))
         new_shape = tensor.shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
         return torch.IntTensor(result)
@@ -110,3 +107,34 @@ class LargePrecisionTensor(AbstractTensor):
         while number_parts:
             n = n * base + number_parts.pop()
         return n
+
+    @staticmethod
+    def _restore_number_np(number_parts, bits):
+        """Rebuild a number from a numpy array
+
+        :param number_parts: the numpy array of numbers representing the original one
+        :param bits: the bits used in the split
+        :return: the original number
+        """
+        base = 2 ** bits
+        n = 0
+        # Using tolist() to allow int type. Terrible :(
+        for x in number_parts.tolist():
+            n = n * base + x
+        return n
+
+    def fix_large_precision(self):
+        self.child = self._create_internal_tensor(self.child, self.precision, self.virtual_prec)
+        return self
+
+    def restore_precision(self):
+        """
+        Restore the tensor expressed now as a matrix for each original item
+        :return: the original tensor
+        """
+        # TODO Is Vectorization possible here?
+        return torch.from_numpy((np.apply_along_axis(lambda x: self._restore_number_np(x, self.precision),
+                                1,
+                                self.child.numpy()) / (2 ** self.virtual_prec))
+                                .astype(np.float)
+                                )

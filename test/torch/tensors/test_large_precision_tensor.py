@@ -1,7 +1,5 @@
 import numpy as np
-import pytest
 import torch
-from torch import nn
 
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 
@@ -18,16 +16,14 @@ def test_wrap(workers):
     assert isinstance(x.child.child, torch.Tensor)
 
 
-@pytest.mark.parametrize("parameter", [False, True])
-def test_large_prec(workers, parameter):
-    x = torch.tensor([1, 2, 3])
-    if parameter:
-        x = nn.Parameter(x)
-    x = x.large_prec()
-    assert (x.child.child == torch.LongTensor([100, 200, 300])).all()
-    x = x.float_prec()
-
-    assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
+def test_large_prec(workers):
+    x = torch.tensor([1.5, 2., 3.])
+    enlarged = x.large_prec(precision=16, virtual_prec=256)
+    print(enlarged)
+    restored = enlarged.restore_precision()
+    # And now x and restored must be the same
+    print(restored)
+    assert torch.all(torch.eq(x, restored))
 
 
 def test_split_restore():
@@ -117,3 +113,4 @@ def test_add_multiple_dimensions():
 
     result = tensor1.add(tensor2)
     assert LargePrecisionTensor._restore_number(result.child.view(-1).tolist(), bits) == expected
+
