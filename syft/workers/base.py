@@ -316,10 +316,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         worker = self.get_worker(worker)
 
-        if ptr_id is None:  # Define a remote id if not specified
-            ptr_id = sy.ID_PROVIDER.pop()
-
         if hasattr(obj, "create_pointer"):
+            if ptr_id is None:  # Define a remote id if not specified
+                ptr_id = sy.ID_PROVIDER.pop()
+
             pointer = obj.create_pointer(
                 owner=self,
                 location=worker,
