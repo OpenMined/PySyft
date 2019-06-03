@@ -25,7 +25,7 @@ def test_tuple_simplify():
     for tuples so that the detailer knows how to interpret it."""
 
     input = ("hello", "world")
-    target = (2, ((18, (b"hello",)), (18, (b"world",))))
+    target = (2, ((17, (b"hello",)), (17, (b"world",))))
     assert serde._simplify(input) == target
 
 
@@ -37,7 +37,7 @@ def test_list_simplify():
     for lists so that the detailer knows how to interpret it."""
 
     input = ["hello", "world"]
-    target = (3, [(18, (b"hello",)), (18, (b"world",))])
+    target = (3, [(17, (b"hello",)), (17, (b"world",))])
     assert serde._simplify(input) == target
 
 
@@ -49,7 +49,7 @@ def test_set_simplify():
     for sets so that the detailer knows how to interpret it."""
 
     input = set(["hello", "world"])
-    target = (4, [(18, (b"hello",)), (18, (b"world",))])
+    target = (4, [(17, (b"hello",)), (17, (b"world",))])
     assert serde._simplify(input)[0] == target[0]
     assert set(serde._simplify(input)[1]) == set(target[1])
 
@@ -83,7 +83,7 @@ def test_string_simplify():
     themselves, with no tuple/id necessary."""
 
     input = "hello"
-    target = (18, (b"hello",))
+    target = (17, (b"hello",))
     assert serde._simplify(input) == target
 
 
@@ -95,7 +95,7 @@ def test_dict_simplify():
     for dicts so that the detailer knows how to interpret it."""
 
     input = {"hello": "world"}
-    target = (5, [((18, (b"hello",)), (18, (b"world",)))])
+    target = (5, [((17, (b"hello",)), (17, (b"world",)))])
     assert serde._simplify(input) == target
 
 
