@@ -1,5 +1,6 @@
 from collections import Counter
-from typing import Tuple,Dict
+from typing import Tuple
+from typing import Dict
 
 class VirtualGrid:
     def __init__(self, *workers):
