@@ -2,6 +2,7 @@ black
 coverage
 Flask
 flask_socketio
+numpy>=1.14.0
 pre-commit
 pytest
 python-socketio>=4.0.3
