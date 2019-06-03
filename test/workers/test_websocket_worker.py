@@ -70,7 +70,7 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
     """Evaluates that you can do basic tensor operations using
     WebsocketServerWorker"""
 
-    kwargs = {"id": "fed1", "host": "localhost", "port": 8768, "hook": hook}
+    kwargs = {"id": "socket_multiple_output", "host": "localhost", "port": 8768, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
