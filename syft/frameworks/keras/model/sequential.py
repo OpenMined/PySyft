@@ -58,7 +58,6 @@ def share(model, *workers, target_graph=None):  # pragma: no cover
 
     # Push and initialize shared model on servers
     sess = tfe.Session(graph=target_graph)
-    tf.Session.reset(sess.target)
     sess.run(initializer)
 
     model._tfe_session = sess

@@ -43,8 +43,7 @@ def test_instantiate_tfe_layer():
     np.testing.assert_allclose(actual, expected, rtol=0.001)
 
 
-@pytest.mark.skip(reason="Currently breaks on macos")
-def test_share():  # pragma: no cover
+def test_share():
 
     from tensorflow.keras import Sequential
     from tensorflow.keras.layers import Dense
@@ -62,10 +61,9 @@ def test_share():  # pragma: no cover
         Dense(5, kernel_initializer=initializer, batch_input_shape=input_shape, use_bias=True)
     )
 
-    AUTO = True
-    alice = sy.TFEWorker(host="localhost:4000", auto_managed=AUTO)
-    bob = sy.TFEWorker(host="localhost:4001", auto_managed=AUTO)
-    carol = sy.TFEWorker(host="localhost:4002", auto_managed=AUTO)
+    alice = sy.TFEWorker(host=None)
+    bob = sy.TFEWorker(host=None)
+    carol = sy.TFEWorker(host=None)
 
     model.share(alice, bob, carol)
 
