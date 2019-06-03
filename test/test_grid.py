@@ -15,7 +15,6 @@ def test_virtual_grid(workers):
     print(workers)
 
     bob = workers["bob"]
-    print("Type of bob",type(bob))
     alice = workers["alice"]
     james = workers["james"]
 
@@ -26,8 +25,6 @@ def test_virtual_grid(workers):
     z = torch.tensor([1, 2, 3, 4]).tag("#james", "#male").send(james)
 
     results, tags = grid.search()
-    print("Type of results",type(results))
-    print("Type of tages",type(tags))
     assert len(results) == 3
 
     assert "bob" in results.keys()
@@ -43,9 +40,3 @@ def test_virtual_grid(workers):
     assert len(results["bob"]) == 1
     assert "alice" not in results
     assert len(results["james"]) == 1
-
-
-
-
-
-
