@@ -242,15 +242,19 @@ def test_torch_conv2d(workers):
     bias_shared = bias.fix_precision().share(bob, alice, crypto_provider=james)
 
     res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get().float_precision()
-    res1 = torch.conv2d(
-        im_shared,
-        w_shared[:, 0:1].contiguous(),
-        bias=bias_shared,
-        stride=2,
-        padding=3,
-        dilation=2,
-        groups=2,
-    ).get().float_precision()
+    res1 = (
+        torch.conv2d(
+            im_shared,
+            w_shared[:, 0:1].contiguous(),
+            bias=bias_shared,
+            stride=2,
+            padding=3,
+            dilation=2,
+            groups=2,
+        )
+        .get()
+        .float_precision()
+    )
 
     expected0 = torch.conv2d(im, w, bias=bias, stride=1)
     expected1 = torch.conv2d(
