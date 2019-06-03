@@ -12,6 +12,7 @@ import syft
 from syft import workers
 
 from syft.workers import BaseWorker
+from syft.federated import Plan
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.pointers import PointerTensor
@@ -958,7 +959,8 @@ class TorchHook:
 
             for p in nn_self.parameters():
                 p.send_(dest)
-
+            if isinstance(nn_self.forward, Plan):
+                nn_self.forward.send(dest)
             return nn_self
 
         self.torch.nn.Module.send = module_send_
@@ -992,6 +994,9 @@ class TorchHook:
             """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
             for p in nn_self.parameters():
                 p.get_()
+
+            if isinstance(nn_self.forward, Plan):
+                nn_self.forward.get()
 
             return nn_self
 
