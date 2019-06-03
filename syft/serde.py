@@ -60,9 +60,8 @@ from syft.exceptions import GetNotPermittedError
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
-
+from syft.frameworks.torch import pointers
 
 # COMPRESSION SCHEME INT CODES
 NO_COMPRESSION = 40
@@ -380,7 +379,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
 
     if tensor.grad is not None:
         if hasattr(tensor, "child"):
-            if isinstance(tensor.child, PointerTensor):
+            if isinstance(tensor.child, pointers.PointerTensor):
                 grad_chain = None
             else:
                 grad_chain = _simplify_torch_tensor(tensor.grad)
@@ -484,7 +483,7 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
     grad = param.grad
 
     if grad is not None and not (
-        hasattr(grad, "child") and isinstance(grad.child, sy.PointerTensor)
+        hasattr(grad, "child") and isinstance(grad.child, pointers.PointerTensor)
     ):
         grad_ser = _simplify_torch_tensor(grad)
     else:
@@ -512,7 +511,7 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     if grad_ser is not None:
         grad = _detail_torch_tensor(worker, grad_ser)
         grad.garbage_collect_data = False
-    elif hasattr(tensor, "child") and isinstance(tensor.child, sy.PointerTensor):
+    elif hasattr(tensor, "child") and isinstance(tensor.child, pointers.PointerTensor):
         grad = tensor.attr("grad")
     else:
         grad = None
@@ -868,11 +867,11 @@ def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.devi
     return torch.device(type=device_type)
 
 
-def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
+def _simplify_pointer_tensor(ptr: pointers.PointerTensor) -> tuple:
     """
     This function takes the attributes of a PointerTensor and saves them in a dictionary
     Args:
-        ptr (PointerTensor): a PointerTensor
+        ptr (pointers.PointerTensor): a PointerTensor
     Returns:
         tuple: a tuple holding the unique attributes of the pointer
     Examples:
@@ -897,7 +896,7 @@ def _simplify_pointer_tensor(ptr: PointerTensor) -> tuple:
     # return _simplify_dictionary(data)
 
 
-def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> PointerTensor:
+def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> pointers.PointerTensor:
     """
     This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
     We use the spread operator to pass the dict data as arguments
@@ -906,7 +905,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
         worker: the worker doing the deserialization
         tensor_tuple: a tuple holding the attributes of the PointerTensor
     Returns:
-        PointerTensor: a PointerTensor
+        PointerTensor: a pointers.PointerTensor
     Examples:
         ptr = _detail_pointer_tensor(data)
     """
@@ -947,7 +946,7 @@ def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> Point
 
         location = syft.torch.hook.local_worker.get_worker(worker_id)
 
-        ptr = PointerTensor(
+        ptr = pointers.PointerTensor(
             location=location,
             id_at_location=id_at_location,
             owner=worker,
@@ -1155,7 +1154,7 @@ def _simplify_worker(worker: AbstractWorker) -> tuple:
     return (_simplify(worker.id),)
 
 
-def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> PointerTensor:
+def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> pointers.PointerTensor:
     """
     This function reconstructs a PlanPointer given it's attributes in form of a tuple.
 
@@ -1224,6 +1223,31 @@ def _simplify_str(obj: str) -> tuple:
 
 def _detail_str(worker: AbstractWorker, str_tuple: tuple) -> str:
     return str_tuple[0].decode("utf-8")
+
+
+def _simplify_object_wrapper(obj: pointers.ObjectWrapper) -> tuple:
+    return (obj.id, _simplify(obj.obj))
+
+
+def _detail_object_wrapper(
+    worker: AbstractWorker, obj_wrapper_tuple: str
+) -> pointers.ObjectWrapper:
+    obj_wrapper = pointers.ObjectWrapper(
+        id=obj_wrapper_tuple[0], obj=_detail(worker, obj_wrapper_tuple[1])
+    )
+    return obj_wrapper
+
+
+def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
+    """Strategy to serialize a script module using Torch.jit"""
+    return obj.save_to_buffer()
+
+
+def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> torch.jit.ScriptModule:
+    """"Strategy to deserialize a binary input using Torch load"""
+    script_module_stream = io.BytesIO(script_module_bin)
+    loaded_module = torch.jit.load(script_module_stream)
+    return loaded_module
 
 
 # High Level Simplification Router
@@ -1302,7 +1326,7 @@ simplifiers = {
     slice: [8, _simplify_slice],
     type(Ellipsis): [9, _simplify_ellipsis],
     torch.device: [10, _simplify_torch_device],
-    PointerTensor: [11, _simplify_pointer_tensor],
+    pointers.PointerTensor: [11, _simplify_pointer_tensor],
     LoggingTensor: [12, _simplify_log_tensor],
     AdditiveSharingTensor: [13, _simplify_additive_shared_tensor],
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
@@ -1310,6 +1334,12 @@ simplifiers = {
     VirtualWorker: [16, _simplify_worker],
     GetNotPermittedError: [17, _simplify_GetNotPermittedError],
     str: [18, _simplify_str],
+    pointers.ObjectWrapper: [20, _simplify_object_wrapper],
+    torch.jit.ScriptModule: [21, _simplify_script_module],
+    torch.jit.TopLevelTracedModule: [
+        21,
+        _simplify_script_module,
+    ],  # treat as torch.jit.ScriptModule
 }
 
 forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
@@ -1361,4 +1391,6 @@ detailers = [
     _detail_GetNotPermittedError,
     _detail_str,
     _force_full_detail_worker,
+    _detail_object_wrapper,
+    _detail_script_module,
 ]

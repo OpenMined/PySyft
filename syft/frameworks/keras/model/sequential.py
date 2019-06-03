@@ -15,7 +15,7 @@ _args_not_supported_by_tfe = [
 ]
 
 
-def share(model, *workers, target_graph=None):
+def share(model, *workers, target_graph=None):  # pragma: no cover
     """
     Secret share the model between `workers`.
 
@@ -77,6 +77,11 @@ def serve(model, num_requests=5):
 
 
 def shutdown_workers(model):
+    if model._tfe_session is not None:
+        sess = model._tfe_session
+        model._tfe_session = None
+        sess.close()
+        del sess
     for worker in model._workers:
         worker.stop()
 
