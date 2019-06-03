@@ -195,7 +195,6 @@ def test_chunk(workers):
 
 def test_nn_linear(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-
     t = torch.tensor([[1.0, 2]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     model = nn.Linear(2, 1)

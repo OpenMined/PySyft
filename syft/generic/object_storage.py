@@ -28,7 +28,7 @@ class ObjectStorage:
             obj_id (int or string): random integer between 0 and 1e10 or
             string uniquely identifying the object.
         """
-        if obj_id is not None:
+        if obj_id is not None and hasattr(obj, "id"):
             obj.id = obj_id
         self.set_obj(obj)
 

@@ -93,16 +93,13 @@ def test_plan_built_on_method(hook):
     net = Net()
 
     net.send(device_1)
-    net.forward.send(device_1)
     pointer_to_data = device_1.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
     pointer_to_result.get()
 
     net.get()
-    net.forward.get()
-
     net.send(device_2)
-    net.forward.send(device_2)
+
     pointer_to_data = device_2.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
     pointer_to_result.get()
@@ -210,7 +207,7 @@ def test_plan_execute_remotely(hook, start_proc):
     x = th.tensor([-1, 2, 3])
     my_plan(x)
 
-    kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8767, "hook": hook}
+    kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8768, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
