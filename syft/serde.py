@@ -43,13 +43,12 @@ from lz4 import (  # noqa: F401
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
 import io
 import numpy
+from tblib import Traceback
+import traceback
+from six import reraise
+import sys
 import warnings
 import zstd
-import tblib.pickling_support
-
-tblib.pickling_support.install()
-import pickle, sys
-from six import reraise
 
 import syft
 import syft as sy
@@ -1199,6 +1198,43 @@ def _detail_GetNotPermittedError(
     raise GetNotPermittedError(error_tuple[0])
 
 
+def _simplify_exception(e):
+    """
+    Serialize information about an Exception which was raised to forward it
+    """
+    # Get information about the exception: type of error, error obj, traceback
+    tp, value, tb = sys.exc_info()
+    # Serialize the traceback
+    traceback_str = "Traceback (most recent call last):\n" + "".join(traceback.format_tb(tb))
+    # Include special attributes if relevant
+    if hasattr(e, "get_attributes"):
+        attributes = e.get_attributes()
+    else:
+        attributes = {}
+    return tp.__name__, traceback_str, _simplify(attributes)
+
+
+def _detail_exception(worker: AbstractWorker, error_tuple: Tuple[str, str, dict]):
+    """
+    Re-raise an Exception forwarded by another worker
+    """
+    error_name, traceback_str, attributes = error_tuple
+    error_name, traceback_str = error_name.decode("utf-8"), traceback_str.decode("utf-8")
+    attributes = _detail(worker, attributes)
+    # De-serialize the traceback
+    tb = Traceback.from_string(traceback_str)
+    # Check that the error belongs to a valid set of Exceptions
+    if error_name in dir(sy.exceptions):
+        error_type = getattr(sy.exceptions, error_name)
+        error = error_type()
+        # Include special attributes if any
+        for attr_name, attr in attributes.items():
+            setattr(error, attr_name, attr)
+        reraise(error_type, error, tb.as_traceback())
+    else:
+        raise ValueError(f"Invalid Exception returned:\n{traceback_str}")
+
+
 def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
     """
 
@@ -1242,16 +1278,6 @@ def _detail_object_wrapper(
         id=obj_wrapper_tuple[0], obj=_detail(worker, obj_wrapper_tuple[1])
     )
     return obj_wrapper
-
-
-def _simplify_exception(e):
-    error_message = sys.exc_info()
-    return pickle.dumps(error_message)
-
-
-def _detail_exception(worker: AbstractWorker, error_tuple: tuple):
-    error = pickle.loads(error_tuple)
-    reraise(*error)
 
 
 def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
