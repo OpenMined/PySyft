@@ -1,5 +1,5 @@
 from .tensors.interpreters import MultiPointerTensor
-from .workers import VirtualWorker
+from syft.workers import VirtualWorker
 
 
 def combine_pointers(*pointers: VirtualWorker) -> MultiPointerTensor:
