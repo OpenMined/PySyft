@@ -39,14 +39,16 @@ def test_add_model():
     net1 = Net()
     params1 = net1.named_parameters()
     dict_params1 = dict(params1)
-    dict_params1["fc1.weight"].data.set_(weight1)
-    dict_params1["fc1.bias"].data.set_(bias1)
+    with th.no_grad():
+        dict_params1["fc1.weight"].set_(weight1)
+        dict_params1["fc1.bias"].set_(bias1)
 
     net2 = Net()
     params2 = net2.named_parameters()
     dict_params2 = dict(params2)
-    dict_params2["fc1.weight"].data.set_(weight2)
-    dict_params2["fc1.bias"].data.set_(bias2)
+    with th.no_grad():
+        dict_params2["fc1.weight"].set_(weight2)
+        dict_params2["fc1.bias"].set_(bias2)
 
     new_model = utils.add_model(net1, net2)
 
@@ -67,8 +69,9 @@ def test_scale_model():
     net1 = Net()
     params1 = net1.named_parameters()
     dict_params1 = dict(params1)
-    dict_params1["fc1.weight"].data.set_(weight1)
-    dict_params1["fc1.bias"].data.set_(bias1)
+    with th.no_grad():
+        dict_params1["fc1.weight"].set_(weight1)
+        dict_params1["fc1.bias"].set_(bias1)
 
     scale = 2.0
 
