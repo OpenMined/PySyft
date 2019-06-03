@@ -64,3 +64,29 @@ def test_websocket_workers_search(hook, start_proc):
     client_worker.ws.close()
     time.sleep(0.1)
     server.terminate()
+
+
+def test_websocket_worker_multiple_output_response(hook, start_proc):
+    """Evaluates that you can do basic tensor operations using
+    WebsocketServerWorker"""
+
+    kwargs = {"id": "fed1", "host": "localhost", "port": 8768, "hook": hook}
+    server = start_proc(WebsocketServerWorker, kwargs)
+
+    time.sleep(0.1)
+    x = torch.tensor([1.0, 3, 2])
+
+    socket_pipe = WebsocketClientWorker(**kwargs)
+
+    x = x.send(socket_pipe)
+    p1, p2 = torch.sort(x)
+    x1, x2 = p1.get(), p2.get()
+
+    assert (x1 == torch.tensor([1.0, 2, 3])).all()
+    assert (x2 == torch.tensor([0, 2, 1])).all()
+
+    del x
+
+    socket_pipe.ws.shutdown()
+    time.sleep(0.1)
+    server.terminate()
