@@ -32,6 +32,10 @@ def test_plan_built_locally(hook):
 
 
 def test_plan_execute_locally(hook):
+    # To run a plan locally the local worker can't be a client worker,
+    # since it needs to register objects
+    hook.local_worker.is_client_worker = False
+
     @sy.func2plan
     def plan_abs(data):
         return data.abs()
