@@ -15,7 +15,7 @@ _args_not_supported_by_tfe = [
 ]
 
 
-def share(model, *workers, target_graph=None):  # pragma: no cover
+def share(model, *workers, target_graph=None):
     """
     Secret share the model between `workers`.
 
