@@ -19,7 +19,7 @@ class PureTorchTensorFoundError(BaseException):
     pass
 
 
-class RemoteTensorFoundError(BaseException):
+class RemoteObjectFoundError(BaseException):
     """Exception raised for errors in the input.
     This error is used in a context similar to PureTorchTensorFoundError but
     to indicate that a Pointer to a remote tensor was found  in the input
@@ -35,6 +35,16 @@ class RemoteTensorFoundError(BaseException):
         self.pointer = pointer
 
 
+class InvalidTensorForRemoteGet(Exception):
+    """Raised when a chain of pointer tensors is not provided for `remote_get`."""
+
+    def __init__(self, tensor: object):
+        message = "Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {}.".format(
+            tensor
+        )
+        super().__init__(message)
+
+
 class WorkerNotFoundException(Exception):
     """Raised when a non-existent worker is requested."""
 
@@ -47,9 +57,9 @@ class CompressionNotFoundException(Exception):
     pass
 
 
-class CannotRequestTensorAttribute(Exception):
+class CannotRequestObjectAttribute(Exception):
     """Raised when .get() is called on a pointer which points to an attribute of
-    another tensor."""
+    another object."""
 
     pass
 

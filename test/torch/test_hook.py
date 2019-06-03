@@ -6,8 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import syft
-from syft.exceptions import RemoteTensorFoundError
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.exceptions import RemoteObjectFoundError
+from syft.frameworks.torch.pointers import PointerTensor
 
 
 def test___init__(hook):
@@ -39,8 +39,8 @@ def test_pointer_found_exception(workers):
     pointer = PointerTensor(id=ptr_id, location=workers["alice"], owner=workers["me"])
 
     try:
-        raise RemoteTensorFoundError(pointer)
-    except RemoteTensorFoundError as err:
+        raise RemoteObjectFoundError(pointer)
+    except RemoteObjectFoundError as err:
         err_pointer = err.pointer
         assert isinstance(err_pointer, PointerTensor)
         assert err_pointer.id == ptr_id
