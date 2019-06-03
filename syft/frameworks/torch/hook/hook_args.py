@@ -1,10 +1,12 @@
 import torch
 import syft as sy
-from syft.exceptions import RemoteTensorFoundError
+from syft.exceptions import RemoteObjectFoundError
 from syft.exceptions import PureTorchTensorFoundError
+
 from syft.exceptions import ResponseSignatureError
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -16,9 +18,12 @@ from typing import Union
 from typing import Tuple
 from typing import List
 
+
 hook_method_args_functions = {}
 hook_method_response_functions = {}
 get_tensor_type_functions = {}
+
+base_types = {int, float, str, bool, bytes, bytearray, complex}
 
 one = lambda _args: 1
 
@@ -30,6 +35,7 @@ type_rule = {
     # should perhaps be of type ShareDict extending dict or something like this
     LoggingTensor: one,
     FixedPrecisionTensor: one,
+    AutogradTensor: one,
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
     PointerTensor: one,
@@ -39,7 +45,7 @@ type_rule = {
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
 forward_func = {
-    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
+    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p)),
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureTorchTensorFoundError),
@@ -48,6 +54,7 @@ forward_func = {
     else (_ for _ in ()).throw(PureTorchTensorFoundError),
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
+    AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
@@ -61,6 +68,7 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
+    AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
@@ -269,9 +277,17 @@ def build_rule(args):
     """
 
     type_args = type(args)
+    # for list, tuple but also tensors and syft tensors
     if type_args in type_rule:
         return type_rule[type_args](args)
+    # for int, float, str, etc
+    elif type_args in base_types:
+        return 0
     else:
+        # New kind of return with pytorch 1.1
+        if "torch.return_types" in str(type_args):
+            return type_rule[tuple](args)
+        # Still remain ellipsis, slices, etc.
         return 0
 
 

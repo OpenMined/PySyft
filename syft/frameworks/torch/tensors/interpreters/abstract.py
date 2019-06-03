@@ -4,11 +4,12 @@ import torch
 from typing import List
 
 import syft as sy
+import weakref
 
 
-class AbstractTensor(ABC):
+class AbstractObject(ABC):
     """
-    This is the tensor abstraction.
+    This is a generic object abstraction.
     """
 
     is_wrapper = False
@@ -64,54 +65,6 @@ class AbstractTensor(ABC):
                 return self.shape[0]
         except IndexError:
             return 0
-
-    def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
-        """
-        Add a syft(log) tensor on top of the tensor.
-
-        Args:
-            tensor: the tensor to extend
-            wrap: if true, add the syft tensor between the wrapper
-            and the rest of the chain. If false, just add it at the top
-
-        Returns:
-            a syft/torch tensor
-        """
-        if not wrap:
-            self.child = tensor
-            return self
-        else:
-            # if tensor is a wrapper
-            if not hasattr(tensor, "child"):
-                tensor = tensor.wrap()
-
-            self.child = tensor.child
-            tensor.child = self
-            return tensor
-
-    def wrap(self) -> torch.Tensor:
-        """Wraps the class inside torch tensor.
-
-        Because PyTorch does not (yet) support functionality for creating
-        arbitrary Tensor types (via subclassing torch.Tensor), in order for our
-        new tensor types (such as PointerTensor) to be usable by the rest of
-        PyTorch (such as PyTorch's layers and loss functions), we need to wrap
-        all of our new tensor types inside of a native PyTorch type.
-
-        This function adds a .wrap() function to all of our tensor types (by
-        adding it to AbstractTensor), such that (on any custom tensor
-        my_tensor), my_tensor.wrap() will return a tensor that is compatible
-        with the rest of the PyTorch API.
-
-        Returns:
-            A pytorch tensor.
-        """
-        wrapper = torch.Tensor()
-        wrapper.child = self
-        wrapper.is_wrapper = True
-        if self.id is None:
-            self.id = sy.ID_PROVIDER.pop()
-        return wrapper
 
     def serialize(self):  # check serde.py to see how to provide compression schemes
         """Serializes the tensor on which it's called.
@@ -201,10 +154,14 @@ class AbstractTensor(ABC):
 
         return response
 
+    def setattr(self, name, value):
+        self.child.setattr(name, value.child)
+
     @classmethod
     def rgetattr(cls, obj, attr, *args):
         """
         Get an attribute recursively
+
 
         Args:
             obj: the object holding the attribute
@@ -224,6 +181,69 @@ class AbstractTensor(ABC):
             return getattr(obj, attr, *args)
 
         return functools.reduce(_getattr, [obj] + attr.split("."))
+
+
+class AbstractTensor(AbstractObject):
+    def __init__(
+        self,
+        id: int = None,
+        owner: "sy.workers.AbstractWorker" = None,
+        tags: List[str] = None,
+        description: str = None,
+        child=None,
+    ):
+        super(AbstractTensor, self).__init__(id, owner, tags, description, child)
+
+    def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
+        """
+        Add a syft(log) tensor on top of the tensor.
+
+        Args:
+            tensor: the tensor to extend
+            wrap: if true, add the syft tensor between the wrapper
+            and the rest of the chain. If false, just add it at the top
+
+        Returns:
+            a syft/torch tensor
+        """
+        if not wrap:
+            self.child = tensor
+            return self
+        else:
+            # if tensor is a wrapper
+            if not hasattr(tensor, "child"):
+                tensor = tensor.wrap()
+
+            self.child = tensor.child
+            tensor.child = self
+            return tensor
+
+    def wrap(self) -> torch.Tensor:
+        """Wraps the class inside torch tensor.
+
+        Because PyTorch does not (yet) support functionality for creating
+        arbitrary Tensor types (via subclassing torch.Tensor), in order for our
+        new tensor types (such as PointerTensor) to be usable by the rest of
+        PyTorch (such as PyTorch's layers and loss functions), we need to wrap
+        all of our new tensor types inside of a native PyTorch type.
+
+        This function adds a .wrap() function to all of our tensor types (by
+        adding it to AbstractTensor), such that (on any custom tensor
+        my_tensor), my_tensor.wrap() will return a tensor that is compatible
+        with the rest of the PyTorch API.
+
+        Returns:
+            A pytorch tensor.
+        """
+        wrapper = torch.Tensor()
+        wrapper.child = self
+        wrapper.is_wrapper = True
+        wrapper.child.parent = weakref.ref(wrapper)
+
+        if self.id is None:
+            self.id = sy.ID_PROVIDER.pop()
+
+        return wrapper
 
 
 def initialize_tensor(

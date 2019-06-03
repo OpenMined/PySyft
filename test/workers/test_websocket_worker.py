@@ -10,7 +10,7 @@ def test_websocket_worker(hook, start_proc):
     """Evaluates that you can do basic tensor operations using
     WebsocketServerWorker"""
 
-    kwargs = {"id": "fed1", "host": "localhost", "port": 8765, "hook": hook}
+    kwargs = {"id": "fed1", "host": "localhost", "port": 8766, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
@@ -37,7 +37,7 @@ def test_websocket_workers_search(hook, start_proc):
     # Sample tensor to store on the server
     sample_data = torch.tensor([1, 2, 3, 4]).tag("#sample_data", "#another_tag")
     # Args for initializing the websocket server and client
-    base_kwargs = {"id": "fed2", "host": "localhost", "port": 8766, "hook": hook}
+    base_kwargs = {"id": "fed2", "host": "localhost", "port": 8767, "hook": hook}
     server_kwargs = base_kwargs
     server_kwargs["data"] = [sample_data]
     server = start_proc(WebsocketServerWorker, server_kwargs)

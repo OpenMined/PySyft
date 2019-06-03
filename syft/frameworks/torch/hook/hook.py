@@ -4,7 +4,7 @@ import logging
 import types
 import copy
 import torch
-import torch.nn as nn
+from torch import nn
 from functools import wraps
 
 
@@ -12,8 +12,10 @@ import syft
 from syft import workers
 
 from syft.workers import BaseWorker
+from syft.federated import Plan
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -140,6 +142,16 @@ class TorchHook:
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
+
+        # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(AutogradTensor)
+
+        # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(AdditiveSharingTensor)
 
         # Hook the tensor constructor function
         self._hook_tensor()
@@ -354,7 +366,8 @@ class TorchHook:
                 if hasattr(self, "child"):
                     del self.child
 
-                self.native_param_data.set_(new_data)  # .wrap()
+                with torch.no_grad():
+                    self.set_(new_data)
             return self
 
         torch.nn.Parameter.data = data
@@ -371,6 +384,7 @@ class TorchHook:
                 if isinstance(to_return.child, syft.PointerTensor):
                     if to_return.child.is_none():
                         to_return = None
+
             else:
                 to_return = self.native_param_grad
 
@@ -396,7 +410,8 @@ class TorchHook:
                 self.child.grad = new_grad  # .wrap()
             else:
                 if self.native_param_grad is not None:
-                    self.native_param_grad.set_(new_grad)  # .wrap()
+                    with torch.no_grad():
+                        self.native_param_grad = new_grad
                 elif new_grad is not None:
                     self.native_param_grad = new_grad
             return self
@@ -812,6 +827,22 @@ class TorchHook:
         tensor_type.native_shape = tensor_type.shape
         tensor_type.native_data = tensor_type.data
 
+        tensor_type.native_grad_fn = tensor_type.grad_fn
+
+        def dim(self):
+            return len(self.shape)
+
+        tensor_type.dim = dim
+
+        @property
+        def grad_fn(self):
+            if self.has_child():
+                return self.child.grad_fn
+            else:
+                return self.native_grad_fn
+
+        tensor_type.grad_fn = grad_fn
+
     def _which_methods_should_we_auto_overload(self, tensor_type: type):
         """Creates a list of Torch methods to auto overload.
 
@@ -928,7 +959,8 @@ class TorchHook:
 
             for p in nn_self.parameters():
                 p.send_(dest)
-
+            if isinstance(nn_self.forward, Plan):
+                nn_self.forward.send(dest)
             return nn_self
 
         self.torch.nn.Module.send = module_send_
@@ -962,6 +994,9 @@ class TorchHook:
             """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
             for p in nn_self.parameters():
                 p.get_()
+
+            if isinstance(nn_self.forward, Plan):
+                nn_self.forward.get()
 
             return nn_self
 
@@ -1006,7 +1041,37 @@ class TorchHook:
 
         self.torch.nn.Module.float_precision = module_float_precision_
 
-        def module_copy_(nn_self):
+        def module_copy(nn_self):
+            """Returns a copy of a torch.nn.Module"""
             return copy.deepcopy(nn_self)
 
-        self.torch.nn.Module.copy = module_copy_
+        self.torch.nn.Module.copy = module_copy
+
+        @property
+        def owner(nn_self):
+            for p in nn_self.parameters():
+                return p.owner
+
+        self.torch.nn.Module.owner = owner
+
+        @property
+        def location(nn_self):
+            try:
+                for p in nn_self.parameters():
+                    return p.location
+            except AttributeError:
+                raise AttributeError(
+                    "Module has no attribute location, did you already send it to some location?"
+                )
+
+        self.torch.nn.Module.location = location
+
+        # Make sure PySyft uses the PyTorch version
+        self.torch.nn.modules.rnn._rnn_impls["LSTM"] = self.torch.lstm
+
+        # Add support for GRUs
+        self.torch.nn.modules.rnn._rnn_impls["GRU"] = self.torch.gru
+
+        # Override _VF.LSTM_Cell and _VF.GRU_Cell with torch.LSTM_Cell and torch.GRU_Cell
+        # With the pytorch-based version
+        self.torch.nn.modules.rnn._VF = self.torch
