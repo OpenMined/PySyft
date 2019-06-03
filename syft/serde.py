@@ -1352,9 +1352,9 @@ simplifiers = {
     str: [18, _simplify_str],
     pointers.ObjectWrapper: [20, _simplify_object_wrapper],
     ResponseSignatureError: [21, _simplify_exception],
-    torch.jit.ScriptModule: [21, _simplify_script_module],
+    torch.jit.ScriptModule: [22, _simplify_script_module],
     torch.jit.TopLevelTracedModule: [
-        21,
+        22,
         _simplify_script_module,
     ],  # treat as torch.jit.ScriptModule
 }
