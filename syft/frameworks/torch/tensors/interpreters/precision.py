@@ -246,7 +246,7 @@ class FixedPrecisionTensor(AbstractTensor):
             stride = torch.nn.modules.utils._pair(stride)
             padding = torch.nn.modules.utils._pair(padding)
             dilation = torch.nn.modules.utils._pair(dilation)
-            
+
             # Extract a few useful values
             batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
             nb_channels_out, nb_channels_in_, nb_rows_kernel, nb_cols_kernel = weight.shape
