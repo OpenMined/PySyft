@@ -15,7 +15,7 @@ _args_not_supported_by_tfe = [
 ]
 
 
-def share(model, *workers, target_graph=None):  # pragma: no cover
+def share(model, *workers, target_graph=None):
     """
     Secret share the model between `workers`.
 
@@ -58,7 +58,6 @@ def share(model, *workers, target_graph=None):  # pragma: no cover
 
     # Push and initialize shared model on servers
     sess = tfe.Session(graph=target_graph)
-    tf.Session.reset(sess.target)
     sess.run(initializer)
 
     model._tfe_session = sess
