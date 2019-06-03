@@ -11,7 +11,7 @@ from syft.frameworks.torch import pointers
 
 
 @pytest.mark.skip(reason="fails currently as it needs functions as torch.nn.linear to be unhooked.")
-def test_train_config_with_jit_script_module(hook, workers):
+def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
     alice = workers["alice"]
     me = workers["me"]
 
@@ -77,7 +77,8 @@ def test_train_config_with_jit_script_module(hook, workers):
     assert loss_after < loss_before
 
 
-def test_train_config_with_jit_trace(hook, workers):
+@pytest.mark.skip(reason="bug in pytorch version 1.1.0, jit.trace returns raw C function")
+def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     alice = workers["alice"]
     me = workers["me"]
 
@@ -139,7 +140,8 @@ def test_train_config_with_jit_trace(hook, workers):
     assert loss_after < loss_before
 
 
-def test_train_config_send_with_traced_fns(hook, workers):
+@pytest.mark.skip(reason="bug in pytorch version 1.1.0, jit.trace returns raw C function")
+def test_train_config_send_with_traced_fns(hook, workers):  # pragma: no cover
     alice = workers["alice"]
     me = workers["me"]
 
