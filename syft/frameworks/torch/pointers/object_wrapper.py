@@ -84,5 +84,6 @@ class ObjectWrapper:
             id_at_location=id_at_location if id_at_location is not None else self.id,
             tags=self.tags,
             description=self.description,
+            garbage_collect_data=False,
         )
         return pointer
