@@ -53,7 +53,6 @@ class LargePrecisionTensor(AbstractTensor):
     def __eq__(self, other):
         return self.child == other.child
 
-    # TODO Having issues with the hook
     @overloaded.method
     def add(self, self_, *args, **kwargs):
         other = args[0]
@@ -130,7 +129,7 @@ class LargePrecisionTensor(AbstractTensor):
         """
         base = 2 ** bits
         n = 0
-        # Using tolist() to allow int type. Terrible :(
+        # Using tolist() to allow int type. Terrible performance :(
         for x in number_parts.tolist():
             n = n * base + x
         return n
