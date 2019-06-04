@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+from syft.frameworks.torch.overload_torch import overloaded
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 
 
@@ -45,36 +46,47 @@ class LargePrecisionTensor(AbstractTensor):
         Specify all the attributes need to build a wrapper correctly when returning a response.
         """
         return {
-            "field": self.precision,
+            "precision": self.precision,
+            "virtual_prec": self.virtual_prec
         }
 
     def __eq__(self, other):
         return self.child == other.child
 
     # TODO Having issues with the hook
-    # @overloaded.method
-    def add(self, other):
-        assert isinstance(other, LargePrecisionTensor), "LargePrecisionTensor cannot be added to %r" % type(other)
-        if self.shape[-1] != other.shape[-1]:
-            if self.shape[-1] < other.shape[-1]:
-                result = self._adjust_to_shape(other.shape) + other.child
+    @overloaded.method
+    def add(self, self_, *args, **kwargs):
+        other = args[0]
+        if self_.shape[-1] != other.shape[-1]:
+            if self_.shape[-1] < other.shape[-1]:
+                result = LargePrecisionTensor._adjust_to_shape(self_, other.shape) + other
             else:
-                result = other._adjust_to_shape(self.shape) + self.child
+                result = LargePrecisionTensor._adjust_to_shape(other, self_.shape) + self_
         else:
-            result = self.child + other.child
+            result = self_ + other
         return LargePrecisionTensor(precision=self.precision, virtual_prec=self.virtual_prec).on(result)
 
-    def _adjust_to_shape(self, shape, fill_value=0) -> torch.Tensor:
+    __add__ = add
+
+    def __iadd__(self, other):
+        """Add two fixed precision tensors together.
+        """
+        self.child = self.add(other).child
+
+        return self
+
+    @staticmethod
+    def _adjust_to_shape(to_adjust, shape, fill_value=0) -> torch.Tensor:
         # We assume only the last dimension needs to be adjusted
         # Original input tensors should have the same dimensions
-        diff_dim = shape[-1] - self.shape[-1]
-        new_shape = self.shape[:-1] + (diff_dim,)
+        diff_dim = shape[-1] - to_adjust.shape[-1]
+        new_shape = to_adjust.shape[:-1] + (diff_dim,)
+
         if not fill_value:
-            filler = torch.zeros(size=new_shape, dtype=self.child.dtype)
+            filler = torch.zeros(size=new_shape, dtype=to_adjust.dtype)
         else:
-            filler = torch.ones(size=new_shape, dtype=self.child.dtype)
-        result = torch.cat([filler, self.child], len(shape) - 1)
-        return result
+            filler = torch.ones(size=new_shape, dtype=to_adjust.dtype)
+        return torch.cat([filler, to_adjust], len(shape) - 1)
 
     @staticmethod
     def _split_number(number, bits):

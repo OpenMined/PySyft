@@ -50,7 +50,7 @@ def test_add():
     expected = torch.tensor([30.])
     lpt1 = x1.large_prec(precision=bits, virtual_prec=virtual_prec)
     lpt2 = x2.large_prec(precision=bits, virtual_prec=virtual_prec)
-    result = lpt1.add(lpt2)
+    result = lpt1 + lpt2
     assert torch.all(torch.eq(expected, result.restore_precision()))
 
 
@@ -62,5 +62,5 @@ def test_add_different_dims():
     expected = torch.tensor([100020.])
     lpt1 = x1.large_prec(precision=bits, virtual_prec=virtual_prec)
     lpt2 = x2.large_prec(precision=bits, virtual_prec=virtual_prec)
-    result = lpt1.add(lpt2)
+    result = lpt1 + lpt2
     assert torch.all(torch.eq(expected, result.restore_precision()))
