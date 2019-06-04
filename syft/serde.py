@@ -1354,7 +1354,7 @@ simplifiers = {
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
     Plan: [15, _simplify_plan],
     VirtualWorker: [16, _simplify_worker],
-    str: [17, _simplify_str],
+    str: [18, _simplify_str],
     pointers.ObjectWrapper: [19, _simplify_object_wrapper],
     GetNotPermittedError: [20, _simplify_exception],
     ResponseSignatureError: [20, _simplify_exception],
@@ -1365,7 +1365,7 @@ simplifiers = {
     ],  # treat as torch.jit.ScriptModule
 }
 
-forced_full_simplifiers = {VirtualWorker: [18, _force_full_simplify_worker]}
+forced_full_simplifiers = {VirtualWorker: [17, _force_full_simplify_worker]}
 
 
 def _detail(worker: AbstractWorker, obj: object) -> object:
@@ -1411,8 +1411,8 @@ detailers = [
     _detail_multi_pointer_tensor,
     _detail_plan,
     _detail_worker,
-    _detail_str,
     _force_full_detail_worker,
+    _detail_str,
     _detail_object_wrapper,
     _detail_exception,
     _detail_script_module,
