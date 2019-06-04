@@ -34,11 +34,10 @@ from syft.serde.native_serde import (
     _simplify_ellipsis,
     _simplify_range,
     _simplify_str,
-
     _detail_slice,
     _detail_ellipsis,
     _detail_range,
-    _detail_str
+    _detail_str,
 )
 
 
@@ -240,7 +239,7 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
     grad = param.grad
 
     if grad is not None and not (
-            hasattr(grad, "child") and isinstance(grad.child, pointers.PointerTensor)
+        hasattr(grad, "child") and isinstance(grad.child, pointers.PointerTensor)
     ):
         grad_ser = _simplify_torch_tensor(grad)
     else:
@@ -403,6 +402,7 @@ def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
 
 # Dictionaries
 
+
 def _simplify_dictionary(my_dict: Dict) -> Dict:
     """
     This function is designed to search a dict for any objects
@@ -492,7 +492,7 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
 
 
 def _detail_ndarray(
-        worker: AbstractWorker, arr_representation: Tuple[bin, Tuple, str]
+    worker: AbstractWorker, arr_representation: Tuple[bin, Tuple, str]
 ) -> numpy.ndarray:
     """
     This function reconstruct a numpy array from it's byte data, the shape and the dtype
@@ -689,7 +689,7 @@ def _simplify_additive_shared_tensor(tensor: AdditiveSharingTensor) -> tuple:
 
 
 def _detail_additive_shared_tensor(
-        worker: AbstractWorker, tensor_tuple: tuple
+    worker: AbstractWorker, tensor_tuple: tuple
 ) -> AdditiveSharingTensor:
     """
         This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
@@ -840,7 +840,7 @@ def _simplify_GetNotPermittedError(error: GetNotPermittedError) -> tuple:
 
 
 def _detail_GetNotPermittedError(
-        worker: AbstractWorker, error_tuple: tuple
+    worker: AbstractWorker, error_tuple: tuple
 ) -> GetNotPermittedError:
     """Details and raises a GetNotPermittedError
 
@@ -883,7 +883,7 @@ def _simplify_object_wrapper(obj: pointers.ObjectWrapper) -> tuple:
 
 
 def _detail_object_wrapper(
-        worker: AbstractWorker, obj_wrapper_tuple: str
+    worker: AbstractWorker, obj_wrapper_tuple: str
 ) -> pointers.ObjectWrapper:
     obj_wrapper = pointers.ObjectWrapper(
         id=obj_wrapper_tuple[0], obj=_detail(worker, obj_wrapper_tuple[1])

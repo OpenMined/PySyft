@@ -131,7 +131,7 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
 
 
 def _detail_ndarray(
-        worker: AbstractWorker, arr_representation: Tuple[bin, Tuple, str]
+    worker: AbstractWorker, arr_representation: Tuple[bin, Tuple, str]
 ) -> numpy.ndarray:
     """
     This function reconstruct a numpy array from it's byte data, the shape and the dtype

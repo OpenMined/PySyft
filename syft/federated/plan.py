@@ -6,7 +6,6 @@ from syft.workers.base import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
 
-
 from typing import List
 from typing import Union
 
@@ -458,7 +457,9 @@ class Plan(ObjectStorage):
         _ = self.owner.send(self, workers=location)
 
         # Deep copy the plan without using deep copy
-        pointer = sy.serde.torch_serde._detail_plan(self.owner, sy.serde.torch_serde._simplify_plan(self))
+        pointer = sy.serde.torch_serde._detail_plan(
+            self.owner, sy.serde.torch_serde._simplify_plan(self)
+        )
 
         # readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
         self.readable_plan = readable_plan_original
