@@ -1,9 +1,12 @@
 import torch as th
 from torch import nn
 from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
+import logging
 
 from syft.generic import ObjectStorage
 from syft.federated.train_config import TrainConfig
+
+logger = logging.getLogger(__name__)
 
 
 class FederatedClient(ObjectStorage):
@@ -54,6 +57,17 @@ class FederatedClient(ObjectStorage):
         return self.optimizer
 
     def fit(self, dataset_key, **kwargs):
+        """Fit a model on the local dataset as specified in the local TrainConfig object
+
+                Args:
+                    dataset_key: str, identifier of the local dataset that shall be used for training
+
+                    **kwargs: unused
+
+                Returns:
+                    loss: training loss on the last batch of training data
+
+                """
         if self.train_config is None:
             raise ValueError("TrainConfig not defined.")
 
@@ -88,4 +102,42 @@ class FederatedClient(ObjectStorage):
                 loss.backward()
                 self.optimizer.step()
 
+        data_range = range(len(self.datasets[key]))
+        if self.train_config.shuffle:
+            sampler = RandomSampler(data_range)
+        else:
+            sampler = SequentialSampler(data_range)
+        train_loader = th.utils.data.DataLoader(
+            self.datasets[key],
+            batch_size=self.train_config.batch_size,
+            sampler=sampler,
+            num_workers=0,
+        )
+        loss = -1.0
+        iteration_count = 0
+        for (data, target) in train_loader:
+
+            if iteration_count % 25 == 0:
+                logger.debug("iteration %s", iteration_count)
+            self.optimizer.zero_grad()
+            output = model(data)
+            loss = loss_fn(output, target)
+            loss.backward()
+            self.optimizer.step()
+            iteration_count += 1
+            if (
+                self.train_config.max_nr_batches
+                and iteration_count >= self.train_config.max_nr_batches
+            ):
+                logger.debug("Accuracy: %s", accuracy(output, target))
+                break
+
         return loss
+
+
+def accuracy(pred_softmax, target):
+    nr_elems = len(target)
+    pred = pred_softmax.argmax(dim=1)
+    logger.debug("predicted: %s", pred)
+    logger.debug("target:    %s", target)
+    return (pred == target).sum().numpy() / float(nr_elems)
