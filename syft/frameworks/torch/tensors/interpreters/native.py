@@ -651,9 +651,9 @@ class TorchTensor(AbstractTensor):
     def large_prec(self, *args, **kwargs):
         return (
             syft.frameworks.torch.tensors.interpreters.LargePrecisionTensor(*args, **kwargs)
-                .on(self)
-                .enc_fix_large_prec()
-                .wrap()
+            .on(self)
+            .enc_fix_large_prec()
+            .wrap()
         )
 
     large_precision = large_prec

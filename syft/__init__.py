@@ -55,7 +55,7 @@ __all__ = [
     "LoggingTensor",
     "PointerTensor",
     "VirtualGrid",
-    "LargePrecisionTensor"
+    "LargePrecisionTensor",
 ]
 
 local_worker = None
