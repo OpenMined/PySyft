@@ -1,10 +1,10 @@
 # Required imports
 import torch
-from Teacher import Teacher
-from Model import Model
+from teacher import Teacher
+from model import Model
 from data import load_data, NoisyDataset
 from util import accuracy, split
-from Student import Student
+from student import Student
 import syft as sy
 from syft.frameworks.torch.differential_privacy import pate
 
