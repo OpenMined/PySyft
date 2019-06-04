@@ -137,6 +137,12 @@ class ResponseSignatureError(Exception):
     def __init__(self, ids_generated=None):
         self.ids_generated = ids_generated
 
+    def get_attributes(self):
+        """
+        Specify all the attributes need to report an error correctly.
+        """
+        return {"ids_generated": self.ids_generated}
+
 
 class GetNotPermittedError(Exception):
     """Raised when calling get on a pointer to a tensor which does not allow

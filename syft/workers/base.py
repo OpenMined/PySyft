@@ -468,7 +468,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         obj = self.get_obj(obj_id)
         if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
-            return GetNotPermittedError()
+            raise GetNotPermittedError()
         else:
             self.de_register_obj(obj)
             return obj
