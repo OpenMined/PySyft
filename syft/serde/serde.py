@@ -31,19 +31,13 @@ serialization process, it can override the functions _serialize_tensor and _dese
 By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function _apply_compress_scheme
 """
-from tempfile import TemporaryFile
-from typing import Collection
-from typing import Dict
-from typing import Tuple
 import torch
 import msgpack
 import lz4
 from lz4 import (  # noqa: F401
     frame,
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
-import io
 import numpy
-import warnings
 import zstd
 
 import syft
@@ -61,17 +55,15 @@ from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch import pointers
 
-from syft.serde.native_serde import(
+from syft.serde.native_serde import (
     _simplify_str,
     _simplify_range,
     _simplify_ellipsis,
     _simplify_slice,
-
     _detail_str,
     _detail_range,
     _detail_ellipsis,
     _detail_slice,
-
 )
 
 from syft.serde.torch_serde import (
@@ -93,7 +85,6 @@ from syft.serde.torch_serde import (
     _force_full_detail_worker,
     _detail_object_wrapper,
     _detail_script_module,
-
     _simplify_torch_tensor,
     _simplify_torch_parameter,
     _simplify_collection,
@@ -109,8 +100,7 @@ from syft.serde.torch_serde import (
     _simplify_GetNotPermittedError,
     _simplify_object_wrapper,
     _force_full_simplify_worker,
-    _simplify_script_module
-
+    _simplify_script_module,
 )
 
 
@@ -122,11 +112,11 @@ ZSTD = 42
 
 # High Level Public Functions (these are the ones you use)
 def serialize(
-        obj: object,
-        simplified: bool = False,
-        force_no_compression: bool = False,
-        force_no_serialization: bool = False,
-        force_full_simplification: bool = False,
+    obj: object,
+    simplified: bool = False,
+    force_no_compression: bool = False,
+    force_no_serialization: bool = False,
+    force_full_simplification: bool = False,
 ) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
@@ -234,6 +224,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, detail=True) -> obje
     else:
         # sometimes we want to skip detailing (such as in Plan)
         return simple_objects
+
 
 # Chosen Compression Algorithm
 
