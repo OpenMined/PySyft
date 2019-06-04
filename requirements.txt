@@ -9,3 +9,4 @@ torchvision
 websocket_client
 websockets>=7.0
 zstd
+tblib
