@@ -38,8 +38,9 @@ class FederatedClient(ObjectStorage):
             self.optimizer = None
         elif isinstance(obj, nn.parameter.Parameter):
             self.parameters.append(obj)
-
-        super().set_obj(obj)
+            super().set_obj(obj)
+        else:
+            super().set_obj(obj)
 
     def _build_optimizer(self, optimizer_name: str, model, lr: float) -> th.optim.Optimizer:
         """Build an optimizer if needed.
