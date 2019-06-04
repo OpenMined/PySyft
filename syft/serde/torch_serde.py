@@ -1,50 +1,16 @@
 """
-This file exists to provide one common place for all serialization to occur
-regardless of framework. As msgpack only supports basic types and binary formats
-every type must be first be converted to one of these types. Thus, we've split our
-functionality into three steps. When converting from a PySyft object (or collection
-of objects) to an object to be sent over the wire (a message), those three steps
-are (in order):
-
-1. Simplify - converts PyTorch objects to simple Python objects (using pickle)
-2. Serialize - converts Python objects to binary
-3. Compress - compresses the binary (Now we're ready send!)
-
-Inversely, when converting from a message sent over the wire back to a PySyft
-object, the three steps are (in order):
-
-1. Decompress - converts compressed binary back to decompressed binary
-2. Deserialize - converts from binary to basic python objects
-3. Detail - converts some basic python objects back to PyTorch objects (Tensors)
-
-Furthermore, note that there is different simplification/serialization logic
-for objects of different types. Thus, instead of using if/else logic, we have
-global dictionaries which contain functions and Python types as keys. For
-simplification logic, this dictionary is called "simplifiers". The keys
-are the types and values are the simplification logic. For example,
-simplifiers[tuple] will return the function which knows how to simplify the
-tuple type. The same is true for all other simplifier/detailer functions.
-
-By default, the simplification/detail operations expect Torch tensors. If the setup requires other
-serialization process, it can override the functions _serialize_tensor and _deserialize_tensor
-
-By default, we serialize using msgpack and compress using lz4.
-If different compressions are required, the worker can override the function _apply_compress_scheme
+This file exists to provide one common place for all serialisation and simplify_ and _detail
+for all tensors (Torch) and collections.
 """
 from tempfile import TemporaryFile
 from typing import Collection
 from typing import Dict
 from typing import Tuple
 import torch
-import msgpack
-import lz4
-from lz4 import (  # noqa: F401
-    frame,
-)  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
+
 import io
 import numpy
 import warnings
-import zstd
 
 import syft
 import syft as sy
@@ -54,7 +20,6 @@ from syft.workers import VirtualWorker
 
 from syft.federated import Plan
 
-from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
@@ -63,126 +28,18 @@ from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.frameworks.torch import pointers
 
-# COMPRESSION SCHEME INT CODES
-NO_COMPRESSION = 40
-LZ4 = 41
-ZSTD = 42
 
+from syft.serde.native_serde import (
+    _simplify_slice,
+    _simplify_ellipsis,
+    _simplify_range,
+    _simplify_str,
 
-# High Level Public Functions (these are the ones you use)
-def serialize(
-    obj: object,
-    simplified: bool = False,
-    force_no_compression: bool = False,
-    force_no_serialization: bool = False,
-    force_full_simplification: bool = False,
-) -> bin:
-    """This method can serialize any object PySyft needs to send or store.
-
-    This is the high level function for serializing any object or collection
-    of objects which PySyft needs to send over the wire. It includes three
-    steps, Simplify, Serialize, and Compress as described inline below.
-
-    Args:
-        obj (object): the object to be serialized
-        simplified (bool): in some cases we want to pass in data which has
-            already been simplified - in which case we must skip double
-            simplification - which would be bad.... so bad... so... so bad
-        force_no_compression (bool): If true, this will override ANY module
-            settings and not compress the objects being serialized. The primary
-            expected use of this functionality is testing and/or experimentation.
-        force_no_serialization (bool): Primarily a testing tool, this will force
-            this method to return human-readable Python objects which is very useful
-            for testing and debugging (forceably overrides module compression,
-            serialization, and the 'force_no_compression' override)). In other words,
-            only simplification operations are performed.
-        force_full_simplification (bool): Some objects are only partially serialized
-            by default. For objects where this is the case, setting this flag to True
-            will force the entire object to be serialized. For example, setting this
-            flag to True will cause a VirtualWorker to be serialized WITH all of its
-            tensors while by default VirtualWorker objects only serialize a small
-            amount of metadata.
-
-    Returns:
-        binary: the serialized form of the object.
-
-    """
-    # 1) Simplify
-    # simplify difficult-to-serialize objects. See the _simpliy method
-    # for details on how this works. The general purpose is to handle types
-    # which the fast serializer cannot handle
-    if not simplified:
-        if force_full_simplification:
-            simple_objects = _force_full_simplify(obj)
-        else:
-            simple_objects = _simplify(obj)
-    else:
-        simple_objects = obj
-
-    # 2) Serialize
-    # serialize into a binary
-    if force_no_serialization:
-        return simple_objects
-    else:
-        binary = msgpack.dumps(simple_objects)
-
-    # 3) Compress
-    # optionally compress the binary and return the result
-    # prepend a 1-byte header '0' or '1' to the output stream
-    # to denote whether output stream is compressed or not
-    # if compressed stream length is greater than input stream
-    # we output the input stream as it is with header set to '0'
-    # otherwise we output the compressed stream with header set to '1'
-    # even if compressed flag is set to false by the caller we
-    # output the input stream as it is with header set to '0'
-    if force_no_compression:
-        return binary
-    else:
-        return _compress(binary)
-
-
-def deserialize(binary: bin, worker: AbstractWorker = None, detail=True) -> object:
-    """ This method can deserialize any object PySyft needs to send or store.
-
-    This is the high level function for deserializing any object or collection
-    of objects which PySyft has sent over the wire or stored. It includes three
-    steps, Decompress, Deserialize, and Detail as described inline below.
-
-    Args:
-        binary (bin): the serialized object to be deserialized.
-        worker (AbstractWorker): the worker which is acquiring the message content,
-            for example used to specify the owner of a tensor received(not obvious
-            for virtual workers)
-        detail (bool): there are some cases where we need to perform the decompression
-            and deserialization part, but we don't need to detail all the message.
-            This is the case for Plan workers for instance
-
-    Returns:
-        object: the deserialized form of the binary input.
-    """
-    if worker is None:
-        worker = syft.torch.hook.local_worker
-
-    # 1) Decompress the binary if needed
-    binary = _decompress(binary)
-
-    # 2) Deserialize
-    # This function converts the binary into the appropriate python
-    # object (or nested dict/collection of python objects)
-    simple_objects = msgpack.loads(binary)
-
-    if detail:
-        # 3) Detail
-        # This function converts typed, simple objects into their more
-        # complex (and difficult to serialize) counterparts which the
-        # serialization library wasn't natively able to serialize (such
-        # as msgpack's inability to serialize torch tensors or ... or
-        # python slice objects
-        return _detail(worker, simple_objects)
-
-    else:
-        # sometimes we want to skip detailing (such as in Plan)
-        return simple_objects
+    _detail_slice,
+    _detail_ellipsis,
+    _detail_range,
+    _detail_str
+)
 
 
 def _serialize_tensor(tensor) -> bin:
@@ -251,106 +108,6 @@ def torch_tensor_deserializer(tensor_bin) -> torch.Tensor:
     """"Strategy to deserialize a binary input using Torch load"""
     bin_tensor_stream = io.BytesIO(tensor_bin)
     return torch.load(bin_tensor_stream)
-
-
-# Chosen Compression Algorithm
-
-
-def _apply_compress_scheme(decompressed_input_bin) -> tuple:
-    """
-    Apply the selected compression scheme.
-    By default is used LZ4
-
-    Args:
-        decompressed_input_bin: the binary to be compressed
-    """
-    return apply_lz4_compression(decompressed_input_bin)
-
-
-def apply_lz4_compression(decompressed_input_bin) -> tuple:
-    """
-    Apply LZ4 compression to the input
-
-    Args:
-        :param decompressed_input_bin: the binary to be compressed
-        :return: a tuple (compressed_result, LZ4)
-    """
-    return lz4.frame.compress(decompressed_input_bin), LZ4
-
-
-def apply_zstd_compression(decompressed_input_bin) -> tuple:
-    """
-    Apply ZSTD compression to the input
-
-    Args:
-        :param decompressed_input_bin: the binary to be compressed
-        :return: a tuple (compressed_result, ZSTD)
-    """
-
-    return zstd.compress(decompressed_input_bin), ZSTD
-
-
-def apply_no_compression(decompressed_input_bin) -> tuple:
-    """
-    No compression is applied to the input
-
-    Args:
-        :param decompressed_input_bin: the binary
-        :return: a tuple (the binary, LZ4)
-    """
-
-    return decompressed_input_bin, NO_COMPRESSION
-
-
-def _compress(decompressed_input_bin: bin) -> bin:
-    """
-    This function compresses a binary using the function _apply_compress_scheme
-    if the input has been already compressed in some step, it will return it as it is
-
-    Args:
-        decompressed_input_bin (bin): binary to be compressed
-
-    Returns:
-        bin: a compressed binary
-
-    """
-
-    compress_stream, compress_scheme = _apply_compress_scheme(decompressed_input_bin)
-
-    if len(compress_stream) < len(decompressed_input_bin):
-        return compress_scheme.to_bytes(1, byteorder="big") + compress_stream
-    else:
-        return NO_COMPRESSION.to_bytes(1, byteorder="big") + decompressed_input_bin
-
-
-def _decompress(binary: bin) -> bin:
-    """
-    This function decompresses a binary using the scheme defined in the first byte of the input
-
-    Args:
-        binary (bin): a compressed binary
-
-    Returns:
-        bin: decompressed binary
-
-    """
-
-    # check the 1-byte header to check the compression scheme used
-    compress_scheme = binary[0]
-
-    # remove the 1-byte header from the input stream
-    binary = binary[1:]
-    # 1)  Decompress or return the original stream
-    if compress_scheme == LZ4:
-        return lz4.frame.decompress(binary)
-    elif compress_scheme == ZSTD:
-        return zstd.decompress(binary)
-    elif compress_scheme == NO_COMPRESSION:
-        return binary
-    else:
-        raise CompressionNotFoundException(
-            "compression scheme not found for" " compression code:" + str(compress_scheme)
-        )
 
 
 # Simplify/Detail Torch Tensors
@@ -483,7 +240,7 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
     grad = param.grad
 
     if grad is not None and not (
-        hasattr(grad, "child") and isinstance(grad.child, pointers.PointerTensor)
+            hasattr(grad, "child") and isinstance(grad.child, pointers.PointerTensor)
     ):
         grad_ser = _simplify_torch_tensor(grad)
     else:
@@ -646,7 +403,6 @@ def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
 
 # Dictionaries
 
-
 def _simplify_dictionary(my_dict: Dict) -> Dict:
     """
     This function is designed to search a dict for any objects
@@ -709,52 +465,6 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
     return pieces
 
 
-# Range
-
-
-def _simplify_range(my_range: range) -> Tuple[int, int, int]:
-    """
-    This function extracts the start, stop and step from the range.
-
-    Args:
-        my_range (range): a range object
-
-    Returns:
-        list: a list defining the range parameters [start, stop, step]
-
-    Examples:
-
-        range_parameters = _simplify_range(range(1, 3, 4))
-
-        assert range_parameters == [1, 3, 4]
-
-    """
-
-    return (my_range.start, my_range.stop, my_range.step)
-
-
-def _detail_range(worker: AbstractWorker, my_range_params: Tuple[int, int, int]) -> range:
-    """
-    This function extracts the start, stop and step from a tuple.
-
-    Args:
-        worker: the worker doing the deserialization (only here to standardise signature
-            with other _detail functions)
-        my_range_params (tuple): a tuple defining the range parameters [start, stop, step]
-
-    Returns:
-        range: a range object
-
-    Examples:
-        new_range = _detail_range([1, 3, 4])
-
-        assert new_range == range(1, 3, 4)
-
-    """
-
-    return range(my_range_params[0], my_range_params[1], my_range_params[2])
-
-
 #   numpy array
 
 
@@ -782,7 +492,7 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
 
 
 def _detail_ndarray(
-    worker: AbstractWorker, arr_representation: Tuple[bin, Tuple, str]
+        worker: AbstractWorker, arr_representation: Tuple[bin, Tuple, str]
 ) -> numpy.ndarray:
     """
     This function reconstruct a numpy array from it's byte data, the shape and the dtype
@@ -810,57 +520,8 @@ def _detail_ndarray(
     return res
 
 
-#   slice
-
-
-def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
-    """
-    This function creates a list that represents a slice.
-
-    Args:
-        my_slice (slice): a python slice
-
-    Returns:
-        tuple : a list holding the start, stop and step values
-
-    Examples:
-
-        slice_representation = _simplify_slice(slice(1,2,3))
-
-    """
-    return (my_slice.start, my_slice.stop, my_slice.step)
-
-
-def _detail_slice(worker: AbstractWorker, my_slice: Tuple[int, int, int]) -> slice:
-    """
-    This function extracts the start, stop and step from a list.
-
-    Args:
-        my_slice (tuple): a list defining the slice parameters [start, stop, step]
-
-    Returns:
-        range: a range object
-
-    Examples:
-        new_range = _detail_range([1, 3, 4])
-
-        assert new_range == range(1, 3, 4)
-
-    """
-
-    return slice(my_slice[0], my_slice[1], my_slice[2])
-
-
-def _simplify_ellipsis(e: Ellipsis) -> bytes:
-    return b""
-
-
 def _simplify_torch_device(device: torch.device) -> Tuple[str]:
     return device.type
-
-
-def _detail_ellipsis(worker: AbstractWorker, ellipsis: bytes) -> Ellipsis:
-    return ...
 
 
 def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.device:
@@ -1028,7 +689,7 @@ def _simplify_additive_shared_tensor(tensor: AdditiveSharingTensor) -> tuple:
 
 
 def _detail_additive_shared_tensor(
-    worker: AbstractWorker, tensor_tuple: tuple
+        worker: AbstractWorker, tensor_tuple: tuple
 ) -> AdditiveSharingTensor:
     """
         This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
@@ -1179,7 +840,7 @@ def _simplify_GetNotPermittedError(error: GetNotPermittedError) -> tuple:
 
 
 def _detail_GetNotPermittedError(
-    worker: AbstractWorker, error_tuple: tuple
+        worker: AbstractWorker, error_tuple: tuple
 ) -> GetNotPermittedError:
     """Details and raises a GetNotPermittedError
 
@@ -1217,20 +878,12 @@ def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tu
     return result
 
 
-def _simplify_str(obj: str) -> tuple:
-    return (obj.encode("utf-8"),)
-
-
-def _detail_str(worker: AbstractWorker, str_tuple: tuple) -> str:
-    return str_tuple[0].decode("utf-8")
-
-
 def _simplify_object_wrapper(obj: pointers.ObjectWrapper) -> tuple:
     return (obj.id, _simplify(obj.obj))
 
 
 def _detail_object_wrapper(
-    worker: AbstractWorker, obj_wrapper_tuple: str
+        worker: AbstractWorker, obj_wrapper_tuple: str
 ) -> pointers.ObjectWrapper:
     obj_wrapper = pointers.ObjectWrapper(
         id=obj_wrapper_tuple[0], obj=_detail(worker, obj_wrapper_tuple[1])

@@ -18,10 +18,10 @@ def test_gradient_serde():
     orig_grad = x.grad
 
     # serialize
-    blob = sy.serde.serialize(x)
+    blob = sy.serde.serde.serialize(x)
 
     # deserialize
-    t = sy.serde.deserialize(blob)
+    t = sy.serde.serde.deserialize(blob)
 
     # check that gradient was properly serde
     assert (t.grad == orig_grad).all()

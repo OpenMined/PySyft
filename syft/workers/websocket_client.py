@@ -61,10 +61,10 @@ class WebsocketClientWorker(BaseWorker):
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
         message = (MSGTYPE.SEARCH, query)
-        serialized_message = sy.serde.serialize(message)
+        serialized_message = sy.serde.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)
-        return sy.serde.deserialize(response)
+        return sy.serde.serde.deserialize(response)
 
     def _send_msg(self, message: bin, location) -> bin:
         raise RuntimeError(

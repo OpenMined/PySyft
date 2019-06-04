@@ -4,8 +4,8 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
-from syft.serde import deserialize
-from syft.serde import serialize
+from syft.serde.serde import deserialize
+from syft.serde.serde import serialize
 import time
 
 import pytest

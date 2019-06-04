@@ -132,7 +132,7 @@ class Plan(ObjectStorage):
         Returns:
             The None message serialized to specify the command was received.
         """
-        (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, detail=False)
+        (some_type, (msg_type, contents)) = sy.serde.serde.deserialize(bin_message, detail=False)
 
         if msg_type != MSGTYPE.OBJ:
             self.plan.append(bin_message)
@@ -143,7 +143,7 @@ class Plan(ObjectStorage):
         if msg_type in (MSGTYPE.OBJ_REQ, MSGTYPE.IS_NONE, MSGTYPE.GET_SHAPE):
             return self.__call__()
 
-        return sy.serde.serialize(None)
+        return sy.serde.serde.serialize(None)
 
     def build_plan(self, args: List):
         """Builds a plan.
@@ -334,7 +334,7 @@ class Plan(ObjectStorage):
 
     def _execute_plan(self):
         for message in self.readable_plan:
-            bin_message = sy.serde.serialize(message, simplified=True)
+            bin_message = sy.serde.serde.serialize(message, simplified=True)
             _ = self.owner.recv_msg(bin_message)
 
     def _get_plan_output(self, result_ids, return_ptr=False):
@@ -395,7 +395,7 @@ class Plan(ObjectStorage):
             self._update_args(args, result_ids)
             self._execute_plan()
 
-        return sy.serde.serialize(None)
+        return sy.serde.serde.serialize(None)
 
     def request_execute_plan(
         self,
@@ -458,7 +458,7 @@ class Plan(ObjectStorage):
         _ = self.owner.send(self, workers=location)
 
         # Deep copy the plan without using deep copy
-        pointer = sy.serde._detail_plan(self.owner, sy.serde._simplify_plan(self))
+        pointer = sy.serde.torch_serde._detail_plan(self.owner, sy.serde.torch_serde._simplify_plan(self))
 
         # readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
         self.readable_plan = readable_plan_original

@@ -3,7 +3,7 @@ This file tests the ability for serde.py to convert complex types into
 simple python types which are serializable by standard serialization tools.
 For more on how/why this works, see serde.py directly.
 """
-from syft import serde
+from syft.serde import serde
 
 
 import syft
@@ -328,7 +328,7 @@ def test_invalid_decompression_scheme(compress_scheme):
         # Simulate compression by removing some values
         return decompressed_input[:10], compress_scheme
 
-    syft.serde._apply_compress_scheme = some_other_compression_scheme
+    syft.serde.serde._apply_compress_scheme = some_other_compression_scheme
     arr_serialized = serde.serialize(arr)
     with pytest.raises(CompressionNotFoundException):
         _ = serde.deserialize(arr_serialized)
@@ -338,9 +338,9 @@ def test_invalid_decompression_scheme(compress_scheme):
 def test_dict(compress):
     # Test with integers
     if compress:
-        syft.serde._apply_compress_scheme = serde.apply_lz4_compression
+        serde._apply_compress_scheme = serde.apply_lz4_compression
     else:
-        syft.serde._apply_compress_scheme = serde.apply_no_compression
+        serde._apply_compress_scheme = serde.apply_no_compression
     _dict = {1: 1, 2: 2, 3: 3}
     dict_serialized = serde.serialize(_dict)
     dict_serialized_deserialized = serde.deserialize(dict_serialized)
@@ -556,8 +556,8 @@ def test_pointer_tensor_detail(id):
 
 
 def test_numpy_tensor_serde():
-    syft.serde._serialize_tensor = syft.serde.numpy_tensor_serializer
-    syft.serde._deserialize_tensor = syft.serde.numpy_tensor_deserializer
+    syft.serde.torch_serde._serialize_tensor = syft.serde.torch_serde.numpy_tensor_serializer
+    syft.serde.torch_serde._deserialize_tensor = syft.serde.torch_serde.numpy_tensor_deserializer
 
     tensor = torch.tensor(numpy.random.random((10, 10)), requires_grad=False)
 
@@ -565,8 +565,8 @@ def test_numpy_tensor_serde():
     tensor_deserialized = serde.deserialize(tensor_serialized)
 
     # Back to Pytorch serializer
-    syft.serde._serialize_tensor = syft.serde.torch_tensor_serializer
-    syft.serde._deserialize_tensor = syft.serde.torch_tensor_deserializer
+    syft.serde.torch_serde._serialize_tensor = syft.serde.torch_serde.torch_tensor_serializer
+    syft.serde.torch_serde._deserialize_tensor = syft.serde.torch_serde.torch_tensor_deserializer
 
     assert torch.eq(tensor_deserialized, tensor).all()
 
@@ -578,8 +578,8 @@ def test_additive_sharing_tensor_serde(compress, workers):
     x = torch.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
 
     additive_sharing_tensor = x.child.child.child
-    data = syft.serde._simplify_additive_shared_tensor(additive_sharing_tensor)
-    additive_sharing_tensor_reconstructed = syft.serde._detail_additive_shared_tensor(
+    data = syft.serde.torch_serde._simplify_additive_shared_tensor(additive_sharing_tensor)
+    additive_sharing_tensor_reconstructed = syft.serde.torch_serde._detail_additive_shared_tensor(
         syft.hook.local_worker, data
     )
 

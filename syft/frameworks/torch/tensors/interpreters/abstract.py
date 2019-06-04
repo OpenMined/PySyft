@@ -80,7 +80,7 @@ class AbstractObject(ABC):
                 x = torch.Tensor([1,2,3,4,5])
                 x.serialize() # returns a serialized object
         """
-        return sy.serde.serialize(self)
+        return sy.serde.serde.serialize(self)
 
     def ser(self, *args, **kwargs):
         return self.serialize(*args, **kwargs)

@@ -215,13 +215,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         message = (msg_type, message)
 
         # Step 1: serialize the message to simple python objects
-        bin_message = sy.serde.serialize(message)
+        bin_message = sy.serde.serde.serialize(message)
 
         # Step 2: send the message and wait for a response
         bin_response = self._send_msg(bin_message, location)
 
         # Step 3: deserialize the response
-        response = sy.serde.deserialize(bin_response, worker=self)
+        response = sy.serde.serde.deserialize(bin_response, worker=self)
 
         return response
 
@@ -245,14 +245,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             self.msg_history.append(bin_message)
 
         # Step 0: deserialize message
-        (msg_type, contents) = sy.serde.deserialize(bin_message, worker=self)
+        (msg_type, contents) = sy.serde.serde.deserialize(bin_message, worker=self)
         if self.verbose:
             print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
         # Step 1: route message to appropriate function
         response = self._message_router[msg_type](contents)
 
         # Step 2: Serialize the message to simple python objects
-        bin_response = sy.serde.serialize(response)
+        bin_response = sy.serde.serde.serialize(response)
 
         return bin_response
 
