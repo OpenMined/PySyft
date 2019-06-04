@@ -62,7 +62,7 @@ class LargePrecisionTensor(AbstractTensor):
                 result = other._adjust_to_shape(self.shape) + self.child
         else:
             result = self.child + other.child
-        return LargePrecisionTensor(tensor=result, precision=self.precision)
+        return LargePrecisionTensor(precision=self.precision, virtual_prec=self.virtual_prec).on(result)
 
     def _adjust_to_shape(self, shape, fill_value=0) -> torch.Tensor:
         # We assume only the last dimension needs to be adjusted
@@ -129,12 +129,13 @@ class LargePrecisionTensor(AbstractTensor):
 
     def restore_precision(self):
         """
-        Restore the tensor expressed now as a matrix for each original item
+        Restore the tensor expressed now as a matrix for each original item.
         :return: the original tensor
         """
-        # TODO Is Vectorization possible here?
+        # We need to pass the PyTorch tensor to Numpy to allow the intermediate large number.
+        # An alternative would be to iterate through the PyTorch tensor and apply the restore function.
+        # This however wouldn't save us from creating a new tensor
         return torch.from_numpy((np.apply_along_axis(lambda x: self._restore_number_np(x, self.precision),
                                 1,
                                 self.child.numpy()) / (2 ** self.virtual_prec))
-                                .astype(np.float)
-                                )
+                                .astype(np.float32))  # At this point the value is an object type. Force cast to float

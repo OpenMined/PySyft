@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
@@ -6,7 +5,7 @@ from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 
 def test_wrap(workers):
     """
-    Test the .on() wrap functionality for LoggingTensor
+    Test the .on() wrap functionality for LargePrecisionTensor
     """
 
     x_tensor = torch.Tensor([1, 2, 3])
@@ -19,10 +18,8 @@ def test_wrap(workers):
 def test_large_prec(workers):
     x = torch.tensor([1.5, 2., 3.])
     enlarged = x.large_prec(precision=16, virtual_prec=256)
-    print(enlarged)
     restored = enlarged.restore_precision()
     # And now x and restored must be the same
-    print(restored)
     assert torch.all(torch.eq(x, restored))
 
 
@@ -47,70 +44,23 @@ def test_split_restore():
 
 def test_add():
     bits = 16
-    expected = 9510765143330165428
-    lpt1 = LargePrecisionTensor(np.array([4755382571665082714]), precision=bits)
-    lpt2 = LargePrecisionTensor(np.array([4755382571665082714]), precision=bits)
+    virtual_prec = 256
+    x1 = torch.tensor([10.])
+    x2 = torch.tensor([20.])
+    expected = torch.tensor([30.])
+    lpt1 = x1.large_prec(precision=bits, virtual_prec=virtual_prec)
+    lpt2 = x2.large_prec(precision=bits, virtual_prec=virtual_prec)
     result = lpt1.add(lpt2)
-    # The same number can be factorized in different ways. The sum of two matrices can be different to the
-    # factorisation of the number the sum represents
-    assert LargePrecisionTensor._restore_number(result.child.view(-1).tolist(), bits) == expected
+    assert torch.all(torch.eq(expected, result.restore_precision()))
 
 
-def test_multiple_dimensions():
+def test_add_different_dims():
     bits = 16
-    expected = torch.IntTensor([[[16894, 33600, 64302, 18778,  1357, 60759, 19791, 31352],
-                                 [16894, 33600, 64302, 18778,  1357, 60759, 19791, 31352]],
-
-                                [[16894, 33600, 64302, 18778,  1357, 60759, 19791, 31348],
-                                 [16894, 33600, 64302, 18778,  1357, 60759, 19791, 31348]]])
-
-    tensor = np.array([
-        [87721325272084551684339671875103718008, 87721325272084551684339671875103718008],
-        [87721325272084551684339671875103718004, 87721325272084551684339671875103718004]
-    ])
-
-    result = LargePrecisionTensor(tensor, precision=bits)
-
-    assert torch.all(torch.eq(expected, result.child))
-
-
-def test_multiple_dimensions_restore():
-    bits = 16
-
-    tensor = np.array([
-        [87721325272084551684339671875103718008, 87721325272084551684339671875103718008],
-        [87721325272084551684339671875103718004, 87721325272084551684339671875103718004]
-    ])
-
-    precision_tensor = LargePrecisionTensor(tensor, precision=bits)
-    all_zeros = LargePrecisionTensor(np.zeros(tensor.shape))
-    result = precision_tensor.add(all_zeros)
-    assert result.shape == precision_tensor.shape
-
-
-def test_dimensions_expanded():
-    bits = 16
-
-    tensor = np.array([
-        [87721325272084551684339671875103718008, 87721325272084551684339671875103718008],
-        [87721325272084551684339671875103718004, 87721325272084551684339671875103718004]
-    ])
-
-    precision_tensor = LargePrecisionTensor(tensor, precision=bits)
-    all_zeros = LargePrecisionTensor(np.zeros(tensor.shape))
-
-    all_zeros = all_zeros._adjust_to_shape(precision_tensor.shape)
-
-    assert precision_tensor.shape == all_zeros.shape
-
-
-def test_add_multiple_dimensions():
-    bits = 16
-
-    expected = 87721325272084551684339671875103719000
-    tensor1 = LargePrecisionTensor(np.array([[87721325272084551684339671875103718008]]), precision=bits)
-    tensor2 = LargePrecisionTensor(np.array([[992]]), precision=bits)
-
-    result = tensor1.add(tensor2)
-    assert LargePrecisionTensor._restore_number(result.child.view(-1).tolist(), bits) == expected
-
+    virtual_prec = 256
+    x1 = torch.tensor([100000.])
+    x2 = torch.tensor([20.])
+    expected = torch.tensor([100020.])
+    lpt1 = x1.large_prec(precision=bits, virtual_prec=virtual_prec)
+    lpt2 = x2.large_prec(precision=bits, virtual_prec=virtual_prec)
+    result = lpt1.add(lpt2)
+    assert torch.all(torch.eq(expected, result.restore_precision()))
