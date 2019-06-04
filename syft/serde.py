@@ -46,7 +46,6 @@ import numpy
 from tblib import Traceback
 import traceback
 from six import reraise
-import sys
 import warnings
 import zstd
 
@@ -1182,14 +1181,15 @@ def _simplify_exception(e):
     """
     Serialize information about an Exception which was raised to forward it
     """
-    # Get information about the exception: type of error, error obj, traceback
-    tp, value, tb = sys.exc_info()
+    # Get information about the exception: type of error,  traceback
+    tp = type(e)
+    tb = e.__traceback__
     # Serialize the traceback
     traceback_str = "Traceback (most recent call last):\n" + "".join(traceback.format_tb(tb))
     # Include special attributes if relevant
-    if hasattr(e, "get_attributes"):
+    try:
         attributes = e.get_attributes()
-    else:
+    except AttributeError:
         attributes = {}
     return tp.__name__, traceback_str, _simplify(attributes)
 
