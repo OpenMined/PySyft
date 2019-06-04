@@ -13,7 +13,9 @@ class LargePrecisionTensor(AbstractTensor):
     If the original tensor is a PyTorch tensor it is not processed
     """
 
-    def __init__(self, owner=None, id=None, tags=None, description=None, precision=16, virtual_prec=0):
+    def __init__(
+        self, owner=None, id=None, tags=None, description=None, precision=16, virtual_prec=0
+    ):
         """Initializes a LargePrecisionTensor.
 
         Args:
@@ -45,10 +47,7 @@ class LargePrecisionTensor(AbstractTensor):
         """
         Specify all the attributes need to build a wrapper correctly when returning a response.
         """
-        return {
-            "precision": self.precision,
-            "virtual_prec": self.virtual_prec
-        }
+        return {"precision": self.precision, "virtual_prec": self.virtual_prec}
 
     def __eq__(self, other):
         return self.child == other.child
@@ -63,7 +62,9 @@ class LargePrecisionTensor(AbstractTensor):
                 result = LargePrecisionTensor._adjust_to_shape(other, self_.shape) + self_
         else:
             result = self_ + other
-        return LargePrecisionTensor(precision=self.precision, virtual_prec=self.virtual_prec).on(result)
+        return LargePrecisionTensor(precision=self.precision, virtual_prec=self.virtual_prec).on(
+            result
+        )
 
     __add__ = add
 
@@ -146,7 +147,11 @@ class LargePrecisionTensor(AbstractTensor):
         # We need to pass the PyTorch tensor to Numpy to allow the intermediate large number.
         # An alternative would be to iterate through the PyTorch tensor and apply the restore function.
         # This however wouldn't save us from creating a new tensor
-        return torch.from_numpy((np.apply_along_axis(lambda x: self._restore_number_np(x, self.precision),
-                                1,
-                                self.child.numpy()) / (2 ** self.virtual_prec))
-                                .astype(np.float32))  # At this point the value is an object type. Force cast to float
+        return torch.from_numpy(
+            (
+                np.apply_along_axis(
+                    lambda x: self._restore_number_np(x, self.precision), 1, self.child.numpy()
+                )
+                / (2 ** self.virtual_prec)
+            ).astype(np.float32)
+        )  # At this point the value is an object type. Force cast to float

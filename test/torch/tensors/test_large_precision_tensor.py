@@ -16,7 +16,7 @@ def test_wrap(workers):
 
 
 def test_large_prec(workers):
-    x = torch.tensor([1.5, 2., 3.])
+    x = torch.tensor([1.5, 2.0, 3.0])
     enlarged = x.large_prec(precision=16, virtual_prec=256)
     restored = enlarged.restore_precision()
     # And now x and restored must be the same
@@ -45,9 +45,9 @@ def test_split_restore():
 def test_add():
     bits = 16
     virtual_prec = 256
-    x1 = torch.tensor([10.])
-    x2 = torch.tensor([20.])
-    expected = torch.tensor([30.])
+    x1 = torch.tensor([10.0])
+    x2 = torch.tensor([20.0])
+    expected = torch.tensor([30.0])
     lpt1 = x1.large_prec(precision=bits, virtual_prec=virtual_prec)
     lpt2 = x2.large_prec(precision=bits, virtual_prec=virtual_prec)
     result = lpt1 + lpt2
@@ -57,9 +57,9 @@ def test_add():
 def test_add_different_dims():
     bits = 16
     virtual_prec = 256
-    x1 = torch.tensor([100000.])
-    x2 = torch.tensor([20.])
-    expected = torch.tensor([100020.])
+    x1 = torch.tensor([100000.0])
+    x2 = torch.tensor([20.0])
+    expected = torch.tensor([100020.0])
     lpt1 = x1.large_prec(precision=bits, virtual_prec=virtual_prec)
     lpt2 = x2.large_prec(precision=bits, virtual_prec=virtual_prec)
     result = lpt1 + lpt2
