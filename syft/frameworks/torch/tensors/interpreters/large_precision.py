@@ -45,11 +45,10 @@ class LargePrecisionTensor(AbstractTensor):
         for x in np.nditer(self.child, flags=["refs_ok"]):
             n = int(x.item() * 2 ** self.virtual_prec)
             print(f"\nAdding number {n} for item {x.item()}\n")
-            result.append(LargePrecisionTensor._split_number(n, type_size[self.internal_type]))
+            result.append(LargePrecisionTensor._split_number(n, internal_precision[self.internal_type]))
         new_shape = self.child.shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
-        # Numbers are all positive. This means we need the double of precision to store them as negative bit is not used
-        return torch.tensor(result, dtype=next_type_size[self.internal_type])
+        return torch.tensor(result, dtype=self.internal_type)
 
     def get_class_attributes(self):
         """
@@ -100,7 +99,7 @@ class LargePrecisionTensor(AbstractTensor):
         # This however wouldn't save us from creating a new tensor
         ndarray = self.child.numpy()
         result = LargePrecisionTensor._restore_tensor_into_numbers(
-            ndarray, type_size[self.internal_type]
+            ndarray, internal_precision[self.internal_type]
         ) / (2 ** self.virtual_prec)
         return torch.from_numpy(result.reshape(ndarray.shape[:-1]).astype(np.float32))
         # At this point the value is an object type. Force cast to float before creating torch.tensor
@@ -166,24 +165,15 @@ class LargePrecisionTensor(AbstractTensor):
         return n
 
 
-type_size = {
-    torch.uint8: 8,
-    torch.int8: 8,
-    torch.int16: 16,
-    torch.short: 16,
-    torch.int32: 32,
-    torch.int: 32,
-    torch.int64: 64,
-    torch.long: 64,
-}
-
-next_type_size = {
-    torch.uint8: torch.int16,
-    torch.int8: torch.int16,
-    torch.int16: torch.int32,
-    torch.short: torch.int32,
-    torch.int32: torch.int64,
-    torch.int: torch.int64,
-    torch.int64: torch.int64,
-    torch.long: torch.int64,
+# The internal precision used to decompose the large numbers is half of the size of the type.
+# This is because we are not considering negative numbers when decomposing.
+internal_precision = {
+    torch.uint8: 4,
+    torch.int8: 4,
+    torch.int16: 8,
+    torch.short: 8,
+    torch.int32: 16,
+    torch.int: 16,
+    torch.int64: 32,
+    torch.long: 32,
 }
