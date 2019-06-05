@@ -122,10 +122,24 @@ class FixedPrecisionTensor(AbstractTensor):
         in the fixed precision setting
         """
 
-        # Replace all syft tensor with their child attribute
-        new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
-            "mul", self, args, kwargs
-        )
+        other = args[0]
+
+        if isinstance(other, FixedPrecisionTensor):
+            assert (
+                self.precision_fractional == other.precision_fractional
+            ), "In mul, all args should have the same precision_fractional"
+
+        if not other.child.is_wrapper:
+            # If other.child is not a wrapper, we want to bypass the self.child wrapper
+            new_self = self.child.child.wrap()
+            new_args = (other.wrap(),)
+            new_kwargs = kwargs
+
+        else:
+            # Replace all syft tensor with their child attribute
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                "mul", self, args, kwargs
+            )
 
         # Send it to the appropriate class and get the response
         response = getattr(new_self, "mul")(*new_args, **new_kwargs)
@@ -134,13 +148,6 @@ class FixedPrecisionTensor(AbstractTensor):
         response = syft.frameworks.torch.hook_args.hook_response(
             "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
-
-        other = args[0]
-
-        if isinstance(other, FixedPrecisionTensor):
-            assert (
-                self.precision_fractional == other.precision_fractional
-            ), "In mul, all args should have the same precision_fractional"
 
         return response.truncate(self.precision_fractional)
 

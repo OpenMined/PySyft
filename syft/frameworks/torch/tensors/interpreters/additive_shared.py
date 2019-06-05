@@ -346,6 +346,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         if isinstance(other, dict):
             return {worker: cmd(share, other[worker]) for worker, share in shares.items()}
+        elif isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
+            return {worker: cmd(share, other.wrap()) for worker, share in shares.items()}
         else:
             return {worker: cmd(share, other) for worker, share in shares.items()}
 
