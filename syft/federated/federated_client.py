@@ -1,12 +1,9 @@
 import torch as th
 from torch import nn
 from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
-import logging
 
 from syft.generic import ObjectStorage
 from syft.federated.train_config import TrainConfig
-
-logger = logging.getLogger(__name__)
 
 
 class FederatedClient(ObjectStorage):
