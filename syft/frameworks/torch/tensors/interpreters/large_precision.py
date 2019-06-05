@@ -10,10 +10,17 @@ class LargePrecisionTensor(AbstractTensor):
 
     Some systems using Syft require larger types than those supported natively. This tensor type supports arbitrarily
     large values by packing them in smaller ones.
+    These smaller values are of type `internal_type`. The large value is defined by `virtual_prec`
     """
 
     def __init__(
-        self, owner=None, id=None, tags=None, description=None, precision=16, virtual_prec=0
+        self,
+        owner=None,
+        id=None,
+        tags=None,
+        description=None,
+        internal_type=torch.int32,
+        virtual_prec=0,
     ):
         """Initializes a LargePrecisionTensor.
 
@@ -23,32 +30,32 @@ class LargePrecisionTensor(AbstractTensor):
             id (str or int): An optional string or integer id of the LargePrecisionTensor.
             tags (list): list of tags for searching.
             description (str): a description of this tensor.
-            precision (int): The precision this tensor will be transformed to internally. In bits.
+            internal_type (int): The precision this tensor will be transformed to internally. In bits.
             virtual_prec (int): The virtual precision required by the caller. In bits.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
-        self.precision = precision
+        self.internal_type = internal_type
         self.virtual_prec = virtual_prec
 
-    @staticmethod
-    def _create_internal_tensor(tensor, precision, virtual_prec):
+    def _create_internal_tensor(self):
         # TODO refs_ok might not be needed as we are passing now torch.tensors here
         # refs_ok is necessary to enable iterations of reference types.
         # These big numbers are stored as objects in np
         result = []
-        for x in np.nditer(tensor, flags=["refs_ok"]):
-            n = int(x.item() * 2 ** virtual_prec)
+        for x in np.nditer(self.child, flags=["refs_ok"]):
+            n = int(x.item() * 2 ** self.virtual_prec)
             print(f"\nAdding number {n} for item {x.item()}\n")
-            result.append(LargePrecisionTensor._split_number(n, precision))
-        new_shape = tensor.shape + (len(max(result, key=len)),)
+            result.append(LargePrecisionTensor._split_number(n, type_size[self.internal_type]))
+        new_shape = self.child.shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
-        return torch.IntTensor(result)
+        # Numbers are all positive. This means we need the double of precision to store them as negative bit is not used
+        return torch.tensor(result, dtype=next_type_size[self.internal_type])
 
     def get_class_attributes(self):
         """
         Specify all the attributes need to build a wrapper correctly when returning a response.
         """
-        return {"precision": self.precision, "virtual_prec": self.virtual_prec}
+        return {"internal_type": self.internal_type, "virtual_prec": self.virtual_prec}
 
     def __eq__(self, other):
         return self.child == other.child
@@ -78,7 +85,7 @@ class LargePrecisionTensor(AbstractTensor):
         return self
 
     def fix_large_precision(self):
-        self.child = self._create_internal_tensor(self.child, self.precision, self.virtual_prec)
+        self.child = self._create_internal_tensor()
         return self
 
     def restore_precision(self):
@@ -92,9 +99,9 @@ class LargePrecisionTensor(AbstractTensor):
         # An alternative would be to iterate through the PyTorch tensor and apply the restore function.
         # This however wouldn't save us from creating a new tensor
         ndarray = self.child.numpy()
-        result = LargePrecisionTensor._restore_tensor_into_numbers(ndarray, self.precision) / (
-            2 ** self.virtual_prec
-        )
+        result = LargePrecisionTensor._restore_tensor_into_numbers(
+            ndarray, type_size[self.internal_type]
+        ) / (2 ** self.virtual_prec)
         return torch.from_numpy(result.reshape(ndarray.shape[:-1]).astype(np.float32))
         # At this point the value is an object type. Force cast to float before creating torch.tensor
 
@@ -157,3 +164,26 @@ class LargePrecisionTensor(AbstractTensor):
         for x in number_parts.tolist():
             n = n * base + x
         return n
+
+
+type_size = {
+    torch.uint8: 8,
+    torch.int8: 8,
+    torch.int16: 16,
+    torch.short: 16,
+    torch.int32: 32,
+    torch.int: 32,
+    torch.int64: 64,
+    torch.long: 64,
+}
+
+next_type_size = {
+    torch.uint8: torch.int16,
+    torch.int8: torch.int16,
+    torch.int16: torch.int32,
+    torch.short: torch.int32,
+    torch.int32: torch.int64,
+    torch.int: torch.int64,
+    torch.int64: torch.int64,
+    torch.long: torch.int64,
+}
