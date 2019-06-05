@@ -32,7 +32,7 @@ def test_2d_tensors(workers):
 
 
 def test_3d_tensors(workers):
-    x = torch.tensor([[[1.5, 2.0, 3.0]], [[4.5, 5.0, 6.0]], [[7., 8.0, 9.0]]])
+    x = torch.tensor([[[1.5, 2.0, 3.0]], [[4.5, 5.0, 6.0]], [[7.0, 8.0, 9.0]]])
     enlarged = x.large_prec(precision=16, virtual_prec=256)
     restored = enlarged.restore_precision()
     # And now x and restored must be the same

@@ -92,7 +92,9 @@ class LargePrecisionTensor(AbstractTensor):
         # An alternative would be to iterate through the PyTorch tensor and apply the restore function.
         # This however wouldn't save us from creating a new tensor
         ndarray = self.child.numpy()
-        result = LargePrecisionTensor._restore_tensor_into_numbers(ndarray, self.precision) / (2 ** self.virtual_prec)
+        result = LargePrecisionTensor._restore_tensor_into_numbers(ndarray, self.precision) / (
+            2 ** self.virtual_prec
+        )
         return torch.from_numpy(result.reshape(ndarray.shape[:-1]).astype(np.float32))
         # At this point the value is an object type. Force cast to float before creating torch.tensor
 
