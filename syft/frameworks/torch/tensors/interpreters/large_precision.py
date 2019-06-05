@@ -54,15 +54,11 @@ class LargePrecisionTensor(AbstractTensor):
         return self.child == other.child
 
     @overloaded.method
-    def add(self, self_, *args, **kwargs):
-        other = args[0]
+    def add(self, self_, other):
         if self_.shape[-1] != other.shape[-1]:
-            result = self._add_different_dims(other, self_)
+            return self._add_different_dims(other, self_)
         else:
-            result = self_ + other
-        return LargePrecisionTensor(precision=self.precision, virtual_prec=self.virtual_prec).on(
-            result
-        )
+            return self_ + other
 
     @staticmethod
     def _add_different_dims(other, self_):
@@ -80,6 +76,33 @@ class LargePrecisionTensor(AbstractTensor):
         self.child = self.add(other).child
 
         return self
+
+    def fix_large_precision(self):
+        self.child = self._create_internal_tensor(self.child, self.precision, self.virtual_prec)
+        return self
+
+    def restore_precision(self):
+        """
+        Restore the tensor expressed now as a matrix for each original item.
+
+        Returns:
+            tensor: the original tensor.
+        """
+        # We need to pass the PyTorch tensor to Numpy to allow the intermediate large number.
+        # An alternative would be to iterate through the PyTorch tensor and apply the restore function.
+        # This however wouldn't save us from creating a new tensor
+        ndarray = self.child.numpy()
+        result = LargePrecisionTensor._restore_tensor_into_numbers(ndarray, self.precision) / (2 ** self.virtual_prec)
+        return torch.from_numpy(result.reshape(ndarray.shape[:-1]).astype(np.float32))
+        # At this point the value is an object type. Force cast to float before creating torch.tensor
+
+    @staticmethod
+    def _restore_tensor_into_numbers(number_array, precision):
+        number_array = number_array.reshape(-1, number_array.shape[-1])
+        result = []
+        for elem in number_array:
+            result.append(LargePrecisionTensor._restore_number(elem, precision))
+        return np.array(result)
 
     @staticmethod
     def _adjust_to_shape(to_adjust, shape, fill_value=0) -> torch.Tensor:
@@ -117,24 +140,6 @@ class LargePrecisionTensor(AbstractTensor):
 
     @staticmethod
     def _restore_number(number_parts, bits):
-        """Rebuilds a number from its parts.
-
-        Args:
-            number_parts (list): the list of numbers representing the original one.
-            bits (int): the bits used in the split.
-
-        Returns:
-            Number: the original number.
-        """
-        base = 2 ** bits
-        n = 0
-        number_parts = number_parts[::-1]
-        while number_parts:
-            n = n * base + number_parts.pop()
-        return n
-
-    @staticmethod
-    def _restore_number_np(number_parts, bits):
         """Rebuild a number from a numpy array,
 
         Args:
@@ -150,26 +155,3 @@ class LargePrecisionTensor(AbstractTensor):
         for x in number_parts.tolist():
             n = n * base + x
         return n
-
-    def fix_large_precision(self):
-        self.child = self._create_internal_tensor(self.child, self.precision, self.virtual_prec)
-        return self
-
-    def restore_precision(self):
-        """
-        Restore the tensor expressed now as a matrix for each original item.
-
-        Returns:
-            tensor: the original tensor.
-        """
-        # We need to pass the PyTorch tensor to Numpy to allow the intermediate large number.
-        # An alternative would be to iterate through the PyTorch tensor and apply the restore function.
-        # This however wouldn't save us from creating a new tensor
-        return torch.from_numpy(
-            (
-                np.apply_along_axis(
-                    lambda x: self._restore_number_np(x, self.precision), 1, self.child.numpy()
-                )
-                / (2 ** self.virtual_prec)
-            ).astype(np.float32)
-        )  # At this point the value is an object type. Force cast to float
