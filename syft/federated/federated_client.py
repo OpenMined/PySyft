@@ -62,18 +62,6 @@ class FederatedClient(ObjectStorage):
             raise ValueError("Unknown optimizer: {}".format(optimizer_name))
         return self.optimizer
 
-    def fit_batch(self, data, target, *args, **kwargs):
-
-        model = self.get_obj(self.train_config.model_id).obj
-        model.train()
-        self.optimizer.zero_grad()
-        output = model.forward(data)
-        loss_fn = self.get_obj(self.train_config.loss_fn_id).obj
-        loss = loss_fn(output, target)
-        loss.backward()
-        self.optimizer.step()
-        return loss
-
     def fit(self, **kwargs):
         if self.train_config is None:
             raise ValueError("TrainConfig not defined.")
