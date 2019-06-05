@@ -30,23 +30,11 @@ def test_remove_dataset():
 def test_set_obj_train_config():
     fed_client = federated.FederatedClient()
 
-    train_config = federated.TrainConfig(id=10)
+    train_config = federated.TrainConfig(id=100, model=None, loss_fn=None)
 
     fed_client.set_obj(train_config)
 
     assert fed_client.train_config.id == train_config.id
-
-
-def test_set_obj_nn_param():
-    fed_client = federated.FederatedClient()
-
-    dummy_data = torch.tensor(42)
-    param = torch.nn.Parameter(data=dummy_data, requires_grad=False)
-
-    fed_client.set_obj(param)
-
-    assert len(fed_client.parameters) == 1
-    assert fed_client.parameters[0] == param
 
 
 def test_set_obj_other():
@@ -61,14 +49,16 @@ def test_set_obj_other():
     assert fed_client._objects[dummy_data.id] == dummy_data
 
 
-def test_fit():
+def test_fit(hook):
+    fed_client = sy.VirtualWorker(hook=hook, id="test_fit_fc")
+
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1], [0], [1], [0]])
+    target = torch.tensor([[1], [0], [1.0], [0]], requires_grad=True)
 
-    fed_client = federated.FederatedClient()
     dataset = sy.BaseDataset(data, target)
-    fed_client.add_dataset(dataset, key="vectors")
+    fed_client.add_dataset(dataset, key="data")
 
+    @torch.jit.script
     def loss_fn(real, pred):
         return ((real.float() - pred.float()) ** 2).mean()
 
@@ -87,10 +77,6 @@ def test_fit():
 
     model_untraced = Net()
     model = torch.jit.trace(model_untraced, data)
-    model_id = 0
-    model_ow = pointers.ObjectWrapper(obj=model, id=model_id)
-    loss_id = 1
-    loss_ow = pointers.ObjectWrapper(obj=loss_fn, id=loss_id)
 
     print("Evaluation before training")
     pred = model(data)
@@ -98,19 +84,18 @@ def test_fit():
     print("Loss: {}".format(loss_before))
 
     # Create and send train config
-    train_config = sy.TrainConfig(batch_size=1, model_id=model_id, loss_fn_id=loss_id)
+    train_config = sy.TrainConfig(batch_size=1, model=model, loss_fn=loss_fn)
+    train_config.send(fed_client)
 
-    fed_client.set_obj(model_ow)
-    fed_client.set_obj(loss_ow)
-    fed_client.set_obj(train_config)
+    print("test", fed_client.train_config._model_id)
 
     for epoch in range(5):
-        loss = fed_client.fit(dataset="vectors")
+        loss = fed_client.fit(dataset_key="data")
         print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
+        print("Iteration %s, loss: %s" % (epoch, loss))
 
     print("Evaluation after training:")
-    new_model = fed_client.get_obj(model_id)
+    new_model = train_config.model_ptr.get()
     pred = new_model.obj(data)
     loss_after = loss_fn(real=target, pred=pred)
     print("Loss: {}".format(loss_after))

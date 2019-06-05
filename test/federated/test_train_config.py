@@ -49,9 +49,7 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
     loss_fn_ptr = me.send(loss_fn, alice)
 
     # Create and send train config
-    train_config = sy.TrainConfig(
-        model_id=model_ptr.id_at_location, loss_fn_id=loss_fn_ptr.id_at_location, batch_size=2
-    )
+    train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2)
     train_config.send(alice)
 
     for epoch in range(5):
@@ -121,9 +119,7 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     print("Loss: {}".format(loss_before))
 
     # Create and send train config
-    train_config = sy.TrainConfig(
-        model_id=model_ptr.id_at_location, loss_fn_id=loss_fn_ptr.id_at_location, batch_size=2
-    )
+    train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2)
     train_config.send(alice)
 
     for epoch in range(5):
@@ -179,11 +175,11 @@ def test_train_config_send_with_traced_fns(hook, workers):  # pragma: no cover
 
     # Create and send train config
     traced_model = torch.jit.trace(model, data)
-    train_config = sy.TrainConfig(batch_size=2)
-    train_config.send(alice, traced_loss_fn=loss_fn, traced_model=traced_model)
+    train_config = sy.TrainConfig(batch_size=2, model=traced_model, loss_fn=loss_fn)
+    train_config.send(alice)
 
     for epoch in range(5):
-        loss = alice.fit(dataset="vectors")
+        loss = alice.fit(dataset_key="vectors")
         print("-" * 50)
         print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
@@ -197,7 +193,7 @@ def test_train_config_send_with_traced_fns(hook, workers):  # pragma: no cover
 
 
 def test___str__():
-    train_config = sy.TrainConfig(batch_size=2, id=99887766)
+    train_config = sy.TrainConfig(batch_size=2, id=99887766, model=None, loss_fn=None)
 
     train_config_str = str(train_config)
     str_expected = "<TrainConfig id:99887766 owner:me epochs: 1 batch_size: 2 lr: 0.1>"
@@ -206,15 +202,14 @@ def test___str__():
 
 
 def test_send(workers):
-    id = 10
-
-    train_config = sy.TrainConfig(batch_size=2, id=id)
     alice = workers["alice"]
+
+    train_config = sy.TrainConfig(batch_size=2, id="id", model=None, loss_fn=None)
     train_config.send(alice)
 
     assert alice.train_config.id == train_config.id
-    assert alice.train_config.model_id == train_config.model_id
-    assert alice.train_config.loss_fn_id == train_config.loss_fn_id
+    assert alice.train_config._model_id == train_config._model_id
+    assert alice.train_config._loss_fn_id == train_config._loss_fn_id
     assert alice.train_config.batch_size == train_config.batch_size
     assert alice.train_config.epochs == train_config.epochs
     assert alice.train_config.optimizer == train_config.optimizer
@@ -223,12 +218,9 @@ def test_send(workers):
 
 
 def test_send_model_and_loss_fn(workers):
-    id = 10
-
-    model = 4
-    loss_fn = 5
-
-    train_config = sy.TrainConfig(batch_size=2, id=id)
+    train_config = sy.TrainConfig(
+        batch_size=2, id="send_model_and_loss_fn_tc", model=None, loss_fn=None
+    )
     alice = workers["alice"]
 
     orig_func = sy.ID_PROVIDER.pop
@@ -240,19 +232,17 @@ def test_send_model_and_loss_fn(workers):
         side_effect=[model_id, model_id_at_location, loss_fn_id, loss_fn_id_at_location]
     )
 
-    train_config.send(alice, traced_model=model, traced_loss_fn=loss_fn)
+    train_config.send(alice)
 
     assert alice.train_config.id == train_config.id
-    assert alice.train_config.model_id == train_config.model_id
-    assert alice.train_config.loss_fn_id == train_config.loss_fn_id
+    assert alice.train_config._model_id == train_config._model_id
+    assert alice.train_config._loss_fn_id == train_config._loss_fn_id
     assert alice.train_config.batch_size == train_config.batch_size
     assert alice.train_config.epochs == train_config.epochs
     assert alice.train_config.optimizer == train_config.optimizer
     assert alice.train_config.lr == train_config.lr
     assert alice.train_config.location == train_config.location
-    assert alice.train_config.model_id == model_id
-    assert alice.train_config.loss_fn_id == loss_fn_id
-    assert alice.get_obj(model_id).obj == model
-    assert alice.get_obj(loss_fn_id).obj == loss_fn
+    assert alice.train_config._model_id == model_id
+    assert alice.train_config._loss_fn_id == loss_fn_id
 
     sy.ID_PROVIDER.pop = orig_func
