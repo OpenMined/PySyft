@@ -10,6 +10,9 @@ import torch
 
 import io
 import numpy
+from tblib import Traceback
+import traceback
+from six import reraise
 import warnings
 
 import syft
@@ -21,6 +24,7 @@ from syft.workers import VirtualWorker
 from syft.federated import Plan
 
 from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ResponseSignatureError
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -834,26 +838,6 @@ def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> pointers.Poin
     return referenced_worker
 
 
-def _simplify_GetNotPermittedError(error: GetNotPermittedError) -> tuple:
-    """Simplifies a GetNotPermittedError into its message"""
-    return (getattr(error, "message", str(error)),)
-
-
-def _detail_GetNotPermittedError(
-    worker: AbstractWorker, error_tuple: tuple
-) -> GetNotPermittedError:
-    """Details and raises a GetNotPermittedError
-
-    Args:
-        worker: the worker doing the deserialization
-        error_tuple: a tuple holding the message of the GetNotPermittedError
-    Raises:
-        GetNotPermittedError: the error thrown when get is not permitted
-    """
-
-    raise GetNotPermittedError(error_tuple[0])
-
-
 def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
     """
 
@@ -889,6 +873,44 @@ def _detail_object_wrapper(
         id=obj_wrapper_tuple[0], obj=_detail(worker, obj_wrapper_tuple[1])
     )
     return obj_wrapper
+
+
+def _simplify_exception(e):
+    """
+    Serialize information about an Exception which was raised to forward it
+    """
+    # Get information about the exception: type of error,  traceback
+    tp = type(e)
+    tb = e.__traceback__
+    # Serialize the traceback
+    traceback_str = "Traceback (most recent call last):\n" + "".join(traceback.format_tb(tb))
+    # Include special attributes if relevant
+    try:
+        attributes = e.get_attributes()
+    except AttributeError:
+        attributes = {}
+    return tp.__name__, traceback_str, _simplify(attributes)
+
+
+def _detail_exception(worker: AbstractWorker, error_tuple: Tuple[str, str, dict]):
+    """
+    Detail and re-raise an Exception forwarded by another worker
+    """
+    error_name, traceback_str, attributes = error_tuple
+    error_name, traceback_str = error_name.decode("utf-8"), traceback_str.decode("utf-8")
+    attributes = _detail(worker, attributes)
+    # De-serialize the traceback
+    tb = Traceback.from_string(traceback_str)
+    # Check that the error belongs to a valid set of Exceptions
+    if error_name in dir(sy.exceptions):
+        error_type = getattr(sy.exceptions, error_name)
+        error = error_type()
+        # Include special attributes if any
+        for attr_name, attr in attributes.items():
+            setattr(error, attr_name, attr)
+        reraise(error_type, error, tb.as_traceback())
+    else:
+        raise ValueError(f"Invalid Exception returned:\n{traceback_str}")
 
 
 def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
@@ -985,9 +1007,10 @@ simplifiers = {
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
     Plan: [15, _simplify_plan],
     VirtualWorker: [16, _simplify_worker],
-    GetNotPermittedError: [17, _simplify_GetNotPermittedError],
     str: [18, _simplify_str],
-    pointers.ObjectWrapper: [20, _simplify_object_wrapper],
+    pointers.ObjectWrapper: [19, _simplify_object_wrapper],
+    GetNotPermittedError: [20, _simplify_exception],
+    ResponseSignatureError: [20, _simplify_exception],
     torch.jit.ScriptModule: [21, _simplify_script_module],
     torch.jit.TopLevelTracedModule: [
         21,
@@ -995,7 +1018,7 @@ simplifiers = {
     ],  # treat as torch.jit.ScriptModule
 }
 
-forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
+forced_full_simplifiers = {VirtualWorker: [17, _force_full_simplify_worker]}
 
 
 def _detail(worker: AbstractWorker, obj: object) -> object:
@@ -1041,9 +1064,9 @@ detailers = [
     _detail_multi_pointer_tensor,
     _detail_plan,
     _detail_worker,
-    _detail_GetNotPermittedError,
-    _detail_str,
     _force_full_detail_worker,
+    _detail_str,
     _detail_object_wrapper,
+    _detail_exception,
     _detail_script_module,
 ]

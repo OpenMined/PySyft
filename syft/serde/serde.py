@@ -49,6 +49,8 @@ from syft.federated import Plan
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ResponseSignatureError
+
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -81,10 +83,10 @@ from syft.serde.torch_serde import (
     _detail_multi_pointer_tensor,
     _detail_plan,
     _detail_worker,
-    _detail_GetNotPermittedError,
     _force_full_detail_worker,
     _detail_object_wrapper,
     _detail_script_module,
+    _detail_exception,
     _simplify_torch_tensor,
     _simplify_torch_parameter,
     _simplify_collection,
@@ -97,7 +99,7 @@ from syft.serde.torch_serde import (
     _simplify_multi_pointer_tensor,
     _simplify_plan,
     _simplify_worker,
-    _simplify_GetNotPermittedError,
+    _simplify_exception,
     _simplify_object_wrapper,
     _force_full_simplify_worker,
     _simplify_script_module,
@@ -408,9 +410,10 @@ simplifiers = {
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
     Plan: [15, _simplify_plan],
     VirtualWorker: [16, _simplify_worker],
-    GetNotPermittedError: [17, _simplify_GetNotPermittedError],
     str: [18, _simplify_str],
-    pointers.ObjectWrapper: [20, _simplify_object_wrapper],
+    pointers.ObjectWrapper: [19, _simplify_object_wrapper],
+    GetNotPermittedError: [20, _simplify_exception],
+    ResponseSignatureError: [20, _simplify_exception],
     torch.jit.ScriptModule: [21, _simplify_script_module],
     torch.jit.TopLevelTracedModule: [
         21,
@@ -465,9 +468,9 @@ detailers = [
     _detail_multi_pointer_tensor,
     _detail_plan,
     _detail_worker,
-    _detail_GetNotPermittedError,
     _detail_str,
     _force_full_detail_worker,
     _detail_object_wrapper,
+    _detail_exception,
     _detail_script_module,
 ]
