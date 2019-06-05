@@ -2,6 +2,7 @@ from typing import Union
 import weakref
 
 import torch
+
 import syft as sy
 from syft import workers
 from syft.frameworks.torch import pointers
@@ -89,12 +90,12 @@ class TrainConfig:
         out += ">"
         return out
 
-    def _wrap_and_send_jit_module(self, module, location):
-        """Wrappers jit module and send it to location."""
-        module_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=module)
-        module_ptr = self.owner.send(module_with_id, location)
-        module_id = module_ptr.id_at_location
-        return module_ptr, module_id
+    def _wrap_and_send_obj(self, obj, location):
+        """Wrappers object and send it to location."""
+        obj_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=obj)
+        obj_ptr = self.owner.send(obj_with_id, location)
+        obj_id = obj_ptr.id_at_location
+        return obj_ptr, obj_id
 
     def send(self, location: workers.BaseWorker) -> weakref:
         """Gets the pointer to a new remote object.
@@ -112,10 +113,10 @@ class TrainConfig:
             A weakref instance.
         """
         # Send traced model
-        self.model_ptr, self._model_id = self._wrap_and_send_jit_module(self.model, location)
+        self.model_ptr, self._model_id = self._wrap_and_send_obj(self.model, location)
 
         # Send loss function
-        self.loss_fn_ptr, self._loss_fn_id = self._wrap_and_send_jit_module(self.loss_fn, location)
+        self.loss_fn_ptr, self._loss_fn_id = self._wrap_and_send_obj(self.loss_fn, location)
 
         # Send train configuration itself
         ptr = self.owner.send(self, location)

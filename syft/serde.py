@@ -1121,13 +1121,13 @@ def _simplify_train_config(train_config: TrainConfig) -> tuple:
     )
 
 
-def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> tuple:
+def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> sy.TrainConfig:
     """This function reconstructs a TrainConfig object given it's attributes in the form of a tuple.
     Args:
         worker: the worker doing the deserialization
         train_config_tuple: a tuple holding the attributes of the TrainConfig
     Returns:
-        Plan: a Plan object
+        train_config: A TrainConfig object
     """
 
     model_id, loss_fn_id, batch_size, epochs, optimizer, lr, id, max_nr_batches, shuffle = (
@@ -1182,7 +1182,7 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
         worker: the worker doing the deserialization
         plan_tuple: a tuple holding the attributes of the Plan
     Returns:
-        Plan: a Plan object
+        plan: a Plan object
     """
 
     readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
