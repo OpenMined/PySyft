@@ -79,7 +79,7 @@ class FederatedClient(ObjectStorage):
                 logger.warning("Available datasets: %s", list(self.datasets.keys()))
                 return None, -1
 
-        model = self.get_obj(self.train_config.model_id).obj
+        model = self.get_obj(self.train_config._model_id).obj
 
         self._build_optimizer(self.train_config.optimizer, model, self.train_config.lr)
         return self._fit(model=model, key=key)
@@ -95,7 +95,7 @@ class FederatedClient(ObjectStorage):
         return batch_sampler
 
     def _fit(self, model, key):
-        loss_fn = self.get_obj(self.train_config.loss_fn_id).obj
+        loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
         model.train()
         batch_sampler = self._create_batch_sampler(key)
         loss = -1.0

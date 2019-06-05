@@ -1109,8 +1109,8 @@ def _simplify_train_config(train_config: TrainConfig) -> tuple:
         tuple: a tuple holding the unique attributes of the TrainConfig object
     """
     return (
-        train_config.model_id,
-        train_config.loss_fn_id,
+        train_config._model_id,
+        train_config._loss_fn_id,
         train_config.batch_size,
         train_config.epochs,
         _simplify(train_config.optimizer),
@@ -1135,11 +1135,11 @@ def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> t
     )
 
     id = _detail(worker, id)
-    # detailed_loss_plan = _detail(worker, loss_plan)
-    # detailed_forward_plan = _detail(worker, forward_plan)
     detailed_optimizer = _detail(worker, optimizer)
 
     train_config = syft.TrainConfig(
+        model=None,
+        loss_fn=None,
         owner=worker,
         id=id,
         model_id=model_id,

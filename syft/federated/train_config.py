@@ -16,20 +16,25 @@ class TrainConfig:
 
     def __init__(
         self,
+        model: torch.jit.ScriptModule,
+        loss_fn: torch.jit.ScriptModule,
         owner: workers.AbstractWorker = None,
         batch_size: int = 32,
         epochs: int = 1,
         optimizer: str = "sgd",
         lr: float = 0.1,
         id: Union[int, str] = None,
-        loss_fn_id: int = None,
-        model_id: int = None,
         max_nr_batches: int = -1,
         shuffle: bool = True,
+        loss_fn_id: int = None,
+        model_id: int = None,
     ):
         """Initializer for TrainConfig.
 
         Args:
+            model: A traced torch nn.Module instance.
+            loss_fn: A jit function representing a loss function which
+                shall be used to calculate the loss.
             batch_size: Batch size used for training.
             epochs: Epochs used for training.
             optimizer: A string indicating which optimizer should be used.
@@ -37,27 +42,35 @@ class TrainConfig:
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the tensor.
-            loss_fn_id: The id_at_location of (the ObjectWrapper of) a loss function which
-                        shall be used to calculate the loss.
-            model_id: id_at_location of a traced torch nn.Module instance (objectwrapper).
-            max_nr_batches: maximum number of training steps that will be performed. For large datasets
+            max_nr_batches: Maximum number of training steps that will be performed. For large datasets
                             this can be used to run for less than the number of epochs provided.
             shuffle: boolean, whether to access the dataset randomly (shuffle) or sequentially (no shuffle).
+            loss_fn_id: The id_at_location of (the ObjectWrapper of) a loss function which
+                        shall be used to calculate the loss. This is used internally for train config deserialization.
+            model_id: id_at_location of a traced torch nn.Module instance (objectwrapper). . This is used internally for train config deserialization.
         """
+        # syft related attributes
         self.owner = owner if owner else sy.hook.local_worker
         self.id = id if id is not None else sy.ID_PROVIDER.pop()
+        self.location = None
 
-        self.model_id = model_id
-        self.loss_fn_id = loss_fn_id
+        # training related attributes
+        self.model = model
+        self.loss_fn = loss_fn
         self.batch_size = batch_size
         self.epochs = epochs
         self.optimizer = optimizer
         self.lr = lr
-        self.location = None
-        self.model_ptr = None
-        self.loss_fn_ptr = None
         self.max_nr_batches = max_nr_batches
         self.shuffle = shuffle
+
+        # pointers
+        self.model_ptr = None
+        self.loss_fn_ptr = None
+
+        # internal ids
+        self._model_id = model_id
+        self._loss_fn_id = loss_fn_id
 
     def __str__(self) -> str:
         """Returns the string representation of a TrainConfig."""
@@ -76,12 +89,14 @@ class TrainConfig:
         out += ">"
         return out
 
-    def send(
-        self,
-        location: workers.BaseWorker,
-        traced_model: torch.jit.ScriptModule = None,
-        traced_loss_fn: torch.jit.ScriptModule = None,
-    ) -> weakref:
+    def _wrap_and_send_jit_module(self, module, location):
+        """Wrappers jit module and send it to location."""
+        module_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=module)
+        module_ptr = self.owner.send(module_with_id, location)
+        module_id = module_ptr.id_at_location
+        return module_ptr, module_id
+
+    def send(self, location: workers.BaseWorker) -> weakref:
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes
@@ -93,30 +108,27 @@ class TrainConfig:
             location: The BaseWorker object which you want to send this object
                 to. Note that this is never actually the BaseWorker but instead
                 a class which instantiates the BaseWorker abstraction.
-            traced_model: traced model to be sent jointly with the train configuration
-            traced_loss_fn: traced loss function to be sent jointly with the train configuration.
-
         Returns:
             A weakref instance.
         """
-        if traced_model:
-            model_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=traced_model)
-            self.model_ptr = self.owner.send(model_with_id, location)
-            self.model_id = self.model_ptr.id_at_location
-        if traced_loss_fn:
-            loss_fn_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=traced_loss_fn)
-            self.loss_fn_ptr = self.owner.send(loss_fn_with_id, location)
-            self.loss_fn_id = self.loss_fn_ptr.id_at_location
+        # Send traced model
+        self.model_ptr, self._model_id = self._wrap_and_send_jit_module(self.model, location)
+
+        # Send loss function
+        self.loss_fn_ptr, self._loss_fn_id = self._wrap_and_send_jit_module(self.loss_fn, location)
 
         # Send train configuration itself
         ptr = self.owner.send(self, location)
 
-        # TODO: why do we want to
-        # we need to cache this weak reference to the pointer so that
-        # if this method gets called multiple times we can simply re-use
-        # the same pointer which was previously created
-        self.ptr = weakref.ref(ptr)
-        return self.ptr
+        return ptr
 
     def get(self, location):
         return self.owner.request_obj(self, location)
+
+    def get_model(self):
+        if self.model is not None:
+            return self.model_ptr.get()
+
+    def get_loss_fn(self):
+        if self.loss_fn is not None:
+            return self.loss_fn.get()
