@@ -14,7 +14,6 @@ logging.basicConfig(format=FORMAT, level=LOG_LEVEL)
 import syft as sy
 
 from syft import workers
-from syft.frameworks.torch import pointers
 from syft.frameworks.torch.federated import utils
 
 logger = logging.getLogger(__name__)
@@ -114,9 +113,9 @@ async def main():
     me = hook.local_worker
 
     if args.use_virtual:
-        alice = sy.workers.VirtualWorker(id="alice", hook=hook, verbose=args.verbose)
-        bob = sy.workers.VirtualWorker(id="bob", hook=hook, verbose=args.verbose)
-        charlie = sy.workers.VirtualWorker(id="charlie", hook=hook, verbose=args.verbose)
+        alice = workers.VirtualWorker(id="alice", hook=hook, verbose=args.verbose)
+        bob = workers.VirtualWorker(id="bob", hook=hook, verbose=args.verbose)
+        charlie = workers.VirtualWorker(id="charlie", hook=hook, verbose=args.verbose)
 
         mnist_trainset = datasets.MNIST(
             root="./data",
@@ -138,9 +137,9 @@ async def main():
         charlie.add_dataset(dataset, key="mnist")
     else:
         kwargs_websocket = {"host": "localhost", "hook": hook, "verbose": args.verbose}
-        alice = sy.workers.WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
-        bob = sy.workers.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
-        charlie = sy.workers.WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
+        alice = workers.WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
+        bob = workers.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
+        charlie = workers.WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
 
     worker_instances = [alice, bob, charlie]
 
