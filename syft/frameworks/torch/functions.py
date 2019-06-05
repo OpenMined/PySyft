@@ -1,8 +1,9 @@
 from .tensors.interpreters import MultiPointerTensor
-from syft.workers import VirtualWorker
+from syft.frameworks.torch.pointers.object_pointer import ObjectPointer
+from typing import List
 
 
-def combine_pointers(*pointers: VirtualWorker) -> MultiPointerTensor:
+def combine_pointers(*pointers: List[ObjectPointer]) -> MultiPointerTensor:
     """Accepts a list of pointers and returns them as a
     MultiPointerTensor. See MultiPointerTensor docs for
     details.
