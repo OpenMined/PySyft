@@ -180,3 +180,12 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
 
     def set_garbage_collect_data(self, value):
         self.garbage_collect_data = value
+
+    def item(self) -> None:
+        """
+        Raising error with a message to be using .get instead of .item
+        """
+        raise RuntimeError(
+            'Error, Please consider calling ".get" method instead of ".item" method, '
+            "so you can be safely getting the item you need."
+        )
