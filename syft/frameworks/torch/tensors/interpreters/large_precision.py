@@ -10,7 +10,6 @@ class LargePrecisionTensor(AbstractTensor):
 
     Some systems using Syft require larger types than those supported natively. This tensor type supports arbitrarily
     large values by packing them in smaller ones.
-    If the original tensor is a PyTorch tensor it is not processed
     """
 
     def __init__(
@@ -19,11 +18,13 @@ class LargePrecisionTensor(AbstractTensor):
         """Initializes a LargePrecisionTensor.
 
         Args:
-            owner: An optional BaseWorker object to specify the worker on which
+            owner (BaseWorker): An optional BaseWorker object to specify the worker on which
                 the tensor is located.
-            id: An optional string or integer id of the LargePrecisionTensor.
-            precision: The precision this tensor will be transformed to internally. In bits.
-            virtual_prec: The virtual precision required by the caller. In bits.
+            id (str or int): An optional string or integer id of the LargePrecisionTensor.
+            tags (list): list of tags for searching.
+            description (str): a description of this tensor.
+            precision (int): The precision this tensor will be transformed to internally. In bits.
+            virtual_prec (int): The virtual precision required by the caller. In bits.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.precision = precision
@@ -56,15 +57,20 @@ class LargePrecisionTensor(AbstractTensor):
     def add(self, self_, *args, **kwargs):
         other = args[0]
         if self_.shape[-1] != other.shape[-1]:
-            if self_.shape[-1] < other.shape[-1]:
-                result = LargePrecisionTensor._adjust_to_shape(self_, other.shape) + other
-            else:
-                result = LargePrecisionTensor._adjust_to_shape(other, self_.shape) + self_
+            result = self._add_different_dims(other, self_)
         else:
             result = self_ + other
         return LargePrecisionTensor(precision=self.precision, virtual_prec=self.virtual_prec).on(
             result
         )
+
+    @staticmethod
+    def _add_different_dims(other, self_):
+        if self_.shape[-1] < other.shape[-1]:
+            result = LargePrecisionTensor._adjust_to_shape(self_, other.shape) + other
+        else:
+            result = LargePrecisionTensor._adjust_to_shape(other, self_.shape) + self_
+        return result
 
     __add__ = add
 
@@ -90,11 +96,15 @@ class LargePrecisionTensor(AbstractTensor):
 
     @staticmethod
     def _split_number(number, bits):
-        """Splits a number in numbers of a smaller power
+        """Splits a number in numbers of a smaller power.
 
-        :param number: the number to split
-        :param bits: the bits to use in the split
-        :return: a list of numbers representing the original one
+        Args:
+            number (int): the number to split.
+            bits (int): the bits to use in the split.
+
+        Returns:
+            list: a list of numbers representing the original one.
+
         """
         if not number:
             return [number]
@@ -107,11 +117,14 @@ class LargePrecisionTensor(AbstractTensor):
 
     @staticmethod
     def _restore_number(number_parts, bits):
-        """Rebuild a number from its parts
+        """Rebuilds a number from its parts.
 
-        :param number_parts: the list of numbers representing the original one
-        :param bits: the bits used in the split
-        :return: the original number
+        Args:
+            number_parts (list): the list of numbers representing the original one.
+            bits (int): the bits used in the split.
+
+        Returns:
+            Number: the original number.
         """
         base = 2 ** bits
         n = 0
@@ -122,11 +135,14 @@ class LargePrecisionTensor(AbstractTensor):
 
     @staticmethod
     def _restore_number_np(number_parts, bits):
-        """Rebuild a number from a numpy array
+        """Rebuild a number from a numpy array,
 
-        :param number_parts: the numpy array of numbers representing the original one
-        :param bits: the bits used in the split
-        :return: the original number
+        Args:
+            number_parts (ndarray): the numpy array of numbers representing the original one.
+            bits (int): the bits used in the split.
+
+        Returns:
+            Number: the original number.
         """
         base = 2 ** bits
         n = 0
@@ -142,7 +158,9 @@ class LargePrecisionTensor(AbstractTensor):
     def restore_precision(self):
         """
         Restore the tensor expressed now as a matrix for each original item.
-        :return: the original tensor
+
+        Returns:
+            tensor: the original tensor.
         """
         # We need to pass the PyTorch tensor to Numpy to allow the intermediate large number.
         # An alternative would be to iterate through the PyTorch tensor and apply the restore function.
