@@ -37,7 +37,9 @@ def method2plan(plan_blueprint):
     Converts a method containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
     """
-    plan = Plan(owner=sy.local_worker, id=sy.ID_PROVIDER.pop(), name=plan_blueprint.__name__)
+    plan = Plan(
+        owner=sy.local_worker, id=sy.ID_PROVIDER.pop(), name=plan_blueprint.__name__, is_method=True
+    )
     plan.blueprint = plan_blueprint
 
     @property
@@ -87,6 +89,7 @@ class Plan(ObjectStorage):
         result_ids: List[Union[str, int]] = None,
         blueprint: callable = None,
         readable_plan: List = None,
+        is_method: bool = False,
         *args,
         **kwargs,
     ):
@@ -114,6 +117,7 @@ class Plan(ObjectStorage):
 
         # For methods
         self.self = None
+        self.is_method = is_method
 
     @property
     def _known_workers(self):
@@ -352,19 +356,13 @@ class Plan(ObjectStorage):
         return responses
 
     def _execute_plan_locally(self, result_ids, *args, **kwargs):
-        args = self._keep_only_tensor_args(args)
+        # If plan is a method the first argument is `self` so we ignore it
+        args = args[1:] if self.is_method else args
+
         self._update_args(args, result_ids)
         self._execute_plan()
         responses = self._get_plan_output(result_ids)
         return responses
-
-    def _keep_only_tensor_args(self, args):
-        """Keeps only Tensors in args. This step is needed for method plans."""
-        tensor_args = []
-        for arg in args:
-            if isinstance(arg, torch.Tensor):
-                tensor_args.append(arg)
-        return tensor_args
 
     def execute_plan(self, args: List, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
