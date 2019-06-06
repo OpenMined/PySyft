@@ -131,7 +131,7 @@ class Plan(ObjectStorage):
         Returns:
             The None message serialized to specify the command was received.
         """
-        (some_type, (msg_type, contents)) = sy.serde.serde.deserialize(bin_message, detail=False)
+        (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, detail=False)
 
         if msg_type != MSGTYPE.OBJ:
             self.plan.append(bin_message)
@@ -142,7 +142,7 @@ class Plan(ObjectStorage):
         if msg_type in (MSGTYPE.OBJ_REQ, MSGTYPE.IS_NONE, MSGTYPE.GET_SHAPE):
             return self.__call__()
 
-        return sy.serde.serde.serialize(None)
+        return sy.serde.serialize(None)
 
     def build_plan(self, args: List):
         """Builds a plan.
@@ -333,7 +333,7 @@ class Plan(ObjectStorage):
 
     def _execute_plan(self):
         for message in self.readable_plan:
-            bin_message = sy.serde.serde.serialize(message, simplified=True)
+            bin_message = sy.serde.serialize(message, simplified=True)
             _ = self.owner.recv_msg(bin_message)
 
     def _get_plan_output(self, result_ids, return_ptr=False):
@@ -394,7 +394,7 @@ class Plan(ObjectStorage):
             self._update_args(args, result_ids)
             self._execute_plan()
 
-        return sy.serde.serde.serialize(None)
+        return sy.serde.serialize(None)
 
     def request_execute_plan(
         self,
