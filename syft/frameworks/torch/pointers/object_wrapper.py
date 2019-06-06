@@ -50,6 +50,7 @@ class ObjectWrapper:
         location: "BaseWorker",
         ptr_id: Union[int, str],
         id_at_location: Union[int, str] = None,
+        garbage_collect_data=False,
         **kwargs,
     ):
         """ Creates a callable pointer to the object wrapper instance
@@ -73,6 +74,8 @@ class ObjectWrapper:
                 something different than self.id, but again this is very rare
                 and most of the time, setting this means that you are probably
                 doing something you shouldn't.
+            garbage_collect_data: If True, delete the remote object when the
+                pointer is deleted.
 
         Returns:
             A pointers.CallablePointer pointer to self.
@@ -84,6 +87,6 @@ class ObjectWrapper:
             id_at_location=id_at_location if id_at_location is not None else self.id,
             tags=self.tags,
             description=self.description,
-            garbage_collect_data=False,
+            garbage_collect_data=garbage_collect_data,
         )
         return pointer
