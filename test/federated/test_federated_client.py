@@ -52,17 +52,14 @@ def test_set_obj_other():
     assert fed_client._objects[dummy_data.id] == dummy_data
 
 
-@pytest.mark.skip(reason="bug in pytorch version 1.1.0, jit.trace returns raw C function")
-def test_fit(hook):  # pragma: no cover
-    fed_client = sy.VirtualWorker(hook=hook, id="test_fit_fc")
-
+def test_fit():
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1], [0], [1.0], [0]], requires_grad=True)
+    target = torch.tensor([[1], [0], [1], [0]])
 
+    fed_client = federated.FederatedClient()
     dataset = sy.BaseDataset(data, target)
-    fed_client.add_dataset(dataset, key="data")
+    fed_client.add_dataset(dataset, key="vectors")
 
-    @torch.jit.script
     def loss_fn(real, pred):
         return ((real.float() - pred.float()) ** 2).mean()
 
@@ -81,6 +78,10 @@ def test_fit(hook):  # pragma: no cover
 
     model_untraced = Net()
     model = torch.jit.trace(model_untraced, data)
+    model_id = 0
+    model_ow = pointers.ObjectWrapper(obj=model, id=model_id)
+    loss_id = 1
+    loss_ow = pointers.ObjectWrapper(obj=loss_fn, id=loss_id)
 
     print("Evaluation before training")
     pred = model(data)
@@ -88,18 +89,21 @@ def test_fit(hook):  # pragma: no cover
     print("Loss: {}".format(loss_before))
 
     # Create and send train config
-    train_config = sy.TrainConfig(batch_size=1, model=model, loss_fn=loss_fn)
-    train_config.send(fed_client)
+    train_config = sy.TrainConfig(
+        batch_size=1, model=None, loss_fn=None, model_id=model_id, loss_fn_id=loss_id
+    )
 
-    print("test", fed_client.train_config._model_id)
+    fed_client.set_obj(model_ow)
+    fed_client.set_obj(loss_ow)
+    fed_client.set_obj(train_config)
 
     for epoch in range(5):
-        loss = fed_client.fit(dataset_key="data")
+        loss = fed_client.fit(dataset_key="vectors")
         print("-" * 50)
-        print("Iteration %s, loss: %s" % (epoch, loss))
+        print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
     print("Evaluation after training:")
-    new_model = train_config.model_ptr.get()
+    new_model = fed_client.get_obj(model_id)
     pred = new_model.obj(data)
     loss_after = loss_fn(real=target, pred=pred)
     print("Loss: {}".format(loss_after))
