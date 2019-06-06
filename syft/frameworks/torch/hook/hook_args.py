@@ -680,17 +680,15 @@ def register_tensor(
     tensor: Union[torch.Tensor, AbstractTensor],
     owner: sy.workers.AbstractWorker,
     response_ids: List = list(),
-) -> Union[torch.Tensor, AbstractTensor]:
+):
     """
-    Register a tensor.
+    Registers a tensor.
 
     Args:
         tensor: A tensor.
-        response_ids: List of ids where the tensor should be stored
-            and each id is pop out when needed
         owner: The owner that makes the registration.
-    Returns:
-        The registered tensor.
+        response_ids: List of ids where the tensor should be stored
+            and each id is pop out when needed.
     """
     tensor.owner = owner
     try:
