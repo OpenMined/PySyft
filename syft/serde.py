@@ -1359,11 +1359,7 @@ def _simplify(obj: object) -> object:
         # for this type. If there is, run return
         # the simplified object
         current_type = type(obj)
-        if isinstance(obj, torch.jit.ScriptModule):
-            current_type = torch.jit.ScriptModule
-
         result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
-
         return result
 
     except KeyError:
