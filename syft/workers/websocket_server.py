@@ -114,7 +114,7 @@ class WebsocketServerWorker(VirtualWorker):
         try:
             return self.recv_msg(message)
         except (ResponseSignatureError, GetNotPermittedError) as e:
-            return sy.serde.serde.serialize(e)
+            return sy.serde.serialize(e)
 
     async def _handler(self, websocket: websockets.WebSocketCommonProtocol, *unused_args):
         """Setup the consumer and producer response handlers with asyncio.

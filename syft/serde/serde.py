@@ -42,7 +42,7 @@ import zstd
 
 import syft
 
-from syft.workers import AbstractWorker
+from syft.workers import AbstractWorker  #
 from syft.workers import VirtualWorker
 
 from syft.federated import Plan

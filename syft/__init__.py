@@ -35,7 +35,9 @@ from syft.frameworks.torch.pointers import CallablePointer
 from syft.frameworks.torch.pointers import PointerTensor
 
 # Import serialization tools
-from syft import serde
+from syft.serde import serde
+from syft.serde import torch_serde
+from syft.serde import native_serde
 
 # import other useful classes
 from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
@@ -47,6 +49,8 @@ __all__ = [
     "frameworks",
     "workers",
     "serde",
+    "torch_serde",
+    "native_serde",
     "TorchHook",
     "VirtualWorker",
     "Plan",
