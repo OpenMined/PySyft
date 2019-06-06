@@ -94,8 +94,18 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def add(self, _self, *args, **kwargs):
-        """Add two fixed precision tensors together.
-        """
+        other = args[0]
+        if _self.is_wrapper and not other.is_wrapper:
+            # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor),
+            # we want to perform AST + torch.tensor
+            _self = _self.child
+            args = (other.wrap(),)
+        elif other.is_wrapper and not _self.is_wrapper:
+            # If we try to add a FPT>torch.tensor and a FPT>(wrap)>AST,
+            # we swap operators so that we do the same operation as above
+            args = (_self.wrap(),)
+            _self = other.child
+            
         response = getattr(_self, "add")(*args, **kwargs)
 
         return response
@@ -109,6 +119,32 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return self
 
+    @overloaded.method
+    def sub(self, _self, *args, **kwargs):
+        other = args[0]
+
+        if _self.is_wrapper and not other.is_wrapper:
+            # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor),
+            # we want to perform AST + torch.tensor
+            _self = _self.child
+            args = (other.wrap(),)
+        elif other.is_wrapper and not _self.is_wrapper:
+            # If we try to subtract a FPT>torch.tensor and a FPT>(wrap)>AST,
+            # we swap operators so that we do the same operation as above
+            args = (_self.wrap(),)
+            _self = other.child
+        
+        response = getattr(_self, "sub")(*args, **kwargs)
+
+        return response
+    
+    __sub__ = sub
+
+    def __isub__(self, other):
+        self.child = self.sub(other).child
+
+        return self
+    
     @overloaded.method
     def t(self, _self, *args, **kwargs):
         """Transpose a tensor. Hooked is handled by the decorator"""
@@ -128,13 +164,21 @@ class FixedPrecisionTensor(AbstractTensor):
             assert (
                 self.precision_fractional == other.precision_fractional
             ), "In mul, all args should have the same precision_fractional"
-
-        if not other.child.is_wrapper:
-            # If other.child is not a wrapper, we want to bypass the self.child wrapper
-            new_self = self.child.child.wrap()
+        
+        if self.child.is_wrapper and not other.child.is_wrapper:
+            # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
+            # we want to perform AST * torch.tensor
+            new_self = self.child
             new_args = (other.wrap(),)
             new_kwargs = kwargs
-
+        
+        elif other.child.is_wrapper and not self.child.is_wrapper:
+            # If we try to multiply a FPT>torch.tensor with a FPT>(wrap)>AST,
+            # we swap operators so that we do the same operation as above
+            new_self = other.child
+            new_args = (self.wrap(),)
+            new_kwargs = kwargs
+        
         else:
             # Replace all syft tensor with their child attribute
             new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
@@ -158,10 +202,33 @@ class FixedPrecisionTensor(AbstractTensor):
         Hook manually matmul to add the truncation part which is inherent to multiplication
         in the fixed precision setting
         """
-        # Replace all syft tensor with their child attribute
-        new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
-            "matmul", self, args, kwargs
-        )
+
+        other = args[0]
+
+        if isinstance(other, FixedPrecisionTensor):
+            assert (
+                self.precision_fractional == other.precision_fractional
+            ), "In matmul, all args should have the same precision_fractional"
+
+        if self.child.is_wrapper and not other.child.is_wrapper:
+            # If we try to matmul a FPT>(wrap)>AST with a FPT>torch.tensor,
+            # we want to perform AST @ torch.tensor
+            new_self = self.child
+            new_args = (other.wrap(),)
+            new_kwargs = kwargs
+
+        elif other.child.is_wrapper and not self.child.is_wrapper:
+            # If we try to matmul a FPT>torch.tensor with a FPT>(wrap)>AST,
+            # we swap operators so that we do the same operation as above
+            new_self = other.child
+            new_args = (self.wrap(),)
+            new_kwargs = kwargs
+        
+        else:
+            # Replace all syft tensor with their child attribute
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                "matmul", self, args, kwargs
+            )
 
         # Send it to the appropriate class and get the response
         response = getattr(new_self, "matmul")(*new_args, **new_kwargs)
@@ -170,12 +237,6 @@ class FixedPrecisionTensor(AbstractTensor):
         response = syft.frameworks.torch.hook_args.hook_response(
             "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
-
-        other = args[0]
-
-        assert (
-            self.precision_fractional == other.precision_fractional
-        ), "In matmul, all args should have the same precision_fractional"
 
         return response.truncate(other.precision_fractional)
 
@@ -209,11 +270,26 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     @overloaded.module
     def torch(module):
+        def add(self, other):
+            return self.__add__(other)
+
+        module.add = add
+        
+        def sub(self, other):
+            return self.__sub__(other)
+
+        module.sub = sub
+        
         def mul(self, other):
             return self.__mul__(other)
 
         module.mul = mul
 
+        def matmul(self, other):
+            return self.matmul(other)
+
+        module.matmul = matmul
+        
         def addmm(bias, input_tensor, weight):
             matmul = input_tensor.matmul(weight)
             result = bias.add(matmul)

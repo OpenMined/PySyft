@@ -256,8 +256,11 @@ class AdditiveSharingTensor(AbstractTensor):
                 to the tensor being added to self.
         """
 
-        # if someone passes in a constant... (i.e., x + 3)
-        if not isinstance(other_shares, dict):
+        if isinstance(other_shares, torch.LongTensor) or isinstance(other_shares, torch.IntTensor):
+            # if someone passes a torch tensor
+            other_shares = other_shares.share(*self.child.keys()).child.child
+        elif not isinstance(other_shares, dict):
+            # if someone passes in a constant... (i.e., x + 3)
             other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
 
         assert len(shares) == len(other_shares)
@@ -286,8 +289,11 @@ class AdditiveSharingTensor(AbstractTensor):
                 to the tensor being subtracted from self.
         """
 
-        # if someone passes in a constant... (i.e., x - 3), make it a shared tensor and keep the dict
-        if not isinstance(other_shares, dict):
+        if isinstance(other_shares, torch.LongTensor) or isinstance(other_shares, torch.IntTensor):
+            # if someone passes a torch tensor
+            other_shares = other_shares.share(*self.child.keys()).child.child
+        elif not isinstance(other_shares, dict):
+            # if someone passes in a constant... (i.e., x - 3), make it a shared tensor and keep the dict
             other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
 
         assert len(shares) == len(other_shares)
@@ -422,6 +428,12 @@ class AdditiveSharingTensor(AbstractTensor):
     @staticmethod
     @overloaded.module
     def torch(module):
+        def add(self, other):
+            """Overload add(x, y) to redirect to add(y)"""
+            return self.add(other)
+
+        module.add = add
+        
         def mul(self, other):
             """Overload torch.mul(x, y) to redirect to x.mul(y)"""
             return self.mul(other)
