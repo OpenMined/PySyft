@@ -45,7 +45,9 @@ class LargePrecisionTensor(AbstractTensor):
         for x in np.nditer(self.child, flags=["refs_ok"]):
             n = int(x.item() * 2 ** self.virtual_prec)
             print(f"\nAdding number {n} for item {x.item()}\n")
-            result.append(LargePrecisionTensor._split_number(n, internal_precision[self.internal_type]))
+            result.append(
+                LargePrecisionTensor._split_number(n, internal_precision[self.internal_type])
+            )
         new_shape = self.child.shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
         return torch.tensor(result, dtype=self.internal_type)
