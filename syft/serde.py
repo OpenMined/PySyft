@@ -1101,8 +1101,13 @@ def _detail_multi_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) ->
 
 
 def _simplify_train_config(train_config: TrainConfig) -> tuple:
-    """
-    This function takes the attributes of a TrainConfig and saves them in a tuple
+    """Takes the attributes of a TrainConfig and saves them in a tuple.
+
+    Attention: this function does not serialize the model and loss_fn attributes
+    of a TrainConfig instance, these are serialized and sent before. TrainConfig
+    keeps a reference to the sent objects using _model_id and _loss_fn_id which
+    are serialized here.
+
     Args:
         train_config: a TrainConfig object
     Returns:
@@ -1123,6 +1128,7 @@ def _simplify_train_config(train_config: TrainConfig) -> tuple:
 
 def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> sy.TrainConfig:
     """This function reconstructs a TrainConfig object given it's attributes in the form of a tuple.
+
     Args:
         worker: the worker doing the deserialization
         train_config_tuple: a tuple holding the attributes of the TrainConfig
