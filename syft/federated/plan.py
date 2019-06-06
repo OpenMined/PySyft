@@ -1,14 +1,15 @@
 import copy
+import functools
+from typing import List
+from typing import Tuple
+from typing import Union
+
 import torch
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.workers.base import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
-
-
-from typing import List
-from typing import Union
 
 
 def make_plan(plan_blueprint):
@@ -20,52 +21,75 @@ def make_plan(plan_blueprint):
     return func2plan(plan_blueprint)
 
 
-def func2plan(plan_blueprint):
+class func2plan(object):
     """Converts a function to a plan.
 
     Converts a function containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
+
+    This class should be used only as decorator.
     """
-    plan = Plan(owner=sy.local_worker, id=sy.ID_PROVIDER.pop(), name=plan_blueprint.__name__)
-    plan.blueprint = plan_blueprint
-    return plan
+
+    def __init__(self, args_shape):
+        self.args_shape = args_shape
+
+    def __call__(self, plan_blueprint):
+        plan = Plan(
+            owner=sy.local_worker,
+            id=sy.ID_PROVIDER.pop(),
+            args_shape=self.args_shape,
+            name=plan_blueprint.__name__,
+        )
+        plan.set_blueprint(plan_blueprint, self.args_shape)
+        return plan
 
 
-def method2plan(plan_blueprint):
+class method2plan(object):
     """Converts a method to a plan.
 
     Converts a method containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
+    This class should be used only as decorator.
     """
-    plan = Plan(owner=sy.local_worker, id=sy.ID_PROVIDER.pop(), name=plan_blueprint.__name__)
-    plan.blueprint = plan_blueprint
 
-    @property
-    def method(self: object) -> Plan:
-        """
-        This property is a way to catch the self of the method and give it to the plan,
-        it will be provided in the future calls as this is not automatic (the structure
-        of @func2plan would not keep the self during the call)
+    def __init__(self, args_shape):
+        self.args_shape = args_shape
 
-        Args:
-            self (object): an instance of a class
+    def __call__(self, plan_blueprint):
+        plan = Plan(
+            owner=sy.local_worker,
+            id=sy.ID_PROVIDER.pop(),
+            args_shape=self.args_shape,
+            is_method=True,
+            name=plan_blueprint.__name__,
+        )
 
-        Returns:
-            the plan which is also a callable.
+        @property
+        def method(_self: object) -> Plan:
+            """
+            This property is a way to catch the self of the method and give it to the plan,
+            it will be provided in the future calls as this is not automatic (the structure
+            of @func2plan would not keep the self during the call)
 
-        Example:
-            When you have your plan and that you do
-            > plan(*args)
-            First the property is call with the part "plan" and self is caught, plan is
-            returned
-            Then plan is called with "(*args)" and in the __call__ function of plan the
-            self parameter is re-inserted
-        """
-        plan.self = self
+            Args:
+                self (object): an instance of a class
 
-        return plan
+            Returns:
+                the plan which is also a callable.
 
-    return method
+            Example:
+                When you have your plan and that you do
+                > plan(*args)
+                First the property is call with the part "plan" and self is caught, plan is
+                returned
+                Then plan is called with "(*args)" and in the __call__ function of plan the
+                self parameter is re-inserted
+            """
+            plan.self = _self
+            plan.set_blueprint(plan_blueprint, self.args_shape)
+            return plan
+
+        return method
 
 
 class Plan(ObjectStorage):
@@ -87,6 +111,7 @@ class Plan(ObjectStorage):
         result_ids: List[Union[str, int]] = None,
         blueprint: callable = None,
         readable_plan: List = None,
+        is_method: bool = False,
         *args,
         **kwargs,
     ):
@@ -113,7 +138,19 @@ class Plan(ObjectStorage):
         self.blueprint = blueprint
 
         # For methods
+        self.is_method = is_method
         self.self = None
+
+    def set_blueprint(self, blueprint: callable, args_shape: List[Tuple[int]] = None):
+        """Updates blueprint attribute and builds plan."""
+        self.blueprint = blueprint
+        if self.is_method:
+            self.build_plan([self.self] + self._create_placeholders(args_shape))
+        else:
+            self.build_plan(self._create_placeholders(args_shape))
+
+    def _create_placeholders(self, args_shape):
+        return [torch.zeros(shape) for shape in args_shape]
 
     @property
     def _known_workers(self):
@@ -440,6 +477,10 @@ class Plan(ObjectStorage):
         self.locations += [self.owner.get_worker(location).id for location in locations]
         # rm duplicates
         self.locations = list(set(self.locations))
+
+        for location in locations:
+            self.ptr_plans[location.id] = self._send(location)
+
         return self
 
     def _send(self, location: "sy.workers.BaseWorker"):
@@ -451,7 +492,6 @@ class Plan(ObjectStorage):
         Args:
             location: Worker where plan should be sent to.
         """
-
         readable_plan_original = copy.deepcopy(self.readable_plan)
         for worker_id in [self.owner.id] + self.locations:
             self.replace_worker_ids(worker_id, location.id)
