@@ -105,7 +105,7 @@ class FixedPrecisionTensor(AbstractTensor):
             # we swap operators so that we do the same operation as above
             args = (_self.wrap(),)
             _self = other.child
-            
+
         response = getattr(_self, "add")(*args, **kwargs)
 
         return response
@@ -133,18 +133,18 @@ class FixedPrecisionTensor(AbstractTensor):
             # we swap operators so that we do the same operation as above
             args = (_self.wrap(),)
             _self = other.child
-        
+
         response = getattr(_self, "sub")(*args, **kwargs)
 
         return response
-    
+
     __sub__ = sub
 
     def __isub__(self, other):
         self.child = self.sub(other).child
 
         return self
-    
+
     @overloaded.method
     def t(self, _self, *args, **kwargs):
         """Transpose a tensor. Hooked is handled by the decorator"""
@@ -164,21 +164,21 @@ class FixedPrecisionTensor(AbstractTensor):
             assert (
                 self.precision_fractional == other.precision_fractional
             ), "In mul, all args should have the same precision_fractional"
-        
+
         if self.child.is_wrapper and not other.child.is_wrapper:
             # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
             # we want to perform AST * torch.tensor
             new_self = self.child
             new_args = (other.wrap(),)
             new_kwargs = kwargs
-        
+
         elif other.child.is_wrapper and not self.child.is_wrapper:
             # If we try to multiply a FPT>torch.tensor with a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
             new_self = other.child
             new_args = (self.wrap(),)
             new_kwargs = kwargs
-        
+
         else:
             # Replace all syft tensor with their child attribute
             new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
@@ -223,7 +223,7 @@ class FixedPrecisionTensor(AbstractTensor):
             new_self = other.child
             new_args = (self.wrap(),)
             new_kwargs = kwargs
-        
+
         else:
             # Replace all syft tensor with their child attribute
             new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
@@ -274,12 +274,12 @@ class FixedPrecisionTensor(AbstractTensor):
             return self.__add__(other)
 
         module.add = add
-        
+
         def sub(self, other):
             return self.__sub__(other)
 
         module.sub = sub
-        
+
         def mul(self, other):
             return self.__mul__(other)
 
@@ -289,7 +289,7 @@ class FixedPrecisionTensor(AbstractTensor):
             return self.matmul(other)
 
         module.matmul = matmul
-        
+
         def addmm(bias, input_tensor, weight):
             matmul = input_tensor.matmul(weight)
             result = bias.add(matmul)

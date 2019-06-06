@@ -433,7 +433,7 @@ class AdditiveSharingTensor(AbstractTensor):
             return self.add(other)
 
         module.add = add
-        
+
         def mul(self, other):
             """Overload torch.mul(x, y) to redirect to x.mul(y)"""
             return self.mul(other)
