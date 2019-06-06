@@ -110,9 +110,6 @@ class WebsocketClientWorker(BaseWorker):
     def list_objects_remote(self):
         return self._send_msg_and_deserialize("list_objects")
 
-    def fit_batch_remote(self):
-        return self._send_msg_and_deserialize("fit_batch")
-
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
 
