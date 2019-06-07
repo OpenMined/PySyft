@@ -421,10 +421,12 @@ def test_torch_sum(workers):
 
     s = torch.sum(x).get()
     s_dim = torch.sum(x, 0).get()
+    s_dim2 = torch.sum(x, (0, 1)).get()
     s_keepdim = torch.sum(x, 1, keepdim=True).get()
 
     assert (s == torch.sum(t)).all()
     assert (s_dim == torch.sum(t, 0)).all()
+    assert (s_dim2 == torch.sum(t, (0, 1))).all()
     assert (s_keepdim == torch.sum(t, 1, keepdim=True)).all()
 
 
@@ -440,17 +442,17 @@ def test_torch_mean(workers):
 
     s = torch.mean(x).get().float_prec()
     s_dim = torch.mean(x, 0).get().float_prec()
+    s_dim2 = torch.mean(x, (0, 1)).get().float_prec()
     s_keepdim = torch.mean(x, 1, keepdim=True).get().float_prec()
 
     expected = (torch.mean(t) * 10 ** prec_frac).floor() / 10 ** prec_frac
     expected_dim = (torch.mean(t, 0) * 10 ** prec_frac).floor() / 10 ** prec_frac
+    expected_dim2 = (torch.mean(t, (0, 1)) * 10 ** prec_frac).floor() / 10 ** prec_frac
     expected_keepdim = (torch.mean(t, 1, keepdim=True) * 10 ** prec_frac).floor() / 10 ** prec_frac
-
-    print(expected)
-    print(s)
 
     assert (s == expected).all()
     assert (s_dim == expected_dim).all()
+    assert (s_dim2 == expected_dim2).all()
     assert (s_keepdim == expected_keepdim).all()
 
 
