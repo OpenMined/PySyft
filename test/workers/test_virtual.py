@@ -5,7 +5,7 @@ import syft as sy
 from syft.exceptions import GetNotPermittedError
 from syft.workers.virtual import VirtualWorker
 from syft.codes import MSGTYPE
-from syft.serde import serde
+from syft import serde
 
 from syft.frameworks.torch import pointers
 

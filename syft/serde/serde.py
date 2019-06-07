@@ -40,7 +40,7 @@ from lz4 import (  # noqa: F401
 import numpy
 import zstd
 
-import syft
+import syft as sy
 
 from syft.workers import AbstractWorker  #
 from syft.workers import VirtualWorker
@@ -204,7 +204,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, detail=True) -> obje
         object: the deserialized form of the binary input.
     """
     if worker is None:
-        worker = syft.torch.hook.local_worker
+        worker = sy.torch.hook.local_worker
 
     # 1) Decompress the binary if needed
     binary = _decompress(binary)
