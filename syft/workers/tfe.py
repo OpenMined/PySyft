@@ -86,12 +86,11 @@ class TFEWorker:
 
 
 class TFECluster:
-    
     def __init__(self, *workers):
         tfe_config, player_to_worker_mapping = self._build_cluster(workers)
         self.tfe_config = tfe_config
         self.player_to_worker_mapping = player_to_worker_mapping
-    
+
     @property
     def workers(self):
         return list(self.player_to_worker_mapping.values())
