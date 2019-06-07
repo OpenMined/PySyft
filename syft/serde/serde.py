@@ -84,7 +84,7 @@ from syft.serde.torch_serde import (
     _detail_log_tensor,
     _detail_additive_shared_tensor,
     _detail_multi_pointer_tensor,
-    _detail_plan,
+    # _detail_plan,
     _detail_worker,
     _force_full_detail_worker,
     _detail_object_wrapper,
@@ -101,7 +101,7 @@ from syft.serde.torch_serde import (
     _simplify_log_tensor,
     _simplify_additive_shared_tensor,
     _simplify_multi_pointer_tensor,
-    _simplify_plan,
+    # _simplify_plan,
     _simplify_worker,
     _simplify_exception,
     _simplify_object_wrapper,
@@ -161,9 +161,9 @@ def serialize(
     # which the fast serializer cannot handle
     if not simplified:
         if force_full_simplification:
-            simple_objects = _force_full_simplify(obj)
+            simple_objects = _force_fullsimplify(obj)
         else:
-            simple_objects = _simplify(obj)
+            simple_objects = simplify(obj)
     else:
         simple_objects = obj
 
@@ -189,7 +189,7 @@ def serialize(
         return _compress(binary)
 
 
-def deserialize(binary: bin, worker: AbstractWorker = None, detail=True) -> object:
+def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 
     This is the high level function for deserializing any object or collection
@@ -219,14 +219,14 @@ def deserialize(binary: bin, worker: AbstractWorker = None, detail=True) -> obje
     # object (or nested dict/collection of python objects)
     simple_objects = msgpack.loads(binary)
 
-    if detail:
+    if details:
         # 3) Detail
         # This function converts typed, simple objects into their morefrom typing import Dict
         # complex (and difficult to serialize) counterparts which the
         # serialization library wasn't natively able to serialize (such
         # as msgpack's inability to serialize torch tensors or ... or
         # python slice objects
-        return _detail(worker, simple_objects)
+        return detail(worker, simple_objects)
 
     else:
         # sometimes we want to skip detailing (such as in Plan)
@@ -336,7 +336,7 @@ def _decompress(binary: bin) -> bin:
 # High Level Simplification Router
 
 
-def _simplify(obj: object) -> object:
+def simplify(obj: object) -> object:
     """
     This function takes an object as input and returns a simple
     Python object which is supported by the chosen serialization
@@ -379,7 +379,7 @@ def _simplify(obj: object) -> object:
         return obj
 
 
-def _force_full_simplify(obj: object) -> object:
+def _force_fullsimplify(obj: object) -> object:
     current_type = type(obj)
 
     if current_type in forced_full_simplifiers:
@@ -392,7 +392,7 @@ def _force_full_simplify(obj: object) -> object:
 
         result = (left, right)
     else:
-        result = _simplify(obj)
+        result = simplify(obj)
 
     return result
 
@@ -413,7 +413,7 @@ simplifiers = {
     LoggingTensor: [12, _simplify_log_tensor],
     AdditiveSharingTensor: [13, _simplify_additive_shared_tensor],
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
-    Plan: [15, _simplify_plan],
+    Plan: [15, sy.Plan._simplify_plan],
     VirtualWorker: [16, _simplify_worker],
     str: [18, _simplify_str],
     pointers.ObjectWrapper: [19, _simplify_object_wrapper],
@@ -431,7 +431,7 @@ simplifiers = {
 forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
 
 
-def _detail(worker: AbstractWorker, obj: object) -> object:
+def detail(worker: AbstractWorker, obj: object) -> object:
     """
     This function reverses the functionality of _simplify. Where applicable,
     it converts simple objects into more complex objects such as converting
@@ -472,7 +472,7 @@ detailers = [
     _detail_log_tensor,
     _detail_additive_shared_tensor,
     _detail_multi_pointer_tensor,
-    _detail_plan,
+    sy.Plan._detail_plan,
     _detail_worker,
     _force_full_detail_worker,
     _detail_str,

@@ -215,7 +215,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         tensor.description = description
 
     if chain is not None:
-        chain = _detail(worker, chain)
+        chain = detail(worker, chain)
         tensor.child = chain
         tensor.is_wrapper = True
 
@@ -343,9 +343,9 @@ def _detail_collection_list(worker: AbstractWorker, my_collection: Collection) -
     # Step 1: deserialize each part of the collection
     for part in my_collection:
         try:
-            pieces.append(_detail(worker, part).decode("utf-8"))  # transform bytes back to string
+            pieces.append(detail(worker, part).decode("utf-8"))  # transform bytes back to string
         except AttributeError:
-            pieces.append(_detail(worker, part))
+            pieces.append(detail(worker, part))
 
     return pieces
 
@@ -372,9 +372,9 @@ def _detail_collection_set(worker: AbstractWorker, my_collection: Collection) ->
     # Step 1: deserialize each part of the collection
     for part in my_collection:
         try:
-            pieces.append(_detail(worker, part).decode("utf-8"))  # transform bytes back to string
+            pieces.append(detail(worker, part).decode("utf-8"))  # transform bytes back to string
         except AttributeError:
-            pieces.append(_detail(worker, part))
+            pieces.append(detail(worker, part))
     return set(pieces)
 
 
@@ -401,7 +401,7 @@ def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
 
     # Step 1: deserialize each part of the collection
     for part in my_tuple:
-        pieces.append(_detail(worker, part))
+        pieces.append(detail(worker, part))
 
     return tuple(pieces)
 
@@ -454,13 +454,13 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
     pieces = {}
     # for dictionaries we want to detail both the key and the value
     for key, value in my_dict:
-        detailed_key = _detail(worker, key)
+        detailed_key = detail(worker, key)
         try:
             detailed_key = detailed_key.decode("utf-8")
         except AttributeError:
             pass
 
-        detailed_value = _detail(worker, value)
+        detailed_value = detail(worker, value)
         try:
             detailed_value = detailed_value.decode("utf-8")
         except AttributeError:
@@ -671,7 +671,7 @@ def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LoggingTe
     tensor = LoggingTensor(owner=worker, id=obj_id)
 
     if chain is not None:
-        chain = _detail(worker, chain)
+        chain = detail(worker, chain)
         tensor.child = chain
 
     return tensor
@@ -715,7 +715,7 @@ def _detail_additive_shared_tensor(
     )
 
     if chain is not None:
-        chain = _detail(worker, chain)
+        chain = detail(worker, chain)
         tensor.child = chain
 
     return tensor
@@ -755,7 +755,7 @@ def _detail_multi_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) ->
     tensor = MultiPointerTensor(owner=worker, id=tensor_id)
 
     if chain is not None:
-        chain = _detail(worker, chain)
+        chain = detail(worker, chain)
         tensor.child = chain
 
     return tensor
@@ -801,8 +801,8 @@ def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> s
         train_config_tuple
     )
 
-    id = _detail(worker, id)
-    detailed_optimizer = _detail(worker, optimizer)
+    id = detail(worker, id)
+    detailed_optimizer = detail(worker, optimizer)
 
     train_config = syft.TrainConfig(
         model=None,
@@ -820,56 +820,6 @@ def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> s
     )
 
     return train_config
-
-
-def _simplify_plan(plan: Plan) -> tuple:
-    """
-    This function takes the attributes of a Plan and saves them in a tuple
-    Args:
-        plan (Plan): a Plan object
-    Returns:
-        tuple: a tuple holding the unique attributes of the Plan object
-
-    """
-    readable_plan = _simplify(plan.readable_plan)
-    return (
-        readable_plan,
-        _simplify(plan.id),
-        _simplify(plan.arg_ids),
-        _simplify(plan.result_ids),
-        _simplify(plan.name),
-        _simplify(plan.tags),
-        _simplify(plan.description),
-    )
-
-
-def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
-    """This function reconstructs a Plan object given it's attributes in the form of a tuple.
-    Args:
-        worker: the worker doing the deserialization
-        plan_tuple: a tuple holding the attributes of the Plan
-    Returns:
-        plan: a Plan object
-    """
-
-    readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
-    id = _detail(worker, id)
-    arg_ids = _detail(worker, arg_ids)
-    result_ids = _detail(worker, result_ids)
-
-    plan = syft.Plan(
-        owner=worker,
-        id=id,
-        arg_ids=arg_ids,
-        result_ids=result_ids,
-        readable_plan=_detail(worker, readable_plan),
-    )
-
-    plan.name = _detail(worker, name)
-    plan.tags = _detail(worker, tags)
-    plan.description = _detail(worker, description)
-
-    return plan
 
 
 def _simplify_worker(worker: AbstractWorker) -> tuple:
@@ -892,7 +842,7 @@ def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> pointers.Poin
     Examples:
         ptr = _detail_pointer_tensor(data)
     """
-    worker_id = _detail(worker, worker_tuple[0])
+    worker_id = detail(worker, worker_tuple[0])
 
     referenced_worker = worker.get_worker(worker_id)
 
@@ -909,10 +859,10 @@ def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
 
 def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
     worker_id, _objects, auto_add = worker_tuple
-    worker_id = _detail(worker, worker_id)
+    worker_id = detail(worker, worker_id)
 
     result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
-    _objects = _detail(worker, _objects)
+    _objects = detail(worker, _objects)
     result._objects = _objects
 
     # make sure they weren't accidentally double registered
@@ -931,7 +881,7 @@ def _detail_object_wrapper(
     worker: AbstractWorker, obj_wrapper_tuple: str
 ) -> pointers.ObjectWrapper:
     obj_wrapper = pointers.ObjectWrapper(
-        id=obj_wrapper_tuple[0], obj=_detail(worker, obj_wrapper_tuple[1])
+        id=obj_wrapper_tuple[0], obj=detail(worker, obj_wrapper_tuple[1])
     )
     return obj_wrapper
 
@@ -959,7 +909,7 @@ def _detail_exception(worker: AbstractWorker, error_tuple: Tuple[str, str, dict]
     """
     error_name, traceback_str, attributes = error_tuple
     error_name, traceback_str = error_name.decode("utf-8"), traceback_str.decode("utf-8")
-    attributes = _detail(worker, attributes)
+    attributes = detail(worker, attributes)
     # De-serialize the traceback
     tb = Traceback.from_string(traceback_str)
     # Check that the error belongs to a valid set of Exceptions
@@ -1064,7 +1014,7 @@ simplifiers = {
     LoggingTensor: [12, _simplify_log_tensor],
     AdditiveSharingTensor: [13, _simplify_additive_shared_tensor],
     MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
-    Plan: [15, _simplify_plan],
+    Plan: [15, sy.Plan._simplify_plan],
     VirtualWorker: [16, _simplify_worker],
     str: [18, _simplify_str],
     pointers.ObjectWrapper: [19, _simplify_object_wrapper],
@@ -1081,7 +1031,7 @@ simplifiers = {
 forced_full_simplifiers = {VirtualWorker: [17, _force_full_simplify_worker]}
 
 
-def _detail(worker: AbstractWorker, obj: object) -> object:
+def detail(worker: AbstractWorker, obj: object) -> object:
     """
     This function reverses the functionality of _simplify. Where applicable,
     it converts simple objects into more complex objects such as converting
@@ -1122,7 +1072,7 @@ detailers = [
     _detail_log_tensor,
     _detail_additive_shared_tensor,
     _detail_multi_pointer_tensor,
-    _detail_plan,
+    sy.Plan._detail_plan,
     _detail_worker,
     _force_full_detail_worker,
     _detail_str,

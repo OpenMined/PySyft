@@ -25,7 +25,7 @@ def test_tuple_simplify():
 
     input = ("hello", "world")
     target = (2, ((18, (b"hello",)), (18, (b"world",))))
-    assert serde._simplify(input) == target
+    assert serde.simplify(input) == target
 
 
 def test_list_simplify():
@@ -37,7 +37,7 @@ def test_list_simplify():
 
     input = ["hello", "world"]
     target = (3, [(18, (b"hello",)), (18, (b"world",))])
-    assert serde._simplify(input) == target
+    assert serde.simplify(input) == target
 
 
 def test_set_simplify():
@@ -49,8 +49,8 @@ def test_set_simplify():
 
     input = set(["hello", "world"])
     target = (4, [(18, (b"hello",)), (18, (b"world",))])
-    assert serde._simplify(input)[0] == target[0]
-    assert set(serde._simplify(input)[1]) == set(target[1])
+    assert serde.simplify(input)[0] == target[0]
+    assert set(serde.simplify(input)[1]) == set(target[1])
 
 
 def test_float_simplify():
@@ -61,7 +61,7 @@ def test_float_simplify():
 
     input = 5.6
     target = 5.6
-    assert serde._simplify(input) == target
+    assert serde.simplify(input) == target
 
 
 def test_int_simplify():
@@ -72,7 +72,7 @@ def test_int_simplify():
 
     input = 5
     target = 5
-    assert serde._simplify(input) == target
+    assert serde.simplify(input) == target
 
 
 def test_string_simplify():
@@ -83,7 +83,7 @@ def test_string_simplify():
 
     input = "hello"
     target = (18, (b"hello",))
-    assert serde._simplify(input) == target
+    assert serde.simplify(input) == target
 
 
 def test_dict_simplify():
@@ -95,7 +95,7 @@ def test_dict_simplify():
 
     input = {"hello": "world"}
     target = (5, [((18, (b"hello",)), (18, (b"world",)))])
-    assert serde._simplify(input) == target
+    assert serde.simplify(input) == target
 
 
 def test_range_simplify():
@@ -107,7 +107,7 @@ def test_range_simplify():
 
     input = range(1, 3, 4)
     target = (6, (1, 3, 4))
-    assert serde._simplify(input) == target
+    assert serde.simplify(input) == target
 
 
 def test_torch_tensor_simplify():
@@ -123,7 +123,7 @@ def test_torch_tensor_simplify():
     input = Tensor(numpy.random.random((100, 100)))
 
     # simplify the tnesor
-    output = serde._simplify(input)
+    output = serde.simplify(input)
 
     # make sure outer type is correct
     assert type(output) == tuple
@@ -151,7 +151,7 @@ def test_ndarray_simplify():
     """
 
     input = numpy.random.random((100, 100))
-    output = serde._simplify(input)
+    output = serde.simplify(input)
 
     # make sure simplified type ID is correct
     assert output[0] == 7
@@ -166,10 +166,10 @@ def test_ellipsis_simplify():
     """Make sure ellipsis simplifies correctly."""
 
     # the id indicating an ellipsis is here
-    assert serde._simplify(Ellipsis)[0] == 9
+    assert serde.simplify(Ellipsis)[0] == 9
 
     # the simplified ellipsis (empty object)
-    assert serde._simplify(Ellipsis)[1] == b""
+    assert serde.simplify(Ellipsis)[1] == b""
 
 
 def test_torch_device_simplify():
@@ -177,10 +177,10 @@ def test_torch_device_simplify():
     device = torch.device("cpu")
 
     # the id indicating an torch.device is here
-    assert serde._simplify(device)[0] == 10
+    assert serde.simplify(device)[0] == 10
 
     # the simplified torch.device
-    assert serde._simplify(device)[1] == "cpu"
+    assert serde.simplify(device)[1] == "cpu"
 
 
 def test_pointer_tensor_simplify():
@@ -189,7 +189,7 @@ def test_pointer_tensor_simplify():
     alice = syft.VirtualWorker(syft.torch.hook, id="alice")
     input_tensor = pointers.PointerTensor(id=1000, location=alice, owner=alice)
 
-    output = serde._simplify(input_tensor)
+    output = serde.simplify(input_tensor)
 
     assert output[1][0] == input_tensor.id
     assert output[1][1] == input_tensor.id_at_location
