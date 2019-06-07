@@ -534,233 +534,6 @@ def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.devi
     return torch.device(type=device_type)
 
 
-def _simplify_pointer_tensor(ptr: pointers.PointerTensor) -> tuple:
-    """
-    This function takes the attributes of a PointerTensor and saves them in a dictionary
-    Args:
-        ptr (pointers.PointerTensor): a PointerTensor
-    Returns:
-        tuple: a tuple holding the unique attributes of the pointer
-    Examples:
-        data = _simplify_pointer_tensor(ptr)
-    """
-
-    return (
-        ptr.id,
-        ptr.id_at_location,
-        ptr.location.id,
-        ptr.point_to_attr,
-        ptr._shape,
-        ptr.garbage_collect_data,
-    )
-
-    # a more general but slower/more verbose option
-
-    # data = vars(ptr).copy()
-    # for k, v in data.items():
-    #     if isinstance(v, AbstractWorker):
-    #         data[k] = v.id
-    # return _simplify_dictionary(data)
-
-
-def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> pointers.PointerTensor:
-    """
-    This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
-    We use the spread operator to pass the dict data as arguments
-    to the init method of PointerTensor
-    Args:
-        worker: the worker doing the deserialization
-        tensor_tuple: a tuple holding the attributes of the PointerTensor
-    Returns:
-        PointerTensor: a pointers.PointerTensor
-    Examples:
-        ptr = _detail_pointer_tensor(data)
-    """
-    # TODO: fix comment for this and simplifier
-    obj_id, id_at_location, worker_id, point_to_attr, shape, garbage_collect_data = tensor_tuple
-
-    if isinstance(worker_id, bytes):
-        worker_id = worker_id.decode()
-
-    if shape is not None:
-        shape = torch.Size(shape)
-
-    # If the pointer received is pointing at the current worker, we load the tensor instead
-    if worker_id == worker.id:
-        tensor = worker.get_obj(id_at_location)
-
-        if point_to_attr is not None and tensor is not None:
-
-            point_to_attrs = point_to_attr.decode("utf-8").split(".")
-            for attr in point_to_attrs:
-                if len(attr) > 0:
-                    tensor = getattr(tensor, attr)
-
-            if tensor is not None:
-
-                if not tensor.is_wrapper and not isinstance(tensor, torch.Tensor):
-                    # if the tensor is a wrapper then it doesn't need to be wrapped
-                    # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
-                    # then it doesn't need to be wrapped.
-                    # if the tensor is not a wrapper BUT it's also not a torch tensor,
-                    # then it needs to be wrapped or else it won't be able to be used
-                    # by other interfaces
-                    tensor = tensor.wrap()
-
-        return tensor
-    # Else we keep the same Pointer
-    else:
-
-        location = syft.torch.hook.local_worker.get_worker(worker_id)
-
-        ptr = pointers.PointerTensor(
-            location=location,
-            id_at_location=id_at_location,
-            owner=worker,
-            id=obj_id,
-            shape=shape,
-            garbage_collect_data=garbage_collect_data,
-        )
-
-        return ptr
-
-    # a more general but slower/more verbose option
-
-    # new_data = {}
-    # for k, v in data.items():
-    #     key = k.decode()
-    #     if type(v) is bytes:
-    #         val_str = v.decode()
-    #         val = syft.local_worker.get_worker(val_str)
-    #     else:
-    #         val = v
-    #     new_data[key] = val
-    # return PointerTensor(**new_data)
-
-
-def _simplify_log_tensor(tensor: LoggingTensor) -> tuple:
-    """
-    This function takes the attributes of a LogTensor and saves them in a tuple
-    Args:
-        tensor (LoggingTensor): a LogTensor
-    Returns:
-        tuple: a tuple holding the unique attributes of the log tensor
-    Examples:
-        data = _simplify_log_tensor(tensor)
-    """
-
-    chain = None
-    if hasattr(tensor, "child"):
-        chain = _simplify(tensor.child)
-    return (tensor.id, chain)
-
-
-def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> LoggingTensor:
-    """
-    This function reconstructs a LogTensor given it's attributes in form of a tuple.
-    Args:
-        worker: the worker doing the deserialization
-        tensor_tuple: a tuple holding the attributes of the LogTensor
-    Returns:
-        LoggingTensor: a LogTensor
-    Examples:
-        logtensor = _detail_log_tensor(data)
-    """
-    obj_id, chain = tensor_tuple
-
-    tensor = LoggingTensor(owner=worker, id=obj_id)
-
-    if chain is not None:
-        chain = detail(worker, chain)
-        tensor.child = chain
-
-    return tensor
-
-
-def _simplify_additive_shared_tensor(tensor: AdditiveSharingTensor) -> tuple:
-    """
-    This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
-    Args:
-        tensor (AdditiveSharingTensor): a AdditiveSharingTensor
-    Returns:
-        tuple: a tuple holding the unique attributes of the additive shared tensor
-    Examples:
-        data = _simplify_additive_shared_tensor(tensor)
-    """
-
-    chain = None
-    if hasattr(tensor, "child"):
-        chain = _simplify(tensor.child)
-    return (tensor.id, tensor.field, tensor.crypto_provider.id, chain)
-
-
-def _detail_additive_shared_tensor(
-    worker: AbstractWorker, tensor_tuple: tuple
-) -> AdditiveSharingTensor:
-    """
-        This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
-        Args:
-            worker: the worker doing the deserialization
-            tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
-        Returns:
-            AdditiveSharingTensor: a AdditiveSharingTensor
-        Examples:
-            shared_tensor = _detail_additive_shared_tensor(data)
-        """
-
-    tensor_id, field, crypto_provider, chain = tensor_tuple
-
-    tensor = AdditiveSharingTensor(
-        owner=worker, id=tensor_id, field=field, crypto_provider=worker.get_worker(crypto_provider)
-    )
-
-    if chain is not None:
-        chain = detail(worker, chain)
-        tensor.child = chain
-
-    return tensor
-
-
-def _simplify_multi_pointer_tensor(tensor: MultiPointerTensor) -> tuple:
-    """
-    This function takes the attributes of a MultiPointerTensor and saves them in a tuple
-    Args:
-        tensor (MultiPointerTensor): a MultiPointerTensor
-    Returns:
-        tuple: a tuple holding the unique attributes of the additive shared tensor
-    Examples:
-        data = _simplify_additive_shared_tensor(tensor)
-    """
-
-    chain = None
-    if hasattr(tensor, "child"):
-        chain = _simplify(tensor.child)
-    return (tensor.id, chain)
-
-
-def _detail_multi_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> MultiPointerTensor:
-    """
-        This function reconstructs a MultiPointerTensor given it's attributes in form of a tuple.
-        Args:
-            worker: the worker doing the deserialization
-            tensor_tuple: a tuple holding the attributes of the MultiPointerTensor
-        Returns:
-            MultiPointerTensor: a MultiPointerTensor
-        Examples:
-            multi_pointer_tensor = _detail_multi_pointer_tensor(data)
-        """
-
-    tensor_id, chain = tensor_tuple
-
-    tensor = MultiPointerTensor(owner=worker, id=tensor_id)
-
-    if chain is not None:
-        chain = detail(worker, chain)
-        tensor.child = chain
-
-    return tensor
-
-
 def _simplify_train_config(train_config: TrainConfig) -> tuple:
     """Takes the attributes of a TrainConfig and saves them in a tuple.
 
@@ -871,19 +644,6 @@ def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tu
             del worker._objects[obj.id]
 
     return result
-
-
-def _simplify_object_wrapper(obj: pointers.ObjectWrapper) -> tuple:
-    return (obj.id, _simplify(obj.obj))
-
-
-def _detail_object_wrapper(
-    worker: AbstractWorker, obj_wrapper_tuple: str
-) -> pointers.ObjectWrapper:
-    obj_wrapper = pointers.ObjectWrapper(
-        id=obj_wrapper_tuple[0], obj=detail(worker, obj_wrapper_tuple[1])
-    )
-    return obj_wrapper
 
 
 def _simplify_exception(e):
@@ -1010,14 +770,14 @@ simplifiers = {
     slice: [8, _simplify_slice],
     type(Ellipsis): [9, _simplify_ellipsis],
     torch.device: [10, _simplify_torch_device],
-    pointers.PointerTensor: [11, _simplify_pointer_tensor],
-    LoggingTensor: [12, _simplify_log_tensor],
-    AdditiveSharingTensor: [13, _simplify_additive_shared_tensor],
-    MultiPointerTensor: [14, _simplify_multi_pointer_tensor],
+    pointers.PointerTensor: [11, sy.PointerTensor._simplify_pointer_tensor],
+    LoggingTensor: [12, sy.LoggingTensor._simplify_log_tensor],
+    AdditiveSharingTensor: [13, sy.AdditiveSharingTensor._simplify_additive_shared_tensor],
+    MultiPointerTensor: [14, sy.MultiPointerTensor._simplify_multi_pointer_tensor],
     Plan: [15, sy.Plan._simplify_plan],
     VirtualWorker: [16, _simplify_worker],
     str: [18, _simplify_str],
-    pointers.ObjectWrapper: [19, _simplify_object_wrapper],
+    pointers.ObjectWrapper: [19, sy.ObjectWrapper._simplify_object_wrapper],
     GetNotPermittedError: [20, _simplify_exception],
     ResponseSignatureError: [20, _simplify_exception],
     torch.jit.ScriptModule: [21, _simplify_script_module],
@@ -1068,15 +828,15 @@ detailers = [
     _detail_slice,
     _detail_ellipsis,
     _detail_torch_device,
-    _detail_pointer_tensor,
-    _detail_log_tensor,
-    _detail_additive_shared_tensor,
-    _detail_multi_pointer_tensor,
+    sy.PointerTensor._detail_pointer_tensor,
+    sy.LoggingTensor._detail_log_tensor,
+    sy.AdditiveSharingTensor._detail_additive_shared_tensor,
+    sy.MultiPointerTensor._detail_multi_pointer_tensor,
     sy.Plan._detail_plan,
     _detail_worker,
     _force_full_detail_worker,
     _detail_str,
-    _detail_object_wrapper,
+    sy.ObjectWrapper._detail_object_wrapper,
     _detail_exception,
     _detail_script_module,
     _detail_train_config,

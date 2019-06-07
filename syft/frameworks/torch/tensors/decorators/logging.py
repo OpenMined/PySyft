@@ -1,6 +1,8 @@
 import syft
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
+from syft.workers import AbstractWorker
+import syft as sy
 
 
 class LoggingTensor(AbstractTensor):
@@ -128,3 +130,42 @@ class LoggingTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
         print("Default log", cmd)
+
+    @staticmethod
+    def _simplify_log_tensor(tensor: "LoggingTensor") -> tuple:
+        """
+        This function takes the attributes of a LogTensor and saves them in a tuple
+        Args:
+            tensor (LoggingTensor): a LogTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the log tensor
+        Examples:
+            data = _simplify_log_tensor(tensor)
+        """
+
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = sy.serde.simplify(tensor.child)
+        return (tensor.id, chain)
+
+    @staticmethod
+    def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> "LoggingTensor":
+        """
+        This function reconstructs a LogTensor given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the LogTensor
+        Returns:
+            LoggingTensor: a LogTensor
+        Examples:
+            logtensor = _detail_log_tensor(data)
+        """
+        obj_id, chain = tensor_tuple
+
+        tensor = LoggingTensor(owner=worker, id=obj_id)
+
+        if chain is not None:
+            chain = sy.serde.detail(worker, chain)
+            tensor.child = chain
+
+        return tensor

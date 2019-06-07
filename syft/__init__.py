@@ -35,14 +35,11 @@ from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.pointers import ObjectPointer
 from syft.frameworks.torch.pointers import CallablePointer
 from syft.frameworks.torch.pointers import PointerTensor
+from syft.frameworks.torch.pointers import ObjectWrapper
 
 # Import serialization tools
 from syft import serde
-
-# from syft.serde import serde
 from syft.serde import torch_serde
-
-# from syft.serde import native_serde
 
 # import other useful classes
 from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
@@ -55,7 +52,6 @@ __all__ = [
     "workers",
     "serde",
     "torch_serde",
-    # "native_serde",
     "TorchHook",
     "VirtualWorker",
     "Plan",
@@ -63,6 +59,7 @@ __all__ = [
     "LoggingTensor",
     "PointerTensor",
     "VirtualGrid",
+    "ObjectWrapper",
 ]
 
 local_worker = None

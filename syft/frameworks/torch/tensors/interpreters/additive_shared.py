@@ -4,6 +4,8 @@ import syft as sy
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
+from syft.workers import AbstractWorker
+
 # Crypto protocols
 from syft.frameworks.torch.crypto import spdz
 from syft.frameworks.torch.crypto import securenn
@@ -226,7 +228,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         Returns:
             an AdditiveSharingTensor
-            
+
         """
         selected_shares = {}
         for worker, share in self_shares.items():
@@ -732,3 +734,50 @@ class AdditiveSharingTensor(AbstractTensor):
         shares = self.child
         for _, share in shares.items():
             share.child.garbage_collect_data = value
+
+    @staticmethod
+    def _simplify_additive_shared_tensor(tensor: "AdditiveSharingTensor") -> tuple:
+        """
+        This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
+        Args:
+            tensor (AdditiveSharingTensor): a AdditiveSharingTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the additive shared tensor
+        Examples:
+            data = _simplify_additive_shared_tensor(tensor)
+        """
+
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = sy.serde.simplify(tensor.child)
+        return (tensor.id, tensor.field, tensor.crypto_provider.id, chain)
+
+    @staticmethod
+    def _detail_additive_shared_tensor(
+        worker: AbstractWorker, tensor_tuple: tuple
+    ) -> "AdditiveSharingTensor":
+        """
+            This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
+            Args:
+                worker: the worker doing the deserialization
+                tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
+            Returns:
+                AdditiveSharingTensor: a AdditiveSharingTensor
+            Examples:
+                shared_tensor = _detail_additive_shared_tensor(data)
+            """
+
+        tensor_id, field, crypto_provider, chain = tensor_tuple
+
+        tensor = AdditiveSharingTensor(
+            owner=worker,
+            id=tensor_id,
+            field=field,
+            crypto_provider=worker.get_worker(crypto_provider),
+        )
+
+        if chain is not None:
+            chain = sy.serde.detail(worker, chain)
+            tensor.child = chain
+
+        return tensor

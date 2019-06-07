@@ -6,10 +6,7 @@ from syft.generic import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
 
-# from syft import serde
-
 from syft.workers import AbstractWorker  #
-
 
 from typing import List
 from typing import Union
