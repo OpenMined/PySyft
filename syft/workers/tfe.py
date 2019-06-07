@@ -58,7 +58,7 @@ class TFEWorker:
         else:
             logger.info("Please terminate the process on host '%s'.", self.host)
 
-    def connect_to_model(self, input_shape, output_shape, cluster):
+    def connect_to_model(self, input_shape, output_shape, cluster, sess=None):
         config = cluster.tfe_config
         tfe.set_config(config)
 
@@ -71,7 +71,8 @@ class TFEWorker:
             input_shape=input_shape, output_shape=output_shape
         )
 
-        sess = tfe.Session(config=config)
+        if sess is None:
+            sess = tfe.Session(config=config)
         self._tf_session = sess
 
     def query_model(self, data):
