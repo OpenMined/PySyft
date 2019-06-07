@@ -617,7 +617,10 @@ def test_serde_object_wrapper_int():
     assert obj_wrapper.id == obj_wrapper_received.id
 
 
-@pytest.mark.skip(reason="bug in pytorch version 1.1.0, jit.trace returns raw C function")
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
 def test_serialize_and_deserialize_torch_scriptmodule():  # pragma: no cover
     @torch.jit.script
     def foo(x):
@@ -629,7 +632,10 @@ def test_serialize_and_deserialize_torch_scriptmodule():  # pragma: no cover
     assert foo.code == foo_loaded.code
 
 
-@pytest.mark.skip(reason="bug in pytorch version 1.1.0, jit.trace returns raw C function")
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
 def test_torch_jit_script_module_serde():  # pragma: no cover
     @torch.jit.script
     def foo(x):
