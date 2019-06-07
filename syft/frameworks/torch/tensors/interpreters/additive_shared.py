@@ -432,6 +432,33 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.matmul = matmul
 
+        def sum(self, *args, **kwargs):
+            """Overload torch.sum(x) to redirect to x.sum()"""
+            return self.sum(*args, **kwargs)
+
+        module.sum = sum
+
+        def mean(self, *args, **kwargs):
+            """Overload torch.mean(x)"""
+            # We cannot directly use mean on Long tensors
+            # so we do it by hand with a sum and a division
+            sum = self.sum(*args, **kwargs)
+
+            # We need to know how many input values are used for each
+            # output value to divide
+            dims_to_reduce = args[0] if args else range(self.dim())
+            if isinstance(dims_to_reduce, int):
+                dims_to_reduce = (dims_to_reduce,)
+
+            div = 1
+            for i, s in enumerate(self.shape):
+                if i in dims_to_reduce:
+                    div *= s
+
+            return sum // div
+
+        module.mean = mean
+
         @overloaded.function
         def unbind(tensor_shares, **kwargs):
             results = None
