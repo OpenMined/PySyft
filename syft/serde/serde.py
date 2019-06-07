@@ -84,7 +84,6 @@ from syft.serde.torch_serde import (
     _force_full_detail_worker,
     _detail_script_module,
     _detail_exception,
-    _detail_train_config,
     _simplify_torch_tensor,
     _simplify_torch_parameter,
     _simplify_collection,
@@ -95,7 +94,6 @@ from syft.serde.torch_serde import (
     _simplify_exception,
     _force_full_simplify_worker,
     _simplify_script_module,
-    _simplify_train_config,
 )
 
 
@@ -412,7 +410,7 @@ simplifiers = {
         21,
         _simplify_script_module,
     ],  # treat as torch.jit.ScriptModule
-    TrainConfig: [22, _simplify_train_config],
+    TrainConfig: [22, sy.TrainConfig._simplify_train_config],
 }
 
 
@@ -467,5 +465,5 @@ detailers = [
     sy.ObjectWrapper._detail_object_wrapper,
     _detail_exception,
     _detail_script_module,
-    _detail_train_config,
+    sy.TrainConfig._detail_train_config,
 ]
