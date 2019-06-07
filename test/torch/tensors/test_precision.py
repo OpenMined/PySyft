@@ -86,11 +86,6 @@ def test_torch_add():
     assert (y == torch.tensor([0.2, 0.4, 0.6])).all()
 
 
-def test_t():
-    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec(precision_fractional=5)
-    print(x)
-
-
 def test_torch_mul():
     # mul with non standard fix precision
     x = torch.tensor([2.113]).fix_prec(precision_fractional=2)
