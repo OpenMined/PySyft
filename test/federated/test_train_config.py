@@ -16,7 +16,7 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
     me = workers["me"]
 
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1], [0], [1], [0]], requires_grad=True)
+    target = torch.tensor([[1], [0], [1], [0]])
 
     dataset = sy.BaseDataset(data, target)
     alice.add_dataset(dataset, key="vectors")
@@ -75,7 +75,10 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
     assert loss_after < loss_before
 
 
-@pytest.mark.skip(reason="bug in pytorch version 1.1.0, jit.trace returns raw C function")
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
 def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     alice = workers["alice"]
     me = workers["me"]
@@ -106,12 +109,6 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     model_untraced = Net()
 
     model = torch.jit.trace(model_untraced, data)
-    model_with_id = pointers.ObjectWrapper(model, sy.ID_PROVIDER.pop())
-
-    loss_fn_with_id = pointers.ObjectWrapper(loss_fn, sy.ID_PROVIDER.pop())
-
-    model_ptr = me.send(model_with_id, alice)
-    loss_fn_ptr = me.send(loss_fn_with_id, alice)
 
     print("Evaluation before training")
     pred = model(data)
@@ -123,12 +120,12 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     train_config.send(alice)
 
     for epoch in range(5):
-        loss = alice.fit(dataset="vectors")
+        loss = alice.fit(dataset_key="vectors")
         print("-" * 50)
         print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
     print("Evaluation after training:")
-    new_model = model_ptr.get()
+    new_model = train_config.model_ptr.get()
     pred = new_model.obj(data)
     loss_after = loss_fn(real=target, pred=pred)
     print("Loss: {}".format(loss_after))
@@ -178,7 +175,7 @@ def prepare_training(hook, alice):  # pragma: no cover
 
 
 @pytest.mark.skipif(
-    torch.__version__ > "1.0.1",
+    torch.__version__ >= "1.1",
     reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
 )
 def test_train_config_with_jit_trace_send_twice_with_fit(hook, workers):  # pragma: no cover
@@ -302,7 +299,10 @@ def test_train_config_with_jit_trace_send_twice_with_fit(hook, workers):  # prag
     assert loss_after < loss_before
 
 
-@pytest.mark.skip(reason="bug in pytorch version 1.1.0, jit.trace returns raw C function")
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
 def test_train_config_send_with_traced_fns(hook, workers):  # pragma: no cover
     alice = workers["alice"]
     me = workers["me"]
