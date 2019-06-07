@@ -42,6 +42,8 @@ import zstd
 
 import syft as sy
 
+from syft.federated import TrainConfig
+
 from syft.workers import AbstractWorker  #
 from syft.workers import VirtualWorker
 
@@ -56,6 +58,7 @@ from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch import pointers
+
 
 from syft.serde.native_serde import (
     _simplify_str,
@@ -87,6 +90,7 @@ from syft.serde.torch_serde import (
     _detail_object_wrapper,
     _detail_script_module,
     _detail_exception,
+    _detail_train_config,
     _simplify_torch_tensor,
     _simplify_torch_parameter,
     _simplify_collection,
@@ -103,6 +107,7 @@ from syft.serde.torch_serde import (
     _simplify_object_wrapper,
     _force_full_simplify_worker,
     _simplify_script_module,
+    _simplify_train_config,
 )
 
 
@@ -419,6 +424,7 @@ simplifiers = {
         21,
         _simplify_script_module,
     ],  # treat as torch.jit.ScriptModule
+    TrainConfig: [22, _simplify_train_config],
 }
 
 
@@ -468,9 +474,10 @@ detailers = [
     _detail_multi_pointer_tensor,
     _detail_plan,
     _detail_worker,
-    _detail_str,
     _force_full_detail_worker,
+    _detail_str,
     _detail_object_wrapper,
     _detail_exception,
     _detail_script_module,
+    _detail_train_config,
 ]

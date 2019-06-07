@@ -525,3 +525,7 @@ class Plan(ObjectStorage):
         out += ">"
 
         return out
+
+    @staticmethod
+    def test(plan: "Plan") -> tuple:
+        return plan
