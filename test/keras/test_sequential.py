@@ -51,7 +51,6 @@ def test_share():
     hook = sy.KerasHook(tf.keras)
 
     input_shape = [4, 5]
-    input_data = np.ones(input_shape)
     kernel = np.random.normal(size=[5, 5])
     initializer = tf.keras.initializers.Constant(kernel)
 
@@ -64,9 +63,14 @@ def test_share():
     alice = sy.TFEWorker(host=None)
     bob = sy.TFEWorker(host=None)
     carol = sy.TFEWorker(host=None)
+    cluster = sy.TFECluster(alice, bob, carol)
 
-    model.share(alice, bob, carol)
+    cluster.start()
+
+    model.share(cluster)
 
     model.serve(num_requests=0)
 
-    model.shutdown_workers()
+    model.stop()
+
+    cluster.stop()

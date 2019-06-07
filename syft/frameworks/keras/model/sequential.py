@@ -15,7 +15,7 @@ _args_not_supported_by_tfe = [
 ]
 
 
-def share(model, *workers, target_graph=None):
+def share(model, cluster, target_graph=None):
     """
     Secret share the model between `workers`.
 
@@ -30,7 +30,7 @@ def share(model, *workers, target_graph=None):
     }
 
     # Handle input combinations to configure TFE
-    player_to_worker_mapping = _configure_tfe(workers)
+    _configure_tfe(cluster)
 
     if target_graph is None:
         # By default we create a new graph for the shared model
@@ -43,27 +43,19 @@ def share(model, *workers, target_graph=None):
         q_input_shape = batch_input_shape
         q_output_shape = model.output_shape
 
-        server = tfe.serving.QueueServer(
+        model._queue_server = tfe.serving.QueueServer(
             input_shape=q_input_shape, output_shape=q_output_shape, computation_fn=tfe_model
         )
 
         initializer = tf.global_variables_initializer()
 
-    model._server = server
-    model._workers = workers
-
-    # Tell the TFE workers to launch TF servers
-    for player_name, worker in player_to_worker_mapping.items():
-        worker.start(player_name, *workers)
-
     # Push and initialize shared model on servers
-    sess = tfe.Session(graph=target_graph)
-    sess.run(initializer)
-
-    model._tfe_session = sess
+    model._tfe_session = tfe.Session(graph=target_graph)
+    model._tfe_session.run(initializer)
 
 
 def serve(model, num_requests=5):
+
     global request_ix
     request_ix = 1
 
@@ -72,34 +64,29 @@ def serve(model, num_requests=5):
         print("Served encrypted prediction {i} to client.".format(i=request_ix))
         request_ix += 1
 
-    model._server.run(model._tfe_session, num_steps=num_requests, step_fn=step_fn)
+    model._queue_server.run(model._tfe_session, num_steps=num_requests, step_fn=step_fn)
 
 
-def shutdown_workers(model):
+def stop(model):
     if model._tfe_session is not None:
         sess = model._tfe_session
         model._tfe_session = None
         sess.close()
         del sess
-    for worker in model._workers:
-        worker.stop()
 
 
-def _configure_tfe(workers):
+def _configure_tfe(cluster):
 
-    if not workers or len(workers) != 3:
+    if not cluster or len(cluster.workers) != 3:
         raise RuntimeError("TF Encrypted expects three parties for its sharing protocols.")
 
-    tfe_worker_cls = workers[0].__class__
-    config, player_to_worker_mapping = tfe_worker_cls.config_from_workers(workers)
+    config = cluster.tfe_config
     tfe.set_config(config)
 
     prot = tfe.protocol.SecureNN(
         config.get_player("server0"), config.get_player("server1"), config.get_player("server2")
     )
     tfe.set_protocol(prot)
-
-    return player_to_worker_mapping
 
 
 def _rebuild_tfe_model(keras_model, stored_keras_weights):

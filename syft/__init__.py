@@ -24,6 +24,7 @@ from syft.federated import method2plan
 from syft.federated import make_plan
 
 # Import Worker Types
+from syft.workers import TFECluster
 from syft.workers import TFEWorker
 from syft.workers import VirtualWorker
 
