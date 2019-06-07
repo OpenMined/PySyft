@@ -10,7 +10,11 @@ class LargePrecisionTensor(AbstractTensor):
 
     Some systems using Syft require larger types than those supported natively. This tensor type supports arbitrarily
     large values by packing them in smaller ones.
+    Typically a user will require to enlarge a float number by fixing its precision
+        tensor.fix_prec()
     These smaller values are of type `internal_type`. The large value is defined by `precision_fractional`
+
+    Check the tests to see how to play with the different parameters.
     """
 
     def __init__(
@@ -19,8 +23,9 @@ class LargePrecisionTensor(AbstractTensor):
         id=None,
         tags=None,
         description=None,
-        internal_type=torch.int32,
+        base: int = 10,
         precision_fractional=0,
+        internal_type=torch.int32,
         verbose=False,
     ):
         """Initializes a LargePrecisionTensor.
@@ -31,10 +36,12 @@ class LargePrecisionTensor(AbstractTensor):
             id (str or int): An optional string or integer id of the LargePrecisionTensor.
             tags (list): list of tags for searching.
             description (str): a description of this tensor.
-            internal_type (dtype): The large tensor will be stored using tensor of this type.
+            base (int): The base that will be used to to calculate the precision.
             precision_fractional (int): The precision required by the caller.
+            internal_type (dtype): The large tensor will be stored using tensor of this type.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
+        self.base = base
         self.internal_type = internal_type
         self.precision_fractional = precision_fractional
         self.verbose = verbose
@@ -46,12 +53,10 @@ class LargePrecisionTensor(AbstractTensor):
         # These big numbers are stored as objects in np
         result = []
         for x in np.nditer(self.child, flags=["refs_ok"]):
-            n = int(x.item() * 2 ** self.precision_fractional)
+            n = int(x.item() * self.base ** self.precision_fractional)
             if self.verbose:
                 print(f"\nAdding number {n} for item {x.item()}\n")
-            result.append(
-                LargePrecisionTensor._split_number(n, internal_precision[self.internal_type])
-            )
+            result.append(self._split_number(n, internal_precision[self.internal_type]))
         new_shape = self.child.shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
         return torch.tensor(result, dtype=self.internal_type)
@@ -134,8 +139,7 @@ class LargePrecisionTensor(AbstractTensor):
             filler = torch.ones(size=new_shape, dtype=to_adjust.dtype)
         return torch.cat([filler, to_adjust], len(shape) - 1)
 
-    @staticmethod
-    def _split_number(number, bits):
+    def _split_number(self, number, bits):
         """Splits a number in numbers of a smaller power.
 
         Args:
@@ -177,7 +181,7 @@ class LargePrecisionTensor(AbstractTensor):
         # Using tolist() to allow int type. Terrible performance :(
         for x in number_parts.tolist():
             n = n * base + x
-        return n / (2 ** self.precision_fractional)
+        return n / (self.base ** self.precision_fractional)
 
 
 # The internal precision used to decompose the large numbers is half of the size of the type.

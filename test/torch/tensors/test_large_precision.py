@@ -39,7 +39,9 @@ def test_3d_tensors(workers):
 
 def test_negative_numbers(workers):
     x = torch.tensor([[[-1.5, 2.0, 3.0]], [[4.5, 5.0, 6.0]], [[7.0, 8.0, 9.0]]])
-    enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=256)
+    enlarged = x.fix_prec(
+        base=10, internal_type=torch.int16, precision_fractional=256, verbose=True
+    )
     restored = enlarged.float_precision()
     # And now x and restored must be the same
     assert torch.all(torch.eq(x, restored))

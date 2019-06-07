@@ -27,7 +27,9 @@ def _get_maximum_precision():
 
 
 def default_pytorch_maximum_precision():
-    return 64
+    """Dealing with integers > 2**62-1 is not fun with precision tensors.
+    """
+    return 62
 
 
 class TorchTensor(AbstractTensor):
