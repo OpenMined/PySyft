@@ -13,6 +13,23 @@ from syft.workers import BaseWorker
 from syft.exceptions import PureTorchTensorFoundError
 
 
+def _get_maximum_precision():
+    """This function returns the maximum value allowed for precision fractions before the chain decides to use LPT.
+
+    This function can be overridden if the setup requires the use of LargePrecisionTensor from a smaller precision.
+
+    The default value is the size of torch.long
+
+    Returns:
+        The maximum value for precision allowed in this setup
+    """
+    return default_pytorch_maximum_precision()
+
+
+def default_pytorch_maximum_precision():
+    return 64
+
+
 class TorchTensor(AbstractTensor):
     """Add methods to this tensor to have them added to every torch.Tensor object.
 
@@ -582,12 +599,23 @@ class TorchTensor(AbstractTensor):
     float_precision_ = float_prec_
 
     def fix_prec(self, *args, **kwargs):
-        return (
-            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor(*args, **kwargs)
-            .on(self)
-            .enc_fix_prec()
-            .wrap()
-        )
+        if (
+            "precision_fractional" in kwargs
+            and kwargs["precision_fractional"] > _get_maximum_precision()
+        ):
+            return (
+                syft.frameworks.torch.tensors.interpreters.LargePrecisionTensor(*args, **kwargs)
+                .on(self)
+                .child.fix_large_precision()
+                .wrap()
+            )
+        else:
+            return (
+                syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor(*args, **kwargs)
+                .on(self)
+                .enc_fix_prec()
+                .wrap()
+            )
 
     fix_precision = fix_prec
 
@@ -647,18 +675,3 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return syft.combine_pointers(*ps)
-
-    def large_prec(self, *args, **kwargs):
-        return (
-            syft.frameworks.torch.tensors.interpreters.LargePrecisionTensor(*args, **kwargs)
-            .on(self)
-            .child.fix_large_precision()
-            .wrap()
-        )
-
-    large_precision = large_prec
-
-    def restore_prec(self):
-        return self.child.restore_precision()
-
-    restore_precision = restore_prec
