@@ -3,6 +3,8 @@ import time
 
 import syft as sy
 import torch as th
+from unittest import mock
+from types import MethodType
 
 from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
@@ -41,3 +43,24 @@ def test_create_already_existing_worker_with_different_type(hook, start_proc):
         bob = WebsocketClientWorker(**kwargs)
 
     server.terminate()
+
+
+def test_execute_command_self(hook):
+    sy.VirtualWorker.mocked_function = MethodType(
+        mock.Mock(return_value="bob_mocked_function"), sy.VirtualWorker
+    )
+
+    bob = sy.VirtualWorker(hook, "bob")
+    x = th.tensor([1, 2, 3]).send(bob)
+
+    message = bob.create_message_execute_command(
+        command_name="mocked_function", command_owner="self"
+    )
+    serialized_message = sy.serde.serialize(message)
+
+    response = bob._recv_msg(serialized_message)
+    response = sy.serde.deserialize(response)
+
+    assert response == "bob_mocked_function"
+
+    bob.mocked_function.assert_called()
