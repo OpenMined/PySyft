@@ -4,6 +4,7 @@ from syft.workers.virtual import VirtualWorker  # noqa: F401
 
 from syft.workers.websocket_client import WebsocketClientWorker  # noqa: F401
 from syft.workers.websocket_server import WebsocketServerWorker  # noqa: F401
+from syft.workers.tfe import TFECluster  # noqa: F401
 from syft.workers.tfe import TFEWorker  # noqa: F401
 
 

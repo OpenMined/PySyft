@@ -18,14 +18,13 @@ class TFEWorker:
         self._server_process = None
         self._auto_managed = auto_managed
 
-    def start(self, player_name, *workers):
+    def start(self, player_name, cluster):
         if self.host is None:
             # we're running using a tfe.LocalConfig which doesn't require us to do anything
             return
 
         config_filename = "/tmp/tfe.config"
-
-        config, _ = self.config_from_workers(workers)
+        config = cluster.tfe_config
         config.save(config_filename)
 
         if self._auto_managed:
@@ -59,8 +58,8 @@ class TFEWorker:
         else:
             logger.info("Please terminate the process on host '%s'.", self.host)
 
-    def connect_to_model(self, input_shape, output_shape, *workers):
-        config, _ = self.config_from_workers(workers)
+    def connect_to_model(self, input_shape, output_shape, cluster):
+        config = cluster.tfe_config
         tfe.set_config(config)
 
         prot = tfe.protocol.SecureNN(
@@ -85,8 +84,28 @@ class TFEWorker:
     def query_model_join(self):
         return self._tf_client.receive_output(self._tf_session)
 
-    @classmethod
-    def config_from_workers(cls, workers):
+
+class TFECluster:
+    
+    def __init__(self, *workers):
+        tfe_config, player_to_worker_mapping = self._build_cluster(workers)
+        self.tfe_config = tfe_config
+        self.player_to_worker_mapping = player_to_worker_mapping
+    
+    @property
+    def workers(self):
+        return list(self.player_to_worker_mapping.values())
+
+    def start(self):
+        # Tell the TFE workers to launch TF servers
+        for player_name, worker in self.player_to_worker_mapping.items():
+            worker.start(player_name, self)
+
+    def stop(self):
+        for worker in self.workers:
+            worker.stop()
+
+    def _build_cluster(self, workers):
         if len(workers) != 3:
             raise ValueError("Expected three workers but {} were given".format(len(workers)))
 
@@ -107,4 +126,5 @@ class TFEWorker:
             [(player_name, worker.host) for player_name, worker in player_to_worker_mapping.items()]
         )
         config = tfe.RemoteConfig(hostmap)
+
         return config, player_to_worker_mapping
