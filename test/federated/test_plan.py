@@ -15,7 +15,7 @@ from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
 
 
-def test_plan_built_locally(hook):
+def test_plan_built_automatically(hook):
     # To run a plan locally the local worker can't be a client worker,
     # since it needs to register objects
     hook.local_worker.is_client_worker = False
@@ -24,11 +24,56 @@ def test_plan_built_locally(hook):
     def plan_abs(data):
         return data.abs()
 
-    x = th.tensor([-1, 2, 3])
-    _ = plan_abs(x)
+    assert isinstance(plan_abs.__str__(), str)
+    assert len(plan_abs.readable_plan) > 0
+    assert plan_abs.is_built
+
+    hook.local_worker.is_client_worker = True
+
+
+def test_plan_without_args_shape(hook):
+    # To run a plan locally the local worker can't be a client worker,
+    # since it needs to register objects
+    hook.local_worker.is_client_worker = False
+
+    @sy.func2plan(args_shape=())
+    def plan_abs(data):
+        return data.abs()
+
+    assert not plan_abs.is_built
+    assert not len(plan_abs.readable_plan)
+
+    plan_abs(th.tensor([-1]))
+
+    assert len(plan_abs.readable_plan)
+    assert plan_abs.is_built
+
+    hook.local_worker.is_client_worker = True
+
+
+def test_plan_built_automatically_with_any_dimension(hook):
+    hook.local_worker.is_client_worker = False
+
+    @sy.func2plan(args_shape=[(-1, 1)])
+    def plan_abs(data):
+        return data.abs()
 
     assert isinstance(plan_abs.__str__(), str)
     assert len(plan_abs.readable_plan) > 0
+
+    hook.local_worker.is_client_worker = True
+
+
+def test_raise_exception_for_invalid_shape(hook):
+    # To run a plan locally the local worker can't be a client worker,
+    # since it needs to register objects
+    hook.local_worker.is_client_worker = False
+
+    with pytest.raises(ValueError):
+
+        @sy.func2plan(args_shape=[(1, -20)])
+        def _(data):
+            return data.abs()
 
     hook.local_worker.is_client_worker = True
 
@@ -47,7 +92,31 @@ def test_plan_execute_locally(hook):
     hook.local_worker.is_client_worker = True
 
 
-def test_plan_built_remotely(workers):
+# TODO: better support to method execution
+# def test_plan_method_execute_locally(hook):
+#     hook.local_worker.is_client_worker = False
+
+#     class Net(nn.Module):
+#         def __init__(self):
+#             super(Net, self).__init__()
+#             self.fc1 = nn.Linear(2, 3)
+#             self.fc2 = nn.Linear(3, 2)
+#             self.fc3 = nn.Linear(2, 1)
+
+#         @sy.method2plan
+#         def forward(self, x):
+#             x = F.relu(self.fc1(x))
+#             x = self.fc2(x)
+#             x = self.fc3(x)
+#             return F.log_softmax(x)
+
+#     model = Net()
+#     assert model(th.tensor([1.0, 2])) == 0
+
+#     hook.local_worker.is_client_worker = True
+
+
+def test_plan_multiple_send(workers):
     me = workers["me"]
     me.is_client_worker = False
 
@@ -65,7 +134,7 @@ def test_plan_built_remotely(workers):
 
     assert (x_abs == th.tensor([1, 7, 3])).all()
 
-    # Test send / get plan
+    # Test get / send plan
     plan_abs.get()
     plan_abs.send(alice)
 
@@ -76,10 +145,7 @@ def test_plan_built_remotely(workers):
     me.is_client_worker = True
 
 
-# TODO: for some reason that I do not understand yet
-# the model is trying to run using the mocked_data
-# used for building the plan
-
+# TODO: better support for method execution
 # def test_plan_built_on_method(hook):
 #     """
 #     Test @sy.meth2plan and plan send / get / send
@@ -98,13 +164,14 @@ def test_plan_built_remotely(workers):
 #             self.fc1 = nn.Linear(2, 3)
 #             self.fc2 = nn.Linear(3, 2)
 
-#         @sy.method2plan(args_shape=[(1, 2)])
+#         @sy.method2plan
 #         def forward(self, x):
 #             x = F.relu(self.fc1(x))
 #             x = self.fc2(x)
 #             return F.log_softmax(x, dim=0)
 
 #     net = Net()
+#     net(th.tensor([1, 2.0]))
 
 #     net.send(device_1)
 #     pointer_to_data = device_1.search("input_data")[0]
@@ -145,28 +212,7 @@ def test_multiple_workers(workers):
     me.is_client_worker = True
 
 
-def test_fetch_plan_built_locally(hook):
-    hook.local_worker.is_client_worker = False
-
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_mult_3(data):
-        return data * 3
-
-    device_3 = sy.VirtualWorker(hook, id="device_3")
-    plan_mult_3.send(device_3)
-
-    # Fetch plan
-    fetched_plan = device_3.fetch_plan(plan_mult_3.id)
-    assert isinstance(fetched_plan, sy.Plan)
-
-    # Build and execute plan locally
-    y = th.tensor([-1, 2, 3])
-    assert (fetched_plan(y) == th.tensor([-3, 6, 9])).all()
-
-    hook.local_worker.is_client_worker = True
-
-
-def test_fetch_plan_built_remotely(hook):
+def test_fetch_plan(hook):
     hook.local_worker.is_client_worker = False
     device_4 = sy.VirtualWorker(hook, id="device_4")
 
@@ -174,23 +220,16 @@ def test_fetch_plan_built_remotely(hook):
     def plan_mult_3(data):
         return data * 3
 
-    x_ptr = th.tensor([-1, 2, 3]).send(device_4)
-
-    # When you "send" a plan we don't actually send the
-    # plan to the worker we just update the plan's location
     sent_plan = plan_mult_3.send(device_4)
-
-    # When you execute the plan, we then send the plan to the
-    # worker and build it
-    _ = sent_plan(x_ptr)
 
     # Fetch plan
     fetched_plan = device_4.fetch_plan(sent_plan.id)
     get_plan = sent_plan.get()
 
-    # Build plan and execute it locally
+    # Execut it locally
     x = th.tensor([-1, 2, 3])
     assert (get_plan(x) == th.tensor([-3, 6, 9])).all()
+    assert fetched_plan.is_built
     assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
 
     hook.local_worker.is_client_worker = True
@@ -199,15 +238,11 @@ def test_fetch_plan_built_remotely(hook):
 def test_plan_serde(hook):
     hook.local_worker.is_client_worker = False
 
-    @sy.func2plan(args_shape=[(1,)])
+    @sy.func2plan(args_shape=[(1, 3)])
     def my_plan(data):
         x = data * 2
         y = (x - 2) * 10
         return x + y
-
-    # TODO: remove this line when issue #2062 is fixed
-    # Force to build plan
-    my_plan(th.tensor([1, 2, 3]))
 
     serialized_plan = serialize(my_plan)
     deserialized_plan = deserialize(serialized_plan)
@@ -228,10 +263,7 @@ def test_plan_execute_remotely(hook, start_proc):
         y = (x - 2) * 10
         return x + y
 
-    # TODO: remove this line when issue #2062 is fixed
-    # Force to build plan
     x = th.tensor([-1, 2, 3])
-    my_plan(x)
 
     kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8799, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
@@ -360,7 +392,7 @@ def test___call__method(hook):
 
     # test the method case
     self_value = "my_self"
-    plan.self = self_value
+    plan._self = self_value
 
     arg_list = (100, 200, 356)
     ret_val = plan(*arg_list)

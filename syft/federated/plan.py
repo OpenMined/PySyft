@@ -7,7 +7,7 @@ from typing import Union
 import torch
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.workers.base import ObjectStorage
+from syft.generic import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
 
@@ -30,66 +30,56 @@ class func2plan(object):
     This class should be used only as decorator.
     """
 
-    def __init__(self, args_shape):
+    def __init__(self, args_shape=None):
         self.args_shape = args_shape
 
     def __call__(self, plan_blueprint):
         plan = Plan(
             owner=sy.local_worker,
             id=sy.ID_PROVIDER.pop(),
-            args_shape=self.args_shape,
             name=plan_blueprint.__name__,
+            blueprint=plan_blueprint,
         )
-        plan.set_blueprint(plan_blueprint, self.args_shape)
+        if self.args_shape:
+            plan._auto_build(args_shape=self.args_shape)
         return plan
 
 
-class method2plan(object):
+def method2plan(plan_blueprint):
     """Converts a method to a plan.
-
     Converts a method containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
-    This class should be used only as decorator.
     """
+    plan = Plan(
+        owner=sy.local_worker,
+        id=sy.ID_PROVIDER.pop(),
+        blueprint=plan_blueprint,
+        name=plan_blueprint.__name__,
+        is_method=True,
+    )
 
-    def __init__(self, args_shape):
-        self.args_shape = args_shape
+    @property
+    def method(self: object) -> Plan:
+        """
+        This property is a way to catch the self of the method and give it to the plan,
+        it will be provided in the future calls as this is not automatic (the structure
+        of @func2plan would not keep the self during the call)
+        Args:
+            self (object): an instance of a class
+        Returns:
+            the plan which is also a callable.
+        Example:
+            When you have your plan and that you do
+            > plan(*args)
+            First the property is call with the part "plan" and self is caught, plan is
+            returned
+            Then plan is called with "(*args)" and in the __call__ function of plan the
+            self parameter is re-inserted
+        """
+        plan._self = self
+        return plan
 
-    def __call__(self, plan_blueprint):
-        plan = Plan(
-            owner=sy.local_worker,
-            id=sy.ID_PROVIDER.pop(),
-            args_shape=self.args_shape,
-            is_method=True,
-            name=plan_blueprint.__name__,
-        )
-
-        @property
-        def method(_self: object) -> Plan:
-            """
-            This property is a way to catch the self of the method and give it to the plan,
-            it will be provided in the future calls as this is not automatic (the structure
-            of @func2plan would not keep the self during the call)
-
-            Args:
-                self (object): an instance of a class
-
-            Returns:
-                the plan which is also a callable.
-
-            Example:
-                When you have your plan and that you do
-                > plan(*args)
-                First the property is call with the part "plan" and self is caught, plan is
-                returned
-                Then plan is called with "(*args)" and in the __call__ function of plan the
-                self parameter is re-inserted
-            """
-            plan.self = _self
-            plan.set_blueprint(plan_blueprint, self.args_shape)
-            return plan
-
-        return method
+    return method
 
 
 class Plan(ObjectStorage):
@@ -112,6 +102,7 @@ class Plan(ObjectStorage):
         blueprint: callable = None,
         readable_plan: List = None,
         is_method: bool = False,
+        is_built: bool = False,
         *args,
         **kwargs,
     ):
@@ -128,6 +119,7 @@ class Plan(ObjectStorage):
         self.arg_ids = arg_ids if arg_ids is not None else []
         self.result_ids = result_ids if result_ids is not None else []
         self.owner_when_built = None
+        self.is_built = is_built
 
         # Pointing info towards a remote plan
         self.locations = []
@@ -139,18 +131,24 @@ class Plan(ObjectStorage):
 
         # For methods
         self.is_method = is_method
-        self.self = None
+        self._self = None
 
-    def set_blueprint(self, blueprint: callable, args_shape: List[Tuple[int]] = None):
-        """Updates blueprint attribute and builds plan."""
-        self.blueprint = blueprint
+    def _auto_build(self, args_shape: List[Tuple[int]] = None):
         if self.is_method:
-            self.build_plan([self.self] + self._create_placeholders(args_shape))
+            self.build_plan([self._self] + self._create_placeholders(args_shape))
         else:
             self.build_plan(self._create_placeholders(args_shape))
 
     def _create_placeholders(self, args_shape):
-        return [torch.zeros(shape) for shape in args_shape]
+        # In order to support -1 value in shape to indicate any dimension
+        # we map -1 to 1 for shape dimensions.
+        mapped_shapes = []
+        for shape in args_shape:
+            if list(filter(lambda x: x < -1, shape)):
+                raise ValueError("Invalid shape {}".format(shape))
+            mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
+
+        return [torch.zeros(shape) for shape in mapped_shapes]
 
     @property
     def _known_workers(self):
@@ -193,12 +191,14 @@ class Plan(ObjectStorage):
         Args:
             param: Input data.
         """
+
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
         self.arg_ids = list()
         local_args = list()
         for arg in args:
             # Send only tensors (in particular don't send the "self" for methods)
+            # in the case of a method.
             if isinstance(arg, torch.Tensor):
                 self.owner.register_obj(arg)
                 arg = arg.send(self)
@@ -207,6 +207,7 @@ class Plan(ObjectStorage):
             local_args.append(arg)
 
         res_ptr = self.blueprint(*local_args)
+
         res_ptr.child.garbage_collect_data = False
 
         worker = self.find_location(args)
@@ -218,6 +219,9 @@ class Plan(ObjectStorage):
 
         # Store owner that built the plan
         self.owner_when_built = self.owner
+
+        self.is_built = True
+        print(self.is_built)
 
     def find_location(self, args):
         """
@@ -239,6 +243,7 @@ class Plan(ObjectStorage):
             result_ids=self.result_ids,
             readable_plan=self.readable_plan,
             blueprint=self.blueprint,
+            is_built=self.is_built,
         )
         plan.replace_ids(
             from_ids=plan.arg_ids, to_ids=plan.arg_ids, from_worker=self.id, to_worker=plan.id
@@ -312,7 +317,7 @@ class Plan(ObjectStorage):
     def _replace_message_ids(obj, change_id, to_id, from_worker, to_worker):
         _obj = list()
 
-        for i, item in enumerate(obj):
+        for item in obj:
             if isinstance(item, int) and (item == change_id):
                 _obj.append(to_id)
 
@@ -345,11 +350,15 @@ class Plan(ObjectStorage):
             The pointer to the result of the execution if the plan was already sent,
             else the None message serialized.
         """
-        assert len(kwargs) == 0, "kwargs not supported for plan"
+        # TODO: raise instead of assert
+        assert len(kwargs) == 0, "kwargs not supported for pland"
+
         result_ids = [sy.ID_PROVIDER.pop()]
+
         # Support for method hooked in plans
-        if self.self is not None:
-            args = [self.self] + list(args)
+        if self._self is not None:
+            args = [self._self] + list(args)
+
         return self.execute_plan(args, result_ids)
 
     def _update_args(
@@ -388,6 +397,9 @@ class Plan(ObjectStorage):
         return responses
 
     def _execute_plan_locally(self, result_ids, *args, **kwargs):
+        # If plan is a method the first argument is `self` so we ignore it
+        args = args[1:] if self.is_method else args
+
         self._update_args(args, result_ids)
         self._execute_plan()
         responses = self._get_plan_output(result_ids)
@@ -408,15 +420,13 @@ class Plan(ObjectStorage):
             result_ids: List of ids where the results will be stored.
         """
         # We build the plan only if needed
-        first_run = self.readable_plan == []
-        if first_run:
+        if not self.is_built:
             self.build_plan(args)
 
         if len(self.locations) > 0:
             worker = self.find_location(args)
             if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
-
             response = self.request_execute_plan(worker, result_ids, *args)
 
             return response
@@ -431,6 +441,8 @@ class Plan(ObjectStorage):
         elif len(self.locations) == 0 and self.owner != sy.hook.local_worker:
             self._update_args(args, result_ids)
             self._execute_plan()
+            responses = self._get_plan_output(result_ids)
+            return responses
 
         return sy.serde.serialize(None)
 
@@ -475,8 +487,9 @@ class Plan(ObjectStorage):
             location: Workers where plan should be sent to.
         """
         self.locations += [self.owner.get_worker(location).id for location in locations]
+
         # rm duplicates
-        self.locations = list(set(self.locations))
+        self.locations = list(set(self.locations) - set([sy.hook.local_worker.id]))
 
         for location in locations:
             self.ptr_plans[location.id] = self._send(location)
@@ -495,6 +508,7 @@ class Plan(ObjectStorage):
         readable_plan_original = copy.deepcopy(self.readable_plan)
         for worker_id in [self.owner.id] + self.locations:
             self.replace_worker_ids(worker_id, location.id)
+
         _ = self.owner.send(self, workers=location)
 
         # Deep copy the plan without using deep copy
@@ -552,7 +566,7 @@ class Plan(ObjectStorage):
             for tag in self.tags:
                 out += " " + str(tag)
 
-        if len(self.readable_plan) > 0:
+        if self.is_built:
             out += " built"
 
         out += ">"
