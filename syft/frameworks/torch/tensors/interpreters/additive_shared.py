@@ -641,7 +641,7 @@ class AdditiveSharingTensor(AbstractTensor):
         for i in range(1, len(values)):
             a = values[i]
             beta = a >= max_value
-            max_index = i * beta - max_index * (beta - 1)
+            max_index = max_index + beta * (-max_index + i)  # TODO i - max_index doesn't work
             max_value = max_value + beta * (a - max_value)
 
         if dim is None and return_idx is False:
