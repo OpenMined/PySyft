@@ -151,7 +151,7 @@ def serialize(
         if force_full_simplification:
             simple_objects = _force_fullsimplify(obj)
         else:
-            simple_objects = simplify(obj)
+            simple_objects = _simplify(obj)
     else:
         simple_objects = obj
 
@@ -214,7 +214,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
         # serialization library wasn't natively able to serialize (such
         # as msgpack's inability to serialize torch tensors or ... or
         # python slice objects
-        return detail(worker, simple_objects)
+        return _detail(worker, simple_objects)
 
     else:
         # sometimes we want to skip detailing (such as in Plan)
@@ -324,7 +324,7 @@ def _decompress(binary: bin) -> bin:
 # High Level Simplification Router
 
 
-def simplify(obj: object) -> object:
+def _simplify(obj: object) -> object:
     """
     This function takes an object as input and returns a simple
     Python object which is supported by the chosen serialization
@@ -380,7 +380,7 @@ def _force_fullsimplify(obj: object) -> object:
 
         result = (left, right)
     else:
-        result = simplify(obj)
+        result = _simplify(obj)
 
     return result
 
@@ -419,7 +419,7 @@ simplifiers = {
 forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify_worker]}
 
 
-def detail(worker: AbstractWorker, obj: object) -> object:
+def _detail(worker: AbstractWorker, obj: object) -> object:
     """
     This function reverses the functionality of _simplify. Where applicable,
     it converts simple objects into more complex objects such as converting

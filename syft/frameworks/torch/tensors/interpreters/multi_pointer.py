@@ -221,7 +221,7 @@ class MultiPointerTensor(AbstractTensor):
         tensor = sy.MultiPointerTensor(owner=worker, id=tensor_id)
 
         if chain is not None:
-            chain = sy.serde.detail(worker, chain)
+            chain = sy.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor

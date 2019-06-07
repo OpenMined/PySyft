@@ -538,15 +538,15 @@ class Plan(ObjectStorage):
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
-        readable_plan = sy.serde.simplify(plan.readable_plan)
+        readable_plan = sy.serde._simplify(plan.readable_plan)
         return (
             readable_plan,
-            sy.serde.simplify(plan.id),
-            sy.serde.simplify(plan.arg_ids),
-            sy.serde.simplify(plan.result_ids),
-            sy.serde.simplify(plan.name),
-            sy.serde.simplify(plan.tags),
-            sy.serde.simplify(plan.description),
+            sy.serde._simplify(plan.id),
+            sy.serde._simplify(plan.arg_ids),
+            sy.serde._simplify(plan.result_ids),
+            sy.serde._simplify(plan.name),
+            sy.serde._simplify(plan.tags),
+            sy.serde._simplify(plan.description),
         )
 
     @staticmethod
@@ -560,20 +560,20 @@ class Plan(ObjectStorage):
         """
 
         readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
-        id = sy.serde.detail(worker, id)
-        arg_ids = sy.serde.detail(worker, arg_ids)
-        result_ids = sy.serde.detail(worker, result_ids)
+        id = sy.serde._detail(worker, id)
+        arg_ids = sy.serde._detail(worker, arg_ids)
+        result_ids = sy.serde._detail(worker, result_ids)
 
         plan = sy.Plan(
             owner=worker,
             id=id,
             arg_ids=arg_ids,
             result_ids=result_ids,
-            readable_plan=sy.serde.detail(worker, readable_plan),
+            readable_plan=sy.serde._detail(worker, readable_plan),
         )
 
-        plan.name = sy.serde.detail(worker, name)
-        plan.tags = sy.serde.detail(worker, tags)
-        plan.description = sy.serde.detail(worker, description)
+        plan.name = sy.serde._detail(worker, name)
+        plan.tags = sy.serde._detail(worker, tags)
+        plan.description = sy.serde._detail(worker, description)
 
         return plan

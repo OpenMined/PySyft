@@ -97,11 +97,11 @@ class ObjectWrapper:
 
     @staticmethod
     def _simplify_object_wrapper(obj: "ObjectWrapper") -> tuple:
-        return (obj.id, sy.serde.simplify(obj.obj))
+        return (obj.id, sy.serde._simplify(obj.obj))
 
     @staticmethod
     def _detail_object_wrapper(worker: AbstractWorker, obj_wrapper_tuple: str) -> "ObjectWrapper":
         obj_wrapper = ObjectWrapper(
-            id=obj_wrapper_tuple[0], obj=sy.serde.detail(worker, obj_wrapper_tuple[1])
+            id=obj_wrapper_tuple[0], obj=sy.serde._detail(worker, obj_wrapper_tuple[1])
         )
         return obj_wrapper
