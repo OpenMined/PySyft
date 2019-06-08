@@ -52,6 +52,8 @@ import zstd
 import syft
 import syft as sy
 
+from syft.federated import TrainConfig
+
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
@@ -1098,6 +1100,67 @@ def _detail_multi_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) ->
     return tensor
 
 
+def _simplify_train_config(train_config: TrainConfig) -> tuple:
+    """Takes the attributes of a TrainConfig and saves them in a tuple.
+
+    Attention: this function does not serialize the model and loss_fn attributes
+    of a TrainConfig instance, these are serialized and sent before. TrainConfig
+    keeps a reference to the sent objects using _model_id and _loss_fn_id which
+    are serialized here.
+
+    Args:
+        train_config: a TrainConfig object
+    Returns:
+        tuple: a tuple holding the unique attributes of the TrainConfig object
+    """
+    return (
+        train_config._model_id,
+        train_config._loss_fn_id,
+        train_config.batch_size,
+        train_config.epochs,
+        _simplify(train_config.optimizer),
+        train_config.lr,
+        _simplify(train_config.id),
+        train_config.max_nr_batches,
+        train_config.shuffle,
+    )
+
+
+def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> sy.TrainConfig:
+    """This function reconstructs a TrainConfig object given it's attributes in the form of a tuple.
+
+    Args:
+        worker: the worker doing the deserialization
+        train_config_tuple: a tuple holding the attributes of the TrainConfig
+    Returns:
+        train_config: A TrainConfig object
+    """
+
+    model_id, loss_fn_id, batch_size, epochs, optimizer, lr, id, max_nr_batches, shuffle = (
+        train_config_tuple
+    )
+
+    id = _detail(worker, id)
+    detailed_optimizer = _detail(worker, optimizer)
+
+    train_config = syft.TrainConfig(
+        model=None,
+        loss_fn=None,
+        owner=worker,
+        id=id,
+        model_id=model_id,
+        loss_fn_id=loss_fn_id,
+        batch_size=batch_size,
+        epochs=epochs,
+        optimizer=detailed_optimizer,
+        lr=lr,
+        max_nr_batches=max_nr_batches,
+        shuffle=shuffle,
+    )
+
+    return train_config
+
+
 def _simplify_plan(plan: Plan) -> tuple:
     """
     This function takes the attributes of a Plan and saves them in a tuple
@@ -1113,7 +1176,7 @@ def _simplify_plan(plan: Plan) -> tuple:
         _simplify(plan.id),
         _simplify(plan.arg_ids),
         _simplify(plan.result_ids),
-        plan.name,
+        _simplify(plan.name),
         _simplify(plan.tags),
         _simplify(plan.description),
     )
@@ -1125,13 +1188,11 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
         worker: the worker doing the deserialization
         plan_tuple: a tuple holding the attributes of the Plan
     Returns:
-        Plan: a Plan object
+        plan: a Plan object
     """
 
     readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
-    id = id
-    if isinstance(id, bytes):
-        id = id.decode("utf-8")
+    id = _detail(worker, id)
     arg_ids = _detail(worker, arg_ids)
     result_ids = _detail(worker, result_ids)
 
@@ -1142,8 +1203,8 @@ def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> Plan:
         result_ids=result_ids,
         readable_plan=_detail(worker, readable_plan),
     )
-    if isinstance(name, bytes):
-        plan.name = name.decode("utf-8")
+
+    plan.name = _detail(worker, name)
     plan.tags = _detail(worker, tags)
     plan.description = _detail(worker, description)
 
@@ -1304,9 +1365,7 @@ def _simplify(obj: object) -> object:
         # for this type. If there is, run return
         # the simplified object
         current_type = type(obj)
-
         result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
-
         return result
 
     except KeyError:
@@ -1363,6 +1422,7 @@ simplifiers = {
         21,
         _simplify_script_module,
     ],  # treat as torch.jit.ScriptModule
+    TrainConfig: [22, _simplify_train_config],
 }
 
 forced_full_simplifiers = {VirtualWorker: [17, _force_full_simplify_worker]}
@@ -1416,4 +1476,5 @@ detailers = [
     _detail_object_wrapper,
     _detail_exception,
     _detail_script_module,
+    _detail_train_config,
 ]

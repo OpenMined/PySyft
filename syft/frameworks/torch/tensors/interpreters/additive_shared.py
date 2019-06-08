@@ -637,7 +637,7 @@ class AdditiveSharingTensor(AbstractTensor):
             dim (None or int): if not None, the dimension on which
                 the comparison should be done
             return_idx (bool): Return the index of the maximum value
-                Note the if dim is specified then the index is returned
+                Note that if dim is specified then the index is returned
                 anyway to match the Pytorch syntax.
 
         return:
@@ -645,7 +645,7 @@ class AdditiveSharingTensor(AbstractTensor):
             and optionally the index of the maximum value (possibly across an axis)
         """
         values = self
-        n_dim = len(self.shape)
+        n_dim = self.dim()
 
         # Make checks and transformation
         assert dim is None or (0 <= dim < n_dim), f"Dim overflow  0 <= {dim} < {n_dim}"
@@ -668,8 +668,8 @@ class AdditiveSharingTensor(AbstractTensor):
         for i in range(1, len(values)):
             a = values[i]
             beta = a >= max_value
-            max_index = i * beta - max_index * (beta - 1)
-            max_value = a * beta - max_value * (beta - 1)
+            max_index = max_index + beta * (-max_index + i)  # TODO i - max_index doesn't work
+            max_value = max_value + beta * (a - max_value)
 
         if dim is None and return_idx is False:
             return max_value
