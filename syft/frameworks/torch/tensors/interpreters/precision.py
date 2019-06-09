@@ -93,20 +93,21 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     @overloaded.method
-    def add(self, _self, *args, **kwargs):
-        other = args[0]
+    def add(self, _self, other):
+        """Add two fixed precision tensors together.
+        """
         if _self.is_wrapper and not other.is_wrapper:
             # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor),
             # we want to perform AST + torch.tensor
             _self = _self.child
-            args = (other.wrap(),)
+            other = other.wrap()
         elif other.is_wrapper and not _self.is_wrapper:
             # If we try to add a FPT>torch.tensor and a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
-            args = (_self.wrap(),)
+            other = _self.wrap()
             _self = other.child
 
-        response = getattr(_self, "add")(*args, **kwargs)
+        response = getattr(_self, "add")(other)
 
         return response
 
@@ -120,21 +121,21 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     @overloaded.method
-    def sub(self, _self, *args, **kwargs):
-        other = args[0]
-
+    def sub(self, _self, other):
+        """Subtracts a fixed precision tensor from another one.
+        """
         if _self.is_wrapper and not other.is_wrapper:
             # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor),
             # we want to perform AST + torch.tensor
             _self = _self.child
-            args = (other.wrap(),)
+            other = other.wrap()
         elif other.is_wrapper and not _self.is_wrapper:
             # If we try to subtract a FPT>torch.tensor and a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
-            args = (_self.wrap(),)
+            other = _self.wrap()
             _self = other.child
 
-        response = getattr(_self, "sub")(*args, **kwargs)
+        response = getattr(_self, "sub")(other)
 
         return response
 
@@ -152,13 +153,11 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return response
 
-    def mul(self, *args, **kwargs):
+    def mul(self, other):
         """
         Hook manually mul to add the truncation part which is inherent to multiplication
         in the fixed precision setting
         """
-
-        other = args[0]
 
         if isinstance(other, FixedPrecisionTensor):
             assert (
@@ -169,24 +168,22 @@ class FixedPrecisionTensor(AbstractTensor):
             # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
             # we want to perform AST * torch.tensor
             new_self = self.child
-            new_args = (other.wrap(),)
-            new_kwargs = kwargs
+            new_other = other.wrap()
 
         elif other.child.is_wrapper and not self.child.is_wrapper:
             # If we try to multiply a FPT>torch.tensor with a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
             new_self = other.child
-            new_args = (self.wrap(),)
-            new_kwargs = kwargs
+            new_other = self.wrap()
 
         else:
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
-                "mul", self, args, kwargs
+            new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
+                "mul", self, other, None
             )
 
         # Send it to the appropriate class and get the response
-        response = getattr(new_self, "mul")(*new_args, **new_kwargs)
+        response = getattr(new_self, "mul")(new_other)
 
         # Put back SyftTensor on the tensors found in the response
         response = syft.frameworks.torch.hook_args.hook_response(
