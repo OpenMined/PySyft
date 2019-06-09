@@ -61,6 +61,21 @@ class LargePrecisionTensor(AbstractTensor):
         result = np.array(result).reshape(new_shape)
         return torch.tensor(result, dtype=self.internal_type)
 
+    def _create_internal_tensor_np(self, ndarray, is_large_already=False):
+        """Decompose a tensor into an array of numbers that represent such tensor with the required precision"""
+        # TODO refs_ok might not be needed as we are passing now torch.tensors here
+        # refs_ok is necessary to enable iterations of reference types.
+        # These big numbers are stored as objects in np
+        result = []
+        for x in np.nditer(ndarray, flags=["refs_ok"]):
+            n = x.item()
+            if self.verbose:
+                print(f"\nAdding number {n} for item {x.item()}\n")
+            result.append(LargePrecisionTensor._split_number(n, internal_precision[self.internal_type]))
+        new_shape = self.child.shape[:-1] + (len(max(result, key=len)),)
+        result = np.array(result).reshape(new_shape)
+        return torch.tensor(result, dtype=self.internal_type)
+
     def get_class_attributes(self):
         """
         Specify all the attributes need to build a wrapper correctly when returning a response.
@@ -72,10 +87,27 @@ class LargePrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def add(self, self_, other):
-        if self_.shape[-1] != other.shape[-1]:
-            return self._add_different_dims(other, self_)
-        else:
-            return self_ + other
+        # if self_.shape[-1] != other.shape[-1]:
+        #     return self._add_different_dims(other, self_)
+        # else:
+        #     return self_ + other
+        ndarray = self.child.numpy()
+        a = LargePrecisionTensor._restore_tensor_into_numbers_np(ndarray, internal_precision[self.internal_type])
+        ndarray_b = other.numpy()
+        b = LargePrecisionTensor._restore_tensor_into_numbers_np(ndarray_b, internal_precision[self.internal_type])
+        return self._create_internal_tensor_np(a + b)
+
+    @overloaded.method
+    def mul(self, self_, other):
+        # if self_.shape[-1] != other.shape[-1]:
+        #     return self._add_different_dims(other, self_)
+        # else:
+        #     return self_ + other
+        ndarray = self.child.numpy()
+        a = LargePrecisionTensor._restore_tensor_into_numbers_np(ndarray, internal_precision[self.internal_type])
+        ndarray_b = other.numpy()
+        b = LargePrecisionTensor._restore_tensor_into_numbers_np(ndarray_b, internal_precision[self.internal_type])
+        return self._create_internal_tensor_np(a * b)
 
     @staticmethod
     def _add_different_dims(other, self_):
@@ -110,16 +142,18 @@ class LargePrecisionTensor(AbstractTensor):
         # An alternative would be to iterate through the PyTorch tensor and apply the restore function.
         # This however wouldn't save us from creating a new tensor
         ndarray = self.child.numpy()
-        result = self._restore_tensor_into_numbers(ndarray, internal_precision[self.internal_type])
+        result = LargePrecisionTensor._restore_tensor_into_numbers_np(ndarray, internal_precision[self.internal_type])
+        result = result / (self.base ** self.precision_fractional)
         return torch.from_numpy(result.reshape(ndarray.shape[:-1]).astype(np.float32))
         # At this point the value is an object type. Force cast to float before creating torch.tensor
 
-    def _restore_tensor_into_numbers(self, number_array, precision):
+    @staticmethod
+    def _restore_tensor_into_numbers_np(number_array, precision):
         """Creates an numpy array containing the original numbers"""
         number_array = number_array.reshape(-1, number_array.shape[-1])
         result = []
         for elem in number_array:
-            result.append(self._restore_number(elem, precision))
+            result.append(LargePrecisionTensor._restore_large_number(elem, precision))
         return np.array(result)
 
     @staticmethod
@@ -136,10 +170,11 @@ class LargePrecisionTensor(AbstractTensor):
         if not fill_value:
             filler = torch.zeros(size=new_shape, dtype=to_adjust.dtype)
         else:
-            filler = torch.ones(size=new_shape, dtype=to_adjust.dtype)
+            filler = torch.ones(size=new_shape, dtype=to_adjust.dtype) * fill_value
         return torch.cat([filler, to_adjust], len(shape) - 1)
 
-    def _split_number(self, number, bits):
+    @staticmethod
+    def _split_number(number, bits):
         """Splits a number in numbers of a smaller power.
 
         Args:
@@ -166,7 +201,8 @@ class LargePrecisionTensor(AbstractTensor):
             number_parts.append(part * sign)
         return number_parts[::-1]
 
-    def _restore_number(self, number_parts, bits):
+    @staticmethod
+    def _restore_large_number(number_parts, bits):
         """Rebuild a number from a numpy array,
 
         Args:
@@ -174,14 +210,14 @@ class LargePrecisionTensor(AbstractTensor):
             bits (int): the bits used in the split.
 
         Returns:
-            Number: the original number.
+            Number: the large number represented by this tensor
         """
         base = 2 ** bits
         n = 0
         # Using tolist() to allow int type. Terrible performance :(
         for x in number_parts.tolist():
             n = n * base + x
-        return n / (self.base ** self.precision_fractional)
+        return n
 
 
 # The internal precision used to decompose the large numbers is half of the size of the type.
