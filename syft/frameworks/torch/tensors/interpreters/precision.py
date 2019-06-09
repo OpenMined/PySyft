@@ -93,8 +93,9 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     @overloaded.method
-    def add(self, _self, *args, **kwargs):
-        other = args[0]
+    def add(self, _self, other):
+        """Add two fixed precision tensors together.
+        """
         if _self.is_wrapper and not other.is_wrapper:
             # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor),
             # we want to perform AST + torch.tensor
@@ -120,9 +121,9 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     @overloaded.method
-    def sub(self, _self, *args, **kwargs):
-        other = args[0]
-
+    def sub(self, _self, other):
+        """Subtracts a fixed precision tensor from another one.
+        """
         if _self.is_wrapper and not other.is_wrapper:
             # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor),
             # we want to perform AST + torch.tensor
@@ -152,13 +153,11 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return response
 
-    def mul(self, *args, **kwargs):
+    def mul(self, other):
         """
         Hook manually mul to add the truncation part which is inherent to multiplication
         in the fixed precision setting
         """
-
-        other = args[0]
 
         if isinstance(other, FixedPrecisionTensor):
             assert (

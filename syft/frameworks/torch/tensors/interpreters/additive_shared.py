@@ -246,22 +246,30 @@ class AdditiveSharingTensor(AbstractTensor):
     ## SECTION SPDZ
 
     @overloaded.method
-    def add(self, shares: dict, other_shares):
-        """Adds two tensors together
+    def add(self, shares: dict, other):
+        """Adds operand to the self AST instance.
 
         Args:
             shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
-            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
-                to the tensor being added to self.
+            other: the operand being added to self, can be:
+                - a dictionary <location_id -> PointerTensor) of shares
+                - a torch tensor
+                - a constant
         """
 
         if isinstance(other_shares, torch.LongTensor) or isinstance(other_shares, torch.IntTensor):
-            # if someone passes a torch tensor
-            other_shares = other_shares.share(*self.child.keys()).child.child
+            # if someone passes a torch tensor, we share it and keep the dict
+            other_shares = other_shares.share(
+                *self.child.keys(), cryto_provider=self.cryto_provider
+            ).child.child
         elif not isinstance(other_shares, dict):
-            # if someone passes in a constant... (i.e., x + 3)
-            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
+            # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
+            other_shares = (
+                torch.Tensor([other_shares])
+                .share(*self.child.keys(), cryto_provider=self.cryto_provider)
+                .child.child
+            )
 
         assert len(shares) == len(other_shares)
 
@@ -280,21 +288,29 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @overloaded.method
     def sub(self, shares: dict, other_shares):
-        """Subtracts an other tensor from self.
+        """Subtracts an operand from the self AST instance.
 
         Args:
             shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
-            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
-                to the tensor being subtracted from self.
+            other: the operand being subtracted from self, can be:
+                - a dictionary <location_id -> PointerTensor) of shares
+                - a torch tensor
+                - a constant
         """
 
         if isinstance(other_shares, torch.LongTensor) or isinstance(other_shares, torch.IntTensor):
-            # if someone passes a torch tensor
-            other_shares = other_shares.share(*self.child.keys()).child.child
+            # if someone passes a torch tensor, we share it and keep the dict
+            other_shares = other_shares.share(
+                *self.child.keys(), cryto_provider=self.cryto_provider
+            ).child.child
         elif not isinstance(other_shares, dict):
-            # if someone passes in a constant... (i.e., x - 3), make it a shared tensor and keep the dict
-            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
+            # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
+            other_shares = (
+                torch.Tensor([other_shares])
+                .share(*self.child.keys(), cryto_provider=self.cryto_provider)
+                .child.child
+            )
 
         assert len(shares) == len(other_shares)
 
@@ -337,13 +353,15 @@ class AdditiveSharingTensor(AbstractTensor):
     @overloaded.method
     def _public_mul(self, shares, other, equation):
         """Multiplies an AdditiveSharingTensor with a non-private value
-        (int, MultiPointerTensor, etc.)
+        (int, torch tensor, MultiPointerTensor, etc.)
 
         Args:
             shares (dict): a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
-            other (dict of int): a dictionary <location_id -> PointerTensor) of shares corresponding
-                to the tensor being multiplied with self or an integer
+            other (dict of int): operand being multiplied with self, can be:
+                - a dictionary <location_id -> PointerTensor) of shares
+                - a torch tensor (Int or Long)
+                - or an integer
             equation: a string representation of the equation to be computed in einstein
                 summation form
         """
