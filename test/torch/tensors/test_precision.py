@@ -115,9 +115,11 @@ def test_torch_sub(workers):
     x = tx.fix_prec()
     y = ty.fix_prec().share(bob, alice, crypto_provider=james)
 
-    z = torch.sub(y, x).get().float_prec()
+    z1 = torch.sub(y, x).get().float_prec()
+    z2 = torch.sub(x, y).get().float_prec()
 
-    assert (z == torch.sub(ty, tx)).all()
+    assert (z1 == torch.sub(ty, tx)).all()
+    assert (z2 == torch.sub(tx, ty)).all()
 
 
 def test_torch_mul(workers):

@@ -257,27 +257,26 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a torch tensor
                 - a constant
         """
-
-        if isinstance(other_shares, torch.LongTensor) or isinstance(other_shares, torch.IntTensor):
+        if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
             # if someone passes a torch tensor, we share it and keep the dict
-            other_shares = other_shares.share(
-                *self.child.keys(), cryto_provider=self.cryto_provider
+            other = other.share(
+                *self.child.keys(), crypto_provider=self.crypto_provider
             ).child.child
-        elif not isinstance(other_shares, dict):
+        elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
-            other_shares = (
-                torch.Tensor([other_shares])
-                .share(*self.child.keys(), cryto_provider=self.cryto_provider)
+            other = (
+                torch.Tensor([other])
+                .share(*self.child.keys(), crypto_provider=self.crypto_provider)
                 .child.child
             )
 
-        assert len(shares) == len(other_shares)
+        assert len(shares) == len(other)
 
         # matches each share which needs to be added according
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = other_shares[k] + v
+            new_shares[k] = other[k] + v
 
         return new_shares
 
@@ -287,7 +286,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return self.add(other, **kwargs)
 
     @overloaded.method
-    def sub(self, shares: dict, other_shares):
+    def sub(self, shares: dict, other):
         """Subtracts an operand from the self AST instance.
 
         Args:
@@ -299,26 +298,26 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
 
-        if isinstance(other_shares, torch.LongTensor) or isinstance(other_shares, torch.IntTensor):
+        if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
             # if someone passes a torch tensor, we share it and keep the dict
-            other_shares = other_shares.share(
-                *self.child.keys(), cryto_provider=self.cryto_provider
+            other = other.share(
+                *self.child.keys(), crypto_provider=self.crypto_provider
             ).child.child
-        elif not isinstance(other_shares, dict):
+        elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
-            other_shares = (
-                torch.Tensor([other_shares])
-                .share(*self.child.keys(), cryto_provider=self.cryto_provider)
+            other = (
+                torch.Tensor([other])
+                .share(*self.child.keys(), crypto_provider=self.crypto_provider)
                 .child.child
             )
 
-        assert len(shares) == len(other_shares)
+        assert len(shares) == len(other)
 
         # matches each share which needs to be added according
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = v - other_shares[k]
+            new_shares[k] = v - other[k]
 
         return new_shares
 
@@ -344,7 +343,7 @@ class AdditiveSharingTensor(AbstractTensor):
         assert len(self.child) == len(other.child)
 
         if self.crypto_provider is None:
-            raise AttributeError("For multiplication a cryto_provider must be passed.")
+            raise AttributeError("For multiplication a crypto_provider must be passed.")
 
         shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field)
 
