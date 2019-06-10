@@ -75,7 +75,7 @@ backward_func = {
 }
 
 # Functions that we really don't want to hook because they don't have tensors in their signature
-exclude_functions = {'as_tensor', 'torch.as_tensor'}
+exclude_functions = {"as_tensor", "torch.as_tensor"}
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
 # they have an arbitrary number of tensors in args which can trigger unexpected behaviour
 ambiguous_methods = {"__getitem__", "_getitem_public", "view", "permute"}
