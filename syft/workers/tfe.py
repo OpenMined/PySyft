@@ -1,12 +1,15 @@
 """To be extended in the near future."""
 from collections import OrderedDict
 import logging
+import os
 import subprocess
+import tempfile
 
 import tf_encrypted as tfe
 
 
 logger = logging.getLogger("tf_encrypted")
+_TMP_DIR = tempfile.gettempdir()
 
 
 class TFEWorker:
@@ -19,29 +22,35 @@ class TFEWorker:
         self._auto_managed = auto_managed
 
     def start(self, player_name, *workers):
-        config_filename = "/tmp/tfe.config"
+        if self.host is None:
+            # we're running using a tfe.LocalConfig which doesn't require us to do anything
+            return
+
+        config_filename = os.path.join(_TMP_DIR, "tfe.config")
 
         config, _ = self.config_from_workers(workers)
         config.save(config_filename)
 
+        launch_cmd = "python -m tf_encrypted.player --config {} {}".format(
+            config_filename, player_name
+        )
         if self._auto_managed:
-            cmd = "python -m tf_encrypted.player --config {} {}".format(
-                config_filename, player_name
-            )
-            self._server_process = subprocess.Popen(cmd.split(" "))
+            self._server_process = subprocess.Popen(launch_cmd.split(" "))
         else:
             logger.info(
                 "If not done already, please launch the following "
-                "command in a terminal on host '%s':\n"
-                "'python -m tf_encrypted.player --config %s %s'\n"
+                "command in a terminal on host %s: '%s'\n"
                 "This can be done automatically in a local subprocess by "
-                "setting `auto_managed=True` when instantiating a TFEWorker.",
+                "setting `auto_managed=True` when instantiating a TFEWorker.\n",
                 self.host,
-                config_filename,
-                player_name,
+                launch_cmd,
             )
 
     def stop(self):
+        if self.host is None:
+            # we're running using a tfe.LocalConfig which doesn't require us to do anything
+            return
+
         if self._auto_managed:
             if self._server_process is None:
                 return
@@ -87,9 +96,16 @@ class TFEWorker:
         player_to_worker_mapping["server1"] = workers[1]
         player_to_worker_mapping["server2"] = workers[2]
 
+        use_local_config = all(worker.host is None for worker in workers)
+        if use_local_config:
+            config = tfe.LocalConfig(
+                player_names=player_to_worker_mapping.keys(), auto_add_unknown_players=False
+            )
+            return config, player_to_worker_mapping
+
+        # use tfe.RemoteConfig
         hostmap = OrderedDict(
             [(player_name, worker.host) for player_name, worker in player_to_worker_mapping.items()]
         )
         config = tfe.RemoteConfig(hostmap)
-
         return config, player_to_worker_mapping

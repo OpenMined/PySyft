@@ -74,10 +74,12 @@ backward_func = {
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
-# methods that we really don't want to hook, for example because they have an arbitrary
-# number of tensors in args signature response
-exclude_methods = {"__getitem__", "_getitem_public", "view", "permute"}
-exclude_functions = {"torch.unbind", "unbind", "torch.stack", "stack"}
+# Functions that we really don't want to hook because they don't have tensors in their signature
+exclude_functions = {"as_tensor", "torch.as_tensor"}
+# Methods or functions whose signature changes a lot and that we don't want to "cache", because
+# they have an arbitrary number of tensors in args which can trigger unexpected behaviour
+ambiguous_methods = {"__getitem__", "_getitem_public", "view", "permute"}
+ambiguous_functions = {"torch.unbind", "unbind", "torch.stack", "stack", "torch.mean", "torch.sum"}
 
 
 def hook_method_args(attr, method_self, args, kwargs):
@@ -105,7 +107,7 @@ def hook_method_args(attr, method_self, args, kwargs):
     attr_id = type(method_self).__name__ + "." + attr
 
     try:
-        assert attr not in exclude_methods
+        assert attr not in ambiguous_methods
 
         # Load the utility function to transform the args
         hook_args = hook_method_args_functions[attr_id]
@@ -139,7 +141,10 @@ def hook_function_args(attr, args, kwargs, return_args_type=False):
         (- the type of the tensors in the arguments)
     """
     try:
-        assert attr not in exclude_functions
+        if attr in exclude_functions:
+            raise PureTorchTensorFoundError
+
+        assert attr not in ambiguous_functions
         # Load the utility function to transform the args
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
@@ -224,7 +229,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     attr_id = f"{attr}@{wrap_type.__name__}.{response_is_tuple}.{hash_wrap_args}"
 
     try:
-        assert attr not in exclude_functions
+        assert attr not in ambiguous_functions
 
         # Load the utility function to transform the args
         response_hook_function = hook_method_response_functions[attr_id]
@@ -636,7 +641,7 @@ def register_response(
     attr_id = "{}".format(attr)
 
     try:
-        assert attr not in exclude_functions
+        assert attr not in ambiguous_functions
 
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]
@@ -678,21 +683,18 @@ def build_register_response_function(response: object) -> Callable:
 
 def register_tensor(
     tensor: Union[torch.Tensor, AbstractTensor],
+    owner: sy.workers.AbstractWorker,
     response_ids: List = list(),
-    owner: sy.workers.AbstractWorker = None,
-) -> None:
+):
     """
-    Register a tensor
+    Registers a tensor.
 
     Args:
-        tensor: the tensor
-        response_ids: list of ids where the tensor should be stored
-            and each id is pop out when needed
-        owner: the owner that makes the registration
-    Returns:
-        the pointer
+        tensor: A tensor.
+        owner: The owner that makes the registration.
+        response_ids: List of ids where the tensor should be stored
+            and each id is pop out when needed.
     """
-    assert owner is not None
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)

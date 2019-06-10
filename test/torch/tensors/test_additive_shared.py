@@ -273,25 +273,29 @@ def test_torch_conv2d(workers):
     )
     bias = torch.Tensor([0.0, 5.0])
 
-    im_shared = im.share(bob, alice, crypto_provider=james)
-    w_shared = w.share(bob, alice, crypto_provider=james)
-    bias_shared = bias.share(bob, alice, crypto_provider=james)
+    im_shared = im.fix_precision().share(bob, alice, crypto_provider=james)
+    w_shared = w.fix_precision().share(bob, alice, crypto_provider=james)
+    bias_shared = bias.fix_precision().share(bob, alice, crypto_provider=james)
 
-    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get()
-    res1 = torch.conv2d(
-        im_shared,
-        w_shared[:, 0:1].contiguous(),
-        bias=bias_shared,
-        stride=2,
-        padding=3,
-        dilation=2,
-        groups=2,
-    ).get()
+    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get().float_precision()
+    res1 = (
+        torch.conv2d(
+            im_shared,
+            w_shared[:, 0:1].contiguous(),
+            bias=bias_shared,
+            stride=2,
+            padding=3,
+            dilation=2,
+            groups=2,
+        )
+        .get()
+        .float_precision()
+    )
 
-    expected0 = torch.conv2d(im, w, bias=bias, stride=1).type(torch.LongTensor)
+    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
     expected1 = torch.conv2d(
         im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
-    ).type(torch.LongTensor)
+    )
 
     assert (res0 == expected0).all()
     assert (res1 == expected1).all()
@@ -444,6 +448,49 @@ def test_mod(workers):
     assert t.child.mod(-8).get() % -8 == torch.tensor([-5])
 
     assert (t.child % 8).get() % 8 == torch.tensor([3])
+
+
+def test_torch_sum(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([[1, 2, 4], [8, 5, 6]])
+    x = t.share(alice, bob, crypto_provider=james)
+
+    s = torch.sum(x).get()
+    s_dim = torch.sum(x, 0).get()
+    s_dim2 = torch.sum(x, (0, 1)).get()
+    s_keepdim = torch.sum(x, 1, keepdim=True).get()
+
+    assert (s == torch.sum(t)).all()
+    assert (s_dim == torch.sum(t, 0)).all()
+    assert (s_dim2 == torch.sum(t, (0, 1))).all()
+    assert (s_keepdim == torch.sum(t, 1, keepdim=True)).all()
+
+
+def test_torch_mean(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    base = 10
+    prec_frac = 4
+
+    t = torch.tensor([[1.0, 2.5, 4.2, 2.0], [8.0, 5.8, 6.2, 3.0]])
+    x = t.fix_prec(base=base, precision_fractional=prec_frac).share(
+        alice, bob, crypto_provider=james
+    )
+
+    s = torch.mean(x).get().float_prec()
+    s_dim = torch.mean(x, 0).get().float_prec()
+    s_dim2 = torch.mean(x, (0, 1)).get().float_prec()
+    s_keepdim = torch.mean(x, 1, keepdim=True).get().float_prec()
+
+    expected = (torch.mean(t) * 10 ** prec_frac).floor() / 10 ** prec_frac
+    expected_dim = (torch.mean(t, 0) * 10 ** prec_frac).floor() / 10 ** prec_frac
+    expected_dim2 = (torch.mean(t, (0, 1)) * 10 ** prec_frac).floor() / 10 ** prec_frac
+    expected_keepdim = (torch.mean(t, 1, keepdim=True) * 10 ** prec_frac).floor() / 10 ** prec_frac
+
+    assert (s == expected).all()
+    assert (s_dim == expected_dim).all()
+    assert (s_dim2 == expected_dim2).all()
+    assert (s_keepdim == expected_keepdim).all()
 
 
 def test_unbind(workers):
