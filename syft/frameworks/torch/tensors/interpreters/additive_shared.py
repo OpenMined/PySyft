@@ -432,6 +432,33 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.matmul = matmul
 
+        def sum(self, *args, **kwargs):
+            """Overload torch.sum(x) to redirect to x.sum()"""
+            return self.sum(*args, **kwargs)
+
+        module.sum = sum
+
+        def mean(self, *args, **kwargs):
+            """Overload torch.mean(x)"""
+            # We cannot directly use mean on Long tensors
+            # so we do it by hand with a sum and a division
+            sum = self.sum(*args, **kwargs)
+
+            # We need to know how many input values are used for each
+            # output value to divide
+            dims_to_reduce = args[0] if args else range(self.dim())
+            if isinstance(dims_to_reduce, int):
+                dims_to_reduce = (dims_to_reduce,)
+
+            div = 1
+            for i, s in enumerate(self.shape):
+                if i in dims_to_reduce:
+                    div *= s
+
+            return sum // div
+
+        module.mean = mean
+
         @overloaded.function
         def unbind(tensor_shares, **kwargs):
             results = None
@@ -610,7 +637,7 @@ class AdditiveSharingTensor(AbstractTensor):
             dim (None or int): if not None, the dimension on which
                 the comparison should be done
             return_idx (bool): Return the index of the maximum value
-                Note the if dim is specified then the index is returned
+                Note that if dim is specified then the index is returned
                 anyway to match the Pytorch syntax.
 
         return:
@@ -618,7 +645,7 @@ class AdditiveSharingTensor(AbstractTensor):
             and optionally the index of the maximum value (possibly across an axis)
         """
         values = self
-        n_dim = len(self.shape)
+        n_dim = self.dim()
 
         # Make checks and transformation
         assert dim is None or (0 <= dim < n_dim), f"Dim overflow  0 <= {dim} < {n_dim}"
@@ -641,8 +668,8 @@ class AdditiveSharingTensor(AbstractTensor):
         for i in range(1, len(values)):
             a = values[i]
             beta = a >= max_value
-            max_index = i * beta - max_index * (beta - 1)
-            max_value = a * beta - max_value * (beta - 1)
+            max_index = max_index + beta * (-max_index + i)  # TODO i - max_index doesn't work
+            max_value = max_value + beta * (a - max_value)
 
         if dim is None and return_idx is False:
             return max_value
