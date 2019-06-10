@@ -41,7 +41,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        self.torch_max_value = torch.tensor([round(self.field / 2)])
+        self.torch_max_value = torch.tensor(self.field)
 
     def get_class_attributes(self):
         """
@@ -62,14 +62,8 @@ class FixedPrecisionTensor(AbstractTensor):
         rational = self.child
 
         upscaled = (rational * self.base ** self.precision_fractional).long()
-        field_element = upscaled % self.field
+        field_element = upscaled % self.field  # Should we raise a warning if upscaled > field?
         field_element.owner = rational.owner
-
-        # Handle neg values
-        gate = field_element.gt(self.torch_max_value).long()
-        neg_nums = (field_element - self.field) * gate
-        pos_nums = field_element * (1 - gate)
-        field_element = neg_nums + pos_nums
 
         self.child = field_element
         return self
@@ -80,7 +74,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         value = self.child.long() % self.field
 
-        gate = value.native_gt(self.torch_max_value).long()
+        gate = value.native_gt(self.torch_max_value / 2).long()
         neg_nums = (value - self.field) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
@@ -97,6 +91,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """Add two fixed precision tensors together.
         """
         response = getattr(_self, "add")(*args, **kwargs)
+        response %= self.field   # Wrap around the field
 
         return response
 
@@ -140,7 +135,10 @@ class FixedPrecisionTensor(AbstractTensor):
             self.precision_fractional == other.precision_fractional
         ), "In mul, all args should have the same precision_fractional"
 
-        return response.truncate(other.precision_fractional)
+        response = response.truncate(other.precision_fractional)
+        response %= self.field   # Wrap around the field
+
+        return response
 
     __mul__ = mul
 
@@ -168,7 +166,10 @@ class FixedPrecisionTensor(AbstractTensor):
             self.precision_fractional == other.precision_fractional
         ), "In matmul, all args should have the same precision_fractional"
 
-        return response.truncate(other.precision_fractional)
+        response = response.truncate(other.precision_fractional)
+        response %= self.field   # Wrap around the field
+
+        return response
 
     __matmul__ = matmul
 
