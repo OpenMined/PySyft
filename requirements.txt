@@ -10,3 +10,5 @@ requests
 syft
 websocket_client
 websockets>=7.0
+flask_sqlalchemy
+flask_migrate

@@ -11,3 +11,4 @@ https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp36-cp36m-linux_x86_64.w
 https://download.pytorch.org/whl/cpu/torch-1.0.1-cp36-cp36m-win_amd64.whl; sys_platform == "windows"
 torch; sys_platform == "darwin"
 torchvision
+psycopg2
