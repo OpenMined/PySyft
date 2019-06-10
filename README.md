@@ -52,7 +52,7 @@ and selecting the pysyft kernel
 Instead of installing all the dependencies on your computer, you can run a notebook server (which comes with Pysyft installed) using [Docker](https://www.docker.com/). All you will have to do is start the container like this:
 
 ```bash
-$ docker container run youben/udacity-secure-private-ai:miniconda
+$ docker container run youben/pysyft:miniconda
 [I 23:41:51.429 NotebookApp] Writing notebook server cookie secret to /root/.local/share/jupyter/runtime/notebook_cookie_secret
 [I 23:41:52.865 NotebookApp] Serving notebooks from local directory: /workspace
 [I 23:41:52.865 NotebookApp] The Jupyter Notebook is running at:
@@ -112,7 +112,7 @@ Step 11/11 : ENTRYPOINT ["/entrypoint.sh"]
 Successfully built 7c400194576f
 Successfully tagged pysyft-notebook:latest
 $
-$ docker container run youben/udacity-secure-private-ai:miniconda
+$ docker container run youben/pysyft:miniconda
 [I 23:41:51.429 NotebookApp] Writing notebook server cookie secret to /root/.local/share/jupyter/runtime/notebook_cookie_secret
 [I 23:41:52.865 NotebookApp] Serving notebooks from local directory: /workspace
 [I 23:41:52.865 NotebookApp] The Jupyter Notebook is running at:
