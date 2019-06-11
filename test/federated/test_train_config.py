@@ -299,65 +299,6 @@ def test_train_config_with_jit_trace_send_twice_with_fit(hook, workers):  # prag
     assert loss_after < loss_before
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
-def test_train_config_send_with_traced_fns(hook, workers):  # pragma: no cover
-    alice = workers["alice"]
-    me = workers["me"]
-
-    data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1], [0], [1], [0]])
-
-    dataset = sy.BaseDataset(data, target)
-    alice.add_dataset(dataset, key="vectors")
-
-    @hook.torch.jit.script
-    def loss_fn(real, pred):
-        return ((real.float() - pred.float()) ** 2).mean()
-
-    class Net(torch.nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
-            self.fc3 = nn.Linear(2, 1)
-
-        def forward(self, x):
-            x = F.relu(self.fc1(x))
-            x = F.relu(self.fc2(x))
-            x = self.fc3(x)
-            return x
-
-    model_untraced = Net()
-
-    model = torch.jit.trace(model_untraced, data)
-
-    print("Evaluation before training")
-    pred = model(data)
-    loss_before = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_before))
-
-    # Create and send train config
-    traced_model = torch.jit.trace(model, data)
-    train_config = sy.TrainConfig(batch_size=2, model=traced_model, loss_fn=loss_fn)
-    train_config.send(alice)
-
-    for epoch in range(5):
-        loss = alice.fit(dataset_key="vectors")
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
-
-    print("Evaluation after training:")
-    new_model = train_config.model_ptr.get()
-    pred = new_model.obj(data)
-    loss_after = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_after))
-
-    assert loss_after < loss_before
-
-
 def test___str__():
     train_config = sy.TrainConfig(batch_size=2, id=99887766, model=None, loss_fn=None)
 
