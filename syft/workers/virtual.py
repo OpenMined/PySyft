@@ -2,6 +2,7 @@ from syft.workers.base import BaseWorker
 from syft.federated import FederatedClient
 from syft.workers import AbstractWorker
 import syft as sy
+from syft.frameworks.torch import pointers
 
 
 class VirtualWorker(BaseWorker, FederatedClient):
@@ -20,7 +21,7 @@ class VirtualWorker(BaseWorker, FederatedClient):
         return (sy.serde._simplify(worker.id),)
 
     @staticmethod
-    def detail(worker: AbstractWorker, worker_tuple: tuple) -> "VirtualWorker":
+    def detail(worker: AbstractWorker, worker_tuple: tuple) -> "pointers.PointerTensor":
         """
         This function reconstructs a PlanPointer given it's attributes in form of a tuple.
 

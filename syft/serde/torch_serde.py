@@ -10,9 +10,6 @@ import torch
 
 import io
 import numpy
-from tblib import Traceback
-import traceback
-from six import reraise
 import warnings
 
 import syft
@@ -558,44 +555,6 @@ def force_full_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
     return result
 
 
-def _simplify_exception(e):
-    """
-    Serialize information about an Exception which was raised to forward it
-    """
-    # Get information about the exception: type of error,  traceback
-    tp = type(e)
-    tb = e.__traceback__
-    # Serialize the traceback
-    traceback_str = "Traceback (most recent call last):\n" + "".join(traceback.format_tb(tb))
-    # Include special attributes if relevant
-    try:
-        attributes = e.get_attributes()
-    except AttributeError:
-        attributes = {}
-    return tp.__name__, traceback_str, _simplify(attributes)
-
-
-def _detail_exception(worker: AbstractWorker, error_tuple: Tuple[str, str, dict]):
-    """
-    Detail and re-raise an Exception forwarded by another worker
-    """
-    error_name, traceback_str, attributes = error_tuple
-    error_name, traceback_str = error_name.decode("utf-8"), traceback_str.decode("utf-8")
-    attributes = detail(worker, attributes)
-    # De-serialize the traceback
-    tb = Traceback.from_string(traceback_str)
-    # Check that the error belongs to a valid set of Exceptions
-    if error_name in dir(sy.exceptions):
-        error_type = getattr(sy.exceptions, error_name)
-        error = error_type()
-        # Include special attributes if any
-        for attr_name, attr in attributes.items():
-            setattr(error, attr_name, attr)
-        reraise(error_type, error, tb.as_traceback())
-    else:
-        raise ValueError(f"Invalid Exception returned:\n{traceback_str}")
-
-
 def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
     """Strategy to serialize a script module using Torch.jit"""
     return obj.save_to_buffer()
@@ -690,8 +649,8 @@ simplifiers = {
     VirtualWorker: [16, sy.VirtualWorker.simplify],
     str: [18, _simplify_str],
     pointers.ObjectWrapper: [19, sy.ObjectWrapper.simplify],
-    GetNotPermittedError: [20, _simplify_exception],
-    ResponseSignatureError: [20, _simplify_exception],
+    GetNotPermittedError: [20, sy.exceptions.GetNotPermittedError.simplify],
+    ResponseSignatureError: [20, sy.exceptions.ResponseSignatureError.simplify],
     torch.jit.ScriptModule: [21, _simplify_script_module],
     torch.jit.TopLevelTracedModule: [
         21,
@@ -749,7 +708,7 @@ detailers = [
     force_full_detail,
     _detail_str,
     sy.ObjectWrapper.detail,
-    _detail_exception,
+    sy.exceptions.GetNotPermittedError.detail,
     _detail_script_module,
     sy.TrainConfig.detail,
 ]
