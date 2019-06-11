@@ -51,18 +51,18 @@ class TorchAttributes(object):
             for func_name in dir(torch_module)
         }
 
-        # Add special functions to exclude from the hook
+        # Add special functions to exclude from the hook **in alphabetical order**
+        # Reasons can be:
+        # - Used for internal process like printing tensors
+        # - Don't use tensors so are bound to have local executions
+        # - etc
+        # DON'T put here:
+        # - functions like native_*
+        # - functions that could use pointers or syft tensors
         self.exclude = [
             "arange",
-            "typename",
-            "is_tensor",
-            "manual_seed",
-            "storage",
-            "storage_offset",
-            "size",
-            "stride",
+            "as_tensor",
             "from_numpy",
-            "set_",
             "get_default_dtype",
             "get_device",
             "get_file_path",
@@ -86,31 +86,24 @@ class TorchAttributes(object):
             "isclose",
             "isfinite",
             "load",
-            "native_add",
-            "native_batch_norm",
-            "native_clone",
-            "native_norm",
-            "native_pow",
-            "native_resize_as_",
-            "native_tensor",
-            "native_zero_",
+            "manual_seed",
             "ones",
             "rand",
             "randint",
-            "randn_like",
             "randn",
+            "randn_like",
+            "randperm",
             "range",
             "save",
+            "set_",
             "short",
-            "zeros",
+            "size",
+            "storage",
+            "storage_offset",
+            "stride",
             "tensor",
-            "get_default_dtype",
-            "is_grad_enabled",
-            "is_nonzero",
-            "is_storage",
-            "is_tensor",
-            "isfinite",
-            "randperm",
+            "typename",
+            "zeros",
         ]
 
         # SECTION: List all torch tensor methods we want to overload
