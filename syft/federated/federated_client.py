@@ -78,44 +78,28 @@ class FederatedClient(ObjectStorage):
 
         return self._fit(model=model, dataset_key=dataset_key, loss_fn=loss_fn)
 
-    def _create_batch_sampler(self, ds_key: str, shuffle: bool = False, drop_last: bool = True):
-        data_range = range(len(self.datasets[ds_key]))
+    def _create_data_loader(self, dataset_key: str, shuffle: bool = False):
+        data_range = range(len(self.datasets[dataset_key]))
         if shuffle:
             sampler = RandomSampler(data_range)
         else:
             sampler = SequentialSampler(data_range)
-
-        batch_sampler = BatchSampler(sampler, self.train_config.batch_size, drop_last)
-        return batch_sampler
-
-    def _fit(self, model, dataset_key, loss_fn):
-        model.train()
-        loss = None
-        batch_sampler = self._create_batch_sampler(dataset_key)
-
-        for epoch in range(self.train_config.epochs):
-            for data_indices in batch_sampler:
-                data, target = self.datasets[dataset_key][data_indices]
-                self.optimizer.zero_grad()
-                output = model.forward(data)
-                loss = loss_fn(output, target)
-                loss.backward()
-                self.optimizer.step()
-
-        data_range = range(len(self.datasets[key]))
-        if self.train_config.shuffle:
-            sampler = RandomSampler(data_range)
-        else:
-            sampler = SequentialSampler(data_range)
-        train_loader = th.utils.data.DataLoader(
-            self.datasets[key],
+        data_loader = th.utils.data.DataLoader(
+            self.datasets[dataset_key],
             batch_size=self.train_config.batch_size,
             sampler=sampler,
             num_workers=0,
         )
-        loss = -1.0
+        return data_loader
+
+    def _fit(self, model, dataset_key, loss_fn):
+        model.train()
+        data_loader = self._create_data_loader(
+            dataset_key=dataset_key, shuffle=self.train_config.shuffle
+        )
+        loss = None
         iteration_count = 0
-        for (data, target) in train_loader:
+        for (data, target) in data_loader:
 
             if iteration_count % 25 == 0:
                 logger.debug("iteration %s", iteration_count)
@@ -140,4 +124,4 @@ def accuracy(pred_softmax, target):
     pred = pred_softmax.argmax(dim=1)
     logger.debug("predicted: %s", pred)
     logger.debug("target:    %s", target)
-    return (pred == target).sum().numpy() / float(nr_elems)
+    return (pred.float() == target.view(pred.shape).float()).sum().numpy() / float(nr_elems)
