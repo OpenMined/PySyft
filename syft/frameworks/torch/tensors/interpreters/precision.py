@@ -83,7 +83,16 @@ class FixedPrecisionTensor(AbstractTensor):
 
     def truncate(self, precision_fractional):
         truncation = self.base ** precision_fractional
-        self.child /= truncation
+
+        # We need to make sure that values are truncated "towards 0"
+        # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
+        # at 97 (equivalent to -3), not 7
+        gate = self.child.native_gt(self.torch_max_value / 2).long()
+
+        neg_nums = (self.child - self.field) / truncation + self.field
+        pos_nums = self.child / truncation
+
+        self.child = neg_nums * gate + pos_nums * (1 - gate)
         return self
 
     @overloaded.method
@@ -91,7 +100,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """Add two fixed precision tensors together.
         """
         response = getattr(_self, "add")(*args, **kwargs)
-        response %= self.field   # Wrap around the field
+        response %= self.field  # Wrap around the field
 
         return response
 
@@ -135,8 +144,8 @@ class FixedPrecisionTensor(AbstractTensor):
             self.precision_fractional == other.precision_fractional
         ), "In mul, all args should have the same precision_fractional"
 
+        response %= self.field  # Wrap around the field
         response = response.truncate(other.precision_fractional)
-        response %= self.field   # Wrap around the field
 
         return response
 
@@ -167,7 +176,7 @@ class FixedPrecisionTensor(AbstractTensor):
         ), "In matmul, all args should have the same precision_fractional"
 
         response = response.truncate(other.precision_fractional)
-        response %= self.field   # Wrap around the field
+        response %= self.field  # Wrap around the field
 
         return response
 
