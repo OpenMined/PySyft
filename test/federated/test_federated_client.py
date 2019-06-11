@@ -32,12 +32,14 @@ def test_remove_dataset():
 
 def test_set_obj_train_config():
     fed_client = federated.FederatedClient()
+    fed_client.optimizer = True
 
     train_config = federated.TrainConfig(id=100, model=None, loss_fn=None)
 
     fed_client.set_obj(train_config)
 
     assert fed_client.train_config.id == train_config.id
+    assert fed_client.optimizer is None
 
 
 def test_set_obj_other():
