@@ -170,14 +170,14 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
     WebsocketServerWorker"""
 
     kwargs = {"id": "socket_multiple_output", "host": "localhost", "port": 8768, "hook": hook}
-    server = start_proc(WebsocketServerWorker, kwargs)
+    process_remote_worker = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
     x = torch.tensor([1.0, 3, 2])
 
-    socket_pipe = WebsocketClientWorker(**kwargs)
+    local_worker = WebsocketClientWorker(**kwargs)
 
-    x = x.send(socket_pipe)
+    x = x.send(local_worker)
     p1, p2 = torch.sort(x)
     x1, x2 = p1.get(), p2.get()
 
@@ -186,6 +186,6 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
 
     del x
 
-    socket_pipe.ws.shutdown()
+    local_worker.ws.shutdown()
     time.sleep(0.1)
-    server.terminate()
+    process_remote_worker.terminate()
