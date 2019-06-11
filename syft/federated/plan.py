@@ -467,7 +467,7 @@ class Plan(ObjectStorage):
         _ = self.owner.send(self, workers=location)
 
         # Deep copy the plan without using deep copy
-        pointer = sy.Plan._detail_plan(self.owner, sy.Plan._simplify_plan(self))
+        pointer = sy.Plan.detail(self.owner, sy.Plan.simplify(self))
 
         # readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
         self.readable_plan = readable_plan_original
@@ -529,7 +529,7 @@ class Plan(ObjectStorage):
         return out
 
     @staticmethod
-    def _simplify_plan(plan: "Plan") -> tuple:
+    def simplify(plan: "Plan") -> tuple:
         """
         This function takes the attributes of a Plan and saves them in a tuple
         Args:
@@ -550,7 +550,7 @@ class Plan(ObjectStorage):
         )
 
     @staticmethod
-    def _detail_plan(worker: AbstractWorker, plan_tuple: tuple) -> "Plan":
+    def detail(worker: AbstractWorker, plan_tuple: tuple) -> "Plan":
         """This function reconstructs a Plan object given it's attributes in the form of a tuple.
         Args:
             worker: the worker doing the deserialization

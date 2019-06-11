@@ -185,7 +185,7 @@ class MultiPointerTensor(AbstractTensor):
             share.child.garbage_collect_data = value
 
     @staticmethod
-    def _simplify_multi_pointer_tensor(tensor: "MultiPointerTensor") -> tuple:
+    def simplify(tensor: "MultiPointerTensor") -> tuple:
         """
         This function takes the attributes of a MultiPointerTensor and saves them in a tuple
         Args:
@@ -193,7 +193,7 @@ class MultiPointerTensor(AbstractTensor):
         Returns:
             tuple: a tuple holding the unique attributes of the additive shared tensor
         Examples:
-            data = _simplify_additive_shared_tensor(tensor)
+            data = simplify(tensor)
         """
 
         chain = None
@@ -202,9 +202,7 @@ class MultiPointerTensor(AbstractTensor):
         return (tensor.id, chain)
 
     @staticmethod
-    def _detail_multi_pointer_tensor(
-        worker: AbstractWorker, tensor_tuple: tuple
-    ) -> "MultiPointerTensor":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "MultiPointerTensor":
         """
         This function reconstructs a MultiPointerTensor given it's attributes in form of a tuple.
         Args:
@@ -213,7 +211,7 @@ class MultiPointerTensor(AbstractTensor):
         Returns:
             MultiPointerTensor: a MultiPointerTensor
         Examples:
-            multi_pointer_tensor = _detail_multi_pointer_tensor(data)
+            multi_pointer_tensor = detail(data)
         """
 
         tensor_id, chain = tensor_tuple

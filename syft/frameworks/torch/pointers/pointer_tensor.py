@@ -193,7 +193,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         )
 
     @staticmethod
-    def _simplify_pointer_tensor(ptr: "PointerTensor") -> tuple:
+    def simplify(ptr: "PointerTensor") -> tuple:
         """
         This function takes the attributes of a PointerTensor and saves them in a dictionary
         Args:
@@ -201,7 +201,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         Returns:
             tuple: a tuple holding the unique attributes of the pointer
         Examples:
-            data = _simplify_pointer_tensor(ptr)
+            data = simplify(ptr)
         """
 
         return (
@@ -222,7 +222,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         # return _simplify_dictionary(data)
 
     @staticmethod
-    def _detail_pointer_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> "PointerTensor":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PointerTensor":
         """
         This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
         We use the spread operator to pass the dict data as arguments
@@ -233,7 +233,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         Returns:
             PointerTensor: a pointers.PointerTensor
         Examples:
-            ptr = _detail_pointer_tensor(data)
+            ptr = detail(data)
         """
         # TODO: fix comment for this and simplifier
         obj_id, id_at_location, worker_id, point_to_attr, shape, garbage_collect_data = tensor_tuple

@@ -132,7 +132,7 @@ class LoggingTensor(AbstractTensor):
         print("Default log", cmd)
 
     @staticmethod
-    def _simplify_log_tensor(tensor: "LoggingTensor") -> tuple:
+    def simplify(tensor: "LoggingTensor") -> tuple:
         """
         This function takes the attributes of a LogTensor and saves them in a tuple
         Args:
@@ -140,7 +140,7 @@ class LoggingTensor(AbstractTensor):
         Returns:
             tuple: a tuple holding the unique attributes of the log tensor
         Examples:
-            data = _simplify_log_tensor(tensor)
+            data = _simplify(tensor)
         """
 
         chain = None
@@ -149,7 +149,7 @@ class LoggingTensor(AbstractTensor):
         return (tensor.id, chain)
 
     @staticmethod
-    def _detail_log_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> "LoggingTensor":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "LoggingTensor":
         """
         This function reconstructs a LogTensor given it's attributes in form of a tuple.
         Args:
@@ -158,7 +158,7 @@ class LoggingTensor(AbstractTensor):
         Returns:
             LoggingTensor: a LogTensor
         Examples:
-            logtensor = _detail_log_tensor(data)
+            logtensor = detail(data)
         """
         obj_id, chain = tensor_tuple
 

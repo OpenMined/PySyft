@@ -794,7 +794,7 @@ class AdditiveSharingTensor(AbstractTensor):
             share.child.garbage_collect_data = value
 
     @staticmethod
-    def _simplify_additive_shared_tensor(tensor: "AdditiveSharingTensor") -> tuple:
+    def simplify(tensor: "AdditiveSharingTensor") -> tuple:
         """
         This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
         Args:
@@ -802,7 +802,7 @@ class AdditiveSharingTensor(AbstractTensor):
         Returns:
             tuple: a tuple holding the unique attributes of the additive shared tensor
         Examples:
-            data = _simplify_additive_shared_tensor(tensor)
+            data = simplify(tensor)
         """
 
         chain = None
@@ -811,9 +811,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return (tensor.id, tensor.field, tensor.crypto_provider.id, chain)
 
     @staticmethod
-    def _detail_additive_shared_tensor(
-        worker: AbstractWorker, tensor_tuple: tuple
-    ) -> "AdditiveSharingTensor":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AdditiveSharingTensor":
         """
             This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
             Args:
@@ -822,7 +820,7 @@ class AdditiveSharingTensor(AbstractTensor):
             Returns:
                 AdditiveSharingTensor: a AdditiveSharingTensor
             Examples:
-                shared_tensor = _detail_additive_shared_tensor(data)
+                shared_tensor = detail(data)
             """
 
         tensor_id, field, crypto_provider, chain = tensor_tuple

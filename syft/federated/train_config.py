@@ -136,7 +136,7 @@ class TrainConfig:
             return self.loss_fn.get()
 
     @staticmethod
-    def _simplify_train_config(train_config: "TrainConfig") -> tuple:
+    def simplify(train_config: "TrainConfig") -> tuple:
         """Takes the attributes of a TrainConfig and saves them in a tuple.
 
         Attention: this function does not serialize the model and loss_fn attributes
@@ -162,7 +162,7 @@ class TrainConfig:
         )
 
     @staticmethod
-    def _detail_train_config(worker: AbstractWorker, train_config_tuple: tuple) -> "TrainConfig":
+    def detail(worker: AbstractWorker, train_config_tuple: tuple) -> "TrainConfig":
         """This function reconstructs a TrainConfig object given it's attributes in the form of a tuple.
 
         Args:

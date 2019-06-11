@@ -534,34 +534,7 @@ def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.devi
     return torch.device(type=device_type)
 
 
-def _simplify_worker(worker: AbstractWorker) -> tuple:
-    """
-
-    """
-
-    return (_simplify(worker.id),)
-
-
-def _detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> pointers.PointerTensor:
-    """
-    This function reconstructs a PlanPointer given it's attributes in form of a tuple.
-
-    Args:
-        worker: the worker doing the deserialization
-        plan_pointer_tuple: a tuple holding the attributes of the PlanPointer
-    Returns:
-        PointerTensor: a PointerTensor
-    Examples:
-        ptr = _detail_pointer_tensor(data)
-    """
-    worker_id = detail(worker, worker_tuple[0])
-
-    referenced_worker = worker.get_worker(worker_id)
-
-    return referenced_worker
-
-
-def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
+def _force_fullsimplify(worker: AbstractWorker) -> tuple:
     """
 
     """
@@ -569,7 +542,7 @@ def _force_full_simplify_worker(worker: AbstractWorker) -> tuple:
     return (_simplify(worker.id), _simplify(worker._objects), worker.auto_add)
 
 
-def _force_full_detail_worker(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
+def force_full_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
     worker_id, _objects, auto_add = worker_tuple
     worker_id = detail(worker, worker_id)
 
@@ -709,14 +682,14 @@ simplifiers = {
     slice: [8, _simplify_slice],
     type(Ellipsis): [9, _simplify_ellipsis],
     torch.device: [10, _simplify_torch_device],
-    pointers.PointerTensor: [11, sy.PointerTensor._simplify_pointer_tensor],
-    LoggingTensor: [12, sy.LoggingTensor._simplify_log_tensor],
-    AdditiveSharingTensor: [13, sy.AdditiveSharingTensor._simplify_additive_shared_tensor],
-    MultiPointerTensor: [14, sy.MultiPointerTensor._simplify_multi_pointer_tensor],
-    Plan: [15, sy.Plan._simplify_plan],
-    VirtualWorker: [16, _simplify_worker],
+    pointers.PointerTensor: [11, sy.PointerTensor.simplify],
+    LoggingTensor: [12, sy.LoggingTensor.simplify],
+    AdditiveSharingTensor: [13, sy.AdditiveSharingTensor.simplify],
+    MultiPointerTensor: [14, sy.MultiPointerTensor.simplify],
+    Plan: [15, sy.Plan.simplify],
+    VirtualWorker: [16, sy.VirtualWorker.simplify],
     str: [18, _simplify_str],
-    pointers.ObjectWrapper: [19, sy.ObjectWrapper._simplify_object_wrapper],
+    pointers.ObjectWrapper: [19, sy.ObjectWrapper.simplify],
     GetNotPermittedError: [20, _simplify_exception],
     ResponseSignatureError: [20, _simplify_exception],
     torch.jit.ScriptModule: [21, _simplify_script_module],
@@ -724,10 +697,10 @@ simplifiers = {
         21,
         _simplify_script_module,
     ],  # treat as torch.jit.ScriptModule
-    TrainConfig: [22, sy.TrainConfig._simplify_train_config],
+    TrainConfig: [22, sy.TrainConfig.simplify],
 }
 
-forced_full_simplifiers = {VirtualWorker: [17, _force_full_simplify_worker]}
+forced_full_simplifiers = {VirtualWorker: [17, _force_fullsimplify]}
 
 
 def detail(worker: AbstractWorker, obj: object) -> object:
@@ -767,16 +740,16 @@ detailers = [
     _detail_slice,
     _detail_ellipsis,
     _detail_torch_device,
-    sy.PointerTensor._detail_pointer_tensor,
-    sy.LoggingTensor._detail_log_tensor,
-    sy.AdditiveSharingTensor._detail_additive_shared_tensor,
-    sy.MultiPointerTensor._detail_multi_pointer_tensor,
-    sy.Plan._detail_plan,
-    _detail_worker,
-    _force_full_detail_worker,
+    sy.PointerTensor.detail,
+    sy.LoggingTensor.detail,
+    sy.AdditiveSharingTensor.detail,
+    sy.MultiPointerTensor.detail,
+    sy.Plan.detail,
+    sy.VirtualWorker.detail,
+    force_full_detail,
     _detail_str,
-    sy.ObjectWrapper._detail_object_wrapper,
+    sy.ObjectWrapper.detail,
     _detail_exception,
     _detail_script_module,
-    sy.TrainConfig._detail_train_config,
+    sy.TrainConfig.detail,
 ]
