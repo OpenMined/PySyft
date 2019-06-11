@@ -3,6 +3,7 @@ import torch as th
 import syft
 
 from syft.frameworks.torch.pointers import PointerTensor
+import pytest
 
 
 def test_init(workers):
@@ -302,3 +303,9 @@ def test_remote_function_with_multi_ouput(workers):
 
     assert max_value.get().item() == 4.0
     assert argmax_idx.get().item() == 3
+
+
+def test_raising_error_when_item_func_called(workers):
+    pointer = PointerTensor(id=1000, location=workers["alice"], owner=workers["me"])
+    with pytest.raises(RuntimeError):
+        pointer.item()
