@@ -261,6 +261,25 @@ def test_torch_nn_functional_linear():
     assert (result == expected).all()
 
 
+def test_operate_with_integer_constants():
+    x = torch.tensor([1.0])
+    x_fp = x.fix_precision()
+
+    r_fp = x_fp + 10
+    r = r_fp.float_precision()
+    assert r == x + 10
+
+    r_fp = x_fp - 7
+    r = r_fp.float_precision()
+    assert r == x - 7
+
+    r_fp = x_fp * 2
+    assert r_fp.float_precision() == x * 2
+
+    r_fp = x_fp / 5
+    assert r_fp.float_precision() == x / 5
+
+
 def test_fixed_precision_and_sharing(workers):
 
     bob, alice = (workers["bob"], workers["alice"])

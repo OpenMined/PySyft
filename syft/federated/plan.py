@@ -11,6 +11,8 @@ from syft.generic import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy
 
+from syft.workers import AbstractWorker  #
+
 
 def make_plan(plan_blueprint):
     """Creates a plan from a function.
@@ -167,7 +169,7 @@ class Plan(ObjectStorage):
         Returns:
             The None message serialized to specify the command was received.
         """
-        (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, detail=False)
+        (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, details=False)
 
         if msg_type != MSGTYPE.OBJ:
             self.plan.append(bin_message)
@@ -531,7 +533,7 @@ class Plan(ObjectStorage):
         _ = self.owner.send(self, workers=location)
 
         # Deep copy the plan without using deep copy
-        pointer = sy.serde._detail_plan(self.owner, sy.serde._simplify_plan(self))
+        pointer = sy.Plan.detail(self.owner, sy.Plan.simplify(self))
 
         # readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
         self.readable_plan = readable_plan_original
@@ -591,3 +593,55 @@ class Plan(ObjectStorage):
         out += ">"
 
         return out
+
+    @staticmethod
+    def simplify(plan: "Plan") -> tuple:
+        """
+        This function takes the attributes of a Plan and saves them in a tuple
+        Args:
+            plan (Plan): a Plan object
+        Returns:
+            tuple: a tuple holding the unique attributes of the Plan object
+
+        """
+        readable_plan = sy.serde._simplify(plan.readable_plan)
+        return (
+            readable_plan,
+            sy.serde._simplify(plan.id),
+            sy.serde._simplify(plan.arg_ids),
+            sy.serde._simplify(plan.result_ids),
+            sy.serde._simplify(plan.name),
+            sy.serde._simplify(plan.tags),
+            sy.serde._simplify(plan.description),
+            plan.is_built,
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, plan_tuple: tuple) -> "Plan":
+        """This function reconstructs a Plan object given it's attributes in the form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            plan_tuple: a tuple holding the attributes of the Plan
+        Returns:
+            plan: a Plan object
+        """
+
+        readable_plan, id, arg_ids, result_ids, name, tags, description, is_built = plan_tuple
+        id = sy.serde._detail(worker, id)
+        arg_ids = sy.serde._detail(worker, arg_ids)
+        result_ids = sy.serde._detail(worker, result_ids)
+
+        plan = sy.Plan(
+            owner=worker,
+            id=id,
+            arg_ids=arg_ids,
+            result_ids=result_ids,
+            readable_plan=sy.serde._detail(worker, readable_plan),
+            is_built=is_built,
+        )
+
+        plan.name = sy.serde._detail(worker, name)
+        plan.tags = sy.serde._detail(worker, tags)
+        plan.description = sy.serde._detail(worker, description)
+
+        return plan
