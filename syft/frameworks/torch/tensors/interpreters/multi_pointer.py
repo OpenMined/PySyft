@@ -204,7 +204,7 @@ class MultiPointerTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde.simplify(tensor.child)
+            chain = sy.serde._simplify(tensor.child)
         return (tensor.id, chain)
 
     @staticmethod
