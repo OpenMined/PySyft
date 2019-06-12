@@ -1,12 +1,15 @@
 """To be extended in the near future."""
 from collections import OrderedDict
 import logging
+import os
 import subprocess
+import tempfile
 
 import tf_encrypted as tfe
 
 
 logger = logging.getLogger("tf_encrypted")
+_TMP_DIR = tempfile.gettempdir()
 
 
 class TFEWorker:
@@ -29,25 +32,23 @@ class TFEWorker:
             # we're running using a tfe.LocalConfig which doesn't require us to do anything
             return
 
-        config_filename = "/tmp/tfe.config"
+        config_filename = os.path.join(_TMP_DIR, "tfe.config")
         config = cluster.tfe_config
         config.save(config_filename)
 
+        launch_cmd = "python -m tf_encrypted.player --config {} {}".format(
+            config_filename, player_name
+        )
         if self._auto_managed:
-            cmd = "python -m tf_encrypted.player --config {} {}".format(
-                config_filename, player_name
-            )
-            self._server_process = subprocess.Popen(cmd.split(" "))
+            self._server_process = subprocess.Popen(launch_cmd.split(" "))
         else:
             logger.info(
                 "If not done already, please launch the following "
-                "command in a terminal on host '%s':\n"
-                "'python -m tf_encrypted.player --config %s %s'\n"
+                "command in a terminal on host %s: '%s'\n"
                 "This can be done automatically in a local subprocess by "
-                "setting `auto_managed=True` when instantiating a TFEWorker.",
+                "setting `auto_managed=True` when instantiating a TFEWorker.\n",
                 self.host,
-                config_filename,
-                player_name,
+                launch_cmd,
             )
 
     def stop(self):

@@ -98,6 +98,15 @@ def test_add(workers):
 
     assert (y == (t + t)).all()
 
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    z = (x + y).get().float_prec()
+
+    assert (z == (t + t)).all()
+
 
 def test_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -126,6 +135,16 @@ def test_sub(workers):
 
     assert (y == (t - t)).all()
 
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    u = torch.tensor([4.0, 3.0, 2.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = u.fix_prec()
+
+    z = (x - y).get().float_prec()
+
+    assert (z == (t - u)).all()
+
 
 def test_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -150,6 +169,15 @@ def test_mul(workers):
     y = (x * x).get().float_prec()
 
     assert (y == (t * t)).all()
+
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    z = (x * y).get().float_prec()
+
+    assert (z == (t * t)).all()
 
 
 def test_stack(workers):
@@ -215,6 +243,15 @@ def test_matmul(workers):
     y = (x @ x).get().float_prec()
 
     assert (y == (m @ m)).all()
+
+    # with FPT>torch.tensor
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(bob, alice, crypto_provider=james)
+    y = m.fix_prec()
+
+    z = (x @ y).get().float_prec()
+
+    assert (z == (m @ m)).all()
 
 
 def test_torch_conv2d(workers):
