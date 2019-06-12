@@ -39,3 +39,15 @@ def test_dim(workers):
     a = th.tensor([1, 2, 3, 4, 5]).send(bob, alice)
 
     assert a.dim() == 1
+
+
+def test_simplify(workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    a = th.tensor([1, 2, 3, 4, 5]).send(bob, alice)
+    ser = sy.serde.serialize(a)
+    detail = sy.serde.deserialize(ser).child
+    assert isinstance(detail, sy.MultiPointerTensor)
+    for key in a.child.child:
+        assert key in detail.child
