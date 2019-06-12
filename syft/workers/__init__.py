@@ -7,4 +7,4 @@ from syft.workers.websocket_server import WebsocketServerWorker  # noqa: F401
 from syft.workers.tfe import TFEWorker  # noqa: F401
 
 
-__all__ = ["base", "virtual", "websocket_client", "socketio_client", "tfe"]
+__all__ = ["base", "virtual", "websocket_client", "socketio_client", "tfe", "BaseWorker"]

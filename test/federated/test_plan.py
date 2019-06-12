@@ -30,8 +30,14 @@ def test_plan_built_locally(hook):
     assert isinstance(plan_abs.__str__(), str)
     assert len(plan_abs.readable_plan) > 0
 
+    hook.local_worker.is_client_worker = True
+
 
 def test_plan_execute_locally(hook):
+    # To run a plan locally the local worker can't be a client worker,
+    # since it needs to register objects
+    hook.local_worker.is_client_worker = False
+
     @sy.func2plan
     def plan_abs(data):
         return data.abs()
@@ -39,6 +45,32 @@ def test_plan_execute_locally(hook):
     x = th.tensor([-1, 2, 3])
     x_abs = plan_abs(x)
     assert (x_abs == th.tensor([1, 2, 3])).all()
+
+    hook.local_worker.is_client_worker = True
+
+
+def test_plan_method_execute_locally(hook):
+    hook.local_worker.is_client_worker = False
+
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.fc3 = nn.Linear(2, 1)
+
+        @sy.method2plan
+        def forward(self, x):
+            x = F.relu(self.fc1(x))
+            x = self.fc2(x)
+            x = self.fc3(x)
+            return F.log_softmax(x)
+
+    model = Net()
+    model.send(hook.local_worker)
+    assert model(th.tensor([1.0, 2])) == 0
+
+    hook.local_worker.is_client_worker = True
 
 
 def test_plan_built_remotely(workers):
@@ -143,6 +175,8 @@ def test_fetch_plan_built_locally(hook):
     y = th.tensor([-1, 2, 3])
     assert (fetched_plan(y) == th.tensor([-3, 6, 9])).all()
 
+    hook.local_worker.is_client_worker = True
+
 
 def test_fetch_plan_built_remotely(hook):
     hook.local_worker.is_client_worker = False
@@ -171,6 +205,8 @@ def test_fetch_plan_built_remotely(hook):
     assert (get_plan(x) == th.tensor([-3, 6, 9])).all()
     assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
 
+    hook.local_worker.is_client_worker = True
+
 
 def test_plan_serde(hook):
     hook.local_worker.is_client_worker = False
@@ -191,6 +227,8 @@ def test_plan_serde(hook):
     x = th.tensor([-1, 2, 3])
     assert (deserialized_plan(x) == th.tensor([-42, 24, 46])).all()
 
+    hook.local_worker.is_client_worker = True
+
 
 def test_plan_execute_remotely(hook, start_proc):
     """Test plan execution remotely."""
@@ -207,7 +245,7 @@ def test_plan_execute_remotely(hook, start_proc):
     x = th.tensor([-1, 2, 3])
     my_plan(x)
 
-    kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8768, "hook": hook}
+    kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8799, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
@@ -223,6 +261,7 @@ def test_plan_execute_remotely(hook, start_proc):
     del x_ptr
 
     server.terminate()
+    hook.local_worker.is_client_worker = True
 
 
 def test_replace_worker_ids_two_strings(hook):

@@ -40,12 +40,13 @@ def add_model(dst_model, src_model):
 
         """
 
-    params1 = dst_model.named_parameters()
-    params2 = src_model.named_parameters()
+    params1 = src_model.named_parameters()
+    params2 = dst_model.named_parameters()
     dict_params2 = dict(params2)
-    for name1, param1 in params1:
-        if name1 in dict_params2:
-            dict_params2[name1].data.set_ = param1.data + dict_params2[name1].data
+    with torch.no_grad():
+        for name1, param1 in params1:
+            if name1 in dict_params2:
+                dict_params2[name1].set_(param1.data + dict_params2[name1].data)
     return dst_model
 
 
@@ -61,8 +62,9 @@ def scale_model(model, scale):
     """
     params = model.named_parameters()
     dict_params = dict(params)
-    for name, param in dict_params.items():
-        dict_params[name].data.set_ = dict_params[name].data * scale
+    with torch.no_grad():
+        for name, param in dict_params.items():
+            dict_params[name].set_(dict_params[name].data * scale)
     return model
 
 
