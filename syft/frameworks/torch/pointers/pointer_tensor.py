@@ -4,6 +4,8 @@ from syft.frameworks.torch.tensors.interpreters import abstract
 from syft.exceptions import CannotRequestObjectAttribute
 from syft.frameworks.torch import pointers
 
+from syft.workers import AbstractWorker  #
+
 from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
@@ -189,3 +191,107 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
             'Error, Please consider calling ".get" method instead of ".item" method, '
             "so you can be safely getting the item you need."
         )
+
+    @staticmethod
+    def simplify(ptr: "PointerTensor") -> tuple:
+        """
+        This function takes the attributes of a PointerTensor and saves them in a dictionary
+        Args:
+            ptr (pointers.PointerTensor): a PointerTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the pointer
+        Examples:
+            data = simplify(ptr)
+        """
+
+        return (
+            ptr.id,
+            ptr.id_at_location,
+            ptr.location.id,
+            ptr.point_to_attr,
+            ptr._shape,
+            ptr.garbage_collect_data,
+        )
+
+        # a more general but slower/more verbose option
+
+        # data = vars(ptr).copy()
+        # for k, v in data.items():
+        #     if isinstance(v, AbstractWorker):
+        #         data[k] = v.id
+        # return _simplify_dictionary(data)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PointerTensor":
+        """
+        This function reconstructs a PointerTensor given it's attributes in form of a dictionary.
+        We use the spread operator to pass the dict data as arguments
+        to the init method of PointerTensor
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the PointerTensor
+        Returns:
+            PointerTensor: a pointers.PointerTensor
+        Examples:
+            ptr = detail(data)
+        """
+        # TODO: fix comment for this and simplifier
+        obj_id, id_at_location, worker_id, point_to_attr, shape, garbage_collect_data = tensor_tuple
+
+        if isinstance(worker_id, bytes):
+            worker_id = worker_id.decode()
+
+        if shape is not None:
+            shape = torch.Size(shape)
+
+        # If the pointer received is pointing at the current worker, we load the tensor instead
+        if worker_id == worker.id:
+            tensor = worker.get_obj(id_at_location)
+
+            if point_to_attr is not None and tensor is not None:
+
+                point_to_attrs = point_to_attr.decode("utf-8").split(".")
+                for attr in point_to_attrs:
+                    if len(attr) > 0:
+                        tensor = getattr(tensor, attr)
+
+                if tensor is not None:
+
+                    if not tensor.is_wrapper and not isinstance(tensor, torch.Tensor):
+                        # if the tensor is a wrapper then it doesn't need to be wrapped
+                        # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
+                        # then it doesn't need to be wrapped.
+                        # if the tensor is not a wrapper BUT it's also not a torch tensor,
+                        # then it needs to be wrapped or else it won't be able to be used
+                        # by other interfaces
+                        tensor = tensor.wrap()
+
+            return tensor
+        # Else we keep the same Pointer
+        else:
+
+            location = syft.torch.hook.local_worker.get_worker(worker_id)
+
+            ptr = pointers.PointerTensor(
+                location=location,
+                id_at_location=id_at_location,
+                owner=worker,
+                id=obj_id,
+                shape=shape,
+                garbage_collect_data=garbage_collect_data,
+            )
+
+            return ptr
+
+        # a more general but slower/more verbose option
+
+        # new_data = {}
+        # for k, v in data.items():
+        #     key = k.decode()
+        #     if type(v) is bytes:
+        #         val_str = v.decode()
+        #         val = syft.local_worker.get_worker(val_str)
+        #     else:
+        #         val = v
+        #     new_data[key] = val
+        # return PointerTensor(**new_data)

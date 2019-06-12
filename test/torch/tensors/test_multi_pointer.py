@@ -30,3 +30,12 @@ def test_multi_pointers(workers):
     c = b.get()
     assert len(c) == 2
     assert (c[0] == th.tensor([2, 4, 6, 8, 10])).all
+
+
+def test_dim(workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    a = th.tensor([1, 2, 3, 4, 5]).send(bob, alice)
+
+    assert a.dim() == 1
