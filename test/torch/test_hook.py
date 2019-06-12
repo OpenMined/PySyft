@@ -223,6 +223,13 @@ def test_hook_args_and_cmd_signature_malleability():
     assert (r3 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
 
 
+def test_torch_func_signature_without_tensor():
+    """The hook on the args of torch commands should work even if the args
+    don't contain any tensor"""
+    x = torch.as_tensor((0.1307,), dtype=torch.float32, device="cpu")
+    assert (x == torch.tensor([0.1307])).all()
+
+
 def test_RNN_grad_set_backpropagation(workers):
     """Perform backpropagation at a remote worker and check if the gradient updates
     and properly computed within the model"""
