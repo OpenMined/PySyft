@@ -442,6 +442,10 @@ class TorchHook:
                 # 5. Put instead the hooked one
                 setattr(torch_module, func, new_func)
 
+        if torch.__version__ < "1.0.2":
+            # Hard fix for PyTorch versions < 1.0.2
+            syft.torch.apply_fix16922(self.torch)
+
         torch_modules = syft.torch.torch_modules
 
         for module_name, torch_module in torch_modules.items():
