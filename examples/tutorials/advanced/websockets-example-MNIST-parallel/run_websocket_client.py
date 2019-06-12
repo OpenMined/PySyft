@@ -77,14 +77,6 @@ def define_and_get_arguments(args=sys.argv[1:]):
     return args
 
 
-def accuracy(pred_softmax, target):
-    nr_elems = len(target)
-    pred = pred_softmax.argmax(dim=1)
-    logger.debug("predicted: %s", pred)
-    logger.debug("target:    %s", target)
-    return (pred == target).sum().numpy() / float(nr_elems)
-
-
 async def fit_model_on_worker(worker, traced_model, batch_size, curr_epoch, max_nr_batches, lr):
     """Send the model to the worker and fit the model on the worker's training data
 
@@ -135,7 +127,7 @@ def __evaluate_models_on_test_data(test_loader, results):
         pred_test = worker_model(data)
         loss = loss_fn(output=pred_test, target=target)
         logger.info(
-            "Worker %s: Loss: %s, accuracy = %s", worker_id, loss, accuracy(pred_test, target)
+            "Worker %s: Loss: %s, accuracy = %s", worker_id, loss, utils.accuracy(pred_test, target)
         )
         pred = pred_test.argmax(dim=1)
         hist, bin_edges = np.histogram(pred, bins=10, range=(0, 10))
