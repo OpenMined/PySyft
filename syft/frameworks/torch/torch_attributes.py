@@ -51,18 +51,18 @@ class TorchAttributes(object):
             for func_name in dir(torch_module)
         }
 
-        # Add special functions to exclude from the hook
+        # Add special functions to exclude from the hook **in alphabetical order**
+        # Reasons can be:
+        # - Used for internal process like printing tensors
+        # - Don't use tensors so are bound to have local executions
+        # - etc
+        # DON'T put here:
+        # - functions like native_*
+        # - functions that could use pointers or syft tensors
         self.exclude = [
             "arange",
-            "typename",
-            "is_tensor",
-            "manual_seed",
-            "storage",
-            "storage_offset",
-            "size",
-            "stride",
+            "as_tensor",
             "from_numpy",
-            "set_",
             "get_default_dtype",
             "get_device",
             "get_file_path",
@@ -86,31 +86,24 @@ class TorchAttributes(object):
             "isclose",
             "isfinite",
             "load",
-            "native_add",
-            "native_batch_norm",
-            "native_clone",
-            "native_norm",
-            "native_pow",
-            "native_resize_as_",
-            "native_tensor",
-            "native_zero_",
+            "manual_seed",
             "ones",
             "rand",
             "randint",
-            "randn_like",
             "randn",
+            "randn_like",
+            "randperm",
             "range",
             "save",
+            "set_",
             "short",
-            "zeros",
+            "size",
+            "storage",
+            "storage_offset",
+            "stride",
             "tensor",
-            "get_default_dtype",
-            "is_grad_enabled",
-            "is_nonzero",
-            "is_storage",
-            "is_tensor",
-            "isfinite",
-            "randperm",
+            "typename",
+            "zeros",
         ]
 
         # SECTION: List all torch tensor methods we want to overload
@@ -244,21 +237,3 @@ class TorchAttributes(object):
             is_inplace = method_name[-1] == "_" and "__" not in method_name
             self.inplace_methods[method_name] = is_inplace
             return is_inplace
-
-    @staticmethod
-    def apply_fix16922(torch):
-        """
-        Apply the fix made in PR16922 of PyTorch until people use PyTorch 1.0.2
-        :param torch: the pytorch module
-        """
-        broken_funcs = [
-            "max_pool1d",
-            "max_pool2d",
-            "max_pool3d",
-            "adaptive_max_pool1d",
-            "adaptive_max_pool2d",
-            "adaptive_max_pool3d",
-        ]
-        for broken_func in broken_funcs:
-            getattr(torch.nn.functional, broken_func).__module__ = "torch.nn.functional"
-            getattr(torch.nn.functional, broken_func).__name__ = broken_func

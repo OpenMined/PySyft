@@ -30,6 +30,7 @@ class FederatedClient(ObjectStorage):
         """
         if isinstance(obj, TrainConfig):
             self.train_config = obj
+            self.optimizer = None
         else:
             super().set_obj(obj)
 
