@@ -5,6 +5,6 @@ ipykernel>=5.1.0
 pre-commit>=1.16.1
 pytest>=4.5.0
 Sphinx>=2.1.1
-sphinx-markdown-builder>=2.3.1
+sphinx-markdown-builder>=0.4.1
 sphinx_rtd_theme>=0.4.3
 
