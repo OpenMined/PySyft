@@ -180,6 +180,24 @@ def test_mul(workers):
     assert (z == (t * t)).all()
 
 
+def test_operate_with_constants(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = th.tensor([1.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=james)
+
+    r_sh = x_sh + 0
+    assert r_sh.get().float_prec() == x
+
+    r_sh = x_sh - 0
+    assert r_sh.get().float_prec() == x
+
+    r_sh = x_sh * 1
+    assert r_sh.get().float_prec() == x
+
+    r_sh = x_sh / 1
+    assert r_sh.get().float_prec() == x
+
+
 def test_stack(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     t = torch.tensor([1.3, 2])
