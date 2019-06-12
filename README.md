@@ -63,7 +63,7 @@ You could also build the image on your own and run it locally:
 ```bash
 $ cd docker-image
 $ docker image build -t pysyft-notebook .
-$ docker container run youben/pysyft:miniconda
+$ docker container run pysyft-notebook
 ```
 
 ## Try out the Tutorials
