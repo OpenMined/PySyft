@@ -3,6 +3,10 @@ from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
 
+import syft as sy
+from syft.workers import AbstractWorker
+
+
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
     from syft.workers import BaseWorker
@@ -90,3 +94,14 @@ class ObjectWrapper:
             garbage_collect_data=garbage_collect_data,
         )
         return pointer
+
+    @staticmethod
+    def simplify(obj: "ObjectWrapper") -> tuple:
+        return (obj.id, sy.serde._simplify(obj.obj))
+
+    @staticmethod
+    def detail(worker: AbstractWorker, obj_wrapper_tuple: str) -> "ObjectWrapper":
+        obj_wrapper = ObjectWrapper(
+            id=obj_wrapper_tuple[0], obj=sy.serde._detail(worker, obj_wrapper_tuple[1])
+        )
+        return obj_wrapper
