@@ -57,6 +57,11 @@ $ docker container run youben/pysyft:miniconda
 
 You can use the provided link to access the jupyter notebook (the link is only accessible from your local machine).
 
+You can also set the directory from which the server will serve notebooks (default is /workspace).
+
+```bash
+$ docker container run -e WORKSPACE_DIR=/root youben/pysyft:miniconda
+```
 
 You could also build the image on your own and run it locally:
 
