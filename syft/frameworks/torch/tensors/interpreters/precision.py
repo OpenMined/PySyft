@@ -96,6 +96,10 @@ class FixedPrecisionTensor(AbstractTensor):
     def add(self, _self, other):
         """Add two fixed precision tensors together.
         """
+        if isinstance(other, int):
+            scaled_int = other * self.base ** self.precision_fractional
+            return getattr(_self, "add")(scaled_int)
+
         if _self.is_wrapper and not other.is_wrapper:
             # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor,
             # we want to perform AST + torch.tensor
@@ -125,6 +129,10 @@ class FixedPrecisionTensor(AbstractTensor):
     def sub(self, _self, other):
         """Subtracts a fixed precision tensor from another one.
         """
+        if isinstance(other, int):
+            scaled_int = other * self.base ** self.precision_fractional
+            return getattr(_self, "sub")(scaled_int)
+
         if _self.is_wrapper and not other.is_wrapper:
             # If we try to subtract a FPT>(wrap)>AST and a FPT>torch.tensor,
             # we want to perform AST - torch.tensor
@@ -166,7 +174,10 @@ class FixedPrecisionTensor(AbstractTensor):
                 self.precision_fractional == other.precision_fractional
             ), "In mul, all args should have the same precision_fractional"
 
-        if self.child.is_wrapper and not other.child.is_wrapper:
+        if isinstance(other, int):
+            new_self = self.child
+            new_other = other * self.base ** self.precision_fractional
+        elif self.child.is_wrapper and not other.child.is_wrapper:
             # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
             # we want to perform AST * torch.tensor
             new_self = self.child
