@@ -408,7 +408,7 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     train_config.send(local_worker)
 
     for epoch in range(5):
-        loss = await local_worker.fit(dataset_key="xor")
+        loss = await local_worker.async_fit(dataset_key="xor")
         print("-" * 50)
         print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
@@ -482,7 +482,7 @@ def test_train_config_with_jit_trace_sync(hook, start_proc):  # pragma: no cover
     train_config.send(local_worker)
 
     for epoch in range(5):
-        loss = local_worker.synchronous_fit(dataset_key="vectors")
+        loss = local_worker.fit(dataset_key="vectors")
         print("-" * 50)
         print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
