@@ -223,7 +223,6 @@ class Plan(ObjectStorage):
         self.owner_when_built = self.owner
 
         self.is_built = True
-        print(self.is_built)
 
     def find_location(self, args):
         """
