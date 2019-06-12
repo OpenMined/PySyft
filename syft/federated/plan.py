@@ -360,7 +360,7 @@ class Plan(ObjectStorage):
         # TODO: try to find a better way to deal with local execution
         # of methods.
         if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
-            self._self.send(sy.hook.local_worker)
+            self._self.send(sy.hook.local_worker, force_send=True)
 
         # Support for method hooked in plans
         if self.is_method:

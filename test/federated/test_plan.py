@@ -330,7 +330,7 @@ def test_execute_plan_module_remotely(hook, start_proc):
 
     # net.get()
 
-    kwargs = {"id": "test_plan_worker_2", "host": "localhost", "port": 8888, "hook": hook}
+    kwargs = {"id": "test_plan_worker_2", "host": "localhost", "port": 8799, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
 
     time.sleep(0.1)
