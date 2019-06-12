@@ -959,8 +959,10 @@ class TorchHook:
 
             for p in nn_self.parameters():
                 p.send_(dest)
+
             if isinstance(nn_self.forward, Plan):
-                nn_self.forward.send(dest)
+                nn_self.forward.send(dest, force=True)
+
             return nn_self
 
         self.torch.nn.Module.send = module_send_

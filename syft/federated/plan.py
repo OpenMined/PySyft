@@ -135,9 +135,9 @@ class Plan(ObjectStorage):
 
     def _auto_build(self, args_shape: List[Tuple[int]] = None):
         if self.is_method:
-            self.build_plan([self._self] + self._create_placeholders(args_shape))
+            self.build([self._self] + self._create_placeholders(args_shape))
         else:
-            self.build_plan(self._create_placeholders(args_shape))
+            self.build(self._create_placeholders(args_shape))
 
     def _create_placeholders(self, args_shape):
         # In order to support -1 value in shape to indicate any dimension
@@ -180,8 +180,8 @@ class Plan(ObjectStorage):
 
         return sy.serde.serialize(None)
 
-    def build_plan(self, args: List):
-        """Builds a plan.
+    def build(self, args: List):
+        """Builds the plan.
 
         The plan must be built with some input data, here `args`. When they
         are provided, they are sent to the plan worker, which executes its
@@ -350,16 +350,29 @@ class Plan(ObjectStorage):
             The pointer to the result of the execution if the plan was already sent,
             else the None message serialized.
         """
-        # TODO: raise instead of assert
-        assert len(kwargs) == 0, "kwargs not supported for pland"
+        if len(kwargs):
+            raise ValueError("Kwargs are not supported for plan.")
 
+        # TODO: for now only one value is returned from a plan
         result_ids = [sy.ID_PROVIDER.pop()]
 
+        # TODO: try to find a better way to deal with local execution
+        # of methods.
+        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
+            self._self.send(sy.hook.local_worker)
+
         # Support for method hooked in plans
-        if self._self is not None:
+        if self.is_method:
             args = [self._self] + list(args)
 
-        return self.execute_plan(args, result_ids)
+        plan_res = self.execute_plan(args, result_ids)
+
+        # TODO: try to find a better way to deal with local execution
+        # of methods.
+        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
+            self._self.get()
+
+        return plan_res
 
     def _update_args(
         self, args: List[Union[torch.Tensor, AbstractTensor]], result_ids: List[Union[str, int]]
@@ -421,7 +434,7 @@ class Plan(ObjectStorage):
         """
         # We build the plan only if needed
         if not self.is_built:
-            self.build_plan(args)
+            self.build(args)
 
         if len(self.locations) > 0:
             worker = self.find_location(args)
@@ -476,16 +489,22 @@ class Plan(ObjectStorage):
         )
         return response
 
-    def send(self, *locations):
-        """Mock send function that only specify that the Plan will have to be sent to location.
+    def send(self, *locations, force=False):
+        """Send plan to locations.
 
-        When one calls .send(), this doesn't trigger a call to remote workers, but
-        just stores "a promise" that it will be sent (with _send()) later when the plan in
-        called (and built)
+        If the plan was not built locally it will raise an exception.
+        If `force` = true plan is going to be sent either way.
+
+        Args:
+            locations: List of workers.
+            force: A boolean indicating if this operation should be forced.
 
         Args:
             location: Workers where plan should be sent to.
         """
+        if not self.is_built and not force:
+            raise RuntimeError("A plan needs to be built before being sent to a worker.")
+
         self.locations += [self.owner.get_worker(location).id for location in locations]
 
         # rm duplicates

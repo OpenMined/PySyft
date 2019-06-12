@@ -65,8 +65,6 @@ def test_plan_built_automatically_with_any_dimension(hook):
 
 
 def test_raise_exception_for_invalid_shape(hook):
-    # To run a plan locally the local worker can't be a client worker,
-    # since it needs to register objects
     hook.local_worker.is_client_worker = False
 
     with pytest.raises(ValueError):
@@ -76,6 +74,22 @@ def test_raise_exception_for_invalid_shape(hook):
             return data.abs()
 
     hook.local_worker.is_client_worker = True
+
+
+def test_raise_exception_when_sending_unbuilt_plan(workers):
+    me = workers["me"]
+    me.is_client_worker = False
+
+    bob = workers["bob"]
+
+    @sy.func2plan()
+    def plan(data):
+        return data.abs()
+
+    with pytest.raises(RuntimeError):
+        plan.send(bob)
+
+    me.is_client_worker = True
 
 
 def test_plan_execute_locally(hook):
@@ -92,28 +106,32 @@ def test_plan_execute_locally(hook):
     hook.local_worker.is_client_worker = True
 
 
-# TODO: better support to method execution
-# def test_plan_method_execute_locally(hook):
-#     hook.local_worker.is_client_worker = False
+def test_plan_method_execute_locally(hook):
+    hook.local_worker.is_client_worker = False
 
-#     class Net(nn.Module):
-#         def __init__(self):
-#             super(Net, self).__init__()
-#             self.fc1 = nn.Linear(2, 3)
-#             self.fc2 = nn.Linear(3, 2)
-#             self.fc3 = nn.Linear(2, 1)
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.fc3 = nn.Linear(2, 1)
 
-#         @sy.method2plan
-#         def forward(self, x):
-#             x = F.relu(self.fc1(x))
-#             x = self.fc2(x)
-#             x = self.fc3(x)
-#             return F.log_softmax(x)
+        @sy.method2plan
+        def forward(self, x):
+            x = F.relu(self.fc1(x))
+            x = self.fc2(x)
+            x = self.fc3(x)
+            return F.log_softmax(x)
 
-#     model = Net()
-#     assert model(th.tensor([1.0, 2])) == 0
+    model = Net()
 
-#     hook.local_worker.is_client_worker = True
+    # Force build
+    assert model(th.tensor([1.0, 2])) == 0
+
+    # Test call multiple times
+    assert model(th.tensor([1.0, 2.1])) == 0
+
+    hook.local_worker.is_client_worker = True
 
 
 def test_plan_multiple_send(workers):
@@ -145,47 +163,50 @@ def test_plan_multiple_send(workers):
     me.is_client_worker = True
 
 
-# TODO: better support for method execution
-# def test_plan_built_on_method(hook):
-#     """
-#     Test @sy.meth2plan and plan send / get / send
-#     """
-#     hook.local_worker.is_client_worker = False
+def test_plan_built_on_method(hook):
+    """
+    Test @sy.meth2plan and plan send / get / send
+    """
+    hook.local_worker.is_client_worker = False
 
-#     x11 = th.tensor([-1, 2.0]).tag("input_data")
-#     x21 = th.tensor([-1, 2.0]).tag("input_data")
+    x11 = th.tensor([-1, 2.0]).tag("input_data")
+    x21 = th.tensor([-1, 2.0]).tag("input_data")
 
-#     device_1 = sy.VirtualWorker(hook, id="device_1", data=(x11,))
-#     device_2 = sy.VirtualWorker(hook, id="device_2", data=(x21, ))
+    device_1 = sy.VirtualWorker(hook, id="device_1", data=(x11,))
+    device_2 = sy.VirtualWorker(hook, id="device_2", data=(x21,))
 
-#     class Net(nn.Module):
-#         def __init__(self):
-#             super(Net, self).__init__()
-#             self.fc1 = nn.Linear(2, 3)
-#             self.fc2 = nn.Linear(3, 2)
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
 
-#         @sy.method2plan
-#         def forward(self, x):
-#             x = F.relu(self.fc1(x))
-#             x = self.fc2(x)
-#             return F.log_softmax(x, dim=0)
+        @sy.method2plan
+        def forward(self, x):
+            x = F.relu(self.fc1(x))
+            x = self.fc2(x)
+            return F.log_softmax(x, dim=0)
 
-#     net = Net()
-#     net(th.tensor([1, 2.0]))
+    net = Net()
 
-#     net.send(device_1)
-#     pointer_to_data = device_1.search("input_data")[0]
-#     pointer_to_result = net(pointer_to_data)
-#     pointer_to_result.get()
+    # Force build
+    assert isinstance(net(th.tensor([1, 2.0])), th.Tensor)
 
-#     net.get()
-#     net.send(device_2)
+    net.send(device_1)
+    pointer_to_data = device_1.search("input_data")[0]
+    pointer_to_result = net(pointer_to_data)
 
-#     pointer_to_data = device_2.search("input_data")[0]
-#     pointer_to_result = net(pointer_to_data)
-#     pointer_to_result.get()
+    assert isinstance(pointer_to_result.get(), th.Tensor)
 
-#     hook.local_worker.is_client_worker = True
+    net.get()
+    net.send(device_2)
+
+    pointer_to_data = device_2.search("input_data")[0]
+    pointer_to_result = net(pointer_to_data)
+
+    assert isinstance(pointer_to_result.get(), th.Tensor)
+
+    hook.local_worker.is_client_worker = True
 
 
 def test_multiple_workers(workers):
@@ -253,7 +274,7 @@ def test_plan_serde(hook):
     hook.local_worker.is_client_worker = True
 
 
-def test_plan_execute_remotely(hook, start_proc):
+def test_execute_plan_remotely(hook, start_proc):
     """Test plan execution remotely."""
     hook.local_worker.is_client_worker = False
 
@@ -264,6 +285,7 @@ def test_plan_execute_remotely(hook, start_proc):
         return x + y
 
     x = th.tensor([-1, 2, 3])
+    local_res = my_plan(x)
 
     kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8799, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
@@ -275,7 +297,50 @@ def test_plan_execute_remotely(hook, start_proc):
     x_ptr = x.send(socket_pipe)
     plan_res = plan_ptr(x_ptr).get()
 
-    assert (plan_res == th.tensor([-42, 24, 46])).all()
+    assert (plan_res == local_res).all()
+
+    # delete remote object before websocket connection termination
+    del x_ptr
+
+    server.terminate()
+    hook.local_worker.is_client_worker = True
+
+
+def test_execute_plan_module_remotely(hook, start_proc):
+    """Test plan execution remotely."""
+    hook.local_worker.is_client_worker = False
+
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+
+        @sy.method2plan
+        def forward(self, x):
+            x = F.relu(self.fc1(x))
+            x = self.fc2(x)
+            return F.log_softmax(x, dim=0)
+
+    net = Net()
+    # net.send(hook.local_worker)
+    x = th.tensor([-1, 2.0])
+
+    local_res = net(x)
+
+    # net.get()
+
+    kwargs = {"id": "test_plan_worker_2", "host": "localhost", "port": 8888, "hook": hook}
+    server = start_proc(WebsocketServerWorker, kwargs)
+
+    time.sleep(0.1)
+    socket_pipe = WebsocketClientWorker(**kwargs)
+
+    plan_ptr = net.send(socket_pipe)
+    x_ptr = x.send(socket_pipe)
+    remote_res = plan_ptr(x_ptr).get()
+
+    assert (remote_res == local_res).all()
 
     # delete remote object before websocket connection termination
     del x_ptr
@@ -353,8 +418,7 @@ def test__replace_message_ids():
 
 def test___call__function(hook):
     plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         plan(kwarg1="hello", kwarg2=None)
 
     result_id = 444
@@ -376,12 +440,14 @@ def test___call__function(hook):
     sy.ID_PROVIDER.pop = pop_function_original
 
 
-def test___call__method(hook):
+def test__call__raise(hook):
     plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         plan(kwarg1="hello", kwarg2=None)
 
+
+def test__call__for_method(hook):
+    plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan", is_method=True)
     result_id = 444
 
     pop_function_original = sy.ID_PROVIDER.pop
@@ -390,8 +456,8 @@ def test___call__method(hook):
     return_value = "return value"
     plan.execute_plan = mock.Mock(return_value=return_value)
 
-    # test the method case
-    self_value = "my_self"
+    self_value = mock.Mock()
+    self_value.send = mock.Mock()
     plan._self = self_value
 
     arg_list = (100, 200, 356)
