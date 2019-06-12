@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 
 def extract_batches_per_worker(federated_train_loader: sy.FederatedDataLoader):
     """Extracts the batches from the federated_train_loader and stores them
-       in a dictionary (keys = data.location)
+       in a dictionary (keys = data.location).
 
        Args:
-       federated_train_loader: the connection object we use to send responses
+       federated_train_loader: the connection object we use to send responses.
                     back to the client.
 
     """
@@ -33,10 +33,10 @@ def add_model(dst_model, src_model):
     """Add the parameters of two models.
 
         Args:
-            dst_model (torch.nn.Module): the model to which the src_model will be added
-            src_model (torch.nn.Module): the model to be added to dst_model
+            dst_model (torch.nn.Module): the model to which the src_model will be added.
+            src_model (torch.nn.Module): the model to be added to dst_model.
         Returns:
-            torch.nn.Module: the resulting model of the addition
+            torch.nn.Module: the resulting model of the addition.
 
         """
 
@@ -54,10 +54,10 @@ def scale_model(model, scale):
     """Scale the parameters of a model.
 
     Args:
-        model (torch.nn.Module): the models whose parameters will be scaled
-        scale (float): the scaling factor
+        model (torch.nn.Module): the models whose parameters will be scaled.
+        scale (float): the scaling factor.
     Returns:
-        torch.nn.Module: the module with scaled parameters
+        torch.nn.Module: the module with scaled parameters.
 
     """
     params = model.named_parameters()
@@ -72,10 +72,10 @@ def federated_avg(models: List[torch.nn.Module]):
     """Calculate the federated average of a list of models.
 
     Args:
-        models (List[torch.nn.Module]): the models of which the federated average is calculated
+        models (List[torch.nn.Module]): the models of which the federated average is calculated.
 
     Returns:
-        torch.nn.Module: the module with averaged parameters
+        torch.nn.Module: the module with averaged parameters.
 
     """
     nr_models = len(models)
@@ -85,3 +85,21 @@ def federated_avg(models: List[torch.nn.Module]):
         model = add_model(model, model_list[i])
     model = scale_model(model, 1.0 / nr_models)
     return model
+
+
+def accuracy(pred_softmax, target):
+    """Calculate the accuray of a given prediction.
+
+    This functions assumes pred_softmax to be converted into the final prediction by taking the argmax.
+
+    Args:
+        pred_softmax: array type(float), providing nr_classes values per element in target.
+        target: array type(int), correct classes, taking values in range [0, nr_classes).
+
+    Returns:
+        accuracy: float, fraction of correct predictions.
+
+    """
+    nr_elems = len(target)
+    pred = pred_softmax.argmax(dim=1)
+    return (pred.float() == target.view(pred.shape).float()).sum().numpy() / float(nr_elems)

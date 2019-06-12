@@ -1,5 +1,4 @@
 import torch as th
-from torch import nn
 from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
 import logging
 
@@ -57,15 +56,15 @@ class FederatedClient(ObjectStorage):
         return self.optimizer
 
     def fit(self, dataset_key, **kwargs):
-        """Fit a model on the local dataset as specified in the local TrainConfig object
+        """Fit a model on the local dataset as specified in the local TrainConfig object.
 
                 Args:
-                    dataset_key: str, identifier of the local dataset that shall be used for training
+                    dataset_key: str, identifier of the local dataset that shall be used for training.
 
-                    **kwargs: unused
+                    **kwargs: unused.
 
                 Returns:
-                    loss: training loss on the last batch of training data
+                    loss: training loss on the last batch of training data.
 
                 """
         if self.train_config is None:
@@ -101,8 +100,6 @@ class FederatedClient(ObjectStorage):
         iteration_count = 0
         for (data, target) in data_loader:
 
-            if iteration_count % 25 == 0:
-                logger.debug("iteration %s", iteration_count)
             self.optimizer.zero_grad()
             output = model(data)
             loss = loss_fn(output, target)
@@ -113,15 +110,6 @@ class FederatedClient(ObjectStorage):
                 self.train_config.max_nr_batches
                 and iteration_count >= self.train_config.max_nr_batches
             ):
-                logger.debug("Accuracy: %s", accuracy(output, target))
                 break
 
         return loss
-
-
-def accuracy(pred_softmax, target):
-    nr_elems = len(target)
-    pred = pred_softmax.argmax(dim=1)
-    logger.debug("predicted: %s", pred)
-    logger.debug("target:    %s", target)
-    return (pred.float() == target.view(pred.shape).float()).sum().numpy() / float(nr_elems)
