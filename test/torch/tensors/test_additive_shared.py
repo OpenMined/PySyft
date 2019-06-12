@@ -180,22 +180,22 @@ def test_mul(workers):
     assert (z == (t * t)).all()
 
 
-def test_operate_with_constants(workers):
+def test_operate_with_integer_constants(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = th.tensor([1.0])
+    x = th.tensor([2.0])
     x_sh = x.fix_precision().share(alice, bob, crypto_provider=james)
 
-    r_sh = x_sh + 0
-    assert r_sh.get().float_prec() == x
+    r_sh = x_sh + 10
+    assert r_sh.get().float_prec() == x + 10
 
-    r_sh = x_sh - 0
-    assert r_sh.get().float_prec() == x
+    r_sh = x_sh - 7
+    assert r_sh.get().float_prec() == x - 7
 
-    r_sh = x_sh * 1
-    assert r_sh.get().float_prec() == x
+    r_sh = x_sh * 2
+    assert r_sh.get().float_prec() == x * 2
 
-    r_sh = x_sh / 1
-    assert r_sh.get().float_prec() == x
+    r_sh = x_sh / 2
+    assert r_sh.get().float_prec() == x / 2
 
 
 def test_stack(workers):

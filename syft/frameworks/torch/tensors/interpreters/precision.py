@@ -97,7 +97,8 @@ class FixedPrecisionTensor(AbstractTensor):
         """Add two fixed precision tensors together.
         """
         if isinstance(other, int):
-            return getattr(_self, "add")(other)
+            scaled_int = other * self.base ** self.precision_fractional
+            return getattr(_self, "add")(scaled_int)
 
         if _self.is_wrapper and not other.is_wrapper:
             # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor,
@@ -129,7 +130,8 @@ class FixedPrecisionTensor(AbstractTensor):
         """Subtracts a fixed precision tensor from another one.
         """
         if isinstance(other, int):
-            return getattr(_self, "sub")(other)
+            scaled_int = other * self.base ** self.precision_fractional
+            return getattr(_self, "sub")(scaled_int)
 
         if _self.is_wrapper and not other.is_wrapper:
             # If we try to subtract a FPT>(wrap)>AST and a FPT>torch.tensor,
@@ -173,10 +175,8 @@ class FixedPrecisionTensor(AbstractTensor):
             ), "In mul, all args should have the same precision_fractional"
 
         if isinstance(other, int):
-            response = getattr(self.child, "mul")(other)
-            return syft.frameworks.torch.hook_args.hook_response(
-                "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
-            )
+            new_self = self.child
+            new_other = other * self.base ** self.precision_fractional
         elif self.child.is_wrapper and not other.child.is_wrapper:
             # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
             # we want to perform AST * torch.tensor
