@@ -10,9 +10,12 @@ from syft import TorchHook
 def start_proc():  # pragma: no cover
     """ helper function for spinning up a websocket participant """
 
-    def _start_proc(participant, kwargs):
+    def _start_proc(participant, dataset=None, **kwargs):
         def target():
             server = participant(**kwargs)
+            if dataset is not None:
+                data, key = dataset
+                server.add_dataset(data, key=key)
             server.start()
 
         p = Process(target=target)

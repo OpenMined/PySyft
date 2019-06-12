@@ -246,7 +246,7 @@ def test_plan_execute_remotely(hook, start_proc):
     my_plan(x)
 
     kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8799, "hook": hook}
-    server = start_proc(WebsocketServerWorker, kwargs)
+    server = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
     socket_pipe = WebsocketClientWorker(**kwargs)
