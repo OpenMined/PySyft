@@ -531,7 +531,7 @@ def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.devi
     return torch.device(type=device_type)
 
 
-def _force_fullsimplify(worker: AbstractWorker) -> tuple:
+def _force_full_simplify(worker: AbstractWorker) -> tuple:
     """
 
     """
@@ -539,7 +539,7 @@ def _force_fullsimplify(worker: AbstractWorker) -> tuple:
     return (_simplify(worker.id), _simplify(worker._objects), worker.auto_add)
 
 
-def force_full_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
+def _force_full_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
     worker_id, _objects, auto_add = worker_tuple
     worker_id = detail(worker, worker_id)
 
@@ -659,7 +659,7 @@ simplifiers = {
     TrainConfig: [22, sy.TrainConfig.simplify],
 }
 
-forced_full_simplifiers = {VirtualWorker: [17, _force_fullsimplify]}
+forced_full_simplifiers = {VirtualWorker: [17, _force_full_simplify]}
 
 
 def detail(worker: AbstractWorker, obj: object) -> object:
@@ -705,7 +705,7 @@ detailers = [
     sy.MultiPointerTensor.detail,
     sy.Plan.detail,
     sy.VirtualWorker.detail,
-    force_full_detail,
+    _force_full_detail,
     _detail_str,
     sy.ObjectWrapper.detail,
     sy.exceptions.GetNotPermittedError.detail,

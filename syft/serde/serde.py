@@ -80,7 +80,7 @@ from syft.serde.torch_serde import (
     _detail_dictionary,
     _detail_ndarray,
     _detail_torch_device,
-    force_full_detail,
+    _force_full_detail,
     _detail_script_module,
     _simplify_torch_tensor,
     _simplify_torch_parameter,
@@ -88,7 +88,7 @@ from syft.serde.torch_serde import (
     _simplify_dictionary,
     _simplify_ndarray,
     _simplify_torch_device,
-    _force_fullsimplify,
+    _force_full_simplify,
     _simplify_script_module,
 )
 
@@ -143,7 +143,7 @@ def serialize(
     # which the fast serializer cannot handle
     if not simplified:
         if force_full_simplification:
-            simple_objects = _force_fullsimplify(obj)
+            simple_objects = _force_full_simplify(obj)
         else:
             simple_objects = _simplify(obj)
     else:
@@ -456,7 +456,7 @@ detailers = [
     sy.MultiPointerTensor.detail,
     sy.Plan.detail,
     sy.VirtualWorker.detail,
-    force_full_detail,
+    _force_full_detail,
     _detail_str,
     sy.ObjectWrapper.detail,
     sy.exceptions.GetNotPermittedError.detail,
