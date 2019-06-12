@@ -163,6 +163,9 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
 
+    def dim(self) -> int:
+        return len(self._shape)
+
     def share(self, *args, **kwargs):
         """
         Send a command to remote worker to additively share a tensor
