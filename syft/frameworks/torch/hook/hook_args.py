@@ -74,8 +74,6 @@ backward_func = {
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
-# Functions that we really don't want to hook because they don't have tensors in their signature
-exclude_functions = {"as_tensor", "torch.as_tensor"}
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
 # they have an arbitrary number of tensors in args which can trigger unexpected behaviour
 ambiguous_methods = {"__getitem__", "_getitem_public", "view", "permute"}
@@ -141,9 +139,6 @@ def hook_function_args(attr, args, kwargs, return_args_type=False):
         (- the type of the tensors in the arguments)
     """
     try:
-        if attr in exclude_functions:
-            raise PureTorchTensorFoundError
-
         assert attr not in ambiguous_functions
         # Load the utility function to transform the args
         # TODO rename registry or use another one than for methods
@@ -413,7 +408,13 @@ def build_get_tensor_type(rules, layer=None):
             lambdas += build_get_tensor_type(r, layer)
 
     if first_layer:
-        return lambdas[0]
+        try:
+            return lambdas[0]
+        except IndexError:
+            # Some functions don't have tensors in their signature so rules is only made of 0s,
+            # Hence lambdas is empty. Raising PureTorchTensorFoundError triggers an execution of
+            # the un-hooked (so native) function which is perfect in that case.
+            raise PureTorchTensorFoundError
     else:
         return lambdas
 

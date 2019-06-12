@@ -361,7 +361,7 @@ def _simplify(obj: object) -> object:
         return obj
 
 
-def _force_fullsimplify(obj: object) -> object:
+def _force_full_simplify(obj: object) -> object:
     current_type = type(obj)
 
     if current_type in forced_full_simplifiers:
@@ -410,7 +410,7 @@ simplifiers = {
 }
 
 
-forced_full_simplifiers = {VirtualWorker: [19, _force_fullsimplify]}
+forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify]}
 
 
 def _detail(worker: AbstractWorker, obj: object) -> object:
