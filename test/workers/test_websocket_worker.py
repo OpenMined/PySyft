@@ -11,7 +11,7 @@ def test_websocket_worker(hook, start_proc):
     WebsocketServerWorker"""
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8766, "hook": hook}
-    process_remote_worker = start_proc(WebsocketServerWorker, kwargs)
+    process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
     x = torch.ones(5)
@@ -41,7 +41,7 @@ def test_websocket_workers_search(hook, start_proc):
     base_kwargs = {"id": "fed2", "host": "localhost", "port": 8767, "hook": hook}
     server_kwargs = base_kwargs
     server_kwargs["data"] = [sample_data]
-    process_remote_worker = start_proc(WebsocketServerWorker, server_kwargs)
+    process_remote_worker = start_proc(WebsocketServerWorker, **server_kwargs)
 
     time.sleep(0.1)
 
@@ -71,7 +71,7 @@ def test_websocket_workers_search(hook, start_proc):
 def test_list_objects_remote(hook, start_proc):
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
-    process_remote_fed1 = start_proc(WebsocketServerWorker, kwargs)
+    process_remote_fed1 = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
 
@@ -102,7 +102,7 @@ def test_list_objects_remote(hook, start_proc):
 def test_objects_count_remote(hook, start_proc):
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
-    process_remote_worker = start_proc(WebsocketServerWorker, kwargs)
+    process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
 
@@ -133,7 +133,7 @@ def test_objects_count_remote(hook, start_proc):
 
 def test_connect_close(hook, start_proc):
     kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
-    process_remote_worker = start_proc(WebsocketServerWorker, kwargs)
+    process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
 
@@ -170,7 +170,7 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
     WebsocketServerWorker"""
 
     kwargs = {"id": "socket_multiple_output", "host": "localhost", "port": 8768, "hook": hook}
-    process_remote_worker = start_proc(WebsocketServerWorker, kwargs)
+    process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
     x = torch.tensor([1.0, 3, 2])
@@ -184,8 +184,7 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
     assert (x1 == torch.tensor([1.0, 2, 3])).all()
     assert (x2 == torch.tensor([0, 2, 1])).all()
 
-    del x
+    x.get()  # retrieve remote object before closing the websocket connection
 
     local_worker.ws.shutdown()
-    time.sleep(0.1)
     process_remote_worker.terminate()
