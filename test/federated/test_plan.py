@@ -32,8 +32,6 @@ def test_plan_built_automatically(hook):
 
 
 def test_plan_without_args_shape(hook):
-    # To run a plan locally the local worker can't be a client worker,
-    # since it needs to register objects
     hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=())
@@ -323,12 +321,8 @@ def test_execute_plan_module_remotely(hook, start_proc):
             return F.log_softmax(x, dim=0)
 
     net = Net()
-    # net.send(hook.local_worker)
     x = th.tensor([-1, 2.0])
-
     local_res = net(x)
-
-    # net.get()
 
     kwargs = {"id": "test_plan_worker_2", "host": "localhost", "port": 8799, "hook": hook}
     server = start_proc(WebsocketServerWorker, kwargs)
