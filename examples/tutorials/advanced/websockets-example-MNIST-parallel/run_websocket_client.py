@@ -8,9 +8,10 @@ import sys
 import asyncio
 import numpy as np
 
-FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d) - %(message)s"
-LOG_LEVEL = logging.INFO
-logging.basicConfig(format=FORMAT, level=LOG_LEVEL)
+if __name__ == "__main__":
+    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d) - %(message)s"
+    LOG_LEVEL = logging.INFO
+    logging.basicConfig(format=FORMAT, level=LOG_LEVEL)
 
 import syft as sy
 
@@ -109,9 +110,9 @@ async def fit_model_on_worker(worker, traced_model, batch_size, curr_epoch, max_
         "Training round %s, calling fit on worker: %s, lr = %s",
         curr_epoch,
         worker.id,
-        train_config.lr,
+        "{:.3f}".format(train_config.lr),
     )
-    loss = await worker.fit(dataset_key="mnist", return_ids=[0])
+    loss = await worker.async_fit(dataset_key="mnist", return_ids=[0])
     logger.info("Training round: %s, worker: %s, avg_loss: %s", curr_epoch, worker.id, loss.mean())
     model = train_config.model_ptr.get().obj
     return worker.id, model, loss
@@ -120,7 +121,6 @@ async def fit_model_on_worker(worker, traced_model, batch_size, curr_epoch, max_
 def __evaluate_models_on_test_data(test_loader, results):
     data, target = test_loader.__iter__().next()
     logger.info("Testing individual models on test data")
-    # logger.info("Target:    %s", target)
     hist, bin_edges = np.histogram(target, bins=10, range=(0, 10))
     logger.info("Target hist: %s", hist)
     for worker_id, worker_model, worker_loss in results:
@@ -132,7 +132,6 @@ def __evaluate_models_on_test_data(test_loader, results):
         pred = pred_test.argmax(dim=1)
         hist, bin_edges = np.histogram(pred, bins=10, range=(0, 10))
         logger.info("Worker %s: Predicted hist: %s", worker_id, hist)
-        # logger.info("Predicted: %s", pred)
 
 
 def evaluate_models_on_test_data(test_loader, results):

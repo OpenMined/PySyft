@@ -1,10 +1,10 @@
 import logging
 
-
-logger = logging.getLogger("run_websocket_server")
-FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
-logging.basicConfig(format=FORMAT)
-logger.setLevel(level=logging.DEBUG)
+if __name__ == "__main__":
+    logger = logging.getLogger("run_websocket_server")
+    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
+    logging.basicConfig(format=FORMAT)
+    logger.setLevel(level=logging.DEBUG)
 
 
 import syft as sy
@@ -15,14 +15,17 @@ from torchvision import datasets
 from torchvision import transforms
 import numpy as np
 
-hook = sy.TorchHook(torch)
+KEEP_LABELS_DICT = {"alice": [0, 1, 2, 3], "bob": [4, 5, 6], "charlie": [7, 8, 9]}
 
 
-def start_server(participant, keep_labels=None, **kwargs):  # pragma: no cover
-    """ helper function for spinning up a websocket participant """
+def start_websocket_server_worker(
+    id, host, port, hook, verbose, keep_labels=None
+):  # pragma: no cover
+    """ helper function for spinning up a websocket server and setting up the local datasets """
 
-    server = participant(**kwargs)
+    server = WebsocketServerWorker(id=id, host=host, port=port, hook=hook, verbose=verbose)
 
+    # Setup toy data (mnist example)
     mnist_trainset = datasets.MNIST(
         root="./data",
         train=True,
@@ -47,6 +50,7 @@ def start_server(participant, keep_labels=None, **kwargs):  # pragma: no cover
     )
     server.add_dataset(dataset, key="mnist")
 
+    # Setup toy data (vectors example)
     data_vectors = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
     target_vectors = torch.tensor([[1], [0], [1], [0]])
 
@@ -65,31 +69,34 @@ def start_server(participant, keep_labels=None, **kwargs):  # pragma: no cover
     return server
 
 
-parser = argparse.ArgumentParser(description="Run websocket server worker.")
-parser.add_argument(
-    "--port", "-p", type=int, help="port number of the websocket server worker, e.g. --port 8777"
-)
-parser.add_argument("--host", type=str, default="localhost", help="host for the connection")
-parser.add_argument(
-    "--id", type=str, help="name (id) of the websocket server worker, e.g. --id alice"
-)
-parser.add_argument(
-    "--verbose",
-    "-v",
-    action="store_true",
-    help="if set, websocket server worker will be started in verbose mode",
-)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run websocket server worker.")
+    parser.add_argument(
+        "--port",
+        "-p",
+        type=int,
+        help="port number of the websocket server worker, e.g. --port 8777",
+    )
+    parser.add_argument("--host", type=str, default="localhost", help="host for the connection")
+    parser.add_argument(
+        "--id", type=str, help="name (id) of the websocket server worker, e.g. --id alice"
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="if set, websocket server worker will be started in verbose mode",
+    )
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-keep_labels_dict = {"alice": [0, 1, 2, 3], "bob": [4, 5, 6], "charlie": [7, 8, 9]}
+    hook = sy.TorchHook(torch)
 
-kwargs = {
-    "id": args.id,
-    "host": args.host,
-    "port": args.port,
-    "hook": hook,
-    "verbose": args.verbose,
-    "keep_labels": keep_labels_dict[args.id],
-}
-server = start_server(WebsocketServerWorker, **kwargs)
+    server = start_websocket_server_worker(
+        id=args.id,
+        host=args.host,
+        port=args.port,
+        hook=hook,
+        verbose=args.verbose,
+        keep_labels=KEEP_LABELS_DICT[args.id],
+    )
