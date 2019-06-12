@@ -2,7 +2,7 @@ import logging
 
 
 logger = logging.getLogger("run_websocket_server")
-FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d) - %(message)s"
+FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
 logging.basicConfig(format=FORMAT)
 logger.setLevel(level=logging.DEBUG)
 
@@ -32,26 +32,31 @@ def start_server(participant, keep_labels=None, **kwargs):  # pragma: no cover
         ),
     )
 
-    indices = np.isin(mnist_trainset.train_labels, keep_labels).astype("uint8")
+    indices = np.isin(mnist_trainset.targets, keep_labels).astype("uint8")
     logger.info("nr true indices: %s", indices.sum())
-    logger.info("train_data shape: %s", mnist_trainset.train_data.shape)
     selected_data = (
-        torch.native_masked_select(mnist_trainset.train_data.transpose(0, 2), torch.tensor(indices))
+        torch.native_masked_select(mnist_trainset.data.transpose(0, 2), torch.tensor(indices))
         .view(28, 28, -1)
         .transpose(2, 0)
     )
     logger.info("after selection: %s", selected_data.shape)
-    selected_targets = torch.native_masked_select(
-        mnist_trainset.train_labels, torch.tensor(indices)
-    )
-
-    # logger.info("data: %s", mnist_trainset.data)
-    # logger.info("target: %s", mnist_trainset.target)
+    selected_targets = torch.native_masked_select(mnist_trainset.targets, torch.tensor(indices))
 
     dataset = sy.BaseDataset(
         data=selected_data, targets=selected_targets, transform=mnist_trainset.transform
     )
     server.add_dataset(dataset, key="mnist")
+
+    data_vectors = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
+    target_vectors = torch.tensor([[1], [0], [1], [0]])
+
+    server.add_dataset(sy.BaseDataset(data_vectors, target_vectors), key="vectors")
+
+    # Setup toy data (xor example)
+    data_xor = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
+    target_xor = torch.tensor([1.0, 1.0, 0.0, 0.0], requires_grad=False)
+
+    server.add_dataset(sy.BaseDataset(data_xor, target_xor), key="xor")
 
     logger.info("datasets: %s", server.datasets)
     logger.info("len(datasets[mnist]): %s", len(server.datasets["mnist"]))
@@ -76,9 +81,6 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-
-# args.id = "alice"
-# args.port = 8777
 
 keep_labels_dict = {"alice": [0, 1, 2, 3], "bob": [4, 5, 6], "charlie": [7, 8, 9]}
 
