@@ -120,11 +120,21 @@ class WebsocketClientWorker(BaseWorker):
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
 
-    async def fit(self, dataset_key, **kwargs):
-        # Arguments provided as kwargs as otherwise miss-match
-        # with signature in FederatedClient.fit()
-        return_ids = kwargs["return_ids"] if "return_ids" in kwargs else [sy.ID_PROVIDER.pop()]
+    async def async_fit(self, dataset_key: str, return_ids: List[int] = None):
+        """Asynchronous call to fit function on the remote location
 
+        Args:
+            dataset_key: str, identifier of the dataset which shall be used for the training
+            return_ids: List[str]
+
+        Returns:
+            See return value of the FederatedClient.fit() method.
+
+        """
+        if return_ids is None:
+            return_ids = [sy.ID_PROVIDER.pop()]
+
+        # close the existing websocket connection in order to open a asynchronous connection
         self.close()
         url = f"ws://{self.host}:{self.port}"
         async with websockets.connect(
@@ -141,16 +151,30 @@ class WebsocketClientWorker(BaseWorker):
             serialized_message = sy.serde.serialize(message)
             await websocket.send(str(binascii.hexlify(serialized_message)))
             await websocket.recv()  # returned value will be None, so don't care
+
+        # Reopen the standard connection
         self.connect()
         msg = (MSGTYPE.OBJ_REQ, return_ids[0])
-        # Send the message and return the deserialized response.
+        # Send an object request message to retrieve the result tensor of the fit() method
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
+        # Return the deserialized response.
         return sy.serde.deserialize(response)
 
-    def synchronous_fit(self, dataset_key, **kwargs):
-        # Arguments provided as kwargs as otherwise miss-match
-        # with signature in FederatedClient.fit()
+    def fit(self, dataset_key, **kwargs):
+        """Call the fit() method on the remote worker (WebsocketServerWorker instance)
+
+        Note: The argument return_ids is provided as kwargs as otherwise there is a miss-match
+        with the signature in VirtualWorker.fit() method. This is important to be able to switch
+        between virtual and websocket workers.
+
+        Args:
+            dataset_key: str, identifier of the dataset which shall be used for the training
+            **kwargs: return_ids: List[str]
+
+        Returns:
+
+        """
         return_ids = kwargs["return_ids"] if "return_ids" in kwargs else [sy.ID_PROVIDER.pop()]
 
         self._send_msg_and_deserialize("fit", return_ids=return_ids, dataset_key=dataset_key)
