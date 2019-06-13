@@ -52,7 +52,7 @@ and selecting the pysyft kernel
 Instead of installing all the dependencies on your computer, you can run a notebook server (which comes with Pysyft installed) using [Docker](https://www.docker.com/). All you will have to do is start the container like this:
 
 ```bash
-$ docker container run youben/pysyft:miniconda
+$ docker container run openmined/pysyft-notebook
 ```
 
 You can use the provided link to access the jupyter notebook (the link is only accessible from your local machine).
@@ -60,7 +60,7 @@ You can use the provided link to access the jupyter notebook (the link is only a
 You can also set the directory from which the server will serve notebooks (default is /workspace).
 
 ```bash
-$ docker container run -e WORKSPACE_DIR=/root youben/pysyft:miniconda
+$ docker container run -e WORKSPACE_DIR=/root openmined/pysyft-notebook
 ```
 
 You could also build the image on your own and run it locally:
