@@ -86,6 +86,21 @@ def test_torch_add(workers):
 
     assert (y == torch.tensor([0.2, 0.4, 0.6])).all()
 
+    # With negative numbers
+    x = torch.tensor([-0.1, -0.2, 0.3]).fix_prec()
+    y = torch.tensor([0.4, -0.5, -0.6]).fix_prec()
+
+    z = torch.add(x, y).float_prec()
+
+    assert (z == torch.tensor([0.3, -0.7, -0.3])).all()
+
+    # When overflow occurs
+    x = torch.tensor([10., 20., 30.]).fix_prec(field=1e4, precision_fractional=2)
+    y = torch.add(x, x)
+    y = torch.add(y, y).float_prec()
+
+    assert (y == torch.tensor([40., -20., 20.])).all()
+
     # with AST
     t = torch.tensor([1.0, -2.0, 3.0])
     x = t.fix_prec()
@@ -147,8 +162,17 @@ def test_torch_mul(workers):
 
     z = z.float_prec()
     assert z == torch.tensor([-0.2380])
+    
+    # When overflow occurs
+    x = torch.tensor([11.]).fix_prec(field=2**16, precision_fractional=2)
+    y = torch.mul(x, x).float_prec()
+
+    # (1100 * 1100) % 2**16 = 30352
+    assert y == torch.tensor([3.03])
 
     # mixing + and *
+    x = torch.tensor([2.113]).fix_prec()
+    y = torch.tensor([-0.113]).fix_prec()
     z = torch.mul(x, y + y)
 
     assert z.child.precision_fractional == 3
@@ -159,12 +183,13 @@ def test_torch_mul(workers):
 
     # with AST
     t = torch.tensor([1.0, -2.0, 3.0])
+    u = torch.tensor([1.0, -2.0, -3.0])
     x = t.fix_prec()
-    y = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = u.fix_prec().share(bob, alice, crypto_provider=james)
 
-    z = torch.mul(y, x).get().float_prec()
+    z = torch.mul(x, y).get().float_prec()
 
-    assert (z == torch.mul(t, t)).all()
+    assert (z == torch.mul(t, u)).all()
 
 
 def test_torch_matmul(workers):

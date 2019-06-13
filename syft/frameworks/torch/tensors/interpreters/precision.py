@@ -9,7 +9,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
-        field: int = (2 ** 62) - 1,
+        field: int = (2 ** 32) - 1,  # I had overflow in muls otherwise
         base: int = 10,
         precision_fractional: int = 3,
         kappa: int = 1,
@@ -41,7 +41,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        self.torch_max_value = torch.tensor(self.field)
+        self.torch_max_value = torch.tensor(self.field).long()
 
     def get_class_attributes(self):
         """
@@ -62,7 +62,11 @@ class FixedPrecisionTensor(AbstractTensor):
         rational = self.child
 
         upscaled = (rational * self.base ** self.precision_fractional).long()
-        field_element = upscaled % self.field  # Should we raise a warning if upscaled > field?
+        assert (
+            upscaled.abs() < (self.field / 2)
+        ).all(), f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
+
+        field_element = upscaled % self.field
         field_element.owner = rational.owner
 
         self.child = field_element
@@ -87,7 +91,10 @@ class FixedPrecisionTensor(AbstractTensor):
         # We need to make sure that values are truncated "towards 0"
         # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
         # at 97 (equivalent to -3), not 7
-        gate = self.child.native_gt(self.torch_max_value / 2).long()
+        if self.child.is_wrapper:  # Need to handle FPT>(wrap)>AST
+            gate = 1
+        else:
+            gate = self.child.native_gt(self.torch_max_value / 2).long()
 
         neg_nums = (self.child - self.field) / truncation + self.field
         pos_nums = self.child / truncation
@@ -150,6 +157,7 @@ class FixedPrecisionTensor(AbstractTensor):
             other = tmp
 
         response = getattr(_self, "sub")(other)
+        response %= self.field  # Wrap around the field
 
         return response
 
@@ -208,7 +216,7 @@ class FixedPrecisionTensor(AbstractTensor):
         )
 
         response %= self.field  # Wrap around the field
-        response = response.truncate(other.precision_fractional)
+        response =  response.truncate(self.precision_fractional)
 
         return response
 
@@ -255,8 +263,8 @@ class FixedPrecisionTensor(AbstractTensor):
             "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        response = response.truncate(other.precision_fractional)
         response %= self.field  # Wrap around the field
+        response = response.truncate(other.precision_fractional)
 
         return response
 
