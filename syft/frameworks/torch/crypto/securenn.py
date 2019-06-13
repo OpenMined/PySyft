@@ -266,12 +266,14 @@ def share_convert(a_sh):
         .child
     )
     r_shares = r_sh.child
-    alpha = (
-        ((r_shares[workers[0].id] + (r_shares[workers[1].id] * 1).move(workers[0])).get() >= L)
+    
+    alpha0 = (
+        ((r_shares[workers[0].id] + (r_shares[workers[1].id] * 1).move(workers[0])) >= L)
         .long()
-        .send(*workers)
-        .child
-    )  # FIXME security issue: the local worker learns alpha while this should be avoided
+    )
+    alpha1 = alpha0.copy().move(workers[1])
+    alpha = sy.MultiPointerTensor(children=[alpha0, alpha1])
+    
     u_sh = (
         torch.zeros(1)
         .long()
