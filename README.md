@@ -12,12 +12,12 @@ PySyft has also been explained in video form by [Siraj Raval](https://www.youtub
 
 ## Pre-Installation
 
-Optionally, we recommend that you install PySyft within the [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/overview.html) virtual environment. If you are using Windows, I suggest installing [Anaconda and using the Anaconda Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to work from the command line. 
+Optionally, we recommend that you install PySyft within the [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/overview.html) virtual environment. If you are using Windows, I suggest installing [Anaconda and using the Anaconda Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to work from the command line.
 
 ```bash
 conda create -n pysyft python=3
 conda activate pysyft # some older version of conda require "source activate pysyft" instead.
-conda install jupyter notebook 
+conda install jupyter notebook
 ```
 
 ## Installation
@@ -46,6 +46,30 @@ make notebook
 ```
 
 and selecting the pysyft kernel
+
+## Use the Docker image
+
+Instead of installing all the dependencies on your computer, you can run a notebook server (which comes with Pysyft installed) using [Docker](https://www.docker.com/). All you will have to do is start the container like this:
+
+```bash
+$ docker container run openmined/pysyft-notebook
+```
+
+You can use the provided link to access the jupyter notebook (the link is only accessible from your local machine).
+
+You can also set the directory from which the server will serve notebooks (default is /workspace).
+
+```bash
+$ docker container run -e WORKSPACE_DIR=/root openmined/pysyft-notebook
+```
+
+You could also build the image on your own and run it locally:
+
+```bash
+$ cd docker-image
+$ docker image build -t pysyft-notebook .
+$ docker container run pysyft-notebook
+```
 
 ## Try out the Tutorials
 
