@@ -69,7 +69,7 @@ def test_raise_exception_for_invalid_shape(hook):
 
         @sy.func2plan(args_shape=[(1, -20)])
         def _(data):
-            pass
+            return data  # pragma: no cover
 
     hook.local_worker.is_client_worker = True
 
@@ -82,7 +82,7 @@ def test_raise_exception_when_sending_unbuilt_plan(workers):
 
     @sy.func2plan()
     def plan(data):
-        pass
+        return data  # pragma: no cover
 
     with pytest.raises(RuntimeError):
         plan.send(bob)
