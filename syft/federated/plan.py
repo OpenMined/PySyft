@@ -144,6 +144,7 @@ class Plan(ObjectStorage):
     def _create_placeholders(self, args_shape):
         # In order to support -1 value in shape to indicate any dimension
         # we map -1 to 1 for shape dimensions.
+        # TODO: A more complex strategy could be used
         mapped_shapes = []
         for shape in args_shape:
             if list(filter(lambda x: x < -1, shape)):
