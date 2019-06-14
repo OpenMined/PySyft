@@ -96,6 +96,7 @@ class TorchAttributes(object):
             "range",
             "save",
             "set_",
+            "set_num_threads",
             "short",
             "size",
             "storage",
