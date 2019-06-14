@@ -56,7 +56,9 @@ def define_and_get_arguments(args=sys.argv[1:]):
     parser.add_argument(
         "--test_batch_size", type=int, default=128, help="batch size used for the test data"
     )
-    parser.add_argument("--epochs", type=int, default=100, help="number of epochs to train")
+    parser.add_argument(
+        "--training_rounds", type=int, default=100, help="number of federated learning rounds"
+    )
     parser.add_argument(
         "--federate_after_n_batches",
         type=int,
@@ -78,14 +80,14 @@ def define_and_get_arguments(args=sys.argv[1:]):
     return args
 
 
-async def fit_model_on_worker(worker, traced_model, batch_size, curr_epoch, max_nr_batches, lr):
+async def fit_model_on_worker(worker, traced_model, batch_size, curr_round, max_nr_batches, lr):
     """Send the model to the worker and fit the model on the worker's training data
 
     Args:
         worker: "workers.WebsocketClientWorker", remote location, where the model shall be trained
         traced_model: torch.jit.ScriptModule, model which shall be trained
         batch_size: int, the batch size of each training step
-        curr_epoch: int, index of the currently trained epoch (for logging purposes)
+        curr_round: int, index of the current training round (for logging purposes)
         max_nr_batches: int, if > 0, training on worker will stop at min(max_nr_batches, nr_available_batches)
         lr: learning rate of each training step
 
@@ -108,12 +110,12 @@ async def fit_model_on_worker(worker, traced_model, batch_size, curr_epoch, max_
     train_config.send(worker)
     logger.info(
         "Training round %s, calling fit on worker: %s, lr = %s",
-        curr_epoch,
+        curr_round,
         worker.id,
         "{:.3f}".format(train_config.lr),
     )
     loss = await worker.async_fit(dataset_key="mnist", return_ids=[0])
-    logger.info("Training round: %s, worker: %s, avg_loss: %s", curr_epoch, worker.id, loss.mean())
+    logger.info("Training round: %s, worker: %s, avg_loss: %s", curr_round, worker.id, loss.mean())
     model = train_config.model_ptr.get().obj
     return worker.id, model, loss
 
@@ -198,7 +200,7 @@ async def main():
     test_loader = torch.utils.data.DataLoader(
         datasets.MNIST(
             "../data",
-            train=True,
+            train=False,
             transform=transforms.Compose(
                 [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
             ),
@@ -215,8 +217,8 @@ async def main():
     traced_model = torch.jit.trace(model, data)
     learning_rate = args.lr
 
-    for epoch in range(1, args.epochs + 1):
-        logger.info("Starting epoch %s/%s", epoch, args.epochs)
+    for curr_round in range(1, args.training_rounds + 1):
+        logger.info("Starting training round %s/%s", curr_round, args.training_rounds)
 
         results = await asyncio.gather(
             *[
@@ -224,7 +226,7 @@ async def main():
                     worker=worker,
                     traced_model=traced_model,
                     batch_size=args.batch_size,
-                    curr_epoch=epoch,
+                    curr_round=curr_round,
                     max_nr_batches=args.federate_after_n_batches,
                     lr=learning_rate,
                 )
@@ -234,7 +236,7 @@ async def main():
         models = {}
         loss_values = {}
 
-        test_models = epoch % 10 == 1 or epoch == args.epochs
+        test_models = curr_round % 10 == 1 or curr_round == args.training_rounds
         if test_models:
             evaluate_models_on_test_data(test_loader, results)
 
