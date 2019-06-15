@@ -71,6 +71,8 @@ $ docker image build -t pysyft-notebook .
 $ docker container run pysyft-notebook
 ```
 
+More information about how to use this image can be found [on docker hub](https://hub.docker.com/r/openmined/pysyft-notebook)
+
 ## Try out the Tutorials
 
 A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials)
