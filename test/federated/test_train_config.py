@@ -254,11 +254,8 @@ def prepare_training(hook, alice):  # pragma: no cover
 
     model = torch.jit.trace(model_untraced, data)
 
-    print("Evaluation before training")
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
-    print("Loss: {}".format(loss_before))
-
     return model, loss_fn, data, target, loss_before, dataset_key
 
 
