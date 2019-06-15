@@ -30,6 +30,7 @@ if __name__ == "__main__":
 def loss_fn(pred, target):
     return F.nll_loss(input=pred, target=target)
 
+
 # Model
 class Net(nn.Module):
     def __init__(self):
@@ -82,12 +83,14 @@ def define_and_get_arguments(args=sys.argv[1:]):
     return args
 
 
-async def fit_model_on_worker(worker: workers.WebsocketClientWorker,
-                              traced_model: torch.jit.ScriptModule,
-                              batch_size: int,
-                              curr_round: int,
-                              max_nr_batches: int,
-                              lr: float):
+async def fit_model_on_worker(
+    worker: workers.WebsocketClientWorker,
+    traced_model: torch.jit.ScriptModule,
+    batch_size: int,
+    curr_round: int,
+    max_nr_batches: int,
+    lr: float,
+):
     """Send the model to the worker and fit the model on the worker's training data.
 
     Args:
@@ -270,5 +273,3 @@ if __name__ == "__main__":
 
     # Run main
     asyncio.get_event_loop().run_until_complete(main())
-
-    
