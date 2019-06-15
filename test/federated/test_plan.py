@@ -325,7 +325,7 @@ def test_execute_plan_module_remotely(hook, start_proc):
     local_res = net(x)
 
     kwargs = {"id": "test_plan_worker_2", "host": "localhost", "port": 8799, "hook": hook}
-    server = start_proc(WebsocketServerWorker, kwargs)
+    server = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
     socket_pipe = WebsocketClientWorker(**kwargs)
