@@ -98,6 +98,15 @@ def test_add(workers):
 
     assert (y == (t + t)).all()
 
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    z = (x + y).get().float_prec()
+
+    assert (z == (t + t)).all()
+
 
 def test_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -126,6 +135,16 @@ def test_sub(workers):
 
     assert (y == (t - t)).all()
 
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    u = torch.tensor([4.0, 3.0, 2.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = u.fix_prec()
+
+    z = (x - y).get().float_prec()
+
+    assert (z == (t - u)).all()
+
 
 def test_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -150,6 +169,33 @@ def test_mul(workers):
     y = (x * x).get().float_prec()
 
     assert (y == (t * t)).all()
+
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    z = (x * y).get().float_prec()
+
+    assert (z == (t * t)).all()
+
+
+def test_operate_with_integer_constants(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = th.tensor([2.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=james)
+
+    r_sh = x_sh + 10
+    assert r_sh.get().float_prec() == x + 10
+
+    r_sh = x_sh - 7
+    assert r_sh.get().float_prec() == x - 7
+
+    r_sh = x_sh * 2
+    assert r_sh.get().float_prec() == x * 2
+
+    r_sh = x_sh / 2
+    assert r_sh.get().float_prec() == x / 2
 
 
 def test_stack(workers):
@@ -215,6 +261,15 @@ def test_matmul(workers):
     y = (x @ x).get().float_prec()
 
     assert (y == (m @ m)).all()
+
+    # with FPT>torch.tensor
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(bob, alice, crypto_provider=james)
+    y = m.fix_prec()
+
+    z = (x @ y).get().float_prec()
+
+    assert (z == (m @ m)).all()
 
 
 def test_torch_conv2d(workers):
@@ -411,6 +466,49 @@ def test_mod(workers):
     assert t.child.mod(-8).get() % -8 == torch.tensor([-5])
 
     assert (t.child % 8).get() % 8 == torch.tensor([3])
+
+
+def test_torch_sum(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([[1, 2, 4], [8, 5, 6]])
+    x = t.share(alice, bob, crypto_provider=james)
+
+    s = torch.sum(x).get()
+    s_dim = torch.sum(x, 0).get()
+    s_dim2 = torch.sum(x, (0, 1)).get()
+    s_keepdim = torch.sum(x, 1, keepdim=True).get()
+
+    assert (s == torch.sum(t)).all()
+    assert (s_dim == torch.sum(t, 0)).all()
+    assert (s_dim2 == torch.sum(t, (0, 1))).all()
+    assert (s_keepdim == torch.sum(t, 1, keepdim=True)).all()
+
+
+def test_torch_mean(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    base = 10
+    prec_frac = 4
+
+    t = torch.tensor([[1.0, 2.5, 4.2, 2.0], [8.0, 5.8, 6.2, 3.0]])
+    x = t.fix_prec(base=base, precision_fractional=prec_frac).share(
+        alice, bob, crypto_provider=james
+    )
+
+    s = torch.mean(x).get().float_prec()
+    s_dim = torch.mean(x, 0).get().float_prec()
+    s_dim2 = torch.mean(x, (0, 1)).get().float_prec()
+    s_keepdim = torch.mean(x, 1, keepdim=True).get().float_prec()
+
+    expected = (torch.mean(t) * 10 ** prec_frac).floor() / 10 ** prec_frac
+    expected_dim = (torch.mean(t, 0) * 10 ** prec_frac).floor() / 10 ** prec_frac
+    expected_dim2 = (torch.mean(t, (0, 1)) * 10 ** prec_frac).floor() / 10 ** prec_frac
+    expected_keepdim = (torch.mean(t, 1, keepdim=True) * 10 ** prec_frac).floor() / 10 ** prec_frac
+
+    assert (s == expected).all()
+    assert (s_dim == expected_dim).all()
+    assert (s_dim2 == expected_dim2).all()
+    assert (s_keepdim == expected_keepdim).all()
 
 
 def test_unbind(workers):

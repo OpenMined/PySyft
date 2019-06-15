@@ -74,7 +74,8 @@ def test_methods_for_linear_module(method, parameter):
     assert (result == fp_result.float_precision()).all()
 
 
-def test_torch_add():
+def test_torch_add(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
 
@@ -85,8 +86,45 @@ def test_torch_add():
 
     assert (y == torch.tensor([0.2, 0.4, 0.6])).all()
 
+    # with AST
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    y = t.fix_prec().share(bob, alice, crypto_provider=james)
 
-def test_torch_mul():
+    z = torch.add(y, x).get().float_prec()
+
+    assert (z == torch.add(t, t)).all()
+
+
+def test_torch_sub(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    x = torch.tensor([0.5, 0.8, 1.3]).fix_prec()
+    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+
+    z = torch.sub(x, y)
+
+    assert (z.child.child == torch.LongTensor([400, 600, 1000])).all()
+    z = z.float_prec()
+
+    assert (z == torch.tensor([0.4, 0.6, 1.0])).all()
+
+    # with AST
+    tx = torch.tensor([1.0, -2.0, 3.0])
+    ty = torch.tensor([0.1, 0.2, 0.3])
+    x = tx.fix_prec()
+    y = ty.fix_prec().share(bob, alice, crypto_provider=james)
+
+    z1 = torch.sub(y, x).get().float_prec()
+    z2 = torch.sub(x, y).get().float_prec()
+
+    assert (z1 == torch.sub(ty, tx)).all()
+    assert (z2 == torch.sub(tx, ty)).all()
+
+
+def test_torch_mul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
     # mul with non standard fix precision
     x = torch.tensor([2.113]).fix_prec(precision_fractional=2)
 
@@ -118,6 +156,34 @@ def test_torch_mul():
     z = z.float_prec()
 
     assert z == torch.tensor([-0.4770])
+
+    # with AST
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    y = t.fix_prec().share(bob, alice, crypto_provider=james)
+
+    z = torch.mul(y, x).get().float_prec()
+
+    assert (z == torch.mul(t, t)).all()
+
+
+def test_torch_matmul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec()
+    y = torch.matmul(x, x).float_prec()
+
+    assert (y == torch.matmul(m, m)).all()
+
+    # with FPT>torch.tensor
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec()
+    y = m.fix_prec().share(bob, alice, crypto_provider=james)
+
+    z = (x @ y).get().float_prec()
+
+    assert (z == torch.matmul(m, m)).all()
 
 
 def test_torch_addmm():
@@ -193,6 +259,25 @@ def test_torch_nn_functional_linear():
     expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
 
     assert (result == expected).all()
+
+
+def test_operate_with_integer_constants():
+    x = torch.tensor([1.0])
+    x_fp = x.fix_precision()
+
+    r_fp = x_fp + 10
+    r = r_fp.float_precision()
+    assert r == x + 10
+
+    r_fp = x_fp - 7
+    r = r_fp.float_precision()
+    assert r == x - 7
+
+    r_fp = x_fp * 2
+    assert r_fp.float_precision() == x * 2
+
+    r_fp = x_fp / 5
+    assert r_fp.float_precision() == x / 5
 
 
 def test_fixed_precision_and_sharing(workers):

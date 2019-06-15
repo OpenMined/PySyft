@@ -30,3 +30,24 @@ def test_multi_pointers(workers):
     c = b.get()
     assert len(c) == 2
     assert (c[0] == th.tensor([2, 4, 6, 8, 10])).all
+
+
+def test_dim(workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    a = th.tensor([1, 2, 3, 4, 5]).send(bob, alice)
+
+    assert a.dim() == 1
+
+
+def test_simplify(workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    a = th.tensor([1, 2, 3, 4, 5]).send(bob, alice)
+    ser = sy.serde.serialize(a)
+    detail = sy.serde.deserialize(ser).child
+    assert isinstance(detail, sy.MultiPointerTensor)
+    for key in a.child.child:
+        assert key in detail.child

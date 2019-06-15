@@ -4,6 +4,8 @@ import syft as sy
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
+from syft.workers import AbstractWorker
+
 # Crypto protocols
 from syft.frameworks.torch.crypto import spdz
 from syft.frameworks.torch.crypto import securenn
@@ -226,7 +228,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         Returns:
             an AdditiveSharingTensor
-            
+
         """
         selected_shares = {}
         for worker, share in self_shares.items():
@@ -246,27 +248,37 @@ class AdditiveSharingTensor(AbstractTensor):
     ## SECTION SPDZ
 
     @overloaded.method
-    def add(self, shares: dict, other_shares):
-        """Adds two tensors together
+    def add(self, shares: dict, other):
+        """Adds operand to the self AST instance.
 
         Args:
             shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
-            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
-                to the tensor being added to self.
+            other: the operand being added to self, can be:
+                - a dictionary <location_id -> PointerTensor) of shares
+                - a torch tensor
+                - a constant
         """
+        if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
+            # if someone passes a torch tensor, we share it and keep the dict
+            other = other.share(
+                *self.child.keys(), crypto_provider=self.crypto_provider
+            ).child.child
+        elif not isinstance(other, dict):
+            # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
+            other = (
+                torch.Tensor([other])
+                .share(*self.child.keys(), crypto_provider=self.crypto_provider)
+                .child.child
+            )
 
-        # if someone passes in a constant... (i.e., x + 3)
-        if not isinstance(other_shares, dict):
-            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
-
-        assert len(shares) == len(other_shares)
+        assert len(shares) == len(other)
 
         # matches each share which needs to be added according
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = other_shares[k] + v
+            new_shares[k] = other[k] + v
 
         return new_shares
 
@@ -276,27 +288,38 @@ class AdditiveSharingTensor(AbstractTensor):
         return self.add(other, **kwargs)
 
     @overloaded.method
-    def sub(self, shares: dict, other_shares):
-        """Subtracts an other tensor from self.
+    def sub(self, shares: dict, other):
+        """Subtracts an operand from the self AST instance.
 
         Args:
             shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
-            other_shares: a dictionary <location_id -> PointerTensor) of shares corresponding
-                to the tensor being subtracted from self.
+            other: the operand being subtracted from self, can be:
+                - a dictionary <location_id -> PointerTensor) of shares
+                - a torch tensor
+                - a constant
         """
 
-        # if someone passes in a constant... (i.e., x - 3), make it a shared tensor and keep the dict
-        if not isinstance(other_shares, dict):
-            other_shares = torch.Tensor([other_shares]).share(*self.child.keys()).child.child
+        if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
+            # if someone passes a torch tensor, we share it and keep the dict
+            other = other.share(
+                *self.child.keys(), crypto_provider=self.crypto_provider
+            ).child.child
+        elif not isinstance(other, dict):
+            # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
+            other = (
+                torch.Tensor([other])
+                .share(*self.child.keys(), crypto_provider=self.crypto_provider)
+                .child.child
+            )
 
-        assert len(shares) == len(other_shares)
+        assert len(shares) == len(other)
 
         # matches each share which needs to be added according
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = v - other_shares[k]
+            new_shares[k] = v - other[k]
 
         return new_shares
 
@@ -322,7 +345,7 @@ class AdditiveSharingTensor(AbstractTensor):
         assert len(self.child) == len(other.child)
 
         if self.crypto_provider is None:
-            raise AttributeError("For multiplication a cryto_provider must be passed.")
+            raise AttributeError("For multiplication a crypto_provider must be passed.")
 
         shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field)
 
@@ -331,13 +354,15 @@ class AdditiveSharingTensor(AbstractTensor):
     @overloaded.method
     def _public_mul(self, shares, other, equation):
         """Multiplies an AdditiveSharingTensor with a non-private value
-        (int, MultiPointerTensor, etc.)
+        (int, torch tensor, MultiPointerTensor, etc.)
 
         Args:
             shares (dict): a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
-            other (dict of int): a dictionary <location_id -> PointerTensor) of shares corresponding
-                to the tensor being multiplied with self or an integer
+            other (dict of int): operand being multiplied with self, can be:
+                - a dictionary <location_id -> PointerTensor) of shares
+                - a torch tensor (Int or Long)
+                - or an integer
             equation: a string representation of the equation to be computed in einstein
                 summation form
         """
@@ -346,6 +371,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         if isinstance(other, dict):
             return {worker: cmd(share, other[worker]) for worker, share in shares.items()}
+        elif isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
+            return {worker: cmd(share, other.wrap()) for worker, share in shares.items()}
         else:
             return {worker: cmd(share, other) for worker, share in shares.items()}
 
@@ -420,6 +447,12 @@ class AdditiveSharingTensor(AbstractTensor):
     @staticmethod
     @overloaded.module
     def torch(module):
+        def add(self, other):
+            """Overload add(x, y) to redirect to add(y)"""
+            return self.add(other)
+
+        module.add = add
+
         def mul(self, other):
             """Overload torch.mul(x, y) to redirect to x.mul(y)"""
             return self.mul(other)
@@ -431,6 +464,33 @@ class AdditiveSharingTensor(AbstractTensor):
             return self.matmul(other)
 
         module.matmul = matmul
+
+        def sum(self, *args, **kwargs):
+            """Overload torch.sum(x) to redirect to x.sum()"""
+            return self.sum(*args, **kwargs)
+
+        module.sum = sum
+
+        def mean(self, *args, **kwargs):
+            """Overload torch.mean(x)"""
+            # We cannot directly use mean on Long tensors
+            # so we do it by hand with a sum and a division
+            sum = self.sum(*args, **kwargs)
+
+            # We need to know how many input values are used for each
+            # output value to divide
+            dims_to_reduce = args[0] if args else range(self.dim())
+            if isinstance(dims_to_reduce, int):
+                dims_to_reduce = (dims_to_reduce,)
+
+            div = 1
+            for i, s in enumerate(self.shape):
+                if i in dims_to_reduce:
+                    div *= s
+
+            return sum // div
+
+        module.mean = mean
 
         @overloaded.function
         def unbind(tensor_shares, **kwargs):
@@ -610,7 +670,7 @@ class AdditiveSharingTensor(AbstractTensor):
             dim (None or int): if not None, the dimension on which
                 the comparison should be done
             return_idx (bool): Return the index of the maximum value
-                Note the if dim is specified then the index is returned
+                Note that if dim is specified then the index is returned
                 anyway to match the Pytorch syntax.
 
         return:
@@ -618,7 +678,7 @@ class AdditiveSharingTensor(AbstractTensor):
             and optionally the index of the maximum value (possibly across an axis)
         """
         values = self
-        n_dim = len(self.shape)
+        n_dim = self.dim()
 
         # Make checks and transformation
         assert dim is None or (0 <= dim < n_dim), f"Dim overflow  0 <= {dim} < {n_dim}"
@@ -641,8 +701,8 @@ class AdditiveSharingTensor(AbstractTensor):
         for i in range(1, len(values)):
             a = values[i]
             beta = a >= max_value
-            max_index = i * beta - max_index * (beta - 1)
-            max_value = a * beta - max_value * (beta - 1)
+            max_index = max_index + beta * (-max_index + i)  # TODO i - max_index doesn't work
+            max_value = max_value + beta * (a - max_value)
 
         if dim is None and return_idx is False:
             return max_value
@@ -732,3 +792,48 @@ class AdditiveSharingTensor(AbstractTensor):
         shares = self.child
         for _, share in shares.items():
             share.child.garbage_collect_data = value
+
+    @staticmethod
+    def simplify(tensor: "AdditiveSharingTensor") -> tuple:
+        """
+        This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
+        Args:
+            tensor (AdditiveSharingTensor): a AdditiveSharingTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the additive shared tensor
+        Examples:
+            data = simplify(tensor)
+        """
+
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = sy.serde._simplify(tensor.child)
+        return (tensor.id, tensor.field, tensor.crypto_provider.id, chain)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AdditiveSharingTensor":
+        """
+            This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
+            Args:
+                worker: the worker doing the deserialization
+                tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
+            Returns:
+                AdditiveSharingTensor: a AdditiveSharingTensor
+            Examples:
+                shared_tensor = detail(data)
+            """
+
+        tensor_id, field, crypto_provider, chain = tensor_tuple
+
+        tensor = AdditiveSharingTensor(
+            owner=worker,
+            id=tensor_id,
+            field=field,
+            crypto_provider=worker.get_worker(crypto_provider),
+        )
+
+        if chain is not None:
+            chain = sy.serde._detail(worker, chain)
+            tensor.child = chain
+
+        return tensor

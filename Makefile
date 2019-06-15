@@ -27,7 +27,7 @@ test: venv
 	(. venv/bin/activate; \
 		python setup.py install; \
 		venv/bin/coverage run setup.py test;\
-		venv/bin/coverage report --fail-under 100;\
+		venv/bin/coverage report -m --fail-under 95;\
 	)
 
 .PHONY: docs
