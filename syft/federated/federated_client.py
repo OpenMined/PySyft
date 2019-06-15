@@ -1,11 +1,8 @@
 import torch as th
 from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
-import logging
 
 from syft.generic import ObjectStorage
 from syft.federated.train_config import TrainConfig
-
-logger = logging.getLogger(__name__)
 
 
 class FederatedClient(ObjectStorage):
@@ -62,18 +59,16 @@ class FederatedClient(ObjectStorage):
             raise ValueError("Unknown optimizer: {}".format(optimizer_name))
         return self.optimizer
 
-    def fit(self, dataset_key, **kwargs):
-        """Fit a model on the local dataset as specified in the local TrainConfig object.
+    def fit(self, dataset_key: str, **kwargs):
+        """Fits a model on the local dataset as specified in the local TrainConfig object.
 
-                Args:
-                    dataset_key: str, identifier of the local dataset that shall be used for training.
+        Args:
+            dataset_key: Identifier of the local dataset that shall be used for training.
+            **kwargs: Unused.
 
-                    **kwargs: unused.
-
-                Returns:
-                    loss: training loss on the last batch of training data.
-
-                """
+        Returns:
+            loss: Training loss on the last batch of training data.
+        """
         if self.train_config is None:
             raise ValueError("TrainConfig not defined.")
 
@@ -108,15 +103,20 @@ class FederatedClient(ObjectStorage):
         data_loader = self._create_data_loader(
             dataset_key=dataset_key, shuffle=self.train_config.shuffle
         )
+
         loss = None
         iteration_count = 0
         for (data, target) in data_loader:
-
+            # Set gradients to zero
             self.optimizer.zero_grad()
+
+            # Update model
             output = model(data)
             loss = loss_fn(target=target, pred=output)
             loss.backward()
             self.optimizer.step()
+
+            # Update and check interation count
             iteration_count += 1
             if iteration_count >= self.train_config.max_nr_batches >= 0:
                 break
