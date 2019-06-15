@@ -1,3 +1,4 @@
+import pytest
 import torch
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 
@@ -91,3 +92,60 @@ def test_add_different_dims():
     lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
     result = lpt1 + lpt2
     assert torch.all(torch.eq(expected, result.float_precision()))
+
+
+def test_mul():
+    internal_type = torch.int16
+    precision_fractional = 32
+    x1 = torch.tensor([10.0])
+    x2 = torch.tensor([20.0])
+    expected = torch.tensor([200.0])
+    expected.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt1 = x1.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    result = lpt1 * lpt2
+    assert torch.all(torch.eq(expected, result.float_precision()))
+
+
+def test_mul_multiple_dims():
+    internal_type = torch.int16
+    precision_fractional = 32
+    x = torch.tensor([[[-1.5, -2.0, -3.0]], [[4.0, 5.0, -3.0]]])
+    y = torch.tensor([[[-1.5, -2.0, -3.0]], [[4.0, 5.0, 6.0]]])
+    expected = torch.tensor([[[2.25, 4.0, 9.0]], [[16.0, 25.0, -18.0]]])
+    expected.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt1 = x.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt2 = y.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    result = lpt1 * lpt2
+    assert torch.all(torch.eq(expected, result.float_precision()))
+
+
+def test_concat_ops():
+    internal_type = torch.int16
+    precision_fractional = 32
+    x = torch.tensor([[[-1.5, -2.0, -3.0]], [[4.0, 5.0, -3.0]]])
+    y = torch.tensor([[[-1.5, -2.0, -3.0]], [[4.0, 5.0, 6.0]]])
+    z = torch.tensor([[[-1.0, -2.0, 2.5]], [[4.0, -5.0, 7.5]]])
+    expected = torch.tensor([[[1.25, 2.0, 11.5]], [[20.0, 20.0, -10.5]]])
+    expected.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt_x = x.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt_y = y.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt_z = z.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    result = (lpt_x * lpt_y) + lpt_z
+
+    assert torch.all(torch.eq(expected, result.float_precision()))
+
+
+def test_uint8_representation_not_allowed_with_negative_values(workers):
+    x = torch.tensor([[-1.5, 2.0, 3.0], [4.5, 5.0, 6.0]])
+    with pytest.raises(AssertionError):
+        x.fix_prec(internal_type=torch.uint8, precision_fractional=256)
+
+
+def test_uint_representation(workers):
+    x = torch.tensor([[1.5, 2.0, 3.0], [4.5, 5.0, 6.0]])
+    enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=256)
+    restored = enlarged.float_precision()
+    # And now x and restored must be the same
+    assert torch.all(torch.eq(x, restored))
+

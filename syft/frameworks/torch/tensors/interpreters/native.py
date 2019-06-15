@@ -635,7 +635,9 @@ class TorchTensor(AbstractTensor):
         """
         base_fractional = math.log2(base ** precision_fractional)
         # Using self.abs().int() can lead to overflow
-        return torch.any(np.log2(self.clone().detach().abs() + 1) + base_fractional > max_precision).item()
+        return torch.any(
+            np.log2(self.clone().detach().abs() + 1) + base_fractional > max_precision
+        ).item()
 
     def share(
         self,
