@@ -152,10 +152,8 @@ def test_connect_close(hook, start_proc):
     local_worker.connect()
 
     assert local_worker.objects_count_remote() == 1
-    print(local_worker.list_objects_remote())
 
     x_val = x_ptr.get()
-    print(x)
     assert (x_val == x).all()
 
     local_worker.ws.shutdown()
