@@ -10,7 +10,7 @@ from syft import TorchHook
 def start_proc():  # pragma: no cover
     """ helper function for spinning up a websocket participant """
 
-    def _start_proc(participant, dataset=None, **kwargs):
+    def _start_proc(participant, dataset: str = None, **kwargs):
         def target():
             server = participant(**kwargs)
             if dataset is not None:
@@ -39,7 +39,7 @@ def workers(hook):
     # breaks the auto garbage collection for pointer of pointers, see #2150
     # hook.local_worker.is_client_worker = False
 
-    # reset the hook and the local worker
+    # Reset the hook and the local worker
     syft.local_worker.clear_objects()
     syft.frameworks.torch.hook.hook_args.hook_method_args_functions = {}
     syft.frameworks.torch.hook.hook_args.hook_method_response_functions = {}
