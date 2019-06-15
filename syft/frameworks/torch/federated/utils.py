@@ -68,7 +68,7 @@ def scale_model(model, scale):
     return model
 
 
-def federated_avg(models: List[torch.nn.Module]):
+def federated_avg(models: List[torch.nn.Module]) -> torch.nn.Module:
     """Calculate the federated average of a list of models.
 
     Args:
@@ -76,7 +76,6 @@ def federated_avg(models: List[torch.nn.Module]):
 
     Returns:
         torch.nn.Module: the module with averaged parameters.
-
     """
     nr_models = len(models)
     model_list = list(models.values())
