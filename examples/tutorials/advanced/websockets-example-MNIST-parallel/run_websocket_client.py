@@ -2,19 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms, datasets
+
 import logging
 import argparse
 import sys
 import asyncio
 import numpy as np
 
-if __name__ == "__main__":
-    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d) - %(message)s"
-    LOG_LEVEL = logging.INFO
-    logging.basicConfig(format=FORMAT, level=LOG_LEVEL)
-
 import syft as sy
-
 from syft import workers
 from syft.frameworks.torch.federated import utils
 
@@ -22,13 +17,20 @@ logger = logging.getLogger(__name__)
 
 LOG_INTERVAL = 25
 
+if __name__ == "__main__":
+    # Logging setup
+    logger = logging.getLogger("run_websocket_server")
+    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
+    logging.basicConfig(format=FORMAT)
+    logger.setLevel(level=logging.DEBUG)
+
 
 # Loss function
 @torch.jit.script
 def loss_fn(pred, target):
     return F.nll_loss(input=pred, target=target)
 
-
+# Model
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -57,7 +59,7 @@ def define_and_get_arguments(args=sys.argv[1:]):
         "--test_batch_size", type=int, default=128, help="batch size used for the test data"
     )
     parser.add_argument(
-        "--training_rounds", type=int, default=100, help="number of federated learning rounds"
+        "--training_rounds", type=int, default=40, help="number of federated learning rounds"
     )
     parser.add_argument(
         "--federate_after_n_batches",
@@ -80,23 +82,27 @@ def define_and_get_arguments(args=sys.argv[1:]):
     return args
 
 
-async def fit_model_on_worker(worker, traced_model, batch_size, curr_round, max_nr_batches, lr):
-    """Send the model to the worker and fit the model on the worker's training data
+async def fit_model_on_worker(worker: workers.WebsocketClientWorker,
+                              traced_model: torch.jit.ScriptModule,
+                              batch_size: int,
+                              curr_round: int,
+                              max_nr_batches: int,
+                              lr: float):
+    """Send the model to the worker and fit the model on the worker's training data.
 
     Args:
-        worker: "workers.WebsocketClientWorker", remote location, where the model shall be trained
-        traced_model: torch.jit.ScriptModule, model which shall be trained
-        batch_size: int, the batch size of each training step
-        curr_round: int, index of the current training round (for logging purposes)
-        max_nr_batches: int, if > 0, training on worker will stop at min(max_nr_batches, nr_available_batches)
-        lr: learning rate of each training step
+        worker: Remote location, where the model shall be trained.
+        traced_model: Model which shall be trained.
+        batch_size: Batch size of each training step.
+        curr_round: Index of the current training round (for logging purposes).
+        max_nr_batches: If > 0, training on worker will stop at min(max_nr_batches, nr_available_batches).
+        lr: Learning rate of each training step.
 
     Returns:
-        (worker_id, improved model, loss on last training batch)
-        worker_id: Union[int, str], id of the worker
-        improved model: torch.jit.ScriptModule, model after training at the worker
-        loss on last training batch, torch.tensor
-
+        A tuple containing:
+            * worker_id: Union[int, str], id of the worker.
+            * improved model: torch.jit.ScriptModule, model after training at the worker.
+            * loss: Loss on last training batch, torch.tensor.
     """
     train_config = sy.TrainConfig(
         model=traced_model,
@@ -123,28 +129,28 @@ async def fit_model_on_worker(worker, traced_model, batch_size, curr_round, max_
 def __evaluate_models_on_test_data(test_loader, results):
     data, target = test_loader.__iter__().next()
     logger.info("Testing individual models on test data")
-    hist, bin_edges = np.histogram(target, bins=10, range=(0, 10))
+    hist, _ = np.histogram(target, bins=10, range=(0, 10))
     logger.info("Target hist: %s", hist)
-    for worker_id, worker_model, worker_loss in results:
+    for worker_id, worker_model, _ in results:
         pred_test = worker_model(data)
         loss = loss_fn(output=pred_test, target=target)
         logger.info(
             "Worker %s: Loss: %s, accuracy = %s", worker_id, loss, utils.accuracy(pred_test, target)
         )
         pred = pred_test.argmax(dim=1)
-        hist, bin_edges = np.histogram(pred, bins=10, range=(0, 10))
+        hist, _ = np.histogram(pred, bins=10, range=(0, 10))
         logger.info("Worker %s: Predicted hist: %s", worker_id, hist)
 
 
 def evaluate_models_on_test_data(test_loader, results):
     np.set_printoptions(formatter={"float": "{: .0f}".format})
-    for worker_id, worker_model, worker_loss in results:
+    for worker_id, worker_model, _ in results:
         evaluate_model(worker_id, worker_model, "cpu", test_loader)
 
 
 def evaluate_model(worker_id, model, device, test_loader, print_target_hist=False):
     model.eval()
-    test_loss = 0
+    test_loss = 0.0
     correct = 0
     hist_target = np.zeros(10)
     hist_pred = np.zeros(10)
@@ -152,19 +158,19 @@ def evaluate_model(worker_id, model, device, test_loader, print_target_hist=Fals
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            hist, bin_edges = np.histogram(target, bins=10, range=(0, 10))
+            hist, _ = np.histogram(target, bins=10, range=(0, 10))
             hist_target += hist
             output = model(data)
             test_loss += loss_fn(output, target).item()  # sum up batch loss
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-            hist, bin_edges = np.histogram(pred, bins=10, range=(0, 10))
+            hist, _ = np.histogram(pred, bins=10, range=(0, 10))
             hist_pred += hist
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
 
     if print_target_hist:
-        logger.info("Target hist    : %s", hist_target)
+        logger.info("Target hist: %s", hist_target)
     logger.info("Prediction hist: %s", hist_pred)
 
     logger.info(
@@ -173,7 +179,7 @@ def evaluate_model(worker_id, model, device, test_loader, print_target_hist=Fals
         "{:.4f}".format(test_loss),
         correct,
         len(test_loader.dataset),
-        "{:.0f}".format(100.0 * correct / len(test_loader.dataset)),
+        "{:.2f}".format(100.0 * correct / len(test_loader.dataset)),
     )
 
 
@@ -257,9 +263,12 @@ async def main():
 
 
 if __name__ == "__main__":
-
+    # Websockets setup
     websockets_logger = logging.getLogger("websockets")
     websockets_logger.setLevel(logging.INFO)
     websockets_logger.addHandler(logging.StreamHandler())
 
+    # Run main
     asyncio.get_event_loop().run_until_complete(main())
+
+    

@@ -1,6 +1,7 @@
 import logging
 
 if __name__ == "__main__":
+    # Logging setup
     logger = logging.getLogger("run_websocket_server")
     FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
     logging.basicConfig(format=FORMAT)
@@ -22,7 +23,7 @@ KEEP_LABELS_DICT = {"alice": [0, 1, 2, 3], "bob": [4, 5, 6], "charlie": [7, 8, 9
 def start_websocket_server_worker(
     id, host, port, hook, verbose, keep_labels=None
 ):  # pragma: no cover
-    """ helper function for spinning up a websocket server and setting up the local datasets """
+    """Helper function for spinning up a websocket server and setting up the local datasets."""
 
     server = WebsocketServerWorker(id=id, host=host, port=port, hook=hook, verbose=verbose)
 
@@ -37,7 +38,7 @@ def start_websocket_server_worker(
     )
 
     indices = np.isin(mnist_trainset.targets, keep_labels).astype("uint8")
-    logger.info("nr true indices: %s", indices.sum())
+    logger.info("number of true indices: %s", indices.sum())
     selected_data = (
         torch.native_masked_select(mnist_trainset.data.transpose(0, 2), torch.tensor(indices))
         .view(28, 28, -1)
@@ -51,6 +52,7 @@ def start_websocket_server_worker(
     )
     server.add_dataset(dataset, key="mnist")
 
+    # We just use MNIST in this example but a worker can store multiple datasets
     # Setup toy data (vectors example)
     data_vectors = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
     target_vectors = torch.tensor([[1], [0], [1], [0]])
@@ -75,6 +77,7 @@ def start_websocket_server_worker(
 
 
 if __name__ == "__main__":
+    # Parse args
     parser = argparse.ArgumentParser(description="Run websocket server worker.")
     parser.add_argument(
         "--port",
@@ -95,8 +98,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Hook and start server
     hook = sy.TorchHook(torch)
-
     server = start_websocket_server_worker(
         id=args.id,
         host=args.host,
