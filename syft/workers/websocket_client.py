@@ -51,13 +51,21 @@ class WebsocketClientWorker(BaseWorker):
         self.ws = None
         self.connect()
 
+    @property
+    def url(self):
+        return f"ws://{self.host}:{self.port}"
+
+    @property
+    def secure_url(self):
+        return f"wss://{self.host}:{self.port}"
+
     def connect(self):
         args = dict()
-        args["url"] = f"ws://{self.host}:{self.port}"
+        args["url"] = self.url
         args["max_size"] = None
         args["timeout"] = TIMEOUT_INTERVAL
         if self.secure:
-            args["uri"] = f"wss://{self.host}:{self.port}"
+            args["uri"] = self.secure_url
             args["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
         self.uri = args["url"]
         self.ws = websocket.create_connection(**args)
@@ -121,24 +129,22 @@ class WebsocketClientWorker(BaseWorker):
         return self._send_msg_and_deserialize("objects_count")
 
     async def async_fit(self, dataset_key: str, return_ids: List[int] = None):
-        """Asynchronous call to fit function on the remote location
+        """Asynchronous call to fit function on the remote location.
 
         Args:
-            dataset_key: str, identifier of the dataset which shall be used for the training
-            return_ids: List[str]
+            dataset_key: Identifier of the dataset which shall be used for the training.
+            return_ids: List of return ids.
 
         Returns:
             See return value of the FederatedClient.fit() method.
-
         """
         if return_ids is None:
             return_ids = [sy.ID_PROVIDER.pop()]
 
-        # close the existing websocket connection in order to open a asynchronous connection
+        # Close the existing websocket connection in order to open a asynchronous connection
         self.close()
-        url = f"ws://{self.host}:{self.port}"
         async with websockets.connect(
-            url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
+            self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
         ) as websocket:
             message = self.create_message_execute_command(
                 command_name="fit",
@@ -154,26 +160,26 @@ class WebsocketClientWorker(BaseWorker):
 
         # Reopen the standard connection
         self.connect()
-        msg = (MSGTYPE.OBJ_REQ, return_ids[0])
+
         # Send an object request message to retrieve the result tensor of the fit() method
+        msg = (MSGTYPE.OBJ_REQ, return_ids[0])
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
+
         # Return the deserialized response.
         return sy.serde.deserialize(response)
 
-    def fit(self, dataset_key, **kwargs):
-        """Call the fit() method on the remote worker (WebsocketServerWorker instance)
+    def fit(self, dataset_key: str, **kwargs):
+        """Call the fit() method on the remote worker (WebsocketServerWorker instance).
 
         Note: The argument return_ids is provided as kwargs as otherwise there is a miss-match
         with the signature in VirtualWorker.fit() method. This is important to be able to switch
         between virtual and websocket workers.
 
         Args:
-            dataset_key: str, identifier of the dataset which shall be used for the training
-            **kwargs: return_ids: List[str]
-
-        Returns:
-
+            dataset_key: Identifier of the dataset which shall be used for the training.
+            **kwargs:
+                return_ids: List[str]
         """
         return_ids = kwargs["return_ids"] if "return_ids" in kwargs else [sy.ID_PROVIDER.pop()]
 
