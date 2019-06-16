@@ -142,7 +142,7 @@ def test_uint8_representation_not_allowed_with_negative_values(workers):
         x.fix_prec(internal_type=torch.uint8, precision_fractional=256)
 
 
-def test_uint_representation(workers):
+def test_uint8_representation(workers):
     x = torch.tensor([[1.5, 2.0, 3.0], [4.5, 5.0, 6.0]])
     enlarged = x.fix_prec(internal_type=torch.uint8, precision_fractional=256)
     restored = enlarged.float_precision()
