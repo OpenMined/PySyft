@@ -58,7 +58,7 @@ def test_add_multiple_dimensions(workers):
     assert torch.all(torch.eq(expected, result.float_precision()))
 
 
-def test_subtract():
+def test_add_negative_values():
     internal_type = torch.int16
     precision_fractional = 256
     x1 = torch.tensor([10.0])
@@ -148,4 +148,16 @@ def test_uint8_representation(workers):
     restored = enlarged.float_precision()
     # And now x and restored must be the same
     assert torch.all(torch.eq(x, restored))
+
+
+def test_subtract():
+    internal_type = torch.int16
+    precision_fractional = 256
+    x1 = torch.tensor([10.0])
+    x2 = torch.tensor([90000000000000010.0])
+    expected = torch.tensor([-90000000000000000.0])
+    lpt1 = x1.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    result = lpt1 - lpt2
+    assert torch.all(torch.eq(expected, result.float_precision()))
 

@@ -105,6 +105,25 @@ class LargePrecisionTensor(AbstractTensor):
         return self
 
     @overloaded.method
+    def sub(self, self_, other):
+        a = LargePrecisionTensor._internal_representation_to_large_ints(
+            self_, internal_precision[self.internal_type]
+        )
+        b = LargePrecisionTensor._internal_representation_to_large_ints(
+            other, internal_precision[self.internal_type]
+        )
+        return self._create_tensor_from_numpy(a - b)
+
+    __sub__ = sub
+
+    def __isub__(self, other):
+        """Add two fixed precision tensors together.
+        """
+        self.child = self.sub(other).child
+
+        return self
+
+    @overloaded.method
     def mul(self, self_, other):
         a = LargePrecisionTensor._internal_representation_to_large_ints(
             self_, internal_precision[self.internal_type]
