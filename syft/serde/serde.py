@@ -94,7 +94,7 @@ from syft.serde.torch_serde import (
 )
 
 # Maps a type to a tuple containing its simplifier and detailer function.
-# IMPORTANT: keep these dict sorted A-Z (by type name).
+# IMPORTANT: keep these structures sorted A-Z (by type name).
 MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         dict: (_simplify_dictionary, _detail_dictionary),
