@@ -68,9 +68,7 @@ class LargePrecisionTensor(AbstractTensor):
         result = []
         # refs_ok is necessary to enable iterations of reference types.
         for x in np.nditer(ndarray, flags=["refs_ok"]):
-            result.append(
-                self._split_number(x.item(), internal_precision[self.internal_type])
-            )
+            result.append(self._split_number(x.item(), internal_precision[self.internal_type]))
         new_shape = self.child.shape[:-1] + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
         return torch.tensor(result, dtype=self.internal_type)
@@ -171,8 +169,9 @@ class LargePrecisionTensor(AbstractTensor):
         if number > 0:
             sign = 1
         else:
-            assert self.internal_type != torch.uint8,\
-                "Negative LargePrecisionTensors cannot be represented with uint8"
+            assert (
+                self.internal_type != torch.uint8
+            ), "Negative LargePrecisionTensors cannot be represented with uint8"
             sign = -1
             number = number * (-1)
 
