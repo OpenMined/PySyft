@@ -24,7 +24,12 @@ def test_tuple_simplify():
     for tuples so that the detailer knows how to interpret it."""
 
     input = ("hello", "world")
-    target = (2, ((18, (b"hello",)), (18, (b"world",))))
+    tuple_detail_index = serde.detailers.index(serde._detail_collection_tuple)
+    str_detail_index = serde.detailers.index(pointers.ObjectWrapper.detail)
+    target = (
+        tuple_detail_index,
+        ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))),
+    )
     assert serde._simplify(input) == target
 
 
@@ -36,7 +41,9 @@ def test_list_simplify():
     for lists so that the detailer knows how to interpret it."""
 
     input = ["hello", "world"]
-    target = (3, [(18, (b"hello",)), (18, (b"world",))])
+    list_detail_index = serde.detailers.index(serde._detail_collection_list)
+    str_detail_index = serde.detailers.index(pointers.ObjectWrapper.detail)
+    target = (list_detail_index, [(str_detail_index, (b"hello",)), (str_detail_index, (b"world",))])
     assert serde._simplify(input) == target
 
 
@@ -48,7 +55,9 @@ def test_set_simplify():
     for sets so that the detailer knows how to interpret it."""
 
     input = set(["hello", "world"])
-    target = (4, [(18, (b"hello",)), (18, (b"world",))])
+    set_detail_index = serde.detailers.index(serde._detail_collection_set)
+    str_detail_index = serde.detailers.index(pointers.ObjectWrapper.detail)
+    target = (set_detail_index, [(str_detail_index, (b"hello",)), (str_detail_index, (b"world",))])
     assert serde._simplify(input)[0] == target[0]
     assert set(serde._simplify(input)[1]) == set(target[1])
 
@@ -82,7 +91,7 @@ def test_string_simplify():
     themselves, with no tuple/id necessary."""
 
     input = "hello"
-    target = (18, (b"hello",))
+    target = (serde.detailers.index(serde._detail_str), (b"hello",))
     assert serde._simplify(input) == target
 
 
@@ -90,11 +99,16 @@ def test_dict_simplify():
     """This tests our ability to simplify dict objects.
 
     This test is pretty simple since dicts just serialize to
-    themselves, with a tuple wrapper with the correct ID (4)
+    themselves, with a tuple wrapper with the correct ID
     for dicts so that the detailer knows how to interpret it."""
 
     input = {"hello": "world"}
-    target = (5, [((18, (b"hello",)), (18, (b"world",)))])
+    detail_dict_index = serde.detailers.index(serde._detail_dictionary)
+    detail_str_index = serde.detailers.index(pointers.ObjectWrapper.detail)
+    target = (
+        detail_dict_index,
+        [((detail_str_index, (b"hello",)), (detail_str_index, (b"world",)))],
+    )
     assert serde._simplify(input) == target
 
 
@@ -106,7 +120,7 @@ def test_range_simplify():
     for dicts so that the detailer knows how to interpret it."""
 
     input = range(1, 3, 4)
-    target = (6, (1, 3, 4))
+    target = (serde.detailers.index(serde._detail_range), (1, 3, 4))
     assert serde._simplify(input) == target
 
 
@@ -130,7 +144,7 @@ def test_torch_tensor_simplify():
 
     # make sure the object type ID is correct
     # (0 for torch.Tensor)
-    assert output[0] == 0
+    assert serde.detailers[output[0]] == serde._detail_torch_tensor
 
     # make sure inner type is correct
     assert type(output[1]) == tuple
@@ -154,7 +168,7 @@ def test_ndarray_simplify():
     output = serde._simplify(input)
 
     # make sure simplified type ID is correct
-    assert output[0] == 7
+    assert serde.detailers[output[0]] == serde._detail_ndarray
 
     # make sure serialized form is correct
     assert type(output[1][0]) == bytes
@@ -164,9 +178,7 @@ def test_ndarray_simplify():
 
 def test_ellipsis_simplify():
     """Make sure ellipsis simplifies correctly."""
-
-    # the id indicating an ellipsis is here
-    assert serde._simplify(Ellipsis)[0] == 9
+    assert serde.detailers[serde._simplify(Ellipsis)[0]] == serde._detail_ellipsis
 
     # the simplified ellipsis (empty object)
     assert serde._simplify(Ellipsis)[1] == b""
@@ -176,8 +188,7 @@ def test_torch_device_simplify():
     """Test the simplification of torch.device"""
     device = torch.device("cpu")
 
-    # the id indicating an torch.device is here
-    assert serde._simplify(device)[0] == 10
+    assert serde.detailers[serde._simplify(device)[0]] == serde._detail_torch_device
 
     # the simplified torch.device
     assert serde._simplify(device)[1] == "cpu"

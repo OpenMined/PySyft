@@ -31,6 +31,7 @@ serialization process, it can override the functions _serialize_tensor and _dese
 By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function _apply_compress_scheme
 """
+from collections import OrderedDict
 import torch
 import msgpack
 import lz4
@@ -92,6 +93,82 @@ from syft.serde.torch_serde import (
     _simplify_script_module,
 )
 
+# Maps a type to a tuple containing its simplifier and detailer function.
+# IMPORTANT: keep these dict sorted A-Z (by type name).
+MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
+    {
+        dict: (_simplify_dictionary, _detail_dictionary),
+        list: (_simplify_collection, _detail_collection_list),
+        numpy.ndarray: (_simplify_ndarray, _detail_ndarray),
+        range: (_simplify_range, _detail_range),
+        set: (_simplify_collection, _detail_collection_set),
+        slice: (_simplify_slice, _detail_slice),
+        str: (_simplify_str, _detail_str),
+        torch.device: (_simplify_torch_device, _detail_torch_device),
+        torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
+        torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
+        torch.nn.Parameter: (_simplify_torch_parameter, _detail_torch_parameter),
+        torch.Tensor: (_simplify_torch_tensor, _detail_torch_tensor),
+        tuple: (_simplify_collection, _detail_collection_tuple),
+        type(Ellipsis): (_simplify_ellipsis, _detail_ellipsis),
+    }
+)
+
+MAP_TO_FORCE_FULL_SIMPLIFY = set([VirtualWorker])
+
+# If a object implements its own simplifer and detailer function they should be stored in this list.
+OBJ_SIMPLIFIER_AND_DETAILERS = [
+    AdditiveSharingTensor,
+    LoggingTensor,
+    MultiPointerTensor,
+    Plan,
+    pointers.PointerTensor,
+    pointers.ObjectWrapper,
+    TrainConfig,
+    VirtualWorker,
+]
+
+EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
+
+## SECTION: dinamically generate simplifiers and detailers using MAP_TO_SIMPLIFIERS_AND_DETAILERS
+def _generate_simplifiers_and_detailers():
+    """Generate simplifiers, forced full simplifiers and detailers based on the constants above."""
+    simplifiers = OrderedDict()
+    forced_full_simplifiers = OrderedDict()
+    detailers = []
+
+    def _add_simplifier_and_detailer(curr_type, simplifier, detailer, forced=False):
+        if detailer in detailers:
+            curr_index = detailers.index(detailer)
+        else:
+            curr_index = len(detailers)
+            detailers.append(detailer)
+
+        if forced:
+            forced_full_simplifiers[curr_type] = (curr_index, simplifier)
+        else:
+            simplifiers[curr_type] = (curr_index, simplifier)
+
+    # Register native and torch types
+    for curr_type in MAP_TO_SIMPLIFIERS_AND_DETAILERS:
+        simplifier, detailer = MAP_TO_SIMPLIFIERS_AND_DETAILERS[curr_type]
+        _add_simplifier_and_detailer(curr_type, simplifier, detailer)
+
+    # Register syft objects with custom simplify and detail methods
+    for syft_type in OBJ_SIMPLIFIER_AND_DETAILERS + EXCEPTION_SIMPLIFIER_AND_DETAILERS:
+        simplifier, detailer = syft_type.simplify, syft_type.detail
+        _add_simplifier_and_detailer(syft_type, simplifier, detailer)
+
+    # Add forced full simplifiers
+    for curr_type in MAP_TO_FORCE_FULL_SIMPLIFY:
+        _add_simplifier_and_detailer(
+            curr_type, _force_full_simplify, _force_full_detail, forced=True
+        )
+
+    return simplifiers, forced_full_simplifiers, detailers
+
+
+simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_detailers()
 
 # COMPRESSION SCHEME INT CODES
 NO_COMPRESSION = 40
@@ -379,40 +456,6 @@ def _force_full_simplify(obj: object) -> object:
     return result
 
 
-simplifiers = {
-    torch.Tensor: [0, _simplify_torch_tensor],
-    torch.nn.Parameter: [1, _simplify_torch_parameter],
-    tuple: [2, _simplify_collection],
-    list: [3, _simplify_collection],
-    set: [4, _simplify_collection],
-    dict: [5, _simplify_dictionary],
-    range: [6, _simplify_range],
-    numpy.ndarray: [7, _simplify_ndarray],
-    slice: [8, _simplify_slice],
-    type(Ellipsis): [9, _simplify_ellipsis],
-    torch.device: [10, _simplify_torch_device],
-    pointers.PointerTensor: [11, sy.PointerTensor.simplify],
-    LoggingTensor: [12, sy.LoggingTensor.simplify],
-    AdditiveSharingTensor: [13, sy.AdditiveSharingTensor.simplify],
-    MultiPointerTensor: [14, sy.MultiPointerTensor.simplify],
-    Plan: [15, sy.Plan.simplify],
-    VirtualWorker: [16, sy.VirtualWorker.simplify],
-    str: [18, _simplify_str],
-    pointers.ObjectWrapper: [19, sy.ObjectWrapper.simplify],
-    GetNotPermittedError: [20, sy.exceptions.GetNotPermittedError.simplify],
-    ResponseSignatureError: [20, sy.exceptions.ResponseSignatureError.simplify],
-    torch.jit.ScriptModule: [21, _simplify_script_module],
-    torch.jit.TopLevelTracedModule: [
-        21,
-        _simplify_script_module,
-    ],  # treat as torch.jit.ScriptModule
-    TrainConfig: [22, sy.TrainConfig.simplify],
-}
-
-
-forced_full_simplifiers = {VirtualWorker: [19, _force_full_simplify]}
-
-
 def _detail(worker: AbstractWorker, obj: object) -> object:
     """
     This function reverses the functionality of _simplify. Where applicable,
@@ -436,30 +479,3 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
         return detailers[obj[0]](worker, obj[1])
     else:
         return obj
-
-
-detailers = [
-    _detail_torch_tensor,
-    _detail_torch_parameter,
-    _detail_collection_tuple,
-    _detail_collection_list,
-    _detail_collection_set,
-    _detail_dictionary,
-    _detail_range,
-    _detail_ndarray,
-    _detail_slice,
-    _detail_ellipsis,
-    _detail_torch_device,
-    sy.PointerTensor.detail,
-    sy.LoggingTensor.detail,
-    sy.AdditiveSharingTensor.detail,
-    sy.MultiPointerTensor.detail,
-    sy.Plan.detail,
-    sy.VirtualWorker.detail,
-    _force_full_detail,
-    _detail_str,
-    sy.ObjectWrapper.detail,
-    sy.exceptions.GetNotPermittedError.detail,
-    _detail_script_module,
-    sy.TrainConfig.detail,
-]
