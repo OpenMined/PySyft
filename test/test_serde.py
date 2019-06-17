@@ -389,7 +389,6 @@ def test_range_serde(compress):
     _range = range(1, 2, 3)
 
     range_serialized = serde.serialize(_range)
-
     range_serialized_deserialized = serde.deserialize(range_serialized)
 
     assert _range == range_serialized_deserialized
@@ -415,10 +414,16 @@ def test_list(compress):
     assert _list == list_serialized_deserialized
 
     # Test with a complex data structure
-    tensor_one = Tensor(numpy.random.random((100, 100)))
-    tensor_two = Tensor(numpy.random.random((100, 100)))
+    tensor_one = Tensor(numpy.ones((100, 100)))
+    tensor_two = Tensor(numpy.ones((100, 100)) * 2)
     _list = (tensor_one, tensor_two)
+
     list_serialized = serde.serialize(_list)
+    if compress:
+        assert list_serialized[0] == serde.LZ4
+    else:
+        assert list_serialized[0] == serde.NO_COMPRESSION
+
     list_serialized_deserialized = serde.deserialize(list_serialized)
     # `assert list_serialized_deserialized == _list` does not work, therefore it's split
     # into 3 assertions
@@ -437,6 +442,7 @@ def test_set(compress):
     # Test with integers
     _set = set([1, 2])
     set_serialized = serde.serialize(_set)
+
     set_serialized_deserialized = serde.deserialize(set_serialized)
     assert _set == set_serialized_deserialized
 
@@ -447,10 +453,16 @@ def test_set(compress):
     assert _set == set_serialized_deserialized
 
     # Test with a complex data structure
-    tensor_one = Tensor(numpy.random.random((100, 100)))
-    tensor_two = Tensor(numpy.random.random((100, 100)))
+    tensor_one = Tensor(numpy.ones((100, 100)))
+    tensor_two = Tensor(numpy.ones((100, 100)) * 2)
     _set = (tensor_one, tensor_two)
+
     set_serialized = serde.serialize(_set)
+    if compress:
+        assert set_serialized[0] == serde.LZ4
+    else:
+        assert set_serialized[0] == serde.NO_COMPRESSION
+
     set_serialized_deserialized = serde.deserialize(set_serialized)
     # `assert set_serialized_deserialized == _set` does not work, therefore it's split
     # into 3 assertions
@@ -503,20 +515,6 @@ def test_float(compress):
     assert y_serialized_deserialized == y
 
 
-def test_compressed_float():
-    x = 0.5
-    y = 1.5
-
-    x_serialized = serde.serialize(x)
-    x_serialized_deserialized = serde.deserialize(x_serialized)
-
-    y_serialized = serde.serialize(y)
-    y_serialized_deserialized = serde.deserialize(y_serialized)
-
-    assert x_serialized_deserialized == x
-    assert y_serialized_deserialized == y
-
-
 @pytest.mark.parametrize(
     "compress, compress_scheme",
     [
@@ -539,8 +537,11 @@ def test_hooked_tensor(compress, compress_scheme):
     else:
         serde._apply_compress_scheme = serde.apply_no_compression
 
-    t = Tensor(numpy.random.random((100, 100)))
+    t = Tensor(numpy.ones((100, 100)))
     t_serialized = serde.serialize(t)
+    assert (
+        t_serialized[0] == compress_scheme if compress else t_serialized[0] == serde.NO_COMPRESSION
+    )
     t_serialized_deserialized = serde.deserialize(t_serialized)
     assert (t == t_serialized_deserialized).all()
 
@@ -570,12 +571,15 @@ def test_pointer_tensor_detail(id):
 
 
 def test_numpy_tensor_serde():
+    serde._apply_compress_scheme = serde.apply_lz4_compression
+
     serde._serialize_tensor = syft.serde.numpy_tensor_serializer
     serde._deserialize_tensor = syft.serde.numpy_tensor_deserializer
 
-    tensor = torch.tensor(numpy.random.random((10, 10)), requires_grad=False)
+    tensor = torch.tensor(numpy.ones((10, 10)), requires_grad=False)
 
     tensor_serialized = serde.serialize(tensor)
+    assert tensor_serialized[0] != serde.NO_COMPRESSION
     tensor_deserialized = serde.deserialize(tensor_serialized)
 
     # Back to Pytorch serializer
