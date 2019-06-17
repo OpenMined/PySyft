@@ -9,7 +9,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
-        field: int = (2 ** 32) - 1,  # I had overflow in muls otherwise
+        field: int = (2 ** 31) - 1, # Overflows with mul for higher. Should change with LargePrecTensor
         base: int = 10,
         precision_fractional: int = 3,
         kappa: int = 1,
@@ -91,8 +91,8 @@ class FixedPrecisionTensor(AbstractTensor):
         # We need to make sure that values are truncated "towards 0"
         # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
         # at 97 (equivalent to -3), not 7
-        if self.child.is_wrapper:  # Need to handle FPT>(wrap)>AST
-            gate = 1
+        if self.child.is_wrapper:  # TODO Need to handle FPT>(wrap)>AST
+            gate = 0
         else:
             gate = self.child.native_gt(self.torch_max_value / 2).long()
 
@@ -531,5 +531,6 @@ class FixedPrecisionTensor(AbstractTensor):
         ).on(self.child.get())
 
     def share(self, *owners, field=None, crypto_provider=None):
+        field = self.field if field is None else field
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
         return self
