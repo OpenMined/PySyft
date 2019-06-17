@@ -19,9 +19,77 @@ def test_wrap():
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "__mul__"])
-def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
+def test_backward_for_binary_cmd_with_autograd(cmd):
+    """
+    Test .backward() on local tensors wrapped in an AutogradTensor
+    (It is useless but this is the most basic example)
+    """
+    a = torch.tensor([3, 2.0, 0], requires_grad=True)
+    b = torch.tensor([1, 2.0, 3], requires_grad=True)
 
+    a = syft.AutogradTensor().on(a)
+    b = syft.AutogradTensor().on(b)
+
+    a_torch = torch.tensor([3, 2.0, 0], requires_grad=True)
+    b_torch = torch.tensor([1, 2.0, 3], requires_grad=True)
+
+    c = getattr(a, cmd)(b)
+    c_torch = getattr(a_torch, cmd)(b_torch)
+
+    ones = torch.ones(c.shape)
+    ones = syft.AutogradTensor().on(ones)
+    c.backward(ones)
+    c_torch.backward(torch.ones(c_torch.shape))
+
+    assert (a.child.grad == a_torch.grad).all()
+    assert (b.child.grad == b_torch.grad).all()
+
+
+@pytest.mark.parametrize("cmd", ["__add__", "__mul__"])
+def test_backward_for_remote_binary_cmd_with_autograd(workers, cmd):
+    """
+    Test .backward() on remote tensors using explicit wrapping
+    with an Autograd Tensor.
+    """
     alice = workers["alice"]
+
+    a = torch.tensor([3, 2.0, 0], requires_grad=True).send(alice)
+    b = torch.tensor([1, 2.0, 3], requires_grad=True).send(alice)
+
+    a = syft.AutogradTensor().on(a)
+    b = syft.AutogradTensor().on(b)
+
+    a_torch = torch.tensor([3, 2.0, 0], requires_grad=True)
+    b_torch = torch.tensor([1, 2.0, 3], requires_grad=True)
+
+    c = getattr(a, cmd)(b)
+    c_torch = getattr(a_torch, cmd)(b_torch)
+
+    ones = torch.ones(c.shape).send(alice)
+    ones = syft.AutogradTensor().on(ones)
+    c.backward(ones)
+    c_torch.backward(torch.ones(c_torch.shape))
+
+    assert (a.grad.get() == a_torch.grad).all()
+    assert (b.grad.get() == b_torch.grad).all()
+
+
+@pytest.mark.parametrize("cmd", ["__add__", "__mul__"])
+def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
+    """
+    Test .backward() on remote tensors using implicit wrapping
+    with an Autograd Tensor.
+
+    Distinguish the current use of:
+        a = torch.tensor([3, 2.0, 0], requires_grad=True)
+        a.send(alice, local_autograd=True)
+
+    instead of the previous:
+        a = torch.tensor([3, 2.0, 0], requires_grad=True).send(alice)
+        a = syft.AutogradTensor().on(a)
+    """
+    alice = workers["alice"]
+
     a = torch.tensor([3, 2.0, 0], requires_grad=True)
     b = torch.tensor([1, 2.0, 3], requires_grad=True)
 
@@ -45,6 +113,10 @@ def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
 
 @pytest.mark.parametrize("cmd", ["sqrt", "asin", "sin", "sinh", "tanh", "sigmoid"])
 def test_backward_for_remote_unary_cmd_local_autograd(workers, cmd):
+    """
+    Test .backward() on unary methods on remote tensors using
+    implicit wrapping
+    """
     alice = workers["alice"]
 
     a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
@@ -62,6 +134,68 @@ def test_backward_for_remote_unary_cmd_local_autograd(workers, cmd):
 
     # Have to do .child.grad here because .grad doesn't work on Wrappers yet
     assert (a.grad.get() == a_torch.grad).all()
+
+
+@pytest.mark.parametrize("cmd", ["__add__", "__mul__"])
+def test_backward_for_fix_prec_binary_cmd_with_autograd(cmd):
+    """
+    Test .backward() on Fixed Precision Tensor for a single operation
+    """
+    a = torch.tensor([3, 2.0, 0], requires_grad=True).fix_prec()
+    b = torch.tensor([1, 2.0, 3], requires_grad=True).fix_prec()
+
+    a = syft.AutogradTensor().on(a)
+    b = syft.AutogradTensor().on(b)
+
+    a_torch = torch.tensor([3, 2.0, 0], requires_grad=True)
+    b_torch = torch.tensor([1, 2.0, 3], requires_grad=True)
+
+    c = getattr(a, cmd)(b)
+    c_torch = getattr(a_torch, cmd)(b_torch)
+
+    ones = torch.ones(c.shape).fix_prec()
+    ones = syft.AutogradTensor().on(ones)
+    c.backward(ones)
+    c_torch.backward(torch.ones(c_torch.shape))
+
+    assert (a.grad.float_prec() == a_torch.grad).all()
+    assert (b.grad.float_prec() == b_torch.grad).all()
+
+
+@pytest.mark.parametrize("cmd", ["__add__", "__mul__"])
+def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd):
+    """
+    Test .backward() on Additive Shared Tensor for a single operation
+    """
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+
+    a = (
+        torch.tensor([3, 2.0, 0], requires_grad=True)
+        .fix_prec()
+        .share(alice, bob, crypto_provider=james)
+    )
+    b = (
+        torch.tensor([1, 2.0, 3], requires_grad=True)
+        .fix_prec()
+        .share(alice, bob, crypto_provider=james)
+    )
+
+    a = syft.AutogradTensor().on(a)
+    b = syft.AutogradTensor().on(b)
+
+    a_torch = torch.tensor([3, 2.0, 0], requires_grad=True)
+    b_torch = torch.tensor([1, 2.0, 3], requires_grad=True)
+
+    c = getattr(a, cmd)(b)
+    c_torch = getattr(a_torch, cmd)(b_torch)
+
+    ones = torch.ones(c.shape).fix_prec().share(alice, bob, crypto_provider=james)
+    ones = syft.AutogradTensor().on(ones)
+    c.backward(ones)
+    c_torch.backward(torch.ones(c_torch.shape))
+
+    assert (a.grad.get().float_prec() == a_torch.grad).all()
+    assert (b.grad.get().float_prec() == b_torch.grad).all()
 
 
 # def test_multi_add_sigmoid_backwards(workers):
