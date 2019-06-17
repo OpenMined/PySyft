@@ -36,12 +36,15 @@ class FederatedClient(ObjectStorage):
         else:
             super().set_obj(obj)
 
-    def _build_optimizer(self, optimizer_name: str, model, lr: float) -> th.optim.Optimizer:
+    def _build_optimizer(
+        self, optimizer_name: str, model, lr: float, weight_decay: float
+    ) -> th.optim.Optimizer:
         """Build an optimizer if needed.
 
         Args:
             optimizer_name: A string indicating the optimizer name.
             lr: A float indicating the learning rate.
+            weight_decay: Weight decay parameter of the optimizer
         Returns:
             A Torch Optimizer.
         """
@@ -50,7 +53,11 @@ class FederatedClient(ObjectStorage):
 
         optimizer_name = optimizer_name.lower()
         if optimizer_name == "sgd":
-            self.optimizer = th.optim.SGD(model.parameters(), lr=lr)
+            optim_args = dict()
+            optim_args["lr"] = lr
+            if weight_decay is not None:
+                optim_args["weight_decay"] = weight_decay
+            self.optimizer = th.optim.SGD(model.parameters(), **optim_args)
         else:
             raise ValueError("Unknown optimizer: {}".format(optimizer_name))
         return self.optimizer
@@ -73,7 +80,12 @@ class FederatedClient(ObjectStorage):
         model = self.get_obj(self.train_config._model_id).obj
         loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
 
-        self._build_optimizer(self.train_config.optimizer, model, self.train_config.lr)
+        self._build_optimizer(
+            self.train_config.optimizer,
+            model,
+            lr=self.train_config.lr,
+            weight_decay=self.train_config.weight_decay,
+        )
 
         return self._fit(model=model, dataset_key=dataset_key, loss_fn=loss_fn)
 
