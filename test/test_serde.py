@@ -626,8 +626,8 @@ def test_serialize_and_deserialize_torch_scriptmodule():  # pragma: no cover
     def foo(x):
         return x + 2
 
-    bin_message = serde._simplify_script_module(foo)
-    foo_loaded = serde._detail_script_module(None, bin_message)
+    bin_message = torch_serde._simplify_script_module(foo)
+    foo_loaded = torch_serde._detail_script_module(None, bin_message)
 
     assert foo.code == foo_loaded.code
 
