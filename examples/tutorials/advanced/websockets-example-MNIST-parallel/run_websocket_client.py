@@ -17,13 +17,6 @@ logger = logging.getLogger(__name__)
 
 LOG_INTERVAL = 25
 
-if __name__ == "__main__":
-    # Logging setup
-    logger = logging.getLogger("run_websocket_server")
-    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
-    logging.basicConfig(format=FORMAT)
-    logger.setLevel(level=logging.DEBUG)
-
 
 # Loss function
 @torch.jit.script
@@ -129,7 +122,7 @@ async def fit_model_on_worker(
     return worker.id, model, loss
 
 
-def __evaluate_models_on_test_data(test_loader, results):
+def _evaluate_models_on_test_data(test_loader, results):
     data, target = test_loader.__iter__().next()
     logger.info("Testing individual models on test data")
     hist, _ = np.histogram(target, bins=10, range=(0, 10))
@@ -148,7 +141,7 @@ def __evaluate_models_on_test_data(test_loader, results):
 def evaluate_models_on_test_data(test_loader, results):
     np.set_printoptions(formatter={"float": "{: .0f}".format})
     for worker_id, worker_model, _ in results:
-        evaluate_model(worker_id, worker_model, "cpu", test_loader)
+        evaluate_model(worker_id, worker_model, "cpu", test_loader, print_target_hist=False)
 
 
 def evaluate_model(worker_id, model, device, test_loader, print_target_hist=False):
@@ -173,8 +166,8 @@ def evaluate_model(worker_id, model, device, test_loader, print_target_hist=Fals
     test_loss /= len(test_loader.dataset)
 
     if print_target_hist:
-        logger.info("Target hist: %s", hist_target)
-    logger.info("Prediction hist: %s", hist_pred)
+        logger.info("Target histogram: %s", hist_target)
+    logger.info("Prediction hist.: %s", hist_pred)
 
     logger.info(
         "%s: Test set: Average loss: %s, Accuracy: %s/%s (%s)",
@@ -256,7 +249,9 @@ async def main():
 
         traced_model = utils.federated_avg(models)
         if test_models:
-            evaluate_model("Federated model", traced_model, "cpu", test_loader)
+            evaluate_model(
+                "Federated model", traced_model, "cpu", test_loader, print_target_hist=True
+            )
 
         # decay learning rate
         learning_rate = max(0.98 * learning_rate, args.lr * 0.01)
@@ -266,6 +261,13 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Logging setup
+    # NOTE: basicConfig needs to be called before importing syft to be taken into account, reason not investigated yet.
+    logger = logging.getLogger("run_websocket_server")
+    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
+    logging.basicConfig(format=FORMAT)
+    logger.setLevel(level=logging.DEBUG)
+
     # Websockets setup
     websockets_logger = logging.getLogger("websockets")
     websockets_logger.setLevel(logging.INFO)
