@@ -103,7 +103,15 @@ class AdditiveSharingTensor(AbstractTensor):
                 shares.append(share.get())
             else:
                 shares.append(share.child)
-        return sum(shares)
+
+        res_field = sum(shares) % self.field
+
+        gate = res_field.native_gt(self.field / 2).long()
+        neg_nums = (res_field - self.field) * gate
+        pos_nums = res_field * (1 - gate)
+        result = neg_nums + pos_nums
+
+        return result
 
     def virtual_get(self):
         """Get the value of the tensor without calling get
@@ -115,7 +123,15 @@ class AdditiveSharingTensor(AbstractTensor):
             share = v.location._objects[v.id_at_location]
             shares.append(share)
 
-        return sum(shares)
+        # repeated piec of code here
+        res_field = sum(shares) % self.field
+
+        gate = res_field.native_gt(self.field / 2).long()
+        neg_nums = (res_field - self.field) * gate
+        pos_nums = res_field * (1 - gate)
+        result = neg_nums + pos_nums
+
+        return result
 
     def init_shares(self, *owners):
         """Initializes shares and distributes them amongst their respective owners
@@ -167,6 +183,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 share = random_shares[i] - random_shares[i - 1]
             else:
                 share = secret - random_shares[i - 1]
+            share %= field
             shares.append(share)
 
         return shares
@@ -262,13 +279,13 @@ class AdditiveSharingTensor(AbstractTensor):
         if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
-                *self.child.keys(), crypto_provider=self.crypto_provider
+                *self.child.keys(), field=self.field, crypto_provider=self.crypto_provider
             ).child.child
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
                 torch.Tensor([other])
-                .share(*self.child.keys(), crypto_provider=self.crypto_provider)
+                .share(*self.child.keys(), field=self.field, crypto_provider=self.crypto_provider)
                 .child.child
             )
 
@@ -278,7 +295,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = other[k] + v
+            new_shares[k] = (other[k] + v) % self.field
 
         return new_shares
 
@@ -303,13 +320,13 @@ class AdditiveSharingTensor(AbstractTensor):
         if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
-                *self.child.keys(), crypto_provider=self.crypto_provider
+                *self.child.keys(), field=self.field, crypto_provider=self.crypto_provider
             ).child.child
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
                 torch.Tensor([other])
-                .share(*self.child.keys(), crypto_provider=self.crypto_provider)
+                .share(*self.child.keys(), field=self.field, crypto_provider=self.crypto_provider)
                 .child.child
             )
 
@@ -319,7 +336,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = v - other[k]
+            new_shares[k] = (v - other[k]) % self.field
 
         return new_shares
 
@@ -370,11 +387,11 @@ class AdditiveSharingTensor(AbstractTensor):
         cmd = getattr(torch, equation)
 
         if isinstance(other, dict):
-            return {worker: cmd(share, other[worker]) for worker, share in shares.items()}
+            return {worker: (cmd(share, other[worker]) % self.field) for worker, share in shares.items()}
         elif isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
-            return {worker: cmd(share, other.wrap()) for worker, share in shares.items()}
+            return {worker: (cmd(share, other.wrap()) % self.field) for worker, share in shares.items()}
         else:
-            return {worker: cmd(share, other) for worker, share in shares.items()}
+            return {worker: (cmd(share, other) % self.field) for worker, share in shares.items()}
 
     def mul(self, other):
         """Multiplies two tensors together
@@ -427,7 +444,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
         divided_shares = {}
         for location, pointer in shares.items():
-            divided_shares[location] = pointer / divisor
+            gate = (pointer > (self.field / 2)).long()
+            neg_nums = (pointer - self.field) / divisor + self.field
+            pos_nums = pointer / divisor
+            divided_shares[location] = neg_nums * gate + pos_nums * (1 - gate)
 
         return divided_shares
 
