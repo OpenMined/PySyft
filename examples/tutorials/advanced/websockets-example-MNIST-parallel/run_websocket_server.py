@@ -14,6 +14,7 @@ import argparse
 from torchvision import datasets
 from torchvision import transforms
 import numpy as np
+from syft.frameworks.torch.federated import utils
 
 KEEP_LABELS_DICT = {"alice": [0, 1, 2, 3], "bob": [4, 5, 6], "charlie": [7, 8, 9]}
 
@@ -61,6 +62,10 @@ def start_websocket_server_worker(
     target_xor = torch.tensor([1.0, 1.0, 0.0, 0.0], requires_grad=False)
 
     server.add_dataset(sy.BaseDataset(data_xor, target_xor), key="xor")
+
+    # Setup gaussian mixture dataset
+    data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
+    server.add_dataset(sy.BaseDataset(data, target), key="gaussian_mixture")
 
     logger.info("datasets: %s", server.datasets)
     logger.info("len(datasets[mnist]): %s", len(server.datasets["mnist"]))
