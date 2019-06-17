@@ -114,7 +114,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     }
 )
 
-MAP_TO_FORCE_FULL_SIMPLIFY = set([VirtualWorker])
+MAP_TO_FORCE_FULL_SIMPLIFY = [VirtualWorker]
 
 # If a object implements its own simplifer and detailer function it should be stored in this list.
 OBJ_SIMPLIFIER_AND_DETAILERS = [
