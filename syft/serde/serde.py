@@ -29,7 +29,7 @@ By default, the simplification/detail operations expect Torch tensors. If the se
 serialization process, it can override the functions _serialize_tensor and _deserialize_tensor
 
 By default, we serialize using msgpack and compress using lz4.
-If different compressions are required, the worker can override the function _apply_compress_scheme
+If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
 import torch
@@ -45,7 +45,7 @@ import syft as sy
 
 from syft.federated import TrainConfig
 
-from syft.workers import AbstractWorker  #
+from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
 from syft.federated import Plan
@@ -60,60 +60,16 @@ from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch import pointers
 
-
-from syft.serde.native_serde import (
-    _simplify_str,
-    _simplify_range,
-    _simplify_ellipsis,
-    _simplify_slice,
-    _detail_str,
-    _detail_range,
-    _detail_ellipsis,
-    _detail_slice,
-)
-
-from syft.serde.torch_serde import (
-    _detail_torch_tensor,
-    _detail_torch_parameter,
-    _detail_collection_tuple,
-    _detail_collection_list,
-    _detail_collection_set,
-    _detail_dictionary,
-    _detail_ndarray,
-    _detail_torch_device,
-    _force_full_detail,
-    _detail_script_module,
-    _simplify_torch_tensor,
-    _simplify_torch_parameter,
-    _simplify_collection,
-    _simplify_dictionary,
-    _simplify_ndarray,
-    _simplify_torch_device,
-    _force_full_simplify,
-    _simplify_script_module,
-)
+from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
+from syft.serde.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
 
 # Maps a type to a tuple containing its simplifier and detailer function.
-# IMPORTANT: keep these structures sorted A-Z (by type name).
 MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
-    {
-        dict: (_simplify_dictionary, _detail_dictionary),
-        list: (_simplify_collection, _detail_collection_list),
-        numpy.ndarray: (_simplify_ndarray, _detail_ndarray),
-        range: (_simplify_range, _detail_range),
-        set: (_simplify_collection, _detail_collection_set),
-        slice: (_simplify_slice, _detail_slice),
-        str: (_simplify_str, _detail_str),
-        torch.device: (_simplify_torch_device, _detail_torch_device),
-        torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
-        torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
-        torch.nn.Parameter: (_simplify_torch_parameter, _detail_torch_parameter),
-        torch.Tensor: (_simplify_torch_tensor, _detail_torch_tensor),
-        tuple: (_simplify_collection, _detail_collection_tuple),
-        type(Ellipsis): (_simplify_ellipsis, _detail_ellipsis),
-    }
+    list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
+    + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
 )
 
+# Objects that we can run force full simplilfy on
 MAP_TO_FORCE_FULL_SIMPLIFY = [VirtualWorker]
 
 # If a object implements its own simplifer and detailer function it should be stored in this list.
@@ -130,9 +86,49 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
 
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
-## SECTION: dinamically generate simplifiers and detailers using MAP_TO_SIMPLIFIERS_AND_DETAILERS
+# COMPRESSION SCHEME INT CODES
+NO_COMPRESSION = 40
+LZ4 = 41
+ZSTD = 42
+
+## SECTION: High Level Simplification Router
+def _force_full_simplify(obj: object) -> object:
+    current_type = type(obj)
+
+    if current_type in forced_full_simplifiers:
+
+        left = forced_full_simplifiers[current_type][0]
+
+        right = forced_full_simplifiers[current_type][1]
+
+        right = right(obj)
+
+        result = (left, right)
+    else:
+        result = _simplify(obj)
+
+    return result
+
+
+def _force_full_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
+    worker_id, _objects, auto_add = worker_tuple
+    worker_id = _detail(worker, worker_id)
+
+    result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
+    _objects = _detail(worker, _objects)
+    result._objects = _objects
+
+    # make sure they weren't accidentally double registered
+    for _, obj in _objects.items():
+        if obj.id in worker._objects:
+            del worker._objects[obj.id]
+
+    return result
+
+
+## SECTION: dinamically generate simplifiers and detailers
 def _generate_simplifiers_and_detailers():
-    """Generate simplifiers, forced full simplifiers and detailers based on the constants above."""
+    """Generate simplifiers, forced full simplifiers and detailers."""
     simplifiers = OrderedDict()
     forced_full_simplifiers = OrderedDict()
     detailers = []
@@ -170,13 +166,7 @@ def _generate_simplifiers_and_detailers():
 
 simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_detailers()
 
-# COMPRESSION SCHEME INT CODES
-NO_COMPRESSION = 40
-LZ4 = 41
-ZSTD = 42
-
-
-# High Level Public Functions (these are the ones you use)
+## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
     obj: object,
     simplified: bool = False,
@@ -260,7 +250,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
         worker (AbstractWorker): the worker which is acquiring the message content,
             for example used to specify the owner of a tensor received(not obvious
             for virtual workers)
-        detail (bool): there are some cases where we need to perform the decompression
+        details (bool): there are some cases where we need to perform the decompression
             and deserialization part, but we don't need to detail all the message.
             This is the case for Plan workers for instance
 
@@ -292,7 +282,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
         return simple_objects
 
 
-# Chosen Compression Algorithm
+## SECTION: chosen Compression Algorithm
 
 
 def _apply_compress_scheme(decompressed_input_bin) -> tuple:
@@ -353,9 +343,7 @@ def _compress(decompressed_input_bin: bin) -> bin:
         bin: a compressed binary
 
     """
-
     compress_stream, compress_scheme = _apply_compress_scheme(decompressed_input_bin)
-
     if len(compress_stream) < len(decompressed_input_bin):
         return compress_scheme.to_bytes(1, byteorder="big") + compress_stream
     else:
@@ -392,9 +380,6 @@ def _decompress(binary: bin) -> bin:
         )
 
 
-# High Level Simplification Router
-
-
 def _simplify(obj: object) -> object:
     """
     This function takes an object as input and returns a simple
@@ -408,29 +393,24 @@ def _simplify(obj: object) -> object:
     being sent.
 
     Args:
-        obj: an object which may need to be simplified
+        obj: an object which may need to be simplified.
 
     Returns:
-        obj: an simple Python object which msgpack can serialize
+        A tuple containing python objects which msgpack can serialize.
 
     Raises:
         ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
         characters.
-
     """
-
     try:
         # check to see if there is a simplifier
         # for this type. If there is, run return
         # the simplified object
         current_type = type(obj)
-
         result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
-
         return result
 
     except KeyError:
-
         # if there is not a simplifier for this
         # object, then the object is already a
         # simple python object and we can just
@@ -438,43 +418,22 @@ def _simplify(obj: object) -> object:
         return obj
 
 
-def _force_full_simplify(obj: object) -> object:
-    current_type = type(obj)
-
-    if current_type in forced_full_simplifiers:
-
-        left = forced_full_simplifiers[current_type][0]
-
-        right = forced_full_simplifiers[current_type][1]
-
-        right = right(obj)
-
-        result = (left, right)
-    else:
-        result = _simplify(obj)
-
-    return result
-
-
 def _detail(worker: AbstractWorker, obj: object) -> object:
-    """
-    This function reverses the functionality of _simplify. Where applicable,
-    it converts simple objects into more complex objects such as converting
-    binary objects into torch tensors. Read _simplify for more information on
-    why _simplify and _detail are needed.
+    """Reverses the functionality of _simplify.
+    Where applicable, it converts simple objects into more complex objects such
+    as converting binary objects into torch tensors. Read _simplify for more
+    information on why _simplify and detail are needed.
 
     Args:
         worker: the worker which is acquiring the message content, for example
         used to specify the owner of a tensor received(not obvious for
-        virtual workers)
-        obj: a simple Python object which msgpack deserialized
+        virtual workers).
+        obj: a simple Python object which msgpack deserialized.
 
     Returns:
         obj: a more complex Python object which msgpack would have had trouble
             deserializing directly.
-
     """
-
     if type(obj) in (list, tuple):
         return detailers[obj[0]](worker, obj[1])
     else:

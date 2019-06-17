@@ -3,7 +3,9 @@ This file tests the ability for serde.py to convert complex types into
 simple python types which are serializable by standard serialization tools.
 For more on how/why this works, see serde.py directly.
 """
+from syft.serde import native_serde
 from syft.serde import serde
+from syft.serde import torch_serde
 
 import syft
 from syft.exceptions import CompressionNotFoundException
@@ -24,8 +26,8 @@ def test_tuple_simplify():
     for tuples so that the detailer knows how to interpret it."""
 
     input = ("hello", "world")
-    tuple_detail_index = serde.detailers.index(serde._detail_collection_tuple)
-    str_detail_index = serde.detailers.index(pointers.ObjectWrapper.detail)
+    tuple_detail_index = serde.detailers.index(native_serde._detail_collection_tuple)
+    str_detail_index = serde.detailers.index(native_serde._detail_str)
     target = (
         tuple_detail_index,
         ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))),
@@ -41,8 +43,8 @@ def test_list_simplify():
     for lists so that the detailer knows how to interpret it."""
 
     input = ["hello", "world"]
-    list_detail_index = serde.detailers.index(serde._detail_collection_list)
-    str_detail_index = serde.detailers.index(pointers.ObjectWrapper.detail)
+    list_detail_index = serde.detailers.index(native_serde._detail_collection_list)
+    str_detail_index = serde.detailers.index(native_serde._detail_str)
     target = (list_detail_index, [(str_detail_index, (b"hello",)), (str_detail_index, (b"world",))])
     assert serde._simplify(input) == target
 
@@ -55,8 +57,8 @@ def test_set_simplify():
     for sets so that the detailer knows how to interpret it."""
 
     input = set(["hello", "world"])
-    set_detail_index = serde.detailers.index(serde._detail_collection_set)
-    str_detail_index = serde.detailers.index(pointers.ObjectWrapper.detail)
+    set_detail_index = serde.detailers.index(native_serde._detail_collection_set)
+    str_detail_index = serde.detailers.index(native_serde._detail_str)
     target = (set_detail_index, [(str_detail_index, (b"hello",)), (str_detail_index, (b"world",))])
     assert serde._simplify(input)[0] == target[0]
     assert set(serde._simplify(input)[1]) == set(target[1])
@@ -91,7 +93,7 @@ def test_string_simplify():
     themselves, with no tuple/id necessary."""
 
     input = "hello"
-    target = (serde.detailers.index(serde._detail_str), (b"hello",))
+    target = (serde.detailers.index(native_serde._detail_str), (b"hello",))
     assert serde._simplify(input) == target
 
 
@@ -103,8 +105,8 @@ def test_dict_simplify():
     for dicts so that the detailer knows how to interpret it."""
 
     input = {"hello": "world"}
-    detail_dict_index = serde.detailers.index(serde._detail_dictionary)
-    detail_str_index = serde.detailers.index(pointers.ObjectWrapper.detail)
+    detail_dict_index = serde.detailers.index(native_serde._detail_dictionary)
+    detail_str_index = serde.detailers.index(native_serde._detail_str)
     target = (
         detail_dict_index,
         [((detail_str_index, (b"hello",)), (detail_str_index, (b"world",)))],
@@ -120,7 +122,7 @@ def test_range_simplify():
     for dicts so that the detailer knows how to interpret it."""
 
     input = range(1, 3, 4)
-    target = (serde.detailers.index(serde._detail_range), (1, 3, 4))
+    target = (serde.detailers.index(native_serde._detail_range), (1, 3, 4))
     assert serde._simplify(input) == target
 
 
@@ -144,7 +146,7 @@ def test_torch_tensor_simplify():
 
     # make sure the object type ID is correct
     # (0 for torch.Tensor)
-    assert serde.detailers[output[0]] == serde._detail_torch_tensor
+    assert serde.detailers[output[0]] == torch_serde._detail_torch_tensor
 
     # make sure inner type is correct
     assert type(output[1]) == tuple
@@ -168,7 +170,7 @@ def test_ndarray_simplify():
     output = serde._simplify(input)
 
     # make sure simplified type ID is correct
-    assert serde.detailers[output[0]] == serde._detail_ndarray
+    assert serde.detailers[output[0]] == torch_serde._detail_ndarray
 
     # make sure serialized form is correct
     assert type(output[1][0]) == bytes
@@ -178,7 +180,7 @@ def test_ndarray_simplify():
 
 def test_ellipsis_simplify():
     """Make sure ellipsis simplifies correctly."""
-    assert serde.detailers[serde._simplify(Ellipsis)[0]] == serde._detail_ellipsis
+    assert serde.detailers[serde._simplify(Ellipsis)[0]] == native_serde._detail_ellipsis
 
     # the simplified ellipsis (empty object)
     assert serde._simplify(Ellipsis)[1] == b""
@@ -188,7 +190,7 @@ def test_torch_device_simplify():
     """Test the simplification of torch.device"""
     device = torch.device("cpu")
 
-    assert serde.detailers[serde._simplify(device)[0]] == serde._detail_torch_device
+    assert serde.detailers[serde._simplify(device)[0]] == torch_serde._detail_torch_device
 
     # the simplified torch.device
     assert serde._simplify(device)[1] == "cpu"
@@ -322,7 +324,9 @@ def test_compressed_serde(compress_scheme):
     else:
         serde._apply_compress_scheme = serde.apply_no_compression
 
-    arr = numpy.random.random((100, 100))
+    # using numpy.ones because numpy.random.random is not compressed.
+    arr = numpy.ones((100, 100))
+
     arr_serialized = serde.serialize(arr)
 
     arr_serialized_deserialized = serde.deserialize(arr_serialized)
