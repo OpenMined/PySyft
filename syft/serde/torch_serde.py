@@ -343,8 +343,8 @@ def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> tor
     return loaded_module
 
 
-# Maps a type to a tuple containing its simplifier and detailer function.
-# IMPORTANT: keep this structure sorted A-Z (by type name).
+# Maps a type to a tuple containing its simplifier and detailer function
+# IMPORTANT: keep this structure sorted A-Z (by type name)
 MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         numpy.ndarray: (_simplify_ndarray, _detail_ndarray),

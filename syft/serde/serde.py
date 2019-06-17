@@ -63,7 +63,7 @@ from syft.frameworks.torch import pointers
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.serde.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
 
-# Maps a type to a tuple containing its simplifier and detailer function.
+# Maps a type to a tuple containing its simplifier and detailer function
 MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
     + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
@@ -72,7 +72,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 # Objects that we can run force full simplilfy on
 MAP_TO_FORCE_FULL_SIMPLIFY = [VirtualWorker]
 
-# If a object implements its own simplifer and detailer function it should be stored in this list.
+# If a object implements its own simplifer and detailer function it should be stored in this list
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     LoggingTensor,
@@ -396,7 +396,7 @@ def _simplify(obj: object) -> object:
         obj: an object which may need to be simplified.
 
     Returns:
-        A tuple containing python objects which msgpack can serialize.
+        obj: an simple Python object which msgpack can serialize.
 
     Raises:
         ValueError: if `move_this` or `in_front_of_that` are not both single ASCII

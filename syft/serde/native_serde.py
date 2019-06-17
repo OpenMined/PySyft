@@ -300,8 +300,8 @@ def _detail_slice(worker: AbstractWorker, my_slice: Tuple[int, int, int]) -> sli
     return slice(my_slice[0], my_slice[1], my_slice[2])
 
 
-# Maps a type to a tuple containing its simplifier and detailer function.
-# IMPORTANT: keep this structure sorted A-Z (by type name).
+# Maps a type to a tuple containing its simplifier and detailer function
+# IMPORTANT: keep this structure sorted A-Z (by type name)
 MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         dict: (_simplify_dictionary, _detail_dictionary),
