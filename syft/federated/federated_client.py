@@ -114,14 +114,11 @@ class FederatedClient(ObjectStorage):
 
             self.optimizer.zero_grad()
             output = model(data)
-            loss = loss_fn(output, target)
+            loss = loss_fn(target=target, pred=output)
             loss.backward()
             self.optimizer.step()
             iteration_count += 1
-            if (
-                self.train_config.max_nr_batches
-                and iteration_count >= self.train_config.max_nr_batches
-            ):
+            if iteration_count >= self.train_config.max_nr_batches >= 0:
                 break
 
         return loss
