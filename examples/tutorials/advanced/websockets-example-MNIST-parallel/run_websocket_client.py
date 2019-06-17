@@ -25,8 +25,8 @@ LOG_INTERVAL = 25
 
 # Loss function
 @torch.jit.script
-def loss_fn(output, target):
-    return F.nll_loss(output, target)
+def loss_fn(pred, target):
+    return F.nll_loss(input=pred, target=target)
 
 
 class Net(nn.Module):
