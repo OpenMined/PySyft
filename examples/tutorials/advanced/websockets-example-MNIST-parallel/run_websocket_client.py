@@ -122,22 +122,6 @@ async def fit_model_on_worker(
     return worker.id, model, loss
 
 
-def _evaluate_models_on_test_data(test_loader, results):
-    data, target = test_loader.__iter__().next()
-    logger.info("Testing individual models on test data")
-    hist, _ = np.histogram(target, bins=10, range=(0, 10))
-    logger.info("Target hist: %s", hist)
-    for worker_id, worker_model, _ in results:
-        pred_test = worker_model(data)
-        loss = loss_fn(output=pred_test, target=target)
-        logger.info(
-            "Worker %s: Loss: %s, accuracy = %s", worker_id, loss, utils.accuracy(pred_test, target)
-        )
-        pred = pred_test.argmax(dim=1)
-        hist, _ = np.histogram(pred, bins=10, range=(0, 10))
-        logger.info("Worker %s: Predicted hist: %s", worker_id, hist)
-
-
 def evaluate_models_on_test_data(test_loader, results):
     np.set_printoptions(formatter={"float": "{: .0f}".format})
     for worker_id, worker_model, _ in results:
@@ -262,7 +246,6 @@ async def main():
 
 if __name__ == "__main__":
     # Logging setup
-    # NOTE: basicConfig needs to be called before importing syft to be taken into account, reason not investigated yet.
     logger = logging.getLogger("run_websocket_server")
     FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
     logging.basicConfig(format=FORMAT)
