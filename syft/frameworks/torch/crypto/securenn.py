@@ -29,7 +29,7 @@ def decompose(tensor):
         powers = powers.unsqueeze(0)
     tensor = tensor.unsqueeze(-1)
     moduli = 2 ** powers
-    tensor = torch.fmod(((tensor + 2 ** n_bits) / moduli.type_as(tensor)), 2)
+    tensor = torch.fmod((tensor / moduli.type_as(tensor)), 2)
     return tensor
 
 
@@ -71,6 +71,54 @@ def _random_common_value(max_value, *workers):
     common_value = sy.MultiPointerTensor(children=pointers)
 
     return common_value
+
+
+def _shares_of_zero(field, crypto_provider, *workers):
+    """
+    Return n in [0, max_value-1] chosen by a worker and sent to all workers,
+    in the form of a MultiPointerTensor
+    """
+    u = (
+        torch.zeros(1)
+        .long()
+        .send(workers[0])
+        .share(*workers, field=field, crypto_provider=crypto_provider)
+        .get()
+        .child
+    )
+
+    return u
+
+
+def select_share(alpha_sh, x_sh, y_sh):
+    """ Performs select share protocol
+    If the bit alpha_sh is 0, x_sh is returned
+    If the bit alpha_sh is 1, y_sh is returned
+
+    Args:
+        x_sh (AdditiveSharingTensor): the first share to select
+        y_sh (AdditiveSharingTensor): the second share to select
+        alpha_sh (AdditiveSharingTensor): the bit to choose between x_sh and y_sh
+
+    Return:
+        z_sh = (1 - alpha_sh) * x_sh + alpha_sh * y_sh
+    """
+    alice, bob = alpha_sh.locations
+    crypto_provider = alpha_sh.crypto_provider
+    L = alpha_sh.field
+
+    u_sh = _shares_of_zero(L, crypto_provider, alice, bob)
+
+    # 1)
+    w_sh = y_sh - x_sh
+
+    # 2)
+    c_sh = alpha_sh * w_sh
+
+    # 3)
+    z_sh = x_sh + c_sh + u_sh
+
+    return z_sh
 
 
 def private_compare(x, r, BETA):
@@ -189,15 +237,20 @@ def msb(a_sh):
 
     # Common Randomness
     BETA = _random_common_bit(alice, bob)
-    u = torch.zeros(1).long().share(alice, bob, field=L, crypto_provider=crypto_provider).child
+    u = (
+        torch.zeros(1)
+        .long()
+        .send(alice)
+        .share(alice, bob, field=L, crypto_provider=crypto_provider)
+        .get()
+        .child
+    )
 
     # 1)
     x = torch.LongTensor(a_sh.shape).random_(L - 1)
     x_bit = decompose(x)
     x_sh = x.share(bob, alice, field=L - 1, crypto_provider=crypto_provider).child
-    x_bit_0 = x_bit[
-        ..., -1
-    ]  # Get last value as decompose reverts bits: 1st one is in last position
+    x_bit_0 = x_bit[..., 0]
     x_bit_sh_0 = x_bit_0.share(
         bob, alice, field=L, crypto_provider=crypto_provider
     ).child  # least -> greatest from left -> right
@@ -208,8 +261,8 @@ def msb(a_sh):
     r_sh = y_sh + x_sh
 
     # 3)
-    r = r_sh.reconstruct()  # convert an additive sharing in multi pointer Tensor
-    r_0 = decompose(r)[..., -1]
+    r = r_sh.reconstruct() % (L - 1)  # convert an additive sharing in multi pointer Tensor
+    r_0 = decompose(r)[..., 0]
 
     # 4)
     BETA_prime = private_compare(x_bit_sh, r, BETA=BETA)
@@ -266,12 +319,13 @@ def share_convert(a_sh):
         .child
     )
     r_shares = r_sh.child
-    alpha = (
-        ((r_shares[workers[0].id] + (r_shares[workers[1].id] * 1).move(workers[0])).get() >= L)
-        .long()
-        .send(*workers)
-        .child
-    )  # FIXME security issue: the local worker learns alpha while this should be avoided
+
+    alpha0 = (
+        (r_shares[workers[0].id] + (r_shares[workers[1].id] * 1).move(workers[0])) >= L
+    ).long()
+    alpha1 = alpha0.copy().move(workers[1])
+    alpha = sy.MultiPointerTensor(children=[alpha0, alpha1])
+
     u_sh = (
         torch.zeros(1)
         .long()
@@ -284,14 +338,8 @@ def share_convert(a_sh):
     # 2)
     a_tilde_sh = a_sh + r_sh
     a_shares = a_sh.child
-    ptr0 = a_shares[workers[0].id] + r_shares[workers[0].id]
-    beta0 = ((a_shares[workers[0].id] + r_shares[workers[0].id]) >= L).long() - (
-        (a_shares[workers[0].id] + r_shares[workers[0].id]) < 0
-    ).long()
-    ptr1 = a_shares[workers[1].id] + r_shares[workers[1].id]
-    beta1 = ((a_shares[workers[1].id] + r_shares[workers[1].id]) >= L).long() - (
-        (a_shares[workers[1].id] + r_shares[workers[1].id]) < 0
-    ).long()
+    beta0 = ((a_shares[workers[0].id] + r_shares[workers[0].id]) >= L).long()
+    beta1 = ((a_shares[workers[1].id] + r_shares[workers[1].id]) >= L).long()
     beta = sy.MultiPointerTensor(children=[beta0.long(), beta1.long()])
 
     # 4)
@@ -299,7 +347,7 @@ def share_convert(a_sh):
     delta = (
         ((a_tilde_shares[workers[0].id] * 1).get() + (a_tilde_shares[workers[1].id] * 1).get()) >= L
     ).long()
-    x = a_tilde_sh.get()
+    x = a_tilde_sh.get() % L
 
     # 5)
     x_bit = decompose(x)
@@ -307,7 +355,7 @@ def share_convert(a_sh):
     delta_sh = delta.share(*workers, field=L - 1, crypto_provider=crypto_provider).child
 
     # 6)
-    eta_p = private_compare(x_bit_sh, r, eta_pp)
+    eta_p = private_compare(x_bit_sh, r - 1, eta_pp)
 
     # 7)
     eta_p_sh = eta_p.share(*workers, field=L - 1, crypto_provider=crypto_provider).child
@@ -322,8 +370,7 @@ def share_convert(a_sh):
     theta_sh = beta - (1 - j) * (alpha + 1) + delta_sh + eta_sh
 
     # 11)
-    y_sh = a_sh - theta_sh + u_sh
-    y_sh.field = L - 1
+    y_sh = -theta_sh + a_sh + u_sh
     return y_sh
 
 
@@ -355,7 +402,7 @@ def relu_deriv(a_sh):
     )
 
     # 1)
-    y_sh = 2 * a_sh
+    y_sh = (2 * a_sh) % L  # TODO put this in mul at some point
 
     # 2) Not applicable with algebraic shares
     # y_sh = share_convert(y_sh)
@@ -392,3 +439,44 @@ def relu(a_sh):
     u = torch.zeros(1).long().share(alice, bob, field=L, crypto_provider=crypto_provider).child
 
     return a_sh * relu_deriv(a_sh) + u
+
+
+def maxpool(x_sh):
+    """
+    """
+    alice, bob = x_sh.locations
+    crypto_provider = x_sh.crypto_provider
+    L = x_sh.field
+
+    input_shape = x_sh.shape
+    x_sh = x_sh.view(-1)
+
+    # Common Randomness
+    u_sh = _shares_of_zero(L, crypto_provider, alice, bob)
+    v_sh = _shares_of_zero(L, crypto_provider, alice, bob)
+
+    # 1)
+    max_sh = x_sh[0]
+    ind_sh = (
+        torch.tensor([0]).share(alice, bob, crypto_provider=crypto_provider).child
+    )  # I did not manage to create an AST with 0 and 0 as shares
+
+    for i in range(1, len(x_sh)):
+        # 3)
+        w_sh = x_sh[i] - max_sh
+
+        # 4)
+        beta_sh = relu_deriv(w_sh)
+
+        # 5)
+        max_sh = select_share(beta_sh, max_sh, x_sh[i])
+
+        # 6)
+        k = (
+            torch.tensor([i]).share(alice, bob, crypto_provider=crypto_provider).child
+        )  # I did not manage to create an AST with 0 and i as shares
+
+        # 7)
+        ind_sh = select_share(beta_sh, ind_sh, k)
+
+    return max_sh + u_sh, ind_sh + v_sh
