@@ -20,9 +20,7 @@ from syft.frameworks.torch.federated import utils
 KEEP_LABELS_DICT = {"alice": [0, 1, 2, 3], "bob": [4, 5, 6], "charlie": [7, 8, 9]}
 
 
-def start_websocket_server_worker(
-    id, host, port, hook, verbose, keep_labels=None
-):  # pragma: no cover
+def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=None):
     """Helper function for spinning up a websocket server and setting up the local datasets."""
 
     server = WebsocketServerWorker(id=id, host=host, port=port, hook=hook, verbose=verbose)
