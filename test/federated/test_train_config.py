@@ -12,6 +12,8 @@ from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
 from syft.frameworks.torch.federated import utils
 
+PRINT_IN_UNITTESTS = False
+
 
 @pytest.mark.skip(reason="fails currently as it needs functions as torch.nn.linear to be unhooked.")
 def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
@@ -57,23 +59,24 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
 
     for epoch in range(5):
         loss = alice.fit(dataset="vectors")
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
+        if PRINT_IN_UNITTESTS:
+            print("-" * 50)
+            print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
     print(alice)
     new_model = model_ptr.get()
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
     target = torch.tensor([[1], [0], [1], [0]])
 
-    print("Evaluation before training")
     pred = model(data)
     loss_before = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_before))
 
-    print("Evaluation after training:")
     pred = new_model(data)
     loss_after = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_after))
+
+    if PRINT_IN_UNITTESTS:
+        print("Loss before training: {}".format(loss_before))
+        print("Loss after training: {}".format(loss_after))
 
     assert loss_after < loss_before
 
@@ -123,14 +126,17 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
 
     for epoch in range(5):
         loss = alice.fit(dataset_key="gaussian_mixture")
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
+        if PRINT_IN_UNITTESTS:
+            print("-" * 50)
+            print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
-    print("Evaluation after training:")
     new_model = train_config.model_ptr.get()
     pred = new_model.obj(data)
     loss_after = loss_fn(target=target, pred=pred)
-    print("Loss: {}".format(loss_after))
+
+    if PRINT_IN_UNITTESTS:
+        print("Loss before training: {}".format(loss_before))
+        print("Loss after training: {}".format(loss_after))
 
     assert loss_after < loss_before
 
@@ -168,10 +174,10 @@ def prepare_training(hook, alice):  # pragma: no cover
 
     model = torch.jit.trace(model_untraced, data)
 
-    print("Evaluation before training")
     pred = model(data)
     loss_before = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_before))
+    if PRINT_IN_UNITTESTS:
+        print("Loss before training: {}".format(loss_before))
 
     return model, loss_fn, data, target, loss_before
 
@@ -182,47 +188,46 @@ def prepare_training(hook, alice):  # pragma: no cover
 )
 def test_train_config_with_jit_trace_send_twice_with_fit(hook, workers):  # pragma: no cover
     alice = workers["alice"]
-    model, loss_fn, data, target, loss_before = prepare_training(hook, alice)
+    model, loss_fn, data, target, loss_before, dataset_key = prepare_training(hook, alice)
 
     # Create and send train config
     train_config_0 = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2)
     train_config_0.send(alice)
 
     for epoch in range(5):
-        loss = alice.fit(dataset_key="vectors")
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
+        loss = alice.fit(dataset_key=dataset_key)
+        if PRINT_IN_UNITTESTS:
+            print("-" * 50)
+            print("TrainConfig 0, iteration %s: alice's loss: %s" % (epoch, loss))
 
-    print("Evaluation after training train_config_0:")
     new_model = train_config_0.model_ptr.get()
     pred = new_model.obj(data)
-    loss_after = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_after))
+    loss_after_0 = loss_fn(pred=pred, target=target)
 
-    assert loss_after < loss_before
+    assert loss_after_0 < loss_before
 
     train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2)
     train_config.send(alice)
 
     for epoch in range(5):
-        loss = alice.fit(dataset_key="vectors")
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
+        loss = alice.fit(dataset_key=dataset_key)
 
-    print("Evaluation after training:")
+        if PRINT_IN_UNITTESTS:
+            print("-" * 50)
+            print("TrainConfig 1, iteration %s: alice's loss: %s" % (epoch, loss))
+
     new_model = train_config.model_ptr.get()
     pred = new_model.obj(data)
-    loss_after = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_after))
+    loss_after = loss_fn(pred=pred, target=target)
+    if PRINT_IN_UNITTESTS:
+        print("Loss after training with TrainConfig 0: {}".format(loss_after_0))
+        print("Loss after training with TrainConfig 1:   {}".format(loss_after))
 
     assert loss_after < loss_before
 
 
 def prepare_training(hook, alice):  # pragma: no cover
 
-    # data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    # target = torch.tensor([[1], [0], [1], [0]])
-    # dataset_key = "vectors"
     data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
     dataset_key = "gaussian_mixture"
 
@@ -257,48 +262,6 @@ def prepare_training(hook, alice):  # pragma: no cover
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
     return model, loss_fn, data, target, loss_before, dataset_key
-
-
-@pytest.mark.skipif(
-    torch.__version__ > "1.0.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
-def test_train_config_with_jit_trace_send_twice_with_fit(hook, workers):  # pragma: no cover
-    alice = workers["alice"]
-    model, loss_fn, data, target, loss_before, dataset_key = prepare_training(hook, alice)
-
-    # Create and send train config
-    train_config_0 = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2)
-    train_config_0.send(alice)
-
-    for epoch in range(5):
-        loss = alice.fit(dataset_key=dataset_key)
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
-
-    print("Evaluation after training train_config_0:")
-    new_model = train_config_0.model_ptr.get()
-    pred = new_model.obj(data)
-    loss_after = loss_fn(target=target, pred=pred)
-    print("Loss: {}".format(loss_after))
-
-    assert loss_after < loss_before
-
-    train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2)
-    train_config.send(alice)
-
-    for epoch in range(5):
-        loss = alice.fit(dataset_key=dataset_key)
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
-
-    print("Evaluation after training:")
-    new_model = train_config.model_ptr.get()
-    pred = new_model.obj(data)
-    loss_after = loss_fn(target=target, pred=pred)
-    print("Loss: {}".format(loss_after))
-
-    assert loss_after < loss_before
 
 
 def test___str__():
@@ -402,10 +365,8 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
 
     model = torch.jit.trace(model_untraced, mock_data)
 
-    print("Evaluation before training")
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
-    print("Loss: {}".format(loss_before))
 
     # Create and send train config
     train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2, lr=0.1)
@@ -413,10 +374,10 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
 
     for epoch in range(5):
         loss = await local_worker.async_fit(dataset_key=dataset_key)
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
+        if PRINT_IN_UNITTESTS:
+            print("-" * 50)
+            print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
-    print("Evaluation after training:")
     new_model = train_config.model_ptr.get()
 
     assert not (model.fc1._parameters["weight"] == new_model.obj.fc1._parameters["weight"]).all()
@@ -429,7 +390,9 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     new_model.obj.eval()
     pred = new_model.obj(data)
     loss_after = loss_fn(target=target, pred=pred)
-    print("Loss: {}".format(loss_after))
+    if PRINT_IN_UNITTESTS:
+        print("Loss before training: {}".format(loss_before))
+        print("Loss after training: {}".format(loss_after))
 
     local_worker.ws.shutdown()
     # process_remote_worker.terminate()
@@ -437,22 +400,22 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     assert loss_after < loss_before
 
 
-@pytest.mark.skip(
-    "bug in pytorch version 1.1.0, jit.trace returns raw C function and non-terminating when run on console"
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
 )
-def test_train_config_with_jit_trace_sync(
-    hook, start_proc, create_mixture_dataset
-):  # pragma: no cover
+def test_train_config_with_jit_trace_sync(hook, start_proc):  # pragma: no cover
     kwargs = {"id": "sync_fit", "host": "localhost", "port": 9000, "hook": hook}
     # data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
     # target = torch.tensor([[1], [0], [1], [0]])
 
-    data, target = create_mixture_dataset(100)
+    data, target = utils.create_gaussian_mixture_toy_data(100)
 
     dataset = sy.BaseDataset(data, target)
 
+    dataset_key = "gaussian_mixture"
     process_remote_worker = start_proc(
-        WebsocketServerWorker, dataset=(dataset, "vectors"), **kwargs
+        WebsocketServerWorker, dataset=(dataset, dataset_key), **kwargs
     )
 
     time.sleep(0.1)
@@ -460,8 +423,8 @@ def test_train_config_with_jit_trace_sync(
     local_worker = WebsocketClientWorker(**kwargs)
 
     @hook.torch.jit.script
-    def loss_fn(real, pred):
-        return ((real.view(pred.shape).float() - pred.float()) ** 2).mean()
+    def loss_fn(pred, target):
+        return ((target.view(pred.shape).float() - pred.float()) ** 2).mean()
 
     class Net(torch.nn.Module):
         def __init__(self):
@@ -480,21 +443,19 @@ def test_train_config_with_jit_trace_sync(
 
     model = torch.jit.trace(model_untraced, data)
 
-    print("Evaluation before training")
     pred = model(data)
-    loss_before = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_before))
+    loss_before = loss_fn(pred=pred, target=target)
 
     # Create and send train config
     train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2, epochs=1)
     train_config.send(local_worker)
 
     for epoch in range(5):
-        loss = local_worker.fit(dataset_key="vectors")
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
+        loss = local_worker.fit(dataset_key=dataset_key)
+        if PRINT_IN_UNITTESTS:
+            print("-" * 50)
+            print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
-    print("Evaluation after training:")
     new_model = train_config.model_ptr.get()
 
     # assert that the new model has updated (modified) parameters
@@ -507,8 +468,11 @@ def test_train_config_with_jit_trace_sync(
 
     new_model.obj.eval()
     pred = new_model.obj(data)
-    loss_after = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_after))
+    loss_after = loss_fn(pred=pred, target=target)
+
+    if PRINT_IN_UNITTESTS:
+        print("Loss before training: {}".format(loss_before))
+        print("Loss after training: {}".format(loss_after))
 
     local_worker.ws.shutdown()
     del local_worker

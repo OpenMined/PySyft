@@ -1,11 +1,11 @@
-import pytest
-
 import torch
 
 import syft as sy
 from syft import federated
 from syft.frameworks.torch import pointers
 from syft.frameworks.torch.federated import utils
+
+PRINT_IN_UNITTESTS = False
 
 
 def test_add_dataset():
@@ -86,11 +86,10 @@ def test_fit():
     model_ow = pointers.ObjectWrapper(obj=model, id=model_id)
     loss_id = 1
     loss_ow = pointers.ObjectWrapper(obj=loss_fn, id=loss_id)
-
-    print("Evaluation before training")
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
-    print("Loss: {}".format(loss_before))
+    if PRINT_IN_UNITTESTS:
+        print("Loss before training: {}".format(loss_before))
 
     # Create and send train config
     train_config = sy.TrainConfig(
@@ -110,15 +109,15 @@ def test_fit():
 
     for curr_round in range(12):
         loss = fed_client.fit(dataset_key=dataset_key)
-        if curr_round % 4 == 0:
+        if PRINT_IN_UNITTESTS and curr_round % 4 == 0:
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (curr_round, loss))
 
-    print("Evaluation after training:")
     new_model = fed_client.get_obj(model_id)
     pred = new_model.obj(data)
     loss_after = loss_fn(target=target, pred=pred)
-    print("Loss: {}".format(loss_after))
+    if PRINT_IN_UNITTESTS:
+        print("Loss after training: {}".format(loss_after))
 
     assert loss_after < loss_before
 
