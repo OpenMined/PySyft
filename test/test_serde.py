@@ -553,8 +553,6 @@ def test_pointer_tensor(hook, workers):
     )
     t_serialized = serde.serialize(t)
     t_serialized_deserialized = serde.deserialize(t_serialized)
-    print(f"t.location - {t.location}")
-    print(f"t_serialized_deserialized.location - {t_serialized_deserialized.location}")
     assert t.id == t_serialized_deserialized.id
     assert t.location.id == t_serialized_deserialized.location.id
     assert t.id_at_location == t_serialized_deserialized.id_at_location
@@ -661,7 +659,6 @@ def test_full_serde_virtual_worker(hook):
     tensor1, tensor2 = torch.tensor([1.0, 2.0]), torch.tensor([0.0])
     ptr1, ptr2 = tensor1.send(virtual_worker), tensor2.send(virtual_worker)
 
-    print(virtual_worker._objects)
     serialized_worker = serde.serialize(virtual_worker, force_full_simplification=True)
 
     deserialized_worker = serde.deserialize(serialized_worker)
