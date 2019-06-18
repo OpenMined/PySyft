@@ -88,7 +88,7 @@ def test_fit():
     loss_ow = pointers.ObjectWrapper(obj=loss_fn, id=loss_id)
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
-    if PRINT_IN_UNITTESTS:
+    if PRINT_IN_UNITTESTS:  # pragma: no cover
         print("Loss before training: {}".format(loss_before))
 
     # Create and send train config
@@ -109,14 +109,14 @@ def test_fit():
 
     for curr_round in range(12):
         loss = fed_client.fit(dataset_key=dataset_key)
-        if PRINT_IN_UNITTESTS and curr_round % 4 == 0:
+        if PRINT_IN_UNITTESTS and curr_round % 4 == 0:  # pragma: no cover
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (curr_round, loss))
 
     new_model = fed_client.get_obj(model_id)
     pred = new_model.obj(data)
     loss_after = loss_fn(target=target, pred=pred)
-    if PRINT_IN_UNITTESTS:
+    if PRINT_IN_UNITTESTS:  # pragma: no cover:
         print("Loss after training: {}".format(loss_after))
 
     assert loss_after < loss_before

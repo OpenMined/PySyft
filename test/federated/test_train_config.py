@@ -59,7 +59,7 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
 
     for epoch in range(5):
         loss = alice.fit(dataset="vectors")
-        if PRINT_IN_UNITTESTS:
+        if PRINT_IN_UNITTESTS:  # pragma: no cover:
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
@@ -74,7 +74,7 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
     pred = new_model(data)
     loss_after = loss_fn(real=target, pred=pred)
 
-    if PRINT_IN_UNITTESTS:
+    if PRINT_IN_UNITTESTS:  # pragma: no cover:
         print("Loss before training: {}".format(loss_before))
         print("Loss after training: {}".format(loss_after))
 
@@ -126,7 +126,7 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
 
     for epoch in range(5):
         loss = alice.fit(dataset_key="gaussian_mixture")
-        if PRINT_IN_UNITTESTS:
+        if PRINT_IN_UNITTESTS:  # pragma: no cover:
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
@@ -134,7 +134,7 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     pred = new_model.obj(data)
     loss_after = loss_fn(target=target, pred=pred)
 
-    if PRINT_IN_UNITTESTS:
+    if PRINT_IN_UNITTESTS:  # pragma: no cover:
         print("Loss before training: {}".format(loss_before))
         print("Loss after training: {}".format(loss_after))
 
@@ -176,7 +176,7 @@ def prepare_training(hook, alice):  # pragma: no cover
 
     pred = model(data)
     loss_before = loss_fn(real=target, pred=pred)
-    if PRINT_IN_UNITTESTS:
+    if PRINT_IN_UNITTESTS:  # pragma: no cover:
         print("Loss before training: {}".format(loss_before))
 
     return model, loss_fn, data, target, loss_before
@@ -196,7 +196,7 @@ def test_train_config_with_jit_trace_send_twice_with_fit(hook, workers):  # prag
 
     for epoch in range(5):
         loss = alice.fit(dataset_key=dataset_key)
-        if PRINT_IN_UNITTESTS:
+        if PRINT_IN_UNITTESTS:  # pragma: no cover:
             print("-" * 50)
             print("TrainConfig 0, iteration %s: alice's loss: %s" % (epoch, loss))
 
@@ -212,14 +212,14 @@ def test_train_config_with_jit_trace_send_twice_with_fit(hook, workers):  # prag
     for epoch in range(5):
         loss = alice.fit(dataset_key=dataset_key)
 
-        if PRINT_IN_UNITTESTS:
+        if PRINT_IN_UNITTESTS:  # pragma: no cover:
             print("-" * 50)
             print("TrainConfig 1, iteration %s: alice's loss: %s" % (epoch, loss))
 
     new_model = train_config.model_ptr.get()
     pred = new_model.obj(data)
     loss_after = loss_fn(pred=pred, target=target)
-    if PRINT_IN_UNITTESTS:
+    if PRINT_IN_UNITTESTS:  # pragma: no cover:
         print("Loss after training with TrainConfig 0: {}".format(loss_after_0))
         print("Loss after training with TrainConfig 1:   {}".format(loss_after))
 
@@ -374,7 +374,7 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
 
     for epoch in range(5):
         loss = await local_worker.async_fit(dataset_key=dataset_key)
-        if PRINT_IN_UNITTESTS:
+        if PRINT_IN_UNITTESTS:  # pragma: no cover
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
@@ -390,7 +390,7 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     new_model.obj.eval()
     pred = new_model.obj(data)
     loss_after = loss_fn(target=target, pred=pred)
-    if PRINT_IN_UNITTESTS:
+    if PRINT_IN_UNITTESTS:  # pragma: no cover
         print("Loss before training: {}".format(loss_before))
         print("Loss after training: {}".format(loss_after))
 
@@ -452,7 +452,7 @@ def test_train_config_with_jit_trace_sync(hook, start_proc):  # pragma: no cover
 
     for epoch in range(5):
         loss = local_worker.fit(dataset_key=dataset_key)
-        if PRINT_IN_UNITTESTS:
+        if PRINT_IN_UNITTESTS:  # pragma: no cover
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
@@ -470,7 +470,7 @@ def test_train_config_with_jit_trace_sync(hook, start_proc):  # pragma: no cover
     pred = new_model.obj(data)
     loss_after = loss_fn(pred=pred, target=target)
 
-    if PRINT_IN_UNITTESTS:
+    if PRINT_IN_UNITTESTS:  # pragma: no cover
         print("Loss before training: {}".format(loss_before))
         print("Loss after training: {}".format(loss_after))
 
