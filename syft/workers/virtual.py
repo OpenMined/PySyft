@@ -13,11 +13,27 @@ class VirtualWorker(BaseWorker, FederatedClient):
         return self.recv_msg(message)
 
     @staticmethod
+    def force_simplify(worker: AbstractWorker) -> tuple:
+        return (sy.serde._simplify(worker.id), sy.serde._simplify(worker._objects), worker.auto_add)
+
+    @staticmethod
+    def force_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
+        worker_id, _objects, auto_add = worker_tuple
+        worker_id = sy.serde._detail(worker, worker_id)
+
+        result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
+        _objects = sy.serde._detail(worker, _objects)
+        result._objects = _objects
+
+        # make sure they weren't accidentally double registered
+        for _, obj in _objects.items():
+            if obj.id in worker._objects:
+                del worker._objects[obj.id]
+
+        return result
+
+    @staticmethod
     def simplify(worker: AbstractWorker) -> tuple:
-        """
-
-        """
-
         return (sy.serde._simplify(worker.id),)
 
     @staticmethod
