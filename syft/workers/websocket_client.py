@@ -46,28 +46,20 @@ class WebsocketClientWorker(BaseWorker):
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
         # Secure flag adds a secure layer applying cryptography and authentication
-        self.uri = ""
         self.secure = secure
         self.ws = None
         self.connect()
 
     @property
     def url(self):
-        return f"ws://{self.host}:{self.port}"
-
-    @property
-    def secure_url(self):
-        return f"wss://{self.host}:{self.port}"
+        return f"wss://{self.host}:{self.port}" if self.secure else f"ws://{self.host}:{self.port}"
 
     def connect(self):
-        args = dict()
-        args["url"] = self.url
-        args["max_size"] = None
-        args["timeout"] = TIMEOUT_INTERVAL
+        args = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
+
         if self.secure:
-            args["uri"] = self.secure_url
             args["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
-        self.uri = args["url"]
+
         self.ws = websocket.create_connection(**args)
 
     def close(self):
@@ -102,7 +94,7 @@ class WebsocketClientWorker(BaseWorker):
             self.ws.shutdown()
             time.sleep(0.1)
             # Avoid timing out on the server-side
-            self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
+            self.ws = websocket.create_connection(self.url, max_size=None, timeout=TIMEOUT_INTERVAL)
             logger.warning("Created new websocket connection")
             time.sleep(0.1)
             response = self._receive_action(message)
