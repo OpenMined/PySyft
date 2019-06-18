@@ -1,10 +1,9 @@
-black
-bumpversion
-coverage
-ipykernel
-pre-commit
-pytest
-Sphinx
-sphinx_markdown_builder
-sphinx_rtd_theme
+black>=10.3b0
+bumpversion>=0.5.3
+coverage>=4.5.3
+ipykernel>=5.1.0
+pre-commit>=1.16.1
+pytest>=4.5.0
+sphinx-markdown-builder>=0.4.1
+Sphinx>=2.1.1
 
