@@ -55,23 +55,17 @@ class LargePrecisionTensor(AbstractTensor):
             n = int(x.item() * self.base ** self.precision_fractional)
             if self.verbose:
                 print(f"\nAdding number {n} for item {x.item()}\n")
-            result.append(self._split_number(n, internal_precision[self.internal_type]))
+            result.append(
+                LargePrecisionTensor._split_number(n, self.internal_precision, self.internal_type)
+            )
         new_shape = self.child.shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
         return torch.tensor(result, dtype=self.internal_type)
 
-    def _create_tensor_from_numpy(self, ndarray):
-        """Decompose a NumPy array into an array of numbers that represent such tensor with the required precision.
-
-        Typically this private method is called on the result of an operation.
-        """
-        result = []
-        # refs_ok is necessary to enable iterations of reference types.
-        for x in np.nditer(ndarray, flags=["refs_ok"]):
-            result.append(self._split_number(x.item(), internal_precision[self.internal_type]))
-        new_shape = self.child.shape[:-1] + (len(max(result, key=len)),)
-        result = np.array(result).reshape(new_shape)
-        return torch.tensor(result, dtype=self.internal_type)
+    @property
+    def internal_precision(self):
+        """"The internal precision used to decompose the large numbers is the size of the type - 1."""
+        return type_precision[self.internal_type]
 
     def get_class_attributes(self):
         """
@@ -85,13 +79,12 @@ class LargePrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def add(self, self_, other):
-        a = LargePrecisionTensor._internal_representation_to_large_ints(
-            self_, internal_precision[self.internal_type]
+        # TODO This should be done by the backward_func.
+        # self_ + other returns a np.array which is probably why it's not going through hook_args.backward_func
+        return LargePrecisionTensor._create_tensor_from_numpy(
+            self_ + other, self.internal_type, self.internal_precision, self.child.shape
         )
-        b = LargePrecisionTensor._internal_representation_to_large_ints(
-            other, internal_precision[self.internal_type]
-        )
-        return self._create_tensor_from_numpy(a + b)
+        # return self_ + other
 
     __add__ = add
 
@@ -104,13 +97,9 @@ class LargePrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def sub(self, self_, other):
-        a = LargePrecisionTensor._internal_representation_to_large_ints(
-            self_, internal_precision[self.internal_type]
+        return self._create_tensor_from_numpy(
+            self_ - other, self.internal_type, self.internal_precision, self.child.shape
         )
-        b = LargePrecisionTensor._internal_representation_to_large_ints(
-            other, internal_precision[self.internal_type]
-        )
-        return self._create_tensor_from_numpy(a - b)
 
     __sub__ = sub
 
@@ -123,14 +112,13 @@ class LargePrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def mul(self, self_, other):
-        a = LargePrecisionTensor._internal_representation_to_large_ints(
-            self_, internal_precision[self.internal_type]
-        )
-        b = LargePrecisionTensor._internal_representation_to_large_ints(
-            other, internal_precision[self.internal_type]
-        )
         # We need to divide the result of the multiplication by the precision
-        return self._create_tensor_from_numpy((a * b) / (self.base ** self.precision_fractional))
+        return self._create_tensor_from_numpy(
+            (self_ * other) / (self.base ** self.precision_fractional),
+            self.internal_type,
+            self.internal_precision,
+            self.child.shape,
+        )
 
     __mul__ = mul
 
@@ -145,14 +133,29 @@ class LargePrecisionTensor(AbstractTensor):
         Returns:
             tensor: the original tensor.
         """
-        result = self._internal_representation_to_large_ints(
-            self.child, internal_precision[self.internal_type]
-        )
+        result = self._internal_representation_to_large_ints(self.child, self.internal_precision)
         result /= self.base ** self.precision_fractional
         # At this point the value is an object type. Force cast to float before creating torch.tensor
         return torch.from_numpy(result.reshape(self.child.shape[:-1]).astype(np.float32))
 
-    def _split_number(self, number, bits) -> list:
+    @staticmethod
+    def _create_tensor_from_numpy(ndarray, internal_type, internal_precision, original_shape):
+        """Decompose a NumPy array into an array of numbers that represent such tensor with the required precision.
+
+        Typically this private method is called on the result of an operation.
+        """
+        result = []
+        # refs_ok is necessary to enable iterations of reference types.
+        for x in np.nditer(ndarray, flags=["refs_ok"]):
+            result.append(
+                LargePrecisionTensor._split_number(x.item(), internal_precision, internal_type)
+            )
+        new_shape = original_shape[:-1] + (len(max(result, key=len)),)
+        result = np.array(result).reshape(new_shape)
+        return torch.tensor(result, dtype=internal_type)
+
+    @staticmethod
+    def _split_number(number, bits, internal_type) -> list:
         """Splits a number in numbers of a smaller power.
 
         Args:
@@ -170,7 +173,7 @@ class LargePrecisionTensor(AbstractTensor):
             sign = 1
         else:
             assert (
-                self.internal_type != torch.uint8
+                internal_type != torch.uint8
             ), "Negative LargePrecisionTensors cannot be represented with uint8"
             sign = -1
             number = number * (-1)
@@ -210,8 +213,7 @@ class LargePrecisionTensor(AbstractTensor):
         return n
 
 
-# The internal precision used to decompose the large numbers is the size of the type - 1.
-internal_precision = {
+type_precision = {
     torch.uint8: 7,
     torch.int8: 7,
     torch.int16: 15,

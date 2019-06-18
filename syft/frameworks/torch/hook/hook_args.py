@@ -19,6 +19,8 @@ from typing import Union
 from typing import Tuple
 from typing import List
 
+import numpy as np
+
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -59,7 +61,9 @@ forward_func = {
     AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
-    LargePrecisionTensor: lambda i: i.child,
+    LargePrecisionTensor: lambda i: LargePrecisionTensor._internal_representation_to_large_ints(
+        i.child, i.internal_precision
+    ),
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -75,6 +79,7 @@ backward_func = {
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
+    # np.ndarray: lambda i, **kwargs: LargePrecisionTensor._create_tensor_from_numpy(i, **kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
