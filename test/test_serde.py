@@ -643,6 +643,36 @@ def test_torch_jit_script_module_serde():  # pragma: no cover
     assert foo.code == foo_received.code
 
 
+def test_serde_virtual_worker(hook):
+    virtual_worker = syft.VirtualWorker(hook=hook, id="deserialized_worker1")
+    # Populate worker
+    tensor1, tensor2 = torch.tensor([1.0, 2.0]), torch.tensor([0.0])
+    ptr1, ptr2 = tensor1.send(virtual_worker), tensor2.send(virtual_worker)
+
+    serialized_worker = serde.serialize(virtual_worker, force_full_simplification=False)
+    deserialized_worker = serde.deserialize(serialized_worker)
+
+    assert virtual_worker.id == deserialized_worker.id
+
+
+def test_full_serde_virtual_worker(hook):
+    virtual_worker = syft.VirtualWorker(hook=hook, id="deserialized_worker2")
+    # Populate worker
+    tensor1, tensor2 = torch.tensor([1.0, 2.0]), torch.tensor([0.0])
+    ptr1, ptr2 = tensor1.send(virtual_worker), tensor2.send(virtual_worker)
+
+    print(virtual_worker._objects)
+    serialized_worker = serde.serialize(virtual_worker, force_full_simplification=True)
+
+    deserialized_worker = serde.deserialize(serialized_worker)
+
+    assert virtual_worker.id == deserialized_worker.id
+    assert virtual_worker.auto_add == deserialized_worker.auto_add
+    assert len(deserialized_worker._objects) == 2
+    assert tensor1.id in deserialized_worker._objects
+    assert tensor2.id in deserialized_worker._objects
+
+
 def test_serde_object_wrapper_traced_module():
 
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]])
