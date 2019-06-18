@@ -69,10 +69,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
 )
 
-# Objects that we can run force full simplilfy on
-MAP_TO_FORCE_FULL_SIMPLIFY = [VirtualWorker]
-
-# If a object implements its own simplifer and detailer function it should be stored in this list
+# If a object implements its own simplify and detail functions it should be stored in this list
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     LoggingTensor,
@@ -83,6 +80,10 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     TrainConfig,
     VirtualWorker,
 ]
+
+# If a object implements its own force_simplify and force_detail functions it should be stored in this list
+OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
+
 
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
@@ -96,32 +97,16 @@ def _force_full_simplify(obj: object) -> object:
     current_type = type(obj)
 
     if current_type in forced_full_simplifiers:
-
+        print(current_type)
         left = forced_full_simplifiers[current_type][0]
 
         right = forced_full_simplifiers[current_type][1]
-
+        print(left, right)
         right = right(obj)
 
         result = (left, right)
     else:
         result = _simplify(obj)
-
-    return result
-
-
-def _force_full_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
-    worker_id, _objects, auto_add = worker_tuple
-    worker_id = _detail(worker, worker_id)
-
-    result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
-    _objects = _detail(worker, _objects)
-    result._objects = _objects
-
-    # make sure they weren't accidentally double registered
-    for _, obj in _objects.items():
-        if obj.id in worker._objects:
-            del worker._objects[obj.id]
 
     return result
 
@@ -155,16 +140,16 @@ def _generate_simplifiers_and_detailers():
         simplifier, detailer = syft_type.simplify, syft_type.detail
         _add_simplifier_and_detailer(syft_type, simplifier, detailer)
 
-    # Add forced full simplifiers
-    for curr_type in MAP_TO_FORCE_FULL_SIMPLIFY:
-        _add_simplifier_and_detailer(
-            curr_type, _force_full_simplify, _force_full_detail, forced=True
-        )
+    # Register syft objects with custom force_simplify and force_detail methods
+    for syft_type in OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS:
+        force_simplifier, force_detailer = syft_type.force_simplify, syft_type.force_detail
+        _add_simplifier_and_detailer(syft_type, force_simplifier, force_detailer, forced=True)
 
     return simplifiers, forced_full_simplifiers, detailers
 
 
 simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_detailers()
+
 
 ## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
