@@ -566,6 +566,18 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.chunk = chunk
 
+        @overloaded.function
+        def roll(tensor_shares, shifts, dims=None):
+            results = {}
+
+            for worker, share in tensor_shares.items():
+                results[worker] = torch.roll(share, shifts[worker].get().item())
+                # Is it ok to get the shift value?
+
+            return results
+
+        module.roll = roll
+
         def max(tensor, **kwargs):
             return tensor.max(**kwargs)
 

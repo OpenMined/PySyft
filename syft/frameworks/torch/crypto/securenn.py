@@ -442,7 +442,15 @@ def relu(a_sh):
 
 
 def maxpool(x_sh):
-    """
+    """ Compute MaxPool: returns fresh shares of the max value in the input tensor
+    and the index of this value in the flattened tensor
+    
+    Args:
+        x_sh (AdditiveSharingTensor): the private tensor on which the op applies
+        
+    Returns:
+        maximum value as an AdditiveSharingTensor
+        index of this value in the flattened tensor as an AdditiveSharingTensor
     """
     alice, bob = x_sh.locations
     crypto_provider = x_sh.crypto_provider
@@ -480,3 +488,54 @@ def maxpool(x_sh):
         ind_sh = select_share(beta_sh, ind_sh, k)
 
     return max_sh + u_sh, ind_sh + v_sh
+
+
+def maxpool_deriv(x_sh):
+    """ Compute derivative of MaxPool
+
+    Args:
+        x_sh (AdditiveSharingTensor): the private tensor on which the op applies
+
+    Returns:
+        an AdditiveSharingTensor of the same shape as x_sh full of zeros except for
+        a 1 at the position of the max value
+    """
+    alice, bob = x_sh.locations
+    crypto_provider = x_sh.crypto_provider
+    L = x_sh.field
+
+    n1, n2 = x_sh.shape
+    n = n1 * n2
+    x_sh = x_sh.view(-1)
+
+    # Common Randomness
+    U_sh = (
+        torch.zeros(n)
+        .long()
+        .send(alice)
+        .share(alice, bob, field=L, crypto_provider=crypto_provider)
+        .get()
+        .child
+    )
+    r = _random_common_value(L, alice, bob)
+
+    # 1)
+    _, ind_max_sh = maxpool(x_sh)
+
+    # 2)
+    j = sy.MultiPointerTensor(children=[torch.tensor([1]).send(alice), torch.tensor([0]).send(bob)])
+    k_sh = ind_max_sh + j * r
+
+    # 3)
+    t = k_sh.get()
+    k = t % n
+    E_k = torch.zeros(n)
+    E_k[k] = 1
+    E_sh = E_k.share(alice, bob).child
+
+    # 4)
+    g = r % n
+    D_sh = torch.roll(E_sh, -g)
+
+    maxpool_d_sh = D_sh + U_sh
+    return maxpool_d_sh.view(*list(input_shape))
