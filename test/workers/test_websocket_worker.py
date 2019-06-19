@@ -11,7 +11,7 @@ from syft.workers import WebsocketServerWorker
 
 
 @pytest.mark.parametrize("secure", [True, False])
-def basic_test_websocket_worker(hook, start_proc, secure, tmpdir):
+def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
     """Evaluates that you can do basic tensor operations using
     WebsocketServerWorker in insecure and secure mode."""
 
