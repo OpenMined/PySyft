@@ -553,8 +553,6 @@ def test_pointer_tensor(hook, workers):
     )
     t_serialized = serde.serialize(t)
     t_serialized_deserialized = serde.deserialize(t_serialized)
-    print(f"t.location - {t.location}")
-    print(f"t_serialized_deserialized.location - {t_serialized_deserialized.location}")
     assert t.id == t_serialized_deserialized.id
     assert t.location.id == t_serialized_deserialized.location.id
     assert t.id_at_location == t_serialized_deserialized.id_at_location
@@ -619,19 +617,25 @@ def test_serde_object_wrapper_int():
     assert obj_wrapper.id == obj_wrapper_received.id
 
 
-@pytest.mark.skip(reason="bug in pytorch version 1.1.0, jit.trace returns raw C function")
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
 def test_serialize_and_deserialize_torch_scriptmodule():  # pragma: no cover
     @torch.jit.script
     def foo(x):
         return x + 2
 
-    bin_message = serde._simplify_script_module(foo)
-    foo_loaded = serde._detail_script_module(None, bin_message)
+    bin_message = torch_serde._simplify_script_module(foo)
+    foo_loaded = torch_serde._detail_script_module(None, bin_message)
 
     assert foo.code == foo_loaded.code
 
 
-@pytest.mark.skip(reason="bug in pytorch version 1.1.0, jit.trace returns raw C function")
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
 def test_torch_jit_script_module_serde():  # pragma: no cover
     @torch.jit.script
     def foo(x):
@@ -641,6 +645,35 @@ def test_torch_jit_script_module_serde():  # pragma: no cover
     foo_received = serde.deserialize(msg)
 
     assert foo.code == foo_received.code
+
+
+def test_serde_virtual_worker(hook):
+    virtual_worker = syft.VirtualWorker(hook=hook, id="deserialized_worker1")
+    # Populate worker
+    tensor1, tensor2 = torch.tensor([1.0, 2.0]), torch.tensor([0.0])
+    ptr1, ptr2 = tensor1.send(virtual_worker), tensor2.send(virtual_worker)
+
+    serialized_worker = serde.serialize(virtual_worker, force_full_simplification=False)
+    deserialized_worker = serde.deserialize(serialized_worker)
+
+    assert virtual_worker.id == deserialized_worker.id
+
+
+def test_full_serde_virtual_worker(hook):
+    virtual_worker = syft.VirtualWorker(hook=hook, id="deserialized_worker2")
+    # Populate worker
+    tensor1, tensor2 = torch.tensor([1.0, 2.0]), torch.tensor([0.0])
+    ptr1, ptr2 = tensor1.send(virtual_worker), tensor2.send(virtual_worker)
+
+    serialized_worker = serde.serialize(virtual_worker, force_full_simplification=True)
+
+    deserialized_worker = serde.deserialize(serialized_worker)
+
+    assert virtual_worker.id == deserialized_worker.id
+    assert virtual_worker.auto_add == deserialized_worker.auto_add
+    assert len(deserialized_worker._objects) == 2
+    assert tensor1.id in deserialized_worker._objects
+    assert tensor2.id in deserialized_worker._objects
 
 
 def test_serde_object_wrapper_traced_module():
