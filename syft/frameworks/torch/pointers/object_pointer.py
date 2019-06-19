@@ -136,7 +136,9 @@ class ObjectPointer(abstract.AbstractObject):
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
         if self.location == self.owner:
-            obj = self.owner.get_obj(self.id_at_location).child
+            obj = self.owner.get_obj(self.id_at_location)
+            if hasattr(obj, "child"):
+                obj = obj.child
         else:
             # get tensor from location
             obj = self.owner.request_obj(self.id_at_location, self.location)
@@ -144,6 +146,10 @@ class ObjectPointer(abstract.AbstractObject):
         # Remove this pointer by default
         if deregister_ptr:
             self.owner.de_register_obj(self)
+
+        if self.garbage_collect_data:
+            # data already retrieved, do not collect any more.
+            self.garbage_collect_data = False
 
         return obj
 
