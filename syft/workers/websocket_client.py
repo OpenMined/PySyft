@@ -134,6 +134,7 @@ class WebsocketClientWorker(BaseWorker):
             return_ids = [sy.ID_PROVIDER.pop()]
 
         # Close the existing websocket connection in order to open a asynchronous connection
+        # This code is not tested with secure connections (wss protocol).
         self.close()
         async with websockets.connect(
             self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
