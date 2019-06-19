@@ -1,10 +1,9 @@
 """
 This file exists to provide one common place for all serialisation and simplify_ and _detail
-for all tensors (Torch) and collections.
+for all tensors (Torch and Numpy).
 """
+from collections import OrderedDict
 from tempfile import TemporaryFile
-from typing import Collection
-from typing import Dict
 from typing import Tuple
 import torch
 
@@ -13,7 +12,6 @@ import numpy
 import warnings
 
 import syft
-import syft as sy
 
 from syft.federated import TrainConfig
 
@@ -30,18 +28,6 @@ from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.frameworks.torch import pointers
-
-
-from syft.serde.native_serde import (
-    _simplify_slice,
-    _simplify_ellipsis,
-    _simplify_range,
-    _simplify_str,
-    _detail_slice,
-    _detail_ellipsis,
-    _detail_range,
-    _detail_str,
-)
 
 
 def _serialize_tensor(tensor) -> bin:
@@ -153,7 +139,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     # I think the pointer bug is is between here
 
     if hasattr(tensor, "child"):
-        chain = _simplify(tensor.child)
+        chain = syft.serde._simplify(tensor.child)
 
     # and here... leaving a reerence here so i can find it later
     # TODO fix pointer bug
@@ -212,7 +198,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         tensor.description = description
 
     if chain is not None:
-        chain = detail(worker, chain)
+        chain = syft.serde._detail(worker, chain)
         tensor.child = chain
         tensor.is_wrapper = True
 
@@ -282,193 +268,7 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     return param
 
 
-# Simplify/Detail Collections (list, set, tuple, etc.)
-
-
-def _simplify_collection(my_collection: Collection) -> Collection:
-    """
-    This function is designed to search a collection for any objects
-    which may need to be simplified (i.e., torch tensors). It iterates
-    through each object in the collection and calls _simplify on it. Finally,
-    it returns the output collection as the same type as the input collection
-    so that the consuming serialization step knows the correct type info. The
-    reverse function to this function is _detail_collection, which undoes
-    the functionality of this function.
-
-    Args:
-        my_collection (Collection): a collection of python objects
-
-    Returns:
-        Collection: a collection of the same type as the input of simplified
-            objects.
-
-    """
-
-    # Step 0: get collection type for later use and itialize empty list
-    my_type = type(my_collection)
-    pieces = list()
-
-    # Step 1: serialize each part of the collection
-    for part in my_collection:
-        pieces.append(_simplify(part))
-
-    # Step 2: convert back to original type and return serialization
-    if my_type == set:
-        return pieces
-    return my_type(pieces)
-
-
-def _detail_collection_list(worker: AbstractWorker, my_collection: Collection) -> Collection:
-    """
-    This function is designed to operate in the opposite direction of
-    _simplify_collection. It takes a collection of simple python objects
-    and iterates through it to determine whether objects in the collection
-    need to be converted into more advanced types. In particular, it
-    converts binary objects into torch Tensors where appropriate.
-
-    Args:
-        worker: the worker doing the deserialization
-        my_collection (Collection): a collection of simple python objects (including binary).
-
-    Returns:
-        Collection: a collection of the same type as the input where the objects
-            in the collection have been detailed.
-    """
-
-    pieces = list()
-
-    # Step 1: deserialize each part of the collection
-    for part in my_collection:
-        try:
-            pieces.append(detail(worker, part).decode("utf-8"))  # transform bytes back to string
-        except AttributeError:
-            pieces.append(detail(worker, part))
-
-    return pieces
-
-
-def _detail_collection_set(worker: AbstractWorker, my_collection: Collection) -> Collection:
-    """
-    This function is designed to operate in the opposite direction of
-    _simplify_collection. It takes a collection of simple python objects
-    and iterates through it to determine whether objects in the collection
-    need to be converted into more advanced types. In particular, it
-    converts binary objects into torch Tensors where appropriate.
-
-    Args:
-        worker: the worker doing the deserialization
-        my_collection (Collection): a collection of simple python objects (including binary).
-
-    Returns:
-        Collection: a collection of the same type as the input where the objects
-            in the collection have been detailed.
-    """
-
-    pieces = list()
-
-    # Step 1: deserialize each part of the collection
-    for part in my_collection:
-        try:
-            pieces.append(detail(worker, part).decode("utf-8"))  # transform bytes back to string
-        except AttributeError:
-            pieces.append(detail(worker, part))
-    return set(pieces)
-
-
-def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
-    """
-    This function is designed to operate in the opposite direction of
-    _simplify_collection. It takes a tuple of simple python objects
-    and iterates through it to determine whether objects in the collection
-    need to be converted into more advanced types. In particular, it
-    converts binary objects into torch Tensors where appropriate.
-    This is only applicable to tuples. They need special handling because
-    `msgpack` is encoding a tuple as a list.
-
-    Args:
-        worker: the worker doing the deserialization
-        my_tuple (Tuple): a collection of simple python objects (including binary).
-
-    Returns:
-        tuple: a collection of the same type as the input where the objects
-            in the collection have been detailed.
-    """
-
-    pieces = list()
-
-    # Step 1: deserialize each part of the collection
-    for part in my_tuple:
-        pieces.append(detail(worker, part))
-
-    return tuple(pieces)
-
-
-# Dictionaries
-
-
-def _simplify_dictionary(my_dict: Dict) -> Dict:
-    """
-    This function is designed to search a dict for any objects
-    which may need to be simplified (i.e., torch tensors). It iterates
-    through each key, value in the dict and calls _simplify on it. Finally,
-    it returns the output dict as the same type as the input dict
-    so that the consuming serialization step knows the correct type info. The
-    reverse function to this function is _detail_dictionary, which undoes
-    the functionality of this function.
-
-    Args:
-        my_dict (Dict): a dictionary of python objects
-
-    Returns:
-        Dict: a dictionary of the same type as the input of simplified
-            objects.
-
-    """
-    pieces = list()
-    # for dictionaries we want to simplify both the key and the value
-    for key, value in my_dict.items():
-        pieces.append((_simplify(key), _simplify(value)))
-
-    return pieces
-
-
-def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
-    """
-    This function is designed to operate in the opposite direction of
-    _simplify_dictionary. It takes a dictionary of simple python objects
-    and iterates through it to determine whether objects in the collection
-    need to be converted into more advanced types. In particular, it
-    converts binary objects into torch Tensors where appropriate.
-
-    Args:
-        worker: the worker doing the deserialization
-        my_dict (Dict): a dictionary of simple python objects (including binary).
-
-    Returns:
-        tuple: a collection of the same type as the input where the objects
-            in the collection have been detailed.
-    """
-    pieces = {}
-    # for dictionaries we want to detail both the key and the value
-    for key, value in my_dict:
-        detailed_key = detail(worker, key)
-        try:
-            detailed_key = detailed_key.decode("utf-8")
-        except AttributeError:
-            pass
-
-        detailed_value = detail(worker, value)
-        try:
-            detailed_value = detailed_value.decode("utf-8")
-        except AttributeError:
-            pass
-
-        pieces[detailed_key] = detailed_value
-
-    return pieces
-
-
-#   numpy array
+#   Numpy array
 
 
 def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
@@ -531,30 +331,6 @@ def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.devi
     return torch.device(type=device_type)
 
 
-def _force_full_simplify(worker: AbstractWorker) -> tuple:
-    """
-
-    """
-
-    return (_simplify(worker.id), _simplify(worker._objects), worker.auto_add)
-
-
-def _force_full_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
-    worker_id, _objects, auto_add = worker_tuple
-    worker_id = detail(worker, worker_id)
-
-    result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
-    _objects = detail(worker, _objects)
-    result._objects = _objects
-
-    # make sure they weren't accidentally double registered
-    for _, obj in _objects.items():
-        if obj.id in worker._objects:
-            del worker._objects[obj.id]
-
-    return result
-
-
 def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
     """Strategy to serialize a script module using Torch.jit"""
     return obj.save_to_buffer()
@@ -567,148 +343,15 @@ def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> tor
     return loaded_module
 
 
-# High Level Simplification Router
-
-
-def _simplify(obj: object) -> object:
-    """
-    This function takes an object as input and returns a simple
-    Python object which is supported by the chosen serialization
-    method (such as JSON or msgpack). The reason we have this function
-    is that some objects are either NOT supported by high level (fast)
-    serializers OR the high level serializers don't support the fastest
-    form of serialization. For example, PyTorch tensors have custom pickle
-    functionality thus its better to pre-serialize PyTorch tensors using
-    pickle and then serialize the binary in with the rest of the message
-    being sent.
-
-    Args:
-        obj: an object which may need to be simplified
-
-    Returns:
-        obj: an simple Python object which msgpack can serialize
-
-    Raises:
-        ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
-        characters.
-
-    """
-
-    try:
-        # check to see if there is a simplifier
-        # for this type. If there is, run return
-        # the simplified object
-        current_type = type(obj)
-        result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
-        return result
-
-    except KeyError:
-
-        # if there is not a simplifier for this
-        # object, then the object is already a
-        # simple python object and we can just
-        # return it
-        return obj
-
-
-def _force_full_simplify(obj: object) -> object:
-    current_type = type(obj)
-
-    if current_type in forced_full_simplifiers:
-
-        left = forced_full_simplifiers[current_type][0]
-
-        right = forced_full_simplifiers[current_type][1]
-
-        right = right(obj)
-
-        result = (left, right)
-    else:
-        result = _simplify(obj)
-
-    return result
-
-
-simplifiers = {
-    torch.Tensor: [0, _simplify_torch_tensor],
-    torch.nn.Parameter: [1, _simplify_torch_parameter],
-    tuple: [2, _simplify_collection],
-    list: [3, _simplify_collection],
-    set: [4, _simplify_collection],
-    dict: [5, _simplify_dictionary],
-    range: [6, _simplify_range],
-    numpy.ndarray: [7, _simplify_ndarray],
-    slice: [8, _simplify_slice],
-    type(Ellipsis): [9, _simplify_ellipsis],
-    torch.device: [10, _simplify_torch_device],
-    pointers.PointerTensor: [11, sy.PointerTensor.simplify],
-    LoggingTensor: [12, sy.LoggingTensor.simplify],
-    AdditiveSharingTensor: [13, sy.AdditiveSharingTensor.simplify],
-    MultiPointerTensor: [14, sy.MultiPointerTensor.simplify],
-    Plan: [15, sy.Plan.simplify],
-    VirtualWorker: [16, sy.VirtualWorker.simplify],
-    str: [18, _simplify_str],
-    pointers.ObjectWrapper: [19, sy.ObjectWrapper.simplify],
-    GetNotPermittedError: [20, sy.exceptions.GetNotPermittedError.simplify],
-    ResponseSignatureError: [20, sy.exceptions.ResponseSignatureError.simplify],
-    torch.jit.ScriptModule: [21, _simplify_script_module],
-    torch.jit.TopLevelTracedModule: [
-        21,
-        _simplify_script_module,
-    ],  # treat as torch.jit.ScriptModule
-    TrainConfig: [22, sy.TrainConfig.simplify],
-}
-
-forced_full_simplifiers = {VirtualWorker: [17, _force_full_simplify]}
-
-
-def detail(worker: AbstractWorker, obj: object) -> object:
-    """
-    This function reverses the functionality of _simplify. Where applicable,
-    it converts simple objects into more complex objects such as converting
-    binary objects into torch tensors. Read _simplify for more information on
-    why _simplify and _detail are needed.
-
-    Args:
-        worker: the worker which is acquiring the message content, for example
-        used to specify the owner of a tensor received(not obvious for
-        virtual workers)
-        obj: a simple Python object which msgpack deserialized
-
-    Returns:
-        obj: a more complex Python object which msgpack would have had trouble
-            deserializing directly.
-
-    """
-
-    if type(obj) in (list, tuple):
-        return detailers[obj[0]](worker, obj[1])
-    else:
-        return obj
-
-
-detailers = [
-    _detail_torch_tensor,
-    _detail_torch_parameter,
-    _detail_collection_tuple,
-    _detail_collection_list,
-    _detail_collection_set,
-    _detail_dictionary,
-    _detail_range,
-    _detail_ndarray,
-    _detail_slice,
-    _detail_ellipsis,
-    _detail_torch_device,
-    sy.PointerTensor.detail,
-    sy.LoggingTensor.detail,
-    sy.AdditiveSharingTensor.detail,
-    sy.MultiPointerTensor.detail,
-    sy.Plan.detail,
-    sy.VirtualWorker.detail,
-    _force_full_detail,
-    _detail_str,
-    sy.ObjectWrapper.detail,
-    sy.exceptions.GetNotPermittedError.detail,
-    _detail_script_module,
-    sy.TrainConfig.detail,
-]
+# Maps a type to a tuple containing its simplifier and detailer function
+# IMPORTANT: keep this structure sorted A-Z (by type name)
+MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
+    {
+        numpy.ndarray: (_simplify_ndarray, _detail_ndarray),
+        torch.device: (_simplify_torch_device, _detail_torch_device),
+        torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
+        torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
+        torch.nn.Parameter: (_simplify_torch_parameter, _detail_torch_parameter),
+        torch.Tensor: (_simplify_torch_tensor, _detail_torch_tensor),
+    }
+)

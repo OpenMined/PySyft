@@ -79,3 +79,19 @@ def test_scale_model():
 
     assert (new_model.fc1.weight.data == (weight1 * scale)).all()
     assert (new_model.fc1.bias.data == (bias1 * scale)).all()
+
+
+def test_accuracy():
+    pred = th.tensor([[0.95, 0.02, 0.03], [0.3, 0.4, 0.3], [0.0, 0.0, 1.0]])
+
+    target = th.tensor([0.0, 1.0, 2.0])
+
+    acc = utils.accuracy(pred, target)
+
+    assert acc == 1.0
+
+    target = th.tensor([2.0, 0.0, 2.0])
+
+    acc = utils.accuracy(pred, target)
+
+    assert acc == 1.0 / 3.0

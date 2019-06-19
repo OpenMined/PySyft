@@ -2,9 +2,205 @@
 This file exists to provide one common place for all serialisation and simplify_ and _detail
 for all native python objects.
 """
-from syft.workers import AbstractWorker
+from collections import OrderedDict
+from typing import Collection
+from typing import Dict
 from typing import Tuple
+
 import numpy
+
+from syft.workers import AbstractWorker
+from syft import serde
+
+
+# Simplify/Detail Collections (list, set, tuple, etc.)
+
+
+def _simplify_collection(my_collection: Collection) -> Collection:
+    """
+    This function is designed to search a collection for any objects
+    which may need to be simplified (i.e., torch tensors). It iterates
+    through each object in the collection and calls _simplify on it. Finally,
+    it returns the output collection as the same type as the input collection
+    so that the consuming serialization step knows the correct type info. The
+    reverse function to this function is _detail_collection, which undoes
+    the functionality of this function.
+
+    Args:
+        my_collection (Collection): a collection of python objects
+
+    Returns:
+        Collection: a collection of the same type as the input of simplified
+            objects.
+
+    """
+
+    # Step 0: get collection type for later use and itialize empty list
+    my_type = type(my_collection)
+    pieces = list()
+
+    # Step 1: serialize each part of the collection
+    for part in my_collection:
+        pieces.append(serde._simplify(part))
+
+    # Step 2: convert back to original type and return serialization
+    if my_type == set:
+        return pieces
+    return my_type(pieces)
+
+
+def _detail_collection_list(worker: AbstractWorker, my_collection: Collection) -> Collection:
+    """
+    This function is designed to operate in the opposite direction of
+    _simplify_collection. It takes a collection of simple python objects
+    and iterates through it to determine whether objects in the collection
+    need to be converted into more advanced types. In particular, it
+    converts binary objects into torch Tensors where appropriate.
+
+    Args:
+        worker: the worker doing the deserialization
+        my_collection (Collection): a collection of simple python objects (including binary).
+
+    Returns:
+        Collection: a collection of the same type as the input where the objects
+            in the collection have been detailed.
+    """
+
+    pieces = list()
+
+    # Step 1: deserialize each part of the collection
+    for part in my_collection:
+        try:
+            pieces.append(
+                serde._detail(worker, part).decode("utf-8")
+            )  # transform bytes back to string
+        except AttributeError:
+            pieces.append(serde._detail(worker, part))
+
+    return pieces
+
+
+def _detail_collection_set(worker: AbstractWorker, my_collection: Collection) -> Collection:
+    """
+    This function is designed to operate in the opposite direction of
+    _simplify_collection. It takes a collection of simple python objects
+    and iterates through it to determine whether objects in the collection
+    need to be converted into more advanced types. In particular, it
+    converts binary objects into torch Tensors where appropriate.
+
+    Args:
+        worker: the worker doing the deserialization
+        my_collection (Collection): a collection of simple python objects (including binary).
+
+    Returns:
+        Collection: a collection of the same type as the input where the objects
+            in the collection have been detailed.
+    """
+
+    pieces = list()
+
+    # Step 1: deserialize each part of the collection
+    for part in my_collection:
+        try:
+            pieces.append(
+                serde._detail(worker, part).decode("utf-8")
+            )  # transform bytes back to string
+        except AttributeError:
+            pieces.append(serde._detail(worker, part))
+    return set(pieces)
+
+
+def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
+    """
+    This function is designed to operate in the opposite direction of
+    _simplify_collection. It takes a tuple of simple python objects
+    and iterates through it to determine whether objects in the collection
+    need to be converted into more advanced types. In particular, it
+    converts binary objects into torch Tensors where appropriate.
+    This is only applicable to tuples. They need special handling because
+    `msgpack` is encoding a tuple as a list.
+
+    Args:
+        worker: the worker doing the deserialization
+        my_tuple (Tuple): a collection of simple python objects (including binary).
+
+    Returns:
+        tuple: a collection of the same type as the input where the objects
+            in the collection have been detailed.
+    """
+
+    pieces = list()
+
+    # Step 1: deserialize each part of the collection
+    for part in my_tuple:
+        pieces.append(serde._detail(worker, part))
+
+    return tuple(pieces)
+
+
+def _simplify_dictionary(my_dict: Dict) -> Dict:
+    """
+    This function is designed to search a dict for any objects
+    which may need to be simplified (i.e., torch tensors). It iterates
+    through each key, value in the dict and calls _simplify on it. Finally,
+    it returns the output dict as the same type as the input dict
+    so that the consuming serialization step knows the correct type info. The
+    reverse function to this function is _detail_dictionary, which undoes
+    the functionality of this function.
+
+    Args:
+        my_dict: A dictionary of python objects.
+
+    Returns:
+        Dict: A dictionary of the same type as the input of simplified
+            objects.
+
+    """
+    pieces = list()
+    # for dictionaries we want to simplify both the key and the value
+    for key, value in my_dict.items():
+        pieces.append((serde._simplify(key), serde._simplify(value)))
+
+    return pieces
+
+
+def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
+    """
+    This function is designed to operate in the opposite direction of
+    _simplify_dictionary. It takes a dictionary of simple python objects
+    and iterates through it to determine whether objects in the collection
+    need to be converted into more advanced types. In particular, it
+    converts binary objects into torch Tensors where appropriate.
+
+    Args:
+        worker: the worker doing the deserialization
+        my_dict (Dict): a dictionary of simple python objects (including binary).
+
+    Returns:
+        tuple: a collection of the same type as the input where the objects
+            in the collection have been detailed.
+    """
+    pieces = {}
+    # for dictionaries we want to detail both the key and the value
+    for key, value in my_dict:
+        detailed_key = serde._detail(worker, key)
+        try:
+            detailed_key = detailed_key.decode("utf-8")
+        except AttributeError:
+            pass
+
+        detailed_value = serde._detail(worker, value)
+        try:
+            detailed_value = detailed_value.decode("utf-8")
+        except AttributeError:
+            pass
+
+        pieces[detailed_key] = detailed_value
+
+    return pieces
+
+
+# Simplify/Detail native types
 
 
 def _simplify_str(obj: str) -> tuple:
@@ -13,9 +209,6 @@ def _simplify_str(obj: str) -> tuple:
 
 def _detail_str(worker: AbstractWorker, str_tuple: tuple) -> str:
     return str_tuple[0].decode("utf-8")
-
-
-# Range
 
 
 def _simplify_range(my_range: range) -> Tuple[int, int, int]:
@@ -107,53 +300,17 @@ def _detail_slice(worker: AbstractWorker, my_slice: Tuple[int, int, int]) -> sli
     return slice(my_slice[0], my_slice[1], my_slice[2])
 
 
-def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
-    """
-    This function gets the byte representation of the array
-        and stores the dtype and shape for reconstruction
-
-    Args:
-        my_array (numpy.ndarray): a numpy array
-
-    Returns:
-        list: a list holding the byte representation, shape and dtype of the array
-
-    Examples:
-
-        arr_representation = _simplify_ndarray(numpy.random.random([1000, 1000])))
-
-    """
-    arr_bytes = my_array.tobytes()
-    arr_shape = my_array.shape
-    arr_dtype = my_array.dtype.name
-
-    return (arr_bytes, arr_shape, arr_dtype)
-
-
-def _detail_ndarray(
-    worker: AbstractWorker, arr_representation: Tuple[bin, Tuple, str]
-) -> numpy.ndarray:
-    """
-    This function reconstruct a numpy array from it's byte data, the shape and the dtype
-        by first loading the byte data with the appropiate dtype and then reshaping it into the
-        original shape
-
-    Args:
-        worker: the worker doing the deserialization
-        arr_representation (tuple): a tuple holding the byte representation, shape
-        and dtype of the array
-
-    Returns:
-        numpy.ndarray: a numpy array
-
-    Examples:
-        arr = _detail_ndarray(arr_representation)
-
-    """
-    res = numpy.frombuffer(arr_representation[0], dtype=arr_representation[2]).reshape(
-        arr_representation[1]
-    )
-
-    assert type(res) == numpy.ndarray
-
-    return res
+# Maps a type to a tuple containing its simplifier and detailer function
+# IMPORTANT: keep this structure sorted A-Z (by type name)
+MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
+    {
+        dict: (_simplify_dictionary, _detail_dictionary),
+        list: (_simplify_collection, _detail_collection_list),
+        range: (_simplify_range, _detail_range),
+        set: (_simplify_collection, _detail_collection_set),
+        slice: (_simplify_slice, _detail_slice),
+        str: (_simplify_str, _detail_str),
+        tuple: (_simplify_collection, _detail_collection_tuple),
+        type(Ellipsis): (_simplify_ellipsis, _detail_ellipsis),
+    }
+)
