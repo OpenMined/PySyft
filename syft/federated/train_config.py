@@ -30,6 +30,7 @@ class TrainConfig:
         shuffle: bool = True,
         loss_fn_id: int = None,
         model_id: int = None,
+        weight_decay: float = 0.01,
     ):
         """Initializer for TrainConfig.
 
@@ -65,6 +66,7 @@ class TrainConfig:
         self.lr = lr
         self.max_nr_batches = max_nr_batches
         self.shuffle = shuffle
+        self.weight_decay = weight_decay
 
         # pointers
         self.model_ptr = None
@@ -159,6 +161,7 @@ class TrainConfig:
             sy.serde._simplify(train_config.id),
             train_config.max_nr_batches,
             train_config.shuffle,
+            train_config.weight_decay,
         )
 
     @staticmethod
@@ -172,7 +175,7 @@ class TrainConfig:
             train_config: A TrainConfig object
         """
 
-        model_id, loss_fn_id, batch_size, epochs, optimizer, lr, id, max_nr_batches, shuffle = (
+        model_id, loss_fn_id, batch_size, epochs, optimizer, lr, id, max_nr_batches, shuffle, weight_decay = (
             train_config_tuple
         )
 
@@ -192,6 +195,7 @@ class TrainConfig:
             lr=lr,
             max_nr_batches=max_nr_batches,
             shuffle=shuffle,
+            weight_decay=weight_decay,
         )
 
         return train_config
