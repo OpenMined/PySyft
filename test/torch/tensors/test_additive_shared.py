@@ -239,6 +239,31 @@ def test_chunk(workers):
     assert all([(res1[i].get() == expected1[i]).all() for i in range(2)])
 
 
+def test_roll(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    x = t.share(bob, alice, crypto_provider=james)
+
+    res1 = torch.roll(x, 2)
+    res2 = torch.roll(x, 2, dims=1)
+    res3 = torch.roll(x, (1, 2), dims=(0, 1))
+
+    assert (res1.get() == torch.roll(t, 2)).all()
+    assert (res2.get() == torch.roll(t, 2, dims=1)).all()
+    assert (res3.get() == torch.roll(t, (1, 2), dims=(0, 1))).all()
+
+    # With MultiPointerTensor
+    shifts = torch.tensor(1).send(alice, bob)
+    res = torch.roll(x, shifts)
+
+    shifts1 = torch.tensor(1).send(alice, bob)
+    shifts2 = torch.tensor(2).send(alice, bob)
+    res2 = torch.roll(x, (shifts1, shifts2), dims=(0, 1))
+
+    assert (res.get() == torch.roll(t, 1)).all()
+    assert (res2.get() == torch.roll(t, (1, 2), dims=(0, 1))).all()
+
+
 def test_nn_linear(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     t = torch.tensor([[1.0, 2]])

@@ -567,12 +567,18 @@ class AdditiveSharingTensor(AbstractTensor):
         module.chunk = chunk
 
         @overloaded.function
-        def roll(tensor_shares, shifts, dims=None):
+        def roll(tensor_shares, shifts, **kwargs):
             results = {}
 
             for worker, share in tensor_shares.items():
-                results[worker] = torch.roll(share, shifts[worker].get().item())
-                # Is it ok to get the shift value?
+                if isinstance(shifts, dict):
+                    results[worker] = torch.roll(share, shifts[worker].get().item(), **kwargs)
+                    # Is it ok to get the shift value?
+                elif isinstance(shifts, tuple) and isinstance(shifts[0], dict):
+                    shifts = [s[worker].get().item() for s in shifts]
+                    results[worker] = torch.roll(share, shifts, **kwargs)
+                else:
+                    results[worker] = torch.roll(share, shifts, **kwargs)
 
             return results
 
