@@ -18,7 +18,7 @@ def test_fix_prec(workers):
     x = torch.tensor([1.5, 2.0, 3.0])
     enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=256)
     restored = enlarged.float_precision()
-    # And now x and restored must be the same
+    # And now x and restored must be the same5
     assert torch.all(torch.eq(x, restored))
 
 
@@ -160,3 +160,12 @@ def test_subtract():
     lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
     result = lpt1 - lpt2
     assert torch.all(torch.eq(expected, result.float_precision()))
+
+
+def test_diff_dims_in_same_tensor():
+    internal_type = torch.int16
+    precision_fractional = 128
+    x = torch.tensor([2000.0, 1.0])
+    lpt_x = x.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    restored = lpt_x.float_precision()
+    assert torch.all(torch.eq(x, restored))

@@ -29,6 +29,7 @@ class LargePrecisionTensor(AbstractTensor):
         precision_fractional=0,
         internal_type=torch.int32,
         verbose=False,
+        **extras,
     ):
         """Initializes a LargePrecisionTensor.
 
@@ -41,6 +42,7 @@ class LargePrecisionTensor(AbstractTensor):
             base (int): The base that will be used to to calculate the precision.
             precision_fractional (int): The precision required by the caller.
             internal_type (dtype): The large tensor will be stored using tensor of this type.
+            extras: TODO
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.base = base
@@ -58,8 +60,18 @@ class LargePrecisionTensor(AbstractTensor):
             result.append(
                 LargePrecisionTensor._split_number(n, self.internal_precision, self.internal_type)
             )
-        new_shape = self.child.shape + (len(max(result, key=len)),)
-        result = np.array(result).reshape(new_shape)
+        max_length = len(max(result, key=len))
+        new_shape = self.child.shape + (max_length,)
+        # List with different lengths will result in np.array building an array of lists instead of the matrices
+        # itertools.zip_longest fills on the right but we need to fill with zeros on the left
+        n_result = []
+        for a_number in result:
+            len_a_number = len(a_number)
+            if len_a_number < max_length:
+                n_result.append([0] * (max_length - len_a_number) + a_number)
+            else:
+                n_result.append(a_number)
+        result = np.array(n_result).reshape(new_shape)
         return torch.tensor(result, dtype=self.internal_type)
 
     @property
@@ -75,16 +87,12 @@ class LargePrecisionTensor(AbstractTensor):
             "base": self.base,
             "internal_type": self.internal_type,
             "precision_fractional": self.precision_fractional,
+            "original_shape": self.child.shape,
         }
 
     @overloaded.method
     def add(self, self_, other):
-        # TODO This should be done by the backward_func.
-        # self_ + other returns a np.array which is probably why it's not going through hook_args.backward_func
-        return LargePrecisionTensor._create_tensor_from_numpy(
-            self_ + other, self.internal_type, self.internal_precision, self.child.shape
-        )
-        # return self_ + other
+        return self_ + other
 
     __add__ = add
 
@@ -97,9 +105,7 @@ class LargePrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def sub(self, self_, other):
-        return self._create_tensor_from_numpy(
-            self_ - other, self.internal_type, self.internal_precision, self.child.shape
-        )
+        return self_ - other
 
     __sub__ = sub
 
@@ -113,12 +119,7 @@ class LargePrecisionTensor(AbstractTensor):
     @overloaded.method
     def mul(self, self_, other):
         # We need to divide the result of the multiplication by the precision
-        return self._create_tensor_from_numpy(
-            (self_ * other) / (self.base ** self.precision_fractional),
-            self.internal_type,
-            self.internal_precision,
-            self.child.shape,
-        )
+        return (self_ * other) / (self.base ** self.precision_fractional)
 
     __mul__ = mul
 
@@ -139,11 +140,14 @@ class LargePrecisionTensor(AbstractTensor):
         return torch.from_numpy(result.reshape(self.child.shape[:-1]).astype(np.float32))
 
     @staticmethod
-    def _create_tensor_from_numpy(ndarray, internal_type, internal_precision, original_shape):
+    def _create_tensor_from_numpy(ndarray, **kwargs):
         """Decompose a NumPy array into an array of numbers that represent such tensor with the required precision.
 
         Typically this private method is called on the result of an operation.
         """
+        internal_type = kwargs["internal_type"]
+        internal_precision = type_precision[internal_type]
+        original_shape = kwargs["original_shape"]
         result = []
         # refs_ok is necessary to enable iterations of reference types.
         for x in np.nditer(ndarray, flags=["refs_ok"]):
