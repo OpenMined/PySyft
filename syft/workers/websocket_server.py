@@ -51,12 +51,14 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
                 initialized with (such as datasets)
             loop: the asyncio event loop if you want to pass one in
                 yourself
+            cert_path: path to used secure certificate, only needed for secure connections
+            key_path: path to secure key, only needed for secure connections
         """
 
         self.port = port
         self.host = host
-        self.cert = cert_path
-        self.key = key_path
+        self.cert_path = cert_path
+        self.key_path = key_path
 
         if loop is None:
             loop = asyncio.new_event_loop()
@@ -139,9 +141,9 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
     def start(self):
         """Start the server"""
         # Secure behavior: adds a secure layer applying cryptography and authentication
-        if not (self.cert is None) and not (self.key is None):
+        if not (self.cert_path is None) and not (self.key_path is None):
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            ssl_context.load_cert_chain(self.cert, self.key)
+            ssl_context.load_cert_chain(self.cert_path, self.key_path)
             start_server = websockets.serve(
                 self._handler,
                 self.host,

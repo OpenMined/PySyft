@@ -147,6 +147,10 @@ class ObjectPointer(abstract.AbstractObject):
         if deregister_ptr:
             self.owner.de_register_obj(self)
 
+        if self.garbage_collect_data:
+            # data already retrieved, do not collect any more.
+            self.garbage_collect_data = False
+
         return obj
 
     def __str__(self):
