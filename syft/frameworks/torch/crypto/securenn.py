@@ -321,7 +321,7 @@ def share_convert(a_sh):
     r_shares = r_sh.child
 
     alpha0 = (
-        (r_shares[workers[0].id] + (r_shares[workers[1].id] * 1).move(workers[0])) >= L
+        (r_shares[workers[0].id] + r_shares[workers[1].id].copy().move(workers[0])) >= L
     ).long()
     alpha1 = alpha0.copy().move(workers[1])
     alpha = sy.MultiPointerTensor(children=[alpha0, alpha1])
@@ -345,7 +345,8 @@ def share_convert(a_sh):
     # 4)
     a_tilde_shares = a_tilde_sh.child
     delta = (
-        ((a_tilde_shares[workers[0].id] * 1).get() + (a_tilde_shares[workers[1].id] * 1).get()) >= L
+        (a_tilde_shares[workers[0].id].copy().get() + a_tilde_shares[workers[1].id].copy().get())
+        >= L
     ).long()
     x = a_tilde_sh.get() % L
 
@@ -402,11 +403,11 @@ def relu_deriv(a_sh):
     )
 
     # 1)
-    y_sh = (2 * a_sh) % L  # TODO put this in mul at some point
+    y_sh = a_sh * 2
 
     # 2) Not applicable with algebraic shares
-    # y_sh = share_convert(y_sh)
-    y_sh.field = L - 1
+    y_sh = share_convert(y_sh)
+    # y_sh.field = L - 1
 
     # 3)
     alpha_sh = msb(y_sh)
@@ -538,4 +539,4 @@ def maxpool_deriv(x_sh):
     D_sh = torch.roll(E_sh, -g)
 
     maxpool_d_sh = D_sh + U_sh
-    return maxpool_d_sh.view(*list(input_shape))
+    return maxpool_d_sh.view(n1, n2)

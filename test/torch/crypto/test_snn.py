@@ -2,7 +2,14 @@ import torch
 import torch as th
 import syft
 
-from syft.frameworks.torch.crypto.securenn import private_compare, decompose, share_convert
+from syft.frameworks.torch.crypto.securenn import (
+    private_compare,
+    decompose,
+    share_convert,
+    relu_deriv,
+    maxpool,
+    maxpool_deriv,
+)
 
 
 def test_xor_implementation(workers):
@@ -71,11 +78,20 @@ def test_share_convert(workers):
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    x_bit_sh = torch.LongTensor([13]).share(alice, bob, crypto_provider=james).child
+    x_bit_sh = torch.LongTensor([13, -2]).share(alice, bob, crypto_provider=james).child
     field = x_bit_sh.field
 
     res = share_convert(x_bit_sh)
     assert res.field == field - 1
+    assert (res.get() == x_bit_sh.get()).all()
+
+
+def test_relu_deriv(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    x = th.tensor([10, 0, -3]).share(alice, bob, crypto_provider=james).child
+    r = relu_deriv(x)
+
+    assert (r.get() == th.tensor([1, 1, 0])).all()
 
 
 def test_relu(workers):
@@ -89,3 +105,20 @@ def test_relu(workers):
     r = x.relu()
 
     assert (r.get().float_prec() == th.tensor([1, 3.1, 0])).all()
+
+
+def test_maxpool(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    x = th.tensor([[10, 0], [15, 7]]).share(alice, bob, crypto_provider=james).child
+    max, ind = maxpool(x)
+
+    assert max.get() == torch.tensor(15)
+    assert ind.get() == torch.tensor(2)
+
+
+def test_maxpool_deriv(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    x = th.tensor([[10, 0], [15, 7]]).share(alice, bob, crypto_provider=james).child
+    max_d = maxpool_deriv(x)
+
+    assert (max_d.get() == torch.tensor([[0, 0], [1, 0]])).all()
