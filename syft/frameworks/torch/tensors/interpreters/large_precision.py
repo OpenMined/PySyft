@@ -131,7 +131,7 @@ class LargePrecisionTensor(AbstractTensor):
         Returns:
             tensor: the original tensor.
         """
-        result = self._internal_representation_to_large_ints(self.child, self.internal_precision)
+        result = self._internal_representation_to_large_ints()
         result /= self.base ** self.precision_fractional
         # At this point the value is an object type. Force cast to float before creating torch.tensor
         return torch.from_numpy(result.reshape(self.child.shape[:-1]).astype(np.float32))
@@ -186,15 +186,14 @@ class LargePrecisionTensor(AbstractTensor):
             number_parts.append(part * sign)
         return number_parts[::-1]
 
-    @staticmethod
-    def _internal_representation_to_large_ints(tensor, precision) -> np.array:
+    def _internal_representation_to_large_ints(self) -> np.array:
         """Creates an numpy array containing the objective large numbers."""
-        ndarray = tensor.numpy()
+        ndarray = self.child.numpy()
         ndarray = ndarray.reshape(-1, ndarray.shape[-1])
         result = []
         for elem in ndarray:
-            result.append(LargePrecisionTensor._restore_large_number(elem, precision))
-        return np.array(result).reshape(tensor.shape[:-1])
+            result.append(LargePrecisionTensor._restore_large_number(elem, self.internal_precision))
+        return np.array(result).reshape(self.child.shape[:-1])
 
     @staticmethod
     def _restore_large_number(number_parts, bits) -> int:

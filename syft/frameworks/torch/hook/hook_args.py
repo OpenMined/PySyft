@@ -62,9 +62,7 @@ forward_func = {
     AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
-    LargePrecisionTensor: lambda i: LargePrecisionTensor._internal_representation_to_large_ints(
-        i.child, i.internal_precision
-    ),
+    LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
     "my_syft_tensor_type": lambda i: i.child,
 }
 
