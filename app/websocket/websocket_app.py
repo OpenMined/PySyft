@@ -1,13 +1,16 @@
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
+import grid as gr
 import syft as sy
 import torch as th
 import redis
 import binascii
 import os
+import sys
 
 hook = sy.TorchHook(th)
+
 
 # Set up REDIS URL
 try:
@@ -23,21 +26,7 @@ socketio = SocketIO(app, async_mode="eventlet")
 CORS(app)
 
 
-def _maybe_create_worker(worker_name: str = "worker", virtual_worker_id: str = "grid"):
-    worker = db.get(worker_name)
-    if worker is None:
-        worker = sy.VirtualWorker(hook, virtual_worker_id, auto_add=False)
-    else:
-        worker = sy.serde.deserialize(worker)
-    return worker
-
-
-def _store_worker(worker, worker_name: str = "worker"):
-    db.set(worker_name, sy.serde.serialize(worker, force_full_simplification=True))
-
-
 def _request_message(worker, request):
-    print("Message Type: ", type(request))
     message = request["message"]
     message = binascii.unhexlify(message[2:-1])
     response = worker._recv_msg(message)
@@ -47,9 +36,7 @@ def _request_message(worker, request):
 
 @app.route("/")
 def hello_world():
-    name = db.get("name") or "World"
-    db.set("del_ctr", 0)
-    return "Websocket Howdy %s!" % str(name)
+    return "Websocket %s! Grid Node" % str(hook.local_worker.id)
 
 
 @socketio.on("/identity")
@@ -62,18 +49,28 @@ def is_this_an_opengrid_node():
     socketio.emit("/identity", "Websocket OpenGrid")
 
 
+@socketio.on("/set-grid-id")
+def set_grid_name(msg):
+    me = hook.local_worker
+    me.id = msg["id"]
+    me.is_client_worker = False
+
+
+@socketio.on("/connect-node")
+def connect_node(msg):
+    try:
+        new_worker = gr.WebsocketGridClient(hook, msg["uri"], id=msg["id"])
+        new_worker.connect()
+        socketio.emit("/connect-node", "Succefully connected!")
+    except Exception as e:
+        socketio.emit("/connect-node", str(e))
+
+
 @socketio.on("/cmd")
 def cmd(message):
     try:
-        worker = _maybe_create_worker("worker", "grid")
-
-        worker.verbose = True
-        sy.torch.hook.local_worker.add_worker(worker)
-
+        worker = hook.local_worker
         response = _request_message(worker, message)
-
-        _store_worker(worker, "worker")
-
         socketio.emit("/cmd", response)
     except Exception as e:
         socketio.emit("/cmd", str(e))

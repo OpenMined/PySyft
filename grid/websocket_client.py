@@ -41,15 +41,15 @@ class WebsocketGridClient(BaseWorker):
         self.wait_for_client_event = False
 
         # Creates the connection with the server
-        self.sio = socketio.Client()
+        self.__sio = socketio.Client()
         super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
 
-        @self.sio.on("/identity/")
+        @self.__sio.on("/identity/")
         def check_identity(msg):
             if msg != "OpenGrid":
                 raise PermissionError("App is not an OpenGrid app")
 
-        @self.sio.on("/cmd")
+        @self.__sio.on("/cmd")
         def on_client_result(args):
             if log_msgs:
                 print("Receiving result from client {}".format(args))
@@ -58,13 +58,18 @@ class WebsocketGridClient(BaseWorker):
             # Tell the wait_for_client_event to clear up and continue execution
             self.wait_for_client_event = False
 
+        @self.__sio.on("/connect-node")
+        def connect_node(msg):
+            if self.verbose:
+                print("Connect Grid Node: ", msg)
+
     def _send_msg(self, message: bin) -> bin:
         raise NotImplementedError
 
     def _recv_msg(self, message: bin) -> bin:
         message = str(binascii.hexlify(message))
         # Sends the message to the server
-        self.sio.emit("/cmd", {"message": message})
+        self.__sio.emit("/cmd", {"message": message})
 
         self.wait_for_client_event = True
         # Wait until the server gets back with a result or an ACK
@@ -77,8 +82,12 @@ class WebsocketGridClient(BaseWorker):
             return sy.serde.serialize(b"")
         return self.response_from_client
 
+    def connect_grid_node(self, addr=str, id=str):
+        self.__sio.emit("/connect-node", {"uri": addr, "id": id})
+
     def connect(self):
-        self.sio.connect(self.uri)
+        self.__sio.connect(self.uri)
+        self.__sio.emit("/set-grid-id", {"id": self.id})
 
     def disconnect(self):
-        self.sio.disconnect()
+        self.__sio.disconnect()
