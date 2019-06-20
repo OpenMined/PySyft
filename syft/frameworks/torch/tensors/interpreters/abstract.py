@@ -154,9 +154,6 @@ class AbstractObject(ABC):
 
         return response
 
-    def setattr(self, name, value):
-        self.child.setattr(name, value.child)
-
     @classmethod
     def rgetattr(cls, obj, attr, *args):
         """

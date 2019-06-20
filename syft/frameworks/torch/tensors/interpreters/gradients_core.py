@@ -32,17 +32,6 @@ class GradFunc:
     def gradient(self, grad):
         raise NotImplementedError
 
-    def __setattr__(self, name, value):
-        # Doing this because we want to pass in AutogradTensors so we can update
-        # tensor.grad in Accumulate, but we also need native looking tensors for
-        # the gradient operations in GradFuncs.
-        try:
-            value = value.child
-        except AttributeError:
-            pass
-
-        object.__setattr__(self, name, value)
-
     def __call__(self, grad):
         return self.gradient(grad)
 
