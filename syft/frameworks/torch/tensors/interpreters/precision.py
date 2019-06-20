@@ -56,6 +56,10 @@ class FixedPrecisionTensor(AbstractTensor):
             "kappa": self.kappa,
         }
 
+    @property
+    def grad(self):
+        return None
+
     def fix_precision(self):
         """This method encodes the .child object using fixed precision"""
 

@@ -245,6 +245,17 @@ class AbstractTensor(AbstractObject):
 
         return wrapper
 
+    def copy(self):
+        return self + 0
+
+    @property
+    def grad(self):
+        child_grad = self.child.grad
+        if child_grad is None:
+            return None
+        else:
+            return child_grad.wrap()
+
 
 def initialize_tensor(
     hook_self, cls, torch_tensor: bool = False, owner=None, id=None, *init_args, **init_kwargs

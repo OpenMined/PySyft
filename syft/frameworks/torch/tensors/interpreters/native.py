@@ -95,6 +95,48 @@ class TorchTensor(AbstractTensor):
         else:
             return self.native_data
 
+    @property
+    def grad(self):
+        if self.is_wrapper:
+            child_grad = self.child.grad
+            if child_grad is None:
+                return None
+            else:
+                if child_grad.is_wrapper:
+                    return child_grad
+                else:
+                    return child_grad.wrap()
+        else:
+            to_return = self.native_grad
+
+            # good to ensure that the ID stays consistent
+            # not 100% this is required but it's at least
+            # good practice
+            try:
+                to_return.id = self.grad_id
+            except AttributeError:
+                if to_return is not None and hasattr(to_return, "id"):
+                    self.grad_id = to_return.id
+
+            return to_return
+
+    @grad.setter
+    def grad(self, new_grad):
+
+        # If grad is not a pure torch tensor you need to store the chain in a
+        # specific place otherwise it will get deleted
+        if new_grad is not None and (
+            not isinstance(new_grad, torch.Tensor) or hasattr(new_grad, "child")
+        ):
+            self.child.grad = new_grad  # .wrap()
+        else:
+            if self.native_grad is not None:
+                with torch.no_grad():
+                    self.native_grad = new_grad
+            elif new_grad is not None:
+                self.native_grad = new_grad
+        return self
+
     def __str__(self) -> str:
         if self.has_child():
             if self.is_wrapper:
@@ -550,15 +592,15 @@ class TorchTensor(AbstractTensor):
     def attr(self, attr_name):
         """"""
 
-        attr_val = self.child.attr(attr_name)
+        if self.is_wrapper:
+            attr_val = self.child.attr(attr_name)
 
-        if attr_name == "grad":
-            self.grad = attr_val
+            if attr_name == "grad":
+                self.grad = attr_val
+        else:
+            attr_val = getattr(self, attr_name)
 
         return attr_val
-
-    def setattr(self, name, value):
-        self.child.setattr(name, value.child)
 
     def enc_fix_prec(self):
         return self.child.fix_precision()

@@ -62,7 +62,7 @@ class Accumulate:
         if self.tensor.grad is not None:
             self.tensor.grad += grad
         else:
-            self.tensor.grad = grad + 0
+            self.tensor.grad = grad.copy()
         return ()
 
     def __repr__(self):

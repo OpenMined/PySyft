@@ -54,8 +54,8 @@ class AutogradTensor(AbstractTensor):
     @grad.setter
     def grad(self, value):
         if value is not None:
-            self.child.setattr("grad", value)
-            self._grad = value.wrap()
+            assert isinstance(value, AutogradTensor)
+            self._grad = value.child
         else:
             self._grad = value
 

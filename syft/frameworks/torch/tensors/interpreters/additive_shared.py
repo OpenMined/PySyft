@@ -91,6 +91,10 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         return {"crypto_provider": self.crypto_provider, "field": self.field, "n_bits": self.n_bits}
 
+    @property
+    def grad(self):
+        return None
+
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
 
