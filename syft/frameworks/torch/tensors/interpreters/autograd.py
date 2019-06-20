@@ -91,6 +91,9 @@ class AutogradTensor(AbstractTensor):
     def __mul__(self, other):
         return self.mul(other)
 
+    def __matmul__(self, other):
+        return self.matmul(other)
+
     @classmethod
     def handle_func_command(cls, command):
         """

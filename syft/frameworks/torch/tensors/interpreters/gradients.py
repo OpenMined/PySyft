@@ -37,6 +37,18 @@ class MulBackward(GradFunc):
         return (grad_self_, grad_other)
 
 
+class MatmulBackward(GradFunc):
+    def __init__(self, self_, other):
+        super().__init__(self, self_, other)
+        self.self_ = self_
+        self.other = other
+
+    def gradient(self, grad):
+        grad_self_ = grad @ self.other.t()
+        grad_other = self.self_.t() @ grad if type(self.self_) == type(self.other) else None
+        return (grad_self_, grad_other)
+
+
 class SigmoidBackward(GradFunc):
     def __init__(self, self_):
         super().__init__(self, self_)
