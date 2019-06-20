@@ -29,7 +29,6 @@ class LargePrecisionTensor(AbstractTensor):
         precision_fractional=0,
         internal_type=torch.int32,
         verbose=False,
-        **extras,
     ):
         """Initializes a LargePrecisionTensor.
 
@@ -42,7 +41,6 @@ class LargePrecisionTensor(AbstractTensor):
             base (int): The base that will be used to to calculate the precision.
             precision_fractional (int): The precision required by the caller.
             internal_type (dtype): The large tensor will be stored using tensor of this type.
-            extras: TODO
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.base = base
@@ -87,7 +85,6 @@ class LargePrecisionTensor(AbstractTensor):
             "base": self.base,
             "internal_type": self.internal_type,
             "precision_fractional": self.precision_fractional,
-            "original_shape": self.child.shape,
         }
 
     @overloaded.method
@@ -147,14 +144,14 @@ class LargePrecisionTensor(AbstractTensor):
         """
         internal_type = kwargs["internal_type"]
         internal_precision = type_precision[internal_type]
-        original_shape = kwargs["original_shape"]
+        original_shape = ndarray.shape
         result = []
         # refs_ok is necessary to enable iterations of reference types.
         for x in np.nditer(ndarray, flags=["refs_ok"]):
             result.append(
                 LargePrecisionTensor._split_number(x.item(), internal_precision, internal_type)
             )
-        new_shape = original_shape[:-1] + (len(max(result, key=len)),)
+        new_shape = original_shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
         return torch.tensor(result, dtype=internal_type)
 
@@ -197,7 +194,7 @@ class LargePrecisionTensor(AbstractTensor):
         result = []
         for elem in ndarray:
             result.append(LargePrecisionTensor._restore_large_number(elem, precision))
-        return np.array(result)
+        return np.array(result).reshape(tensor.shape[:-1])
 
     @staticmethod
     def _restore_large_number(number_parts, bits) -> int:
