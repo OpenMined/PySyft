@@ -340,7 +340,7 @@ def share_convert(a_sh):
     a_shares = a_sh.child
     beta0 = ((a_shares[workers[0].id] + r_shares[workers[0].id]) >= L).long()
     beta1 = ((a_shares[workers[1].id] + r_shares[workers[1].id]) >= L).long()
-    beta = sy.MultiPointerTensor(children=[beta0.long(), beta1.long()])
+    beta = sy.MultiPointerTensor(children=[beta0, beta1])
 
     # 4)
     a_tilde_shares = a_tilde_sh.child

@@ -59,8 +59,10 @@ def test_private_compare(workers):
     assert not beta_p
 
     # Negative values
-    x_bit_sh = decompose(torch.LongTensor([-105])).share(alice, bob, crypto_provider=james).child
-    r = torch.LongTensor([-52]).send(alice, bob).child
+    x_val = -105 % 2 ** 62
+    r_val = -52 % 2 ** 62  # The protocol works only for values in Zq
+    x_bit_sh = decompose(torch.LongTensor([x_val])).share(alice, bob, crypto_provider=james).child
+    r = torch.LongTensor([r_val]).send(alice, bob).child
 
     beta = torch.LongTensor([1]).send(alice, bob).child
     beta_p = private_compare(x_bit_sh, r, beta)
@@ -77,13 +79,16 @@ def test_share_convert(workers):
     This is a light test as share_convert is not used for the moment
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-
-    x_bit_sh = torch.LongTensor([13, -2]).share(alice, bob, crypto_provider=james).child
-    field = x_bit_sh.field
+    L = 2 ** 62
+    x_bit_sh = (
+        torch.LongTensor([13, 3567, 2 ** 60])
+        .share(alice, bob, crypto_provider=james, field=L)
+        .child
+    )
 
     res = share_convert(x_bit_sh)
-    assert res.field == field - 1
-    assert (res.get() == x_bit_sh.get()).all()
+    assert res.field == L - 1
+    assert (res.get() % L == torch.LongTensor([13, 3567, 2 ** 60])).all()
 
 
 def test_relu_deriv(workers):
