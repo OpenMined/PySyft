@@ -137,7 +137,7 @@ class LargePrecisionTensor(AbstractTensor):
         return torch.from_numpy(result.reshape(self.child.shape[:-1]).astype(np.float32))
 
     @staticmethod
-    def _create_tensor_from_numpy(ndarray, **kwargs):
+    def create_tensor_from_numpy(ndarray, **kwargs):
         """Decompose a NumPy array into an array of numbers that represent such tensor with the required precision.
 
         Typically this private method is called on the result of an operation.
