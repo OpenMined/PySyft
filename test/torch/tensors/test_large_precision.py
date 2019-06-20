@@ -18,7 +18,7 @@ def test_fix_prec(workers):
     x = torch.tensor([1.5, 2.0, 3.0])
     enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=256)
     restored = enlarged.float_precision()
-    # And now x and restored must be the same5
+    # And now x and restored must be the same
     assert torch.all(torch.eq(x, restored))
 
 

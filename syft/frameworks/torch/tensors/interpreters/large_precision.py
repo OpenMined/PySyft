@@ -12,7 +12,11 @@ class LargePrecisionTensor(AbstractTensor):
     large values by packing them in smaller ones.
     Typically a user will require to enlarge a float number by fixing its precision
         tensor.fix_prec()
-    These smaller values are of type `internal_type`. The large value is defined by `precision_fractional`.
+
+    The large value is defined by `precision_fractional`.
+
+    The smaller values are of type `internal_type`. The split of the large number into the smaller values is done using
+    half the size of the selected internal type. This is to avoid overflow as types are in the range ±2**(size - 1).
 
     By default operations are done with NumPy. This implies unpacking the representation and packing it again.
 
@@ -51,6 +55,7 @@ class LargePrecisionTensor(AbstractTensor):
     def _create_internal_representation(self):
         """Decompose a tensor into an array of numbers that represent such tensor with the required precision"""
         result = []
+        # TODO Could this be vectorized?
         for x in np.nditer(self.child):
             n = int(x.item() * self.base ** self.precision_fractional)
             if self.verbose:
@@ -62,20 +67,25 @@ class LargePrecisionTensor(AbstractTensor):
         new_shape = self.child.shape + (max_length,)
         # List with different lengths will result in np.array building an array of lists instead of the matrices
         # itertools.zip_longest fills on the right but we need to fill with zeros on the left
-        n_result = []
-        for a_number in result:
-            len_a_number = len(a_number)
-            if len_a_number < max_length:
-                n_result.append([0] * (max_length - len_a_number) + a_number)
-            else:
-                n_result.append(a_number)
-        result = np.array(n_result).reshape(new_shape)
+        result = [self._expand_item(a_number, max_length) for a_number in result]
+        result = np.array(result).reshape(new_shape)
         return torch.tensor(result, dtype=self.internal_type)
+
+    @staticmethod
+    def _expand_item(a_number, max_length):
+        len_a_number = len(a_number)
+        if len_a_number < max_length:
+            return [0] * (max_length - len_a_number) + a_number
+        else:
+            return a_number
 
     @property
     def internal_precision(self):
-        """"The internal precision used to decompose the large numbers is the size of the type - 1."""
-        return type_precision[self.internal_type]
+        """"The internal precision used to decompose the large numbers is the size of the type - 1.
+        The large number is decomposed into positive smaller numbers. This could provoke overflow if any of these
+        smaller parts are bigger than type_precision/2.
+        """
+        return type_precision[self.internal_type] - 1
 
     def get_class_attributes(self):
         """
@@ -143,14 +153,12 @@ class LargePrecisionTensor(AbstractTensor):
         Typically this private method is called on the result of an operation.
         """
         internal_type = kwargs["internal_type"]
-        internal_precision = type_precision[internal_type]
+        internal_precision = type_precision[internal_type] - 1
         original_shape = ndarray.shape
-        result = []
+        # TODO Could this be vectorized?
         # refs_ok is necessary to enable iterations of reference types.
-        for x in np.nditer(ndarray, flags=["refs_ok"]):
-            result.append(
-                LargePrecisionTensor._split_number(x.item(), internal_precision, internal_type)
-            )
+        result = [LargePrecisionTensor._split_number(x.item(), internal_precision, internal_type)
+                  for x in np.nditer(ndarray, flags=["refs_ok"])]
         new_shape = original_shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
         return torch.tensor(result, dtype=internal_type)
@@ -206,20 +214,21 @@ class LargePrecisionTensor(AbstractTensor):
         Returns:
             Number: the large number represented by this tensor
         """
-        base = 2 ** bits
-        n = 0
-        for x in number_parts.tolist():
-            n = n * base + x
-        return n
+        def _restore_recursive(parts, acc, base):
+            if len(parts) == 0:
+                return acc
+            return _restore_recursive(parts[1:], acc * base + parts[0].item(), base)
+        return _restore_recursive(number_parts, 0, 2 ** bits)
 
 
+# The size of each type
 type_precision = {
-    torch.uint8: 7,
-    torch.int8: 7,
-    torch.int16: 15,
-    torch.short: 15,
-    torch.int32: 31,
-    torch.int: 31,
-    torch.int64: 63,
-    torch.long: 63,
+    torch.uint8: 8,
+    torch.int8: 8,
+    torch.int16: 16,
+    torch.short: 16,
+    torch.int32: 32,
+    torch.int: 32,
+    torch.int64: 64,
+    torch.long: 64,
 }
