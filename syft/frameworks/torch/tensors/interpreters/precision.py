@@ -534,10 +534,10 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return (
             syft.serde._simplify(tensor.id),
-            syft.serde._simplify(tensor.field),
-            syft.serde._simplify(tensor.base),
-            syft.serde._simplify(tensor.precision_fractional),
-            syft.serde._simplify(tensor.kappa),
+            tensor.field,
+            tensor.base,
+            tensor.precision_fractional,
+            tensor.kappa,
             syft.serde._simplify(tensor.tags),
             syft.serde._simplify(tensor.description),
             chain,
@@ -561,10 +561,10 @@ class FixedPrecisionTensor(AbstractTensor):
         tensor = FixedPrecisionTensor(
             owner=worker,
             id=syft.serde._detail(worker, tensor_id),
-            field=syft.serde._detail(worker, field),
-            base=syft.serde._detail(worker, base),
-            precision_fractional=syft.serde._detail(worker, precision_fractional),
-            kappa=syft.serde._detail(worker, kappa),
+            field=field,
+            base=base,
+            precision_fractional=precision_fractional,
+            kappa=kappa,
             tags=syft.serde._detail(worker, tags),
             description=syft.serde._detail(worker, description),
         )
