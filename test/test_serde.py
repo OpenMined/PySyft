@@ -621,6 +621,7 @@ def test_fixed_precision_tensor_serde(compress, workers):
 
     assert x.id == deserialied_x.child.id
     assert x.child.field == deserialied_x.child.field
+    assert x.child.kappa == deserialied_x.child.kappa
     assert x.child.precision_fractional == deserialied_x.child.precision_fractional
     assert x.child.base == deserialied_x.child.base
 
