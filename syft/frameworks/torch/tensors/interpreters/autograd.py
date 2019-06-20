@@ -23,7 +23,6 @@ class AutogradTensor(AbstractTensor):
         requires_grad=True,
         owner=None,
         id=None,
-        parent=None,
         preinitialize_grad=False,
         **kwargs,
     ):
@@ -31,7 +30,6 @@ class AutogradTensor(AbstractTensor):
 
         self.owner = owner
         self.id = id
-        self.parent = parent
 
         self.child = data
         self.requires_grad = requires_grad
@@ -60,10 +58,6 @@ class AutogradTensor(AbstractTensor):
             self._grad = value.wrap()
         else:
             self._grad = value
-
-        if self.parent is not None:
-            # self.parent is a weakref
-            self.parent().grad = self._grad
 
     def attr(self, attr_name):
         attr_val = self.child.attr(attr_name)
