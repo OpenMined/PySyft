@@ -157,8 +157,10 @@ class LargePrecisionTensor(AbstractTensor):
         original_shape = ndarray.shape
         # TODO Could this be vectorized?
         # refs_ok is necessary to enable iterations of reference types.
-        result = [LargePrecisionTensor._split_number(x.item(), internal_precision, internal_type)
-                  for x in np.nditer(ndarray, flags=["refs_ok"])]
+        result = [
+            LargePrecisionTensor._split_number(x.item(), internal_precision, internal_type)
+            for x in np.nditer(ndarray, flags=["refs_ok"])
+        ]
         new_shape = original_shape + (len(max(result, key=len)),)
         result = np.array(result).reshape(new_shape)
         return torch.tensor(result, dtype=internal_type)
@@ -214,10 +216,12 @@ class LargePrecisionTensor(AbstractTensor):
         Returns:
             Number: the large number represented by this tensor
         """
+
         def _restore_recursive(parts, acc, base):
             if len(parts) == 0:
                 return acc
             return _restore_recursive(parts[1:], acc * base + parts[0].item(), base)
+
         return _restore_recursive(number_parts, 0, 2 ** bits)
 
 
