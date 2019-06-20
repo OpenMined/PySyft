@@ -7,6 +7,7 @@ from syft.frameworks.torch.crypto.securenn import (
     decompose,
     share_convert,
     relu_deriv,
+    division,
     maxpool,
     maxpool_deriv,
 )
@@ -110,6 +111,21 @@ def test_relu(workers):
     r = x.relu()
 
     assert (r.get().float_prec() == th.tensor([1, 3.1, 0])).all()
+
+
+def test_division(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x0 = th.tensor(10).share(alice, bob, crypto_provider=james).child
+    y0 = th.tensor(2).share(alice, bob, crypto_provider=james).child
+    res0 = division(x0, y0, bit_len_max=5)
+
+    x1 = th.tensor([[25, 9], [10, 30]]).share(alice, bob, crypto_provider=james).child
+    y1 = th.tensor([[5, 12], [2, 7]]).share(alice, bob, crypto_provider=james).child
+    res1 = division(x1, y1, bit_len_max=5)
+
+    assert res0.get() == torch.tensor(5)
+    assert (res1.get() == torch.tensor([[5, 0], [5, 4]])).all()
 
 
 def test_maxpool(workers):

@@ -237,27 +237,18 @@ def msb(a_sh):
 
     # Common Randomness
     BETA = _random_common_bit(alice, bob)
-    u = (
-        torch.zeros(1)
-        .long()
-        .send(alice)
-        .share(alice, bob, field=L, crypto_provider=crypto_provider)
-        .get()
-        .child
-    )
+    u = _shares_of_zero(L, crypto_provider, alice, bob)
 
     # 1)
     x = torch.LongTensor(a_sh.shape).random_(L - 1)
     x_bit = decompose(x)
     x_sh = x.share(bob, alice, field=L - 1, crypto_provider=crypto_provider).child
     x_bit_0 = x_bit[..., 0]
-    x_bit_sh_0 = x_bit_0.share(
-        bob, alice, field=L, crypto_provider=crypto_provider
-    ).child  # least -> greatest from left -> right
+    x_bit_sh_0 = x_bit_0.share(bob, alice, field=L, crypto_provider=crypto_provider).child
     x_bit_sh = x_bit.share(bob, alice, field=p, crypto_provider=crypto_provider).child
 
     # 2)
-    y_sh = 2 * a_sh
+    y_sh = a_sh * 2
     r_sh = y_sh + x_sh
 
     # 3)
@@ -281,7 +272,7 @@ def msb(a_sh):
     theta = gamma * delta
 
     # 10)
-    a = gamma + delta - (2 * theta) + u
+    a = gamma + delta - (theta * 2) + u
 
     if len(input_shape):
         return a.view(*list(input_shape))
@@ -440,6 +431,67 @@ def relu(a_sh):
     u = torch.zeros(1).long().share(alice, bob, field=L, crypto_provider=crypto_provider).child
 
     return a_sh * relu_deriv(a_sh) + u
+
+
+def division(x_sh, y_sh, bit_len_max=Q_BITS):
+    """ Performs division of encrypted numbers
+    
+    Args:
+        x_sh, y_sh (AdditiveSharingTensor): the private tensors on which the op applies
+        bit_len_max: the number of bits needed to represent the highest value in the tensors
+            we may want to avoid giving this value so Q_BITS is the default value
+
+    Returns:
+        element-wise integer division of x_sh by y_sh
+    """
+    alice, bob = x_sh.locations
+    crypto_provider = x_sh.crypto_provider
+    L = x_sh.field
+
+    x_shape = x_sh.shape
+    y_shape = y_sh.shape
+    assert x_shape == y_shape
+
+    x_sh = x_sh.view(-1)
+    y_sh = y_sh.view(-1)
+
+    # Common Randomness
+    w_sh = (
+        torch.zeros(bit_len_max)
+        .long()
+        .send(alice)
+        .share(alice, bob, field=L, crypto_provider=crypto_provider)
+        .get()
+        .child
+    )
+    s_sh = _shares_of_zero(L, crypto_provider, alice, bob)
+    u_sh = _shares_of_zero(L, crypto_provider, alice, bob)
+
+    ks = []
+    for i in range(bit_len_max - 1, -1, -1):
+        # 3)
+        z_sh = x_sh - u_sh - 2 ** i * y_sh + w_sh[i]
+
+        # 4)
+        beta_sh = relu_deriv(z_sh)
+
+        # 5)
+        v_sh = beta_sh * (2 ** i * y_sh)
+
+        # 6)
+        k_sh = beta_sh * 2 ** i
+        ks.append(k_sh)
+
+        # 7)
+        u_sh = u_sh + v_sh
+
+    # 9)
+    q = sum(ks) + s_sh
+
+    if len(x_shape):
+        return q.view(*x_shape)
+    else:
+        return q
 
 
 def maxpool(x_sh):
