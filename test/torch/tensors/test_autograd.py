@@ -24,14 +24,14 @@ def test_backward_for_binary_cmd_with_autograd(cmd):
     Test .backward() on local tensors wrapped in an AutogradTensor
     (It is useless but this is the most basic example)
     """
-    a = torch.tensor([[3., 2], [-1, 2]], requires_grad=True)
-    b = torch.tensor([[1., 2], [3, 2]], requires_grad=True)
+    a = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
 
     a = syft.AutogradTensor().on(a)
     b = syft.AutogradTensor().on(b)
 
-    a_torch = torch.tensor([[3., 2], [-1, 2]], requires_grad=True)
-    b_torch = torch.tensor([[1., 2], [3, 2]], requires_grad=True)
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
 
     c = getattr(a, cmd)(b)
     c_torch = getattr(a_torch, cmd)(b_torch)
@@ -53,14 +53,14 @@ def test_backward_for_remote_binary_cmd_with_autograd(workers, cmd):
     """
     alice = workers["alice"]
 
-    a = torch.tensor([[3., 2], [-1, 2]], requires_grad=True).send(alice)
-    b = torch.tensor([[1., 2], [3, 2]], requires_grad=True).send(alice)
+    a = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True).send(alice)
+    b = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True).send(alice)
 
     a = syft.AutogradTensor().on(a)
     b = syft.AutogradTensor().on(b)
 
-    a_torch = torch.tensor([[3., 2], [-1, 2]], requires_grad=True)
-    b_torch = torch.tensor([[1., 2], [3, 2]], requires_grad=True)
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
 
     c = getattr(a, cmd)(b)
     c_torch = getattr(a_torch, cmd)(b_torch)
@@ -90,14 +90,14 @@ def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
     """
     alice = workers["alice"]
 
-    a = torch.tensor([[3., 2], [-1, 2]], requires_grad=True)
-    b = torch.tensor([[1., 2], [3, 2]], requires_grad=True)
+    a = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
 
     a = a.send(alice, local_autograd=True)
     b = b.send(alice, local_autograd=True)
 
-    a_torch = torch.tensor([[3., 2], [-1, 2]], requires_grad=True)
-    b_torch = torch.tensor([[1., 2], [3, 2]], requires_grad=True)
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
 
     c = getattr(a, cmd)(b)
     c_torch = getattr(a_torch, cmd)(b_torch)
@@ -141,14 +141,14 @@ def test_backward_for_fix_prec_binary_cmd_with_autograd(cmd):
     """
     Test .backward() on Fixed Precision Tensor for a single operation
     """
-    a = torch.tensor([[3., 2], [-1, 2]], requires_grad=True).fix_prec()
-    b = torch.tensor([[1., 2], [3, 2]], requires_grad=True).fix_prec()
+    a = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True).fix_prec()
+    b = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True).fix_prec()
 
     a = syft.AutogradTensor().on(a)
     b = syft.AutogradTensor().on(b)
 
-    a_torch = torch.tensor([[3., 2], [-1, 2]], requires_grad=True)
-    b_torch = torch.tensor([[1., 2], [3, 2]], requires_grad=True)
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
 
     c = getattr(a, cmd)(b)
     c_torch = getattr(a_torch, cmd)(b_torch)
@@ -170,12 +170,12 @@ def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd):
     bob, alice, james = workers["bob"], workers["alice"], workers["james"]
 
     a = (
-        torch.tensor([[3., 2], [-1, 2]], requires_grad=True)
+        torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
         .fix_prec()
         .share(alice, bob, crypto_provider=james)
     )
     b = (
-        torch.tensor([[1., 2], [3, 2]], requires_grad=True)
+        torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
         .fix_prec()
         .share(alice, bob, crypto_provider=james)
     )
@@ -183,8 +183,8 @@ def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd):
     a = syft.AutogradTensor().on(a)
     b = syft.AutogradTensor().on(b)
 
-    a_torch = torch.tensor([[3., 2], [-1, 2]], requires_grad=True)
-    b_torch = torch.tensor([[1., 2], [3, 2]], requires_grad=True)
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
 
     c = getattr(a, cmd)(b)
     c_torch = getattr(a_torch, cmd)(b_torch)
