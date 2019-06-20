@@ -18,13 +18,7 @@ class AutogradTensor(AbstractTensor):
     """
 
     def __init__(
-        self,
-        data=None,
-        requires_grad=True,
-        owner=None,
-        id=None,
-        preinitialize_grad=False,
-        **kwargs,
+        self, data=None, requires_grad=True, owner=None, id=None, preinitialize_grad=False, **kwargs
     ):
         super().__init__()
 
@@ -44,7 +38,6 @@ class AutogradTensor(AbstractTensor):
     def backward(self, grad=None):
         if grad is None:
             grad = torch.ones(self.child.shape)
-
         backwards_grad(self.grad_fn, grad)
 
     @property
@@ -83,7 +76,6 @@ class AutogradTensor(AbstractTensor):
                 result = syft.frameworks.torch.hook_args.hook_response(
                     name, result, wrap_type=type(self)
                 )
-
                 result.grad_fn = grad_fn(self, *args, **kwargs)
                 result.grad_fn.result = result
 

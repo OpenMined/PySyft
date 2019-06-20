@@ -365,6 +365,11 @@ class TorchTensor(AbstractTensor):
                 # want it to keep. #HackAlert
                 output.backup_grad = grad
 
+                if local_autograd:
+                    output = syft.AutogradTensor(
+                        data=output, preinitialize_grad=preinitialize_grad
+                    ).on(output)
+
         else:
 
             children = list()
@@ -484,11 +489,6 @@ class TorchTensor(AbstractTensor):
                 shape=shape,
                 tags=self.tags,
                 description=self.description,
-            )
-
-        if self.requires_grad and local_autograd:
-            ptr = syft.AutogradTensor(data=ptr.wrap(), preinitialize_grad=preinitialize_grad).on(
-                ptr, wrap=False
             )
 
         return ptr
