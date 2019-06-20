@@ -4,9 +4,10 @@ from typing import List
 
 import torch
 import websocket
-import time
+import websockets
 import logging
 import ssl
+import time
 
 import syft as sy
 from syft.codes import MSGTYPE
@@ -40,23 +41,29 @@ class WebsocketClientWorker(BaseWorker):
         self.port = port
         self.host = host
 
+        super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
+
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
-
         # Secure flag adds a secure layer applying cryptography and authentication
-        self.uri = f"ws://{self.host}:{self.port}"
-        if secure:
-            self.uri = f"wss://{self.host}:{self.port}"
-            ssl_settings = {"cert_reqs": ssl.CERT_NONE}
-            self.ws = websocket.create_connection(
-                self.uri, sslopt=ssl_settings, max_size=None, timeout=TIMEOUT_INTERVAL
-            )
-        else:
-            # Insecure flow
-            # Also avoid the server from timing out on the server-side in case of slow clients
-            self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
+        self.secure = secure
+        self.ws = None
+        self.connect()
 
-        super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
+    @property
+    def url(self):
+        return f"wss://{self.host}:{self.port}" if self.secure else f"ws://{self.host}:{self.port}"
+
+    def connect(self):
+        args = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
+
+        if self.secure:
+            args["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
+
+        self.ws = websocket.create_connection(**args)
+
+    def close(self):
+        self.ws.shutdown()
 
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
@@ -87,7 +94,7 @@ class WebsocketClientWorker(BaseWorker):
             self.ws.shutdown()
             time.sleep(0.1)
             # Avoid timing out on the server-side
-            self.ws = websocket.create_connection(self.uri, max_size=None, timeout=TIMEOUT_INTERVAL)
+            self.ws = websocket.create_connection(self.url, max_size=None, timeout=TIMEOUT_INTERVAL)
             logger.warning("Created new websocket connection")
             time.sleep(0.1)
             response = self._receive_action(message)
@@ -113,12 +120,64 @@ class WebsocketClientWorker(BaseWorker):
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
 
-    def fit(self, dataset_key, **kwargs):
-        # Arguments provided as kwargs as otherwise miss-match
-        # with signature in FederatedClient.fit()
+    async def async_fit(self, dataset_key: str, return_ids: List[int] = None):
+        """Asynchronous call to fit function on the remote location.
+
+        Args:
+            dataset_key: Identifier of the dataset which shall be used for the training.
+            return_ids: List of return ids.
+
+        Returns:
+            See return value of the FederatedClient.fit() method.
+        """
+        if return_ids is None:
+            return_ids = [sy.ID_PROVIDER.pop()]
+
+        # Close the existing websocket connection in order to open a asynchronous connection
+        # This code is not tested with secure connections (wss protocol).
+        self.close()
+        async with websockets.connect(
+            self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
+        ) as websocket:
+            message = self.create_message_execute_command(
+                command_name="fit",
+                command_owner="self",
+                return_ids=return_ids,
+                dataset_key=dataset_key,
+            )
+
+            # Send the message and return the deserialized response.
+            serialized_message = sy.serde.serialize(message)
+            await websocket.send(str(binascii.hexlify(serialized_message)))
+            await websocket.recv()  # returned value will be None, so don't care
+
+        # Reopen the standard connection
+        self.connect()
+
+        # Send an object request message to retrieve the result tensor of the fit() method
+        msg = (MSGTYPE.OBJ_REQ, return_ids[0])
+        serialized_message = sy.serde.serialize(msg)
+        response = self._recv_msg(serialized_message)
+
+        # Return the deserialized response.
+        return sy.serde.deserialize(response)
+
+    def fit(self, dataset_key: str, **kwargs):
+        """Call the fit() method on the remote worker (WebsocketServerWorker instance).
+
+        Note: The argument return_ids is provided as kwargs as otherwise there is a miss-match
+        with the signature in VirtualWorker.fit() method. This is important to be able to switch
+        between virtual and websocket workers.
+
+        Args:
+            dataset_key: Identifier of the dataset which shall be used for the training.
+            **kwargs:
+                return_ids: List[str]
+        """
         return_ids = kwargs["return_ids"] if "return_ids" in kwargs else [sy.ID_PROVIDER.pop()]
 
         self._send_msg_and_deserialize("fit", return_ids=return_ids, dataset_key=dataset_key)
+
         msg = (MSGTYPE.OBJ_REQ, return_ids[0])
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(msg)

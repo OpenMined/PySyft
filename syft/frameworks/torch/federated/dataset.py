@@ -13,24 +13,20 @@ class BaseDataset:
     of a .data attribute for inputs and a .targets one for labels. It is to
     be used like the MNIST Dataset object, and is useful to avoid handling
     the two inputs and label tensors separately.
-    
-    Args: 
-        
+
+    Args:
+
         data[list,torch tensors]: the data points
         targets: Corresponding labels of the data points
-        transform: Function to transform the datapoints 
-            
+        transform: Function to transform the datapoints
+
     """
 
     def __init__(self, data, targets, transform=None):
 
         self.data = data
         self.targets = targets
-
-        # Perform required transform on the dataset
-        if transform:
-
-            self.data = transform(self.data)
+        self.transform_ = transform
 
     def __len__(self):
         return len(self.data)
@@ -39,23 +35,27 @@ class BaseDataset:
 
         """
         Args:
-            
-            index[integer]: index of item of to get 
-        
+
+            index[integer]: index of item of to get
+
         Returns:
-            
+
             data: Data points corresponding to the given index
             targets: Targets correspoding to given datapoint
         """
+        data_elem = self.data[index]
+        if self.transform_ is not None:
+            # TODO: avoid passing through numpy domain
+            data_elem = torch.tensor(self.transform_(data_elem.numpy()))
 
-        return self.data[index], self.targets[index]
+        return data_elem, self.targets[index]
 
     def transform(self, transform):
 
         """
          Allows a transform to be applied on given dataset.
          Args:
-            
+
             transform: The transform to be applied on the data
         """
 
@@ -71,13 +71,13 @@ class BaseDataset:
     def send(self, worker):
         """
         Args:
-            
+
             worker[worker class]: worker to which the data must be sent
-                
+
         Returns:
-            
+
             self: Return the object instance with data sent to corresponding worker
-            
+
         """
 
         self.data.send_(worker)
@@ -206,8 +206,8 @@ class FederatedDataset:
         """
            Args:
                    worker_id[str,int]: ID of respective worker
-                   
-           Returns: Get Datasets from the respective worker 
+
+           Returns: Get Datasets from the respective worker
         """
 
         return self.datasets[worker_id]
