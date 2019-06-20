@@ -1,5 +1,7 @@
-import syft
 import torch
+
+import syft
+from syft.workers import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
@@ -515,3 +517,60 @@ class FixedPrecisionTensor(AbstractTensor):
     def share(self, *owners, field=None, crypto_provider=None):
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
         return self
+
+    @staticmethod
+    def simplify(tensor: "FixedPrecisionTensor") -> tuple:
+        """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
+
+        Args:
+            tensor: a FixedPrecisionTensor.
+
+        Returns:
+            tuple: a tuple holding the unique attributes of the fixed precision tensor.
+        """
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = syft.serde._simplify(tensor.child)
+
+        return (
+            syft.serde._simplify(tensor.id),
+            syft.serde._simplify(tensor.field),
+            syft.serde._simplify(tensor.base),
+            syft.serde._simplify(tensor.precision_fractional),
+            syft.serde._simplify(tensor.kappa),
+            syft.serde._simplify(tensor.tags),
+            syft.serde._simplify(tensor.description),
+            chain,
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "FixedPrecisionTensor":
+        """
+            This function reconstructs a FixedPrecisionTensor given it's attributes in form of a tuple.
+            Args:
+                worker: the worker doing the deserialization
+                tensor_tuple: a tuple holding the attributes of the FixedPrecisionTensor
+            Returns:
+                FixedPrecisionTensor: a FixedPrecisionTensor
+            Examples:
+                shared_tensor = detail(data)
+            """
+
+        tensor_id, field, base, precision_fractional, kappa, tags, description, chain = tensor_tuple
+
+        tensor = FixedPrecisionTensor(
+            owner=worker,
+            id=syft.serde._detail(worker, tensor_id),
+            field=syft.serde._detail(worker, field),
+            base=syft.serde._detail(worker, base),
+            precision_fractional=syft.serde._detail(worker, precision_fractional),
+            kappa=syft.serde._detail(worker, kappa),
+            tags=syft.serde._detail(worker, tags),
+            description=syft.serde._detail(worker, description),
+        )
+
+        if chain is not None:
+            chain = syft.serde._detail(worker, chain)
+            tensor.child = chain
+
+        return tensor
