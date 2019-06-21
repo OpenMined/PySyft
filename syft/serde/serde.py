@@ -56,6 +56,7 @@ from syft.exceptions import ResponseSignatureError
 
 
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch import pointers
@@ -72,6 +73,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 # If a object implements its own simplify and detail functions it should be stored in this list
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
+    FixedPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
     Plan,
