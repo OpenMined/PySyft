@@ -3,6 +3,7 @@ import torch
 
 import syft
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.frameworks.torch.overload_torch import overloaded
 from . import gradients
 
 
@@ -53,8 +54,10 @@ class AutogradTensor(AbstractTensor):
             self._grad = value
 
     def attr(self, attr_name):
-        attr_val = self.child.attr(attr_name)
+        if attr_name == "grad":
+            return self.grad
 
+        attr_val = self.child.attr(attr_name)
         return attr_val
 
     def __getattribute__(self, name):
@@ -88,11 +91,47 @@ class AutogradTensor(AbstractTensor):
     def __add__(self, other):
         return self.add(other)
 
+    def __sub__(self, other):
+        return self.sub(other)
+
     def __mul__(self, other):
         return self.mul(other)
 
     def __matmul__(self, other):
         return self.matmul(other)
+
+    def __pow__(self, power, **kwargs):
+        return self.pow(power, **kwargs)
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        def add(self, other):
+            return self.__add__(other)
+
+        module.add = add
+
+        def sub(self, other):
+            return self.__sub__(other)
+
+        module.sub = sub
+
+        def mul(self, other):
+            return self.__mul__(other)
+
+        module.mul = mul
+
+        def matmul(self, other):
+            return self.matmul(other)
+
+        module.matmul = matmul
+
+        def addmm(bias, input_tensor, weight):
+            matmul = input_tensor.matmul(weight)
+            result = bias.add(matmul)
+            return result
+
+        module.addmm = addmm
 
     @classmethod
     def handle_func_command(cls, command):
@@ -110,6 +149,14 @@ class AutogradTensor(AbstractTensor):
         """
 
         cmd, _, args, kwargs = command
+
+        # Check that the function has not been overwritten
+        try:
+            # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+            cmd = cls.rgetattr(cls, cmd)
+            return cmd(*args, **kwargs)
+        except AttributeError:
+            pass
 
         # TODO: I can't manage the import issue, can you?
         # Replace all AutogradTensor with their child attribute

@@ -381,7 +381,7 @@ class TorchHook:
 
             if hasattr(self, "child"):
                 to_return = self.child.attr("grad")
-                if isinstance(to_return.child, syft.PointerTensor):
+                if to_return is not None and isinstance(to_return.child, syft.PointerTensor):
                     if to_return.child.is_none():
                         to_return = None
 

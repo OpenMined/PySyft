@@ -15,6 +15,28 @@ class AddBackward(GradFunc):
         return (grad_self_, grad_other)
 
 
+class SubBackward(GradFunc):
+    def __init__(self, self_, other):
+        super().__init__(self, self_, other)
+        self.self_ = self_
+        self.other = other
+
+    def gradient(self, grad):
+        grad_self_ = grad
+        grad_other = grad * -1 if type(self.self_) == type(self.other) else None
+        return (grad_self_, grad_other)
+
+
+class SumBackward(GradFunc):
+    def __init__(self, self_):
+        super().__init__(self, self_)
+        self.self_ = self_
+
+    def gradient(self, grad):
+        return ((self.self_ * 0 + 1) * grad,)
+        # return (torch.ones(self.self_.shape) * grad, )
+
+
 class AsinBackward(GradFunc):
     def __init__(self, self_):
         super().__init__(self, self_)
@@ -37,6 +59,17 @@ class MulBackward(GradFunc):
         return (grad_self_, grad_other)
 
 
+class PowBackward(GradFunc):
+    def __init__(self, self_, power):
+        super().__init__(self, self_, power)
+        self.self_ = self_
+        self.power = power
+
+    def gradient(self, grad):
+        power = self.power
+        return (power * self.self_ ** (power - 1) * grad,)
+
+
 class MatmulBackward(GradFunc):
     def __init__(self, self_, other):
         super().__init__(self, self_, other)
@@ -47,6 +80,15 @@ class MatmulBackward(GradFunc):
         grad_self_ = grad @ self.other.t()
         grad_other = self.self_.t() @ grad if type(self.self_) == type(self.other) else None
         return (grad_self_, grad_other)
+
+
+class TBackward(GradFunc):
+    def __init__(self, self_):
+        super().__init__(self, self_)
+        self.self_ = self_
+
+    def gradient(self, grad):
+        return (grad.t(),)
 
 
 class SigmoidBackward(GradFunc):
