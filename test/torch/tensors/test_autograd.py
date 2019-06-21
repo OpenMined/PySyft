@@ -198,6 +198,49 @@ def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd):
     assert (b.grad.get().float_prec() == b_torch.grad).all()
 
 
+def test_addmm_backward_for_additive_shared_with_autograd(workers):
+    """
+    Test .backward() on Additive Shared Tensor for addmm
+    """
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+
+    a = (
+        torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+        .fix_prec()
+        .share(alice, bob, crypto_provider=james)
+    )
+    b = (
+        torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
+        .fix_prec()
+        .share(alice, bob, crypto_provider=james)
+    )
+    c = (
+        torch.tensor([[2.0, 2], [0, 1]], requires_grad=True)
+        .fix_prec()
+        .share(alice, bob, crypto_provider=james)
+    )
+
+    a = syft.AutogradTensor().on(a)
+    b = syft.AutogradTensor().on(b)
+    c = syft.AutogradTensor().on(c)
+
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
+    c_torch = torch.tensor([[2.0, 2], [0, 1]], requires_grad=True)
+
+    r = torch.addmm(c, a, b)
+    r_torch = torch.addmm(c_torch, a_torch, b_torch)
+
+    ones = torch.ones(r.shape).fix_prec().share(alice, bob, crypto_provider=james)
+    ones = syft.AutogradTensor().on(ones)
+    r.backward(ones)
+    r_torch.backward(torch.ones(r_torch.shape))
+
+    assert (a.grad.get().float_prec() == a_torch.grad).all()
+    assert (b.grad.get().float_prec() == b_torch.grad).all()
+    assert (c.grad.get().float_prec() == c_torch.grad).all()
+
+
 # def test_multi_add_sigmoid_backwards(workers):
 #     alice = workers["alice"]
 
