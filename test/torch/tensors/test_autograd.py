@@ -45,6 +45,36 @@ def test_backward_for_binary_cmd_with_autograd(cmd):
     assert (b.child.grad == b_torch.grad).all()
 
 
+@pytest.mark.parametrize("cmd", ["__iadd__", "__isub__"])
+def test_backward_for_inplace_binary_cmd_with_autograd(cmd):
+
+    a = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
+    c = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
+
+    a = syft.AutogradTensor().on(a)
+    b = syft.AutogradTensor().on(b)
+    c = syft.AutogradTensor().on(c)
+
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
+    c_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
+
+    r = a * b
+    getattr(r, cmd)(c)
+    r_torch = a_torch * b_torch
+    getattr(r_torch, cmd)(c_torch)
+
+    ones = torch.ones(r.shape)
+    ones = syft.AutogradTensor().on(ones)
+    r.backward(ones)
+    r_torch.backward(torch.ones(r_torch.shape))
+
+    assert (a.child.grad == a_torch.grad).all()
+    assert (b.child.grad == b_torch.grad).all()
+    assert (c.child.grad == c_torch.grad).all()
+
+
 @pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
 def test_backward_for_remote_binary_cmd_with_autograd(workers, cmd):
     """
@@ -72,6 +102,37 @@ def test_backward_for_remote_binary_cmd_with_autograd(workers, cmd):
 
     assert (a.grad.get() == a_torch.grad).all()
     assert (b.grad.get() == b_torch.grad).all()
+
+
+@pytest.mark.parametrize("cmd", ["__iadd__", "__isub__"])
+def test_backward_for_remote_inplace_binary_cmd_with_autograd(workers, cmd):
+    alice = workers["alice"]
+
+    a = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True).send(alice)
+    b = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True).send(alice)
+    c = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True).send(alice)
+
+    a = syft.AutogradTensor().on(a)
+    b = syft.AutogradTensor().on(b)
+    c = syft.AutogradTensor().on(c)
+
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
+    c_torch = torch.tensor([[1.0, 2], [3, 2]], requires_grad=True)
+
+    r = a * b
+    getattr(r, cmd)(c)
+    r_torch = a_torch * b_torch
+    getattr(r_torch, cmd)(c_torch)
+
+    ones = torch.ones(r.shape).send(alice)
+    ones = syft.AutogradTensor().on(ones)
+    r.backward(ones)
+    r_torch.backward(torch.ones(r_torch.shape))
+
+    assert (a.grad.get() == a_torch.grad).all()
+    assert (b.grad.get() == b_torch.grad).all()
+    assert (c.grad.get() == c_torch.grad).all()
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])

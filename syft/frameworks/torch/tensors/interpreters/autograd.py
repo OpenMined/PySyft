@@ -91,8 +91,18 @@ class AutogradTensor(AbstractTensor):
     def __add__(self, other):
         return self.add(other)
 
+    def __iadd__(self, other):
+        result = self.add(other)
+        self.child = result.child
+        self.grad_fn = result.grad_fn
+
     def __sub__(self, other):
         return self.sub(other)
+
+    def __isub__(self, other):
+        result = self.sub(other)
+        self.child = result.child
+        self.grad_fn = result.grad_fn
 
     def __mul__(self, other):
         return self.mul(other)
