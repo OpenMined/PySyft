@@ -72,6 +72,9 @@ class FederatedClient(ObjectStorage):
         if self.train_config is None:
             raise ValueError("TrainConfig not defined.")
 
+        if dataset_key not in self.datasets:
+            raise ValueError("Dataset {} unknown.".format(dataset_key))
+
         model = self.get_obj(self.train_config._model_id).obj
         loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
 
