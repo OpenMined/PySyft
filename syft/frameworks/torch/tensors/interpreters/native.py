@@ -3,7 +3,6 @@ from typing import List
 from typing import Union
 import weakref
 
-import numpy as np
 import torch
 
 import syft
@@ -631,13 +630,10 @@ class TorchTensor(AbstractTensor):
     fix_precision_ = fix_prec_
 
     def _requires_large_precision(self, max_precision, base, precision_fractional):
-        """Check if any of the elements in the tensor would require to be large precision.
+        """Check if any of the elements in the tensor would require large precision.
         """
         base_fractional = math.log2(base ** precision_fractional)
-        # Using self.abs().int() can lead to overflow
-        return torch.any(
-            np.log2(self.clone().detach().abs() + 1) + base_fractional > max_precision
-        ).item()
+        return torch.any((self.abs() + 1).log2() + base_fractional > max_precision)
 
     def share(
         self,

@@ -73,11 +73,7 @@ class LargePrecisionTensor(AbstractTensor):
 
     @staticmethod
     def _expand_item(a_number, max_length):
-        len_a_number = len(a_number)
-        if len_a_number < max_length:
-            return [0] * (max_length - len_a_number) + a_number
-        else:
-            return a_number
+        return [0] * (max_length - len(a_number)) + a_number
 
     @property
     def internal_precision(self):
