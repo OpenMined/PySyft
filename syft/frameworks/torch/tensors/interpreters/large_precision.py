@@ -15,8 +15,8 @@ class LargePrecisionTensor(AbstractTensor):
 
     The large value is defined by `precision_fractional`.
 
-    The smaller values are of type `internal_type`. The split of the large number into the smaller values is done using
-    half the size of the selected internal type. This is to avoid overflow as types are in the range ±2**(size - 1).
+    The smaller values are of type `internal_type`. The split of the large number into the smaller values
+    is in the range ±2**(size - 1).
 
     By default operations are done with NumPy. This implies unpacking the representation and packing it again.
 
@@ -125,6 +125,17 @@ class LargePrecisionTensor(AbstractTensor):
         return (self_ * other) / (self.base ** self.precision_fractional)
 
     __mul__ = mul
+
+    @overloaded.method
+    def mod(self, self_, other):
+        return self_ % other
+
+    __mod__ = mod
+
+    def __imod__(self, other):
+        self.child = self.mod(other).child
+
+        return self
 
     def fix_large_precision(self):
         self.child = self._create_internal_representation()

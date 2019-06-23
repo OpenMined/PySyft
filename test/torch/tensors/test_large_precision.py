@@ -169,3 +169,15 @@ def test_diff_dims_in_same_tensor():
     lpt_x = x.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
     restored = lpt_x.float_precision()
     assert torch.all(torch.eq(x, restored))
+
+
+def test_mod():
+    internal_type = torch.int16
+    precision_fractional = 256
+    expected = torch.tensor([6.0, 3.0])
+    x1 = torch.tensor([6.0, 12.0])
+    x2 = torch.tensor([9.0])
+    lpt1 = x1.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    result = lpt1 % lpt2
+    assert torch.all(torch.eq(expected, result.float_precision()))
