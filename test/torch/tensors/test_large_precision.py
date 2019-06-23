@@ -82,6 +82,18 @@ def test_add():
     assert torch.all(torch.eq(expected, result.float_precision()))
 
 
+def test_iadd():
+    internal_type = torch.int16
+    precision_fractional = 256
+    x1 = torch.tensor([10.0])
+    x2 = torch.tensor([20.0])
+    expected = torch.tensor([30.0])
+    lpt1 = x1.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt1.add_(lpt2)
+    assert torch.all(torch.eq(expected, lpt1.float_precision()))
+
+
 def test_add_different_dims():
     internal_type = torch.int16
     precision_fractional = 256
@@ -105,6 +117,19 @@ def test_mul():
     lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
     result = lpt1 * lpt2
     assert torch.all(torch.eq(expected, result.float_precision()))
+
+
+def test_imul():
+    internal_type = torch.int16
+    precision_fractional = 32
+    x1 = torch.tensor([10.0])
+    x2 = torch.tensor([20.0])
+    expected = torch.tensor([200.0])
+    expected.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt1 = x1.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt1.mul_(lpt2)
+    assert torch.all(torch.eq(expected, lpt1.float_precision()))
 
 
 def test_mul_multiple_dims():
@@ -160,6 +185,18 @@ def test_subtract():
     lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
     result = lpt1 - lpt2
     assert torch.all(torch.eq(expected, result.float_precision()))
+
+
+def test_subtract():
+    internal_type = torch.int16
+    precision_fractional = 256
+    x1 = torch.tensor([10.0])
+    x2 = torch.tensor([90000000000000010.0])
+    expected = torch.tensor([-90000000000000000.0])
+    lpt1 = x1.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
+    lpt1.sub_(lpt2)
+    assert torch.all(torch.eq(expected, lpt1.float_precision()))
 
 
 def test_diff_dims_in_same_tensor():

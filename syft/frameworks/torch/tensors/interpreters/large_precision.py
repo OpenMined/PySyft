@@ -106,6 +106,8 @@ class LargePrecisionTensor(AbstractTensor):
 
         return self
 
+    add_ = __iadd__
+
     @overloaded.method
     def sub(self, self_, other):
         return self_ - other
@@ -119,6 +121,8 @@ class LargePrecisionTensor(AbstractTensor):
 
         return self
 
+    sub_ = __isub__
+
     @overloaded.method
     def mul(self, self_, other):
         # We need to divide the result of the multiplication by the precision
@@ -126,16 +130,17 @@ class LargePrecisionTensor(AbstractTensor):
 
     __mul__ = mul
 
+    def __imul__(self, other):
+        self.child = self.mul(other).child
+        return self
+
+    mul_ = __imul__
+
     @overloaded.method
     def mod(self, self_, other):
         return self_ % other
 
     __mod__ = mod
-
-    def __imod__(self, other):
-        self.child = self.mod(other).child
-
-        return self
 
     def fix_large_precision(self):
         self.child = self._create_internal_representation()
