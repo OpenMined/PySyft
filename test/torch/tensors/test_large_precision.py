@@ -175,7 +175,7 @@ def test_uint8_representation(workers):
     assert torch.all(torch.eq(x, restored))
 
 
-def test_subtract():
+def test_sub():
     internal_type = torch.int16
     precision_fractional = 256
     x1 = torch.tensor([10.0])
@@ -187,7 +187,7 @@ def test_subtract():
     assert torch.all(torch.eq(expected, result.float_precision()))
 
 
-def test_subtract():
+def test_isub():
     internal_type = torch.int16
     precision_fractional = 256
     x1 = torch.tensor([10.0])
