@@ -109,19 +109,21 @@ class FederatedClient(ObjectStorage):
 
         loss = None
         iteration_count = 0
-        for (data, target) in data_loader:
-            # Set gradients to zero
-            self.optimizer.zero_grad()
 
-            # Update model
-            output = model(data)
-            loss = loss_fn(target=target, pred=output)
-            loss.backward()
-            self.optimizer.step()
+        for _ in range(self.train_config.epochs):
+            for (data, target) in data_loader:
+                # Set gradients to zero
+                self.optimizer.zero_grad()
 
-            # Update and check interation count
-            iteration_count += 1
-            if iteration_count >= self.train_config.max_nr_batches >= 0:
-                break
+                # Update model
+                output = model(data)
+                loss = loss_fn(target=target, pred=output)
+                loss.backward()
+                self.optimizer.step()
+
+                # Update and check interation count
+                iteration_count += 1
+                if iteration_count >= self.train_config.max_nr_batches >= 0:
+                    break
 
         return loss

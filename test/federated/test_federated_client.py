@@ -57,8 +57,11 @@ def test_set_obj_other():
     assert fed_client._objects[dummy_data.id] == dummy_data
 
 
-@pytest.mark.parametrize("fit_dataset_key", ["gaussian_mixture", "another_dataset"])
-def test_fit(fit_dataset_key):
+@pytest.mark.parametrize(
+    "fit_dataset_key, epochs",
+    [("gaussian_mixture", 1), ("gaussian_mixture", 10), ("another_dataset", 1)],
+)
+def test_fit(fit_dataset_key, epochs):
     data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
 
     fed_client = federated.FederatedClient()
@@ -103,6 +106,7 @@ def test_fit(fit_dataset_key):
         loss_fn_id=loss_id,
         lr=0.05,
         weight_decay=0.01,
+        epochs=epochs,
     )
 
     fed_client.set_obj(model_ow)
@@ -110,7 +114,8 @@ def test_fit(fit_dataset_key):
     fed_client.set_obj(train_config)
     fed_client.optimizer = None
 
-    for curr_round in range(12):
+    loss = loss_before
+    for curr_round in range(3):
         if fit_dataset_key == dataset_key:
             loss = fed_client.fit(dataset_key=fit_dataset_key)
         else:
