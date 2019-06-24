@@ -11,9 +11,15 @@ class AddBackward(GradFunc):
         self.other = other
 
     def gradient(self, grad):
-        grad_self_ = grad
-        grad_other = grad if type(self.self_) == type(self.other) else None
-        return (grad_self_, grad_other)
+        grad_self = grad.copy()
+        grad_other = grad.copy() if type(self.self_) == type(self.other) else None
+
+        if self.self_.shape != self.other.shape:
+            grad_self, grad_other = apply_dim_transformations(
+                grad_self, grad_other, self.self_.shape, self.other.shape
+            )
+
+        return (grad_self, grad_other)
 
 
 class SubBackward(GradFunc):
@@ -23,9 +29,14 @@ class SubBackward(GradFunc):
         self.other = other
 
     def gradient(self, grad):
-        grad_self_ = grad
+        grad_self = grad.copy()
         grad_other = grad * -1 if type(self.self_) == type(self.other) else None
-        return (grad_self_, grad_other)
+
+        if self.self_.shape != self.other.shape:
+            grad_self, grad_other = apply_dim_transformations(
+                grad_self, grad_other, self.self_.shape, self.other.shape
+            )
+        return (grad_self, grad_other)
 
 
 class SumBackward(GradFunc):

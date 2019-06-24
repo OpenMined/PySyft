@@ -18,7 +18,7 @@ def test_wrap():
     assert isinstance(x.child.child, torch.Tensor)
 
 
-@pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
+@pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__", "__matmul__"])
 def test_backward_for_binary_cmd_with_autograd(cmd):
     """
     Test .backward() on local tensors wrapped in an AutogradTensor
@@ -73,6 +73,44 @@ def test_backward_for_inplace_binary_cmd_with_autograd(cmd):
     assert (a.child.grad == a_torch.grad).all()
     assert (b.child.grad == b_torch.grad).all()
     assert (c.child.grad == c_torch.grad).all()
+
+
+@pytest.mark.parametrize("cmd", ["__add__", "__sub__"])
+@pytest.mark.parametrize(
+    "shapes",
+    [
+        ((2,), (2,)),
+        ((5, 3, 2), (5, 1, 2)),
+        ((3, 2), (5, 3, 2)),
+        ((3, 1), (5, 3, 2)),
+        ((3, 2), (5, 1, 2)),
+    ],
+)
+def test_backward_for_binary_cmd_with_inputs_of_different_dim_and_autograd(cmd, shapes):
+    """
+    Test .backward() on local tensors wrapped in an AutogradTensor
+    (It is useless but this is the most basic example)
+    """
+    a_shape, b_shape = shapes
+    a = torch.ones(a_shape, requires_grad=True)
+    b = torch.ones(b_shape, requires_grad=True)
+
+    a = syft.AutogradTensor().on(a)
+    b = syft.AutogradTensor().on(b)
+
+    a_torch = torch.ones(a_shape, requires_grad=True)
+    b_torch = torch.ones(b_shape, requires_grad=True)
+
+    c = getattr(a, cmd)(b)
+    c_torch = getattr(a_torch, cmd)(b_torch)
+
+    ones = torch.ones(c.shape)
+    ones = syft.AutogradTensor().on(ones)
+    c.backward(ones)
+    c_torch.backward(torch.ones(c_torch.shape))
+
+    assert (a.child.grad == a_torch.grad).all()
+    assert (b.child.grad == b_torch.grad).all()
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
