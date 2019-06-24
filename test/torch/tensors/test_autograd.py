@@ -1,5 +1,6 @@
 import pytest
 import torch
+import torch.nn as nn
 import syft
 
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
@@ -261,6 +262,46 @@ def test_backward_for_fix_prec_binary_cmd_with_autograd(cmd):
     assert (b.grad.float_prec() == b_torch.grad).all()
 
 
+def test_backward_for_linear_model_on_fix_prec_params_with_autograd():
+    """
+    Test .backward() on Fixed Precision parameters with mixed operations
+    """
+    x = torch.tensor([[1.0, 2], [1.0, 2]]).fix_prec()
+    target = torch.tensor([[1.0], [1.0]]).fix_prec()
+    model = nn.Linear(2, 1)
+    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
+    model.bias = nn.Parameter(torch.tensor([-1.0]))
+    model.fix_precision()
+
+    x = syft.AutogradTensor().on(x)
+    target = syft.AutogradTensor().on(target)
+    model.weight = syft.AutogradTensor().on(model.weight)
+    model.bias = syft.AutogradTensor().on(model.bias)
+
+    output = model(x)
+    loss = ((output - target) ** 2).sum()
+    one = torch.ones(loss.shape).fix_prec()
+    one = syft.AutogradTensor().on(one)
+    loss.backward(one)
+
+    weight_grad = model.weight.grad.float_precision()
+    bias_grad = model.bias.grad.float_precision()
+
+    x = torch.tensor([[1.0, 2], [1.0, 2]])
+    target = torch.tensor([[1.0], [1.0]])
+    model = nn.Linear(2, 1)
+    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
+    model.bias = nn.Parameter(torch.tensor([-1.0]))
+
+    output = model(x)
+    loss = ((output - target) ** 2).sum()
+
+    one = torch.ones(loss.shape)
+    loss.backward(one)
+    assert (model.weight.grad == weight_grad).all()
+    assert (model.bias.grad == bias_grad).all()
+
+
 @pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
 def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd):
     """
@@ -338,6 +379,48 @@ def test_addmm_backward_for_additive_shared_with_autograd(workers):
     assert (a.grad.get().float_prec() == a_torch.grad).all()
     assert (b.grad.get().float_prec() == b_torch.grad).all()
     assert (c.grad.get().float_prec() == c_torch.grad).all()
+
+
+def test_backward_for_linear_model_on_additive_shared_with_autograd(workers):
+    """
+    Test .backward() on Additive Shared tensors with mixed operations
+    """
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+
+    x = torch.tensor([[1.0, 2], [1.0, 2]]).fix_prec().share(bob, alice, crypto_provider=james)
+    target = torch.tensor([[1.0], [1.0]]).fix_prec().share(bob, alice, crypto_provider=james)
+    model = nn.Linear(2, 1)
+    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
+    model.bias = nn.Parameter(torch.tensor([-1.0]))
+    model.fix_precision().share(bob, alice, crypto_provider=james)
+
+    x = syft.AutogradTensor().on(x)
+    target = syft.AutogradTensor().on(target)
+    model.weight = syft.AutogradTensor().on(model.weight)
+    model.bias = syft.AutogradTensor().on(model.bias)
+
+    output = model(x)
+    loss = ((output - target) ** 2).sum()
+    one = torch.ones(loss.shape).fix_prec().share(bob, alice, crypto_provider=james)
+    one = syft.AutogradTensor().on(one)
+    loss.backward(one)
+
+    weight_grad = model.weight.grad.get().float_precision()
+    bias_grad = model.bias.grad.get().float_precision()
+
+    x = torch.tensor([[1.0, 2], [1.0, 2]])
+    target = torch.tensor([[1.0], [1.0]])
+    model = nn.Linear(2, 1)
+    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
+    model.bias = nn.Parameter(torch.tensor([-1.0]))
+
+    output = model(x)
+    loss = ((output - target) ** 2).sum()
+
+    one = torch.ones(loss.shape)
+    loss.backward(one)
+    assert (model.weight.grad == weight_grad).all()
+    assert (model.bias.grad == bias_grad).all()
 
 
 # def test_multi_add_sigmoid_backwards(workers):
