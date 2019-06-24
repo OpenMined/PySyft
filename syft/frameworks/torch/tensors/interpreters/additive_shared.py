@@ -448,8 +448,11 @@ class AdditiveSharingTensor(AbstractTensor):
         assert isinstance(divisor, int)
 
         divided_shares = {}
-        for location, pointer in shares.items():
-            divided_shares[location] = pointer / divisor
+        for i_worker, (location, pointer) in enumerate(shares.items()):
+            if i_worker % 3 == 0:
+                divided_shares[location] = self.field - (self.field - pointer) / divisor
+            else:
+                divided_shares[location] = pointer / divisor
 
         return divided_shares
 

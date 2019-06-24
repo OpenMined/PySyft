@@ -9,7 +9,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
-        field: int = (2 ** 62) - 1,
+        field: int = 2 ** 62,
         base: int = 10,
         precision_fractional: int = 3,
         kappa: int = 1,
@@ -41,7 +41,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        self.torch_max_value = torch.tensor([round(self.field / 2)])
+        self.torch_max_value = torch.tensor(self.field).long()
 
     def get_class_attributes(self):
         """
@@ -62,14 +62,12 @@ class FixedPrecisionTensor(AbstractTensor):
         rational = self.child
 
         upscaled = (rational * self.base ** self.precision_fractional).long()
+        assert (
+            upscaled.abs() < (self.field / 2)
+        ).all(), f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
+
         field_element = upscaled % self.field
         field_element.owner = rational.owner
-
-        # Handle neg values
-        gate = field_element.gt(self.torch_max_value).long()
-        neg_nums = (field_element - self.field) * gate
-        pos_nums = field_element * (1 - gate)
-        field_element = neg_nums + pos_nums
 
         self.child = field_element
         return self
@@ -80,7 +78,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         value = self.child.long() % self.field
 
-        gate = value.native_gt(self.torch_max_value).long()
+        gate = value.native_gt(self.torch_max_value / 2).long()
         neg_nums = (value - self.field) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
@@ -89,8 +87,19 @@ class FixedPrecisionTensor(AbstractTensor):
 
     def truncate(self, precision_fractional):
         truncation = self.base ** precision_fractional
-        self.child /= truncation
-        return self
+
+        # We need to make sure that values are truncated "towards 0"
+        # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
+        # at 97 (equivalent to -3), not 7
+        if self.child.is_wrapper:  # Handle FPT>(wrap)>AST
+            self.child = (self.child / truncation)
+            return self
+        else:
+            gate = self.child.native_gt(self.torch_max_value / 2).long()
+            neg_nums = (self.child - self.field) / truncation + self.field
+            pos_nums = self.child / truncation
+            self.child = neg_nums * gate + pos_nums * (1 - gate)
+            return self
 
     @overloaded.method
     def add(self, _self, other):
@@ -113,6 +122,7 @@ class FixedPrecisionTensor(AbstractTensor):
             other = tmp
 
         response = getattr(_self, "add")(other)
+        response %= self.field  # Wrap around the field
 
         return response
 
@@ -146,6 +156,7 @@ class FixedPrecisionTensor(AbstractTensor):
             other = tmp
 
         response = getattr(_self, "sub")(other)
+        response %= self.field  # Wrap around the field
 
         return response
 
@@ -203,7 +214,10 @@ class FixedPrecisionTensor(AbstractTensor):
             "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        return response.truncate(self.precision_fractional)
+        response %= self.field  # Wrap around the field
+        response =  response.truncate(self.precision_fractional)
+
+        return response
 
     __mul__ = mul
 
@@ -248,7 +262,10 @@ class FixedPrecisionTensor(AbstractTensor):
             "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        return response.truncate(other.precision_fractional)
+        response %= self.field  # Wrap around the field
+        response = response.truncate(other.precision_fractional)
+
+        return response
 
     __matmul__ = matmul
 
@@ -513,5 +530,6 @@ class FixedPrecisionTensor(AbstractTensor):
         ).on(self.child.get())
 
     def share(self, *owners, field=None, crypto_provider=None):
+        field = self.field if field is None else field
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
         return self
