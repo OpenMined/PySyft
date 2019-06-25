@@ -123,7 +123,6 @@ class AdditiveSharingTensor(AbstractTensor):
             share = v.location._objects[v.id_at_location]
             shares.append(share)
 
-        # repeated piece of code here
         res_field = sum(shares) % self.field
 
         gate = res_field.native_gt(self.field / 2).long()
@@ -183,7 +182,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 share = random_shares[i] - random_shares[i - 1]
             else:
                 share = secret - random_shares[i - 1]
-            share %= field
+            share %= field  # Generated shares should be in a finite field Zq
             shares.append(share)
 
         return shares
@@ -444,11 +443,15 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @overloaded.method
     def __truediv__(self, shares: dict, divisor):
-        # TODO: truediv in Zq
+        # TODO: how to correctly handle division in Zq?
         assert isinstance(divisor, int)
 
         divided_shares = {}
         for i_worker, (location, pointer) in enumerate(shares.items()):
+            # Still no solution to perform a real division on a additive shared tensor
+            # without a heavy crypto protocol.
+            # For now, the solution works in most cases (we compute Q - (Q - pointer) / divisor
+            # for as many worker as the number of times the sum of shares "crosses" Q/2, in average)
             if i_worker % 3 == 0:
                 divided_shares[location] = self.field - (self.field - pointer) / divisor
             else:
