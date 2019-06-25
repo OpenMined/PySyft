@@ -1,3 +1,5 @@
+import pytest
+
 import torch
 
 import syft as sy
@@ -55,7 +57,11 @@ def test_set_obj_other():
     assert fed_client._objects[dummy_data.id] == dummy_data
 
 
-def test_fit():
+@pytest.mark.parametrize(
+    "fit_dataset_key, epochs",
+    [("gaussian_mixture", 1), ("gaussian_mixture", 10), ("another_dataset", 1)],
+)
+def test_fit(fit_dataset_key, epochs):
     data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
 
     fed_client = federated.FederatedClient()
@@ -100,6 +106,7 @@ def test_fit():
         loss_fn_id=loss_id,
         lr=0.05,
         weight_decay=0.01,
+        epochs=epochs,
     )
 
     fed_client.set_obj(model_ow)
@@ -107,32 +114,22 @@ def test_fit():
     fed_client.set_obj(train_config)
     fed_client.optimizer = None
 
-    for curr_round in range(12):
-        loss = fed_client.fit(dataset_key=dataset_key)
+    loss = loss_before
+    for curr_round in range(3):
+        if fit_dataset_key == dataset_key:
+            loss = fed_client.fit(dataset_key=fit_dataset_key)
+        else:
+            with pytest.raises(ValueError):
+                loss = fed_client.fit(dataset_key=fit_dataset_key)
         if PRINT_IN_UNITTESTS and curr_round % 4 == 0:  # pragma: no cover
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (curr_round, loss))
 
-    new_model = fed_client.get_obj(model_id)
-    pred = new_model.obj(data)
-    loss_after = loss_fn(target=target, pred=pred)
-    if PRINT_IN_UNITTESTS:  # pragma: no cover:
-        print("Loss after training: {}".format(loss_after))
+    if dataset_key == fit_dataset_key:
+        new_model = fed_client.get_obj(model_id)
+        pred = new_model.obj(data)
+        loss_after = loss_fn(target=target, pred=pred)
+        if PRINT_IN_UNITTESTS:  # pragma: no cover:
+            print("Loss after training: {}".format(loss_after))
 
-    assert loss_after < loss_before
-
-
-def create_xor_data(nr_samples):  # pragma: no cover
-    with torch.no_grad():
-        data = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
-        target = torch.tensor([1, 1, 0, 0], requires_grad=False)
-
-        data_len = int(nr_samples / 4 + 1) * 4
-        X = torch.zeros(data_len, 2, requires_grad=True)
-        Y = torch.zeros(data_len, requires_grad=False)
-
-        for i in range(int(data_len / 4)):
-            X[i * 4 : (i + 1) * 4, :] = data
-            Y[i * 4 : (i + 1) * 4] = target
-
-    return X, Y.long()
+        assert loss_after < loss_before
