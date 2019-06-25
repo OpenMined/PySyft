@@ -73,13 +73,13 @@ def _random_common_value(max_value, *workers):
     return common_value
 
 
-def _shares_of_zero(field, crypto_provider, *workers):
+def _shares_of_zero(size, field, crypto_provider, *workers):
     """
     Return n in [0, max_value-1] chosen by a worker and sent to all workers,
     in the form of a MultiPointerTensor
     """
     u = (
-        torch.zeros(1)
+        torch.zeros(size)
         .long()
         .send(workers[0])
         .share(*workers, field=field, crypto_provider=crypto_provider)
@@ -107,7 +107,7 @@ def select_share(alpha_sh, x_sh, y_sh):
     crypto_provider = alpha_sh.crypto_provider
     L = alpha_sh.field
 
-    u_sh = _shares_of_zero(L, crypto_provider, alice, bob)
+    u_sh = _shares_of_zero(1, L, crypto_provider, alice, bob)
 
     # 1)
     w_sh = y_sh - x_sh
@@ -237,7 +237,7 @@ def msb(a_sh):
 
     # Common Randomness
     BETA = _random_common_bit(alice, bob)
-    u = _shares_of_zero(L, crypto_provider, alice, bob)
+    u = _shares_of_zero(1, L, crypto_provider, alice, bob)
 
     # 1)
     x = torch.LongTensor(a_sh.shape).random_(L - 1)
@@ -317,14 +317,7 @@ def share_convert(a_sh):
     alpha1 = alpha0.copy().move(workers[1])
     alpha = sy.MultiPointerTensor(children=[alpha0, alpha1])
 
-    u_sh = (
-        torch.zeros(1)
-        .long()
-        .send(workers[0])
-        .share(*workers, field=L - 1, crypto_provider=crypto_provider)
-        .get()
-        .child
-    )
+    u_sh = _shares_of_zero(1, L - 1, crypto_provider, *workers)
 
     # 2)
     a_tilde_sh = a_sh + r_sh
@@ -384,14 +377,7 @@ def relu_deriv(a_sh):
     L = a_sh.field
 
     # Common randomness
-    u = (
-        torch.zeros(1)
-        .long()
-        .send(alice)
-        .share(alice, bob, field=L, crypto_provider=crypto_provider)
-        .get()
-        .child
-    )
+    u = _shares_of_zero(1, L, crypto_provider, alice, bob)
 
     # 1)
     y_sh = a_sh * 2
@@ -428,7 +414,7 @@ def relu(a_sh):
     L = a_sh.field
 
     # Common Randomness
-    u = torch.zeros(1).long().share(alice, bob, field=L, crypto_provider=crypto_provider).child
+    u = _shares_of_zero(1, L, crypto_provider, alice, bob)
 
     return a_sh * relu_deriv(a_sh) + u
 
@@ -456,16 +442,9 @@ def division(x_sh, y_sh, bit_len_max=Q_BITS):
     y_sh = y_sh.view(-1)
 
     # Common Randomness
-    w_sh = (
-        torch.zeros(bit_len_max)
-        .long()
-        .send(alice)
-        .share(alice, bob, field=L, crypto_provider=crypto_provider)
-        .get()
-        .child
-    )
-    s_sh = _shares_of_zero(L, crypto_provider, alice, bob)
-    u_sh = _shares_of_zero(L, crypto_provider, alice, bob)
+    w_sh = _shares_of_zero(bit_len_max, L, crypto_provider, alice, bob)
+    s_sh = _shares_of_zero(1, L, crypto_provider, alice, bob)
+    u_sh = _shares_of_zero(1, L, crypto_provider, alice, bob)
 
     ks = []
     for i in range(bit_len_max - 1, -1, -1):
@@ -513,8 +492,8 @@ def maxpool(x_sh):
     x_sh = x_sh.view(-1)
 
     # Common Randomness
-    u_sh = _shares_of_zero(L, crypto_provider, alice, bob)
-    v_sh = _shares_of_zero(L, crypto_provider, alice, bob)
+    u_sh = _shares_of_zero(1, L, crypto_provider, alice, bob)
+    v_sh = _shares_of_zero(1, L, crypto_provider, alice, bob)
 
     # 1)
     max_sh = x_sh[0]
@@ -562,14 +541,7 @@ def maxpool_deriv(x_sh):
     x_sh = x_sh.view(-1)
 
     # Common Randomness
-    U_sh = (
-        torch.zeros(n)
-        .long()
-        .send(alice)
-        .share(alice, bob, field=L, crypto_provider=crypto_provider)
-        .get()
-        .child
-    )
+    U_sh = _shares_of_zero(n, L, crypto_provider, alice, bob)
     r = _random_common_value(L, alice, bob)
 
     # 1)
