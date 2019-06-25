@@ -95,6 +95,11 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @property
     def grad(self):
+        """
+        Gradient makes no sense for Additive Shared Tensor, so we make it clear
+        that if someone query .grad on a Additive Shared Tensor it doesn't error
+        but returns grad and can't be set
+        """
         return None
 
     def get(self):
@@ -401,7 +406,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         Compute integer power of a number by recursion using mul
         """
-        assert power > 0
+        assert isinstance(power, int) and power > 0
         if power == 1:
             return self
         else:

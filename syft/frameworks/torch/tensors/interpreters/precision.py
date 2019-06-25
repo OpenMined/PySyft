@@ -69,6 +69,11 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @property
     def grad(self):
+        """
+        Gradient makes no sense for Fixed Precision Tensor, so we make it clear
+        that if someone query .grad on a Fixed Precision Tensor it doesn't error
+        but returns grad and can't be set
+        """
         return None
 
     def attr(self, attr_name):
@@ -178,6 +183,15 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __sub__ = sub
 
+    def sub_(self, value_or_tensor, tensor=None):
+        if tensor is None:
+            result = self.sub(value_or_tensor)
+        else:
+            result = self.sub(value_or_tensor * tensor)
+
+        self.child = result.child
+        return self
+
     def __isub__(self, other):
         self.child = self.sub(other).child
 
@@ -238,7 +252,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         Compute integer power of a number by recursion using mul
         """
-        assert power > 0
+        assert isinstance(power, int) and power > 0
         if power == 1:
             return self
         else:

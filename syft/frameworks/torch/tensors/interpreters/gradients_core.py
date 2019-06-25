@@ -123,7 +123,7 @@ def get_mismatch_dims(
 def apply_dim_transformations(grad_self, grad_other, self_shape, other_shape):
     """
     Given computed gradients and initial shapes, reshape the gradients to match the
-    initial shapes by retro-engineering the expansion operations made by PyTorch
+    initial shapes by reverse engineering the expansion operations made by PyTorch
     when operating two tensors with different shapes.
 
     Args:

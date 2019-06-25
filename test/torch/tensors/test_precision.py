@@ -107,15 +107,35 @@ def test_torch_add_():
     assert (y == torch.tensor([0.2, 0.4, 0.6])).all()
 
     x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
-    x2 = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
     lr = torch.tensor(0.5).fix_prec()
 
-    y = x.add_(lr, x2)
+    y = x.add_(lr, x)
 
     assert (y.child.child == torch.LongTensor([150, 300, 450])).all()
     y = y.float_prec()
 
     assert (y == torch.tensor([0.15, 0.3, 0.45])).all()
+
+
+def test_torch_sub_():
+    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+
+    y = x.sub_(x)
+
+    assert (y.child.child == torch.LongTensor([0, 0, 0])).all()
+    y = y.float_prec()
+
+    assert (y == torch.tensor([0, 0, 0.0])).all()
+
+    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+    lr = torch.tensor(0.5).fix_prec()
+
+    y = x.sub_(lr, x)
+
+    assert (y.child.child == torch.LongTensor([50, 100, 150])).all()
+    y = y.float_prec()
+
+    assert (y == torch.tensor([0.05, 0.1, 0.15])).all()
 
 
 def test_torch_sub(workers):
