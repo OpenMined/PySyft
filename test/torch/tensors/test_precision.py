@@ -95,11 +95,11 @@ def test_torch_add(workers):
     assert (z == torch.tensor([0.3, -0.7, -0.3])).all()
 
     # When overflow occurs
-    x = torch.tensor([10., 20., 30.]).fix_prec(field=1e4, precision_fractional=2)
+    x = torch.tensor([10.0, 20.0, 30.0]).fix_prec(field=1e4, precision_fractional=2)
     y = torch.add(x, x)
     y = torch.add(y, y).float_prec()
 
-    assert (y == torch.tensor([40., -20., 20.])).all()
+    assert (y == torch.tensor([40.0, -20.0, 20.0])).all()
 
     # with AST
     t = torch.tensor([1.0, -2.0, 3.0])
@@ -162,9 +162,9 @@ def test_torch_mul(workers):
 
     z = z.float_prec()
     assert z == torch.tensor([-0.2380])
-    
+
     # When overflow occurs
-    x = torch.tensor([11.]).fix_prec(field=2**16, precision_fractional=2)
+    x = torch.tensor([11.0]).fix_prec(field=2 ** 16, precision_fractional=2)
     y = torch.mul(x, x).float_prec()
 
     # (1100 * 1100) % 2**16 = 30352

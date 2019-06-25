@@ -64,7 +64,9 @@ class FixedPrecisionTensor(AbstractTensor):
         upscaled = (rational * self.base ** self.precision_fractional).long()
         assert (
             upscaled.abs() < (self.field / 2)
-        ).all(), f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
+        ).all(), (
+            f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
+        )
 
         field_element = upscaled % self.field
         field_element.owner = rational.owner
@@ -92,7 +94,7 @@ class FixedPrecisionTensor(AbstractTensor):
         # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
         # at 97 (equivalent to -3), not 7
         if self.child.is_wrapper:  # Handle FPT>(wrap)>AST
-            self.child = (self.child / truncation)
+            self.child = self.child / truncation
             return self
         else:
             gate = self.child.native_gt(self.torch_max_value / 2).long()
@@ -215,7 +217,7 @@ class FixedPrecisionTensor(AbstractTensor):
         )
 
         response %= self.field  # Wrap around the field
-        response =  response.truncate(self.precision_fractional)
+        response = response.truncate(self.precision_fractional)
 
         return response
 
