@@ -8,6 +8,11 @@ from . import gradients
 
 
 def backwards_grad(grad_fn, in_grad=None):
+    if grad_fn is None:
+        raise ValueError(
+            "The gradient for one of the command you used was not found. Check gradients.py "
+            "to see if it's missing."
+        )
     back_grad = grad_fn(in_grad)
     for next_grad_fn, next_grad in zip(grad_fn.next_functions, back_grad):
         backwards_grad(next_grad_fn, next_grad)

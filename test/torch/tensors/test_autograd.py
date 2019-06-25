@@ -1,6 +1,7 @@
 import pytest
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import syft
 
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
@@ -423,26 +424,58 @@ def test_backward_for_linear_model_on_additive_shared_with_autograd(workers):
     assert (model.bias.grad == bias_grad).all()
 
 
-# def test_multi_add_sigmoid_backwards(workers):
-#     alice = workers["alice"]
+def test_encrypted_training_with_linear_model(workers):
+    """
+    Test a minimal example of encrypted training using nn.Linear
+    """
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
 
-#     a = torch.tensor([0.3, 0.2, 0], requires_grad=True)
-#     b = torch.tensor([[1., 2], [3, 2]], requires_grad=True)
-#     c = torch.tensor([-1, -1, 2.0], requires_grad=True)
+    # A Toy Dataset
+    data = (
+        torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
+        .fix_prec()
+        .share(bob, alice, crypto_provider=james)
+    )
+    target = (
+        torch.tensor([[0], [0], [1], [1.0]]).fix_prec().share(bob, alice, crypto_provider=james)
+    )
 
-#     a = a.send(alice, local_autograd=True)
-#     b = b.send(alice, local_autograd=True)
-#     c = c.send(alice, local_autograd=True)
+    # A Toy Model
+    model = nn.Linear(2, 1).fix_precision().share(bob, alice, crypto_provider=james)
 
-#     a_torch = torch.tensor([0.3, 0.2, 0], requires_grad=True)
-#     b_torch = torch.tensor([[1., 2], [3, 2]], requires_grad=True)
-#     c_torch = torch.tensor([-1, -1, 2.0], requires_grad=True)
+    data = syft.AutogradTensor().on(data)
+    target = syft.AutogradTensor().on(target)
+    model.weight = syft.AutogradTensor().on(model.weight)
+    model.bias = syft.AutogradTensor().on(model.bias)
 
-#     res = ((a * b) + c).sigmoid()
-#     res = ((a_torch * b_torch) + c_torch).sigmoid()
+    def train():
+        # Training Logic
+        opt = optim.SGD(params=model.parameters(), lr=0.1)
+        # Convert the learning rate to fixed precision
+        opt.param_groups[0]["lr"] = torch.tensor(opt.param_groups[0]["lr"]).fix_precision().child
+        for iter in range(5):
 
-#     res.backward(torch.ones(res.shape).send(alice))
-#     res_torch.backward(torch.ones_like(res_torch))
+            # 1) erase previous gradients (if they exist)
+            opt.zero_grad()
 
-#     # Have to do .child.grad here because .grad doesn't work on Wrappers yet
-#     assert (a.grad.get() == a_torch.grad).all()
+            # 2) make a prediction
+            pred = model(data)
+
+            # 3) calculate how much we missed
+            loss = ((pred - target) ** 2).sum()
+
+            # 4) figure out which weights caused us to miss
+            one = torch.ones(loss.shape).fix_prec().share(bob, alice, crypto_provider=james)
+            one = syft.AutogradTensor().on(one)
+            loss.backward(one)
+
+            # 5) change those weights
+            opt.step()
+
+            print(loss.child.child.child.child.virtual_get())
+
+        return loss
+
+    loss = train()
+
+    assert loss.child.child.child.child.virtual_get() < 200
