@@ -42,16 +42,21 @@ class AutogradTensor(AbstractTensor):
         backwards_grad(self.grad_fn, grad)
 
     @property
+    def data(self):
+        return self
+
+    @data.setter
+    def data(self, new_data):
+        self.child = new_data.child
+        return self
+
+    @property
     def grad(self):
         return self._grad
 
     @grad.setter
     def grad(self, value):
-        if value is not None:
-            assert isinstance(value, AutogradTensor)
-            self._grad = value.child
-        else:
-            self._grad = value
+        self._grad = value
 
     def attr(self, attr_name):
         if attr_name == "grad":

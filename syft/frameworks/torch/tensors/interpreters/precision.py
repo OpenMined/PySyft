@@ -59,8 +59,20 @@ class FixedPrecisionTensor(AbstractTensor):
         }
 
     @property
+    def data(self):
+        return self
+
+    @data.setter
+    def data(self, new_data):
+        self.child = new_data.child
+        return self
+
+    @property
     def grad(self):
         return None
+
+    def attr(self, attr_name):
+        return self.__getattribute__(attr_name)
 
     def fix_precision(self):
         """This method encodes the .child object using fixed precision"""
