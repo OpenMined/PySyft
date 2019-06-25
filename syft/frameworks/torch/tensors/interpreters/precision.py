@@ -136,6 +136,15 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __add__ = add
 
+    def add_(self, value_or_tensor, tensor=None):
+        if tensor is None:
+            result = self.add(value_or_tensor)
+        else:
+            result = self.add(value_or_tensor * tensor)
+
+        self.child = result.child
+        return self
+
     def __iadd__(self, other):
         """Add two fixed precision tensors together.
         """
