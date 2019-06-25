@@ -7,7 +7,7 @@ from syft import federated
 from syft.frameworks.torch import pointers
 from syft.frameworks.torch.federated import utils
 
-PRINT_IN_UNITTESTS = False
+PRINT_IN_UNITTESTS = True
 
 
 def test_add_dataset():
@@ -141,8 +141,8 @@ def test_fit(fit_dataset_key, epochs):
         if PRINT_IN_UNITTESTS:  # pragma: no cover
             print("Loss after training: {}".format(loss_after))
 
-        if loss_after >= loss_before:
-            if PRINT_IN_UNITTESTS:  # pragma: no cover
+        if loss_after >= loss_before:  # pragma: no cover
+            if PRINT_IN_UNITTESTS:
                 print("Loss not reduced, train more: {}".format(loss_after))
 
             train_model(
