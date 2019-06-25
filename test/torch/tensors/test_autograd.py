@@ -454,9 +454,9 @@ def test_encrypted_training_with_linear_model(workers):
 
     def train():
         # Training Logic
-        opt = optim.SGD(params=model.parameters(), lr=0.1)
         # Convert the learning rate to fixed precision
-        opt.param_groups[0]["lr"] = torch.tensor(opt.param_groups[0]["lr"]).fix_precision().child
+        opt = optim.SGD(params=model.parameters(), lr=0.1).fix_precision()
+
         for iter in range(10):
 
             # 1) erase previous gradients (if they exist)
