@@ -147,7 +147,7 @@ def test_sub(workers):
 
 
 def test_mul(workers):
-    torch.manual_seed(121) # Truncation might not always work so we set the random seed
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     # 2 workers
@@ -266,7 +266,7 @@ def test_roll(workers):
 
 
 def test_nn_linear(workers):
-    torch.manual_seed(121) # Truncation might not always work so we set the random seed
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     t = torch.tensor([[1.0, 2]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
@@ -281,7 +281,7 @@ def test_nn_linear(workers):
 
 
 def test_matmul(workers):
-    torch.manual_seed(121) # Truncation might not always work so we set the random seed
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     m = torch.tensor([[1, 2], [3, 4.0]])
@@ -514,7 +514,7 @@ def test_torch_sum(workers):
 
 
 def test_torch_mean(workers):
-    torch.manual_seed(121) # Truncation might not always work so we set the random seed
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     base = 10
     prec_frac = 4
