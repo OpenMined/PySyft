@@ -43,7 +43,9 @@ class AutogradTensor(AbstractTensor):
 
     def backward(self, grad=None):
         if grad is None:
-            grad = torch.ones(self.child.shape)
+            # Build a torch tensor of ones with the same shape
+            # And chain structure than self
+            grad = self * 0 + 1
         backwards_grad(self.grad_fn, grad)
 
     @property

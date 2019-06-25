@@ -21,7 +21,8 @@ def test_wrap():
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__", "__matmul__"])
-def test_backward_for_binary_cmd_with_autograd(cmd):
+@pytest.mark.parametrize("backward_one", [True, False])
+def test_backward_for_binary_cmd_with_autograd(cmd, backward_one):
     """
     Test .backward() on local tensors wrapped in an AutogradTensor
     (It is useless but this is the most basic example)
@@ -40,7 +41,7 @@ def test_backward_for_binary_cmd_with_autograd(cmd):
 
     ones = torch.ones(c.shape)
     ones = syft.AutogradTensor().on(ones)
-    c.backward(ones)
+    c.backward(ones if backward_one else None)
     c_torch.backward(torch.ones(c_torch.shape))
 
     assert (a.child.grad == a_torch.grad).all()
@@ -116,7 +117,8 @@ def test_backward_for_binary_cmd_with_inputs_of_different_dim_and_autograd(cmd, 
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
-def test_backward_for_remote_binary_cmd_with_autograd(workers, cmd):
+@pytest.mark.parametrize("backward_one", [True, False])
+def test_backward_for_remote_binary_cmd_with_autograd(workers, cmd, backward_one):
     """
     Test .backward() on remote tensors using explicit wrapping
     with an Autograd Tensor.
@@ -137,7 +139,7 @@ def test_backward_for_remote_binary_cmd_with_autograd(workers, cmd):
 
     ones = torch.ones(c.shape).send(alice)
     ones = syft.AutogradTensor().on(ones)
-    c.backward(ones)
+    c.backward(ones if backward_one else None)
     c_torch.backward(torch.ones(c_torch.shape))
 
     assert (a.grad.get() == a_torch.grad).all()
@@ -238,7 +240,8 @@ def test_backward_for_remote_unary_cmd_local_autograd(workers, cmd):
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
-def test_backward_for_fix_prec_binary_cmd_with_autograd(cmd):
+@pytest.mark.parametrize("backward_one", [True, False])
+def test_backward_for_fix_prec_binary_cmd_with_autograd(cmd, backward_one):
     """
     Test .backward() on Fixed Precision Tensor for a single operation
     """
@@ -256,7 +259,7 @@ def test_backward_for_fix_prec_binary_cmd_with_autograd(cmd):
 
     ones = torch.ones(c.shape).fix_prec()
     ones = syft.AutogradTensor().on(ones)
-    c.backward(ones)
+    c.backward(ones if backward_one else None)
     c_torch.backward(torch.ones(c_torch.shape))
 
     assert (a.grad.float_prec() == a_torch.grad).all()
@@ -304,7 +307,8 @@ def test_backward_for_linear_model_on_fix_prec_params_with_autograd():
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
-def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd):
+@pytest.mark.parametrize("backward_one", [True, False])
+def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd, backward_one):
     """
     Test .backward() on Additive Shared Tensor for a single operation
     """
@@ -332,7 +336,7 @@ def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd):
 
     ones = torch.ones(c.shape).fix_prec().share(alice, bob, crypto_provider=james)
     ones = syft.AutogradTensor().on(ones)
-    c.backward(ones)
+    c.backward(ones if backward_one else None)
     c_torch.backward(torch.ones(c_torch.shape))
 
     assert (a.grad.get().float_prec() == a_torch.grad).all()
@@ -453,7 +457,7 @@ def test_encrypted_training_with_linear_model(workers):
         opt = optim.SGD(params=model.parameters(), lr=0.1)
         # Convert the learning rate to fixed precision
         opt.param_groups[0]["lr"] = torch.tensor(opt.param_groups[0]["lr"]).fix_precision().child
-        for iter in range(5):
+        for iter in range(10):
 
             # 1) erase previous gradients (if they exist)
             opt.zero_grad()
@@ -465,17 +469,13 @@ def test_encrypted_training_with_linear_model(workers):
             loss = ((pred - target) ** 2).sum()
 
             # 4) figure out which weights caused us to miss
-            one = torch.ones(loss.shape).fix_prec().share(bob, alice, crypto_provider=james)
-            one = syft.AutogradTensor().on(one)
-            loss.backward(one)
+            loss.backward()
 
             # 5) change those weights
             opt.step()
-
-            print(loss.child.child.child.child.virtual_get())
 
         return loss
 
     loss = train()
 
-    assert loss.child.child.child.child.virtual_get() < 200
+    assert loss.child.child.child.child.virtual_get() < 500
