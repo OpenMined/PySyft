@@ -1,7 +1,9 @@
 import sys
 import pytest
+from syft import dependency_check
 
 
+@pytest.mark.skipif(not dependency_check.keras_available, reason="tf_encrypted not installed")
 def test_tf_encrypted_available():
     sys.modules.pop("syft", None)
     sys.modules.pop("syft.dependency_check", None)
