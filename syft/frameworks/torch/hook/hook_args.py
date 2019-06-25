@@ -11,6 +11,7 @@ from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import CRTTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
 from typing import Callable
@@ -38,6 +39,7 @@ type_rule = {
     AutogradTensor: one,
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
+    CRTTensor: one,
     PointerTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
@@ -57,6 +59,7 @@ forward_func = {
     AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
+    CRTTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -71,6 +74,7 @@ backward_func = {
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
+    CRTTensor: lambda i, **kwargs: CRTTensor(i, **kwargs),#.on(i, wrap=False),  # I am not sure how the .on() works here
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
