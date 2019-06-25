@@ -11,12 +11,15 @@ from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
 from typing import Callable
 from typing import Union
 from typing import Tuple
 from typing import List
+
+import numpy as np
 
 
 hook_method_args_functions = {}
@@ -32,6 +35,7 @@ type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     dict: one,  # FIXME This is for additiveShareTensor.child, it can be confusing and AST.child
+    np.ndarray: one,
     # should perhaps be of type ShareDict extending dict or something like this
     LoggingTensor: one,
     FixedPrecisionTensor: one,
@@ -39,6 +43,7 @@ type_rule = {
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
     PointerTensor: one,
+    LargePrecisionTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
 }
@@ -57,6 +62,7 @@ forward_func = {
     AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
+    LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -68,6 +74,9 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
+    LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor(**kwargs).on(
+        LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
+    ),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),

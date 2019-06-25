@@ -1,3 +1,4 @@
+import math
 from typing import List
 from typing import Union
 import weakref
@@ -11,6 +12,25 @@ from syft.frameworks.torch.pointers import PointerTensor
 from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
+
+
+def _get_maximum_precision():
+    """This function returns the maximum value allowed for precision fractions before the chain decides to use LPT.
+
+    This function can be overridden if the setup requires the use of LargePrecisionTensor from a smaller precision.
+
+    The default value is the size of torch.long
+
+    Returns:
+        The maximum value for precision allowed in this setup
+    """
+    return default_pytorch_maximum_precision()
+
+
+def default_pytorch_maximum_precision():
+    """Dealing with integers > 2**62-1 is not fun with precision tensors.
+    """
+    return 62
 
 
 class TorchTensor(AbstractTensor):
@@ -621,12 +641,23 @@ class TorchTensor(AbstractTensor):
     float_precision_ = float_prec_
 
     def fix_prec(self, *args, **kwargs):
-        return (
-            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor(*args, **kwargs)
-            .on(self)
-            .enc_fix_prec()
-            .wrap()
-        )
+        base = kwargs.get("base", 10)
+        prec_fractional = kwargs.get("precision_fractional", 3)
+        max_precision = _get_maximum_precision()
+        if self._requires_large_precision(max_precision, base, prec_fractional):
+            return (
+                syft.frameworks.torch.tensors.interpreters.LargePrecisionTensor(*args, **kwargs)
+                .on(self)
+                .child.fix_large_precision()
+                .wrap()
+            )
+        else:
+            return (
+                syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor(*args, **kwargs)
+                .on(self)
+                .enc_fix_prec()
+                .wrap()
+            )
 
     fix_precision = fix_prec
 
@@ -636,6 +667,12 @@ class TorchTensor(AbstractTensor):
         return self
 
     fix_precision_ = fix_prec_
+
+    def _requires_large_precision(self, max_precision, base, precision_fractional):
+        """Check if any of the elements in the tensor would require large precision.
+        """
+        base_fractional = math.log2(base ** precision_fractional)
+        return torch.any((self.abs() + 1).log2() + base_fractional > max_precision)
 
     def share(
         self,
