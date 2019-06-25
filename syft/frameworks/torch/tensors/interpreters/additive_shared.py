@@ -397,6 +397,18 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         return self.mul(other, **kwargs)
 
+    def pow(self, power):
+        """
+        Compute integer power of a number by recursion using mul
+        """
+        assert power > 0
+        if power == 1:
+            return self
+        else:
+            return self.mul(self.pow(power - 1))
+
+    __pow__ = pow
+
     def matmul(self, other):
         """Multiplies two tensors matrices together
 

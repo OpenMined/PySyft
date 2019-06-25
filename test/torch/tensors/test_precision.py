@@ -167,6 +167,15 @@ def test_torch_mul(workers):
     assert (z == torch.mul(t, t)).all()
 
 
+def test_torch_pow():
+
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec()
+    y = (x ** 3).float_prec()
+
+    assert (y == (m ** 3)).all()
+
+
 def test_torch_matmul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 

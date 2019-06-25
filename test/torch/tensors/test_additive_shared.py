@@ -180,6 +180,16 @@ def test_mul(workers):
     assert (z == (t * t)).all()
 
 
+def test_pow(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x ** 3).get().float_prec()
+
+    assert (y == (m ** 3)).all()
+
+
 def test_operate_with_integer_constants(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = th.tensor([2.0])

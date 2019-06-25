@@ -225,6 +225,18 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __mul__ = mul
 
+    def pow(self, power):
+        """
+        Compute integer power of a number by recursion using mul
+        """
+        assert power > 0
+        if power == 1:
+            return self
+        else:
+            return self.mul(self.pow(power - 1))
+
+    __pow__ = pow
+
     def matmul(self, *args, **kwargs):
         """
         Hook manually matmul to add the truncation part which is inherent to multiplication
