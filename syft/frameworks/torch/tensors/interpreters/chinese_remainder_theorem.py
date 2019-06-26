@@ -20,9 +20,7 @@ class CRTTensor(AbstractTensor):
     It also makes additions, subtractions, and multiplications of huge numbers quite efficient.
     """
 
-    def __init__(
-        self, residues: dict = None, owner=None, id=None, tags=None, description=None
-    ):
+    def __init__(self, residues: dict = None, owner=None, id=None, tags=None, description=None):
         super().__init__(owner=owner, id=id, tags=tags, description=description)
 
         # check that all the modulos are pairwise coprime
@@ -50,7 +48,7 @@ class CRTTensor(AbstractTensor):
 
     def __repr__(self):
         return self.__str__()
-    
+
     @property
     def shape(self) -> torch.Size:
         return next(iter(self.child.values())).shape
@@ -105,7 +103,7 @@ class CRTTensor(AbstractTensor):
         1) Compute N = prod(self.child.keys())
         2) yi = N / ni where the ni's are modulos in the system
         3) zi = yi^(-1) mod ni (we know zi exists because all the original modulos are pairwise coprime
-        4) The result is x = sum(ai * yi * zi)
+        4) The result is x = sum(ai * yi * zi) where ai is the residue modulo ni in the system
         """
         N = 1
         for mod in self.child.keys():
@@ -117,16 +115,18 @@ class CRTTensor(AbstractTensor):
             """
             b0 = b
             x0, x1 = 0, 1
-            if b == 1: return 1
+            if b == 1:
+                return 1
             while a > 1:
                 q = a // b
                 a = b
-                b = a%b
+                b = a % b
                 x0 = x1 - q * x0
                 x1 = x0
-            if x1 < 0: x1 += b0
+            if x1 < 0:
+                x1 += b0
             return x1
-    
+
         res = 0
         for mod, ai in self.child.items():
             ai = ai.float_prec() % mod
