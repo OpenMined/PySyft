@@ -55,20 +55,8 @@ class LargePrecisionTensor(AbstractTensor):
     def _create_internal_representation(self):
         """Decompose a tensor into an array of numbers that represent such tensor with the required precision"""
         result = []
-        # TODO Could this be vectorized?
-        for x in np.nditer(self.child):
-            n = int(x.item() * self.base ** self.precision_fractional)
-            if self.verbose:
-                print(f"\nAdding number {n} for item {x.item()}\n")
-            result.append(
-                LargePrecisionTensor._split_number(n, self.internal_precision, self.internal_type)
-            )
-        max_length = len(max(result, key=len))
-        new_shape = self.child.shape + (max_length,)
-        # List with different lengths will result in np.array building an array of lists instead of the matrices
-        # itertools.zip_longest fills on the right but we need to fill with zeros on the left
-        result = [self._expand_item(a_number, max_length) for a_number in result]
-        result = np.array(result).reshape(new_shape)
+        self_scaled = self.child.numpy() * self.base ** self.precision_fractional
+        result = LargePrecisionTensor._split_number(self_scaled, self.internal_precision, self.internal_type)
         return torch.tensor(result, dtype=self.internal_type)
 
     @staticmethod
@@ -166,19 +154,12 @@ class LargePrecisionTensor(AbstractTensor):
         """
         internal_type = kwargs["internal_type"]
         internal_precision = type_precision[internal_type] - 1
-        original_shape = ndarray.shape
-        # TODO Could this be vectorized?
-        # refs_ok is necessary to enable iterations of reference types.
-        result = [
-            LargePrecisionTensor._split_number(x.item(), internal_precision, internal_type)
-            for x in np.nditer(ndarray, flags=["refs_ok"])
-        ]
-        new_shape = original_shape + (len(max(result, key=len)),)
-        result = np.array(result).reshape(new_shape)
+
+        result = LargePrecisionTensor._split_number(ndarray, internal_precision, internal_type)
         return torch.tensor(result, dtype=internal_type)
 
     @staticmethod
-    def _split_number(number, bits, internal_type) -> list:
+    def _split_number(number, bits, internal_type) -> np.array:
         """Splits a number in numbers of a smaller power.
 
         Args:
@@ -189,24 +170,20 @@ class LargePrecisionTensor(AbstractTensor):
             list: a list of numbers representing the original one.
 
         """
-        if not number:
-            return [number]
-
-        if number > 0:
-            sign = 1
-        else:
-            assert (
-                internal_type != torch.uint8
-            ), "Negative LargePrecisionTensors cannot be represented with uint8"
-            sign = -1
-            number = number * (-1)
+        sign_mask = np.where(number > 0, 1, -1)
+        if internal_type == torch.uint8:
+            assert np.all(sign_mask == 1)
+        number = np.where(number > 0, number, -number)
 
         base = 2 ** bits
         number_parts = []
-        while number:
-            number, part = divmod(number, base)
-            number_parts.append(part * sign)
-        return number_parts[::-1]
+        while np.any(number):
+            #number, part = np.divmod(number, base)  # Not sure why this doesn't work
+            part = number % base
+            number = number // base
+            number_parts.append(part * sign_mask)
+        res = np.array(number_parts[::-1], dtype=np.int)
+        return res.transpose(*range(1, res.ndim), 0)
 
     def _internal_representation_to_large_ints(self) -> np.array:
         """Creates an numpy array containing the objective large numbers."""
