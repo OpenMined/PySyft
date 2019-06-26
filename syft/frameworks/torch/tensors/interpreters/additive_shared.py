@@ -596,6 +596,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         @overloaded.function
         def roll(tensor_shares, shifts, **kwargs):
+            """ Return a tensor where values are cyclically shifted compared to the original one.
+            For instance, torch.roll([1, 2, 3], 1) returns torch.tensor([3, 1, 2]).
+            In **kwargs should be dims, an argument to tell along which dimension the tensor should
+            be rolled. If dims is None, the tensor is flattened, rolled, and restored to its original shape.
+            shifts and dims can be tuples of same length to perform several rolls along different dimensions.
+            """
             results = {}
 
             for worker, share in tensor_shares.items():
