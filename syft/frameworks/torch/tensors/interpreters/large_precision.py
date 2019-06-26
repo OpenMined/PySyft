@@ -56,7 +56,9 @@ class LargePrecisionTensor(AbstractTensor):
         """Decompose a tensor into an array of numbers that represent such tensor with the required precision"""
         result = []
         self_scaled = self.child.numpy() * self.base ** self.precision_fractional
-        result = LargePrecisionTensor._split_number(self_scaled, self.internal_precision, self.internal_type)
+        result = LargePrecisionTensor._split_number(
+            self_scaled, self.internal_precision, self.internal_type
+        )
         return torch.tensor(result, dtype=self.internal_type)
 
     @staticmethod
@@ -178,7 +180,7 @@ class LargePrecisionTensor(AbstractTensor):
         base = 2 ** bits
         number_parts = []
         while np.any(number):
-            #number, part = np.divmod(number, base)  # Not sure why this doesn't work
+            # number, part = np.divmod(number, base)  # Not sure why this doesn't work
             part = number % base
             number = number // base
             number_parts.append(part * sign_mask)
