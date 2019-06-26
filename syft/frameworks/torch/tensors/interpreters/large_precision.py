@@ -54,7 +54,6 @@ class LargePrecisionTensor(AbstractTensor):
 
     def _create_internal_representation(self):
         """Decompose a tensor into an array of numbers that represent such tensor with the required precision"""
-        result = []
         self_scaled = self.child.numpy() * self.base ** self.precision_fractional
         result = LargePrecisionTensor._split_number(
             self_scaled, self.internal_precision, self.internal_type
@@ -174,7 +173,9 @@ class LargePrecisionTensor(AbstractTensor):
         """
         sign_mask = np.where(number > 0, 1, -1)
         if internal_type == torch.uint8:
-            assert np.all(sign_mask == 1)
+            assert np.all(
+                sign_mask == 1
+            ), "LargePrecisionTensors with negative values cannot be represented with uint8"
         number = np.where(number > 0, number, -number)
 
         base = 2 ** bits
