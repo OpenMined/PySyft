@@ -21,7 +21,7 @@ class CRTTensor(AbstractTensor):
     """
 
     def __init__(
-        self, residues: dict = None, field=None, owner=None, id=None, tags=None, description=None
+        self, residues: dict = None, owner=None, id=None, tags=None, description=None
     ):
         super().__init__(owner=owner, id=id, tags=tags, description=description)
 
@@ -41,11 +41,6 @@ class CRTTensor(AbstractTensor):
             prod_modulo *= f
             assert r.shape == res_shape, "All residue tensors of CRTTensor must have the same shape"
 
-        if field is not None:
-            assert prod_modulo == field
-        else:
-            field = prod_modulo
-
     def __str__(self):
         type_name = type(self).__name__
         out = f"[" f"{type_name}]"
@@ -55,6 +50,10 @@ class CRTTensor(AbstractTensor):
 
     def __repr__(self):
         return self.__str__()
+    
+    @property
+    def shape(self) -> torch.Size:
+        return next(iter(self.child.values())).shape
 
     @overloaded.method
     def add(self, self_, other):
@@ -99,7 +98,58 @@ class CRTTensor(AbstractTensor):
 
     __mul__ = mul
 
-    def reconctruct(self):
-        """ Build the tensor in self.field satisfying the modular system represented by self
+    def solve_system(self):
+        """ Build the tensor in Zq with q = prod(self.child.keys())
+        satisfying the modular system represented by the tensor.
+        The algorithm consists in:
+        1) Compute N = prod(self.child.keys())
+        2) yi = N / ni where the ni's are modulos in the system
+        3) zi = yi^(-1) mod ni (we know zi exists because all the original modulos are pairwise coprime
+        4) The result is x = sum(ai * yi * zi)
         """
-        pass
+        N = 1
+        for mod in self.child.keys():
+            N *= mod
+
+        def modular_inverse(a, b):
+            """ Computes the modular inverse x = a^(-1) mod b
+            with Euclid's extended algorithm.
+            """
+            b0 = b
+            x0, x1 = 0, 1
+            if b == 1: return 1
+            while a > 1:
+                q = a // b
+                a = b
+                b = a%b
+                x0 = x1 - q * x0
+                x1 = x0
+            if x1 < 0: x1 += b0
+            return x1
+    
+        res = 0
+        for mod, ai in self.child.items():
+            ai = ai.float_prec() % mod
+            yi = N // mod
+            zi = modular_inverse(yi, mod)
+            res += ai * yi * zi
+
+        return FixedPrecisionTensor(field=N, precision_fractional=0).on(res % N)
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        def add(self, other):
+            return self.__add__(other)
+
+        module.add = add
+
+        def sub(self, other):
+            return self.__sub__(other)
+
+        module.sub = sub
+
+        def mul(self, other):
+            return self.__mul__(other)
+
+        module.mul = mul
