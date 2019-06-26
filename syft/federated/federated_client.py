@@ -34,27 +34,22 @@ class FederatedClient(ObjectStorage):
             super().set_obj(obj)
 
     def _build_optimizer(
-        self, optimizer_name: str, model, lr: float, weight_decay: float
+        self, optimizer_name: str, model, optimizer_args: dict
     ) -> th.optim.Optimizer:
         """Build an optimizer if needed.
 
         Args:
             optimizer_name: A string indicating the optimizer name.
-            lr: A float indicating the learning rate.
-            weight_decay: Weight decay parameter of the optimizer
+            optimizer_args: A dict containing the args used to initialize the optimizer
         Returns:
             A Torch Optimizer.
         """
         if self.optimizer is not None:
             return self.optimizer
 
-        optimizer_name = optimizer_name.lower()
-        if optimizer_name == "sgd":
-            optim_args = dict()
-            optim_args["lr"] = lr
-            if weight_decay is not None:
-                optim_args["weight_decay"] = weight_decay
-            self.optimizer = th.optim.SGD(model.parameters(), **optim_args)
+        if optimizer_name in dir(th.optim):
+            optimizer = getattr(th.optim, optimizer_name)
+            self.optimizer = optimizer(model.parameters(), **optimizer_args)
         else:
             raise ValueError("Unknown optimizer: {}".format(optimizer_name))
         return self.optimizer
@@ -72,14 +67,14 @@ class FederatedClient(ObjectStorage):
         if self.train_config is None:
             raise ValueError("TrainConfig not defined.")
 
+        if dataset_key not in self.datasets:
+            raise ValueError("Dataset {} unknown.".format(dataset_key))
+
         model = self.get_obj(self.train_config._model_id).obj
         loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
 
         self._build_optimizer(
-            self.train_config.optimizer,
-            model,
-            lr=self.train_config.lr,
-            weight_decay=self.train_config.weight_decay,
+            self.train_config.optimizer, model, optimizer_args=self.train_config.optimizer_args
         )
 
         return self._fit(model=model, dataset_key=dataset_key, loss_fn=loss_fn)
@@ -106,19 +101,21 @@ class FederatedClient(ObjectStorage):
 
         loss = None
         iteration_count = 0
-        for (data, target) in data_loader:
-            # Set gradients to zero
-            self.optimizer.zero_grad()
 
-            # Update model
-            output = model(data)
-            loss = loss_fn(target=target, pred=output)
-            loss.backward()
-            self.optimizer.step()
+        for _ in range(self.train_config.epochs):
+            for (data, target) in data_loader:
+                # Set gradients to zero
+                self.optimizer.zero_grad()
 
-            # Update and check interation count
-            iteration_count += 1
-            if iteration_count >= self.train_config.max_nr_batches >= 0:
-                break
+                # Update model
+                output = model(data)
+                loss = loss_fn(target=target, pred=output)
+                loss.backward()
+                self.optimizer.step()
+
+                # Update and check interation count
+                iteration_count += 1
+                if iteration_count >= self.train_config.max_nr_batches >= 0:
+                    break
 
         return loss
