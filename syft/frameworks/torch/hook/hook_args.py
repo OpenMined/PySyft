@@ -74,7 +74,7 @@ backward_func = {
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
-    CRTTensor: lambda i, **kwargs: CRTTensor(i, **kwargs),  # I am not sure how the .on() works here
+    CRTTensor: lambda i, **kwargs: CRTTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 

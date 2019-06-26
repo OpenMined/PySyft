@@ -24,26 +24,28 @@ class CRTTensor(AbstractTensor):
         super().__init__(owner=owner, id=id, tags=tags, description=description)
 
         # check that all the modulos are pairwise coprime
-        for pair in itertools.combinations(residues.keys(), r=2):
-            assert (
-                math.gcd(pair[0], pair[1]) == 1
-            ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as modulos"
+        if residues is not None:
+            for pair in itertools.combinations(residues.keys(), r=2):
+                assert (
+                    math.gcd(pair[0], pair[1]) == 1
+                ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as modulos"
 
-        prod_modulo = 1
-        res_shape = next(iter(residues.values())).shape
-        self.child = {}
-        for f, r in residues.items():
-            assert isinstance(r.child, FixedPrecisionTensor)
-            assert f == r.child.field
-            self.child[f] = r
-            prod_modulo *= f
-            assert r.shape == res_shape, "All residue tensors of CRTTensor must have the same shape"
+        if residues is not None:
+            res_shape = next(iter(residues.values())).shape
+            self.child = {}
+            for f, r in residues.items():
+                assert isinstance(r.child, FixedPrecisionTensor)
+                assert f == r.child.field
+                self.child[f] = r
+                assert (
+                    r.shape == res_shape
+                ), "All residue tensors of CRTTensor must have the same shape"
 
     def __str__(self):
         type_name = type(self).__name__
         out = f"[" f"{type_name}]"
         for mod, res in self.child.items():
-            out += f"\n\t {mod} -> " + str(res)
+            out += f"\n\t -> {mod}: {res}"
         return out
 
     def __repr__(self):
@@ -119,8 +121,7 @@ class CRTTensor(AbstractTensor):
                 return 1
             while a > 1:
                 q = a // b
-                a = b
-                b = a % b
+                a, b = b, a % b
                 x0 = x1 - q * x0
                 x1 = x0
             if x1 < 0:
