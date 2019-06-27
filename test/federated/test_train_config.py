@@ -268,7 +268,7 @@ def test___str__():
     train_config = sy.TrainConfig(batch_size=2, id=99887766, model=None, loss_fn=None)
 
     train_config_str = str(train_config)
-    str_expected = "<TrainConfig id:99887766 owner:me epochs: 1 batch_size: 2 lr: 0.1>"
+    str_expected = "<TrainConfig id:99887766 owner:me epochs: 1 batch_size: 2 optimizer_args: {'lr': 0.1, 'weight_decay': 0.01}>"
 
     assert str_expected == train_config_str
 
@@ -285,7 +285,7 @@ def test_send(workers):
     assert alice.train_config.batch_size == train_config.batch_size
     assert alice.train_config.epochs == train_config.epochs
     assert alice.train_config.optimizer == train_config.optimizer
-    assert alice.train_config.lr == train_config.lr
+    assert alice.train_config.optimizer_args == train_config.optimizer_args
     assert alice.train_config.location == train_config.location
 
 
@@ -312,7 +312,7 @@ def test_send_model_and_loss_fn(workers):
     assert alice.train_config.batch_size == train_config.batch_size
     assert alice.train_config.epochs == train_config.epochs
     assert alice.train_config.optimizer == train_config.optimizer
-    assert alice.train_config.lr == train_config.lr
+    assert alice.train_config.optimizer_args == train_config.optimizer_args
     assert alice.train_config.location == train_config.location
     assert alice.train_config._model_id == model_id
     assert alice.train_config._loss_fn_id == loss_fn_id

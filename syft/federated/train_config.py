@@ -86,7 +86,7 @@ class TrainConfig:
 
         out += " epochs: " + str(self.epochs)
         out += " batch_size: " + str(self.batch_size)
-        out += " optimizer args: " + str(self.optimizer_args)
+        out += " optimizer_args: " + str(self.optimizer_args)
 
         out += ">"
         return out
