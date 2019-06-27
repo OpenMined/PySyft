@@ -40,7 +40,7 @@ class FederatedClient(ObjectStorage):
 
         Args:
             optimizer_name: A string indicating the optimizer name.
-            optimizer_args: A dict containing the args used to initialize the optimizer
+            optimizer_args: A dict containing the args used to initialize the optimizer.
         Returns:
             A Torch Optimizer.
         """
