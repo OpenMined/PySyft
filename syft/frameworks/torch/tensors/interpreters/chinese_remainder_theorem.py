@@ -55,6 +55,27 @@ class CRTTensor(AbstractTensor):
     def shape(self) -> torch.Size:
         return next(iter(self.child.values())).shape
 
+    def eq(self, other):
+        self_ = self.child
+        other_ = other.child
+        assert (
+            self_.keys() == other_.keys()
+        ), "Cannot compare 2 CRT that don't have the same modulos"
+
+        for mod in self_.keys():
+            if torch.ne(self_[mod], other_[mod]).any():  # __ne__ does not work with FPT
+                return False
+        return True
+
+    __eq__ = eq
+
+    """
+    def ne(self, other):
+        return not self.eq(other)
+
+    __ne__ = ne
+    """
+
     @overloaded.method
     def add(self, self_, other):
         assert self_.keys() == other.keys(), "Cannot add 2 CRT that don't have the same modulos"
