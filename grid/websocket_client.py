@@ -74,7 +74,7 @@ class WebsocketGridClient(BaseWorker):
         self.wait_for_client_event = True
         # Wait until the server gets back with a result or an ACK
         while self.wait_for_client_event:
-            time.sleep(0.1)
+            continue
 
         # Return the result
         if self.response_from_client == "ACK":
