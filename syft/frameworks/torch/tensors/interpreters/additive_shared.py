@@ -405,12 +405,25 @@ class AdditiveSharingTensor(AbstractTensor):
     def pow(self, power):
         """
         Compute integer power of a number by recursion using mul
+
+        This uses the following trick:
+         - Divide power by 2 and multiply base to itself (if the power is even)
+         - Decrement power by 1 to make it even and then follow the first step
         """
-        assert isinstance(power, int) and power > 0
-        if power == 1:
-            return self
-        else:
-            return self.mul(self.pow(power - 1))
+        base = self
+
+        result = 1
+        while power > 0:
+            # If power is odd
+            if power % 2 == 1:
+                result = result * base
+
+            # Divide the power by 2
+            power = power // 2
+            # Multiply base to itself
+            base = base * base
+
+        return result
 
     __pow__ = pow
 
