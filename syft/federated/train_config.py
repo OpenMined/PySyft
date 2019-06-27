@@ -6,6 +6,7 @@ import torch
 import syft as sy
 from syft import workers
 from syft.frameworks.torch import pointers
+from syft.workers import AbstractWorker
 
 
 class TrainConfig:
@@ -29,6 +30,7 @@ class TrainConfig:
         shuffle: bool = True,
         loss_fn_id: int = None,
         model_id: int = None,
+        weight_decay: float = 0.01,
     ):
         """Initializer for TrainConfig.
 
@@ -64,6 +66,7 @@ class TrainConfig:
         self.lr = lr
         self.max_nr_batches = max_nr_batches
         self.shuffle = shuffle
+        self.weight_decay = weight_decay
 
         # pointers
         self.model_ptr = None
@@ -133,3 +136,66 @@ class TrainConfig:
     def get_loss_fn(self):
         if self.loss_fn is not None:
             return self.loss_fn.get()
+
+    @staticmethod
+    def simplify(train_config: "TrainConfig") -> tuple:
+        """Takes the attributes of a TrainConfig and saves them in a tuple.
+
+        Attention: this function does not serialize the model and loss_fn attributes
+        of a TrainConfig instance, these are serialized and sent before. TrainConfig
+        keeps a reference to the sent objects using _model_id and _loss_fn_id which
+        are serialized here.
+
+        Args:
+            train_config: a TrainConfig object
+        Returns:
+            tuple: a tuple holding the unique attributes of the TrainConfig object
+        """
+        return (
+            train_config._model_id,
+            train_config._loss_fn_id,
+            train_config.batch_size,
+            train_config.epochs,
+            sy.serde._simplify(train_config.optimizer),
+            train_config.lr,
+            sy.serde._simplify(train_config.id),
+            train_config.max_nr_batches,
+            train_config.shuffle,
+            train_config.weight_decay,
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, train_config_tuple: tuple) -> "TrainConfig":
+        """This function reconstructs a TrainConfig object given it's attributes in the form of a tuple.
+
+        Args:
+            worker: the worker doing the deserialization
+            train_config_tuple: a tuple holding the attributes of the TrainConfig
+        Returns:
+            train_config: A TrainConfig object
+        """
+
+        model_id, loss_fn_id, batch_size, epochs, optimizer, lr, id, max_nr_batches, shuffle, weight_decay = (
+            train_config_tuple
+        )
+
+        id = sy.serde._detail(worker, id)
+        detailed_optimizer = sy.serde._detail(worker, optimizer)
+
+        train_config = TrainConfig(
+            model=None,
+            loss_fn=None,
+            owner=worker,
+            id=id,
+            model_id=model_id,
+            loss_fn_id=loss_fn_id,
+            batch_size=batch_size,
+            epochs=epochs,
+            optimizer=detailed_optimizer,
+            lr=lr,
+            max_nr_batches=max_nr_batches,
+            shuffle=shuffle,
+            weight_decay=weight_decay,
+        )
+
+        return train_config

@@ -33,7 +33,7 @@ def test_create_already_existing_worker_with_different_type(hook, start_proc):
     _ = th.tensor([1, 2, 3]).send(bob)
 
     kwargs = {"id": "fed1", "host": "localhost", "port": 8765, "hook": hook}
-    server = start_proc(WebsocketServerWorker, kwargs)
+    server = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
 
