@@ -606,6 +606,26 @@ def test_additive_sharing_tensor_serde(compress, workers):
     )
 
 
+@pytest.mark.parametrize("compress", [True, False])
+def test_fixed_precision_tensor_serde(compress, workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = (
+        torch.tensor([[3.1, 4.3]])
+        .fix_prec(base=12, precision_fractional=5)
+        .share(alice, bob, crypto_provider=james)
+    )
+
+    serialized_x = serde.serialize(x)
+    deserialied_x = serde.deserialize(serialized_x)
+
+    assert x.id == deserialied_x.child.id
+    assert x.child.field == deserialied_x.child.field
+    assert x.child.kappa == deserialied_x.child.kappa
+    assert x.child.precision_fractional == deserialied_x.child.precision_fractional
+    assert x.child.base == deserialied_x.child.base
+
+
 def test_serde_object_wrapper_int():
     obj = 4
     obj_wrapper = pointers.ObjectWrapper(obj, id=100)
