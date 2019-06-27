@@ -268,7 +268,9 @@ def test___str__():
     train_config = sy.TrainConfig(batch_size=2, id=99887766, model=None, loss_fn=None)
 
     train_config_str = str(train_config)
-    str_expected = "<TrainConfig id:99887766 owner:me epochs: 1 batch_size: 2 optimizer_args: {'lr': 0.1, 'weight_decay': 0.01}>"
+    str_expected = (
+        "<TrainConfig id:99887766 owner:me epochs: 1 batch_size: 2 optimizer_args: {'lr': 0.1}>"
+    )
 
     assert str_expected == train_config_str
 

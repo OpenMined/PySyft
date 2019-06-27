@@ -24,7 +24,7 @@ class TrainConfig:
         batch_size: int = 32,
         epochs: int = 1,
         optimizer: str = "SGD",
-        optimizer_args: dict = {"lr": 0.1, "weight_decay": 0.01},
+        optimizer_args: dict = {"lr": 0.1},
         id: Union[int, str] = None,
         max_nr_batches: int = -1,
         shuffle: bool = True,
@@ -40,7 +40,7 @@ class TrainConfig:
             batch_size: Batch size used for training.
             epochs: Epochs used for training.
             optimizer: A string indicating which optimizer should be used.
-            optimizer_args: A dict containing the arguments to initialize the optimizer. Defaults fot {'lr': 0.1, 'weight_decay': 0.01}.
+            optimizer_args: A dict containing the arguments to initialize the optimizer. Defaults to {'lr': 0.1}.
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the tensor.
