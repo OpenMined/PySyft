@@ -1,6 +1,7 @@
 import pytest
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import syft
 
@@ -384,6 +385,19 @@ def test_addmm_backward_for_additive_shared_with_autograd(workers):
     assert (a.grad.get().float_prec() == a_torch.grad).all()
     assert (b.grad.get().float_prec() == b_torch.grad).all()
     assert (c.grad.get().float_prec() == c_torch.grad).all()
+
+
+def test_relu_backward_or_additive_shared_with_autograd(workers):
+    """
+    Test .backward() on Additive Shared Tensor for F.relu
+    """
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+    data = torch.tensor([[-1, -0.1], [1, 0.1]], requires_grad=True)
+    data = data.fix_precision().share(bob, alice, crypto_provider=james, requires_grad=True)
+    loss = F.relu(data)
+    loss.backward()
+    expected = torch.tensor([[0.0, 0], [1, 1]])
+    assert (data.grad.get().float_prec() == expected).all()
 
 
 def test_backward_for_linear_model_on_additive_shared_with_autograd(workers):

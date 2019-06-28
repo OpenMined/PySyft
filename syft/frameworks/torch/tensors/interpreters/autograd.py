@@ -72,6 +72,55 @@ class AutogradTensor(AbstractTensor):
         attr_val = self.child.attr(attr_name)
         return attr_val
 
+    def __add__(self, other):
+        return self.add(other)
+
+    def __iadd__(self, other):
+        result = self.add(other)
+        self.child = result.child
+        self.grad_fn = result.grad_fn
+
+    def __sub__(self, other):
+        return self.sub(other)
+
+    def __isub__(self, other):
+        result = self.sub(other)
+        self.child = result.child
+        self.grad_fn = result.grad_fn
+
+    def __mul__(self, other):
+        return self.mul(other)
+
+    def __matmul__(self, other):
+        return self.matmul(other)
+
+    def __pow__(self, power, **kwargs):
+        return self.pow(power, **kwargs)
+
+    @overloaded.method
+    def __gt__(self, _self, other):
+        return _self.__gt__(other)
+
+    @overloaded.method
+    def __ge__(self, _self, other):
+        return _self.__ge__(other)
+
+    @overloaded.method
+    def __lt__(self, _self, other):
+        return _self.__lt__(other)
+
+    @overloaded.method
+    def __le__(self, _self, other):
+        return _self.__le__(other)
+
+    @overloaded.method
+    def eq(self, _self, other):
+        return _self.eq(other)
+
+    @overloaded.method
+    def relu(self, self_):
+        return self_.relu()
+
     def __getattribute__(self, name):
         # Automatically attaching gradient functions if they are defined in the
         # gradients module.
@@ -99,31 +148,6 @@ class AutogradTensor(AbstractTensor):
             return method_with_grad
         else:
             return object.__getattribute__(self, name)
-
-    def __add__(self, other):
-        return self.add(other)
-
-    def __iadd__(self, other):
-        result = self.add(other)
-        self.child = result.child
-        self.grad_fn = result.grad_fn
-
-    def __sub__(self, other):
-        return self.sub(other)
-
-    def __isub__(self, other):
-        result = self.sub(other)
-        self.child = result.child
-        self.grad_fn = result.grad_fn
-
-    def __mul__(self, other):
-        return self.mul(other)
-
-    def __matmul__(self, other):
-        return self.matmul(other)
-
-    def __pow__(self, power, **kwargs):
-        return self.pow(power, **kwargs)
 
     @staticmethod
     @overloaded.module
@@ -171,6 +195,11 @@ class AutogradTensor(AbstractTensor):
                     return torch.nn.functional.native_linear(*args)
 
                 module.linear = linear
+
+                def relu(tensor):
+                    return tensor.relu()
+
+                module.relu = relu
 
             module.functional = functional
 

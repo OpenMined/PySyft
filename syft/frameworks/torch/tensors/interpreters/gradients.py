@@ -151,3 +151,14 @@ class TanhBackward(GradFunc):
     def gradient(self, grad):
         grad_self_ = grad * (1 - self.self_.tanh() ** 2)
         return (grad_self_,)
+
+
+class ReluBackward(GradFunc):
+    def __init__(self, self_):
+        super().__init__(self, self_)
+        self.self_ = self_
+
+    def gradient(self, grad):
+        zero = self.self_*0
+        gt_zero = self.self_ > zero
+        return (gt_zero * grad, )
