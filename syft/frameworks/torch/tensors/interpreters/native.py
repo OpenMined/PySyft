@@ -396,9 +396,7 @@ class TorchTensor(AbstractTensor):
             for loc in location:
                 children.append(self.clone().send(loc))
 
-            output = syft.frameworks.torch.tensors.interpreters.MultiPointerTensor(
-                children=children
-            ).wrap()
+            output = syft.MultiPointerTensor(children=children).wrap()
 
         return output
 
@@ -646,18 +644,13 @@ class TorchTensor(AbstractTensor):
         max_precision = _get_maximum_precision()
         if self._requires_large_precision(max_precision, base, prec_fractional):
             return (
-                syft.frameworks.torch.tensors.interpreters.LargePrecisionTensor(*args, **kwargs)
+                syft.LargePrecisionTensor(*args, **kwargs)
                 .on(self)
                 .child.fix_large_precision()
                 .wrap()
             )
         else:
-            return (
-                syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor(*args, **kwargs)
-                .on(self)
-                .enc_fix_prec()
-                .wrap()
-            )
+            return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
 
     fix_precision = fix_prec
 
@@ -679,6 +672,7 @@ class TorchTensor(AbstractTensor):
         *owners: List[BaseWorker],
         field: Union[int, None] = None,
         crypto_provider: Union[BaseWorker, None] = None,
+        requires_grad: bool = False,
     ):
         """This is a pass through method which calls .share on the child.
 
@@ -686,20 +680,27 @@ class TorchTensor(AbstractTensor):
             owners (list): A list of BaseWorker objects determining who to send shares to.
             field (int or None): The arithmetic field where live the shares.
             crypto_provider (BaseWorker or None): The worker providing the crypto primitives.
+            requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
+                default is False.
         """
 
+        shared_tensor = self
         if self.has_child():
             self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
-            return self
-
-        return (
-            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
-                field=field, crypto_provider=crypto_provider, owner=self.owner
+        else:
+            shared_tensor = (
+                syft.AdditiveSharingTensor(
+                    field=field, crypto_provider=crypto_provider, owner=self.owner
+                )
+                .on(self)
+                .child.init_shares(*owners)
+                .wrap()
             )
-            .on(self)
-            .child.init_shares(*owners)
-            .wrap()
-        )
+
+        if requires_grad:
+            shared_tensor = syft.AutogradTensor().on(shared_tensor)
+
+        return shared_tensor
 
     def share_(self, *args, **kwargs):
         """

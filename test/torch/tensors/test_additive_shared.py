@@ -43,6 +43,15 @@ def test_virtual_get(workers):
     assert (x == t).all()
 
 
+def test_autograd_kwarg(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3])
+    x = t.share(alice, bob, crypto_provider=james, requires_grad=True)
+
+    assert isinstance(x.child, syft.AutogradTensor)
+
+
 def test_send_get(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x_sh = th.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
