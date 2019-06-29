@@ -159,6 +159,6 @@ class ReluBackward(GradFunc):
         self.self_ = self_
 
     def gradient(self, grad):
-        zero = self.self_*0
+        zero = self.self_ * 0
         gt_zero = self.self_ > zero
-        return (gt_zero * grad, )
+        return (gt_zero * grad,)

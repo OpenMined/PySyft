@@ -493,3 +493,21 @@ def test_encrypted_training_with_linear_model(workers):
     loss = train()
 
     assert loss.child.child.child.child.virtual_get() < 500
+
+
+def test_get_float_prec_on_autograd_tensor(workers):
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+
+    x = torch.tensor([0.1, 1.0])
+    x2 = syft.AutogradTensor().on(x.fix_prec())
+    assert (x2.float_precision() == x).all()
+
+    x = torch.tensor([1, 2])
+    x2 = x.share(bob, alice, crypto_provider=james)
+    x2 = syft.AutogradTensor().on(x2)
+    assert (x2.get() == x).all()
+
+    x = torch.tensor([0.1, 1.0])
+    x2 = x.fix_precision()
+    x2 = x2.share(bob, alice, crypto_provider=james, requires_grad=True)
+    assert (x2.get().float_precision() == x).all()

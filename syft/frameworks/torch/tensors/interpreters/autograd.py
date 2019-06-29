@@ -247,3 +247,21 @@ class AutogradTensor(AbstractTensor):
         response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
+
+    def get(self):
+        """Just a pass through. This is most commonly used when calling .get() on a
+        AutogradTensor which has also been shared."""
+        self.child = self.child.get()
+        # Remove the autograd node if a simple tensor is received
+        if isinstance(self.child, torch.Tensor) and not self.child.is_wrapper:
+            return self.child
+        return self
+
+    def float_precision(self):
+        """Just a pass through. This is most commonly used when calling .float_precision() on a
+        AutogradTensor which has also been shared."""
+        self.child = self.child.float_precision()
+        # Remove the autograd node if a simple tensor is received
+        if isinstance(self.child, torch.Tensor) and not self.child.is_wrapper:
+            return self.child
+        return self
