@@ -124,8 +124,7 @@ def test_fit(fit_dataset_key, epochs):
         loss_fn=None,
         model_id=model_id,
         loss_fn_id=loss_id,
-        lr=0.05,
-        weight_decay=0.01,
+        optimizer_args={"lr": 0.05, "weight_decay": 0.01},
         epochs=epochs,
     )
 
