@@ -34,7 +34,7 @@ before_script:
   - flake8 . --count --exit-zero --statistics --select=E,F,W,C90
   # Run type checker in CI such that type errors can be identified and gradually addressed.
   # Once all existing type errors are addressed, the `|| echo` after the mypy call can be removed.
-  - mypy --python-version 3.6 --ignore-missing-imports syft || echo "Type errors found, continuing build..."
+  - mypy syft || echo "Type errors found, continuing build..."
 script:
   - coverage run -m pytest
   - coverage report --fail-under 95 -m

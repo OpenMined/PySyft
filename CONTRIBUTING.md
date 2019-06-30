@@ -106,6 +106,16 @@ from syft.serde import deserialize
 sphinx-apidoc -f -o docs/modules/ syft/
 ```
 
+#### Type Checking
+
+The codebase contains [static type hints](https://docs.python.org/3/library/typing.html) for code clarity and catching errors prior to runtime. If you're adding type hints, please run the static type checker to ensure the type annotations you added are correct via:
+
+```bash
+mypy syft
+```
+
+Due to issue [#2323](https://github.com/OpenMined/PySyft/issues/2323) you can ignore existing type issues found by mypy.
+
 ### Keep it DRY (Don't repeat yourself)
 
 As with any software project it's important to keep the amount of code to a minimum, so keep code duplication to a minimum!
