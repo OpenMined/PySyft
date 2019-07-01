@@ -55,6 +55,9 @@ class LargePrecisionTensor(AbstractTensor):
     def _create_internal_representation(self):
         """Decompose a tensor into an array of numbers that represent such tensor with the required precision"""
         self_scaled = self.child.numpy() * self.base ** self.precision_fractional
+        # self_scaled can be an array of floats. As multiplying an array of int with an int
+        # still gives an array of int, I think it should be because self.child is a float tensor at this point.
+        # Right now, it does not cause any problem, LargePrecisionTensor._split_number() returns an array of int.
         result = LargePrecisionTensor._split_number(
             self_scaled, self.internal_precision, self.internal_type
         )
