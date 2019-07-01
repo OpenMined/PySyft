@@ -121,96 +121,92 @@ def select_share(alpha_sh, x_sh, y_sh):
     return z_sh
 
 
-def private_compare(x, r, BETA):
+def private_compare(x_bit_sh, r, beta):
     """
     Perform privately x > r
 
     args:
         x (AdditiveSharedTensor): the private tensor
         r (MultiPointerTensor): the threshold commonly held by alice and bob
-        BETA (MultiPointerTensor): a boolean commonly held by alice and bob to
+        beta (MultiPointerTensor): a boolean commonly held by alice and bob to
             hide the result of computation for the crypto provider
 
     return:
         β′ = β ⊕ (x > r).
     """
-    assert isinstance(x, sy.AdditiveSharingTensor)
+    assert isinstance(x_bit_sh, sy.AdditiveSharingTensor)
     assert isinstance(r, sy.MultiPointerTensor)
-    assert isinstance(BETA, sy.MultiPointerTensor)
+    assert isinstance(beta, sy.MultiPointerTensor)
+    # Would it be safer to have a different r/beta for each value in the tensor?
 
-    alice, bob = x.locations
-    crypto_provider = x.crypto_provider
-    p = x.field
+    alice, bob = x_bit_sh.locations
+    crypto_provider = x_bit_sh.crypto_provider
+    p = x_bit_sh.field
     L = 2 ** Q_BITS  # 2**l
 
     # the commented out numbers below correspond to the
     # line numbers in Algorithm 3 of the SecureNN paper
     # https://eprint.iacr.org/2018/442.pdf
 
+    # Common randomess
+    s = torch.randint(1, p, x_bit_sh.shape).send(alice, bob).child
+    u = torch.randint(1, p, x_bit_sh.shape).send(alice, bob).child
+    perm = torch.randperm(x_bit_sh.shape[-1]).send(alice, bob).child
+
+    j = sy.MultiPointerTensor(children=[torch.tensor([0]).send(alice), torch.tensor([1]).send(bob)])
+
     # 1)
     t = (r + 1) % L
+    t_bit = decompose(t)
+    r_bit = decompose(r)
 
-    # Mask for the case r == 2^l −1
-    R_MASK = (r == (L - 1)).long()
-
-    r = decompose(r)
-    t = decompose(t)
-    # Mask for beta
-    BETA = BETA.unsqueeze(1).expand(list(r.shape))
-    R_MASK = R_MASK.unsqueeze(1).expand(list(r.shape))
-
-    u = (torch.rand(x.shape) > 0.5).long().send(bob, alice).child
-    # Mask for condition i̸=1 in 11)
-    l1_mask = torch.zeros(x.shape).long()
-    l1_mask[:, -1:] = 1
-    l1_mask = l1_mask.send(bob, alice).child
-
-    # if BETA == 0
+    # if beta == 0
     # 5)
-    j0 = torch.zeros(x.shape).long().send(bob)
-    j1 = torch.ones(x.shape).long().send(alice)
-    j = sy.MultiPointerTensor(children=[j0, j1])
-    w = (j * r) + x - (2 * x * r)
-
+    w = x_bit_sh + (j * r_bit) - (2 * r_bit * x_bit_sh)
     # 6)
-    wf = flip(w, 1)
-    wfc = wf.cumsum(1) - wf
-    wfcf = flip(wfc, 1)
-    c_beta0 = (j * r) - x + j + wfcf
+    wc = w.flip(-1).cumsum(-1).flip(-1) - w
+    c_beta0 = -x_bit_sh + (j * r_bit) + j + wc
 
-    # elif BETA == 1 AND r != 2^l- 1
+    # elif beta == 1 AND r != 2^l- 1
     # 8)
-    w = x + (j * t) - (2 * t * x)  # FIXME: unused
+    w = x_bit_sh + (j * t_bit) - (2 * t_bit * x_bit_sh)
     # 9)
-    c_beta1 = (-j * t) + x + j + wfcf
+    wc = w.flip(-1).cumsum(-1).flip(-1) - w
+    c_beta1 = x_bit_sh + (-j * t_bit) + j + wc
 
     # else
     # 11)
     c_igt1 = (1 - j) * (u + 1) - (j * u)
-    c_ie1 = (j * -2) + 1
-    c_21l = (l1_mask * c_ie1) + ((1 - l1_mask) * c_igt1)
+    c_ie1 = (1 - 2 * j) * u
+
+    l1_mask = torch.zeros(x_bit_sh.shape).long()
+    l1_mask[..., 0] = 1
+    l1_mask = l1_mask.send(alice, bob).child
+    # c_else = if i == 1 c_ie1 else c_igt1
+    c_else = ((l1_mask * c_ie1) + ((1 - l1_mask) * c_igt1))
+
+    # Mask for the case r == 2^l −1
+    r_mask = (r == (L - 1)).long()
+    r_mask = r_mask.unsqueeze(-1)
 
     # Mask combination to execute the if / else statements of 4), 7), 10)
-    c = (1 - BETA) * c_beta0 + BETA * c_beta1
-    c = (c * (1 - R_MASK)) + (c_21l * R_MASK)
+    c = (1 - beta) * c_beta0 + (beta * (1 - r_mask)) * c_beta1 + (beta * r_mask) * c_else
 
     # 14)
     # Hide c values
-    s = torch.randint(1, p, c.shape).send(alice, bob).child
     mask = s * c
+
     # Permute the mask
-    perm = torch.randperm(c.shape[1]).send(alice, bob).child
-    permuted_mask = mask[:, perm]
-    # Send it to another worker
-    remote_mask = permuted_mask.wrap().send(crypto_provider)
+    # I have to create idx because Ellipsis are still not supported
+    # (I would like to do permuted_mask = mask[..., perm])
+    idx = tuple([slice(None)] * (len(x_bit_sh.shape) - 1) + [perm])
+    permuted_mask = mask[idx]
 
     # 15)
-    # transform remotely the AdditiveSharingTensor back to a torch tensor
-    d_ptr = remote_mask.remote_get()
-    beta_prime = (d_ptr == 0).sum(1)
-    # Get result back
-    res = beta_prime.get()
-    return res
+    d = permuted_mask.get()
+    beta_prime = ((d == 0).sum(-1) > 0).long()
+
+    return beta_prime
 
 
 def msb(a_sh):
@@ -236,7 +232,7 @@ def msb(a_sh):
     # https://eprint.iacr.org/2018/442.pdf
 
     # Common Randomness
-    BETA = _random_common_bit(alice, bob)
+    beta = _random_common_bit(alice, bob)
     u = _shares_of_zero(1, L, crypto_provider, alice, bob)
 
     # 1)
@@ -256,14 +252,14 @@ def msb(a_sh):
     r_0 = decompose(r)[..., 0]
 
     # 4)
-    BETA_prime = private_compare(x_bit_sh, r, BETA=BETA)
+    beta_prime = private_compare(x_bit_sh, r, beta=beta)
 
     # 5)
-    BETA_prime_sh = BETA_prime.share(bob, alice, field=L, crypto_provider=crypto_provider).child
+    beta_prime_sh = beta_prime.share(bob, alice, field=L, crypto_provider=crypto_provider).child
 
     # 7)
     j = sy.MultiPointerTensor(children=[torch.tensor([0]).send(alice), torch.tensor([1]).send(bob)])
-    gamma = BETA_prime_sh + (j * BETA) - (2 * BETA * BETA_prime_sh)
+    gamma = beta_prime_sh + (j * beta) - (2 * beta * beta_prime_sh)
 
     # 8)
     delta = x_bit_sh_0 + (j * r_0) - (2 * r_0 * x_bit_sh_0)
@@ -292,6 +288,7 @@ def share_convert(a_sh):
         An additive sharing tensor with shares in field L-1
     """
     assert isinstance(a_sh, sy.AdditiveSharingTensor)
+    print("shape", a_sh.shape)
 
     workers = a_sh.locations
     crypto_provider = a_sh.crypto_provider
@@ -340,8 +337,9 @@ def share_convert(a_sh):
     delta_sh = delta.share(*workers, field=L - 1, crypto_provider=crypto_provider).child
 
     # 6)
+    print(x_bit_sh, x_bit_sh.shape)
     eta_p = private_compare(x_bit_sh, r - 1, eta_pp)
-
+    print(eta_p, eta_p.shape)
     # 7)
     eta_p_sh = eta_p.share(*workers, field=L - 1, crypto_provider=crypto_provider).child
 

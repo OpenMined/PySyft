@@ -43,7 +43,6 @@ def test_private_compare(workers):
 
     beta = torch.LongTensor([0]).send(alice, bob).child
     beta_p = private_compare(x_bit_sh, r, beta)
-
     assert beta_p
 
     # Big values
@@ -56,8 +55,19 @@ def test_private_compare(workers):
 
     beta = torch.LongTensor([0]).send(alice, bob).child
     beta_p = private_compare(x_bit_sh, r, beta)
-
     assert not beta_p
+
+    # Multidimensional tensors
+    x_bit_sh = decompose(torch.LongTensor([[13, 44], [1, 28]])).share(alice, bob, crypto_provider=james).child
+    r = torch.LongTensor([[12, 44], [12, 33]]).send(alice, bob).child
+
+    beta = torch.LongTensor([1]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta)
+    assert (beta_p == torch.tensor([[0, 1], [1, 1]])).all()
+
+    beta = torch.LongTensor([0]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta)
+    assert (beta_p == torch.tensor([[1, 0], [0, 0]])).all()
 
     # Negative values
     x_val = -105 % 2 ** 62
@@ -71,7 +81,6 @@ def test_private_compare(workers):
 
     beta = torch.LongTensor([0]).send(alice, bob).child
     beta_p = private_compare(x_bit_sh, r, beta)
-
     assert not beta_p
 
 
