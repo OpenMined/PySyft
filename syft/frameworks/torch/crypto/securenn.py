@@ -183,7 +183,7 @@ def private_compare(x_bit_sh, r, beta):
     l1_mask[..., 0] = 1
     l1_mask = l1_mask.send(alice, bob).child
     # c_else = if i == 1 c_ie1 else c_igt1
-    c_else = ((l1_mask * c_ie1) + ((1 - l1_mask) * c_igt1))
+    c_else = (l1_mask * c_ie1) + ((1 - l1_mask) * c_igt1)
 
     # Mask for the case r == 2^l −1
     r_mask = (r == (L - 1)).long()
@@ -288,7 +288,6 @@ def share_convert(a_sh):
         An additive sharing tensor with shares in field L-1
     """
     assert isinstance(a_sh, sy.AdditiveSharingTensor)
-    print("shape", a_sh.shape)
 
     workers = a_sh.locations
     crypto_provider = a_sh.crypto_provider
@@ -337,9 +336,7 @@ def share_convert(a_sh):
     delta_sh = delta.share(*workers, field=L - 1, crypto_provider=crypto_provider).child
 
     # 6)
-    print(x_bit_sh, x_bit_sh.shape)
     eta_p = private_compare(x_bit_sh, r - 1, eta_pp)
-    print(eta_p, eta_p.shape)
     # 7)
     eta_p_sh = eta_p.share(*workers, field=L - 1, crypto_provider=crypto_provider).child
 

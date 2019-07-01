@@ -58,7 +58,11 @@ def test_private_compare(workers):
     assert not beta_p
 
     # Multidimensional tensors
-    x_bit_sh = decompose(torch.LongTensor([[13, 44], [1, 28]])).share(alice, bob, crypto_provider=james).child
+    x_bit_sh = (
+        decompose(torch.LongTensor([[13, 44], [1, 28]]))
+        .share(alice, bob, crypto_provider=james)
+        .child
+    )
     r = torch.LongTensor([[12, 44], [12, 33]]).send(alice, bob).child
 
     beta = torch.LongTensor([1]).send(alice, bob).child
