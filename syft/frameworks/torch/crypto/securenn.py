@@ -199,7 +199,7 @@ def private_compare(x_bit_sh, r, beta):
     # Permute the mask
     # I have to create idx because Ellipsis are still not supported
     # (I would like to do permuted_mask = mask[..., perm])
-    idx = tuple([slice(None)] * (len(x_bit_sh.shape) - 1) + [perm])
+    idx = [slice(None)] * (len(x_bit_sh.shape) - 1) + [perm]
     permuted_mask = mask[idx]
 
     # 15)

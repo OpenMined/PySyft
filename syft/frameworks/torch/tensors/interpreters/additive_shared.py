@@ -253,7 +253,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return selected_shares
 
     def __getitem__(self, indices):
-        if not isinstance(indices, tuple):
+        if not isinstance(indices, (tuple, list)):
             indices = (indices,)
         tensor_type = type(indices[-1])
         if tensor_type == sy.MultiPointerTensor:
