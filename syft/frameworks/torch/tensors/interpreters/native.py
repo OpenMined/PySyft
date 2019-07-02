@@ -1,3 +1,4 @@
+import math
 from typing import List
 from typing import Union
 import weakref
@@ -11,6 +12,25 @@ from syft.frameworks.torch.pointers import PointerTensor
 from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
+
+
+def _get_maximum_precision():
+    """This function returns the maximum value allowed for precision fractions before the chain decides to use LPT.
+
+    This function can be overridden if the setup requires the use of LargePrecisionTensor from a smaller precision.
+
+    The default value is the size of torch.long
+
+    Returns:
+        The maximum value for precision allowed in this setup
+    """
+    return default_pytorch_maximum_precision()
+
+
+def default_pytorch_maximum_precision():
+    """Dealing with integers > 2**62-1 is not fun with precision tensors.
+    """
+    return 62
 
 
 class TorchTensor(AbstractTensor):
@@ -95,6 +115,48 @@ class TorchTensor(AbstractTensor):
         else:
             return self.native_data
 
+    @property
+    def grad(self):
+        if self.is_wrapper:
+            child_grad = self.child.grad
+            if child_grad is None:
+                return None
+            else:
+                if child_grad.is_wrapper:
+                    return child_grad
+                else:
+                    return child_grad.wrap()
+        else:
+            to_return = self.native_grad
+
+            # good to ensure that the ID stays consistent
+            # not 100% this is required but it's at least
+            # good practice
+            try:
+                to_return.id = self.grad_id
+            except AttributeError:
+                if to_return is not None and hasattr(to_return, "id"):
+                    self.grad_id = to_return.id
+
+            return to_return
+
+    @grad.setter
+    def grad(self, new_grad):
+
+        # If grad is not a pure torch tensor you need to store the chain in a
+        # specific place otherwise it will get deleted
+        if new_grad is not None and (
+            not isinstance(new_grad, torch.Tensor) or hasattr(new_grad, "child")
+        ):
+            self.child.grad = new_grad  # .wrap()
+        else:
+            if self.native_grad is not None:
+                with torch.no_grad():
+                    self.native_grad = new_grad
+            elif new_grad is not None:
+                self.native_grad = new_grad
+        return self
+
     def __str__(self) -> str:
         if self.has_child():
             if self.is_wrapper:
@@ -156,9 +218,6 @@ class TorchTensor(AbstractTensor):
         Utility method to test if the tensor is in fact a Parameter
         """
         return isinstance(self, syft.hook.torch.nn.Parameter)
-
-    def copy(self):
-        return self + 0
 
     @classmethod
     def handle_func_command(cls, command):
@@ -326,15 +385,18 @@ class TorchTensor(AbstractTensor):
                 # want it to keep. #HackAlert
                 output.backup_grad = grad
 
+                if local_autograd:
+                    output = syft.AutogradTensor(
+                        data=output, preinitialize_grad=preinitialize_grad
+                    ).on(output)
+
         else:
 
             children = list()
             for loc in location:
                 children.append(self.clone().send(loc))
 
-            output = syft.frameworks.torch.tensors.interpreters.MultiPointerTensor(
-                children=children
-            ).wrap()
+            output = syft.MultiPointerTensor(children=children).wrap()
 
         return output
 
@@ -447,11 +509,6 @@ class TorchTensor(AbstractTensor):
                 description=self.description,
             )
 
-        if self.requires_grad and local_autograd:
-            ptr = syft.AutogradTensor(data=ptr.wrap(), preinitialize_grad=preinitialize_grad).on(
-                ptr, wrap=False
-            )
-
         return ptr
 
     def mid_get(self):
@@ -550,15 +607,15 @@ class TorchTensor(AbstractTensor):
     def attr(self, attr_name):
         """"""
 
-        attr_val = self.child.attr(attr_name)
+        if self.is_wrapper:
+            attr_val = self.child.attr(attr_name)
 
-        if attr_name == "grad":
-            self.grad = attr_val
+            if attr_name == "grad":
+                self.grad = attr_val
+        else:
+            attr_val = getattr(self, attr_name)
 
         return attr_val
-
-    def setattr(self, name, value):
-        self.child.setattr(name, value.child)
 
     def enc_fix_prec(self):
         return self.child.fix_precision()
@@ -582,12 +639,18 @@ class TorchTensor(AbstractTensor):
     float_precision_ = float_prec_
 
     def fix_prec(self, *args, **kwargs):
-        return (
-            syft.frameworks.torch.tensors.interpreters.FixedPrecisionTensor(*args, **kwargs)
-            .on(self)
-            .enc_fix_prec()
-            .wrap()
-        )
+        base = kwargs.get("base", 10)
+        prec_fractional = kwargs.get("precision_fractional", 3)
+        max_precision = _get_maximum_precision()
+        if self._requires_large_precision(max_precision, base, prec_fractional):
+            return (
+                syft.LargePrecisionTensor(*args, **kwargs)
+                .on(self)
+                .child.fix_large_precision()
+                .wrap()
+            )
+        else:
+            return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
 
     fix_precision = fix_prec
 
@@ -598,11 +661,18 @@ class TorchTensor(AbstractTensor):
 
     fix_precision_ = fix_prec_
 
+    def _requires_large_precision(self, max_precision, base, precision_fractional):
+        """Check if any of the elements in the tensor would require large precision.
+        """
+        base_fractional = math.log2(base ** precision_fractional)
+        return torch.any((self.abs() + 1).log2() + base_fractional > max_precision)
+
     def share(
         self,
         *owners: List[BaseWorker],
         field: Union[int, None] = None,
         crypto_provider: Union[BaseWorker, None] = None,
+        requires_grad: bool = False,
     ):
         """This is a pass through method which calls .share on the child.
 
@@ -610,20 +680,27 @@ class TorchTensor(AbstractTensor):
             owners (list): A list of BaseWorker objects determining who to send shares to.
             field (int or None): The arithmetic field where live the shares.
             crypto_provider (BaseWorker or None): The worker providing the crypto primitives.
+            requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
+                default is False.
         """
 
+        shared_tensor = self
         if self.has_child():
             self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
-            return self
-
-        return (
-            syft.frameworks.torch.tensors.interpreters.AdditiveSharingTensor(
-                field=field, crypto_provider=crypto_provider, owner=self.owner
+        else:
+            shared_tensor = (
+                syft.AdditiveSharingTensor(
+                    field=field, crypto_provider=crypto_provider, owner=self.owner
+                )
+                .on(self)
+                .child.init_shares(*owners)
+                .wrap()
             )
-            .on(self)
-            .child.init_shares(*owners)
-            .wrap()
-        )
+
+        if requires_grad:
+            shared_tensor = syft.AutogradTensor().on(shared_tensor)
+
+        return shared_tensor
 
     def share_(self, *args, **kwargs):
         """

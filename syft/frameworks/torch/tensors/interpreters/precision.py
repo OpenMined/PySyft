@@ -1,5 +1,7 @@
-import syft
 import torch
+
+import syft
+from syft.workers import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
@@ -55,6 +57,27 @@ class FixedPrecisionTensor(AbstractTensor):
             "precision_fractional": self.precision_fractional,
             "kappa": self.kappa,
         }
+
+    @property
+    def data(self):
+        return self
+
+    @data.setter
+    def data(self, new_data):
+        self.child = new_data.child
+        return self
+
+    @property
+    def grad(self):
+        """
+        Gradient makes no sense for Fixed Precision Tensor, so we make it clear
+        that if someone query .grad on a Fixed Precision Tensor it doesn't error
+        but returns grad and can't be set
+        """
+        return None
+
+    def attr(self, attr_name):
+        return self.__getattribute__(attr_name)
 
     def fix_precision(self):
         """This method encodes the .child object using fixed precision"""
@@ -130,6 +153,15 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __add__ = add
 
+    def add_(self, value_or_tensor, tensor=None):
+        if tensor is None:
+            result = self.add(value_or_tensor)
+        else:
+            result = self.add(value_or_tensor * tensor)
+
+        self.child = result.child
+        return self
+
     def __iadd__(self, other):
         """Add two fixed precision tensors together.
         """
@@ -163,6 +195,15 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __sub__ = sub
+
+    def sub_(self, value_or_tensor, tensor=None):
+        if tensor is None:
+            result = self.sub(value_or_tensor)
+        else:
+            result = self.sub(value_or_tensor * tensor)
+
+        self.child = result.child
+        return self
 
     def __isub__(self, other):
         self.child = self.sub(other).child
@@ -222,6 +263,31 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __mul__ = mul
+
+    def pow(self, power):
+        """
+        Compute integer power of a number by recursion using mul
+
+        This uses the following trick:
+         - Divide power by 2 and multiply base to itself (if the power is even)
+         - Decrement power by 1 to make it even and then follow the first step
+        """
+        base = self
+
+        result = 1
+        while power > 0:
+            # If power is odd
+            if power % 2 == 1:
+                result = result * base
+
+            # Divide the power by 2
+            power = power // 2
+            # Multiply base to itself
+            base = base * base
+
+        return result
+
+    __pow__ = pow
 
     def matmul(self, *args, **kwargs):
         """
@@ -535,3 +601,60 @@ class FixedPrecisionTensor(AbstractTensor):
         field = self.field if field is None else field
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
         return self
+
+    @staticmethod
+    def simplify(tensor: "FixedPrecisionTensor") -> tuple:
+        """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
+
+        Args:
+            tensor: a FixedPrecisionTensor.
+
+        Returns:
+            tuple: a tuple holding the unique attributes of the fixed precision tensor.
+        """
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = syft.serde._simplify(tensor.child)
+
+        return (
+            syft.serde._simplify(tensor.id),
+            tensor.field,
+            tensor.base,
+            tensor.precision_fractional,
+            tensor.kappa,
+            syft.serde._simplify(tensor.tags),
+            syft.serde._simplify(tensor.description),
+            chain,
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "FixedPrecisionTensor":
+        """
+            This function reconstructs a FixedPrecisionTensor given it's attributes in form of a tuple.
+            Args:
+                worker: the worker doing the deserialization
+                tensor_tuple: a tuple holding the attributes of the FixedPrecisionTensor
+            Returns:
+                FixedPrecisionTensor: a FixedPrecisionTensor
+            Examples:
+                shared_tensor = detail(data)
+            """
+
+        tensor_id, field, base, precision_fractional, kappa, tags, description, chain = tensor_tuple
+
+        tensor = FixedPrecisionTensor(
+            owner=worker,
+            id=syft.serde._detail(worker, tensor_id),
+            field=field,
+            base=base,
+            precision_fractional=precision_fractional,
+            kappa=kappa,
+            tags=syft.serde._detail(worker, tags),
+            description=syft.serde._detail(worker, description),
+        )
+
+        if chain is not None:
+            chain = syft.serde._detail(worker, chain)
+            tensor.child = chain
+
+        return tensor

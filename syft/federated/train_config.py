@@ -23,8 +23,8 @@ class TrainConfig:
         owner: workers.AbstractWorker = None,
         batch_size: int = 32,
         epochs: int = 1,
-        optimizer: str = "sgd",
-        lr: float = 0.1,
+        optimizer: str = "SGD",
+        optimizer_args: dict = {"lr": 0.1},
         id: Union[int, str] = None,
         max_nr_batches: int = -1,
         shuffle: bool = True,
@@ -40,7 +40,7 @@ class TrainConfig:
             batch_size: Batch size used for training.
             epochs: Epochs used for training.
             optimizer: A string indicating which optimizer should be used.
-            lr: Learning rate.
+            optimizer_args: A dict containing the arguments to initialize the optimizer. Defaults to {'lr': 0.1}.
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the tensor.
@@ -62,7 +62,7 @@ class TrainConfig:
         self.batch_size = batch_size
         self.epochs = epochs
         self.optimizer = optimizer
-        self.lr = lr
+        self.optimizer_args = optimizer_args
         self.max_nr_batches = max_nr_batches
         self.shuffle = shuffle
 
@@ -86,7 +86,7 @@ class TrainConfig:
 
         out += " epochs: " + str(self.epochs)
         out += " batch_size: " + str(self.batch_size)
-        out += " lr: " + str(self.lr)
+        out += " optimizer_args: " + str(self.optimizer_args)
 
         out += ">"
         return out
@@ -155,7 +155,7 @@ class TrainConfig:
             train_config.batch_size,
             train_config.epochs,
             sy.serde._simplify(train_config.optimizer),
-            train_config.lr,
+            sy.serde._simplify(train_config.optimizer_args),
             sy.serde._simplify(train_config.id),
             train_config.max_nr_batches,
             train_config.shuffle,
@@ -172,12 +172,13 @@ class TrainConfig:
             train_config: A TrainConfig object
         """
 
-        model_id, loss_fn_id, batch_size, epochs, optimizer, lr, id, max_nr_batches, shuffle = (
+        model_id, loss_fn_id, batch_size, epochs, optimizer, optimizer_args, id, max_nr_batches, shuffle = (
             train_config_tuple
         )
 
         id = sy.serde._detail(worker, id)
         detailed_optimizer = sy.serde._detail(worker, optimizer)
+        detailed_optimizer_args = sy.serde._detail(worker, optimizer_args)
 
         train_config = TrainConfig(
             model=None,
@@ -189,7 +190,7 @@ class TrainConfig:
             batch_size=batch_size,
             epochs=epochs,
             optimizer=detailed_optimizer,
-            lr=lr,
+            optimizer_args=detailed_optimizer_args,
             max_nr_batches=max_nr_batches,
             shuffle=shuffle,
         )

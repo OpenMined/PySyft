@@ -20,6 +20,7 @@ from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
@@ -153,6 +154,9 @@ class TorchHook:
         # SyftTensor class file)
         self._hook_syft_tensor_methods(AdditiveSharingTensor)
 
+        # Add all hooked tensor methods to LargePrecisionTensor tensor
+        self._hook_syft_tensor_methods(LargePrecisionTensor)
+
         # Hook the tensor constructor function
         self._hook_tensor()
 
@@ -164,6 +168,9 @@ class TorchHook:
 
         # Hook torch.nn (containing Linear and Convolution layers)
         self._hook_module()
+
+        # Hook torch.optim (containing optim.SGD, Adam, etc)
+        self._hook_optim()
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
@@ -381,7 +388,7 @@ class TorchHook:
 
             if hasattr(self, "child"):
                 to_return = self.child.attr("grad")
-                if isinstance(to_return.child, syft.PointerTensor):
+                if to_return is not None and isinstance(to_return.child, syft.PointerTensor):
                     if to_return.child.is_none():
                         to_return = None
 
@@ -441,6 +448,11 @@ class TorchHook:
                 setattr(torch_module, f"native_{func}", native_func)
                 # 5. Put instead the hooked one
                 setattr(torch_module, func, new_func)
+
+        if torch.__version__ < "1.0.2":
+            # Hard fix for PyTorch versions < 1.0.2
+            # usage of torch.jit requires a torch version < torch 1.1, so we still need to support this torch version
+            syft.torch.apply_fix16922(self.torch)
 
         torch_modules = syft.torch.torch_modules
 
@@ -1074,3 +1086,35 @@ class TorchHook:
         # Override _VF.LSTM_Cell and _VF.GRU_Cell with torch.LSTM_Cell and torch.GRU_Cell
         # With the pytorch-based version
         self.torch.nn.modules.rnn._VF = self.torch
+
+    def _hook_optim(self):
+        """Overloading torch.optim.Optimizer with PySyft functionality. Optimizer
+           hyper-parameters should indeed be converted to fixed precision to interact
+           with fixed precision or additive shared tensors.
+           It is important to note that all the operations are actually in-place.
+        """
+
+        def optim_fix_precision_(optim_self, *args, **kwargs):
+            """Overloads fix_precision for torch.optim.Optimizer"""
+
+            for param_group in optim_self.param_groups:
+                for key, param in param_group.items():
+                    if isinstance(param, (float, int, bool)) and param != 0 and key != "params":
+                        param_group[key] = torch.tensor(param).fix_precision(*args, **kwargs).child
+
+            return optim_self
+
+        self.torch.optim.Optimizer.fix_precision = optim_fix_precision_
+
+        def optim_float_precision_(optim_self):
+            """Overloads float_precision for torch.optim.Optimizer, convert fix_precision
+            hyper-parameters to normal float values"""
+
+            for param_group in optim_self.param_groups:
+                for key, param in param_group.items():
+                    if isinstance(param, syft.FixedPrecisionTensor) and key != "params":
+                        param_group[key] = param.float_precision().item()
+
+            return optim_self
+
+        self.torch.optim.Optimizer.float_precision = optim_float_precision_
