@@ -201,12 +201,19 @@ def private_compare(x_bit_sh, r, beta):
     # (I would like to do permuted_mask = mask[..., perm])
     idx = [slice(None)] * (len(x_bit_sh.shape) - 1) + [perm]
     permuted_mask = mask[idx]
+    # Send it to another worker
+    # We do this because we can't allow the local worker to get and see permuted_mask
+    # because otherwise it can inverse the permutation and remove s to get c.
+    # So opening the permuted_mask should be made by a worker which doesn't have access to the randomness
+    remote_mask = permuted_mask.wrap().send(crypto_provider)
 
     # 15)
-    d = permuted_mask.get()
-    beta_prime = ((d == 0).sum(-1) > 0).long()
+    d_ptr = remote_mask.remote_get()
+    beta_prime = (d_ptr == 0).sum(-1)
 
-    return beta_prime
+    # Get result back
+    res = beta_prime.get()
+    return res
 
 
 def msb(a_sh):
