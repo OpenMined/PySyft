@@ -20,6 +20,7 @@ from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
@@ -152,6 +153,9 @@ class TorchHook:
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_syft_tensor_methods(AdditiveSharingTensor)
+
+        # Add all hooked tensor methods to LargePrecisionTensor tensor
+        self._hook_syft_tensor_methods(LargePrecisionTensor)
 
         # Hook the tensor constructor function
         self._hook_tensor()
@@ -442,8 +446,10 @@ class TorchHook:
                 # 5. Put instead the hooked one
                 setattr(torch_module, func, new_func)
 
-        # Hard fix for PyTorch versions < 1.0.2
-        syft.torch.apply_fix16922(self.torch)
+        if torch.__version__ < "1.0.2":
+            # Hard fix for PyTorch versions < 1.0.2
+            # usage of torch.jit requires a torch version < torch 1.1, so we still need to support this torch version
+            syft.torch.apply_fix16922(self.torch)
 
         torch_modules = syft.torch.torch_modules
 
@@ -951,7 +957,7 @@ class TorchHook:
                 o.backward()
                 p.grad -= p.grad
 
-        def module_send_(nn_self, dest):
+        def module_send_(nn_self, dest, force_send=False, **kwargs):
             """Overloads torch.nn instances so that they could be sent to other workers"""
 
             if module_is_missing_grad(nn_self):
@@ -959,8 +965,10 @@ class TorchHook:
 
             for p in nn_self.parameters():
                 p.send_(dest)
+
             if isinstance(nn_self.forward, Plan):
-                nn_self.forward.send(dest)
+                nn_self.forward.send(dest, force=force_send)
+
             return nn_self
 
         self.torch.nn.Module.send = module_send_

@@ -5,6 +5,9 @@ import torch
 import syft as sy
 from syft import federated
 from syft.frameworks.torch import pointers
+from syft.frameworks.torch.federated import utils
+
+PRINT_IN_UNITTESTS = True
 
 
 def test_add_dataset():
@@ -32,12 +35,14 @@ def test_remove_dataset():
 
 def test_set_obj_train_config():
     fed_client = federated.FederatedClient()
+    fed_client.optimizer = True
 
     train_config = federated.TrainConfig(id=100, model=None, loss_fn=None)
 
     fed_client.set_obj(train_config)
 
     assert fed_client.train_config.id == train_config.id
+    assert fed_client.optimizer is None
 
 
 def test_set_obj_other():
@@ -52,28 +57,53 @@ def test_set_obj_other():
     assert fed_client._objects[dummy_data.id] == dummy_data
 
 
-def test_fit():
-    data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1], [0], [1], [0]])
+def evaluate_model(fed_client, model_id, loss_fn, data, target):  # pragma: no cover
+    new_model = fed_client.get_obj(model_id)
+    pred = new_model.obj(data)
+    loss_after = loss_fn(target=target, pred=pred)
+    return loss_after
+
+
+def train_model(fed_client, fit_dataset_key, available_dataset_key, nr_rounds):  # pragma: no cover
+    loss = None
+    for curr_round in range(nr_rounds):
+        if fit_dataset_key == available_dataset_key:
+            loss = fed_client.fit(dataset_key=fit_dataset_key)
+        else:
+            with pytest.raises(ValueError):
+                loss = fed_client.fit(dataset_key=fit_dataset_key)
+        if PRINT_IN_UNITTESTS and curr_round % 2 == 0:  # pragma: no cover
+            print("-" * 50)
+            print("Iteration %s: alice's loss: %s" % (curr_round, loss))
+
+
+@pytest.mark.parametrize(
+    "fit_dataset_key, epochs",
+    [("gaussian_mixture", 1), ("gaussian_mixture", 10), ("another_dataset", 1)],
+)
+def test_fit(fit_dataset_key, epochs):
+    data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
 
     fed_client = federated.FederatedClient()
     dataset = sy.BaseDataset(data, target)
-    fed_client.add_dataset(dataset, key="vectors")
+    dataset_key = "gaussian_mixture"
+    fed_client.add_dataset(dataset, key=dataset_key)
 
-    def loss_fn(real, pred):
-        return ((real.float() - pred.float()) ** 2).mean()
+    def loss_fn(target, pred):
+        return torch.nn.functional.cross_entropy(input=pred, target=target)
 
     class Net(torch.nn.Module):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = torch.nn.Linear(2, 3)
             self.fc2 = torch.nn.Linear(3, 2)
-            self.fc3 = torch.nn.Linear(2, 1)
+
+            torch.nn.init.xavier_normal_(self.fc1.weight)
+            torch.nn.init.xavier_normal_(self.fc2.weight)
 
         def forward(self, x):
             x = torch.nn.functional.relu(self.fc1(x))
             x = torch.nn.functional.relu(self.fc2(x))
-            x = self.fc3(x)
             return x
 
     model_untraced = Net()
@@ -82,30 +112,41 @@ def test_fit():
     model_ow = pointers.ObjectWrapper(obj=model, id=model_id)
     loss_id = 1
     loss_ow = pointers.ObjectWrapper(obj=loss_fn, id=loss_id)
-
-    print("Evaluation before training")
     pred = model(data)
-    loss_before = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_before))
+    loss_before = loss_fn(target=target, pred=pred)
+    if PRINT_IN_UNITTESTS:  # pragma: no cover
+        print("Loss before training: {}".format(loss_before))
 
     # Create and send train config
     train_config = sy.TrainConfig(
-        batch_size=1, model=None, loss_fn=None, model_id=model_id, loss_fn_id=loss_id
+        batch_size=8,
+        model=None,
+        loss_fn=None,
+        model_id=model_id,
+        loss_fn_id=loss_id,
+        optimizer_args={"lr": 0.05, "weight_decay": 0.01},
+        epochs=epochs,
     )
 
     fed_client.set_obj(model_ow)
     fed_client.set_obj(loss_ow)
     fed_client.set_obj(train_config)
+    fed_client.optimizer = None
 
-    for epoch in range(5):
-        loss = fed_client.fit(dataset_key="vectors")
-        print("-" * 50)
-        print("Iteration %s: alice's loss: %s" % (epoch, loss))
+    train_model(fed_client, fit_dataset_key, available_dataset_key=dataset_key, nr_rounds=3)
 
-    print("Evaluation after training:")
-    new_model = fed_client.get_obj(model_id)
-    pred = new_model.obj(data)
-    loss_after = loss_fn(real=target, pred=pred)
-    print("Loss: {}".format(loss_after))
+    if dataset_key == fit_dataset_key:
+        loss_after = evaluate_model(fed_client, model_id, loss_fn, data, target)
+        if PRINT_IN_UNITTESTS:  # pragma: no cover
+            print("Loss after training: {}".format(loss_after))
 
-    assert loss_after < loss_before
+        if loss_after >= loss_before:  # pragma: no cover
+            if PRINT_IN_UNITTESTS:
+                print("Loss not reduced, train more: {}".format(loss_after))
+
+            train_model(
+                fed_client, fit_dataset_key, available_dataset_key=dataset_key, nr_rounds=10
+            )
+            loss_after = evaluate_model(fed_client, model_id, loss_fn, data, target)
+
+        assert loss_after < loss_before

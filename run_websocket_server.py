@@ -45,4 +45,4 @@ kwargs = {
     "hook": hook,
     "verbose": args.verbose,
 }
-server = start_proc(WebsocketServerWorker, kwargs)
+server = start_proc(WebsocketServerWorker, **kwargs)
