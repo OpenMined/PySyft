@@ -58,6 +58,27 @@ class FixedPrecisionTensor(AbstractTensor):
             "kappa": self.kappa,
         }
 
+    @property
+    def data(self):
+        return self
+
+    @data.setter
+    def data(self, new_data):
+        self.child = new_data.child
+        return self
+
+    @property
+    def grad(self):
+        """
+        Gradient makes no sense for Fixed Precision Tensor, so we make it clear
+        that if someone query .grad on a Fixed Precision Tensor it doesn't error
+        but returns grad and can't be set
+        """
+        return None
+
+    def attr(self, attr_name):
+        return self.__getattribute__(attr_name)
+
     def fix_precision(self):
         """This method encodes the .child object using fixed precision"""
 
@@ -120,6 +141,15 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __add__ = add
 
+    def add_(self, value_or_tensor, tensor=None):
+        if tensor is None:
+            result = self.add(value_or_tensor)
+        else:
+            result = self.add(value_or_tensor * tensor)
+
+        self.child = result.child
+        return self
+
     def __iadd__(self, other):
         """Add two fixed precision tensors together.
         """
@@ -152,6 +182,15 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __sub__ = sub
+
+    def sub_(self, value_or_tensor, tensor=None):
+        if tensor is None:
+            result = self.sub(value_or_tensor)
+        else:
+            result = self.sub(value_or_tensor * tensor)
+
+        self.child = result.child
+        return self
 
     def __isub__(self, other):
         self.child = self.sub(other).child
@@ -208,6 +247,31 @@ class FixedPrecisionTensor(AbstractTensor):
         return response.truncate(self.precision_fractional)
 
     __mul__ = mul
+
+    def pow(self, power):
+        """
+        Compute integer power of a number by recursion using mul
+
+        This uses the following trick:
+         - Divide power by 2 and multiply base to itself (if the power is even)
+         - Decrement power by 1 to make it even and then follow the first step
+        """
+        base = self
+
+        result = 1
+        while power > 0:
+            # If power is odd
+            if power % 2 == 1:
+                result = result * base
+
+            # Divide the power by 2
+            power = power // 2
+            # Multiply base to itself
+            base = base * base
+
+        return result
+
+    __pow__ = pow
 
     def matmul(self, *args, **kwargs):
         """
