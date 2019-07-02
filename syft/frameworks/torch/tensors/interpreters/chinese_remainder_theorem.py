@@ -49,8 +49,10 @@ class CRTTensor(AbstractTensor):
                 assert r.child.base == b
                 assert r.child.precision_fractional == prec_frac
 
-            if base is not None: assert b == base
-            if precision_fractional is not None: assert prec_frac == precision_fractional
+            if base is not None:
+                assert b == base
+            if precision_fractional is not None:
+                assert prec_frac == precision_fractional
             self.base = b
             self.precision_fractional = prec_frac
 
@@ -67,10 +69,7 @@ class CRTTensor(AbstractTensor):
                 ), "All residue tensors of CRTTensor must have the same shape"
 
     def get_class_attributes(self):
-        return {
-            "base": self.base,
-            "precision_fractional": self.precision_fractional,
-        }
+        return {"base": self.base, "precision_fractional": self.precision_fractional}
 
     def __str__(self):
         type_name = type(self).__name__
@@ -92,7 +91,9 @@ class CRTTensor(AbstractTensor):
             self_.keys() == other_.keys()
         ), "Cannot compare 2 CRT that don't have the same modulos"
 
-        result = torch.ones(self.shape).fix_prec(precision_fractional=self.precision_fractional)
+        result = torch.ones(self.shape).fix_prec(
+            base=self.base, precision_fractional=self.precision_fractional
+        )
         for mod in self_.keys():
             result *= (self_[mod] == other_[mod]).long()
 
@@ -193,7 +194,9 @@ class CRTTensor(AbstractTensor):
             zi = modular_inverse(yi, mod)
             res += ai * yi * zi
 
-        return FixedPrecisionTensor(field=N, precision_fractional=self.precision_fractional).on(res % N)
+        return FixedPrecisionTensor(
+            field=N, base=self.base, precision_fractional=self.precision_fractional
+        ).on(res % N)
 
     @staticmethod
     @overloaded.module

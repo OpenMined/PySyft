@@ -43,15 +43,15 @@ def test_eq():
     res_7c = torch.tensor([4, 4]).fix_prec(field=7, precision_fractional=0)
     residues_c = {3: res_3c, 7: res_7c}
     crt_c = syft.CRTTensor(residues_c).wrap()
-    
+
     eq_ab = (crt_a == crt_b).child.solve_system()
     eq_ac = (crt_a == crt_c).child.solve_system()
 
     exp_ab = torch.tensor([1, 1]).fix_prec(field=21, precision_fractional=0)
     exp_ac = torch.tensor([0, 1]).fix_prec(field=21, precision_fractional=0)
-    
-    assert ((eq_ab == exp_ab).all())
-    assert ((eq_ac == exp_ac).all())
+
+    assert (eq_ab == exp_ab).all()
+    assert (eq_ac == exp_ac).all()
 
 
 def test_add():
@@ -61,9 +61,9 @@ def test_add():
 
     crt1 = syft.CRTTensor(residues).wrap()
     crt2 = syft.CRTTensor(residues).wrap()
-    
+
     result = crt1 + crt2
-    
+
     exp_3 = torch.tensor([[2, 1], [0, 2]]).fix_prec(field=3, precision_fractional=0)
     exp_7 = torch.tensor([[6, 1], [3, 5]]).fix_prec(field=7, precision_fractional=0)
     exp_res = {3: exp_3, 7: exp_7}
@@ -83,9 +83,9 @@ def test_sub():
 
     crt_a = syft.CRTTensor(residues_a).wrap()
     crt_b = syft.CRTTensor(residues_b).wrap()
-    
+
     result = crt_a - crt_b
-    
+
     exp_3 = torch.tensor([[0, 1], [0, 2]]).fix_prec(field=3, precision_fractional=0)
     exp_7 = torch.tensor([[5, 3], [0, 4]]).fix_prec(field=7, precision_fractional=0)
     exp_res = {3: exp_3, 7: exp_7}
@@ -101,9 +101,9 @@ def test_mul():
 
     crt1 = syft.CRTTensor(residues).wrap()
     crt2 = syft.CRTTensor(residues).wrap()
-    
+
     result = crt1 * crt2
-    
+
     exp_3 = torch.tensor([[1, 1], [0, 1]]).fix_prec(field=3, precision_fractional=0)
     exp_7 = torch.tensor([[2, 2], [4, 1]]).fix_prec(field=7, precision_fractional=0)
     exp_res = {3: exp_3, 7: exp_7}
@@ -120,4 +120,4 @@ def test_torch_sum():
     crt = syft.CRTTensor(residues)
 
     res = torch.sum(crt)
-    assert res.child == {3: 1, 7:4}
+    assert res.child == {3: 1, 7: 4}
