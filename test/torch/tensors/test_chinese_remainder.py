@@ -50,13 +50,9 @@ def test_eq():
     exp_ab = torch.tensor([1, 1]).fix_prec(field=21, precision_fractional=0)
     exp_ac = torch.tensor([0, 1]).fix_prec(field=21, precision_fractional=0)
     
-    print(eq_ab)
-    print(exp_ab)
-
     assert ((eq_ab == exp_ab).all())
     assert ((eq_ac == exp_ac).all())
 
-"""
 
 def test_add():
     res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
@@ -73,15 +69,48 @@ def test_add():
     exp_res = {3: exp_3, 7: exp_7}
     exp = syft.CRTTensor(exp_res).wrap()
 
-    assert result == exp
-
-def test_sub(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    assert (result.child.solve_system() == exp.child.solve_system()).all()
 
 
-def test_mul(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+def test_sub():
+    res_a3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
+    res_a7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
+    residues_a = {3: res_a3, 7: res_a7}
 
+    res_b3 = torch.tensor([[1, 1], [0, 2]]).fix_prec(field=3, precision_fractional=0)
+    res_b7 = torch.tensor([[5, 1], [5, 2]]).fix_prec(field=7, precision_fractional=0)
+    residues_b = {3: res_b3, 7: res_b7}
+
+    crt_a = syft.CRTTensor(residues_a).wrap()
+    crt_b = syft.CRTTensor(residues_b).wrap()
+    
+    result = crt_a - crt_b
+    
+    exp_3 = torch.tensor([[0, 1], [0, 2]]).fix_prec(field=3, precision_fractional=0)
+    exp_7 = torch.tensor([[5, 3], [0, 4]]).fix_prec(field=7, precision_fractional=0)
+    exp_res = {3: exp_3, 7: exp_7}
+    exp = syft.CRTTensor(exp_res).wrap()
+
+    assert (result.child.solve_system() == exp.child.solve_system()).all()
+
+
+def test_mul():
+    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
+    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
+    residues = {3: res_3, 7: res_7}
+
+    crt1 = syft.CRTTensor(residues).wrap()
+    crt2 = syft.CRTTensor(residues).wrap()
+    
+    result = crt1 * crt2
+    
+    exp_3 = torch.tensor([[1, 1], [0, 1]]).fix_prec(field=3, precision_fractional=0)
+    exp_7 = torch.tensor([[2, 2], [4, 1]]).fix_prec(field=7, precision_fractional=0)
+    exp_res = {3: exp_3, 7: exp_7}
+    exp = syft.CRTTensor(exp_res).wrap()
+
+    assert (result.child.solve_system() == exp.child.solve_system()).all()
+"""
 
 def test_torch_sum(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
