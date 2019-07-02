@@ -20,6 +20,7 @@ from syft import dependency_check
 
 if dependency_check.keras_available:
     from syft.frameworks.keras import KerasHook
+    from syft.workers import TFECluster
     from syft.workers import TFEWorker
 else:
     logger.warning("Keras (Tensorflow) not available.")
@@ -49,8 +50,6 @@ from syft.federated import method2plan
 from syft.federated import make_plan
 
 # Import Worker Types
-from syft.workers import TFECluster
-from syft.workers import TFEWorker
 from syft.workers import VirtualWorker
 
 
