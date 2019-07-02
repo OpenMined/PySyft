@@ -49,6 +49,22 @@ class MultiPointerTensor(AbstractTensor):
             out += "\n\t-> " + str(v)
         return out
 
+    @property
+    @overloaded.method
+    def grad(self, self_):
+        results = {}
+        all_none = True
+        for worker, pointer in self_.items():
+            pointer_grad = pointer.grad
+
+            if pointer_grad is None:
+                results[worker] = None
+            else:
+                results[worker] = pointer_grad
+                all_none = False
+
+        return results if not all_none else None
+
     def __eq__(self, other):
         return torch.eq(self, other)
 
