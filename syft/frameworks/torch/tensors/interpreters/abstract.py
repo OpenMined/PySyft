@@ -154,9 +154,6 @@ class AbstractObject(ABC):
 
         return response
 
-    def setattr(self, name, value):
-        self.child.setattr(name, value.child)
-
     @classmethod
     def rgetattr(cls, obj, attr, *args):
         """
@@ -244,6 +241,17 @@ class AbstractTensor(AbstractObject):
             self.id = sy.ID_PROVIDER.pop()
 
         return wrapper
+
+    def copy(self):
+        return self + 0
+
+    @property
+    def grad(self):
+        child_grad = self.child.grad
+        if child_grad is None:
+            return None
+        else:
+            return child_grad.wrap()
 
 
 def initialize_tensor(
