@@ -110,8 +110,14 @@ def test_mul():
     exp = syft.CRTTensor(exp_res).wrap()
 
     assert (result.child.solve_system() == exp.child.solve_system()).all()
-"""
 
-def test_torch_sum(workers):
-    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-"""
+
+def test_torch_sum():
+    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
+    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
+    residues = {3: res_3, 7: res_7}
+
+    crt = syft.CRTTensor(residues)
+
+    res = torch.sum(crt)
+    assert res.child == {3: 1, 7:4}

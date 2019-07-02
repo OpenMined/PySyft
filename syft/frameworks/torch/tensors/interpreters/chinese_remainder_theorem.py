@@ -20,26 +20,35 @@ class CRTTensor(AbstractTensor):
     It also makes additions, subtractions, and multiplications of huge numbers quite efficient.
     """
 
-    def __init__(self, residues: dict = None, owner=None, id=None, tags=None, description=None):
+    def __init__(
+        self,
+        residues: dict = None,
+        owner=None,
+        id=None,
+        tags: set = None,
+        description: str = None,
+    ):
         super().__init__(owner=owner, id=id, tags=tags, description=description)
 
-        # check that all the modulos are pairwise coprime
+        # Check that all the modulos are pairwise coprime
         if residues is not None:
             for pair in itertools.combinations(residues.keys(), r=2):
                 assert (
                     math.gcd(pair[0], pair[1]) == 1
                 ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as modulos"
 
-        # check that all the residues have the same precision
+        # Check that all the residues have the same precision
         if residues is not None:
             prec_frac = next(iter(residues.values())).child.precision_fractional
-            base = next(iter(residues.values())).child.base
+            b = next(iter(residues.values())).child.base
             for r in residues.values():
                 assert r.child.precision_fractional == prec_frac
-                assert r.child.base == base
-            self.precision_fractional = prec_frac
-            self.base = base
+                assert r.child.base == b
 
+            self.precision_fractional = prec_frac
+            self.base = b
+
+        # Check that all the shapes are the same while filling tensor
         if residues is not None:
             res_shape = next(iter(residues.values())).shape
             self.child = {}
@@ -71,12 +80,13 @@ class CRTTensor(AbstractTensor):
             self_.keys() == other_.keys()
         ), "Cannot compare 2 CRT that don't have the same modulos"
 
-        result = torch.ones(self.shape).fix_prec(precision_fractional=self.precision_fractional)
+        result = torch.ones(self.shape).fix_prec(precision_fractional=0)#self.precision_fractional)
         for mod in self_.keys():
             result *= (self_[mod] == other_[mod]).long()
 
         dict_result = {}
         for mod in self_.keys():
+            result.field = mod
             dict_result[mod] = result
 
         return dict_result
@@ -125,6 +135,15 @@ class CRTTensor(AbstractTensor):
         return result
 
     __mul__ = mul
+
+    @overloaded.method
+    def sum(self, self_, *args, **kwargs):
+        result = {}
+
+        for mod in self_.keys():
+            result[mod] = self_[mod].sum() % mod  # TODO why % mod is needed?
+
+        return result
 
     def solve_system(self):
         """ Build the tensor in Zq with q = prod(self.child.keys())
@@ -181,3 +200,8 @@ class CRTTensor(AbstractTensor):
             return self.__mul__(other)
 
         module.mul = mul
+
+        def sum(self, *args, **kwargs):
+            return self.sum(*args, **kwargs)
+
+        module.sum = sum
