@@ -43,28 +43,19 @@ def test_eq():
     res_7c = torch.tensor([4, 4]).fix_prec(field=7, precision_fractional=0)
     residues_c = {3: res_3c, 7: res_7c}
     crt_c = syft.CRTTensor(residues_c).wrap()
-
-    assert crt_a == crt_b
-    assert not (crt_a == crt_c)
-
-
-"""
-def test_ne():
-    res_3a = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_7a = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
-    residues_a = {3: res_3a, 7: res_7a}
-    crt_a = syft.CRTTensor(residues_a).wrap()
     
-    crt_b = syft.CRTTensor(residues_a).wrap()
+    eq_ab = (crt_a == crt_b).child.solve_system()
+    eq_ac = (crt_a == crt_c).child.solve_system()
 
-    res_3c = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_7c = torch.tensor([[4, 4], [4, 4]]).fix_prec(field=7, precision_fractional=0)
-    residues_c = {3: res_3c, 7: res_7c}
-    crt_c = syft.CRTTensor(residues_c).wrap()
+    exp_ab = torch.tensor([1, 1]).fix_prec(field=21, precision_fractional=0)
+    exp_ac = torch.tensor([0, 1]).fix_prec(field=21, precision_fractional=0)
     
-    assert not (crt_a != crt_b)
-    assert (crt_a != crt_c)
-"""
+    print(eq_ab)
+    print(exp_ab)
+
+    assert ((eq_ab == exp_ab).all())
+    assert ((eq_ac == exp_ac).all())
+
 """
 
 def test_add():
