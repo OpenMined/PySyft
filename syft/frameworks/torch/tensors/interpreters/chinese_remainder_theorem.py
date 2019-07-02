@@ -30,6 +30,16 @@ class CRTTensor(AbstractTensor):
                     math.gcd(pair[0], pair[1]) == 1
                 ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as modulos"
 
+        # check that all the residues have the same precision
+        if residues is not None:
+            prec_frac = next(iter(residues.values())).child.precision_fractional
+            base = next(iter(residues.values())).child.base
+            for r in residues.values():
+                assert r.child.precision_fractional == prec_frac
+                assert r.child.base == base
+            self.precision_fractional = prec_frac
+            self.base = base
+
         if residues is not None:
             res_shape = next(iter(residues.values())).shape
             self.child = {}
@@ -61,10 +71,10 @@ class CRTTensor(AbstractTensor):
             self_.keys() == other_.keys()
         ), "Cannot compare 2 CRT that don't have the same modulos"
 
-        result = torch.ones(self.shape).fix_prec(precision_fractional=0)
+        result = torch.ones(self.shape).fix_prec(precision_fractional=self.precision_fractional)
         for mod in self_.keys():
             result *= (self_[mod] == other_[mod]).long()
-        
+
         dict_result = {}
         for mod in self_.keys():
             dict_result[mod] = result
@@ -140,15 +150,14 @@ class CRTTensor(AbstractTensor):
             while a > 1:
                 q = a // b
                 a, b = b, a % b
-                x0 = x1 - q * x0
-                x1 = x0
+                x0, x1 = x1 - q * x0, x0
             if x1 < 0:
                 x1 += b0
             return x1
 
         res = 0
         for mod, ai in self.child.items():
-            ai = ai.float_prec() % mod
+            ai = (ai.float_prec() % mod).long()
             yi = N // mod
             zi = modular_inverse(yi, mod)
             res += ai * yi * zi
