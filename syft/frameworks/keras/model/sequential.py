@@ -39,7 +39,8 @@ def share(model, cluster, target_graph=None):
         # By default we create a new graph for the shared model
         target_graph = tf.Graph()
 
-    with target_graph.as_default():
+    model._tfe_graph = target_graph
+    with model._tfe_graph.as_default():
         tfe_model, batch_input_shape = _rebuild_tfe_model(model, stored_keras_weights)
 
         # Set up a new tfe.serving.QueueServer for the shared TFE model
@@ -53,7 +54,7 @@ def share(model, cluster, target_graph=None):
         initializer = tf.global_variables_initializer()
 
     # Push and initialize shared model on servers
-    model._tfe_session = tfe.Session(graph=target_graph)
+    model._tfe_session = tfe.Session(graph=model._tfe_graph)
     model._tfe_session.run(initializer)
 
 
@@ -98,6 +99,7 @@ def _configure_tfe(cluster):
         config.get_player("server0"), config.get_player("server1"), config.get_player("server2")
     )
     tfe.set_protocol(prot)
+    tfe.clear_initializers()
 
 
 def _rebuild_tfe_model(keras_model, stored_keras_weights):
