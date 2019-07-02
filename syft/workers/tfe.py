@@ -22,6 +22,12 @@ class TFEWorker:
         self._auto_managed = auto_managed
 
     def start(self, player_name, cluster):
+        """
+        Start the worker as a player in the given cluster.
+        Depending on whether the worker was constructed with a host or not
+        this may launch a subprocess running a TensorFlow server.
+        """
+
         if self.host is None:
             # we're running using a tfe.LocalConfig which doesn't require us to do anything
             return
@@ -46,6 +52,11 @@ class TFEWorker:
             )
 
     def stop(self):
+        """
+        Stop the worker. This will shutdown any TensorFlow server launched
+        in `start()`.
+        """
+
         if self.host is None:
             # we're running using a tfe.LocalConfig which doesn't require us to do anything
             return
@@ -60,6 +71,12 @@ class TFEWorker:
             logger.info("Please terminate the process on host '%s'.", self.host)
 
     def connect_to_model(self, input_shape, output_shape, cluster):
+        """
+        Connect to a TF Encrypted model being served by the given cluster.
+        
+        This must be done before querying the model.
+        """
+
         config = cluster.tfe_config
         tfe.set_config(config)
 
@@ -76,17 +93,40 @@ class TFEWorker:
         self._tf_session = sess
 
     def query_model(self, data):
+        """
+        Encrypt data and sent it as input to the model being served.
+        
+        This will block until a result is ready, and requires that
+        a connection to the model has already been established via
+        `connect_to_model()`.
+        """
         self.query_model_async(data)
         return self.query_model_join()
 
     def query_model_async(self, data):
+        """
+        Asynchronous version of `query_model` that will not block until a
+        result is ready. Call `query_model_join` to retrive result.
+        
+        This requires that a connection to the model has already been
+        established via `connect_to_model()`.
+        """
         self._tf_client.send_input(self._tf_session, data)
 
     def query_model_join(self):
+        """
+        Retrives the result from calling `query_model_async`, blocking until
+        ready.
+        """
         return self._tf_client.receive_output(self._tf_session)
 
 
 class TFECluster:
+    """
+    A TFECluster represents a group of TFEWorkers that are aware about each
+    other and collectively perform an encrypted computation.
+    """
+
     def __init__(self, *workers):
         tfe_config, player_to_worker_mapping = self._build_cluster(workers)
         self.tfe_config = tfe_config
@@ -97,11 +137,17 @@ class TFECluster:
         return list(self.player_to_worker_mapping.values())
 
     def start(self):
+        """
+        Start all workers in the cluster.
+        """
         # Tell the TFE workers to launch TF servers
         for player_name, worker in self.player_to_worker_mapping.items():
             worker.start(player_name, self)
 
     def stop(self):
+        """
+        Stop all workers in the cluster.
+        """
         for worker in self.workers:
             worker.stop()
 

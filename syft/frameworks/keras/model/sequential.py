@@ -19,8 +19,11 @@ def share(model, cluster, target_graph=None):
     """
     Secret share the model between `workers`.
 
-    This is done by rebuilding the model as a TF Encrypted model inside `target_graph`
-    and pushing this graph to TensorFlow servers running on the workers.
+    This is done by rebuilding the model as a TF Encrypted model inside
+    `target_graph` and pushing this graph to TFEWorkers running the cluster.
+
+    Note that this keeps a TensorFlow session alive that must later be
+    shutdown using `model.stop()`.
     """
 
     # Store Keras weights before loading them in the TFE layers.
@@ -55,6 +58,10 @@ def share(model, cluster, target_graph=None):
 
 
 def serve(model, num_requests=5):
+    """
+    Serve the specified number of predictions using the shared model,
+    blocking until completed.
+    """
 
     global request_ix
     request_ix = 1
@@ -68,6 +75,10 @@ def serve(model, num_requests=5):
 
 
 def stop(model):
+    """
+    Shutdown the TensorFlow session that was used to serve the shared model.
+    """
+
     if model._tfe_session is not None:
         sess = model._tfe_session
         model._tfe_session = None
