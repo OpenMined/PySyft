@@ -96,6 +96,48 @@ def test_torch_add(workers):
     assert (z == torch.add(t, t)).all()
 
 
+def test_torch_add_():
+    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+
+    y = x.add_(x)
+
+    assert (y.child.child == torch.LongTensor([200, 400, 600])).all()
+    y = y.float_prec()
+
+    assert (y == torch.tensor([0.2, 0.4, 0.6])).all()
+
+    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+    lr = torch.tensor(0.5).fix_prec()
+
+    y = x.add_(lr, x)
+
+    assert (y.child.child == torch.LongTensor([150, 300, 450])).all()
+    y = y.float_prec()
+
+    assert (y == torch.tensor([0.15, 0.3, 0.45])).all()
+
+
+def test_torch_sub_():
+    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+
+    y = x.sub_(x)
+
+    assert (y.child.child == torch.LongTensor([0, 0, 0])).all()
+    y = y.float_prec()
+
+    assert (y == torch.tensor([0, 0, 0.0])).all()
+
+    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+    lr = torch.tensor(0.5).fix_prec()
+
+    y = x.sub_(lr, x)
+
+    assert (y.child.child == torch.LongTensor([50, 100, 150])).all()
+    y = y.float_prec()
+
+    assert (y == torch.tensor([0.05, 0.1, 0.15])).all()
+
+
 def test_torch_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
@@ -165,6 +207,15 @@ def test_torch_mul(workers):
     z = torch.mul(y, x).get().float_prec()
 
     assert (z == torch.mul(t, t)).all()
+
+
+def test_torch_pow():
+
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec()
+    y = (x ** 3).float_prec()
+
+    assert (y == (m ** 3)).all()
 
 
 def test_torch_matmul(workers):
