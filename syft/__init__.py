@@ -53,6 +53,14 @@ from syft.workers import TFECluster
 from syft.workers import TFEWorker
 from syft.workers import VirtualWorker
 
+
+# Import Tensor Types
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+
 from syft.frameworks.torch.pointers import ObjectPointer
 from syft.frameworks.torch.pointers import CallablePointer
 from syft.frameworks.torch.pointers import ObjectWrapper
@@ -77,6 +85,7 @@ __all__ = [
     "PointerTensor",
     "VirtualGrid",
     "ObjectWrapper",
+    "LargePrecisionTensor",
 ]
 
 local_worker = None
