@@ -668,7 +668,9 @@ class TorchTensor(AbstractTensor):
         """
         base_fractional = math.log2(base ** precision_fractional)
         # We need to use NumPy here as log2 is not yet implemented for LongTensor PyTorch objects
-        return np.any(np.log2(np.abs(self.clone().detach().numpy()) + 1) + base_fractional > max_precision)
+        return np.any(
+            np.log2(np.abs(self.clone().detach().numpy()) + 1) + base_fractional > max_precision
+        )
 
     def share(
         self,
