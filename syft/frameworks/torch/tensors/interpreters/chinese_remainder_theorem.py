@@ -265,7 +265,14 @@ class CRTTensor(AbstractTensor):
         chain = None
         if hasattr(tensor, "child"):
             chain = syft.serde._simplify(tensor.child)
-        return (tensor.id, chain)
+
+        return (
+            tensor.id,
+            tensor.base,
+            tensor.precision_fractional,
+            tensor.solve_system_coeffs,
+            chain,
+        )
 
     @staticmethod
     def detail(worker, tensor_tuple: tuple) -> "CRTTensor":
@@ -277,9 +284,18 @@ class CRTTensor(AbstractTensor):
         Returns:
             CRTTensor: a CRTTensor
         """
-        tensor_id, chain = tensor_tuple
+        tensor_id, tensor_base, tensor_precision_fractional, tensor_solve_system_coeffs, chain = (
+            tensor_tuple
+        )
 
-        tensor = syft.CRTTensor(owner=worker, id=tensor_id)
+        tensor = syft.CRTTensor(
+            base=tensor_base,
+            precision_fractional=tensor_precision_fractional,
+            # FIXME need to cast to tuple otherwise tensor_solve_system_coeffs is an unashable list
+            solve_system_coeffs=tuple(tensor_solve_system_coeffs),
+            owner=worker,
+            id=tensor_id,
+        )
 
         if chain is not None:
             chain = syft.serde._detail(worker, chain)
