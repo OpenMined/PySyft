@@ -215,6 +215,20 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return sy.MultiPointerTensor(children=pointers)
 
+    def zero(self):
+        """
+        Build an additive shared tensor of value zero with the same
+        properties as self
+        """
+        shape = self.shape if self.shape else [1]
+        zero = (
+            torch.zeros(*shape)
+            .long()
+            .share(*self.locations, field=self.field, crypto_provider=self.crypto_provider)
+            .child
+        )
+        return zero
+
     @overloaded.overload_method
     def _getitem_multipointer(self, self_shares, indices_shares):
         """
@@ -381,6 +395,9 @@ class AdditiveSharingTensor(AbstractTensor):
         """Multiplies an AdditiveSharingTensor with a non-private value
         (int, torch tensor, MultiPointerTensor, etc.)
 
+        When other is a constant equal to zero, the shares vanish so we need to add fresh
+        shares of zero.
+
         Args:
             shares (dict): a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
@@ -393,17 +410,29 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         assert equation == "mul" or equation == "matmul"
         cmd = getattr(torch, equation)
-
         if isinstance(other, dict):
             return {
                 worker: (cmd(share, other[worker]) % self.field) for worker, share in shares.items()
             }
-        elif isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
-            return {
-                worker: (cmd(share, other.wrap()) % self.field) for worker, share in shares.items()
-            }
         else:
-            return {worker: (cmd(share, other) % self.field) for worker, share in shares.items()}
+            other_is_zero = False
+            if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
+                other = other.wrap()
+                if (other == 0).any():
+                    other_is_zero = True
+            elif other == 0:
+                other_is_zero = True
+
+            if other_is_zero:
+                zero = self.zero().child
+                return {
+                    worker: ((cmd(share, other) + zero[worker]) % self.field)
+                    for worker, share in shares.items()
+                }
+            else:
+                return {
+                    worker: (cmd(share, other) % self.field) for worker, share in shares.items()
+                }
 
     def mul(self, other):
         """Multiplies two tensors together
