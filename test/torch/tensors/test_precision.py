@@ -18,15 +18,6 @@ def test_wrap(workers):
     assert isinstance(x.child.child, torch.Tensor)
 
 
-def test_long():
-    x = torch.tensor([1])
-    expected = torch.tensor([1.0])
-    enlarged = x.fix_prec()
-    restored = enlarged.float_precision()
-    # And now expected and restored must be the same
-    assert torch.all(torch.eq(expected, restored))
-
-
 @pytest.mark.parametrize("parameter", [False, True])
 def test_encode_decode(workers, parameter):
     x = torch.tensor([0.1, 0.2, 0.3])

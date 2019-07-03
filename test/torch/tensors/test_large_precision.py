@@ -220,9 +220,16 @@ def test_mod():
     assert torch.all(torch.eq(expected, result.float_precision()))
 
 
-def test_long():
-    x = torch.tensor([1])
-    expected = torch.tensor([1.0])
+test_data = [
+    (torch.tensor([1]), torch.tensor([1.0])),
+    (torch.tensor([1.0]), torch.tensor([1.0])),
+    (torch.tensor([2000.0, 1.0]), torch.tensor([2000.0, 1.0])),
+    (torch.tensor([2000.0, 1]), torch.tensor([2000.0, 1.0])),
+]
+
+
+@pytest.mark.parametrize("x, expected", test_data)
+def test_types(x, expected):
     enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=256)
     restored = enlarged.float_precision()
     # And now x and restored must be the same
