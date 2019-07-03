@@ -218,3 +218,12 @@ def test_mod():
     lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
     result = lpt1 % lpt2
     assert torch.all(torch.eq(expected, result.float_precision()))
+
+
+def test_long():
+    x = torch.tensor([1])
+    expected = torch.tensor([1.0])
+    enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=256)
+    restored = enlarged.float_precision()
+    # And now x and restored must be the same
+    assert torch.all(torch.eq(expected, restored))

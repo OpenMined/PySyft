@@ -13,6 +13,8 @@ from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
 
+import numpy as np
+
 
 def _get_maximum_precision():
     """This function returns the maximum value allowed for precision fractions before the chain decides to use LPT.
@@ -665,7 +667,8 @@ class TorchTensor(AbstractTensor):
         """Check if any of the elements in the tensor would require large precision.
         """
         base_fractional = math.log2(base ** precision_fractional)
-        return torch.any((self.abs() + 1).log2() + base_fractional > max_precision)
+        # We need to use NumPy here as log2 is not yet implemented for LongTensor PyTorch objects
+        return np.any(np.log2(np.abs(self.numpy())) + base_fractional > max_precision)
 
     def share(
         self,
