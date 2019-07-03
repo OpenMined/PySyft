@@ -93,6 +93,15 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         return {"crypto_provider": self.crypto_provider, "field": self.field, "n_bits": self.n_bits}
 
+    @property
+    def grad(self):
+        """
+        Gradient makes no sense for Additive Shared Tensor, so we make it clear
+        that if someone query .grad on a Additive Shared Tensor it doesn't error
+        but returns grad and can't be set
+        """
+        return None
+
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
 
@@ -392,6 +401,31 @@ class AdditiveSharingTensor(AbstractTensor):
         """Multiplies two number for details see mul
         """
         return self.mul(other, **kwargs)
+
+    def pow(self, power):
+        """
+        Compute integer power of a number by recursion using mul
+
+        This uses the following trick:
+         - Divide power by 2 and multiply base to itself (if the power is even)
+         - Decrement power by 1 to make it even and then follow the first step
+        """
+        base = self
+
+        result = 1
+        while power > 0:
+            # If power is odd
+            if power % 2 == 1:
+                result = result * base
+
+            # Divide the power by 2
+            power = power // 2
+            # Multiply base to itself
+            base = base * base
+
+        return result
+
+    __pow__ = pow
 
     def matmul(self, other):
         """Multiplies two tensors matrices together
