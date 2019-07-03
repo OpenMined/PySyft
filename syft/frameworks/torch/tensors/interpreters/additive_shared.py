@@ -298,7 +298,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a torch tensor
                 - a constant
         """
-        if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
+        if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
                 *self.child.keys(), field=self.field, crypto_provider=self.crypto_provider
@@ -339,7 +339,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
 
-        if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
+        if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
                 *self.child.keys(), field=self.field, crypto_provider=self.crypto_provider
@@ -416,7 +416,7 @@ class AdditiveSharingTensor(AbstractTensor):
             }
         else:
             other_is_zero = False
-            if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
+            if isinstance(other, (torch.LongTensor, torch.IntTensor)):
                 other = other.wrap()
                 if (other == 0).any():
                     other_is_zero = True
