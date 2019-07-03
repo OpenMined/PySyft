@@ -190,6 +190,46 @@ def test_mul(workers):
     assert (z == (t * t)).all()
 
 
+def test_public_mul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = th.tensor([-3.1, 1.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    y = 1
+    z = (x * y).get().float_prec()
+    assert (z == (t * y)).all()
+
+    t = th.tensor([-3.1, 1.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    y = 0
+    z = (x * y).get().float_prec()
+    assert (z == (t * y)).all()
+
+    t_x = th.tensor([-3.1, 1])
+    t_y = th.tensor([1.0])
+    x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+    y = t_y.fix_prec()
+    z = x * y
+    z = z.get().float_prec()
+    assert (z == t_x * t_y).all()
+
+    t_x = th.tensor([-3.1, 1])
+    t_y = th.tensor([0.0])
+    x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+    y = t_y.fix_prec()
+    z = x * y
+    z = z.get().float_prec()
+    assert (z == t_x * t_y).all()
+
+    t_x = th.tensor([-3.1, 1])
+    t_y = th.tensor([0.0, 2.1])
+    x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+    y = t_y.fix_prec()
+    z = x * y
+    z = z.get().float_prec()
+    assert (z == t_x * t_y).all()
+
+
 def test_pow(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
