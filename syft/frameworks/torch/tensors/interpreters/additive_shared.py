@@ -215,6 +215,20 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return sy.MultiPointerTensor(children=pointers)
 
+    def zero(self):
+        """
+        Build an additive shared tensor of value zero with the same
+        properties as self
+        """
+        shape = self.shape if self.shape else [1]
+        zero = (
+            torch.zeros(*shape)
+            .long()
+            .share(*self.locations, field=self.field, crypto_provider=self.crypto_provider)
+            .child
+        )
+        return zero
+
     @overloaded.overload_method
     def _getitem_multipointer(self, self_shares, indices_shares):
         """
@@ -398,12 +412,17 @@ class AdditiveSharingTensor(AbstractTensor):
             return {
                 worker: (cmd(share, other[worker]) % self.field) for worker, share in shares.items()
             }
-        elif isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
-            return {
-                worker: (cmd(share, other.wrap()) % self.field) for worker, share in shares.items()
-            }
         else:
-            return {worker: (cmd(share, other) % self.field) for worker, share in shares.items()}
+            if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
+                other = other.wrap()
+
+            # Refresh shares
+            zero_shares = self.zero().child
+
+            return {
+                worker: ((cmd(share, other) + zero_shares[worker]) % self.field)
+                for worker, share in shares.items()
+            }
 
     def mul(self, other):
         """Multiplies two tensors together
