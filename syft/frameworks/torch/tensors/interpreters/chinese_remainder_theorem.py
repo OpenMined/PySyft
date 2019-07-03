@@ -2,6 +2,7 @@ import torch
 import math
 import itertools
 
+import syft
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.overload_torch import overloaded
@@ -251,3 +252,37 @@ class CRTTensor(AbstractTensor):
             return self.sum(*args, **kwargs)
 
         module.sum = sum
+
+    @staticmethod
+    def simplify(tensor: "CRTTensor") -> tuple:
+        """
+        This function takes the attributes of a CRTTensor and saves them in a tuple
+        Args:
+            crttensor: a CRTTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the tensor
+        """
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = syft.serde._simplify(tensor.child)
+        return (tensor.id, chain)
+
+    @staticmethod
+    def detail(worker, tensor_tuple: tuple) -> "CRTTensor":
+        """
+        This function reconstructs a CRTTensor given its attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the CRTTensor
+        Returns:
+            CRTTensor: a CRTTensor
+        """
+        tensor_id, chain = tensor_tuple
+
+        tensor = syft.CRTTensor(owner=worker, id=tensor_id)
+
+        if chain is not None:
+            chain = syft.serde._detail(worker, chain)
+            tensor.child = chain
+
+        return tensor
