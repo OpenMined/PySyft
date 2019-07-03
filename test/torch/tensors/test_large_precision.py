@@ -230,7 +230,10 @@ def test_mod():
         (torch.tensor([2000.0, 1]), torch.tensor([2000.0, 1.0])),
         (torch.tensor([-2000.0]), torch.tensor([-2000.0])),
         (torch.tensor([-2000.0, -50]), torch.tensor([-2000.0, -50.0])),
+        (torch.tensor([-2000.0, 50]), torch.tensor([-2000.0, 50.0])),
+        (torch.tensor([[-2000.0, 50], [1000.5, -25]]), torch.tensor([[-2000.0, 50.0], [1000.5, -25.0]])),
         (torch.tensor([-2000.0123458910]), torch.tensor([-2000.0123458910])),
+        (torch.tensor([2000.0123458910]), torch.tensor([2000.0123458910])),
     ],
 )
 def test_types(x, expected):
