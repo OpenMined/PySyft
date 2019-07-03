@@ -395,6 +395,9 @@ class AdditiveSharingTensor(AbstractTensor):
         """Multiplies an AdditiveSharingTensor with a non-private value
         (int, torch tensor, MultiPointerTensor, etc.)
 
+        When other is a constant equal to zero, the shares vanish so we need to add fresh
+        shares of zero.
+
         Args:
             shares (dict): a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
@@ -407,22 +410,29 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         assert equation == "mul" or equation == "matmul"
         cmd = getattr(torch, equation)
-
         if isinstance(other, dict):
             return {
                 worker: (cmd(share, other[worker]) % self.field) for worker, share in shares.items()
             }
         else:
+            other_is_zero = False
             if isinstance(other, torch.LongTensor) or isinstance(other, torch.IntTensor):
                 other = other.wrap()
+                if (other == 0).any():
+                    other_is_zero = True
+            elif other == 0:
+                other_is_zero = True
 
-            # Refresh shares
-            zero_shares = self.zero().child
-
-            return {
-                worker: ((cmd(share, other) + zero_shares[worker]) % self.field)
-                for worker, share in shares.items()
-            }
+            if other_is_zero:
+                zero = self.zero().child
+                return {
+                    worker: ((cmd(share, other) + zero[worker]) % self.field)
+                    for worker, share in shares.items()
+                }
+            else:
+                return {
+                    worker: (cmd(share, other) % self.field) for worker, share in shares.items()
+                }
 
     def mul(self, other):
         """Multiplies two tensors together
