@@ -86,8 +86,8 @@ class TensorsNotCollocatedException(Exception):
             message = (
                 "You tried to call "
                 + attr
-                + " involving two tensors which "
-                + "are not on the same machine! One tensor is on "
+                + " involving two tensors which"
+                + " are not on the same machine! One tensor is on "
                 + str(tensor_a.location)
                 + " while the other is on "
                 + str(tensor_b.location)
@@ -98,7 +98,7 @@ class TensorsNotCollocatedException(Exception):
                 "You tried to call "
                 + attr
                 + " involving two tensors where one tensor is actually located"
-                + "on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
+                + " on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
                 + str(tensor_a.location.id)
                 + ") on the other tensor.\n"
                 + "\nTensor A: "
@@ -111,7 +111,7 @@ class TensorsNotCollocatedException(Exception):
                 "You tried to call "
                 + attr
                 + " involving two tensors where one tensor is actually located"
-                + "on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
+                + " on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
                 + str(tensor_b.location.id)
                 + ") on the other tensor.\n"
                 + "\nTensor A: "
