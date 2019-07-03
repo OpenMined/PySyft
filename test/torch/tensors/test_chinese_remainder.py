@@ -121,3 +121,35 @@ def test_torch_sum():
 
     res = torch.sum(crt)
     assert res.child == {3: 1, 7: 4}
+
+
+def test_send_get(workers):
+    alice, bob = (workers["alice"], workers["bob"])
+
+    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
+    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
+    residues = {3: res_3, 7: res_7}
+
+    crt = syft.CRTTensor(residues).wrap()
+    to_alice = crt.send(alice)
+    to_alice_id = to_alice.id_at_location
+
+    assert to_alice_id in alice._objects
+
+    to_bob_to_alice = to_alice.send(bob)
+    to_bob_to_alice_id = to_bob_to_alice.id_at_location
+
+    assert to_alice_id in alice._objects
+    assert to_bob_to_alice_id in bob._objects
+
+    to_alice_back = to_bob_to_alice.get()
+
+    assert to_bob_to_alice_id not in bob._objects
+    assert to_alice_id in alice._objects
+
+    t_back = to_alice_back.get()
+
+    assert to_alice_id not in alice._objects
+
+    eq = (t_back == crt).child.solve_system()
+    assert (eq == 1.0).all()
