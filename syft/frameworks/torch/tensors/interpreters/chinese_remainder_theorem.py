@@ -269,7 +269,7 @@ class CRTTensor(AbstractTensor):
         def div(self, other):
             return self.div(other)
 
-        module.mul = mul
+        module.div = div
 
         def sum(self, *args, **kwargs):
             return self.sum(*args, **kwargs)
