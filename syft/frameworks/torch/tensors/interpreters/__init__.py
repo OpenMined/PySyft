@@ -4,4 +4,5 @@ from .precision import FixedPrecisionTensor  # noqa: F401
 from .additive_shared import AdditiveSharingTensor  # noqa: F401
 from .multi_pointer import MultiPointerTensor  # noqa: F401
 from .chinese_remainder_theorem import CRTTensor  # noqa: F401
+from .large_precision import LargePrecisionTensor  # noqa: F401
 from .autograd import AutogradTensor  # noqa: F401
