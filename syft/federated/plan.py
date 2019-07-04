@@ -136,10 +136,7 @@ class Plan(ObjectStorage):
         self._self = None
 
     def _auto_build(self, args_shape: List[Tuple[int]] = None):
-        if self.is_method:
-            self.build([self._self] + self._create_placeholders(args_shape))
-        else:
-            self.build(self._create_placeholders(args_shape))
+        self.build(self._create_placeholders(args_shape))
 
     def _create_placeholders(self, args_shape):
         # In order to support -1 value in shape to indicate any dimension
@@ -192,8 +189,10 @@ class Plan(ObjectStorage):
         and is used to fill the plan.
 
         Args:
-            param: Input data.
+            args: Input data.
         """
+        if self.is_method and self._self not in args:
+            args = [self._self] + args
 
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
@@ -342,6 +341,24 @@ class Plan(ObjectStorage):
 
         return _obj
 
+    def _execute_readable_plan(self, *args):
+        # TODO: for now only one value is returned from a plan
+        result_ids = [sy.ID_PROVIDER.pop()]
+
+        # TODO: try to find a better way to deal with local execution
+        # of methods.
+        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
+            self._self.send(sy.hook.local_worker, force_send=True)
+
+        plan_res = self.execute_plan(args, result_ids)
+
+        # TODO: try to find a better way to deal with local execution
+        # of methods.
+        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
+            self._self.get()
+
+        return plan_res
+
     def __call__(self, *args, **kwargs):
         """Calls a plan.
 
@@ -355,26 +372,14 @@ class Plan(ObjectStorage):
         if len(kwargs):
             raise ValueError("Kwargs are not supported for plan.")
 
-        # TODO: for now only one value is returned from a plan
-        result_ids = [sy.ID_PROVIDER.pop()]
-
-        # TODO: try to find a better way to deal with local execution
-        # of methods.
-        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
-            self._self.send(sy.hook.local_worker, force_send=True)
-
         # Support for method hooked in plans
         if self.is_method:
             args = [self._self] + list(args)
 
-        plan_res = self.execute_plan(args, result_ids)
+        if self.blueprint:
+            return self.blueprint(*args)
 
-        # TODO: try to find a better way to deal with local execution
-        # of methods.
-        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
-            self._self.get()
-
-        return plan_res
+        return self._execute_readable_plan(*args)
 
     def _update_args(
         self, args: List[Union[torch.Tensor, AbstractTensor]], result_ids: List[Union[str, int]]

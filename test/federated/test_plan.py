@@ -187,8 +187,8 @@ def test_plan_built_on_method(hook):
 
     net = Net()
 
-    # Force build
-    assert isinstance(net(th.tensor([1, 2.0])), th.Tensor)
+    # build
+    net.forward.build(th.tensor([1, 2.0]))
 
     net.send(device_1)
     pointer_to_data = device_1.search("input_data")[0]
