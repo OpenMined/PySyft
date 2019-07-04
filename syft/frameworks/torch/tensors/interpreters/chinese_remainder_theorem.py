@@ -26,7 +26,7 @@ class CRTTensor(AbstractTensor):
         residues: dict = None,
         base=None,
         precision_fractional=None,
-        solve_system_coeffs=None,
+        reconstruction_coeffs=None,
         owner=None,
         id=None,
         tags: set = None,
@@ -41,15 +41,28 @@ class CRTTensor(AbstractTensor):
                     math.gcd(pair[0], pair[1]) == 1
                 ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as modulos"
 
-        # Check that all the residues have the same precision
+        # Check that all the residues have the same precision and
+        # check that all the shapes are the same
+        # while filling tensor
         self.base = base
         self.precision_fractional = precision_fractional
         if residues is not None:
-            b = next(iter(residues.values())).child.base
-            prec_frac = next(iter(residues.values())).child.precision_fractional
-            for r in residues.values():
+            r = next(iter(residues.values()))  # Take one arbitrary residue
+            assert isinstance(r.child, FixedPrecisionTensor)
+            b = r.child.base
+            prec_frac = r.child.precision_fractional
+            res_shape = r.shape
+            self.child = {}
+            for f, r in residues.items():
+                assert isinstance(r.child, FixedPrecisionTensor)
                 assert r.child.base == b
                 assert r.child.precision_fractional == prec_frac
+                assert f == r.child.field
+                assert (
+                    r.shape == res_shape
+                ), "All residue tensors of CRTTensor must have the same shape"
+
+                self.child[f] = r
 
             if base is not None:
                 assert b == base
@@ -58,30 +71,18 @@ class CRTTensor(AbstractTensor):
             self.base = b
             self.precision_fractional = prec_frac
 
-        # Check that all the shapes are the same while filling tensor
-        if residues is not None:
-            res_shape = next(iter(residues.values())).shape
-            self.child = {}
-            for f, r in residues.items():
-                assert isinstance(r.child, FixedPrecisionTensor)
-                assert f == r.child.field
-                self.child[f] = r
-                assert (
-                    r.shape == res_shape
-                ), "All residue tensors of CRTTensor must have the same shape"
-
         # In order to avoid computing the coefficients to solve the modular system several times,
         # we can store them once computed. See the docstring of the solve_system method for more details.
-        if residues is not None and solve_system_coeffs is None:
-            solve_system_coeffs = self.compute_solve_system_coeffs()
-        self.solve_system_coeffs = solve_system_coeffs
+        if residues is not None and reconstruction_coeffs is None:
+            reconstruction_coeffs = self.compute_reconstruction_coeffs()
+        self.reconstruction_coeffs = reconstruction_coeffs
 
     def get_class_attributes(self):
         return {
             "base": self.base,
             "precision_fractional": self.precision_fractional,
             # Solving coefficients can be reused in results of operations (see docstring of solve_system method)
-            "solve_system_coeffs": self.solve_system_coeffs,
+            "reconstruction_coeffs": self.reconstruction_coeffs,
         }
 
     @property
@@ -170,6 +171,11 @@ class CRTTensor(AbstractTensor):
 
     __mul__ = mul
 
+    def div(self, other):
+        raise NotImplementedError
+
+    __truediv__ = div
+
     @overloaded.method
     def sum(self, self_, *args, **kwargs):
         result = {}
@@ -179,7 +185,7 @@ class CRTTensor(AbstractTensor):
 
         return result
 
-    def solve_system(self):
+    def reconstruct(self):
         """ Build the tensor in Zq with q = prod(self.child.keys())
         satisfying the modular system represented by the tensor.
         The algorithm consists in:
@@ -200,14 +206,18 @@ class CRTTensor(AbstractTensor):
         # We need to sort the dict to be sure that the coeffs are retrieved in the same order they were stored
         for i, (mod, ai) in enumerate(sorted(self.child.items())):
             ai = (ai.float_prec() % mod).long()
-            res += ai * self.solve_system_coeffs[i]
+            res += ai * self.reconstruction_coeffs[i]
             N *= mod
 
         return FixedPrecisionTensor(
             field=N, base=self.base, precision_fractional=self.precision_fractional
         ).on(res % N)
 
-    def compute_solve_system_coeffs(self):
+    def compute_reconstruction_coeffs(self):
+        """ Compute the coefficients needed for the reconstruction (see the detailed exaplanation in the
+        docstring for the reconstruct method).
+        """
+
         def modular_inverse(a, b):
             """ Computes the modular inverse x = a^(-1) mod b
             with Euclid's extended algorithm.
@@ -242,17 +252,22 @@ class CRTTensor(AbstractTensor):
     @overloaded.module
     def torch(module):
         def add(self, other):
-            return self.__add__(other)
+            return self.add(other)
 
         module.add = add
 
         def sub(self, other):
-            return self.__sub__(other)
+            return self.sub(other)
 
         module.sub = sub
 
         def mul(self, other):
-            return self.__mul__(other)
+            return self.mul(other)
+
+        module.mul = mul
+
+        def div(self, other):
+            return self.div(other)
 
         module.mul = mul
 
@@ -278,7 +293,7 @@ class CRTTensor(AbstractTensor):
             tensor.id,
             tensor.base,
             tensor.precision_fractional,
-            tensor.solve_system_coeffs,
+            tensor.reconstruction_coeffs,
             chain,
         )
 
@@ -292,15 +307,15 @@ class CRTTensor(AbstractTensor):
         Returns:
             CRTTensor: a CRTTensor
         """
-        tensor_id, tensor_base, tensor_precision_fractional, tensor_solve_system_coeffs, chain = (
+        tensor_id, tensor_base, tensor_precision_fractional, tensor_reconstruction_coeffs, chain = (
             tensor_tuple
         )
 
         tensor = syft.CRTTensor(
             base=tensor_base,
             precision_fractional=tensor_precision_fractional,
-            # FIXME need to cast to tuple otherwise tensor_solve_system_coeffs is an unashable list
-            solve_system_coeffs=tuple(tensor_solve_system_coeffs),
+            # FIXME need to cast to tuple otherwise tensor_reconstruction_coeffs is an unashable list
+            reconstruction_coeffs=tuple(tensor_reconstruction_coeffs),
             owner=worker,
             id=tensor_id,
         )

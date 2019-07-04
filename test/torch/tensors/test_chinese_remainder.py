@@ -44,8 +44,8 @@ def test_eq():
     residues_c = {3: res_3c, 7: res_7c}
     crt_c = syft.CRTTensor(residues_c).wrap()
 
-    eq_ab = (crt_a == crt_b).child.solve_system()
-    eq_ac = (crt_a == crt_c).child.solve_system()
+    eq_ab = (crt_a == crt_b).child.reconstruct()
+    eq_ac = (crt_a == crt_c).child.reconstruct()
 
     exp_ab = torch.tensor([1, 1]).fix_prec(field=21, precision_fractional=0)
     exp_ac = torch.tensor([0, 1]).fix_prec(field=21, precision_fractional=0)
@@ -69,7 +69,7 @@ def test_add():
     exp_res = {3: exp_3, 7: exp_7}
     exp = syft.CRTTensor(exp_res).wrap()
 
-    assert (result.child.solve_system() == exp.child.solve_system()).all()
+    assert (result.child.reconstruct() == exp.child.reconstruct()).all()
 
 
 def test_sub():
@@ -91,7 +91,7 @@ def test_sub():
     exp_res = {3: exp_3, 7: exp_7}
     exp = syft.CRTTensor(exp_res).wrap()
 
-    assert (result.child.solve_system() == exp.child.solve_system()).all()
+    assert (result.child.reconstruct() == exp.child.reconstruct()).all()
 
 
 def test_mul():
@@ -109,7 +109,7 @@ def test_mul():
     exp_res = {3: exp_3, 7: exp_7}
     exp = syft.CRTTensor(exp_res).wrap()
 
-    assert (result.child.solve_system() == exp.child.solve_system()).all()
+    assert (result.child.reconstruct() == exp.child.reconstruct()).all()
 
 
 def test_torch_sum():
@@ -151,5 +151,5 @@ def test_send_get(workers):
 
     assert to_alice_id not in alice._objects
 
-    eq = (t_back == crt).child.solve_system()
+    eq = (t_back == crt).child.reconstruct()
     assert (eq == 1.0).all()
