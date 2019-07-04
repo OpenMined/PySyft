@@ -41,7 +41,7 @@ def test_plan_without_args_shape(hook):
     assert not plan_abs.is_built
     assert not len(plan_abs.readable_plan)
 
-    plan_abs(th.tensor([-1]))
+    plan_abs.build(th.tensor([-1]))
 
     assert len(plan_abs.readable_plan)
     assert plan_abs.is_built
@@ -323,6 +323,7 @@ def test_execute_plan_module_remotely(hook, start_proc):
     net = Net()
     x = th.tensor([-1, 2.0])
     local_res = net(x)
+    net.forward.build(x)
 
     kwargs = {"id": "test_plan_worker_2", "host": "localhost", "port": 8799, "hook": hook}
     server = start_proc(WebsocketServerWorker, **kwargs)
@@ -457,7 +458,7 @@ def test__call__for_method(hook):
     arg_list = (100, 200, 356)
     ret_val = plan(*arg_list)
 
-    expected_args = [self_value] + list(arg_list)
+    expected_args = tuple([self_value] + list(arg_list))
     plan.execute_plan.assert_called_with(expected_args, [result_id])
 
     assert ret_val == return_value
