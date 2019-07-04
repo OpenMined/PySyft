@@ -67,6 +67,9 @@ class WebsocketGridClient(BaseWorker):
         raise NotImplementedError
 
     def _recv_msg(self, message: bin) -> bin:
+        if self.__sio.eio.state != "connected":
+            raise ConnectionError("Worker is not connected to the server")
+
         message = str(binascii.hexlify(message))
         # Sends the message to the server
         self.__sio.emit("/cmd", {"message": message})
