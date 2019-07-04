@@ -84,6 +84,14 @@ class CRTTensor(AbstractTensor):
             "solve_system_coeffs": self.solve_system_coeffs,
         }
 
+    @property
+    def grad(self):
+        """ Gradient makes no sense for CRT Tensor, so we make it clear
+        that if someone query .grad on a CRT Tensor it doesn't error
+        but returns grad and can't be set
+        """
+        return None
+
     def __str__(self):
         type_name = type(self).__name__
         out = f"[" f"{type_name}]"
