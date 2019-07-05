@@ -226,10 +226,9 @@ class TorchTensor(AbstractTensor):
     @staticmethod
     @overloaded.module
     def torch(module):
-        def roll(tensor, shift):
-            int_shift = int(shift.item())
-
-            return torch.native_roll(tensor, int_shift)
+        def roll(tensor, shifts, **kwargs):
+            int_shifts = int(shifts.item())
+            return torch.native_roll(tensor, int_shifts, **kwargs)
 
         module.roll = roll
 
