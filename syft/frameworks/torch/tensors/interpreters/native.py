@@ -227,9 +227,7 @@ class TorchTensor(AbstractTensor):
     @overloaded.module
     def torch(module):
         def roll(tensor, shift):
-            print("nem")
             int_shift = int(shift.item())
-            print(int_shift)
 
             return torch.native_roll(tensor, int_shift)
 
