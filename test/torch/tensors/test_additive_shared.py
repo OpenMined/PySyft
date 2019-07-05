@@ -552,6 +552,29 @@ def test_handle_func_command(workers):
     _ = torch.abs(t).get()
 
 
+def test_roll(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([1.0, 2.0, 3, 4, 5])
+    index = torch.tensor([-1.0])
+
+    expected = torch.roll(x, index)
+
+    # x is an AST
+    x = (
+        torch.tensor([1.0, 2.0, 3, 4, 5])
+        .fix_prec(precision_fractional=0)
+        .share(alice, bob, crypto_provider=james)
+        .child.child.child
+    )
+    # index is a MPT
+    index = torch.tensor([-1]).send(alice, bob).child
+
+    result = torch.roll(x, index).get()
+
+    assert (result == expected.long()).all()
+
+
 def test_init_with_no_crypto_provider(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
