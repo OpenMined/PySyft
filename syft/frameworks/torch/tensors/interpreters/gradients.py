@@ -70,6 +70,18 @@ class MulBackward(GradFunc):
         return (grad_self_, grad_other)
 
 
+class DivBackward(GradFunc):
+    def __init__(self, self_, other):
+        super().__init__(self, self_, other)
+        self.self_ = self_
+        self.other = other
+
+    def gradient(self, grad):
+        assert isinstance(self.other, int)
+        grad_self_ = grad / self.other
+        return (grad_self_, )
+
+
 class PowBackward(GradFunc):
     def __init__(self, self_, power):
         super().__init__(self, self_, power)

@@ -344,6 +344,36 @@ def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd, bac
     assert (b.grad.get().float_prec() == b_torch.grad).all()
 
 
+@pytest.mark.parametrize("backward_one", [True, False])
+def test_backward_for_additive_shared_div_with_autograd(workers, backward_one):
+    """
+    Test .backward() on Additive Shared Tensor for division with an integer
+    """
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+
+    a = (
+        torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+            .fix_prec()
+            .share(alice, bob, crypto_provider=james)
+    )
+    b = 2
+
+    a = syft.AutogradTensor().on(a)
+
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = 2
+
+    c = a / b
+    c_torch = a_torch / b_torch
+
+    ones = torch.ones(c.shape).fix_prec().share(alice, bob, crypto_provider=james)
+    ones = syft.AutogradTensor().on(ones)
+    c.backward(ones if backward_one else None)
+    c_torch.backward(torch.ones(c_torch.shape))
+
+    assert (a.grad.get().float_prec() == a_torch.grad).all()
+
+
 def test_addmm_backward_for_additive_shared_with_autograd(workers):
     """
     Test .backward() on Additive Shared Tensor for addmm
