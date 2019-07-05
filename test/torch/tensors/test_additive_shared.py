@@ -544,7 +544,7 @@ def test_unbind(workers):
 def test_handle_func_command(workers):
     """
     Just to show that handle_func_command works
-    Even is torch.abs should be hooked to return a correct value
+    Even if torch.abs should be hooked to return a correct value
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 

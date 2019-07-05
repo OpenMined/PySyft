@@ -807,10 +807,10 @@ class AdditiveSharingTensor(AbstractTensor):
         results = {}
         for worker, share in new_args[0].items():
             new_type = type(share)
-            new_args = tuple(AdditiveSharingTensor.dispatch(new_args, worker))
+            new_args_worker = tuple(AdditiveSharingTensor.dispatch(new_args, worker))
 
             # build the new command
-            new_command = (cmd, None, new_args, new_kwargs)
+            new_command = (cmd, None, new_args_worker, new_kwargs)
 
             # Send it to the appropriate class and get the response
             results[worker] = new_type.handle_func_command(new_command)
