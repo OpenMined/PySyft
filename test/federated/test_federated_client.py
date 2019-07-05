@@ -19,6 +19,18 @@ def test_add_dataset():
     assert "string_dataset" in fed_client.datasets
 
 
+def test_add_dataset_with_duplicate_key():
+    fed_client = federated.FederatedClient()
+
+    dataset = "my_dataset"
+    fed_client.add_dataset(dataset, "string_dataset")
+
+    assert "string_dataset" in fed_client.datasets
+
+    with pytest.raises(ValueError):
+        fed_client.add_dataset(dataset, "string_dataset")
+
+
 def test_remove_dataset():
     fed_client = federated.FederatedClient()
 

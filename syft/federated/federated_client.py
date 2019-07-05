@@ -15,7 +15,10 @@ class FederatedClient(ObjectStorage):
         self.train_config = None
 
     def add_dataset(self, dataset, key: str):
-        self.datasets[key] = dataset
+        if key not in self.datasets:
+            self.datasets[key] = dataset
+        else:
+            raise ValueError(f"Key {key} already exists in Datasets")
 
     def remove_dataset(self, key: str):
         if key in self.datasets:

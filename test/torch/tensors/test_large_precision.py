@@ -1,5 +1,6 @@
 import pytest
 import torch
+
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 
 
@@ -218,3 +219,28 @@ def test_mod():
     lpt2 = x2.fix_prec(internal_type=internal_type, precision_fractional=precision_fractional)
     result = lpt1 % lpt2
     assert torch.all(torch.eq(expected, result.float_precision()))
+
+
+@pytest.mark.parametrize(
+    "x, expected",
+    [
+        (torch.tensor([1]), torch.tensor([1.0])),
+        (torch.tensor([1.0]), torch.tensor([1.0])),
+        (torch.tensor([2000.0, 1.0]), torch.tensor([2000.0, 1.0])),
+        (torch.tensor([2000.0, 1]), torch.tensor([2000.0, 1.0])),
+        (torch.tensor([-2000.0]), torch.tensor([-2000.0])),
+        (torch.tensor([-2000.0, -50]), torch.tensor([-2000.0, -50.0])),
+        (torch.tensor([-2000.0, 50]), torch.tensor([-2000.0, 50.0])),
+        (
+            torch.tensor([[-2000.0, 50], [1000.5, -25]]),
+            torch.tensor([[-2000.0, 50.0], [1000.5, -25.0]]),
+        ),
+        (torch.tensor([-2000.0123458910]), torch.tensor([-2000.0123458910])),
+        (torch.tensor([2000.0123458910]), torch.tensor([2000.0123458910])),
+    ],
+)
+def test_types(x, expected):
+    enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=256)
+    restored = enlarged.float_precision()
+    # And now x and restored must be the same
+    assert torch.all(torch.eq(expected, restored))
