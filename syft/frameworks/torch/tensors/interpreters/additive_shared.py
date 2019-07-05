@@ -669,10 +669,9 @@ class AdditiveSharingTensor(AbstractTensor):
 
             for worker, share in tensor_shares.items():
                 if isinstance(shifts, dict):
-                    results[worker] = torch.roll(share, shifts[worker].get().item(), **kwargs)
-                    # Is it ok to get the shift value?
+                    results[worker] = torch.roll(share, shifts[worker], **kwargs)
                 elif isinstance(shifts, tuple) and isinstance(shifts[0], dict):
-                    shifts = [s[worker].get().item() for s in shifts]
+                    shifts = [s[worker] for s in shifts]
                     results[worker] = torch.roll(share, shifts, **kwargs)
                 else:
                     results[worker] = torch.roll(share, shifts, **kwargs)
