@@ -153,3 +153,19 @@ def test_send_get(workers):
 
     eq = (t_back == crt).child.reconstruct()
     assert (eq == 1.0).all()
+
+
+def test_share_and_get(workers):
+    alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
+
+    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
+    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
+    residues = {3: res_3, 7: res_7}
+
+    crt = syft.CRTTensor(residues).wrap()
+    copy = syft.CRTTensor(residues).wrap()
+
+    shared = crt.share(alice, bob, crypto_provider=james)
+    back = shared.get()
+
+    assert (back.child.reconstruct() == copy.child.reconstruct()).all()
