@@ -5,6 +5,7 @@ import itertools
 import syft
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
 
@@ -181,7 +182,7 @@ class CRTTensor(AbstractTensor):
         result = {}
 
         for mod in self_.keys():
-            result[mod] = self_[mod].sum() % mod  # FIXME why % mod is needed?
+            result[mod] = self_[mod].sum() % mod  # FIXME % mod needed till SecureNN PR merged
 
         return result
 
@@ -275,6 +276,25 @@ class CRTTensor(AbstractTensor):
             return self.sum(*args, **kwargs)
 
         module.sum = sum
+
+    def share(self, *owners, field=None, crypto_provider=None):
+        """ Share the tensor between several workers.
+        This gives an AdditiveSharingTensor wrapped around the original CRT tensor
+        """
+        assert field is None or field == self.field, "field is chosen when fixing precision"
+        self_ = self.child
+        for mod, res in self_.items():
+            ast_mod = res.share(*owners, field=mod, crypto_provider=None)
+
+        return self
+
+    def get(self):
+        """ Get back a tensor shared between several workers.
+        """
+        self_ = self.child
+        for mod, res in self_.items():
+            res.child = res.child.get().child
+        return self.wrap()
 
     @staticmethod
     def simplify(tensor: "CRTTensor") -> tuple:
