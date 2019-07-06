@@ -14,7 +14,7 @@ def test_wrap():
     res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
     residues = {3: res_3, 7: res_7}
 
-    x = syft.CRTTensor().on(residues, wrap=False).wrap()  # TODO see why I have to do that
+    x = syft.CRTTensor().on(residues, wrap=False).wrap()
 
     assert isinstance(x, torch.Tensor)
     assert isinstance(x.child, syft.CRTTensor)
@@ -22,115 +22,77 @@ def test_wrap():
 
 
 def test__str__():
-    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
-    residues = {3: res_3, 7: res_7}
-
-    crt = syft.CRTTensor(residues).wrap()
+    t = torch.tensor([[3, 9], [4, 1]])
+    crt = t.fix_precision(field=21, precision_fractional=0, storage="crt")
 
     assert isinstance(crt.__str__(), str)
 
 
 def test_eq():
-    res_3a = torch.tensor([1, 2]).fix_prec(field=3, precision_fractional=0)
-    res_7a = torch.tensor([3, 4]).fix_prec(field=7, precision_fractional=0)
-    residues_a = {3: res_3a, 7: res_7a}
-    crt_a = syft.CRTTensor(residues_a).wrap()
+    t_a = torch.tensor([[3, 9], [4, 1]])
+    t_b = torch.tensor([[3, 9], [4, 1]])
+    t_c = torch.tensor([[2, 9], [4, 2]])
 
-    crt_b = syft.CRTTensor(residues_a).wrap()
+    crt_a = t_a.fix_precision(field=21, precision_fractional=0, storage="crt")
+    crt_b = t_b.fix_precision(field=21, precision_fractional=0, storage="crt")
+    crt_c = t_c.fix_precision(field=21, precision_fractional=0, storage="crt")
 
-    res_3c = torch.tensor([1, 2]).fix_prec(field=3, precision_fractional=0)
-    res_7c = torch.tensor([4, 4]).fix_prec(field=7, precision_fractional=0)
-    residues_c = {3: res_3c, 7: res_7c}
-    crt_c = syft.CRTTensor(residues_c).wrap()
+    eq_ab = (crt_a == crt_b).float_precision()
+    eq_ac = (crt_a == crt_c).float_precision()
 
-    eq_ab = (crt_a == crt_b).child.reconstruct()
-    eq_ac = (crt_a == crt_c).child.reconstruct()
-
-    exp_ab = torch.tensor([1, 1]).fix_prec(field=21, precision_fractional=0)
-    exp_ac = torch.tensor([0, 1]).fix_prec(field=21, precision_fractional=0)
-
-    assert (eq_ab == exp_ab).all()
-    assert (eq_ac == exp_ac).all()
+    assert (eq_ab == torch.tensor([[1.0, 1.0], [1.0, 1.0]])).all()
+    assert (eq_ac == torch.tensor([[0.0, 1.0], [1.0, 0.0]])).all()
 
 
 def test_add():
-    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
-    residues = {3: res_3, 7: res_7}
+    # TODO add tests for values > Q/2 and also wrapping
+    t = torch.tensor([[1, 2], [3, 4]])
 
-    crt1 = syft.CRTTensor(residues).wrap()
-    crt2 = syft.CRTTensor(residues).wrap()
+    crt_a = t.fix_precision(field=21, precision_fractional=0, storage="crt")
+    crt_b = t.fix_precision(field=21, precision_fractional=0, storage="crt")
 
-    result = crt1 + crt2
+    result = crt_a + crt_b
 
-    exp_3 = torch.tensor([[2, 1], [0, 2]]).fix_prec(field=3, precision_fractional=0)
-    exp_7 = torch.tensor([[6, 1], [3, 5]]).fix_prec(field=7, precision_fractional=0)
-    exp_res = {3: exp_3, 7: exp_7}
-    exp = syft.CRTTensor(exp_res).wrap()
-
-    assert (result.child.reconstruct() == exp.child.reconstruct()).all()
+    assert (result.float_precision() == torch.tensor([[2.0, 4.0], [6.0, 8.0]])).all()
 
 
 def test_sub():
-    res_a3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_a7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
-    residues_a = {3: res_a3, 7: res_a7}
+    t_a = torch.tensor([[4, 3], [2, 1]])
+    t_b = torch.tensor([[1, 2], [3, 4]])
 
-    res_b3 = torch.tensor([[1, 1], [0, 2]]).fix_prec(field=3, precision_fractional=0)
-    res_b7 = torch.tensor([[5, 1], [5, 2]]).fix_prec(field=7, precision_fractional=0)
-    residues_b = {3: res_b3, 7: res_b7}
-
-    crt_a = syft.CRTTensor(residues_a).wrap()
-    crt_b = syft.CRTTensor(residues_b).wrap()
+    crt_a = t_a.fix_precision(field=21, precision_fractional=0, storage="crt")
+    crt_b = t_b.fix_precision(field=21, precision_fractional=0, storage="crt")
 
     result = crt_a - crt_b
 
-    exp_3 = torch.tensor([[0, 1], [0, 2]]).fix_prec(field=3, precision_fractional=0)
-    exp_7 = torch.tensor([[5, 3], [0, 4]]).fix_prec(field=7, precision_fractional=0)
-    exp_res = {3: exp_3, 7: exp_7}
-    exp = syft.CRTTensor(exp_res).wrap()
-
-    assert (result.child.reconstruct() == exp.child.reconstruct()).all()
+    assert (result.float_precision() == torch.tensor([[3.0, 1.0], [-1.0, -3.0]])).all()
 
 
 def test_mul():
-    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
-    residues = {3: res_3, 7: res_7}
+    # 2 CRT tensors
+    # TODO add tests for values > Q/2 and also wrapping
+    t_a = torch.tensor([[1, -2], [3, -2]])
+    t_b = torch.tensor([[1, 2], [3, -2]])
 
-    crt1 = syft.CRTTensor(residues).wrap()
-    crt2 = syft.CRTTensor(residues).wrap()
+    crt_a = t_a.fix_precision(field=21, precision_fractional=0, storage="crt")
+    crt_b = t_b.fix_precision(field=21, precision_fractional=0, storage="crt")
 
-    result = crt1 * crt2
+    result = crt_a * crt_b
 
-    exp_3 = torch.tensor([[1, 1], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    exp_7 = torch.tensor([[2, 2], [4, 1]]).fix_prec(field=7, precision_fractional=0)
-    exp_res = {3: exp_3, 7: exp_7}
-    exp = syft.CRTTensor(exp_res).wrap()
+    assert (result.float_precision() == torch.tensor([[1.0, -4.0], [9.0, 4.0]])).all()
 
-    assert (result.child.reconstruct() == exp.child.reconstruct()).all()
+    # With scalar
+    result = 3 * crt_a
 
-
-def test_torch_sum():
-    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
-    residues = {3: res_3, 7: res_7}
-
-    crt = syft.CRTTensor(residues)
-
-    res = torch.sum(crt)
-    assert res.child == {3: 1, 7: 4}
+    assert (result.float_precision() == torch.tensor([[3.0, -6.0], [9.0, -6.0]])).all()
 
 
-def test_send_get(workers):
+def test_send_and_get(workers):
     alice, bob = (workers["alice"], workers["bob"])
 
-    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
-    residues = {3: res_3, 7: res_7}
+    t = torch.tensor([1, 2])
+    crt = t.fix_precision(field=21, precision_fractional=0, storage="crt")
 
-    crt = syft.CRTTensor(residues).wrap()
     to_alice = crt.send(alice)
     to_alice_id = to_alice.id_at_location
 
@@ -151,21 +113,18 @@ def test_send_get(workers):
 
     assert to_alice_id not in alice._objects
 
-    eq = (t_back == crt).child.reconstruct()
-    assert (eq == 1.0).all()
+    eq = (t_back == crt).float_precision()
+    assert (eq == torch.tensor([1.0, 1.0])).all()
 
 
 def test_share_and_get(workers):
     alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
 
-    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
-    residues = {3: res_3, 7: res_7}
-
-    crt = syft.CRTTensor(residues).wrap()
-    copy = syft.CRTTensor(residues).wrap()
+    t = torch.tensor([1, 2])
+    crt = t.fix_precision(field=21, precision_fractional=0, storage="crt")
+    copy = t.fix_precision(field=21, precision_fractional=0, storage="crt")
 
     shared = crt.share(alice, bob, crypto_provider=james)
     back = shared.get()
 
-    assert (back.child.reconstruct() == copy.child.reconstruct()).all()
+    assert (back.float_precision() == copy.float_precision()).all()

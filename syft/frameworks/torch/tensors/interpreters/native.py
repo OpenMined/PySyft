@@ -640,11 +640,20 @@ class TorchTensor(AbstractTensor):
 
     float_precision_ = float_prec_
 
-    def fix_prec(self, *args, **kwargs):
+    def fix_prec(self, *args, storage="auto", **kwargs):
         base = kwargs.get("base", 10)
         prec_fractional = kwargs.get("precision_fractional", 3)
+
         max_precision = _get_maximum_precision()
-        if self._requires_large_precision(max_precision, base, prec_fractional):
+        need_large_prec = self._requires_large_precision(max_precision, base, prec_fractional)
+
+        if storage == "crt":
+            lpt = syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
+            return (
+                syft.CRTTensor(*args, **kwargs).on(lpt, wrap=False).to_crt_representation().wrap()
+            )
+
+        if need_large_prec or storage == "large":
             return (
                 syft.LargePrecisionTensor(*args, **kwargs)
                 .on(self)
@@ -652,6 +661,7 @@ class TorchTensor(AbstractTensor):
                 .wrap()
             )
         else:
+            assert not need_large_prec, "This tensor needs large precision to be correctly stored"
             return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
 
     fix_precision = fix_prec

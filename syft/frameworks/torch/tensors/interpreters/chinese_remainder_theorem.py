@@ -24,6 +24,7 @@ class CRTTensor(AbstractTensor):
 
     def __init__(
         self,
+        field: int = 21,
         residues: dict = None,
         base=None,
         precision_fractional=None,
@@ -41,6 +42,8 @@ class CRTTensor(AbstractTensor):
                 assert (
                     math.gcd(pair[0], pair[1]) == 1
                 ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as modulos"
+
+        self.field = field
 
         # Check that all the residues have the same precision and
         # check that all the shapes are the same
@@ -78,13 +81,32 @@ class CRTTensor(AbstractTensor):
             reconstruction_coeffs = self.compute_reconstruction_coeffs()
         self.reconstruction_coeffs = reconstruction_coeffs
 
-    def get_class_attributes(self):
-        return {
-            "base": self.base,
-            "precision_fractional": self.precision_fractional,
-            # Solving coefficients can be reused in results of operations (see docstring of solve_system method)
-            "reconstruction_coeffs": self.reconstruction_coeffs,
-        }
+    def to_crt_representation(self):
+        """This method encodes the .child object to CRT representation """
+
+        fix_prec_tensor = self.child
+        self.base = fix_prec_tensor.child.base
+        self.precision_fractional = fix_prec_tensor.child.precision_fractional
+
+        try:
+            moduli = _moduli_for_fields[fix_prec_tensor.child.field]
+        except KeyError as e:
+            possible_moduli = list(_moduli_for_fields.keys())
+            raise Exception(
+                f"Only tensor in fields of size in {possible_moduli} are currently possible to represent with CRT tensors"
+            ) from e
+
+        self.child = {}
+        for mod in moduli:
+            self.child[mod] = fix_prec_tensor % mod
+
+        self.reconstruction_coeffs = self.compute_reconstruction_coeffs()
+
+        return self
+
+    def float_precision(self):
+        reconstructed = self.reconstruct()
+        return reconstructed.float_precision()
 
     @property
     def grad(self):
@@ -159,32 +181,30 @@ class CRTTensor(AbstractTensor):
 
     @overloaded.method
     def mul(self, self_, other):
-        assert (
-            self_.keys() == other.keys()
-        ), "Cannot multiply 2 CRT that don't have the same modulos"
 
         result = {}
 
-        for mod in self_.keys():
-            result[mod] = self_[mod] * other[mod]
+        if isinstance(other, int):
+            for mod in self_.keys():
+                result[mod] = self_[mod] * other
+
+        else:
+            assert (
+                self_.keys() == other.keys()
+            ), "Cannot multiply 2 CRT that don't have the same modulos"
+
+            for mod in self_.keys():
+                result[mod] = self_[mod] * other[mod]
 
         return result
 
     __mul__ = mul
+    __rmul__ = mul
 
     def div(self, other):
         raise NotImplementedError
 
     __truediv__ = div
-
-    @overloaded.method
-    def sum(self, self_, *args, **kwargs):
-        result = {}
-
-        for mod in self_.keys():
-            result[mod] = self_[mod].sum() % mod  # FIXME % mod needed till SecureNN PR merged
-
-        return result
 
     def reconstruct(self):
         """ Build the tensor in Zq with q = prod(self.child.keys())
@@ -272,19 +292,14 @@ class CRTTensor(AbstractTensor):
 
         module.div = div
 
-        def sum(self, *args, **kwargs):
-            return self.sum(*args, **kwargs)
-
-        module.sum = sum
-
     def share(self, *owners, field=None, crypto_provider=None):
         """ Share the tensor between several workers.
         This gives an AdditiveSharingTensor wrapped around the original CRT tensor
         """
         assert field is None or field == self.field, "field is chosen when fixing precision"
-        self_ = self.child
-        for mod, res in self_.items():
+        for mod, res in self.child.items():
             ast_mod = res.share(*owners, field=mod, crypto_provider=None)
+            self.child[mod] = ast_mod
 
         return self
 
@@ -345,3 +360,14 @@ class CRTTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+    def get_class_attributes(self):
+        return {
+            "base": self.base,
+            "precision_fractional": self.precision_fractional,
+            # Solving coefficients can be reused in results of operations (see docstring of solve_system method)
+            "reconstruction_coeffs": self.reconstruction_coeffs,
+        }
+
+
+_moduli_for_fields = {21: [3, 7]}
