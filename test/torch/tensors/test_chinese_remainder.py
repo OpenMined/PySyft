@@ -5,22 +5,6 @@ import syft
 # from syft import syft.CRTTesor
 
 
-def test_wrap():
-    """
-    Test the .on() wrap functionality for syft.CRTTesor
-    """
-
-    res_3 = torch.tensor([[1, 2], [0, 1]]).fix_prec(field=3, precision_fractional=0)
-    res_7 = torch.tensor([[3, 4], [5, 6]]).fix_prec(field=7, precision_fractional=0)
-    residues = {3: res_3, 7: res_7}
-
-    x = syft.CRTTensor().on(residues, wrap=False).wrap()
-
-    assert isinstance(x, torch.Tensor)
-    assert isinstance(x.child, syft.CRTTensor)
-    assert isinstance(x.child.child, dict)
-
-
 def test__str__():
     t = torch.tensor([[3, 9], [4, 1]])
     crt = t.fix_precision(field=21, precision_fractional=0, storage="crt")
