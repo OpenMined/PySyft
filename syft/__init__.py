@@ -4,6 +4,7 @@ from syft import frameworks
 from syft import workers
 from syft import codes
 from syft import federated
+from .version import __version__
 
 import logging
 
