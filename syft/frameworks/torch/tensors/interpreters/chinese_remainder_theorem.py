@@ -11,7 +11,7 @@ from syft.frameworks.torch.overload_torch import overloaded
 
 class CRTTensor(AbstractTensor):
     """ A CRT tensor is a tensor whose values are represented as their remainders modulo several pairwise coprime numbers.
-    The true tensor values lie in the Zq field where q is the product of all the modulos.
+    The true tensor values lie in the Zq field where q is the product of all the moduli.
     A CRT tensor then represent a modular system of equations:
         x = a_0 mod f_0
         ...
@@ -36,12 +36,12 @@ class CRTTensor(AbstractTensor):
     ):
         super().__init__(owner=owner, id=id, tags=tags, description=description)
 
-        # Check that all the modulos are pairwise coprime
+        # Check that all the moduli are pairwise coprime
         if residues is not None:
             for pair in itertools.combinations(residues.keys(), r=2):
                 assert (
                     math.gcd(pair[0], pair[1]) == 1
-                ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as modulos"
+                ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as moduli"
 
         self.field = field
 
@@ -134,7 +134,7 @@ class CRTTensor(AbstractTensor):
     def eq(self, self_, other_):
         assert (
             self_.keys() == other_.keys()
-        ), "Cannot compare 2 CRT that don't have the same modulos"
+        ), "Cannot compare 2 CRT tensors that don't have the same moduli"
 
         result = torch.ones(self.shape).fix_prec(
             base=self.base, precision_fractional=self.precision_fractional
@@ -144,40 +144,61 @@ class CRTTensor(AbstractTensor):
 
         dict_result = {}
         for mod in self_.keys():
-            # This is a bit ugly, I want the result to be stored in a CRT tensor with same modulos
+            # This is a bit ugly, I want the result to be stored in a CRT tensor with same moduli
             result.child.field = mod
             dict_result[mod] = result.copy()
         return dict_result
 
     __eq__ = eq
 
+    def __neg__(self):
+        return -1 * self
+
     @overloaded.method
     def add(self, self_, other):
-        assert self_.keys() == other.keys(), "Cannot add 2 CRT that don't have the same modulos"
 
         result = {}
 
-        for mod in self_.keys():
-            result[mod] = self_[mod] + other[mod]
+        if isinstance(other, int):
+            for mod in self_.keys():
+                result[mod] = self_[mod] + other
+
+        else:
+            assert (
+                self_.keys() == other.keys()
+            ), "Cannot add 2 CRT tensors that don't have the same moduli"
+
+            for mod in self_.keys():
+                result[mod] = self_[mod] + other[mod]
 
         return result
 
     __add__ = add
+    __radd__ = add
 
     @overloaded.method
     def sub(self, self_, other):
-        assert (
-            self_.keys() == other.keys()
-        ), "Cannot subtract 2 CRT that don't have the same modulos"
 
         result = {}
 
-        for mod in self_.keys():
-            result[mod] = self_[mod] - other[mod]
+        if isinstance(other, int):
+            for mod in self_.keys():
+                result[mod] = self_[mod] - other
+
+        else:
+            assert (
+                self_.keys() == other.keys()
+            ), "Cannot subtract 2 CRT tensors that don't have the same moduli"
+
+            for mod in self_.keys():
+                result[mod] = self_[mod] - other[mod]
 
         return result
 
     __sub__ = sub
+
+    def __rsub__(self, other):
+        return (-self).sub(-other)
 
     @overloaded.method
     def mul(self, self_, other):
@@ -191,7 +212,7 @@ class CRTTensor(AbstractTensor):
         else:
             assert (
                 self_.keys() == other.keys()
-            ), "Cannot multiply 2 CRT that don't have the same modulos"
+            ), "Cannot multiply 2 CRT tensors that don't have the same moduli"
 
             for mod in self_.keys():
                 result[mod] = self_[mod] * other[mod]
@@ -211,15 +232,15 @@ class CRTTensor(AbstractTensor):
         satisfying the modular system represented by the tensor.
         The algorithm consists in:
         1) Compute N = prod(self.child.keys())
-        2) yi = N / ni where the ni's are modulos in the system
-        3) zi = yi^(-1) mod ni (we know zi exists because all the original modulos are pairwise coprime)
+        2) yi = N / ni where the ni's are moduli in the system
+        3) zi = yi^(-1) mod ni (we know zi exists because all the original moduli are pairwise coprime)
         4) The result is x = sum(ai * yi * zi) where ai is the residue modulo ni in the system
         
         We can see that this boils down to a linear combination of ai's with coefficients yi * zi.
-        These coefficients depend only on the modulos used to represent the tensor so we don't need
+        These coefficients depend only on the moduli used to represent the tensor so we don't need
         to compute them several times for the same tensor. We can also reuse them for a tensor produced
-        by operations on self because 1) the operations can only be done between tensors with the same modulos
-        and 2) the output tensor will have the same modulos.
+        by operations on self because 1) the operations can only be done between tensors with the same moduli
+        and 2) the output tensor will have the same moduli.
         This is why we store them after having computed them once.
         """
         res = 0
@@ -242,7 +263,7 @@ class CRTTensor(AbstractTensor):
         def modular_inverse(a, b):
             """ Computes the modular inverse x = a^(-1) mod b
             with Euclid's extended algorithm.
-            The coefficient are computed and stored in a list in ascending order of modulos.
+            The coefficient are computed and stored in a list in ascending order of moduli.
             The list is then turned to a tuple to be hashable and passed via the get_class_attributes method.
             """
             b0 = b

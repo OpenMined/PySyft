@@ -1,9 +1,6 @@
 import torch
 import syft
 
-# from syft.frameworks.torch.tensors.interpreters import syft.CRTTesor
-# from syft import syft.CRTTesor
-
 
 def test__str__():
     t = torch.tensor([[3, 9], [4, 1]])
@@ -28,33 +25,52 @@ def test_eq():
     assert (eq_ac == torch.tensor([[0.0, 1.0], [1.0, 0.0]])).all()
 
 
-def test_add():
-    # TODO add tests for values > Q/2 and also wrapping
-    t = torch.tensor([[1, 2], [3, 4]])
+def test__neg__():
+    t = torch.tensor([[1, -3], [3, -2]])
+    crt = t.fix_precision(field=21, precision_fractional=0, storage="crt")
 
-    crt_a = t.fix_precision(field=21, precision_fractional=0, storage="crt")
-    crt_b = t.fix_precision(field=21, precision_fractional=0, storage="crt")
+    neg = -crt
+
+    assert (neg.float_precision() == torch.tensor([[-1.0, 3.0], [-3.0, 2.0]])).all()
+
+
+def test_add():
+    t_a = torch.tensor([[1, 2], [3, -4]])
+    t_b = torch.tensor([[1, -3], [3, -2]])
+
+    crt_a = t_a.fix_precision(field=21, precision_fractional=0, storage="crt")
+    crt_b = t_b.fix_precision(field=21, precision_fractional=0, storage="crt")
 
     result = crt_a + crt_b
 
-    assert (result.float_precision() == torch.tensor([[2.0, 4.0], [6.0, 8.0]])).all()
+    assert (result.float_precision() == torch.tensor([[2.0, -1.0], [6.0, -6.0]])).all()
+
+    # With scalars
+    result = crt_a + 1
+
+    assert (result.float_precision() == torch.tensor([[2.0, 3.0], [4.0, -3.0]])).all()
 
 
 def test_sub():
-    t_a = torch.tensor([[4, 3], [2, 1]])
-    t_b = torch.tensor([[1, 2], [3, 4]])
+    t_a = torch.tensor([[1, 2], [5, -4]])
+    t_b = torch.tensor([[1, -3], [3, -2]])
 
     crt_a = t_a.fix_precision(field=21, precision_fractional=0, storage="crt")
     crt_b = t_b.fix_precision(field=21, precision_fractional=0, storage="crt")
 
     result = crt_a - crt_b
 
-    assert (result.float_precision() == torch.tensor([[3.0, 1.0], [-1.0, -3.0]])).all()
+    assert (result.float_precision() == torch.tensor([[0.0, 5.0], [2.0, -2.0]])).all()
+
+    # With scalars
+    result_a = crt_a - 1
+    result_b = 1 - crt_a
+
+    assert (result_a.float_precision() == torch.tensor([[0.0, 1.0], [4.0, -5.0]])).all()
+    assert (result_b.float_precision() == torch.tensor([[0.0, -1.0], [-4.0, 5.0]])).all()
 
 
 def test_mul():
-    # 2 CRT tensors
-    # TODO add tests for values > Q/2 and also wrapping
     t_a = torch.tensor([[1, -2], [3, -2]])
     t_b = torch.tensor([[1, 2], [3, -2]])
 
