@@ -136,10 +136,9 @@ class Plan(ObjectStorage):
         self._self = None
 
     def _auto_build(self, args_shape: List[Tuple[int]] = None):
-        if self.is_method:
-            self.build([self._self] + self._create_placeholders(args_shape))
-        else:
-            self.build(self._create_placeholders(args_shape))
+        placeholders = self._create_placeholders(args_shape)
+        args = [self._self] + placeholders if self.is_method else placeholders
+        self._build(args)
 
     def _create_placeholders(self, args_shape):
         # In order to support -1 value in shape to indicate any dimension
@@ -183,7 +182,21 @@ class Plan(ObjectStorage):
 
         return sy.serde.serialize(None)
 
-    def build(self, args: List):
+    def _prepare_for_running_local_method(self):
+        """Steps needed before running or building a local plan based on a method."""
+        # TODO: try to find a better way to deal with local execution
+        # of methods.
+        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
+            self._self.send(sy.hook.local_worker, force_send=True)
+
+    def _after_running_local_method(self):
+        """Steps needed after running or building a local plan based on a method."""
+        # TODO: try to find a better way to deal with local execution
+        # of methods.
+        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
+            self._self.get()
+
+    def build(self, *args):
         """Builds the plan.
 
         The plan must be built with some input data, here `args`. When they
@@ -192,8 +205,15 @@ class Plan(ObjectStorage):
         and is used to fill the plan.
 
         Args:
-            param: Input data.
+            args: Input data.
         """
+        self._prepare_for_running_local_method()
+        self._build(list(args))
+        self._after_running_local_method()
+
+    def _build(self, args: List):
+        if self.is_method:
+            args = [self._self] + args
 
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
@@ -342,6 +362,18 @@ class Plan(ObjectStorage):
 
         return _obj
 
+    def _execute_readable_plan(self, *args):
+        # TODO: for now only one value is returned from a plan
+        result_ids = [sy.ID_PROVIDER.pop()]
+
+        self._prepare_for_running_local_method()
+
+        plan_res = self.execute_plan(args, result_ids)
+
+        self._after_running_local_method()
+
+        return plan_res
+
     def __call__(self, *args, **kwargs):
         """Calls a plan.
 
@@ -355,26 +387,14 @@ class Plan(ObjectStorage):
         if len(kwargs):
             raise ValueError("Kwargs are not supported for plan.")
 
-        # TODO: for now only one value is returned from a plan
-        result_ids = [sy.ID_PROVIDER.pop()]
-
-        # TODO: try to find a better way to deal with local execution
-        # of methods.
-        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
-            self._self.send(sy.hook.local_worker, force_send=True)
-
         # Support for method hooked in plans
         if self.is_method:
             args = [self._self] + list(args)
 
-        plan_res = self.execute_plan(args, result_ids)
+        if self.blueprint:
+            return self.blueprint(*args)
 
-        # TODO: try to find a better way to deal with local execution
-        # of methods.
-        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
-            self._self.get()
-
-        return plan_res
+        return self._execute_readable_plan(*args)
 
     def _update_args(
         self, args: List[Union[torch.Tensor, AbstractTensor]], result_ids: List[Union[str, int]]
@@ -436,7 +456,7 @@ class Plan(ObjectStorage):
         """
         # We build the plan only if needed
         if not self.is_built:
-            self.build(args)
+            self._build(args)
 
         if len(self.locations) > 0:
             worker = self.find_location(args)
