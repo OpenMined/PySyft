@@ -648,9 +648,9 @@ class TorchTensor(AbstractTensor):
         need_large_prec = self._requires_large_precision(max_precision, base, prec_fractional)
 
         if storage == "crt":
-            lpt = syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
+            fpt = syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
             return (
-                syft.CRTTensor(*args, **kwargs).on(lpt, wrap=False).to_crt_representation().wrap()
+                syft.CRTTensor(*args, **kwargs).on(fpt, wrap=False).to_crt_representation().wrap()
             )
 
         if need_large_prec or storage == "large":
