@@ -33,7 +33,6 @@ def test_clear_object_for_worker_created_with_pre_existing_id(hook):
     worker.clear_objects()
 
     ptr = th.tensor([1, 2, 3]).send(worker)
-    print(worker._objects)
 
     assert len(worker._known_workers[worker.id]._objects) == len(worker._objects)
     assert len(worker._objects) == 1
@@ -46,7 +45,6 @@ def test_clear_object_for_worker_created_with_pre_existing_id(hook):
     assert len(worker._objects) == 0
 
     ptr = th.tensor([1, 2, 3]).send(worker)
-    print(worker._objects)
 
     assert len(worker._known_workers[worker.id]._objects) == len(worker._objects)
     assert len(worker._objects) == 1
