@@ -513,9 +513,10 @@ class AdditiveSharingTensor(AbstractTensor):
         for i_worker, (location, pointer) in enumerate(shares.items()):
             # Still no solution to perform a real division on a additive shared tensor
             # without a heavy crypto protocol.
-            # For now, the solution works in most cases (we compute Q - (Q - pointer) / divisor
-            # for as many worker as the number of times the sum of shares "crosses" Q/2, in average)
-            if i_worker % 3 == 0:
+            # For now, the solution works in most cases when the tensor is shared between 2 workers
+            # The idea is to compute Q - (Q - pointer) / divisor for as many worker
+            # as the number of times the sum of shares "crosses" Q/2.
+            if i_worker % 2 == 0:
                 divided_shares[location] = self.field - (self.field - pointer) / divisor
             else:
                 divided_shares[location] = pointer / divisor

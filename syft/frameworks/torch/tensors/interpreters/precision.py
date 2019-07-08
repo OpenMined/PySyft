@@ -230,7 +230,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         if isinstance(other, int):
             new_self = self.child
-            new_other = other * self.base ** self.precision_fractional
+            new_other = other
         elif self.child.is_wrapper and not other.child.is_wrapper:
             # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
             # we want to perform AST * torch.tensor
@@ -258,7 +258,8 @@ class FixedPrecisionTensor(AbstractTensor):
         )
 
         response %= self.field  # Wrap around the field
-        response = response.truncate(self.precision_fractional)
+        if not isinstance(other, int):
+            response = response.truncate(self.precision_fractional)
 
         return response
 
