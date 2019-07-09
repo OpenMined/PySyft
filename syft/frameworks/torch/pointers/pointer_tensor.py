@@ -193,7 +193,17 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         return attr_ptr
 
     def dim(self) -> int:
+        print("called another dim")
         return len(self._shape)
+    
+    
+    def size(self, dim=None):
+            """Hook the size to return the shape with a callable syntax"""
+            print("Called size")
+            if dim is None:
+                return self._shape
+            return self._shape[dim]
+    
 
     def share(self, *args, **kwargs):
         """
