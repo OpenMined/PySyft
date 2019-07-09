@@ -273,7 +273,7 @@ def test_plan_serde(hook):
     hook.local_worker.is_client_worker = True
 
 
-def test_execute_plan_remotely(hook, start_proc):
+def test_execute_plan_remotely(hook, start_remote_worker):
     """Test plan execution remotely."""
     hook.local_worker.is_client_worker = False
 
@@ -286,14 +286,10 @@ def test_execute_plan_remotely(hook, start_proc):
     x = th.tensor([-1, 2, 3])
     local_res = my_plan(x)
 
-    kwargs = {"id": "test_plan_worker", "host": "localhost", "port": 8799, "hook": hook}
-    server = start_proc(WebsocketServerWorker, **kwargs)
+    server, remote_worker = start_remote_worker(id="test_plan_worker", port=8799, hook=hook)
 
-    time.sleep(0.1)
-    socket_pipe = WebsocketClientWorker(**kwargs)
-
-    plan_ptr = my_plan.send(socket_pipe)
-    x_ptr = x.send(socket_pipe)
+    plan_ptr = my_plan.send(remote_worker)
+    x_ptr = x.send(remote_worker)
     plan_res = plan_ptr(x_ptr).get()
 
     assert (plan_res == local_res).all()
@@ -305,7 +301,7 @@ def test_execute_plan_remotely(hook, start_proc):
     hook.local_worker.is_client_worker = True
 
 
-def test_execute_plan_module_remotely(hook, start_proc):
+def test_execute_plan_module_remotely(hook, start_remote_worker):
     """Test plan execution remotely."""
     hook.local_worker.is_client_worker = False
 
@@ -329,14 +325,10 @@ def test_execute_plan_module_remotely(hook, start_proc):
 
     net.forward.build(x)
 
-    kwargs = {"id": "test_plan_worker_2", "host": "localhost", "port": 8799, "hook": hook}
-    server = start_proc(WebsocketServerWorker, **kwargs)
+    server, remote_worker = start_remote_worker(id="test_plan_worker_2", port=8799, hook=hook)
 
-    time.sleep(0.1)
-    socket_pipe = WebsocketClientWorker(**kwargs)
-
-    plan_ptr = net.send(socket_pipe)
-    x_ptr = x.send(socket_pipe)
+    plan_ptr = net.send(remote_worker)
+    x_ptr = x.send(remote_worker)
     remote_res = plan_ptr(x_ptr).get()
 
     assert (remote_res == local_res).all()
@@ -348,7 +340,7 @@ def test_execute_plan_module_remotely(hook, start_proc):
     hook.local_worker.is_client_worker = True
 
 
-def test_train_plan_locally_and_then_send_it(hook, start_proc):
+def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
     """Test training a plan locally and then executing it remotely."""
     hook.local_worker.is_client_worker = False
 
@@ -399,14 +391,10 @@ def test_train_plan_locally_and_then_send_it(hook, start_proc):
     local_res = net(x)
     net.forward.build(x)
 
-    kwargs = {"id": "test_plan_worker_3", "host": "localhost", "port": 8800, "hook": hook}
-    server = start_proc(WebsocketServerWorker, **kwargs)
+    server, remote_worker = start_remote_worker(id="test_plan_worker_3", port=8800, hook=hook)
 
-    time.sleep(0.1)
-    socket_pipe = WebsocketClientWorker(**kwargs)
-
-    plan_ptr = net.send(socket_pipe)
-    x_ptr = x.send(socket_pipe)
+    plan_ptr = net.send(remote_worker)
+    x_ptr = x.send(remote_worker)
     remote_res = plan_ptr(x_ptr).get()
 
     assert (remote_res == local_res).all()

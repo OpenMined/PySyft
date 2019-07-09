@@ -1,3 +1,4 @@
+import time
 import pytest
 import torch
 from multiprocessing import Process
@@ -5,25 +6,47 @@ import builtins
 
 import syft
 from syft import TorchHook
+from syft.workers import WebsocketClientWorker
+from syft.workers import WebsocketServerWorker
+
+
+def _start_proc(participant, dataset: str = None, **kwargs):
+    """Helper function for spinning up a websocket participant."""
+
+    def target():
+        server = participant(**kwargs)
+        if dataset is not None:
+            data, key = dataset
+            server.add_dataset(data, key=key)
+        server.start()
+
+    p = Process(target=target)
+    p.start()
+    return p
 
 
 @pytest.fixture()
 def start_proc():  # pragma: no cover
-    """ helper function for spinning up a websocket participant """
-
-    def _start_proc(participant, dataset: str = None, **kwargs):
-        def target():
-            server = participant(**kwargs)
-            if dataset is not None:
-                data, key = dataset
-                server.add_dataset(data, key=key)
-            server.start()
-
-        p = Process(target=target)
-        p.start()
-        return p
-
     return _start_proc
+
+
+@pytest.fixture()
+def start_remote_worker():  # pragma: no cover
+    """Helper function for starting a websocket worker."""
+
+    def _start_remote_worker(
+        id, port, hook, dataset: str = None, host="localhost", sleep_time=0.01, **kwargs
+    ):
+        base_kwargs = {"id": id, "host": host, "port": port, "hook": hook}
+        kwargs.update(base_kwargs)
+        server = _start_proc(WebsocketServerWorker, dataset=dataset, **kwargs)
+
+        time.sleep(sleep_time)
+
+        remote_worker = WebsocketClientWorker(**base_kwargs)
+        return server, remote_worker
+
+    return _start_remote_worker
 
 
 @pytest.fixture(scope="session", autouse=True)
