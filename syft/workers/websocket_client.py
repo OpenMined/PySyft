@@ -184,6 +184,32 @@ class WebsocketClientWorker(BaseWorker):
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
 
+    def evaluate(
+        self, dataset_key: str, histograms: bool = False, nr_bins: int = -1, calculate_loss=True
+    ):
+        """Call the evaluate() method on the remote worker (WebsocketServerWorker instance).
+
+        Args:
+            dataset_key: Identifier of the dataset which shall be used for the training.
+            **kwargs:
+                return_ids: List[str]
+        """
+        # return_ids = kwargs["return_ids"] if "return_ids" in kwargs else [sy.ID_PROVIDER.pop()]
+
+        return self._send_msg_and_deserialize(
+            "evaluate",
+            dataset_key=dataset_key,
+            histograms=histograms,
+            nr_bins=nr_bins,
+            calculate_loss=calculate_loss,
+        )
+
+        # msg = (MSGTYPE.OBJ_REQ, return_ids[0])
+        # # Send the message and return the deserialized response.
+        # serialized_message = sy.serde.serialize(msg)
+        # response = self._recv_msg(serialized_message)
+        # return sy.serde.deserialize(response)
+
     def __str__(self):
         """Returns the string representation of a Websocket worker.
 

@@ -1,5 +1,6 @@
 import torch as th
 from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
+import numpy as np
 
 from syft.generic import ObjectStorage
 from syft.federated.train_config import TrainConfig
@@ -122,3 +123,66 @@ class FederatedClient(ObjectStorage):
                     break
 
         return loss
+
+    def evaluate(
+        self,
+        dataset_key: str,
+        histograms: bool = False,
+        nr_bins: int = -1,
+        calculate_loss: bool = False,
+    ):
+        """Evaluates a model on the local dataset as specified in the local TrainConfig object.
+
+        Args:
+            dataset_key: Identifier of the local dataset that shall be used for training.
+            histograms: If True, calculate the histograms of predicted classes.
+            nr_bins: Used together with histograms, number of classes.
+            calculate_loss: If True, loss is calculated additionally.
+
+        Returns:
+            Tuple containing:
+                * test_loss: avg loss on data set, None if not calculated
+                * correct: number of correct predictions
+                * dataset_len: total number of predictions
+                * hist_pred: histogram of predictions
+                * hist_target: histogram of target values in the dataset
+        """
+        if self.train_config is None:
+            raise ValueError("TrainConfig not defined.")
+
+        if dataset_key not in self.datasets:
+            raise ValueError("Dataset {} unknown.".format(dataset_key))
+
+        model = self.get_obj(self.train_config._model_id).obj
+        loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
+        model.eval()
+        device = "cpu"
+        data_loader = self._create_data_loader(dataset_key=dataset_key, shuffle=False)
+        if calculate_loss:
+            test_loss = 0.0
+        else:
+            test_loss = None
+        correct = 0
+        hist_target = np.zeros(nr_bins)
+        hist_pred = np.zeros(nr_bins)
+
+        with th.no_grad():
+            for data, target in data_loader:
+                data, target = data.to(device), target.to(device)
+                output = model(data)
+                if calculate_loss:
+                    test_loss += loss_fn(output, target).item()  # sum up batch loss
+                pred = output.argmax(
+                    dim=1, keepdim=True
+                )  # get the index of the max log-probability
+                if histograms:
+                    hist, _ = np.histogram(target, bins=nr_bins, range=(0, nr_bins))
+                    hist_target += hist
+                    hist, _ = np.histogram(pred, bins=nr_bins, range=(0, nr_bins))
+                    hist_pred += hist
+                correct += pred.eq(target.view_as(pred)).sum().item()
+
+        if calculate_loss:
+            test_loss /= len(data_loader.dataset)
+
+        return test_loss, correct, len(data_loader.dataset), hist_pred, hist_target
