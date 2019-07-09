@@ -216,8 +216,11 @@ class FixedPrecisionTensor(AbstractTensor):
             ), "In mul, all args should have the same precision_fractional"
 
         if isinstance(other, int):
-            new_self = self.child
-            new_other = other * self.base ** self.precision_fractional
+            response = getattr(self.child, "mul")(other)                
+            return syft.frameworks.torch.hook_args.hook_response(
+            "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
+            )
+            
         elif self.child.is_wrapper and not other.child.is_wrapper:
             # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
             # we want to perform AST * torch.tensor
