@@ -193,7 +193,6 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         return attr_ptr
 
     def dim(self) -> int:
-        print("called another dim")
         return len(self._shape)
     
     

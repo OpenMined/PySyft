@@ -103,13 +103,10 @@ class MultiPointerTensor(AbstractTensor):
     def dim(self) -> int:
         """This method fixes the error that the result of dim was a list of ints
         stored inside a multipointer tensor"""
-        print("Or maybe here")
-
         return len(self.shape)
     
     def size(self, dim=None):
         """Hook the size to return the shape with a callable syntax"""
-        print("Called pointer size")
         if dim is None:
             return self.shape
         return self.shape[dim]
