@@ -4,6 +4,7 @@ from syft import frameworks
 from syft import workers
 from syft import codes
 from syft import federated
+from .version import __version__
 
 import logging
 
@@ -55,9 +56,10 @@ from syft.workers import VirtualWorker
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 
 from syft.frameworks.torch.pointers import ObjectPointer
 from syft.frameworks.torch.pointers import CallablePointer

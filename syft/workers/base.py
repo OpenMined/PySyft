@@ -678,7 +678,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def clear_objects(self):
         """Removes all objects from the worker."""
 
-        self._objects = {}
+        self._objects.clear()
         return self
 
     @staticmethod
