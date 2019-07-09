@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch as th
-import syft
 
+import syft
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 
 
@@ -553,7 +553,7 @@ def test_handle_func_command(workers):
 
 
 def test_init_with_no_crypto_provider(workers):
-    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    alice, bob = workers["alice"], workers["bob"]
 
     x = torch.tensor([21, 17]).share(bob, alice).child
 
