@@ -81,7 +81,7 @@ def test_websocket_workers_search(hook, start_remote_worker):
 
     # Sample tensor to store on the server
     sample_data = torch.tensor([1, 2, 3, 4]).tag("#sample_data", "#another_tag")
-    sample_data.send(remote_worker)
+    _ = sample_data.send(remote_worker)
 
     # Search for the tensor located on the server by using its tag
     results = remote_worker.search("#sample_data", "#another_tag")
