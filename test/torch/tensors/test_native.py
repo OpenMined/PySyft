@@ -117,19 +117,29 @@ def test_copy():
     assert tensor is not coppied_tensor
 
 
-def test_size():
+def test_local_size():
     tensor = torch.rand(5, 3)
     assert tensor.size() == torch.Size([5, 3])
     assert tensor.size() == tensor.shape
     assert tensor.size(0) == tensor.shape[0]
+    
+    
+#Compare local size with the remote one
+def test_remote_size(workers):
+    tensor_local = torch.randn(5, 3)
+    tensor_remote = tensor_local.send(workers["alice"])
+
+    assert tensor_local.size() == tensor_remote.size()
 
 
-# Compare local dim with the remote one
-def test_dim(workers):
+#Compare local dim with the remote one
+def test_remote_dim(workers):
     tensor_local = torch.randn(5, 3)
     tensor_remote = tensor_local.send(workers["alice"])
 
     assert tensor_local.dim() == tensor_remote.dim()
+
+
 
 
 def test_does_not_require_large_precision():
