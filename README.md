@@ -79,6 +79,10 @@ A comprehensive list of tutorials can be found [here](https://github.com/OpenMin
 
 These tutorials cover how to perform techniques such as federated learning and differential privacy using PySyft.
 
+## High-level Architecture
+
+![alt text](art/PySyft-Arch.png "High-level Architecture")
+
 ## Start Contributing
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
