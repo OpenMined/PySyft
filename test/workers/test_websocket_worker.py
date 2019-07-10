@@ -76,10 +76,12 @@ def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
 def test_websocket_workers_search(hook, start_remote_worker):
     """Evaluates that a client can search and find tensors that belong
     to another party"""
+    # Args for initializing the websocket server and client
+    server, remote_worker = start_remote_worker(id="fed2", port=8767, hook=hook)
+
     # Sample tensor to store on the server
     sample_data = torch.tensor([1, 2, 3, 4]).tag("#sample_data", "#another_tag")
-    # Args for initializing the websocket server and client
-    server, remote_worker = start_remote_worker(id="fed2", port=8767, hook=hook, data=[sample_data])
+    sample_data.send(remote_worker)
 
     # Search for the tensor located on the server by using its tag
     results = remote_worker.search("#sample_data", "#another_tag")
@@ -103,7 +105,7 @@ def test_websocket_workers_search(hook, start_remote_worker):
 
 
 def test_list_objects_remote(hook, start_remote_worker):
-    server, remote_worker = start_remote_worker(id="fed", port=8765, hook=hook)
+    server, remote_worker = start_remote_worker(id="fed", port=8763, hook=hook)
     x = torch.tensor([1, 2, 3]).send(remote_worker)
 
     res = remote_worker.list_objects_remote()
@@ -151,7 +153,7 @@ def test_objects_count_remote(hook, start_remote_worker):
 
 
 def test_connect_close(hook, start_remote_worker):
-    server, remote_worker = start_remote_worker(id="fed", port=8765, hook=hook)
+    server, remote_worker = start_remote_worker(id="fed", port=8769, hook=hook)
 
     x = torch.tensor([1, 2, 3])
     x_ptr = x.send(remote_worker)

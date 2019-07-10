@@ -35,15 +35,14 @@ def start_remote_worker():  # pragma: no cover
     """Helper function for starting a websocket worker."""
 
     def _start_remote_worker(
-        id, port, hook, dataset: str = None, host="localhost", sleep_time=0.01, **kwargs
+        id, port, hook, dataset: str = None, host="localhost", sleep_time=0.01
     ):
-        base_kwargs = {"id": id, "host": host, "port": port, "hook": hook}
-        kwargs.update(base_kwargs)
+        kwargs = {"id": id, "host": host, "port": port, "hook": hook}
         server = _start_proc(WebsocketServerWorker, dataset=dataset, **kwargs)
 
         time.sleep(sleep_time)
 
-        remote_worker = WebsocketClientWorker(**base_kwargs)
+        remote_worker = WebsocketClientWorker(**kwargs)
         return server, remote_worker
 
     return _start_remote_worker

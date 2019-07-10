@@ -14,8 +14,6 @@ def test_explicit_garbage_collect_pointer(workers):
     """Tests whether deleting a PointerTensor garbage collects the remote object too"""
     bob = workers["bob"]
 
-    alice, bob = workers["alice"], workers["bob"]
-
     # create tensor
     x = torch.Tensor([1, 2])
 
@@ -79,8 +77,6 @@ def test_explicit_garbage_collect_double_pointer(workers):
 def test_implicit_garbage_collection_pointer(workers):
     """Tests whether GCing a PointerTensor GCs the remote object too."""
     bob = workers["bob"]
-
-    alice, bob = workers["alice"], workers["bob"]
 
     # create tensor
     x = torch.Tensor([1, 2])
