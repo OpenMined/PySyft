@@ -340,7 +340,7 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     # TODO check reason for error (RuntimeError: This event loop is already running) when starting websocket server from pytest-asyncio environment
     # dataset = sy.BaseDataset(data, target)
 
-    # process_remote_worker = start_remote_worker(id="async_fit", port="8777", hook=hook, dataset=(dataset, dataset_key))
+    # process_remote_worker = start_remote_worker(id="async_fit", hook=hook, dataset=(dataset, dataset_key))
 
     # time.sleep(0.1)
 
@@ -412,7 +412,7 @@ def test_train_config_with_jit_trace_sync(hook, start_remote_worker):  # pragma:
     dataset_key = "gaussian_mixture"
 
     server, remote_worker = start_remote_worker(
-        id="sync_fit", hook=hook, port=9000, dataset=(dataset, dataset_key)
+        id="sync_fit", hook=hook, dataset=(dataset, dataset_key)
     )
 
     @hook.torch.jit.script

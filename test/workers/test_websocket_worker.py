@@ -77,7 +77,7 @@ def test_websocket_workers_search(hook, start_remote_worker):
     """Evaluates that a client can search and find tensors that belong
     to another party"""
     # Args for initializing the websocket server and client
-    server, remote_worker = start_remote_worker(id="fed2", port=8767, hook=hook)
+    server, remote_worker = start_remote_worker(id="fed2", hook=hook)
 
     # Sample tensor to store on the server
     sample_data = torch.tensor([1, 2, 3, 4]).tag("#sample_data", "#another_tag")
@@ -105,7 +105,7 @@ def test_websocket_workers_search(hook, start_remote_worker):
 
 
 def test_list_objects_remote(hook, start_remote_worker):
-    server, remote_worker = start_remote_worker(id="fed", port=8763, hook=hook)
+    server, remote_worker = start_remote_worker(id="fed", hook=hook)
     x = torch.tensor([1, 2, 3]).send(remote_worker)
 
     res = remote_worker.list_objects_remote()
@@ -128,7 +128,7 @@ def test_list_objects_remote(hook, start_remote_worker):
 
 
 def test_objects_count_remote(hook, start_remote_worker):
-    server, remote_worker = start_remote_worker(id="fed", port=8764, hook=hook)
+    server, remote_worker = start_remote_worker(id="fed", hook=hook)
 
     x = torch.tensor([1, 2, 3]).send(remote_worker)
 
@@ -153,7 +153,7 @@ def test_objects_count_remote(hook, start_remote_worker):
 
 
 def test_connect_close(hook, start_remote_worker):
-    server, remote_worker = start_remote_worker(id="fed", port=8769, hook=hook)
+    server, remote_worker = start_remote_worker(id="fed", hook=hook)
 
     x = torch.tensor([1, 2, 3])
     x_ptr = x.send(remote_worker)
@@ -181,7 +181,7 @@ def test_connect_close(hook, start_remote_worker):
 def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
     """Evaluates that you can do basic tensor operations using
     WebsocketServerWorker."""
-    server, remote_worker = start_remote_worker(id="socket_multiple_output", port=8768, hook=hook)
+    server, remote_worker = start_remote_worker(id="socket_multiple_output", hook=hook)
     x = torch.tensor([1.0, 3, 2])
 
     x = x.send(remote_worker)
