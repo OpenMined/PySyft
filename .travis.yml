@@ -13,7 +13,7 @@ install:
   - hash -r
   - pip3 install -r requirements.txt >build.log
   - pip3 install flake8
-  - pip3 install flake8-docstrings
+  #- pip3 install flake8-docstrings
   - pip3 install flake8-comprehensions
   - pip3 install pep8-naming
   - python setup.py install >> build.log
