@@ -1,19 +1,19 @@
+import torch
+import numpy as np
 import math
+
 from typing import List
 from typing import Union
 import weakref
-
-import torch
 
 import syft
 from syft.exceptions import InvalidTensorForRemoteGet
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.pointers import PointerTensor
 from syft.workers import BaseWorker
+from syft.frameworks.torch.tensors.interpreters.chinese_remainder_theorem import _sizes_for_fields
 
 from syft.exceptions import PureTorchTensorFoundError
-
-import numpy as np
 
 
 def _get_maximum_precision():
@@ -640,7 +640,7 @@ class TorchTensor(AbstractTensor):
 
     float_precision_ = float_prec_
 
-    def fix_prec(self, *args, storage="auto", **kwargs):
+    def fix_prec(self, *args, storage="auto", field_type="int100", **kwargs):
         base = kwargs.get("base", 10)
         prec_fractional = kwargs.get("precision_fractional", 3)
 
@@ -648,9 +648,15 @@ class TorchTensor(AbstractTensor):
         need_large_prec = self._requires_large_precision(max_precision, base, prec_fractional)
 
         if storage == "crt":
+            assert (
+                "field" not in kwargs
+            ), 'When storage is set to "crt", choose the field size with the field_type argument'
             fpt = syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
             return (
-                syft.CRTTensor(*args, **kwargs).on(fpt, wrap=False).to_crt_representation().wrap()
+                syft.CRTTensor(*args, **kwargs)
+                .on(fpt, wrap=False)
+                .to_crt_representation(field_type)
+                .wrap()
             )
 
         if need_large_prec or storage == "large":

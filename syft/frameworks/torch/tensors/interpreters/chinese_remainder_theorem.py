@@ -24,7 +24,6 @@ class CRTTensor(AbstractTensor):
 
     def __init__(
         self,
-        field: int = 21,
         residues: dict = None,
         base=None,
         precision_fractional=None,
@@ -43,8 +42,6 @@ class CRTTensor(AbstractTensor):
                     math.gcd(pair[0], pair[1]) == 1
                 ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as moduli"
 
-        self.field = field
-
         # Check that all the residues have the same precision and
         # check that all the shapes are the same
         # while filling tensor
@@ -60,6 +57,7 @@ class CRTTensor(AbstractTensor):
             prec_frac = r.child.precision_fractional
             res_shape = r.shape
             self.child = {}
+            prod_moduli = 1
             for f, r in residues.items():
                 assert isinstance(
                     r.child, FixedPrecisionTensor
@@ -77,6 +75,7 @@ class CRTTensor(AbstractTensor):
                 ), "All residue tensors of CRTTensor must have the same shape"
 
                 self.child[f] = r
+                prod_moduli *= f
 
             if base is not None:
                 assert (
@@ -88,6 +87,7 @@ class CRTTensor(AbstractTensor):
                 ), "If a precision_fractional is specified, it should be the same as the residue tensors' precision_fractional"
             self.base = b
             self.precision_fractional = prec_frac
+            self.field = prod_moduli
 
         # In order to avoid computing the coefficients to solve the modular system several times,
         # we can store them once computed. See the docstring of the solve_system method for more details.
@@ -95,20 +95,21 @@ class CRTTensor(AbstractTensor):
             reconstruction_coeffs = self.compute_reconstruction_coeffs()
         self.reconstruction_coeffs = reconstruction_coeffs
 
-    def to_crt_representation(self):
+    def to_crt_representation(self, field_type):
         """This method encodes the .child object to CRT representation """
+
+        try:
+            moduli = _moduli_for_fields[field_type]
+            self.field = _sizes_for_fields[field_type]
+        except KeyError as e:
+            possible_field_types = list(_moduli_for_fields.keys())
+            raise Exception(
+                f"Only tensor in fields of size in {possible_field_types} are currently possible to represent with CRT tensors"
+            ) from e
 
         fix_prec_tensor = self.child
         self.base = fix_prec_tensor.child.base
         self.precision_fractional = fix_prec_tensor.child.precision_fractional
-
-        try:
-            moduli = _moduli_for_fields[fix_prec_tensor.child.field]
-        except KeyError as e:
-            possible_moduli = list(_moduli_for_fields.keys())
-            raise Exception(
-                f"Only tensor in fields of size in {possible_moduli} are currently possible to represent with CRT tensors"
-            ) from e
 
         self.child = {}
         for mod in moduli:
@@ -400,9 +401,21 @@ class CRTTensor(AbstractTensor):
         return {
             "base": self.base,
             "precision_fractional": self.precision_fractional,
-            # Solving coefficients can be reused in results of operations (see docstring of solve_system method)
+            # Solving coefficients can be reused in results of operations (see docstring of the reconstruct method)
             "reconstruction_coeffs": self.reconstruction_coeffs,
         }
 
 
-_moduli_for_fields = {21: [3, 7]}
+_moduli_for_fields = {
+    21: [3, 7],  # Still here for some small tests
+    "int64": [257, 263, 269, 271, 277, 281, 283, 293],
+    "int100": [1201, 1433, 1217, 1237, 1321, 1103, 1129, 1367, 1093, 1039],
+    "int128": [883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977],
+}
+_sizes_for_fields = {
+    21: 21,  # Still here for some small tests
+    "int64": 31_801_718_393_038_504_727,
+    "int100": 6_616_464_272_061_971_915_798_970_247_351,
+    "int128": 403_323_543_826_671_667_708_586_382_524_878_143_061,
+}
+# Should we also precompute reconstruction coefficients and put them here?
