@@ -13,6 +13,8 @@ from syft.workers import BaseWorker
 
 from syft.exceptions import PureTorchTensorFoundError
 
+from syft.frameworks.torch.overload_torch import overloaded
+
 import numpy as np
 
 
@@ -221,6 +223,15 @@ class TorchTensor(AbstractTensor):
         """
         return isinstance(self, syft.hook.torch.nn.Parameter)
 
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        def roll(tensor, shifts, **kwargs):
+            int_shifts = int(shifts.item())
+            return torch.native_roll(tensor, int_shifts, **kwargs)
+
+        module.roll = roll
+
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -254,6 +265,7 @@ class TorchTensor(AbstractTensor):
         cmd, _, args, kwargs = command
 
         try:  # will work if tensors are wrappers
+
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
             new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
@@ -273,6 +285,15 @@ class TorchTensor(AbstractTensor):
                 cmd, response, wrap_type=args_type
             )
         except PureTorchTensorFoundError:  # means that it's not a wrapper but a pure tensor
+
+            # Check that the function has not been overwritten
+            try:
+                # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+                command = cls.rgetattr(cls, cmd)
+                return command(*args, **kwargs)
+            except AttributeError:
+                pass
+
             # TODO: clean this line
             cmd = (
                 "syft.local_worker.hook."
@@ -641,18 +662,22 @@ class TorchTensor(AbstractTensor):
     float_precision_ = float_prec_
 
     def fix_prec(self, *args, **kwargs):
-        base = kwargs.get("base", 10)
-        prec_fractional = kwargs.get("precision_fractional", 3)
-        max_precision = _get_maximum_precision()
-        if self._requires_large_precision(max_precision, base, prec_fractional):
-            return (
-                syft.LargePrecisionTensor(*args, **kwargs)
-                .on(self)
-                .child.fix_large_precision()
-                .wrap()
-            )
+        if self.is_wrapper:
+            self.child = self.child.fix_prec(*args, **kwargs)
+            return self
         else:
-            return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
+            base = kwargs.get("base", 10)
+            prec_fractional = kwargs.get("precision_fractional", 3)
+            max_precision = _get_maximum_precision()
+            if self._requires_large_precision(max_precision, base, prec_fractional):
+                return (
+                    syft.LargePrecisionTensor(*args, **kwargs)
+                    .on(self)
+                    .child.fix_large_precision()
+                    .wrap()
+                )
+            else:
+                return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
 
     fix_precision = fix_prec
 
