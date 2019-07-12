@@ -356,7 +356,7 @@ def test_fixed_precision_and_sharing(workers):
     assert (y == (t + t)).all()
 
 
-def test_remote_fixed_precision_and_sharing(workers):
+def test_fixed_precision_and_sharing_on_pointer(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     t = torch.tensor([1, 2, 3, 4.0])
@@ -368,6 +368,10 @@ def test_remote_fixed_precision_and_sharing(workers):
 
     y = y.get().get().float_prec()
     assert (y == (t + t)).all()
+
+
+def test_pointer_on_fixed_precision_and_sharing(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     t = torch.tensor([1, 2, 3, 4.0])
 
