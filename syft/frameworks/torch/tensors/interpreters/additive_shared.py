@@ -523,6 +523,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return divided_shares
 
+    div = __truediv__
+
     @overloaded.method
     def mod(self, shares: dict, modulus: int):
         assert isinstance(modulus, int)
