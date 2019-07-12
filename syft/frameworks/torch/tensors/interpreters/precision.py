@@ -599,7 +599,13 @@ class FixedPrecisionTensor(AbstractTensor):
         ).on(self.child.get())
 
     def share(self, *owners, field=None, crypto_provider=None):
-        field = self.field if field is None else field
+        if field is None:
+            field = self.field
+        else:
+            assert (
+                field == self.field
+            ), "When sharing a FixedPrecisionTensor, the field of the resulting AdditiveSharingTensor \
+                must be the same as the one of the original tensor"
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
         return self
 
