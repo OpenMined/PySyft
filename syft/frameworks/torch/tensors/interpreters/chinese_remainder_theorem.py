@@ -79,9 +79,13 @@ class CRTTensor(AbstractTensor):
                 self.child[f] = r
 
             if base is not None:
-                assert b == base
+                assert (
+                    b == base
+                ), "If a base is specified, it should be the same as the residue tensors' base"
             if precision_fractional is not None:
-                assert prec_frac == precision_fractional
+                assert (
+                    prec_frac == precision_fractional
+                ), "If a precision_fractional is specified, it should be the same as the residue tensors' precision_fractional"
             self.base = b
             self.precision_fractional = prec_frac
 
