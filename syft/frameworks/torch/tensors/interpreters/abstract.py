@@ -245,6 +245,16 @@ class AbstractTensor(AbstractObject):
     def copy(self):
         return self + 0
 
+    def refresh(self):
+        """
+        Forward to Additive Shared Tensor the call to refresh shares
+        """
+        if hasattr(self, "child"):
+            self.child = self.child.refresh()
+            return self
+        else:
+            raise AttributeError("Refresh should only be called on AdditiveSharedTensors")
+
     @property
     def grad(self):
         child_grad = self.child.grad

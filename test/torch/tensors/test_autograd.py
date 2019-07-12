@@ -353,8 +353,8 @@ def test_backward_for_additive_shared_div_with_autograd(workers, backward_one):
 
     a = (
         torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
-            .fix_prec()
-            .share(alice, bob, crypto_provider=james)
+        .fix_prec()
+        .share(alice, bob, crypto_provider=james)
     )
     b = 2
 

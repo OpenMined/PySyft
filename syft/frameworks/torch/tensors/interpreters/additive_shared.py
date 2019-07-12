@@ -229,6 +229,15 @@ class AdditiveSharingTensor(AbstractTensor):
         )
         return zero
 
+    def refresh(self):
+        """
+        Refresh shares by adding shares of zero
+        """
+        print("ok")
+        zero = self.zero()
+        r = self + zero
+        return r
+
     @overloaded.overload_method
     def _getitem_multipointer(self, self_shares, indices_shares):
         """

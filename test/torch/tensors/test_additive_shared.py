@@ -1,3 +1,5 @@
+import pytest
+
 import torch
 import torch.nn as nn
 import torch as th
@@ -622,3 +624,24 @@ def test_init_with_no_crypto_provider(workers):
     x = torch.tensor([21, 17]).share(bob, alice).child
 
     assert x.crypto_provider.id == syft.hook.local_worker.id
+
+
+def test_zero_refresh(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([2.2, -1.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+
+    x_sh = x.child.child.child
+    assert (x_sh.zero().get() == torch.zeros(*t.shape).long()).all()
+
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x_copy = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x_r = x.refresh()
+
+    assert (x_r.get().float_prec() == x_copy.get().float_prec()).all()
+
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x_r = x.refresh()
+
+    assert ((x_r / 2).get().float_prec() == t / 2).all()

@@ -79,7 +79,7 @@ class DivBackward(GradFunc):
     def gradient(self, grad):
         assert isinstance(self.other, int)
         grad_self_ = grad / self.other
-        return (grad_self_, )
+        return (grad_self_,)
 
 
 class PowBackward(GradFunc):
