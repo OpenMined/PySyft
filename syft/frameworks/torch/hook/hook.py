@@ -842,7 +842,6 @@ class TorchHook:
             return len(self.shape)
 
         tensor_type.dim = dim
-        
 
         @property
         def grad_fn(self):

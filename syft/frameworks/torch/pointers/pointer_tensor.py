@@ -194,7 +194,6 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
 
     def dim(self) -> int:
         return len(self._shape)
-    
 
     def fix_prec(self, *args, **kwargs):
         """

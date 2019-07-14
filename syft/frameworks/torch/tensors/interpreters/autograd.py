@@ -265,8 +265,7 @@ class AutogradTensor(AbstractTensor):
         if isinstance(self.child, torch.Tensor) and not self.child.is_wrapper:
             return self.child
         return self
-    
-    
+
     @staticmethod
     def simplify(tensor: "AutogradTensor") -> tuple:
         """Takes the attributes of an AutogradTensor and saves them in a tuple.
@@ -278,7 +277,7 @@ class AutogradTensor(AbstractTensor):
             tuple: a tuple holding the unique attributes of the AutogradTensor.
         """
         chain = None
-        #send the child over
+        # send the child over
         if hasattr(tensor, "child"):
             chain = syft.serde._simplify(tensor.child)
 
@@ -292,7 +291,6 @@ class AutogradTensor(AbstractTensor):
             syft.serde._simplify(tensor.tags),
             syft.serde._simplify(tensor.description),
         )
-        
 
     @staticmethod
     def detail(worker: AbstractTensor, tensor_tuple: tuple) -> "AutogradTensor":
@@ -306,22 +304,21 @@ class AutogradTensor(AbstractTensor):
             Examples:
                 shared_tensor = detail(data)
             """
-        owner, tensor_id, chain, requires_grad, preinitialize_grad, grad_fn, tags, description = tensor_tuple
+        owner, tensor_id, chain, requires_grad, preinitialize_grad, grad_fn, tags, description = (
+            tensor_tuple
+        )
 
-        
         if chain is not None:
             chain = syft.serde._detail(worker, chain)
-            
-    
+
         tensor = AutogradTensor(
             owner=owner,
             id=syft.serde._detail(worker, tensor_id),
             preinitialize_grad=preinitialize_grad,
-            grad_fn = grad_fn,
-            data = chain, #pass the de-serialized data
-            tags = syft.serde._detail(worker, tags),
-            description = syft.serde._detail(worker, description),
+            grad_fn=grad_fn,
+            data=chain,  # pass the de-serialized data
+            tags=syft.serde._detail(worker, tags),
+            description=syft.serde._detail(worker, description),
         )
-        
 
         return tensor

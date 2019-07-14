@@ -104,7 +104,7 @@ def test_lstm(workers):
         torch.randn(1, 1, 3).send(bob),
         torch.randn(1, 1, 3).send(bob),
     )  # clean out hidden state
-    #out, hidden = lstm(inputs, hidden)
-    #This test will pass once the .size() method is implemented for
-    #remote tensors
-    #assert out.shape == torch.Size([5, 1, 3])
+    # out, hidden = lstm(inputs, hidden)
+    # This test will pass once the .size() method is implemented for
+    # remote tensors
+    # assert out.shape == torch.Size([5, 1, 3])
