@@ -204,6 +204,23 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
             return self._shape[dim]
     
 
+    def fix_prec(self, *args, **kwargs):
+        """
+        Send a command to remote worker to transform a tensor to fix_precision
+
+        Returns:
+            A pointer to an FixPrecisionTensor
+        """
+
+        # Send the command
+        command = ("fix_prec", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
+
+    fix_precision = fix_prec
+
     def share(self, *args, **kwargs):
         """
         Send a command to remote worker to additively share a tensor
