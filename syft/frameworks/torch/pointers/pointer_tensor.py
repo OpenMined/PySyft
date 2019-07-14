@@ -195,14 +195,6 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
     def dim(self) -> int:
         return len(self._shape)
     
-    
-    def size(self, dim=None):
-            """Hook the size to return the shape with a callable syntax"""
-            print("Called size")
-            if dim is None:
-                return self._shape
-            return self._shape[dim]
-    
 
     def fix_prec(self, *args, **kwargs):
         """

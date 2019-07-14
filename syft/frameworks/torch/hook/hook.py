@@ -843,12 +843,6 @@ class TorchHook:
 
         tensor_type.dim = dim
         
-        def size(self, dim=None):
-            if dim is None:
-                return self.shape
-            return self.shape[dim]
-        
-        tensor_type.size = size
 
         @property
         def grad_fn(self):

@@ -85,12 +85,6 @@ class AdditiveSharingTensor(AbstractTensor):
         for share in self.child.values():
             return len(share.shape)
         
-    def size(self, dim):
-        for share in self.child.values():
-            if dim is None:
-                return share.shape
-            return share.shape[dim]
-
     def get_class_attributes(self):
         """
         Specify all the attributes need to build a wrapper correctly when returning a response,
