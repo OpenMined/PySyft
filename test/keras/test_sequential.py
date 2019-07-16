@@ -55,23 +55,39 @@ def test_share():
 
     hook = sy.KerasHook(tf.keras)
 
-    input_shape = [4, 5]
-    input_data = np.ones(input_shape)
-    kernel = np.random.normal(size=[5, 5])
+    input_shape = (4, 5)
+    kernel = np.random.normal(size=(5, 5))
     initializer = tf.keras.initializers.Constant(kernel)
+    dummy_input = np.ones(input_shape).astype(np.float32)
 
     model = Sequential()
 
     model.add(
         Dense(5, kernel_initializer=initializer, batch_input_shape=input_shape, use_bias=True)
     )
+    output_shape = model.output_shape
+    result_public = model.predict(dummy_input)
 
+    client = sy.TFEWorker(host=None)
     alice = sy.TFEWorker(host=None)
     bob = sy.TFEWorker(host=None)
     carol = sy.TFEWorker(host=None)
+    cluster = sy.TFECluster(alice, bob, carol)
 
-    model.share(alice, bob, carol)
+    cluster.start()
 
-    model.serve(num_requests=0)
+    model.share(cluster)
 
-    model.shutdown_workers()
+    with model._tfe_graph.as_default():
+        client.connect_to_model(input_shape, output_shape, cluster, sess=model._tfe_session)
+
+    client.query_model_async(dummy_input)
+
+    model.serve(num_requests=1)
+
+    result_private = client.query_model_join().astype(np.float32)
+    np.testing.assert_allclose(result_private, result_public, atol=0.01)
+
+    model.stop()
+
+    cluster.stop()
