@@ -63,7 +63,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             primarily a development/testing feature.
         auto_add: Determines whether to automatically add this worker to the
             list of known workers.
-        data_size: Yields the size of the data being sent or received in an event.
     """
 
     def __init__(
@@ -75,7 +74,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         log_msgs: bool = False,
         verbose: bool = False,
         auto_add: bool = True,
-        data_size: Union[int, str] = 0,
     ):
         """Initializes a BaseWorker."""
         super().__init__()
@@ -87,7 +85,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.verbose = verbose
         self.auto_add = auto_add
         self.msg_history = list()
-        self.data_size = data_size
 
         # For performance, we cache each
         self._message_router = {

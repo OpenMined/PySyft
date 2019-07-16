@@ -33,7 +33,6 @@ class WebsocketClientWorker(BaseWorker):
         log_msgs: bool = False,
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
-        data_size: tuple = None,
     ):
         """A client which will forward all messages to a remote worker running a
         WebsocketServerWorker and receive all responses back from the server.
@@ -43,7 +42,7 @@ class WebsocketClientWorker(BaseWorker):
         self.port = port
         self.host = host
 
-        super().__init__(hook, id, data, is_client_worker, log_msgs, verbose, data_size)
+        super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
 
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
@@ -204,20 +203,21 @@ class WebsocketClientWorker(BaseWorker):
         return out
 
     @staticmethod
-    def get_packet_size():
+    def get_packet_size(interface=None):
         """
        Returns the size of the serialized data using Wireshark.
 
-       Args: TODO
+       Args:
+           interface: A string. Name of the interface to sniff on. If none given, takes the first available.
 
        Returns: Size of the packet sent over WebSockets in a given event.
        """
-        capture = pyshark.LiveCapture(interface="eth0")
+        capture = pyshark.LiveCapture(interface=interface)
         capture.sniff(timeout=60)
 
         for packet in capture:
             try:
-                packet_size = packet.data.data
+                packet_size = packet.tcp.data
             except:
                 packet_size = None
                 raise Exception("Cannot determine packet size.")
