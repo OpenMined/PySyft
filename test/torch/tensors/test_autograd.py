@@ -510,35 +510,35 @@ def test_get_float_prec_on_autograd_tensor(workers):
     x2 = x.fix_precision()
     x2 = x2.share(bob, alice, crypto_provider=james, requires_grad=True)
     assert (x2.get().float_precision() == x).all()
-    
-    
+
+
 def test_serialize_deserialize_autograd_tensor(workers):
-    #let's try to send an autogradTensor to a remote location and get it back
+    # let's try to send an autogradTensor to a remote location and get it back
     alice = workers["alice"]
-    random_tensor = torch.randn(5,3)
+    random_tensor = torch.randn(5, 3)
     remote_tensor = random_tensor.send(alice, local_autograd=True)
     local_tensor = remote_tensor.get()
-    #check if the tensor sent is equal to the tensor got from the remote version
+    # check if the tensor sent is equal to the tensor got from the remote version
     equal_tensors = torch.all(torch.eq(local_tensor, random_tensor))
-    
-    assert(equal_tensors == 1)
 
-    
+    assert equal_tensors == 1
+
+
 def test_train_remote_autograd_tensor(workers):
     worker = workers["alice"]
-    
-    #Some Toy Data
-    data = (torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]]))
-    target = (torch.tensor([[0], [0], [1], [1.0]]))
+
+    # Some Toy Data
+    data = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
+    target = torch.tensor([[0], [0], [1], [1.0]])
 
     # A Toy Model
     model = nn.Linear(2, 1)
     model_remote = model.send(worker)
 
-    #Set autograd for the data and the targets
+    # Set autograd for the data and the targets
     data_remote = data.send(worker, local_autograd=True)
     target_remote = target.send(worker, local_autograd=True)
-    #Also set the autograd for the model's parameters
+    # Also set the autograd for the model's parameters
     model_weight_local = model_remote.weight.get()
     model_remote.weight = model_weight_local.send(worker, local_autograd=True)
     model_bias_local = model_remote.bias.get()
@@ -568,7 +568,5 @@ def test_train_remote_autograd_tensor(workers):
         return loss
 
     loss = train()
-    
+
     assert loss.child.child.child.child.virtual_get() < 500
-
-
