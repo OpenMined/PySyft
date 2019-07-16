@@ -203,7 +203,7 @@ class WebsocketClientWorker(BaseWorker):
         return out
 
     @staticmethod
-    def get_packet_size(interface=None):
+    def get_packet_info(interface=None):
         """
        Returns the size of the serialized data using Wireshark.
 
@@ -212,14 +212,14 @@ class WebsocketClientWorker(BaseWorker):
 
        Returns: Size of the packet sent over WebSockets in a given event.
        """
-        capture = pyshark.LiveCapture(interface=interface)
-        capture.sniff(timeout=60)
-
-        for packet in capture:
-            try:
-                packet_size = packet.tcp.data
-            except:
-                packet_size = None
-                raise Exception("Cannot determine packet size.")
-
-        return packet_size
+        if interface is None:
+            raise Exception("Please provide the interface used.")
+        else:
+            capture = pyshark.LiveCapture(interface=interface)
+            capture.sniff(timeout=60)
+            for packet in capture:
+                try:
+                    packet_info = packet.pretty_print()
+                except:
+                    raise Exception("Cannot determine packet info.")
+            return packet_info
