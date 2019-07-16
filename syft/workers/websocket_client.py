@@ -208,7 +208,7 @@ class WebsocketClientWorker(BaseWorker):
        Returns the size of the serialized data using Wireshark.
 
        Args:
-           interface: A string. Name of the interface to sniff on. If none given, takes the first available.
+           interface: A string. Name of the interface to sniff on.
 
        Returns: Size of the packet sent over WebSockets in a given event.
        """
