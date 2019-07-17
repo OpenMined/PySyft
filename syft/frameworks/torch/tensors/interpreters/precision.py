@@ -394,6 +394,44 @@ class FixedPrecisionTensor(AbstractTensor):
 
         module.addmm = addmm
 
+        def sigmoid(tensor):
+            """
+            Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+            TODO: clean function
+            :param tensor:
+            :return:
+            """
+            degree = 5
+            weights = [0.5, 0.2159198015, -0.0082176259, 0.0001825597, -0.0000018848, 0.0000000072]
+            degrees = [0, 1, 3, 5, 7, 9]
+            selected_weights = list(weights[1:2 + int((degree - 1) / 2)])
+            result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
+            for w, d in zip(selected_weights, degrees[1:len(selected_weights) + 1]):
+                result = result + (tensor ** d) * torch.tensor(w).fix_precision().child
+
+            return result
+
+        module.sigmoid = sigmoid
+
+        def tanh(tensor):
+            """
+            Ref: http://serge.mehl.free.fr/anx/dev_lim.html
+            TODO: clean function
+            TODO: replace with interpolation like Morten blog to have better approx when x << 1 is not true
+            :return:
+            """
+            degree = 5
+            weights = [0, 1, -1./3, 2./15, -17./315]
+            degrees = [0, 1, 3, 5, 7, 9]
+            selected_weights = list(weights[1:2 + int((degree - 1) / 2)])
+            result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
+            for w, d in zip(selected_weights, degrees[1:len(selected_weights) + 1]):
+                result = result + (tensor ** d) * torch.tensor(w).fix_precision().child
+
+            return result
+
+        module.tanh = tanh
+
         def conv2d(
             input,
             weight,
