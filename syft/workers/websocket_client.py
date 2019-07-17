@@ -203,28 +203,42 @@ class WebsocketClientWorker(BaseWorker):
         return out
 
     @staticmethod
-    def get_packets(interface=None):
+    def get_packets(
+        timeout=50,
+        interface=None,
+        bpf_filter=None,
+        display_filter="tcp.port == 80",
+        tshark_path=None,
+        output_file=None,
+    ):
         """
        Returns the captured packets of the transmitted data using Wireshark.
 
        Args:
+           timeout: An integer. Set for sniffing with tshark. Default to 50 seconds in this setup.
            interface: A string. Name of the interface to sniff on.
+           bpf_filter: A string. The capture filter in bpf syntax 'tcp port 80'. Needs to be changed to match filter for the traffic sent. Not to be confused with the display filters (e.g. tcp.port == 80). The former are much more limited and is used to restrict the size of a raw packet capture, whereas the latter is used to hide some packets from the packet list. More info can be found at https://wiki.wireshark.org/CaptureFilters.
+           display_filter: A string. Default to 'tcp.port == 80' (assuming this is the port of the 'WebsocketClientWorker'). Please see notes for 'bpf_filter' for details regarding differences. More info can be found at https://wiki.wireshark.org/DisplayFilters.
+           tshark_path: Path to the tshark binary. E.g. '/usr/local/bin/tshark'.
+           output_file: A string. Path including the output file name is to saved. E.g. '/tmp/mycapture.cap'
 
        Returns:
-           catpure: A list. Of packets sent over WebSockets.
+           catpure: A 'pyshark.capture.live_capture.LiveCapture' object. Of packets sent over WebSockets.
            length: An integer. The number of packets captured at the network interface.
        """
         capture_output = []
         if interface is None:
             raise Exception("Please provide the interface used.")
         else:
-            capture = pyshark.LiveCapture(interface=interface)
-            capture.sniff(timeout=50)
+            capture = pyshark.LiveCapture(
+                interface=interface,
+                bpf_filter=bpf_filter,
+                tshark_path=tshark_path,
+                output_file=output_file,
+            )
+            capture.sniff(timeout=timeout)
             length = len(capture)
-            capture_output = capture
-            # for packet in capture:
-            # capture_output.append(packet)
-            return capture_output, length
+            return capture, length
 
     @staticmethod
     def read_packet(index=None, capture_input=None):
