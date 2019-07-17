@@ -57,8 +57,8 @@ class LargePrecisionTensor(AbstractTensor):
         self_scaled = self.child.numpy() * self.base ** self.precision_fractional
         # self_scaled can be an array of floats. As multiplying an array of int with an int
         # still gives an array of int, I think it should be because self.child is a float tensor at this point.
-        # Right now, it does not cause any problem, LargePrecisionTensor._split_number() returns an array of int.
-        result = LargePrecisionTensor._split_number(
+        # Right now, it does not cause any problem, LargePrecisionTensor._split_numbers() returns an array of int.
+        result = LargePrecisionTensor._split_numbers(
             self_scaled, self.internal_precision, self.internal_type
         )
         return torch.tensor(result, dtype=self.internal_type)
@@ -117,8 +117,11 @@ class LargePrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def mul(self, self_, other):
-        # We need to divide the result of the multiplication by the precision
-        return (self_ * other) / (self.base ** self.precision_fractional)
+        if isinstance(other, int):
+            return self_ * other
+        else:
+            # We need to divide the result of the multiplication by the precision
+            return (self_ * other) // (self.base ** self.precision_fractional)
 
     __mul__ = mul
 
@@ -134,6 +137,18 @@ class LargePrecisionTensor(AbstractTensor):
 
     __mod__ = mod
 
+    @overloaded.method
+    def gt(self, self_, other):
+        return 1 * (self_ > other)
+
+    __gt__ = gt
+
+    @overloaded.method
+    def lt(self, self_, other):
+        return 1 * (self_ < other)
+
+    __lt__ = lt
+
     def fix_large_precision(self):
         self.child = self._create_internal_representation()
         return self
@@ -146,7 +161,7 @@ class LargePrecisionTensor(AbstractTensor):
             tensor: the original tensor.
         """
         result = self._internal_representation_to_large_ints()
-        result /= self.base ** self.precision_fractional
+        result = result / self.base ** self.precision_fractional
         # At this point the value is an object type. Force cast to float before creating torch.tensor
         return torch.from_numpy(result.reshape(self.child.shape[:-1]).astype(np.float32))
 
@@ -159,34 +174,40 @@ class LargePrecisionTensor(AbstractTensor):
         internal_type = kwargs["internal_type"]
         internal_precision = type_precision[internal_type] - 1
 
-        result = LargePrecisionTensor._split_number(ndarray, internal_precision, internal_type)
+        result = LargePrecisionTensor._split_numbers(ndarray, internal_precision, internal_type)
         return torch.tensor(result, dtype=internal_type)
 
     @staticmethod
-    def _split_number(number, bits, internal_type) -> np.array:
-        """Splits a number in numbers of a smaller power.
+    def _split_numbers(numbers, bits, internal_type) -> np.array:
+        """Splits a tensor of numbers in numbers of a smaller power.
 
         Args:
-            number (int): the number to split.
+            numbers (array): the tensor to split.
             bits (int): the bits to use in the split.
 
         Returns:
-            list: a list of numbers representing the original one.
+            array: a tensor with one more dimension representing the original one.
 
         """
-        sign_mask = np.where(number > 0, 1, -1)
+        if np.all(numbers == 0):
+            # numbers is an array of objects if the values are too large
+            # we need to cast it back to an array of integers
+            numbers = numbers.astype(np.int)
+            return np.expand_dims(numbers, -1)
+
+        sign_mask = np.where(numbers > 0, 1, -1)
         if internal_type == torch.uint8:
             assert np.all(
                 sign_mask == 1
             ), "LargePrecisionTensors with negative values cannot be represented with uint8"
-        number = np.where(number > 0, number, -number)
+        numbers = np.where(numbers > 0, numbers, -numbers)
 
         base = 2 ** bits
         number_parts = []
-        while np.any(number):
+        while np.any(numbers):
             # number, part = np.divmod(number, base)  # Not sure why this doesn't work
-            part = number % base
-            number = number // base
+            part = numbers % base
+            numbers = numbers // base
             number_parts.append(part * sign_mask)
         res = np.array(number_parts[::-1], dtype=np.int)
         return res.transpose(*range(1, res.ndim), 0)

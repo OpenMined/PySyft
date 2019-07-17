@@ -11,7 +11,7 @@ from syft.exceptions import InvalidTensorForRemoteGet
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.pointers import PointerTensor
 from syft.workers import BaseWorker
-from syft.frameworks.torch.tensors.interpreters.chinese_remainder_theorem import _sizes_for_fields
+from syft.frameworks.torch.tensors.interpreters.chinese_remainder_theorem import _moduli_for_fields
 
 from syft.exceptions import PureTorchTensorFoundError
 
@@ -672,13 +672,22 @@ class TorchTensor(AbstractTensor):
             assert (
                 "field" not in kwargs
             ), 'When storage is set to "crt", choose the field size with the field_type argument'
-            fpt = syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
-            return (
-                syft.CRTTensor(*args, **kwargs)
-                .on(fpt, wrap=False)
-                .to_crt_representation(field_type)
-                .wrap()
-            )
+
+            possible_field_types = list(_moduli_for_fields.keys())
+            assert (
+                field_type in possible_field_types
+            ), f"Choose field_type in {possible_field_types} to build CRT tensors"
+
+            residues = {}
+            for mod in _moduli_for_fields[field_type]:
+                residues[mod] = (
+                    syft.FixedPrecisionTensor(*args, field=mod, **kwargs)
+                    .on(self)
+                    .enc_fix_prec()
+                    .wrap()
+                )
+
+            return syft.CRTTensor(residues, *args, **kwargs).wrap()
 
         if need_large_prec or storage == "large":
             return (

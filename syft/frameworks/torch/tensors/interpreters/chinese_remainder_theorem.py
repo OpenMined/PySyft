@@ -95,33 +95,8 @@ class CRTTensor(AbstractTensor):
             reconstruction_coeffs = self.compute_reconstruction_coeffs()
         self.reconstruction_coeffs = reconstruction_coeffs
 
-    def to_crt_representation(self, field_type):
-        """This method encodes the .child object to CRT representation """
-
-        try:
-            moduli = _moduli_for_fields[field_type]
-            self.field = _sizes_for_fields[field_type]
-        except KeyError as e:
-            possible_field_types = list(_moduli_for_fields.keys())
-            raise Exception(
-                f"Only tensor in fields of size in {possible_field_types} are currently possible to represent with CRT tensors"
-            ) from e
-
-        fix_prec_tensor = self.child
-        self.base = fix_prec_tensor.child.base
-        self.precision_fractional = fix_prec_tensor.child.precision_fractional
-
-        self.child = {}
-        for mod in moduli:
-            self.child[mod] = fix_prec_tensor % mod
-
-        self.reconstruction_coeffs = self.compute_reconstruction_coeffs()
-
-        return self
-
     def float_precision(self):
-        reconstructed = self.reconstruct()
-        return reconstructed.float_precision()
+        return self.reconstruct()
 
     @property
     def grad(self):
@@ -162,6 +137,7 @@ class CRTTensor(AbstractTensor):
             # This is a bit ugly, I want the result to be stored in a CRT tensor with same moduli
             result.child.field = mod
             dict_result[mod] = result.copy()
+
         return dict_result
 
     __eq__ = eq
@@ -260,15 +236,23 @@ class CRTTensor(AbstractTensor):
         """
         res = 0
         N = 1
+
         # We need to sort the dict to be sure that the coeffs are retrieved in the same order they were stored
         for i, (mod, ai) in enumerate(sorted(self.child.items())):
-            ai = (ai.float_prec() % mod).long()
+            # We need LargePrecisionTensors to reconstruct the original tensor because large values are used in the process
+            ai = ai.child.child
+            ai = ai.fix_prec(storage="large", precision_fractional=0)
             res += ai * self.reconstruction_coeffs[i]
             N *= mod
 
-        return FixedPrecisionTensor(
-            field=N, base=self.base, precision_fractional=self.precision_fractional
-        ).on(res % N)
+        res %= N
+
+        gate = res > (N / 2)
+        neg_nums = (res - N) * gate
+        pos_nums = res * (1 - gate)
+        res = neg_nums + pos_nums
+
+        return res.float_precision()
 
     def compute_reconstruction_coeffs(self):
         """ Compute the coefficients needed for the reconstruction (see the detailed exaplanation in the
@@ -364,7 +348,7 @@ class CRTTensor(AbstractTensor):
             tensor.id,
             tensor.base,
             tensor.precision_fractional,
-            tensor.reconstruction_coeffs,
+            # tensor.reconstruction_coeffs,
             chain,
         )
 
@@ -378,15 +362,14 @@ class CRTTensor(AbstractTensor):
         Returns:
             CRTTensor: a CRTTensor
         """
-        tensor_id, tensor_base, tensor_precision_fractional, tensor_reconstruction_coeffs, chain = (
-            tensor_tuple
-        )
+        tensor_id, tensor_base, tensor_precision_fractional, chain = tensor_tuple
 
         tensor = syft.CRTTensor(
             base=tensor_base,
             precision_fractional=tensor_precision_fractional,
             # FIXME need to cast to tuple otherwise tensor_reconstruction_coeffs is an unashable list
-            reconstruction_coeffs=tuple(tensor_reconstruction_coeffs),
+            # reconstruction_coeffs can be large integers that cannot be serialized with msgpack
+            # reconstruction_coeffs=tuple(tensor_reconstruction_coeffs),
             owner=worker,
             id=tensor_id,
         )
@@ -394,6 +377,9 @@ class CRTTensor(AbstractTensor):
         if chain is not None:
             chain = syft.serde._detail(worker, chain)
             tensor.child = chain
+
+        # We need it now because we cannot serialize large reconstruction coefficients
+        tensor.reconstruction_coeffs = tensor.compute_reconstruction_coeffs()
 
         return tensor
 
