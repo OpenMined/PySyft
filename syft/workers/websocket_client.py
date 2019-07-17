@@ -203,23 +203,55 @@ class WebsocketClientWorker(BaseWorker):
         return out
 
     @staticmethod
-    def get_packet_info(interface=None):
+    def get_packets(interface=None):
         """
-       Returns the size of the serialized data using Wireshark.
+       Returns the captured packets of the transmitted data using Wireshark.
 
        Args:
            interface: A string. Name of the interface to sniff on.
 
-       Returns: Size of the packet sent over WebSockets in a given event.
+       Returns:
+           catpure: A list. Of packets sent over WebSockets.
+           length: An integer. The number of packets captured at the network interface.
        """
+        capture_output = []
         if interface is None:
             raise Exception("Please provide the interface used.")
         else:
             capture = pyshark.LiveCapture(interface=interface)
-            capture.sniff(timeout=60)
-            for packet in capture:
+            capture.sniff(timeout=50)
+            length = len(capture)
+            capture_output = capture
+            # for packet in capture:
+            # capture_output.append(packet)
+            return capture_output, length
+
+    @staticmethod
+    def read_packet(index=None, capture_input=None):
+        """
+        Reads the info of one packet returned by get_packets using pretty_print().
+
+        Args:
+            index: An integer. The index of the packet to be examined.
+
+        Returns:
+            pretty_print: The info of the packet chosen to be read.
+        """
+        if index is None:
+            raise Exception(
+                "Please choose an index within the total number of packets captured by get_packets."
+            )
+        elif capture_input is None:
+            raise Exception("Please input the capture_output from get_packets.")
+        elif not isinstance(index, int):
+            raise Exception("The index passed is not an integer.")
+        else:
+            length = len(capture_input)
+            if index < length:
                 try:
-                    packet_info = packet.pretty_print()
+                    packet = capture_input[index]
+                    return packet.pretty_print()
                 except:
-                    raise Exception("Cannot determine packet info.")
-            return packet_info
+                    raise Exception("Something went wrong when retrieving packet data.")
+            else:
+                raise Exception("The index given is not valid.")
