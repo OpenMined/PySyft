@@ -12,7 +12,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
-        field: int = (2 ** 62) - 1,
+        field: int = 2 ** 62,
         base: int = 10,
         precision_fractional: int = 3,
         kappa: int = 1,
@@ -44,7 +44,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        self.torch_max_value = torch.tensor([round(self.field / 2)])
+        self.torch_max_value = torch.tensor(self.field).long()
 
     def get_class_attributes(self):
         """
@@ -86,14 +86,14 @@ class FixedPrecisionTensor(AbstractTensor):
         rational = self.child
 
         upscaled = (rational * self.base ** self.precision_fractional).long()
+        assert (
+            upscaled.abs() < (self.field / 2)
+        ).all(), (
+            f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
+        )
+
         field_element = upscaled % self.field
         field_element.owner = rational.owner
-
-        # Handle neg values
-        gate = field_element.gt(self.torch_max_value).long()
-        neg_nums = (field_element - self.field) * gate
-        pos_nums = field_element * (1 - gate)
-        field_element = neg_nums + pos_nums
 
         self.child = field_element
         return self
@@ -104,7 +104,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         value = self.child.long() % self.field
 
-        gate = value.native_gt(self.torch_max_value).long()
+        gate = value.native_gt(self.torch_max_value / 2).long()
         neg_nums = (value - self.field) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
@@ -113,8 +113,19 @@ class FixedPrecisionTensor(AbstractTensor):
 
     def truncate(self, precision_fractional):
         truncation = self.base ** precision_fractional
-        self.child /= truncation
-        return self
+
+        # We need to make sure that values are truncated "towards 0"
+        # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
+        # at 97 (equivalent to -3), not 7
+        if self.child.is_wrapper:  # Handle FPT>(wrap)>AST
+            self.child = self.child / truncation
+            return self
+        else:
+            gate = self.child.native_gt(self.torch_max_value / 2).long()
+            neg_nums = (self.child - self.field) / truncation + self.field
+            pos_nums = self.child / truncation
+            self.child = neg_nums * gate + pos_nums * (1 - gate)
+            return self
 
     @overloaded.method
     def add(self, _self, other):
@@ -137,6 +148,7 @@ class FixedPrecisionTensor(AbstractTensor):
             other = tmp
 
         response = getattr(_self, "add")(other)
+        response %= self.field  # Wrap around the field
 
         return response
 
@@ -179,6 +191,7 @@ class FixedPrecisionTensor(AbstractTensor):
             other = tmp
 
         response = getattr(_self, "sub")(other)
+        response %= self.field  # Wrap around the field
 
         return response
 
@@ -218,7 +231,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         if isinstance(other, int):
             new_self = self.child
-            new_other = other * self.base ** self.precision_fractional
+            new_other = other
         elif self.child.is_wrapper and not other.child.is_wrapper:
             # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
             # we want to perform AST * torch.tensor
@@ -245,7 +258,11 @@ class FixedPrecisionTensor(AbstractTensor):
             "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        return response.truncate(self.precision_fractional)
+        response %= self.field  # Wrap around the field
+        if not isinstance(other, int):
+            response = response.truncate(self.precision_fractional)
+
+        return response
 
     __mul__ = mul
 
@@ -315,7 +332,10 @@ class FixedPrecisionTensor(AbstractTensor):
             "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        return response.truncate(other.precision_fractional)
+        response %= self.field  # Wrap around the field
+        response = response.truncate(other.precision_fractional)
+
+        return response
 
     __matmul__ = matmul
 
@@ -373,6 +393,44 @@ class FixedPrecisionTensor(AbstractTensor):
             return result
 
         module.addmm = addmm
+
+        def sigmoid(tensor):
+            """
+            Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+            TODO: clean function
+            :param tensor:
+            :return:
+            """
+            degree = 5
+            weights = [0.5, 0.2159198015, -0.0082176259, 0.0001825597, -0.0000018848, 0.0000000072]
+            degrees = [0, 1, 3, 5, 7, 9]
+            selected_weights = list(weights[1:2 + int((degree - 1) / 2)])
+            result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
+            for w, d in zip(selected_weights, degrees[1:len(selected_weights) + 1]):
+                result = result + (tensor ** d) * torch.tensor(w).fix_precision().child
+
+            return result
+
+        module.sigmoid = sigmoid
+
+        def tanh(tensor):
+            """
+            Ref: http://serge.mehl.free.fr/anx/dev_lim.html
+            TODO: clean function
+            TODO: replace with interpolation like Morten blog to have better approx when x << 1 is not true
+            :return:
+            """
+            degree = 5
+            weights = [0, 1, -1./3, 2./15, -17./315]
+            degrees = [0, 1, 3, 5, 7, 9]
+            selected_weights = list(weights[1:2 + int((degree - 1) / 2)])
+            result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
+            for w, d in zip(selected_weights, degrees[1:len(selected_weights) + 1]):
+                result = result + (tensor ** d) * torch.tensor(w).fix_precision().child
+
+            return result
+
+        module.tanh = tanh
 
         def conv2d(
             input,
@@ -616,6 +674,13 @@ class FixedPrecisionTensor(AbstractTensor):
         ).on(self.child.get())
 
     def share(self, *owners, field=None, crypto_provider=None):
+        if field is None:
+            field = self.field
+        else:
+            assert (
+                field == self.field
+            ), "When sharing a FixedPrecisionTensor, the field of the resulting AdditiveSharingTensor \
+                must be the same as the one of the original tensor"
         self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
         return self
 

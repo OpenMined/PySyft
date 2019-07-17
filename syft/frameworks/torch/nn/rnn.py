@@ -190,6 +190,8 @@ class RNNBase(nn.Module):
         seq_len = x.shape[0]
 
         if h is None:
+            # TODO convert in an appropriate fashion (FPT AST etc)
+            print("WARNING: wrong init 1")
             h = torch.zeros(
                 self.num_layers * self.num_directions,
                 batch_size,
@@ -198,6 +200,7 @@ class RNNBase(nn.Module):
                 device=x.device,
             )
             if self.is_lstm:
+                print("WARNING: wrong init 2")
                 c = torch.zeros(
                     self.num_layers * self.num_directions,
                     batch_size,

@@ -4,7 +4,7 @@ for all tensors (Torch and Numpy).
 """
 from collections import OrderedDict
 from tempfile import TemporaryFile
-from typing import Tuple
+from typing import Tuple, List
 import torch
 
 import io
@@ -331,6 +331,14 @@ def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.devi
     return torch.device(type=device_type)
 
 
+def _simplify_torch_size(shape: torch.Size) -> Tuple:
+    return (list(shape),)
+
+
+def _detail_torch_size(worker: AbstractWorker, shape: List[int]) -> torch.Size:
+    return torch.Size(*shape)
+
+
 def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
     """Strategy to serialize a script module using Torch.jit"""
     return obj.save_to_buffer()
@@ -349,6 +357,7 @@ MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         numpy.ndarray: (_simplify_ndarray, _detail_ndarray),
         torch.device: (_simplify_torch_device, _detail_torch_device),
+        torch.Size: (_simplify_torch_size, _detail_torch_size),
         torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
         torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
         torch.nn.Parameter: (_simplify_torch_parameter, _detail_torch_parameter),
