@@ -21,14 +21,19 @@ class TFEWorker:
         self._server_process = None
         self._auto_managed = auto_managed
 
-    def start(self, player_name, *workers):
+    def start(self, player_name, cluster):
+        """
+        Start the worker as a player in the given cluster.
+        Depending on whether the worker was constructed with a host or not
+        this may launch a subprocess running a TensorFlow server.
+        """
+
         if self.host is None:
             # we're running using a tfe.LocalConfig which doesn't require us to do anything
             return
 
         config_filename = os.path.join(_TMP_DIR, "tfe.config")
-
-        config, _ = self.config_from_workers(workers)
+        config = cluster.tfe_config
         config.save(config_filename)
 
         launch_cmd = "python -m tf_encrypted.player --config {} {}".format(
@@ -47,6 +52,11 @@ class TFEWorker:
             )
 
     def stop(self):
+        """
+        Stop the worker. This will shutdown any TensorFlow server launched
+        in `start()`.
+        """
+
         if self.host is None:
             # we're running using a tfe.LocalConfig which doesn't require us to do anything
             return
@@ -60,8 +70,14 @@ class TFEWorker:
         else:
             logger.info("Please terminate the process on host '%s'.", self.host)
 
-    def connect_to_model(self, input_shape, output_shape, *workers):
-        config, _ = self.config_from_workers(workers)
+    def connect_to_model(self, input_shape, output_shape, cluster, sess=None):
+        """
+        Connect to a TF Encrypted model being served by the given cluster.
+        
+        This must be done before querying the model.
+        """
+
+        config = cluster.tfe_config
         tfe.set_config(config)
 
         prot = tfe.protocol.SecureNN(
@@ -73,21 +89,70 @@ class TFEWorker:
             input_shape=input_shape, output_shape=output_shape
         )
 
-        sess = tfe.Session(config=config)
+        if sess is None:
+            sess = tfe.Session(config=config)
         self._tf_session = sess
 
     def query_model(self, data):
+        """
+        Encrypt data and sent it as input to the model being served.
+        
+        This will block until a result is ready, and requires that
+        a connection to the model has already been established via
+        `connect_to_model()`.
+        """
         self.query_model_async(data)
         return self.query_model_join()
 
     def query_model_async(self, data):
+        """
+        Asynchronous version of `query_model` that will not block until a
+        result is ready. Call `query_model_join` to retrive result.
+        
+        This requires that a connection to the model has already been
+        established via `connect_to_model()`.
+        """
         self._tf_client.send_input(self._tf_session, data)
 
     def query_model_join(self):
+        """
+        Retrives the result from calling `query_model_async`, blocking until
+        ready.
+        """
         return self._tf_client.receive_output(self._tf_session)
 
-    @classmethod
-    def config_from_workers(cls, workers):
+
+class TFECluster:
+    """
+    A TFECluster represents a group of TFEWorkers that are aware about each
+    other and collectively perform an encrypted computation.
+    """
+
+    def __init__(self, *workers):
+        tfe_config, player_to_worker_mapping = self._build_cluster(workers)
+        self.tfe_config = tfe_config
+        self.player_to_worker_mapping = player_to_worker_mapping
+
+    @property
+    def workers(self):
+        return list(self.player_to_worker_mapping.values())
+
+    def start(self):
+        """
+        Start all workers in the cluster.
+        """
+        # Tell the TFE workers to launch TF servers
+        for player_name, worker in self.player_to_worker_mapping.items():
+            worker.start(player_name, self)
+
+    def stop(self):
+        """
+        Stop all workers in the cluster.
+        """
+        for worker in self.workers:
+            worker.stop()
+
+    def _build_cluster(self, workers):
         if len(workers) != 3:
             raise ValueError("Expected three workers but {} were given".format(len(workers)))
 
@@ -108,4 +173,5 @@ class TFEWorker:
             [(player_name, worker.host) for player_name, worker in player_to_worker_mapping.items()]
         )
         config = tfe.RemoteConfig(hostmap)
+
         return config, player_to_worker_mapping

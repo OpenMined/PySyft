@@ -117,6 +117,33 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
     def shape(self, new_shape):
         self._shape = new_shape
 
+    @property
+    def grad(self):
+        if not hasattr(self, "_grad"):
+            self._grad = self.attr("grad")
+
+        if self._grad.child.is_none():
+            return None
+
+        return self._grad
+
+    @grad.setter
+    def grad(self, new_grad):
+        self._grad = new_grad
+
+    @property
+    def data(self):
+        if not hasattr(self, "_data"):
+            self._data = self.attr("data")
+        return self._data
+
+    @data.setter
+    def data(self, new_data):
+        self._data = new_data
+
+    def is_none(self):
+        return self.owner.request_is_remote_tensor_none(self)
+
     def get(self, deregister_ptr: bool = True):
         """Requests the tensor/chain being pointed to, be serialized and return
 
@@ -167,6 +194,23 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
 
     def dim(self) -> int:
         return len(self._shape)
+
+    def fix_prec(self, *args, **kwargs):
+        """
+        Send a command to remote worker to transform a tensor to fix_precision
+
+        Returns:
+            A pointer to an FixPrecisionTensor
+        """
+
+        # Send the command
+        command = ("fix_prec", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
+
+    fix_precision = fix_prec
 
     def share(self, *args, **kwargs):
         """
