@@ -208,7 +208,7 @@ def test_torch_mul(workers):
     x = torch.tensor([11.0]).fix_prec(field=2 ** 16, precision_fractional=2)
     y = torch.mul(x, x).float_prec()
 
-    assert y == torch.tensor([121.])
+    assert y == torch.tensor([121.0])
 
     # mixing + and *
     x = torch.tensor([2.113]).fix_prec()
