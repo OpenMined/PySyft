@@ -16,7 +16,7 @@ class CRTTensor(AbstractTensor):
         x = a_0 mod f_0
         ...
         x = a_n mod f_n
-    The Chineses Remainder Theorem (that also gives his name to this tensor) assert that exactly one x in Zq with q = f_0 * ... * f_n
+    The Chinese Remainder Theorem (that also gives his name to this tensor) assert that exactly one x in Zq with q = f_0 * ... * f_n
     satisfies this system. This x is the real value represented by the tensor.
     This tensor makes it possible to represent big numbers and to avoid overflows while manipulating them.
     It also makes additions, subtractions, and multiplications of huge numbers quite efficient.
@@ -96,7 +96,8 @@ class CRTTensor(AbstractTensor):
         self.reconstruction_coeffs = reconstruction_coeffs
 
     def float_precision(self):
-        return self.reconstruct()
+        res = self.reconstruct() / self.base ** self.precision_fractional
+        return res
 
     @property
     def grad(self):
@@ -126,9 +127,7 @@ class CRTTensor(AbstractTensor):
             self_.keys() == other_.keys()
         ), "Cannot compare 2 CRT tensors that don't have the same moduli"
 
-        result = torch.ones(self.shape).fix_prec(
-            base=self.base, precision_fractional=self.precision_fractional
-        )
+        result = 1
         for mod in self_.keys():
             result *= (self_[mod] == other_[mod]).long()
 

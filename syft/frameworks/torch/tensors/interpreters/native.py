@@ -683,7 +683,7 @@ class TorchTensor(AbstractTensor):
                 residues[mod] = (
                     syft.FixedPrecisionTensor(*args, field=mod, **kwargs)
                     .on(self)
-                    .enc_fix_prec()
+                    .child.fix_precision(check_range=False)
                     .wrap()
                 )
 
