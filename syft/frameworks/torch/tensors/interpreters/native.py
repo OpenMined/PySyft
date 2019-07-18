@@ -662,6 +662,10 @@ class TorchTensor(AbstractTensor):
     float_precision_ = float_prec_
 
     def fix_prec(self, *args, storage="auto", field_type="int100", **kwargs):
+        if self.is_wrapper:
+            self.child = self.child.fix_prec(*args, **kwargs)
+            return self
+
         base = kwargs.get("base", 10)
         prec_fractional = kwargs.get("precision_fractional", 3)
 
