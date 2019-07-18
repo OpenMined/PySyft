@@ -79,17 +79,19 @@ class FixedPrecisionTensor(AbstractTensor):
     def attr(self, attr_name):
         return self.__getattribute__(attr_name)
 
-    def fix_precision(self):
+    def fix_precision(self, check_range=True):
         """This method encodes the .child object using fixed precision"""
 
         rational = self.child
 
         upscaled = (rational * self.base ** self.precision_fractional).long()
-        assert (
-            upscaled.abs() < (self.field / 2)
-        ).all(), (
-            f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
-        )
+
+        if check_range:
+            assert (
+                upscaled.abs() < (self.field / 2)
+            ).all(), (
+                f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
+            )
 
         field_element = upscaled % self.field
         field_element.owner = rational.owner
@@ -110,13 +112,13 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return result
 
-    def truncate(self, precision_fractional):
+    def truncate(self, precision_fractional, check_sign=True):
         truncation = self.base ** precision_fractional
 
         # We need to make sure that values are truncated "towards 0"
         # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
         # at 97 (equivalent to -3), not 7
-        if self.child.is_wrapper:  # Handle FPT>(wrap)>AST
+        if self.child.is_wrapper or not check_sign:  # Handle FPT>(wrap)>AST
             self.child = self.child / truncation
             return self
         else:
@@ -223,47 +225,100 @@ class FixedPrecisionTensor(AbstractTensor):
         in the fixed precision setting
         """
 
-        if isinstance(other, FixedPrecisionTensor):
+        if isinstance(other, (int, torch.IntTensor, torch.LongTensor)):
+            new_self = self.child
+            new_other = other
+
+            # Send it to the appropriate class and get the response
+            response = getattr(new_self, "mul")(new_other)
+
+            # Put back SyftTensor on the tensors found in the response
+            response = syft.frameworks.torch.hook_args.hook_response(
+                "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
+            )
+
+            response %= self.field  # Wrap around the field
+
+        elif other.child.is_wrapper or self.child.is_wrapper:
+            if not other.child.is_wrapper:
+                # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
+                # we want to perform AST * torch.tensor
+                new_self = self.child
+                new_other = other.wrap()
+
+            elif not self.child.is_wrapper:
+                # If we try to multiply a FPT>torch.tensor with a FPT>(wrap)>AST,
+                # we swap operators so that we do the same operation as above
+                new_self = other.child
+                new_other = self.wrap()
+
+            else:  # Both are FPT>(wrap)>AST
+                # If we try to multiply a FPT>(wrap)>AST with a FPT>(wrap)>AST,
+                # Replace all syft tensor with their child attribute
+                new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
+                    "mul", self, other, None
+                )
+
+            # Send it to the appropriate class and get the response
+            response = getattr(new_self, "mul")(new_other)
+
+            # Put back SyftTensor on the tensors found in the response
+            response = syft.frameworks.torch.hook_args.hook_response(
+                "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
+            )
+
+            response = response.truncate(self.precision_fractional)
+            response %= self.field  # Wrap around the field
+
+        elif isinstance(other, FixedPrecisionTensor):
             assert (
                 self.precision_fractional == other.precision_fractional
             ), "In mul, all args should have the same precision_fractional"
 
-        if isinstance(other, int):
-            new_self = self.child
-            new_other = other
-        elif self.child.is_wrapper and not other.child.is_wrapper:
-            # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
-            # we want to perform AST * torch.tensor
-            new_self = self.child
-            new_other = other.wrap()
-
-        elif other.child.is_wrapper and not self.child.is_wrapper:
-            # If we try to multiply a FPT>torch.tensor with a FPT>(wrap)>AST,
-            # we swap operators so that we do the same operation as above
-            new_self = other.child
-            new_other = self.wrap()
-
-        else:
             # Replace all syft tensor with their child attribute
             new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
                 "mul", self, other, None
             )
 
-        # Send it to the appropriate class and get the response
-        response = getattr(new_self, "mul")(new_other)
+            # To avoid overflow due to multiplication of small negative numbers
+            # we take absolute value of the operands
 
-        # Put back SyftTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
-            "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
-        )
+            # sgn_self is 1 when new_self is positive else it's 0
+            sgn_self = (new_self < self.field // 2).long()
+            pos_self = new_self * sgn_self
+            neg_self = (self.field - new_self) * (1 - sgn_self)
+            new_self = neg_self + pos_self
 
-        response %= self.field  # Wrap around the field
-        if not isinstance(other, int):
-            response = response.truncate(self.precision_fractional)
+            # sgn_other is 1 when new_other is positive else it's 0
+            sgn_other = (new_other < self.field // 2).long()
+            pos_other = new_other * sgn_other
+            neg_other = (self.field - new_other) * (1 - sgn_other)
+            new_other = neg_other + pos_other
+
+            # If both have the same sign, sgn is 1 else it's 0
+            sgn = 1 - (sgn_self - sgn_other) ** 2
+
+            # Send it to the appropriate class and get the response
+            response = getattr(new_self, "mul")(new_other)
+
+            # Put back SyftTensor on the tensors found in the response
+            response = syft.frameworks.torch.hook_args.hook_response(
+                "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
+            )
+
+            # With this sign trick, we don't need to consider negative numbers when truncating
+            response = response.truncate(self.precision_fractional, check_sign=False)
+            response %= self.field  # Wrap around the field
+
+            # Give back its sign to response
+            pos_res = response * sgn
+            neg_res = (self.field - response) * (1 - sgn)
+            response = neg_res + pos_res
 
         return response
 
     __mul__ = mul
+    __imul__ = mul
 
     def pow(self, power):
         """

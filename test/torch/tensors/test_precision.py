@@ -205,12 +205,10 @@ def test_torch_mul(workers):
     z = z.float_prec()
     assert z == torch.tensor([-0.2380])
 
-    # When overflow occurs
     x = torch.tensor([11.0]).fix_prec(field=2 ** 16, precision_fractional=2)
     y = torch.mul(x, x).float_prec()
 
-    # (1100 * 1100) % 2**16 = 30352
-    assert y == torch.tensor([3.03])
+    assert y == torch.tensor([121.])
 
     # mixing + and *
     x = torch.tensor([2.113]).fix_prec()
