@@ -344,10 +344,11 @@ class AdditiveSharingTensor(AbstractTensor):
             other = other.share(
                 *self.child.keys(), field=self.field, crypto_provider=self.crypto_provider
             ).child.child
-        elif not isinstance(other, dict):
+
+        elif isinstance(other, (int, float)):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
-                torch.Tensor([other])
+                torch.tensor([other])
                 .share(*self.child.keys(), field=self.field, crypto_provider=self.crypto_provider)
                 .child.child
             )
