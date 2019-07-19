@@ -234,6 +234,26 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
 
         return ptr
 
+    def move(self, location):
+        ptr = self.owner.send(self, location)
+        ptr.remote_get()
+        # don't want it to accidentally delete the remote object
+        # when this pointer is deleted
+        ptr.garbage_collect_data = False
+        return ptr
+
+    def mid_get(self):
+        """This method calls .get() on a child pointer and correctly registers the results"""
+
+        child_id = self.id
+        tensor = self.get()
+        tensor.id = child_id
+        self.owner.register_obj(tensor)
+
+    def remote_get(self):
+        self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
+        return self
+
     def get(self, deregister_ptr: bool = True):
         """Requests the tensor/chain being pointed to, be serialized and return
 
@@ -283,7 +303,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         return attr_ptr
 
     def dim(self) -> int:
-        return len(self._shape)
+        return len(self.shape)
 
     def share(self, *args, **kwargs):
         """
@@ -311,6 +331,9 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
             'Error, Please consider calling ".get" method instead of ".item" method, '
             "so you can be safely getting the item you need."
         )
+
+    def __eq__(self, other):
+        return self.eq(other)
 
     @staticmethod
     def simplify(ptr: "PointerTensor") -> tuple:

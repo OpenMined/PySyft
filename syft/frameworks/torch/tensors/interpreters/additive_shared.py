@@ -108,10 +108,10 @@ class AdditiveSharingTensor(AbstractTensor):
         shares = list()
 
         for share in self.child.values():
-            if hasattr(share, "child") and isinstance(share.child, sy.PointerTensor):
+            if isinstance(share, sy.PointerTensor):
                 shares.append(share.get())
             else:
-                shares.append(share.child)
+                shares.append(share)
 
         res_field = sum(shares) % self.field
 
@@ -121,6 +121,14 @@ class AdditiveSharingTensor(AbstractTensor):
         result = neg_nums + pos_nums
 
         return result
+
+    def mid_get(self):
+        """This method calls .get() on a child pointer and correctly registers the results"""
+
+        child_id = self.id
+        tensor = self.get()
+        tensor.id = child_id
+        self.owner.register_obj(tensor)
 
     def virtual_get(self):
         """Get the value of the tensor without calling get
@@ -204,7 +212,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         workers = self.locations
 
-        ptr_to_sh = self.wrap().send(workers[0])
+        ptr_to_sh = self.wrap().send(workers[0]).child
         pointer = ptr_to_sh.remote_get()
 
         pointers = [pointer]
@@ -913,7 +921,7 @@ class AdditiveSharingTensor(AbstractTensor):
     def set_garbage_collect_data(self, value):
         shares = self.child
         for _, share in shares.items():
-            share.child.garbage_collect_data = value
+            share.garbage_collect_data = value
 
     @staticmethod
     def simplify(tensor: "AdditiveSharingTensor") -> tuple:
