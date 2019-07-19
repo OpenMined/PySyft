@@ -293,7 +293,7 @@ def test_evaluate(hook, start_proc):  # pragma: no cover
     train_config.send(local_worker)
 
     result = local_worker.evaluate(
-        dataset_key=dataset_key, histograms=True, nr_bins=3, calculate_loss=True
+        dataset_key=dataset_key, calculate_histograms=True, nr_bins=3, calculate_loss=True
     )
 
     test_loss_before, correct_before, len_dataset, hist_pred_before, hist_target = result

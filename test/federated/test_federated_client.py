@@ -229,7 +229,7 @@ def test_evaluate():  # pragma: no cover
     fed_client.optimizer = None
 
     result = fed_client.evaluate(
-        dataset_key=dataset_key, histograms=True, nr_bins=3, calculate_loss=True
+        dataset_key=dataset_key, calculate_histograms=True, nr_bins=3, calculate_loss=True
     )
 
     test_loss_before, correct_before, len_dataset, hist_pred_before, hist_target = result
@@ -255,16 +255,13 @@ def test_evaluate():  # pragma: no cover
     train_model(fed_client, dataset_key, available_dataset_key=dataset_key, nr_rounds=50)
 
     result = fed_client.evaluate(
-        dataset_key=dataset_key, histograms=True, nr_bins=3, calculate_loss=True
+        dataset_key=dataset_key, calculate_histograms=True, nr_bins=3, calculate_loss=True
     )
 
     test_loss_after, correct_after, len_dataset, hist_pred_after, hist_target = result
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
         print("Evaluation result: {}".format(result))
-        # final_model = fed_client.get_obj(model_id).obj
-        # print("model weights: {}".format(final_model.fc1.weight))
-        # print("model bias: {}".format(final_model.fc1.bias))
 
     assert len_dataset == 30
     assert (hist_target == [10, 10, 10]).all()

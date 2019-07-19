@@ -127,25 +127,25 @@ class FederatedClient(ObjectStorage):
     def evaluate(
         self,
         dataset_key: str,
-        histograms: bool = False,
+        calculate_histograms: bool = False,
         nr_bins: int = -1,
-        calculate_loss: bool = False,
+        calculate_loss: bool = True,
     ):
         """Evaluates a model on the local dataset as specified in the local TrainConfig object.
 
         Args:
             dataset_key: Identifier of the local dataset that shall be used for training.
-            histograms: If True, calculate the histograms of predicted classes.
-            nr_bins: Used together with histograms, number of classes.
+            calculate_histograms: If True, calculate the histograms of predicted classes.
+            nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
             calculate_loss: If True, loss is calculated additionally.
 
         Returns:
             Tuple containing:
-                * test_loss: avg loss on data set, None if not calculated
-                * correct: number of correct predictions
-                * dataset_len: total number of predictions
-                * hist_pred: histogram of predictions
-                * hist_target: histogram of target values in the dataset
+                * test_loss: avg loss on data set, None if not calculated.
+                * correct: number of correct predictions.
+                * dataset_len: total number of predictions.
+                * hist_pred: histogram of predictions.
+                * hist_target: histogram of target values in the dataset.
         """
         if self.train_config is None:
             raise ValueError("TrainConfig not defined.")
@@ -175,7 +175,7 @@ class FederatedClient(ObjectStorage):
                 pred = output.argmax(
                     dim=1, keepdim=True
                 )  # get the index of the max log-probability
-                if histograms:
+                if calculate_histograms:
                     hist, _ = np.histogram(target, bins=nr_bins, range=(0, nr_bins))
                     hist_target += hist
                     hist, _ = np.histogram(pred, bins=nr_bins, range=(0, nr_bins))
