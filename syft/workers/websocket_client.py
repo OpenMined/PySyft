@@ -195,9 +195,18 @@ class WebsocketClientWorker(BaseWorker):
 
         Args:
             dataset_key: Identifier of the local dataset that shall be used for training.
-            calculate_histograms: If True, calculate the histograms of predicted classes.
+            return_histograms: If True, calculate the histograms of predicted classes.
             nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
-            calculate_loss: If True, loss is calculated additionally.
+            return_loss: If True, loss is calculated additionally.
+            return_raw_accuracy: If True, return nr_correct_predictions and nr_predictions
+
+        Returns:
+            Dictionary containing depending on the provided flags:
+                * loss: avg loss on data set, None if not calculated.
+                * nr_correct_predictions: number of correct predictions.
+                * nr_predictions: total number of predictions.
+                * histogram_predictions: histogram of predictions.
+                * histogram_target: histogram of target values in the dataset.
         """
 
         return self._send_msg_and_deserialize(

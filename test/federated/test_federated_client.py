@@ -229,10 +229,14 @@ def test_evaluate():  # pragma: no cover
     fed_client.optimizer = None
 
     result = fed_client.evaluate(
-        dataset_key=dataset_key, calculate_histograms=True, nr_bins=3, calculate_loss=True
+        dataset_key=dataset_key, return_histograms=True, nr_bins=3, return_loss=True
     )
 
-    test_loss_before, correct_before, len_dataset, hist_pred_before, hist_target = result
+    test_loss_before = result["loss"]
+    correct_before = result["nr_correct_predictions"]
+    len_dataset = result["nr_predictions"]
+    hist_pred_before = result["histogram_predictions"]
+    hist_target = result["histogram_target"]
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
         print("Evaluation result before training: {}".format(result))
@@ -255,10 +259,14 @@ def test_evaluate():  # pragma: no cover
     train_model(fed_client, dataset_key, available_dataset_key=dataset_key, nr_rounds=50)
 
     result = fed_client.evaluate(
-        dataset_key=dataset_key, calculate_histograms=True, nr_bins=3, calculate_loss=True
+        dataset_key=dataset_key, return_histograms=True, nr_bins=3, return_loss=True
     )
 
-    test_loss_after, correct_after, len_dataset, hist_pred_after, hist_target = result
+    test_loss_after = result["loss"]
+    correct_after = result["nr_correct_predictions"]
+    len_dataset = result["nr_predictions"]
+    hist_pred_after = result["histogram_predictions"]
+    hist_target = result["histogram_target"]
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
         print("Evaluation result: {}".format(result))

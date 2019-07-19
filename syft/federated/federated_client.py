@@ -127,25 +127,27 @@ class FederatedClient(ObjectStorage):
     def evaluate(
         self,
         dataset_key: str,
-        calculate_histograms: bool = False,
+        return_histograms: bool = False,
         nr_bins: int = -1,
-        calculate_loss: bool = True,
+        return_loss: bool = True,
+        return_raw_accuracy: bool = True,
     ):
         """Evaluates a model on the local dataset as specified in the local TrainConfig object.
 
         Args:
             dataset_key: Identifier of the local dataset that shall be used for training.
-            calculate_histograms: If True, calculate the histograms of predicted classes.
+            return_histograms: If True, calculate the histograms of predicted classes.
             nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
-            calculate_loss: If True, loss is calculated additionally.
+            return_loss: If True, loss is calculated additionally.
+            return_raw_accuracy: If True, return nr_correct_predictions and nr_predictions
 
         Returns:
-            Tuple containing:
-                * test_loss: avg loss on data set, None if not calculated.
-                * correct: number of correct predictions.
-                * dataset_len: total number of predictions.
-                * hist_pred: histogram of predictions.
-                * hist_target: histogram of target values in the dataset.
+            Dictionary containing depending on the provided flags:
+                * loss: avg loss on data set, None if not calculated.
+                * nr_correct_predictions: number of correct predictions.
+                * nr_predictions: total number of predictions.
+                * histogram_predictions: histogram of predictions.
+                * histogram_target: histogram of target values in the dataset.
         """
         if self.train_config is None:
             raise ValueError("TrainConfig not defined.")
@@ -153,36 +155,43 @@ class FederatedClient(ObjectStorage):
         if dataset_key not in self.datasets:
             raise ValueError("Dataset {} unknown.".format(dataset_key))
 
+        eval_result = dict()
         model = self.get_obj(self.train_config._model_id).obj
         loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
         model.eval()
         device = "cpu"
         data_loader = self._create_data_loader(dataset_key=dataset_key, shuffle=False)
-        if calculate_loss:
-            test_loss = 0.0
-        else:
-            test_loss = None
+        test_loss = 0.0
         correct = 0
-        hist_target = np.zeros(nr_bins)
-        hist_pred = np.zeros(nr_bins)
+        if return_histograms:
+            hist_target = np.zeros(nr_bins)
+            hist_pred = np.zeros(nr_bins)
 
         with th.no_grad():
             for data, target in data_loader:
                 data, target = data.to(device), target.to(device)
                 output = model(data)
-                if calculate_loss:
+                if return_loss:
                     test_loss += loss_fn(output, target).item()  # sum up batch loss
                 pred = output.argmax(
                     dim=1, keepdim=True
                 )  # get the index of the max log-probability
-                if calculate_histograms:
+                if return_histograms:
                     hist, _ = np.histogram(target, bins=nr_bins, range=(0, nr_bins))
                     hist_target += hist
                     hist, _ = np.histogram(pred, bins=nr_bins, range=(0, nr_bins))
                     hist_pred += hist
-                correct += pred.eq(target.view_as(pred)).sum().item()
+                if return_raw_accuracy:
+                    correct += pred.eq(target.view_as(pred)).sum().item()
 
-        if calculate_loss:
+        if return_loss:
             test_loss /= len(data_loader.dataset)
+            eval_result["loss"] = test_loss
+        if return_raw_accuracy:
+            eval_result["nr_correct_predictions"] = correct
+            eval_result["nr_predictions"] = len(data_loader.dataset)
+        if return_histograms:
+            eval_result["histogram_predictions"] = hist_pred
+            eval_result["histogram_target"] = hist_target
 
-        return test_loss, correct, len(data_loader.dataset), hist_pred, hist_target
+        return eval_result

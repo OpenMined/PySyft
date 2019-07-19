@@ -131,7 +131,7 @@ def evaluate_model_on_worker(
     train_config.send(worker)
 
     result = worker.evaluate(
-        dataset_key=dataset_key, calculate_histograms=True, nr_bins=nr_bins, calculate_loss=True
+        dataset_key=dataset_key, return_histograms=True, nr_bins=nr_bins, return_loss=True
     )
     test_loss, correct, len_dataset, hist_pred, hist_target = result
 
