@@ -653,11 +653,7 @@ class TorchHook:
                 # Run the native function with the new args
 
                 try:
-                    if isinstance(args, tuple):
-                        response = method(*args, **kwargs)
-                    else:
-                        response = method(args, **kwargs)
-
+                    response = method(*args, **kwargs)
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
                     raise route_method_exception(e, self, args, kwargs)
@@ -707,14 +703,27 @@ class TorchHook:
         if attr.__module__ is None:
             attr.__module__ = "torch"
 
+        cmd_name = f"{attr.__module__}.{attr.__name__}"
+
         @wraps(attr)
         def overloaded_func(*args, **kwargs):
             """
             Operate the hooking
             """
-            cmd_name = f"{attr.__module__}.{attr.__name__}"
+            try:
+                tensor_type = type(args[0]) if not isinstance(args[0], (tuple, list)) else type(args[0][0])
+            except IndexError:
+                tensor_type = TorchTensor
+
             command = (cmd_name, None, args, kwargs)
-            response = TorchTensor.handle_func_command(command)
+
+            try:
+                handle_func_command = tensor_type.handle_func_command
+            except AttributeError:
+                handle_func_command = TorchTensor.handle_func_command
+
+            response = handle_func_command(command)
+
             return response
 
         return overloaded_func
@@ -980,7 +989,7 @@ class TorchHook:
 
             params = list(nn_self.parameters())
             for p in params:
-                p.child.wrap().move(destination)
+                p.move(destination)
 
         self.torch.nn.Module.move = module_move_
 

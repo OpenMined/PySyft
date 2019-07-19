@@ -152,12 +152,10 @@ class AdditiveSharingTensor(AbstractTensor):
             self.child, n_workers=len(owners), field=self.field, random_type=torch.LongTensor
         )
 
-        for i in range(len(shares)):
-            shares[i] = shares[i].send(owners[i])
-
         shares_dict = {}
-        for i in range(len(shares)):
-            shares_dict[shares[i].location.id] = shares[i]
+        for share, owner in zip(shares, owners):
+            share_ptr = share.send(owner).child
+            shares_dict[share_ptr.location.id] = share_ptr
 
         self.child = shares_dict
         return self
@@ -233,7 +231,6 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         Refresh shares by adding shares of zero
         """
-        print("ok")
         zero = self.zero()
         r = self + zero
         return r
@@ -844,7 +841,7 @@ class AdditiveSharingTensor(AbstractTensor):
     ## STANDARD
 
     @staticmethod
-    def dispatch(args, worker):
+    def select_worker(args, worker):
         """
         utility function for handle_func_command which help to select
         shares (seen as elements of dict) in an argument set. It could
@@ -879,8 +876,6 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
 
-        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
-
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
@@ -890,8 +885,10 @@ class AdditiveSharingTensor(AbstractTensor):
         if not isinstance(cmd, str):
             return cmd(*args, **kwargs)
 
+        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
+
         # TODO: I can't manage the import issue, can you?
-        # Replace all LoggingTensor with their child attribute
+        # Replace all SyftTensors with their child attribute
         new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.hook_function_args(
             cmd, args, kwargs
         )
@@ -899,7 +896,7 @@ class AdditiveSharingTensor(AbstractTensor):
         results = {}
         for worker, share in new_args[0].items():
             new_type = type(share)
-            new_args_worker = tuple(AdditiveSharingTensor.dispatch(new_args, worker))
+            new_args_worker = tuple(AdditiveSharingTensor.select_worker(new_args, worker))
 
             # build the new command
             new_command = (cmd, None, new_args_worker, new_kwargs)
