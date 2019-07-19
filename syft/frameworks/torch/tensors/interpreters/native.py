@@ -312,7 +312,12 @@ class TorchTensor(AbstractTensor):
         return response
 
     def send(
-        self, *location, inplace: bool = False, local_autograd=False, preinitialize_grad=False
+        self,
+        *location,
+        inplace: bool = False,
+        local_autograd=False,
+        preinitialize_grad=False,
+        no_wrap=False,
     ):
         """Gets the pointer to a new remote object.
 
@@ -376,6 +381,8 @@ class TorchTensor(AbstractTensor):
                     self.data = ptr
                     output = self
                 else:
+                    if no_wrap:
+                        raise ValueError("Parameters can't accept no_wrap=True")
                     wrapper = torch.Tensor()
                     param_wrapper = torch.nn.Parameter(wrapper)
                     with torch.no_grad():
@@ -388,7 +395,10 @@ class TorchTensor(AbstractTensor):
                     self.child = ptr
                     return self
                 else:
-                    output = ptr.wrap()
+                    if no_wrap:
+                        output = ptr
+                    else:
+                        output = ptr.wrap()
 
             if self.requires_grad:
                 # This is for AutogradTensor to work on Multipointer Tensors
@@ -417,9 +427,12 @@ class TorchTensor(AbstractTensor):
 
             children = list()
             for loc in location:
-                children.append(self.clone().send(loc))
+                children.append(self.clone().send(loc, no_wrap=True))
 
-            output = syft.MultiPointerTensor(children=children).wrap()
+            output = syft.MultiPointerTensor(children=children)
+
+            if not no_wrap:
+                output = output.wrap()
 
         return output
 
@@ -634,6 +647,7 @@ class TorchTensor(AbstractTensor):
         field: Union[int, None] = None,
         crypto_provider: Union[BaseWorker, None] = None,
         requires_grad: bool = False,
+        no_wrap: bool = False,
     ):
         """This is a pass through method which calls .share on the child.
 
@@ -648,6 +662,8 @@ class TorchTensor(AbstractTensor):
         shared_tensor = self
         if self.has_child():
             self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
+            if no_wrap:
+                return self.child
         else:
             shared_tensor = (
                 syft.AdditiveSharingTensor(
@@ -655,8 +671,9 @@ class TorchTensor(AbstractTensor):
                 )
                 .on(self)
                 .child.init_shares(*owners)
-                .wrap()
             )
+            if not no_wrap:
+                shared_tensor = shared_tensor.wrap()
 
         if requires_grad:
             shared_tensor = syft.AutogradTensor().on(shared_tensor)
