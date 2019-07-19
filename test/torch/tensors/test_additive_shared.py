@@ -426,6 +426,34 @@ def test_fixed_precision_and_sharing(workers):
     assert (y == (t + t)).all()
 
 
+def test_fixed_precision_and_sharing_on_pointer(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3, 4.0])
+    ptr = t.send(james)
+
+    x = ptr.fix_prec().share(bob, alice)
+
+    y = x + x
+
+    y = y.get().get().float_prec()
+    assert (y == (t + t)).all()
+
+
+def test_pointer_on_fixed_precision_and_sharing(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3, 4.0])
+
+    x = t.fix_prec().share(bob, alice)
+    x = x.send(james)
+
+    y = x + x
+
+    y = y.get().get().float_prec()
+    assert (y == (t + t)).all()
+
+
 def test_get_item(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     x = th.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
