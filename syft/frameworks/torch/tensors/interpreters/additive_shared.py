@@ -448,9 +448,12 @@ class AdditiveSharingTensor(AbstractTensor):
                 worker: (cmd(share, other[worker]) % self.field) for worker, share in shares.items()
             }
         else:
-            other_is_zero = (
-                isinstance(other, (torch.LongTensor, torch.IntTensor)) and (other == 0).any()
-            ) or other == 0
+            other_is_zero = False
+            if isinstance(other, (torch.LongTensor, torch.IntTensor)):
+                if (other == 0).any():
+                    other_is_zero = True
+            elif other == 0:
+                other_is_zero = True
 
             if other_is_zero:
                 zero_shares = self.zero().child
