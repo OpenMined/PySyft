@@ -517,20 +517,18 @@ class TorchTensor(AbstractTensor):
         if shape is None:
             shape = self.shape
 
-        # previous_pointer = owner.get_pointer_to(location, id_at_location)
-        previous_pointer = None
-
-        if previous_pointer is None:
-            ptr = PointerTensor(
-                location=location,
-                id_at_location=id_at_location,
-                owner=owner,
-                id=ptr_id,
-                garbage_collect_data=garbage_collect_data,
-                shape=shape,
-                tags=self.tags,
-                description=self.description,
-            )
+        ptr = syft.PointerTensor.create_pointer(
+            self,
+            location,
+            id_at_location,
+            register,
+            owner,
+            ptr_id,
+            garbage_collect_data,
+            shape,
+            local_autograd,
+            preinitialize_grad,
+        )
 
         return ptr
 

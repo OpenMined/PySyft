@@ -512,6 +512,10 @@ class TorchHook:
 
             response = owner.send_command(location, command)
 
+            # For inplace methods, just directly return self
+            if syft.torch.is_inplace_method(attr):
+                return self
+
             return response
 
         return overloaded_pointer_method
@@ -711,7 +715,9 @@ class TorchHook:
             Operate the hooking
             """
             try:
-                tensor_type = type(args[0]) if not isinstance(args[0], (tuple, list)) else type(args[0][0])
+                tensor_type = (
+                    type(args[0]) if not isinstance(args[0], (tuple, list)) else type(args[0][0])
+                )
             except IndexError:
                 tensor_type = TorchTensor
 
