@@ -10,6 +10,8 @@ from syft.workers import AbstractWorker
 from syft.frameworks.torch.crypto import spdz
 from syft.frameworks.torch.crypto import securenn
 
+no_wrap = {"no_wrap": True}
+
 
 class AdditiveSharingTensor(AbstractTensor):
     def __init__(
@@ -162,7 +164,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         shares_dict = {}
         for share, owner in zip(shares, owners):
-            share_ptr = share.send(owner).child
+            share_ptr = share.send(owner, **no_wrap)
             shares_dict[share_ptr.location.id] = share_ptr
 
         self.child = shares_dict
@@ -212,7 +214,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         workers = self.locations
 
-        ptr_to_sh = self.wrap().send(workers[0]).child
+        ptr_to_sh = self.wrap().send(workers[0], **no_wrap)
         pointer = ptr_to_sh.remote_get()
 
         pointers = [pointer]
@@ -230,8 +232,9 @@ class AdditiveSharingTensor(AbstractTensor):
         zero = (
             torch.zeros(*shape)
             .long()
-            .share(*self.locations, field=self.field, crypto_provider=self.crypto_provider)
-            .child
+            .share(
+                *self.locations, field=self.field, crypto_provider=self.crypto_provider, **no_wrap
+            )
         )
         return zero
 
@@ -315,14 +318,22 @@ class AdditiveSharingTensor(AbstractTensor):
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
-                *self.child.keys(), field=self.field, crypto_provider=self.crypto_provider
-            ).child.child
+                *self.child.keys(),
+                field=self.field,
+                crypto_provider=self.crypto_provider,
+                **no_wrap,
+            ).child
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
                 torch.Tensor([other])
-                .share(*self.child.keys(), field=self.field, crypto_provider=self.crypto_provider)
-                .child.child
+                .share(
+                    *self.child.keys(),
+                    field=self.field,
+                    crypto_provider=self.crypto_provider,
+                    **no_wrap,
+                )
+                .child
             )
 
         assert len(shares) == len(other)
@@ -356,14 +367,22 @@ class AdditiveSharingTensor(AbstractTensor):
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
-                *self.child.keys(), field=self.field, crypto_provider=self.crypto_provider
-            ).child.child
+                *self.child.keys(),
+                field=self.field,
+                crypto_provider=self.crypto_provider,
+                **no_wrap,
+            ).child
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
                 torch.Tensor([other])
-                .share(*self.child.keys(), field=self.field, crypto_provider=self.crypto_provider)
-                .child.child
+                .share(
+                    *self.child.keys(),
+                    field=self.field,
+                    crypto_provider=self.crypto_provider,
+                    **no_wrap,
+                )
+                .child
             )
 
         assert len(shares) == len(other)
@@ -434,9 +453,9 @@ class AdditiveSharingTensor(AbstractTensor):
             ) or other == 0
 
             if other_is_zero:
-                zero = self.zero().child
+                zero_shares = self.zero().child
                 return {
-                    worker: ((cmd(share, other) + zero[worker]) % self.field)
+                    worker: ((cmd(share, other) + zero_shares[worker]) % self.field)
                     for worker, share in shares.items()
                 }
             else:
@@ -818,10 +837,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         # Init max vals and idx to the first element
         max_value = values[0]
-        max_index = (
-            torch.tensor([0])
-            .share(*self.locations, field=self.field, crypto_provider=self.crypto_provider)
-            .child
+        max_index = torch.tensor([0]).share(
+            *self.locations, field=self.field, crypto_provider=self.crypto_provider, **no_wrap
         )
 
         for i in range(1, len(values)):
