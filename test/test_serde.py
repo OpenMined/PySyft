@@ -333,21 +333,6 @@ def test_compressed_serde(compress_scheme):
     assert numpy.array_equal(arr, arr_serialized_deserialized)
 
 
-@pytest.mark.parametrize("compress_scheme", [1, 2, 3, 100])
-def test_invalid_decompression_scheme(compress_scheme):
-    # using numpy.ones because numpy.random.random is not compressed.
-    arr = numpy.ones((100, 100))
-
-    def some_other_compression_scheme(decompressed_input):
-        # Simulate compression by removing some values
-        return decompressed_input[:10], compress_scheme
-
-    serde._apply_compress_scheme = some_other_compression_scheme
-    arr_serialized = serde.serialize(arr)
-    with pytest.raises(CompressionNotFoundException):
-        _ = serde.deserialize(arr_serialized)
-
-
 @pytest.mark.parametrize("compress", [True, False])
 def test_dict(compress):
     # Test with integers

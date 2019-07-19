@@ -93,6 +93,11 @@ EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureErr
 NO_COMPRESSION = 40
 LZ4 = 41
 ZSTD = 42
+scheme_to_bytes = {
+    NO_COMPRESSION: NO_COMPRESSION.to_bytes(1, byteorder="big"),
+    LZ4: LZ4.to_bytes(1, byteorder="big"),
+    ZSTD: ZSTD.to_bytes(1, byteorder="big"),
+}
 
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(obj: object) -> object:
@@ -329,10 +334,13 @@ def _compress(decompressed_input_bin: bin) -> bin:
 
     """
     compress_stream, compress_scheme = _apply_compress_scheme(decompressed_input_bin)
-    if len(compress_stream) < len(decompressed_input_bin):
-        return compress_scheme.to_bytes(1, byteorder="big") + compress_stream
-    else:
-        return NO_COMPRESSION.to_bytes(1, byteorder="big") + decompressed_input_bin
+    try:
+        z = scheme_to_bytes[compress_scheme] + compress_stream
+        return z
+    except KeyError:
+        raise CompressionNotFoundException(
+            "compression scheme not found for compression code:" + str(compress_scheme)
+        )
 
 
 def _decompress(binary: bin) -> bin:
@@ -361,7 +369,7 @@ def _decompress(binary: bin) -> bin:
         return binary
     else:
         raise CompressionNotFoundException(
-            "compression scheme not found for" " compression code:" + str(compress_scheme)
+            "compression scheme not found for compression code:" + str(compress_scheme)
         )
 
 
