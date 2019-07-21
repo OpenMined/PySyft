@@ -79,7 +79,7 @@ def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
     return outfile.getvalue()
 
 
-def torch_tensor_deserializer(tensor_bin) -> torch.Tensor:
+def numpy_tensor_deserializer(tensor_bin) -> torch.Tensor:
     """Strategy to deserialize a binary input in npy format into Torch tensor
     
     Args
