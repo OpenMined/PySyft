@@ -3,7 +3,6 @@ This file exists to provide one common place for all serialisation and simplify_
 for all tensors (Torch and Numpy).
 """
 from collections import OrderedDict
-from tempfile import TemporaryFile
 from typing import Tuple
 import torch
 
