@@ -111,12 +111,12 @@ def test_websocket_workers_search(hook, start_proc):
 
 def test_list_objects_remote(hook, start_proc):
 
-    kwargs = {"id": "fed", "host": "localhost", "port": 8762, "hook": hook}
+    kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
     process_remote_fed1 = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
 
-    kwargs = {"id": "fed", "host": "localhost", "port": 8762, "hook": hook}
+    kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
     local_worker = WebsocketClientWorker(**kwargs)
 
     x = torch.tensor([1, 2, 3]).send(local_worker)
