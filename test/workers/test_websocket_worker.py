@@ -145,7 +145,7 @@ def test_objects_count_remote(hook, start_proc):
     kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
 
-    time.sleep(0.1)
+    time.sleep(0.5)
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
     local_worker = WebsocketClientWorker(**kwargs)
