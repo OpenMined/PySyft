@@ -69,7 +69,6 @@ class BaseDataset:
         else:
             raise TypeError("Transform cann't be None")
 
-
     def send(self, worker):
         """
         Args:
