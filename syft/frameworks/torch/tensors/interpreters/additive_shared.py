@@ -35,7 +35,7 @@ class AdditiveSharingTensor(AbstractTensor):
             shares: Optional dictionary with the shares already split
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
-            id: An optional string or integer id of the LoggingTensor.
+            id: An optional string or integer id of the AdditiveSharingTensor.
             field: size of the arithmetic field in which the shares live
             n_bits: linked to the field with the relation (2 ** nbits) == field
             crypto_provider: an optional BaseWorker providing crypto elements
