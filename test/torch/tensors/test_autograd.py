@@ -535,7 +535,7 @@ def test_serialize_deserialize_autograd_tensor(workers):
     
     
 def train(model_input, data_input, target_input):
-    opt = optim.SGD(params=model_input.parameters(), lr=0.1)
+	opt = optim.SGD(params=model_input.parameters(), lr=0.1)
     for iter in range(10):
         # 1) erase previous gradients (if they exist)
         opt.zero_grad()
@@ -551,10 +551,7 @@ def train(model_input, data_input, target_input):
 
 
 def test_train_remote_autograd_tensor(workers):
-    
     #Training procedure to train an input model, be it remote or local
-   
-    
     hook = sy.TorchHook(torch)
     worker = workers["alice"] 
 
@@ -576,7 +573,6 @@ def test_train_remote_autograd_tensor(workers):
     
     loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote)
     
-    loss_remote_val = loss_remote.copy().get().item()
     
     #let's check if the local version and the remote version have the same weigth
     equal_weights = torch.all(torch.eq(model_local_trained.weight.copy().get().data, model_remote.weight.copy().get().data))
