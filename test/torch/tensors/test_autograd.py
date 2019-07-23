@@ -526,11 +526,11 @@ def test_serialize_deserialize_autograd_tensor(workers):
 
 
 def test_train_remote_autograd_tensor(workers):
-    #Training procedure to train an input model, be it remote or local
-    
+    # Training procedure to train an input model, be it remote or local
+
     def train(model_input, data_input, target_input, remote=False):
         opt = optim.SGD(params=model_input.parameters(), lr=0.1)
-        loss_previous = 99999999999 #just a very big number
+        loss_previous = 99999999999  # just a very big number
         for iter in range(10):
             # 1) erase previous gradients (if they exist)
             opt.zero_grad()
@@ -538,21 +538,20 @@ def test_train_remote_autograd_tensor(workers):
             predictions = model_input(data_input)
             # 3) calculate how much we missed
             loss = ((predictions - target_input) ** 2).sum()
-            #check for monotonic decrease of the loss
-           
-             
-            if(remote == True):
-                #Remote loss monotonic decrease
+            # check for monotonic decrease of the loss
+
+            if remote == True:
+                # Remote loss monotonic decrease
                 loss_val_local = loss.copy().get().item()
-                assert(loss_val_local < loss_previous)
+                assert loss_val_local < loss_previous
                 loss_previous = loss_val_local
 
             else:
-                #Local loss monotonic decrease
+                # Local loss monotonic decrease
                 loss_val_local = loss.item()
-                assert(loss_val_local < loss_previous)
+                assert loss_val_local < loss_previous
                 loss_previous = loss_val_local
-                
+
             # 4) Figure out which weights caused us to miss
             loss.backward()
             # 5) change those weights
