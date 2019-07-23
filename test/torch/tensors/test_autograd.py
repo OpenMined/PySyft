@@ -526,8 +526,11 @@ def test_serialize_deserialize_autograd_tensor(workers):
 
 
 def test_train_remote_autograd_tensor(workers):
-    def train(model_input, data_input, target_input):
+    #Training procedure to train an input model, be it remote or local
+    
+    def train(model_input, data_input, target_input, remote=False):
         opt = optim.SGD(params=model_input.parameters(), lr=0.1)
+        loss_previous = 99999999999 #just a very big number
         for iter in range(10):
             # 1) erase previous gradients (if they exist)
             opt.zero_grad()
@@ -535,13 +538,27 @@ def test_train_remote_autograd_tensor(workers):
             predictions = model_input(data_input)
             # 3) calculate how much we missed
             loss = ((predictions - target_input) ** 2).sum()
+            #check for monotonic decrease of the loss
+           
+             
+            if(remote == True):
+                #Remote loss monotonic decrease
+                loss_val_local = loss.copy().get().item()
+                assert(loss_val_local < loss_previous)
+                loss_previous = loss_val_local
+
+            else:
+                #Local loss monotonic decrease
+                loss_val_local = loss.item()
+                assert(loss_val_local < loss_previous)
+                loss_previous = loss_val_local
+                
             # 4) Figure out which weights caused us to miss
             loss.backward()
             # 5) change those weights
             opt.step()
         return (loss, model_input)
 
-    # Training procedure to train an input model, be it remote or local
     worker = workers["alice"]
 
     # Some Toy Data
@@ -552,14 +569,14 @@ def test_train_remote_autograd_tensor(workers):
     model_local = nn.Linear(2, 1)
 
     # Local training
-    loss_local, model_local_trained = train(model_local, data_local, target_local)
+    loss_local, model_local_trained = train(model_local, data_local, target_local, remote=False)
 
     # Remote training, setting autograd for the data and the targets
     data_remote = data_local.send(worker, local_autograd=True)
     target_remote = target_local.send(worker, local_autograd=True)
     model_remote = model_local.send(worker, local_autograd=True)
 
-    loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote)
+    loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote, remote=True)
 
     # let's check if the local version and the remote version have the same weigth
     equal_weights = torch.all(
