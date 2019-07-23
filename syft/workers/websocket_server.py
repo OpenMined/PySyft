@@ -8,6 +8,7 @@ import websockets
 import ssl
 import sys
 import tblib.pickling_support
+import socket
 
 tblib.pickling_support.install()
 
@@ -165,7 +166,11 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
             )
 
         asyncio.get_event_loop().run_until_complete(start_server)
-        asyncio.get_event_loop().run_forever()
+        print("Serving. Press CTRL-C to stop.")
+        try:
+            asyncio.get_event_loop().run_forever()
+        except KeyboardInterrupt:
+            print("Server is ready.")
 
     def list_objects(self, *args):
         return str(self._objects)
