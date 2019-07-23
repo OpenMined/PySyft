@@ -4,7 +4,6 @@ from typing import Union
 
 import syft as sy
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.workers import BaseWorker
 from syft.frameworks.torch.overload_torch import overloaded
 
@@ -76,7 +75,7 @@ class MultiPointerTensor(AbstractTensor):
 
         Else, we just redirect to .add which works well
         """
-        if isinstance(other, AdditiveSharingTensor):
+        if isinstance(other, sy.AdditiveSharingTensor):
             return other.__add__(self)
         else:
             return self.add(other)
@@ -85,7 +84,7 @@ class MultiPointerTensor(AbstractTensor):
         """
         See __add__ for details but, MPT * AST should return AST
         """
-        if isinstance(other, AdditiveSharingTensor):
+        if isinstance(other, sy.AdditiveSharingTensor):
             return other.__mul__(self)
         else:
             return self.mul(other)
