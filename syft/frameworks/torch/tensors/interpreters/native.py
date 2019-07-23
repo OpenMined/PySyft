@@ -206,7 +206,7 @@ class TorchTensor(AbstractTensor):
         else:
             try:
                 return self._id
-            except:
+            except AttributeError:
                 self._id = syft.ID_PROVIDER.pop()
                 return self._id
 
@@ -221,7 +221,7 @@ class TorchTensor(AbstractTensor):
         """
         Utility method to test if the tensor is in fact a Parameter
         """
-        return isinstance(self, syft.hook.torch.nn.Parameter)
+        return isinstance(self, torch.nn.Parameter)
 
     @staticmethod
     @overloaded.module
@@ -363,11 +363,10 @@ class TorchTensor(AbstractTensor):
             ptr.tags = self.tags
 
             # The last pointer should control remote GC, not the previous self.ptr
-            if hasattr(self, "ptr"):
-                if self.ptr is not None:
-                    ptr_ = self.ptr()
-                    if ptr_ is not None:
-                        ptr_.garbage_collect_data = False
+            if hasattr(self, "ptr") and self.ptr is not None:
+                ptr_ = self.ptr()
+                if ptr_ is not None:
+                    ptr_.garbage_collect_data = False
 
             # we need to cache this weak reference to the pointer so that
             # if this method gets called multiple times we can simply re-use
@@ -395,14 +394,11 @@ class TorchTensor(AbstractTensor):
                     self.child = ptr
                     return self
                 else:
-                    if no_wrap:
-                        output = ptr
-                    else:
-                        output = ptr.wrap()
+                    output = ptr if no_wrap else ptr.wrap()
 
             if self.requires_grad:
-                # This is for AutogradTensor to work on Multipointer Tensors
-                # With prinitialized gradients, this should get it from AutogradTensor.grad
+                # This is for AutogradTensor to work on MultiPointerTensors
+                # With pre-initialized gradients, this should get it from AutogradTensor.grad
                 if preinitialize_grad:
                     grad = output.child.grad
                 else:
@@ -443,7 +439,7 @@ class TorchTensor(AbstractTensor):
         :return:
         """
         if len(location) > 1:
-            raise NotImplementedError("Inplace send to several workers is currently not reported.")
+            raise NotImplementedError("Inplace send to several workers is currently not supported.")
 
         return self.send(*location, inplace=True)
 
