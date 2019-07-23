@@ -296,6 +296,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if not isinstance(indices, (tuple, list)):
             indices = (indices,)
         tensor_type = type(indices[-1])
+
         if tensor_type == sy.MultiPointerTensor:
             return self._getitem_multipointer(indices)
         else:
