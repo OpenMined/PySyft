@@ -532,47 +532,55 @@ def test_serialize_deserialize_autograd_tensor(workers):
     equal_tensors = torch.all(torch.eq(local_tensor, random_tensor))
 
     assert equal_tensors == 1
+    
+    
+def train(model_input, data_input, target_input):
+    opt = optim.SGD(params=model_input.parameters(), lr=0.1)
+    for iter in range(10):
+        # 1) erase previous gradients (if they exist)
+        opt.zero_grad()
+        # 2) make a prediction
+        predictions = model_input(data_input)
+        # 3) calculate how much we missed
+        loss = ((predictions - target_input) ** 2).sum()
+        #4) Figure out which weights caused us to miss
+        loss.backward()
+        # 5) change those weights
+        opt.step()
+    return(loss, model_input)
 
 
 def test_train_remote_autograd_tensor(workers):
-    worker = workers["alice"]
+    
+    #Training procedure to train an input model, be it remote or local
+   
+    
+    hook = sy.TorchHook(torch)
+    worker = workers["alice"] 
 
     # Some Toy Data
-    data = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
-    target = torch.tensor([[0], [0], [1], [1.0]])
+    data_local = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
+    target_local = torch.tensor([[0], [0], [1], [1.0]])
 
-    # A Toy Model
-    model = nn.Linear(2, 1)
+    #Toy local model
+    model_local = nn.Linear(2, 1)
+    
+    #Local training
+    loss_local, model_local_trained = train(model_local, data_local, target_local)
+    loss_local_val = loss_local.item()
+    
+    #Remote training, setting autograd for the data and the targets
+    data_remote = data_local.send(worker, local_autograd=True)
+    target_remote = target_local.send(worker, local_autograd=True)
+    model_remote = model_local.send(worker, local_autograd=True)
+    
+    loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote)
+    
+    loss_remote_val = loss_remote.copy().get().item()
+    
+    #let's check if the local version and the remote version have the same weigth
+    equal_weights = torch.all(torch.eq(model_local_trained.weight.copy().get().data, model_remote.weight.copy().get().data))
 
-    # Set autograd for the data and the targets
-    data_remote = data.send(worker, local_autograd=True)
-    target_remote = target.send(worker, local_autograd=True)
-    model_remote = model.send(worker, local_autograd=True)
-
-
-    def train():
-        # Training Logic
-        opt = optim.SGD(params=model_remote.parameters(), lr=0.1)
-
-        for iter in range(10):
-
-            # 1) erase previous gradients (if they exist)
-            opt.zero_grad()
-
-            # 2) make a prediction
-            pred_remote = model_remote(data_remote)
-
-            # 3) calculate how much we missed
-            loss = ((pred_remote - target_remote) ** 2).sum()
-
-            # 4) figure out which weights caused us to miss
-            loss.backward()
-
-            # 5) change those weights
-            opt.step()
-
-        return(loss)
-
-    loss = train()
-
-    assert loss.copy().get().item() < 500
+    assert equal_tensors == 1
+    
+    assert loss_remote_val.copy().get().item() < 500 and loss_local.item() < 500
