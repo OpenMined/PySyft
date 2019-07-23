@@ -3,19 +3,49 @@
 from syft import frameworks
 from syft import workers
 from syft import codes
+from syft import federated
+from .version import __version__
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 # The purpose of the following import section is to increase the convenience of using
 # PySyft by making it possible to import the most commonly used objects from syft
 # directly (i.e., syft.TorchHook or syft.VirtualWorker or syft.LoggingTensor)
 
+# Tensorflow / Keras dependencies
+# Import Hooks
+
+from syft import dependency_check
+
+if dependency_check.keras_available:
+    from syft.frameworks.keras import KerasHook
+    from syft.workers import TFECluster
+    from syft.workers import TFEWorker
+else:
+    logger.warning("Keras (Tensorflow) not available.")
+
+# Pytorch dependencies
 # Import Hook
 from syft.frameworks.torch import TorchHook
+
+# Import Tensor Types
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.pointers import PointerTensor
+
+# import other useful classes
+from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
 
 # Import grids
 from syft.grid import VirtualGrid
 
-# Import federated objects
+# Import federate learning objects
 from syft.federated import Plan
+from syft.federated import TrainConfig
 from syft.federated import func2plan
 from syft.federated import method2plan
 from syft.federated import make_plan
@@ -23,18 +53,22 @@ from syft.federated import make_plan
 # Import Worker Types
 from syft.workers import VirtualWorker
 
+
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+
+from syft.frameworks.torch.pointers import ObjectPointer
+from syft.frameworks.torch.pointers import CallablePointer
+from syft.frameworks.torch.pointers import ObjectWrapper
 
 # Import serialization tools
 from syft import serde
-
-# import other useful classes
-from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
+from syft.serde import torch_serde
 
 # import functions
 from syft.frameworks.torch.functions import combine_pointers
@@ -43,6 +77,7 @@ __all__ = [
     "frameworks",
     "workers",
     "serde",
+    "torch_serde",
     "TorchHook",
     "VirtualWorker",
     "Plan",
@@ -50,6 +85,8 @@ __all__ = [
     "LoggingTensor",
     "PointerTensor",
     "VirtualGrid",
+    "ObjectWrapper",
+    "LargePrecisionTensor",
 ]
 
 local_worker = None

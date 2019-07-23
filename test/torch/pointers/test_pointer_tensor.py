@@ -2,7 +2,8 @@ import torch
 import torch as th
 import syft
 
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
+import pytest
 
 
 def test_init(workers):
@@ -13,7 +14,6 @@ def test_init(workers):
 def test_create_pointer(workers):
     x = torch.Tensor([1, 2])
     x.create_pointer()
-    x.create_pointer(location=workers["james"])
 
 
 def test_send_default_garbage_collector_true(workers):
@@ -194,7 +194,7 @@ def test_method_on_attribute(workers):
     x.child.point_to_attr = "child"
     try:
         x.get()
-    except syft.exceptions.CannotRequestTensorAttribute as e:
+    except syft.exceptions.CannotRequestObjectAttribute as e:
         assert True
 
 
@@ -212,26 +212,34 @@ def test_grad_pointer(workers):
 
 
 def test_move(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    x = torch.tensor([1, 2, 3, 4, 5]).send(workers["bob"])
+    x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    assert x.id_at_location in workers["bob"]._objects
-    assert x.id_at_location not in workers["alice"]._objects
+    assert x.id_at_location in bob._objects
+    assert x.id_at_location not in alice._objects
 
-    x.move(workers["alice"])
+    x.move(alice)
 
-    assert x.id_at_location not in workers["bob"]._objects
-    assert x.id_at_location in workers["alice"]._objects
+    assert x.id_at_location not in bob._objects
+    assert x.id_at_location in alice._objects
 
-    x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(workers["bob"])
+    x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(bob)
 
-    assert x.id_at_location in workers["bob"]._objects
-    assert x.id_at_location not in workers["alice"]._objects
+    assert x.id_at_location in bob._objects
+    assert x.id_at_location not in alice._objects
 
-    x.move(workers["alice"])
+    x.move(alice)
 
-    assert x.id_at_location not in workers["bob"]._objects
-    assert x.id_at_location in workers["alice"]._objects
+    assert x.id_at_location not in bob._objects
+    assert x.id_at_location in alice._objects
+
+    alice.clear_objects()
+    bob.clear_objects()
+    x = torch.tensor([1.0, 2, 3, 4, 5]).send(bob)
+    x.move(alice)
+
+    assert len(alice._objects) == 1
 
 
 def test_combine_pointers(workers):
@@ -295,3 +303,9 @@ def test_remote_function_with_multi_ouput(workers):
 
     assert max_value.get().item() == 4.0
     assert argmax_idx.get().item() == 3
+
+
+def test_raising_error_when_item_func_called(workers):
+    pointer = PointerTensor(id=1000, location=workers["alice"], owner=workers["me"])
+    with pytest.raises(RuntimeError):
+        pointer.item()

@@ -1,22 +1,25 @@
 import torch
 import syft as sy
-from syft.exceptions import RemoteTensorFoundError
+from syft.exceptions import RemoteObjectFoundError
 from syft.exceptions import PureTorchTensorFoundError
 
 from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
 from typing import Callable
 from typing import Union
 from typing import Tuple
 from typing import List
+
+import numpy as np
 
 
 hook_method_args_functions = {}
@@ -32,6 +35,7 @@ type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     dict: one,  # FIXME This is for additiveShareTensor.child, it can be confusing and AST.child
+    np.ndarray: one,
     # should perhaps be of type ShareDict extending dict or something like this
     LoggingTensor: one,
     FixedPrecisionTensor: one,
@@ -39,13 +43,14 @@ type_rule = {
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
     PointerTensor: one,
+    LargePrecisionTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
 forward_func = {
-    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
+    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p)),
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureTorchTensorFoundError),
@@ -57,6 +62,7 @@ forward_func = {
     AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
+    LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -68,16 +74,19 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
+    LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor(**kwargs).on(
+        LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
+    ),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
-# methods that we really don't want to hook, for example because they have an arbitrary
-# number of tensors in args signature response
-exclude_methods = {"__getitem__", "_getitem_public", "view", "permute"}
-exclude_functions = {"torch.unbind", "unbind", "torch.stack", "stack"}
+# Methods or functions whose signature changes a lot and that we don't want to "cache", because
+# they have an arbitrary number of tensors in args which can trigger unexpected behaviour
+ambiguous_methods = {"__getitem__", "_getitem_public", "view", "permute", "add_", "sub_"}
+ambiguous_functions = {"torch.unbind", "unbind", "torch.stack", "stack", "torch.mean", "torch.sum"}
 
 
 def hook_method_args(attr, method_self, args, kwargs):
@@ -105,7 +114,7 @@ def hook_method_args(attr, method_self, args, kwargs):
     attr_id = type(method_self).__name__ + "." + attr
 
     try:
-        assert attr not in exclude_methods
+        assert attr not in ambiguous_methods
 
         # Load the utility function to transform the args
         hook_args = hook_method_args_functions[attr_id]
@@ -139,7 +148,7 @@ def hook_function_args(attr, args, kwargs, return_args_type=False):
         (- the type of the tensors in the arguments)
     """
     try:
-        assert attr not in exclude_functions
+        assert attr not in ambiguous_functions
         # Load the utility function to transform the args
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
@@ -224,7 +233,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     attr_id = f"{attr}@{wrap_type.__name__}.{response_is_tuple}.{hash_wrap_args}"
 
     try:
-        assert attr not in exclude_functions
+        assert attr not in ambiguous_functions
 
         # Load the utility function to transform the args
         response_hook_function = hook_method_response_functions[attr_id]
@@ -408,7 +417,13 @@ def build_get_tensor_type(rules, layer=None):
             lambdas += build_get_tensor_type(r, layer)
 
     if first_layer:
-        return lambdas[0]
+        try:
+            return lambdas[0]
+        except IndexError:
+            # Some functions don't have tensors in their signature so rules is only made of 0s,
+            # Hence lambdas is empty. Raising PureTorchTensorFoundError triggers an execution of
+            # the un-hooked (so native) function which is perfect in that case.
+            raise PureTorchTensorFoundError
     else:
         return lambdas
 
@@ -636,7 +651,7 @@ def register_response(
     attr_id = "{}".format(attr)
 
     try:
-        assert attr not in exclude_functions
+        assert attr not in ambiguous_functions
 
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]
@@ -678,21 +693,18 @@ def build_register_response_function(response: object) -> Callable:
 
 def register_tensor(
     tensor: Union[torch.Tensor, AbstractTensor],
+    owner: sy.workers.AbstractWorker,
     response_ids: List = list(),
-    owner: sy.workers.AbstractWorker = None,
-) -> None:
+):
     """
-    Register a tensor
+    Registers a tensor.
 
     Args:
-        tensor: the tensor
-        response_ids: list of ids where the tensor should be stored
-            and each id is pop out when needed
-        owner: the owner that makes the registration
-    Returns:
-        the pointer
+        tensor: A tensor.
+        owner: The owner that makes the registration.
+        response_ids: List of ids where the tensor should be stored
+            and each id is pop out when needed.
     """
-    assert owner is not None
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)

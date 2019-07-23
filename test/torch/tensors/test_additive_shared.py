@@ -43,6 +43,15 @@ def test_virtual_get(workers):
     assert (x == t).all()
 
 
+def test_autograd_kwarg(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3])
+    x = t.share(alice, bob, crypto_provider=james, requires_grad=True)
+
+    assert isinstance(x.child, syft.AutogradTensor)
+
+
 def test_send_get(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x_sh = th.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
@@ -98,6 +107,15 @@ def test_add(workers):
 
     assert (y == (t + t)).all()
 
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    z = (x + y).get().float_prec()
+
+    assert (z == (t + t)).all()
+
 
 def test_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -126,8 +144,19 @@ def test_sub(workers):
 
     assert (y == (t - t)).all()
 
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    u = torch.tensor([4.0, 3.0, 2.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = u.fix_prec()
+
+    z = (x - y).get().float_prec()
+
+    assert (z == (t - u)).all()
+
 
 def test_mul(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     # 2 workers
@@ -150,6 +179,83 @@ def test_mul(workers):
     y = (x * x).get().float_prec()
 
     assert (y == (t * t)).all()
+
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    z = (x * y).get().float_prec()
+
+    assert (z == (t * t)).all()
+
+
+def test_public_mul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = th.tensor([-3.1, 1.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    y = 1
+    z = (x * y).get().float_prec()
+    assert (z == (t * y)).all()
+
+    t = th.tensor([-3.1, 1.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    y = 0
+    z = (x * y).get().float_prec()
+    assert (z == (t * y)).all()
+
+    t_x = th.tensor([-3.1, 1])
+    t_y = th.tensor([1.0])
+    x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+    y = t_y.fix_prec()
+    z = x * y
+    z = z.get().float_prec()
+    assert (z == t_x * t_y).all()
+
+    t_x = th.tensor([-3.1, 1])
+    t_y = th.tensor([0.0])
+    x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+    y = t_y.fix_prec()
+    z = x * y
+    z = z.get().float_prec()
+    assert (z == t_x * t_y).all()
+
+    t_x = th.tensor([-3.1, 1])
+    t_y = th.tensor([0.0, 2.1])
+    x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+    y = t_y.fix_prec()
+    z = x * y
+    z = z.get().float_prec()
+    assert (z == t_x * t_y).all()
+
+
+def test_pow(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x ** 3).get().float_prec()
+
+    assert (y == (m ** 3)).all()
+
+
+def test_operate_with_integer_constants(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = th.tensor([2.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=james)
+
+    r_sh = x_sh + 10
+    assert r_sh.get().float_prec() == x + 10
+
+    r_sh = x_sh - 7
+    assert r_sh.get().float_prec() == x - 7
+
+    r_sh = x_sh * 2
+    assert r_sh.get().float_prec() == x * 2
+
+    r_sh = x_sh / 2
+    assert r_sh.get().float_prec() == x / 2
 
 
 def test_stack(workers):
@@ -193,9 +299,34 @@ def test_chunk(workers):
     assert all([(res1[i].get() == expected1[i]).all() for i in range(2)])
 
 
-def test_nn_linear(workers):
+def test_roll(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    x = t.share(bob, alice, crypto_provider=james)
 
+    res1 = torch.roll(x, 2)
+    res2 = torch.roll(x, 2, dims=1)
+    res3 = torch.roll(x, (1, 2), dims=(0, 1))
+
+    assert (res1.get() == torch.roll(t, 2)).all()
+    assert (res2.get() == torch.roll(t, 2, dims=1)).all()
+    assert (res3.get() == torch.roll(t, (1, 2), dims=(0, 1))).all()
+
+    # With MultiPointerTensor
+    shifts = torch.tensor(1).send(alice, bob)
+    res = torch.roll(x, shifts)
+
+    shifts1 = torch.tensor(1).send(alice, bob)
+    shifts2 = torch.tensor(2).send(alice, bob)
+    res2 = torch.roll(x, (shifts1, shifts2), dims=(0, 1))
+
+    assert (res.get() == torch.roll(t, 1)).all()
+    assert (res2.get() == torch.roll(t, (1, 2), dims=(0, 1))).all()
+
+
+def test_nn_linear(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     t = torch.tensor([[1.0, 2]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     model = nn.Linear(2, 1)
@@ -209,6 +340,7 @@ def test_nn_linear(workers):
 
 
 def test_matmul(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     m = torch.tensor([[1, 2], [3, 4.0]])
@@ -216,6 +348,15 @@ def test_matmul(workers):
     y = (x @ x).get().float_prec()
 
     assert (y == (m @ m)).all()
+
+    # with FPT>torch.tensor
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(bob, alice, crypto_provider=james)
+    y = m.fix_prec()
+
+    z = (x @ y).get().float_prec()
+
+    assert (z == (m @ m)).all()
 
 
 def test_torch_conv2d(workers):
@@ -237,25 +378,29 @@ def test_torch_conv2d(workers):
     )
     bias = torch.Tensor([0.0, 5.0])
 
-    im_shared = im.share(bob, alice, crypto_provider=james)
-    w_shared = w.share(bob, alice, crypto_provider=james)
-    bias_shared = bias.share(bob, alice, crypto_provider=james)
+    im_shared = im.fix_precision().share(bob, alice, crypto_provider=james)
+    w_shared = w.fix_precision().share(bob, alice, crypto_provider=james)
+    bias_shared = bias.fix_precision().share(bob, alice, crypto_provider=james)
 
-    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get()
-    res1 = torch.conv2d(
-        im_shared,
-        w_shared[:, 0:1].contiguous(),
-        bias=bias_shared,
-        stride=2,
-        padding=3,
-        dilation=2,
-        groups=2,
-    ).get()
+    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get().float_precision()
+    res1 = (
+        torch.conv2d(
+            im_shared,
+            w_shared[:, 0:1].contiguous(),
+            bias=bias_shared,
+            stride=2,
+            padding=3,
+            dilation=2,
+            groups=2,
+        )
+        .get()
+        .float_precision()
+    )
 
-    expected0 = torch.conv2d(im, w, bias=bias, stride=1).type(torch.LongTensor)
+    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
     expected1 = torch.conv2d(
         im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
-    ).type(torch.LongTensor)
+    )
 
     assert (res0 == expected0).all()
     assert (res1 == expected1).all()
@@ -276,6 +421,34 @@ def test_fixed_precision_and_sharing(workers):
     y = x + x
 
     y = y.get().float_prec()
+    assert (y == (t + t)).all()
+
+
+def test_fixed_precision_and_sharing_on_pointer(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3, 4.0])
+    ptr = t.send(james)
+
+    x = ptr.fix_prec().share(bob, alice)
+
+    y = x + x
+
+    y = y.get().get().float_prec()
+    assert (y == (t + t)).all()
+
+
+def test_pointer_on_fixed_precision_and_sharing(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3, 4.0])
+
+    x = t.fix_prec().share(bob, alice)
+    x = x.send(james)
+
+    y = x + x
+
+    y = y.get().get().float_prec()
     assert (y == (t + t)).all()
 
 
@@ -410,6 +583,45 @@ def test_mod(workers):
     assert (t.child % 8).get() % 8 == torch.tensor([3])
 
 
+def test_torch_sum(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([[1, 2, 4], [8, 5, 6]])
+    x = t.share(alice, bob, crypto_provider=james)
+
+    s = torch.sum(x).get()
+    s_dim = torch.sum(x, 0).get()
+    s_dim2 = torch.sum(x, (0, 1)).get()
+    s_keepdim = torch.sum(x, 1, keepdim=True).get()
+
+    assert (s == torch.sum(t)).all()
+    assert (s_dim == torch.sum(t, 0)).all()
+    assert (s_dim2 == torch.sum(t, (0, 1))).all()
+    assert (s_keepdim == torch.sum(t, 1, keepdim=True)).all()
+
+
+def test_torch_mean(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    base = 10
+    prec_frac = 4
+
+    t = torch.tensor([[1.0, 2.5], [8.0, 5.5]])
+    x = t.fix_prec(base=base, precision_fractional=prec_frac).share(
+        alice, bob, crypto_provider=james
+    )
+
+    s = torch.mean(x).get().float_prec()
+    s_dim = torch.mean(x, 0).get().float_prec()
+    s_dim2 = torch.mean(x, (0, 1)).get().float_prec()
+    s_keepdim = torch.mean(x, 1, keepdim=True).get().float_prec()
+
+    assert (s == torch.tensor(4.25)).all()
+    assert (s_dim == torch.tensor([4.5, 4.0])).all()
+    assert (s_dim2 == torch.tensor(4.25)).all()
+    assert (s_keepdim == torch.tensor([[1.75], [6.75]])).all()
+
+
 def test_unbind(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
@@ -424,7 +636,7 @@ def test_unbind(workers):
 def test_handle_func_command(workers):
     """
     Just to show that handle_func_command works
-    Even is torch.abs should be hooked to return a correct value
+    Even if torch.abs should be hooked to return a correct value
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 

@@ -6,8 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import syft
-from syft.exceptions import RemoteTensorFoundError
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.exceptions import RemoteObjectFoundError
+from syft.frameworks.torch.pointers import PointerTensor
 
 
 def test___init__(hook):
@@ -39,8 +39,8 @@ def test_pointer_found_exception(workers):
     pointer = PointerTensor(id=ptr_id, location=workers["alice"], owner=workers["me"])
 
     try:
-        raise RemoteTensorFoundError(pointer)
-    except RemoteTensorFoundError as err:
+        raise RemoteObjectFoundError(pointer)
+    except RemoteObjectFoundError as err:
         err_pointer = err.pointer
         assert isinstance(err_pointer, PointerTensor)
         assert err_pointer.id == ptr_id
@@ -221,6 +221,13 @@ def test_hook_args_and_cmd_signature_malleability():
 
     r3 = a + b
     assert (r3 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
+
+
+def test_torch_func_signature_without_tensor():
+    """The hook on the args of torch commands should work even if the args
+    don't contain any tensor"""
+    x = torch.as_tensor((0.1307,), dtype=torch.float32, device="cpu")
+    assert (x == torch.tensor([0.1307])).all()
 
 
 def test_RNN_grad_set_backpropagation(workers):

@@ -8,6 +8,8 @@ from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.workers import BaseWorker
 from syft.frameworks.torch.overload_torch import overloaded
 
+from syft.workers import AbstractWorker
+
 
 class MultiPointerTensor(AbstractTensor):
     ""
@@ -47,6 +49,22 @@ class MultiPointerTensor(AbstractTensor):
             out += "\n\t-> " + str(v)
         return out
 
+    @property
+    @overloaded.method
+    def grad(self, self_):
+        results = {}
+        all_none = True
+        for worker, pointer in self_.items():
+            pointer_grad = pointer.grad
+
+            if pointer_grad is None:
+                results[worker] = None
+            else:
+                results[worker] = pointer_grad
+                all_none = False
+
+        return results if not all_none else None
+
     def __eq__(self, other):
         return torch.eq(self, other)
 
@@ -81,6 +99,12 @@ class MultiPointerTensor(AbstractTensor):
         directly (which is inefficient and should be avoided)."""
 
         return list(self.child.values())[0].shape
+
+    def dim(self) -> int:
+        """This method fixes the error that the result of dim was a list of ints
+        stored inside a multipointer tensor"""
+
+        return len(self.shape)
 
     def get(self, sum_results: bool = False) -> torch.Tensor:
 
@@ -176,3 +200,48 @@ class MultiPointerTensor(AbstractTensor):
         )
 
         return response
+
+    def set_garbage_collect_data(self, value):
+        shares = self.child
+        for _, share in shares.items():
+            share.child.garbage_collect_data = value
+
+    @staticmethod
+    def simplify(tensor: "MultiPointerTensor") -> tuple:
+        """
+        This function takes the attributes of a MultiPointerTensor and saves them in a tuple
+        Args:
+            tensor (MultiPointerTensor): a MultiPointerTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the additive shared tensor
+        Examples:
+            data = simplify(tensor)
+        """
+
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = sy.serde._simplify(tensor.child)
+        return (tensor.id, chain)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "MultiPointerTensor":
+        """
+        This function reconstructs a MultiPointerTensor given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the MultiPointerTensor
+        Returns:
+            MultiPointerTensor: a MultiPointerTensor
+        Examples:
+            multi_pointer_tensor = detail(data)
+        """
+
+        tensor_id, chain = tensor_tuple
+
+        tensor = sy.MultiPointerTensor(owner=worker, id=tensor_id)
+
+        if chain is not None:
+            chain = sy.serde._detail(worker, chain)
+            tensor.child = chain
+
+        return tensor

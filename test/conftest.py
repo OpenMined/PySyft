@@ -1,6 +1,7 @@
 import pytest
 import torch
 from multiprocessing import Process
+import builtins
 
 import syft
 from syft import TorchHook
@@ -10,9 +11,12 @@ from syft import TorchHook
 def start_proc():  # pragma: no cover
     """ helper function for spinning up a websocket participant """
 
-    def _start_proc(participant, kwargs):
+    def _start_proc(participant, dataset: str = None, **kwargs):
         def target():
             server = participant(**kwargs)
+            if dataset is not None:
+                data, key = dataset
+                server.add_dataset(data, key=key)
             server.start()
 
         p = Process(target=target)
@@ -36,7 +40,7 @@ def workers(hook):
     # breaks the auto garbage collection for pointer of pointers, see #2150
     # hook.local_worker.is_client_worker = False
 
-    # reset the hook and the local worker
+    # Reset the hook and the local worker
     syft.local_worker.clear_objects()
     syft.frameworks.torch.hook.hook_args.hook_method_args_functions = {}
     syft.frameworks.torch.hook.hook_args.hook_method_response_functions = {}
@@ -54,3 +58,17 @@ def workers(hook):
     alice.remove_worker_from_local_worker_registry()
     bob.remove_worker_from_local_worker_registry()
     james.remove_worker_from_local_worker_registry()
+
+
+@pytest.fixture
+def no_tf_encrypted():
+    import_orig = builtins.__import__
+
+    def mocked_import(name, globals, locals, fromlist, level):
+        if "tf_encrypted" in name:
+            raise ImportError()
+        return import_orig(name, globals, locals, fromlist, level)
+
+    builtins.__import__ = mocked_import
+    yield
+    builtins.__import__ = import_orig

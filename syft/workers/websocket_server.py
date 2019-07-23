@@ -6,12 +6,20 @@ import asyncio
 import torch
 import websockets
 import ssl
+import sys
+import tblib.pickling_support
 
+tblib.pickling_support.install()
+
+import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers.virtual import VirtualWorker
+from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ResponseSignatureError
+from syft.federated import FederatedClient
 
 
-class WebsocketServerWorker(VirtualWorker):
+class WebsocketServerWorker(VirtualWorker, FederatedClient):
     def __init__(
         self,
         hook,
@@ -43,12 +51,14 @@ class WebsocketServerWorker(VirtualWorker):
                 initialized with (such as datasets)
             loop: the asyncio event loop if you want to pass one in
                 yourself
+            cert_path: path to used secure certificate, only needed for secure connections
+            key_path: path to secure key, only needed for secure connections
         """
 
         self.port = port
         self.host = host
-        self.cert = cert_path
-        self.key = key_path
+        self.cert_path = cert_path
+        self.key_path = key_path
 
         if loop is None:
             loop = asyncio.new_event_loop()
@@ -94,7 +104,7 @@ class WebsocketServerWorker(VirtualWorker):
             message = binascii.unhexlify(message[2:-1])
 
             # process the message
-            response = self.recv_msg(message)
+            response = self._recv_msg(message)
 
             # convert the binary to a string representation
             # (this is needed for the websocket library)
@@ -102,6 +112,12 @@ class WebsocketServerWorker(VirtualWorker):
 
             # send the response
             await websocket.send(response)
+
+    def _recv_msg(self, message: bin) -> bin:
+        try:
+            return self.recv_msg(message)
+        except (ResponseSignatureError, GetNotPermittedError) as e:
+            return sy.serde.serialize(e)
 
     async def _handler(self, websocket: websockets.WebSocketCommonProtocol, *unused_args):
         """Setup the consumer and producer response handlers with asyncio.
@@ -125,9 +141,9 @@ class WebsocketServerWorker(VirtualWorker):
     def start(self):
         """Start the server"""
         # Secure behavior: adds a secure layer applying cryptography and authentication
-        if not (self.cert is None) and not (self.key is None):
+        if not (self.cert_path is None) and not (self.key_path is None):
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            ssl_context.load_cert_chain(self.cert, self.key)
+            ssl_context.load_cert_chain(self.cert_path, self.key_path)
             start_server = websockets.serve(
                 self._handler,
                 self.host,
@@ -150,3 +166,9 @@ class WebsocketServerWorker(VirtualWorker):
 
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
+
+    def list_objects(self, *args):
+        return str(self._objects)
+
+    def objects_count(self, *args):
+        return len(self._objects)
