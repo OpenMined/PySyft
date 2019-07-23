@@ -522,7 +522,7 @@ def test_encrypted_training_with_linear_model(workers):
 
     loss = train()
 
-    assert loss.child.child.child.child.virtual_get() < 500
+    assert loss.child.child.child.virtual_get() < 500
 
 
 def test_get_float_prec_on_autograd_tensor(workers):

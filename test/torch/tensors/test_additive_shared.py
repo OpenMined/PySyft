@@ -118,6 +118,10 @@ def test_add(workers):
 
     assert (z == (t + t)).all()
 
+    z = (y + x).get().float_prec()
+
+    assert (z == (t + t)).all()
+
 
 def test_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -155,6 +159,10 @@ def test_sub(workers):
     z = (x - y).get().float_prec()
 
     assert (z == (t - u)).all()
+
+    z = (y - x).get().float_prec()
+
+    assert (z == (u - t)).all()
 
 
 def test_mul(workers):
@@ -360,6 +368,10 @@ def test_matmul(workers):
 
     assert (z == (m @ m)).all()
 
+    z = (y @ x).get().float_prec()
+
+    assert (z == (m @ m)).all()
+
 
 def test_torch_conv2d(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -459,8 +471,10 @@ def test_get_item(workers):
     x = th.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
     idx = torch.tensor([0]).send(alice, bob)
 
-    assert x.child.child[:, idx].get() == torch.tensor([[3100]])
+    # Operate directly AST[MPT]
+    assert x.child.child[:, idx.child].get() == torch.tensor([[3100]])
 
+    # With usual wrappers and FPT
     x = th.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
     idx = torch.tensor([0]).send(alice, bob)
     assert x[:, idx].get() == torch.tensor([[3]])
@@ -660,7 +674,7 @@ def test_zero_refresh(workers):
     t = torch.tensor([2.2, -1.0])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
 
-    x_sh = x.child.child.child
+    x_sh = x.child.child
     assert (x_sh.zero().get() == torch.zeros(*t.shape).long()).all()
 
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
