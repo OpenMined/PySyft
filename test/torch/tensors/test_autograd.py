@@ -465,7 +465,17 @@ def test_encrypted_training_with_linear_model(workers):
     model.weight = syft.AutogradTensor().on(model.weight)
     model.bias = syft.AutogradTensor().on(model.bias)
 
-    def train():
+    def train(): model = nn.Linear(2, 1)
+    model_remote = model.send(worker)
+
+    # Set autograd for the data and the targets
+    data_remote = data.send(worker, local_autograd=True)
+    target_remote = target.send(worker, local_autograd=True)
+    # Also set the autograd for the model's parameters
+    model_weight_local = model_remote.weight.get()
+    model_remote.weight = model_weight_local.send(worker, local_autograd=True)
+    model_bias_local = model_remote.bias.get()
+    model_remote.bias = model_bias_local.send(worker, local_autograd=True)
         # Training Logic
         # Convert the learning rate to fixed precision
         opt = optim.SGD(params=model.parameters(), lr=0.1).fix_precision()
@@ -533,16 +543,12 @@ def test_train_remote_autograd_tensor(workers):
 
     # A Toy Model
     model = nn.Linear(2, 1)
-    model_remote = model.send(worker)
 
     # Set autograd for the data and the targets
     data_remote = data.send(worker, local_autograd=True)
     target_remote = target.send(worker, local_autograd=True)
-    # Also set the autograd for the model's parameters
-    model_weight_local = model_remote.weight.get()
-    model_remote.weight = model_weight_local.send(worker, local_autograd=True)
-    model_bias_local = model_remote.bias.get()
-    model_remote.bias = model_bias_local.send(worker, local_autograd=True)
+    model_remote = model.send(worker, local_autograd=True)
+
 
     def train():
         # Training Logic
@@ -565,8 +571,8 @@ def test_train_remote_autograd_tensor(workers):
             # 5) change those weights
             opt.step()
 
-        return loss
+        return(loss)
 
     loss = train()
 
-    assert loss.child.child.child.child.virtual_get() < 500
+    assert loss.copy().get().item() < 500
