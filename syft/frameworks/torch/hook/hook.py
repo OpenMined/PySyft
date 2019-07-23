@@ -975,17 +975,18 @@ class TorchHook:
                 o.backward()
                 p.grad -= p.grad
 
-        def module_send_(nn_self, dest, force_send=False, **kwargs):
+        def module_send_(nn_self, *dest, force_send=False, **kwargs):
             """Overloads torch.nn instances so that they could be sent to other workers"""
+            print(nn_self, dest, force_send, **kwargs)
 
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
             for p in nn_self.parameters():
-                p.send_(dest)
+                p.send_(*dest)
 
             if isinstance(nn_self.forward, Plan):
-                nn_self.forward.send(dest, force=force_send)
+                nn_self.forward.send(*dest, force=force_send)
 
             return nn_self
 
