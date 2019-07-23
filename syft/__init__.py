@@ -1,4 +1,8 @@
-"""Some syft imports..."""
+r"""
+PySyft is a Python library for secure, private Deep Learning. 
+PySyft decouples private data from model training, using Federated Learning,
+Differential Privacy, and Multi-Party Computation (MPC) within PyTorch.
+"""
 # Major imports
 from syft import frameworks
 from syft import workers
