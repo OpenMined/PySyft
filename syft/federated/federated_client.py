@@ -37,6 +37,10 @@ class FederatedClient(ObjectStorage):
         else:
             super().set_obj(obj)
 
+    def _check_train_config(self):
+        if self.train_config is None:
+            raise ValueError("Operation needs TrainConfig object to be set.")
+
     def _build_optimizer(
         self, optimizer_name: str, model, optimizer_args: dict
     ) -> th.optim.Optimizer:
@@ -68,8 +72,7 @@ class FederatedClient(ObjectStorage):
         Returns:
             loss: Training loss on the last batch of training data.
         """
-        if self.train_config is None:
-            raise ValueError("TrainConfig not defined.")
+        self._check_train_config()
 
         if dataset_key not in self.datasets:
             raise ValueError("Dataset {} unknown.".format(dataset_key))
@@ -149,8 +152,7 @@ class FederatedClient(ObjectStorage):
                 * histogram_predictions: histogram of predictions.
                 * histogram_target: histogram of target values in the dataset.
         """
-        if self.train_config is None:
-            raise ValueError("TrainConfig not defined.")
+        self._check_train_config()
 
         if dataset_key not in self.datasets:
             raise ValueError("Dataset {} unknown.".format(dataset_key))
