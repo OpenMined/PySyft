@@ -447,6 +447,7 @@ def test_encrypted_training_with_linear_model(workers):
     Test a minimal example of encrypted training using nn.Linear
     """
     bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+
     # A Toy Dataset
     data = (
         torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
@@ -465,17 +466,7 @@ def test_encrypted_training_with_linear_model(workers):
     model.weight = syft.AutogradTensor().on(model.weight)
     model.bias = syft.AutogradTensor().on(model.bias)
 
-    def train(): model = nn.Linear(2, 1)
-    model_remote = model.send(worker)
-
-    # Set autograd for the data and the targets
-    data_remote = data.send(worker, local_autograd=True)
-    target_remote = target.send(worker, local_autograd=True)
-    # Also set the autograd for the model's parameters
-    model_weight_local = model_remote.weight.get()
-    model_remote.weight = model_weight_local.send(worker, local_autograd=True)
-    model_bias_local = model_remote.bias.get()
-    model_remote.bias = model_bias_local.send(worker, local_autograd=True)
+    def train():
         # Training Logic
         # Convert the learning rate to fixed precision
         opt = optim.SGD(params=model.parameters(), lr=0.1).fix_precision()
@@ -532,51 +523,51 @@ def test_serialize_deserialize_autograd_tensor(workers):
     equal_tensors = torch.all(torch.eq(local_tensor, random_tensor))
 
     assert equal_tensors == 1
-    
-    
-def train(model_input, data_input, target_input):
-	opt = optim.SGD(params=model_input.parameters(), lr=0.1)
-    for iter in range(10):
-        # 1) erase previous gradients (if they exist)
-        opt.zero_grad()
-        # 2) make a prediction
-        predictions = model_input(data_input)
-        # 3) calculate how much we missed
-        loss = ((predictions - target_input) ** 2).sum()
-        #4) Figure out which weights caused us to miss
-        loss.backward()
-        # 5) change those weights
-        opt.step()
-    return(loss, model_input)
 
 
 def test_train_remote_autograd_tensor(workers):
-    #Training procedure to train an input model, be it remote or local
-    hook = sy.TorchHook(torch)
-    worker = workers["alice"] 
+    def train(model_input, data_input, target_input):
+        opt = optim.SGD(params=model_input.parameters(), lr=0.1)
+        for iter in range(10):
+            # 1) erase previous gradients (if they exist)
+            opt.zero_grad()
+            # 2) make a prediction
+            predictions = model_input(data_input)
+            # 3) calculate how much we missed
+            loss = ((predictions - target_input) ** 2).sum()
+            # 4) Figure out which weights caused us to miss
+            loss.backward()
+            # 5) change those weights
+            opt.step()
+        return (loss, model_input)
+
+    # Training procedure to train an input model, be it remote or local
+    worker = workers["alice"]
 
     # Some Toy Data
     data_local = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
     target_local = torch.tensor([[0], [0], [1], [1.0]])
 
-    #Toy local model
+    # Toy local model
     model_local = nn.Linear(2, 1)
-    
-    #Local training
+
+    # Local training
     loss_local, model_local_trained = train(model_local, data_local, target_local)
-    loss_local_val = loss_local.item()
-    
-    #Remote training, setting autograd for the data and the targets
+
+    # Remote training, setting autograd for the data and the targets
     data_remote = data_local.send(worker, local_autograd=True)
     target_remote = target_local.send(worker, local_autograd=True)
     model_remote = model_local.send(worker, local_autograd=True)
-    
-    loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote)
-    
-    
-    #let's check if the local version and the remote version have the same weigth
-    equal_weights = torch.all(torch.eq(model_local_trained.weight.copy().get().data, model_remote.weight.copy().get().data))
 
-    assert equal_tensors == 1
-    
-    assert loss_remote_val.copy().get().item() < 500 and loss_local.item() < 500
+    loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote)
+
+    # let's check if the local version and the remote version have the same weigth
+    equal_weights = torch.all(
+        torch.eq(
+            model_local_trained.weight.copy().get().data, model_remote.weight.copy().get().data
+        )
+    )
+
+    assert equal_weights == 1
+
+    assert loss_remote.copy().get().item() < 500 and loss_local.item() < 500
