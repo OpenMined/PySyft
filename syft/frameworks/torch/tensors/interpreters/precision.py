@@ -404,9 +404,9 @@ class FixedPrecisionTensor(AbstractTensor):
             degree = 5
             weights = [0.5, 0.2159198015, -0.0082176259, 0.0001825597, -0.0000018848, 0.0000000072]
             degrees = [0, 1, 3, 5, 7, 9]
-            selected_weights = list(weights[1:2 + int((degree - 1) / 2)])
+            selected_weights = list(weights[1 : 2 + int((degree - 1) / 2)])
             result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
-            for w, d in zip(selected_weights, degrees[1:len(selected_weights) + 1]):
+            for w, d in zip(selected_weights, degrees[1 : len(selected_weights) + 1]):
                 result = result + (tensor ** d) * torch.tensor(w).fix_precision().child
 
             return result
@@ -421,16 +421,21 @@ class FixedPrecisionTensor(AbstractTensor):
             :return:
             """
             degree = 5
-            weights = [0, 1, -1./3, 2./15, -17./315]
+            weights = [0, 1, -1.0 / 3, 2.0 / 15, -17.0 / 315]
             degrees = [0, 1, 3, 5, 7, 9]
-            selected_weights = list(weights[1:2 + int((degree - 1) / 2)])
+            selected_weights = list(weights[1 : 2 + int((degree - 1) / 2)])
             result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
-            for w, d in zip(selected_weights, degrees[1:len(selected_weights) + 1]):
+            for w, d in zip(selected_weights, degrees[1 : len(selected_weights) + 1]):
                 result = result + (tensor ** d) * torch.tensor(w).fix_precision().child
 
             return result
 
         module.tanh = tanh
+
+        def dot(self, other):
+            return self.__mul__(other).sum()
+
+        module.dot = dot
 
         def conv2d(
             input,

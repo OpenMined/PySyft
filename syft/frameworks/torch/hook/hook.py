@@ -1038,6 +1038,7 @@ class TorchHook:
             return nn_self
 
         self.torch.nn.Module.fix_precision = module_fix_precision_
+        self.torch.nn.Module.fix_prec = module_fix_precision_
 
         def module_float_precision_(nn_self):
             """Overloads float_precision for torch.nn.Module, convert fix_precision

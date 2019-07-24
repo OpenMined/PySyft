@@ -59,7 +59,7 @@ def _deserialize_tensor(tensor_bin) -> torch.Tensor:
 
 def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
     """Strategy to serialize a tensor using numpy npy format.
-    If tensor requires to calculate gradients, it will detached.
+    If tensor requires to calculate gradients, it will be detached.
     """
     if tensor.requires_grad:
         warnings.warn(
