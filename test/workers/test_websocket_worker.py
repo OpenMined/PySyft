@@ -114,7 +114,7 @@ def test_list_objects_remote(hook, start_proc):
     kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
     process_remote_fed1 = start_proc(WebsocketServerWorker, **kwargs)
 
-    time.sleep(0.1)
+    time.sleep(0.5)
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
     local_worker = WebsocketClientWorker(**kwargs)
@@ -145,7 +145,7 @@ def test_objects_count_remote(hook, start_proc):
     kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
 
-    time.sleep(0.1)
+    time.sleep(0.5)
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
     local_worker = WebsocketClientWorker(**kwargs)
@@ -176,7 +176,7 @@ def test_connect_close(hook, start_proc):
     kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
 
-    time.sleep(0.1)
+    time.sleep(0.5)
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
     local_worker = WebsocketClientWorker(**kwargs)
@@ -211,7 +211,7 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
     kwargs = {"id": "socket_multiple_output", "host": "localhost", "port": 8768, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
 
-    time.sleep(0.1)
+    time.sleep(0.5)
     x = torch.tensor([1.0, 3, 2])
 
     local_worker = WebsocketClientWorker(**kwargs)
