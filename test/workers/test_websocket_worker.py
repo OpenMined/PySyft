@@ -10,6 +10,26 @@ from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
 
 
+def instantiate_websocket_client_worker(**kwargs):  # pragma: no cover
+    """ Helper function to instantiate the websocket client.
+    If connection is refused, we wait a bit and try again.
+    After 5 failed tries, a ConnectionRefusedError is raised.
+    """
+    retry_counter = 0
+    connection_open = False
+    while not connection_open:
+        try:
+            local_worker = WebsocketClientWorker(**kwargs)
+            connection_open = True
+        except ConnectionRefusedError as e:
+            if retry_counter < 5:
+                retry_counter += 1
+                time.sleep(0.1)
+            else:
+                raise e
+    return local_worker
+
+
 @pytest.mark.parametrize("secure", [True, False])
 def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
     """Evaluates that you can do basic tensor operations using
@@ -57,7 +77,7 @@ def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
         del kwargs["key_path"]
 
     kwargs["secure"] = secure
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = x.send(local_worker)
     y = x + x
@@ -84,9 +104,7 @@ def test_websocket_workers_search(hook, start_proc):
     server_kwargs["data"] = [sample_data]
     process_remote_worker = start_proc(WebsocketServerWorker, **server_kwargs)
 
-    time.sleep(0.1)
-
-    local_worker = WebsocketClientWorker(**base_kwargs)
+    local_worker = instantiate_websocket_client_worker(**base_kwargs)
 
     # Search for the tensor located on the server by using its tag
     results = local_worker.search("#sample_data", "#another_tag")
@@ -102,8 +120,7 @@ def test_websocket_workers_search(hook, start_proc):
     assert results[0].owner.id == "me"
     assert results[0].location.id == "fed2"
 
-    local_worker.ws.shutdown()
-    local_worker.ws.close()
+    local_worker.close()
     time.sleep(0.1)
     local_worker.remove_worker_from_local_worker_registry()
     process_remote_worker.terminate()
@@ -113,11 +130,7 @@ def test_list_objects_remote(hook, start_proc):
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
     process_remote_fed1 = start_proc(WebsocketServerWorker, **kwargs)
-
-    time.sleep(0.1)
-
-    kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = torch.tensor([1, 2, 3]).send(local_worker)
 
@@ -130,12 +143,10 @@ def test_list_objects_remote(hook, start_proc):
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 2
 
-    # delete x before terminating the websocket connection
-    del x
-    del y
-    time.sleep(0.1)
-    local_worker.ws.shutdown()
-    time.sleep(0.1)
+    # retrieve x and y before terminating the websocket connection
+    x.get()
+    y.get()
+    local_worker.close()
     local_worker.remove_worker_from_local_worker_registry()
     process_remote_fed1.terminate()
 
@@ -144,11 +155,7 @@ def test_objects_count_remote(hook, start_proc):
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
-
-    time.sleep(0.1)
-
-    kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = torch.tensor([1, 2, 3]).send(local_worker)
 
@@ -163,11 +170,9 @@ def test_objects_count_remote(hook, start_proc):
     nr_objects = local_worker.objects_count_remote()
     assert nr_objects == 1
 
-    # delete remote object before terminating the websocket connection
-    del y
-    time.sleep(0.1)
-    local_worker.ws.shutdown()
-    time.sleep(0.1)
+    # get remote object before terminating the websocket connection
+    y.get()
+    local_worker.close()
     local_worker.remove_worker_from_local_worker_registry()
     process_remote_worker.terminate()
 
@@ -175,11 +180,7 @@ def test_objects_count_remote(hook, start_proc):
 def test_connect_close(hook, start_proc):
     kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
-
-    time.sleep(0.1)
-
-    kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = torch.tensor([1, 2, 3])
     x_ptr = x.send(local_worker)
@@ -197,7 +198,7 @@ def test_connect_close(hook, start_proc):
     x_val = x_ptr.get()
     assert (x_val == x).all()
 
-    local_worker.ws.shutdown()
+    local_worker.close()
 
     time.sleep(0.1)
 
@@ -210,12 +211,9 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
 
     kwargs = {"id": "socket_multiple_output", "host": "localhost", "port": 8768, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
-    time.sleep(0.1)
     x = torch.tensor([1.0, 3, 2])
-
-    local_worker = WebsocketClientWorker(**kwargs)
-
     x = x.send(local_worker)
     p1, p2 = torch.sort(x)
     x1, x2 = p1.get(), p2.get()
@@ -225,5 +223,5 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
 
     x.get()  # retrieve remote object before closing the websocket connection
 
-    local_worker.ws.shutdown()
+    local_worker.close()
     process_remote_worker.terminate()
