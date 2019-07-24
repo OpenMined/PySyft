@@ -10,6 +10,26 @@ from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
 
 
+def instantiate_websocket_client_worker(**kwargs):  # pragma: no cover
+    """ Helper function to instantiate the websocket client.
+    If connection is refused, we wait a bit and try again.
+    After 5 failed tries, a ConnectionRefusedError is raised.
+    """
+    retry_counter = 0
+    connection_open = False
+    while not connection_open:
+        try:
+            local_worker = WebsocketClientWorker(**kwargs)
+            connection_open = True
+        except ConnectionRefusedError as e:
+            if retry_counter < 5:
+                retry_counter += 1
+                time.sleep(0.1)
+            else:
+                raise e
+    return local_worker
+
+
 @pytest.mark.parametrize("secure", [True, False])
 def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
     """Evaluates that you can do basic tensor operations using
@@ -57,7 +77,7 @@ def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
         del kwargs["key_path"]
 
     kwargs["secure"] = secure
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = x.send(local_worker)
     y = x + x
@@ -86,7 +106,7 @@ def test_websocket_workers_search(hook, start_proc):
 
     time.sleep(0.1)
 
-    local_worker = WebsocketClientWorker(**base_kwargs)
+    local_worker = instantiate_websocket_client_worker(**base_kwargs)
 
     # Search for the tensor located on the server by using its tag
     results = local_worker.search("#sample_data", "#another_tag")
@@ -117,7 +137,7 @@ def test_list_objects_remote(hook, start_proc):
     time.sleep(0.5)
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = torch.tensor([1, 2, 3]).send(local_worker)
 
@@ -148,7 +168,7 @@ def test_objects_count_remote(hook, start_proc):
     time.sleep(0.5)
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = torch.tensor([1, 2, 3]).send(local_worker)
 
@@ -179,7 +199,7 @@ def test_connect_close(hook, start_proc):
     time.sleep(0.5)
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = torch.tensor([1, 2, 3])
     x_ptr = x.send(local_worker)
@@ -214,7 +234,7 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
     time.sleep(0.5)
     x = torch.tensor([1.0, 3, 2])
 
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = x.send(local_worker)
     p1, p2 = torch.sort(x)
