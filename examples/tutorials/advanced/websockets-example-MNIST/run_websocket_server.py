@@ -4,7 +4,7 @@ import syft as sy
 from syft.workers import WebsocketServerWorker
 import torch
 import argparse
-
+import os
 
 hook = sy.TorchHook(torch)
 
@@ -45,4 +45,9 @@ kwargs = {
     "hook": hook,
     "verbose": args.verbose,
 }
-server = start_proc(WebsocketServerWorker, kwargs)
+
+if os.name != 'nt':
+   server = start_proc(WebsocketServerWorker, kwargs)
+else:
+   server = WebsocketServerWorker(**kwargs)
+   server.start()
