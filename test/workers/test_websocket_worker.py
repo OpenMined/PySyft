@@ -104,8 +104,6 @@ def test_websocket_workers_search(hook, start_proc):
     server_kwargs["data"] = [sample_data]
     process_remote_worker = start_proc(WebsocketServerWorker, **server_kwargs)
 
-    time.sleep(0.1)
-
     local_worker = instantiate_websocket_client_worker(**base_kwargs)
 
     # Search for the tensor located on the server by using its tag
@@ -122,8 +120,7 @@ def test_websocket_workers_search(hook, start_proc):
     assert results[0].owner.id == "me"
     assert results[0].location.id == "fed2"
 
-    local_worker.ws.shutdown()
-    local_worker.ws.close()
+    local_worker.close()
     time.sleep(0.1)
     local_worker.remove_worker_from_local_worker_registry()
     process_remote_worker.terminate()
@@ -133,10 +130,6 @@ def test_list_objects_remote(hook, start_proc):
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
     process_remote_fed1 = start_proc(WebsocketServerWorker, **kwargs)
-
-    time.sleep(0.5)
-
-    kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
     local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = torch.tensor([1, 2, 3]).send(local_worker)
@@ -150,12 +143,10 @@ def test_list_objects_remote(hook, start_proc):
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 2
 
-    # delete x before terminating the websocket connection
-    del x
-    del y
-    time.sleep(0.1)
-    local_worker.ws.shutdown()
-    time.sleep(0.1)
+    # retrieve x and y before terminating the websocket connection
+    x.get()
+    y.get()
+    local_worker.close()
     local_worker.remove_worker_from_local_worker_registry()
     process_remote_fed1.terminate()
 
@@ -164,10 +155,6 @@ def test_objects_count_remote(hook, start_proc):
 
     kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
-
-    time.sleep(0.5)
-
-    kwargs = {"id": "fed", "host": "localhost", "port": 8764, "hook": hook}
     local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = torch.tensor([1, 2, 3]).send(local_worker)
@@ -183,11 +170,9 @@ def test_objects_count_remote(hook, start_proc):
     nr_objects = local_worker.objects_count_remote()
     assert nr_objects == 1
 
-    # delete remote object before terminating the websocket connection
-    del y
-    time.sleep(0.1)
-    local_worker.ws.shutdown()
-    time.sleep(0.1)
+    # get remote object before terminating the websocket connection
+    y.get()
+    local_worker.close()
     local_worker.remove_worker_from_local_worker_registry()
     process_remote_worker.terminate()
 
@@ -195,10 +180,6 @@ def test_objects_count_remote(hook, start_proc):
 def test_connect_close(hook, start_proc):
     kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
-
-    time.sleep(0.5)
-
-    kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
     local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = torch.tensor([1, 2, 3])
@@ -217,7 +198,7 @@ def test_connect_close(hook, start_proc):
     x_val = x_ptr.get()
     assert (x_val == x).all()
 
-    local_worker.ws.shutdown()
+    local_worker.close()
 
     time.sleep(0.1)
 
@@ -230,12 +211,9 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
 
     kwargs = {"id": "socket_multiple_output", "host": "localhost", "port": 8768, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
-
-    time.sleep(0.5)
-    x = torch.tensor([1.0, 3, 2])
-
     local_worker = instantiate_websocket_client_worker(**kwargs)
 
+    x = torch.tensor([1.0, 3, 2])
     x = x.send(local_worker)
     p1, p2 = torch.sort(x)
     x1, x2 = p1.get(), p2.get()
@@ -245,5 +223,5 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
 
     x.get()  # retrieve remote object before closing the websocket connection
 
-    local_worker.ws.shutdown()
+    local_worker.close()
     process_remote_worker.terminate()
