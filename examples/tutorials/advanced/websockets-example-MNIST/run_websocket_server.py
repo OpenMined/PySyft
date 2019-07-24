@@ -46,8 +46,8 @@ kwargs = {
     "verbose": args.verbose,
 }
 
-if os.name != 'nt':
-   server = start_proc(WebsocketServerWorker, kwargs)
+if os.name != "nt":
+    server = start_proc(WebsocketServerWorker, kwargs)
 else:
-   server = WebsocketServerWorker(**kwargs)
-   server.start()
+    server = WebsocketServerWorker(**kwargs)
+    server.start()
