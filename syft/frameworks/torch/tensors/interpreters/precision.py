@@ -396,10 +396,9 @@ class FixedPrecisionTensor(AbstractTensor):
 
         def sigmoid(tensor):
             """
+            Overloads torch.sigmoid to be able to use MPC
             Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
             TODO: clean function
-            :param tensor:
-            :return:
             """
             degree = 5
             weights = [0.5, 0.2159198015, -0.0082176259, 0.0001825597, -0.0000018848, 0.0000000072]
@@ -414,6 +413,9 @@ class FixedPrecisionTensor(AbstractTensor):
         module.sigmoid = sigmoid
 
         def tanh(tensor):
+            """
+            Overloads torch.tanh to be able to use MPC
+            """
 
             result = 2 * sigmoid(2 * tensor) - 1
 
