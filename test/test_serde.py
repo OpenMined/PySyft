@@ -572,7 +572,7 @@ def test_pointer_tensor_detail(id):
     "tensor",
     [
         (torch.tensor(numpy.ones((10, 10)), requires_grad=False)),
-        (torch.randint(low=4, high=15, size=[8, 2], requires_grad=False)),
+        (torch.tensor([[0.25, 1.5], [0.15, 0.25], [1.25, 0.5]], requires_grad=True)),
         (torch.randint(low=0, high=10, size=[3, 7], requires_grad=False)),
     ],
 )
