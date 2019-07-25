@@ -8,6 +8,7 @@ import websockets
 import logging
 import ssl
 import time
+import os
 
 import syft as sy
 from syft.codes import MSGTYPE
@@ -16,8 +17,10 @@ from syft.workers import BaseWorker
 
 logger = logging.getLogger(__name__)
 
-
-TIMEOUT_INTERVAL = 9_999_999
+if os.name != "nt":
+    TIMEOUT_INTERVAL = 9_999_999
+else:
+    TIMEOUT_INTERVAL = 999_999
 
 
 class WebsocketClientWorker(BaseWorker):
