@@ -1,5 +1,6 @@
 import torch
 import math
+import numpy as np
 import itertools
 
 import syft
@@ -88,12 +89,6 @@ class CRTTensor(AbstractTensor):
             self.base = b
             self.precision_fractional = prec_frac
             self.field = prod_moduli
-
-        # In order to avoid computing the coefficients to solve the modular system several times,
-        # we can store them once computed. See the docstring of the solve_system method for more details.
-        if residues is not None and reconstruction_coeffs is None:
-            reconstruction_coeffs = self.compute_reconstruction_coeffs()
-        self.reconstruction_coeffs = reconstruction_coeffs
 
     def float_precision(self):
         res = self.reconstruct() / self.base ** self.precision_fractional
@@ -236,28 +231,6 @@ class CRTTensor(AbstractTensor):
         res = 0
         N = 1
 
-        # We need to sort the dict to be sure that the coeffs are retrieved in the same order they were stored
-        for i, (mod, ai) in enumerate(sorted(self.child.items())):
-            # We need LargePrecisionTensors to reconstruct the original tensor because large values are used in the process
-            ai = ai.child.child
-            ai = ai.fix_prec(storage="large", precision_fractional=0)
-            res += ai * self.reconstruction_coeffs[i]
-            N *= mod
-
-        res %= N
-
-        gate = res > (N / 2)
-        neg_nums = (res - N) * gate
-        pos_nums = res * (1 - gate)
-        res = neg_nums + pos_nums
-
-        return res.float_precision()
-
-    def compute_reconstruction_coeffs(self):
-        """ Compute the coefficients needed for the reconstruction (see the detailed exaplanation in the
-        docstring for the reconstruct method).
-        """
-
         def modular_inverse(a, b):
             """ Computes the modular inverse x = a^(-1) mod b
             with Euclid's extended algorithm.
@@ -284,9 +257,19 @@ class CRTTensor(AbstractTensor):
         for mod, ai in sorted(self.child.items()):
             yi = N // mod
             zi = modular_inverse(yi, mod)
-            coeffs.append(yi * zi)
+            # We need numpy objects to reconstruct the original tensor because large values are used in the process
+            res += ai.child.child.numpy() * yi * zi
 
-        return tuple(coeffs)
+        res %= N
+
+        gate = res > (N / 2)
+        neg_nums = (res - N) * gate
+        pos_nums = res * (1 - gate)
+        res = neg_nums + pos_nums
+
+        res = res.astype(np.float32)
+        return torch.from_numpy(res)
+
 
     @staticmethod
     @overloaded.module
@@ -347,7 +330,6 @@ class CRTTensor(AbstractTensor):
             tensor.id,
             tensor.base,
             tensor.precision_fractional,
-            # tensor.reconstruction_coeffs,
             chain,
         )
 
@@ -366,9 +348,6 @@ class CRTTensor(AbstractTensor):
         tensor = syft.CRTTensor(
             base=tensor_base,
             precision_fractional=tensor_precision_fractional,
-            # FIXME need to cast to tuple otherwise tensor_reconstruction_coeffs is an unashable list
-            # reconstruction_coeffs can be large integers that cannot be serialized with msgpack
-            # reconstruction_coeffs=tuple(tensor_reconstruction_coeffs),
             owner=worker,
             id=tensor_id,
         )
@@ -377,17 +356,12 @@ class CRTTensor(AbstractTensor):
             chain = syft.serde._detail(worker, chain)
             tensor.child = chain
 
-        # We need it now because we cannot serialize large reconstruction coefficients
-        tensor.reconstruction_coeffs = tensor.compute_reconstruction_coeffs()
-
         return tensor
 
     def get_class_attributes(self):
         return {
             "base": self.base,
             "precision_fractional": self.precision_fractional,
-            # Solving coefficients can be reused in results of operations (see docstring of the reconstruct method)
-            "reconstruction_coeffs": self.reconstruction_coeffs,
         }
 
 
