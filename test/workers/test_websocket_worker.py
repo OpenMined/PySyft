@@ -5,9 +5,13 @@ from socket import gethostname
 from OpenSSL import crypto, SSL
 import pytest
 import torch
+import syft as sy
+from syft.frameworks.torch.federated import utils
 
 from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
+
+PRINT_IN_UNITTESTS = False
 
 
 def instantiate_websocket_client_worker(**kwargs):  # pragma: no cover
@@ -199,6 +203,8 @@ def test_connect_close(hook, start_proc):
     assert (x_val == x).all()
 
     local_worker.close()
+    local_worker.remove_worker_from_local_worker_registry()
+    local_worker.close()
 
     time.sleep(0.1)
 
@@ -224,4 +230,80 @@ def test_websocket_worker_multiple_output_response(hook, start_proc):
     x.get()  # retrieve remote object before closing the websocket connection
 
     local_worker.close()
+    local_worker.remove_worker_from_local_worker_registry()
     process_remote_worker.terminate()
+
+
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
+def test_evaluate(hook, start_proc):  # pragma: no cover
+
+    sy.local_worker.clear_objects()
+    sy.frameworks.torch.hook.hook_args.hook_method_args_functions = {}
+    sy.frameworks.torch.hook.hook_args.hook_method_response_functions = {}
+    sy.frameworks.torch.hook.hook_args.get_tensor_type_functions = {}
+    sy.frameworks.torch.hook.hook_args.register_response_functions = {}
+
+    data, target = utils.iris_data_partial()
+
+    dataset = sy.BaseDataset(data=data, targets=target)
+
+    kwargs = {"id": "evaluate_remote", "host": "localhost", "port": 8780, "hook": hook}
+    dataset_key = "iris"
+    # TODO: check why unit test sometimes fails when WebsocketServerWorker is started from the unit test. Fails when run after test_federated_client.py
+    # process_remote_worker = start_proc(WebsocketServerWorker, dataset=(dataset, dataset_key), verbose=True, **kwargs)
+
+    local_worker = instantiate_websocket_client_worker(**kwargs)
+
+    def loss_fn(pred, target):
+        return torch.nn.functional.cross_entropy(input=pred, target=target)
+
+    class Net(torch.nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = torch.nn.Linear(4, 3)
+
+            torch.nn.init.xavier_normal_(self.fc1.weight)
+
+        def forward(self, x):
+            x = torch.nn.functional.relu(self.fc1(x))
+            return x
+
+    model_untraced = Net()
+    model = torch.jit.trace(model_untraced, data)
+    loss_traced = torch.jit.trace(loss_fn, (torch.tensor([[0.3, 0.5, 0.2]]), torch.tensor([1])))
+
+    pred = model(data)
+    loss_before = loss_fn(target=target, pred=pred)
+    if PRINT_IN_UNITTESTS:  # pragma: no cover
+        print("Loss: {}".format(loss_before))
+
+    # Create and send train config
+    train_config = sy.TrainConfig(
+        batch_size=4,
+        model=model,
+        loss_fn=loss_traced,
+        model_id=None,
+        loss_fn_id=None,
+        optimizer_args=None,
+        epochs=1,
+    )
+    train_config.send(local_worker)
+
+    result = local_worker.evaluate(
+        dataset_key=dataset_key, calculate_histograms=True, nr_bins=3, calculate_loss=True
+    )
+
+    test_loss_before, correct_before, len_dataset, hist_pred_before, hist_target = result
+
+    if PRINT_IN_UNITTESTS:  # pragma: no cover
+        print("Evaluation result before training: {}".format(result))
+
+    assert len_dataset == 30
+    assert (hist_target == [10, 10, 10]).all()
+
+    local_worker.close()
+    local_worker.remove_worker_from_local_worker_registry()
+    # process_remote_worker.terminate()
