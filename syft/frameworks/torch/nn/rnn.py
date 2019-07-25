@@ -190,24 +190,26 @@ class RNNBase(nn.Module):
         seq_len = x.shape[0]
 
         if h is None:
-            # TODO convert in an appropriate fashion (FPT AST etc)
-            print("WARNING: wrong init 1")
+            crypto_provider = x.child.child.child.crypto_provider
+            owners = x.child.child.child.locations
+
             h = torch.zeros(
                 self.num_layers * self.num_directions,
                 batch_size,
                 self.hidden_size,
                 dtype=x.dtype,
                 device=x.device,
-            )
+            ).fix_precision().share(*owners, crypto_provider=crypto_provider)
+
             if self.is_lstm:
-                print("WARNING: wrong init 2")
                 c = torch.zeros(
                     self.num_layers * self.num_directions,
                     batch_size,
                     self.hidden_size,
                     dtype=x.dtype,
                     device=x.device,
-                )
+                ).fix_precision().share(*owners, crypto_provider=crypto_provider)
+                
         elif self.is_lstm:
             h, c = h
 
