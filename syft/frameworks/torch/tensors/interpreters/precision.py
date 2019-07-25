@@ -414,19 +414,8 @@ class FixedPrecisionTensor(AbstractTensor):
         module.sigmoid = sigmoid
 
         def tanh(tensor):
-            """
-            Ref: http://serge.mehl.free.fr/anx/dev_lim.html
-            TODO: clean function
-            TODO: replace with interpolation like Morten blog to have better approx when x << 1 is not true
-            :return:
-            """
-            degree = 5
-            weights = [0, 1, -1.0 / 3, 2.0 / 15, -17.0 / 315]
-            degrees = [0, 1, 3, 5, 7, 9]
-            selected_weights = list(weights[1 : 2 + int((degree - 1) / 2)])
-            result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
-            for w, d in zip(selected_weights, degrees[1 : len(selected_weights) + 1]):
-                result = result + (tensor ** d) * torch.tensor(w).fix_precision().child
+
+            result = 2 * sigmoid(2 * tensor) - 1
 
             return result
 
