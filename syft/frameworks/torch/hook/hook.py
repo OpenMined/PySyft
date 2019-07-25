@@ -955,11 +955,10 @@ class TorchHook:
 
         def create_grad_objects(model):
             """Assigns gradient to model parameters if not assigned"""
-            pass
-            # for p in model.parameters():
-            #     o = p.sum()
-            #     o.backward()
-            #     p.grad -= p.grad
+            for p in model.parameters():
+                o = p.sum()
+                o.backward()
+                p.grad -= p.grad
 
         def module_send_(nn_self, dest, force_send=False, **kwargs):
             """Overloads torch.nn instances so that they could be sent to other workers"""

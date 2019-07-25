@@ -193,23 +193,31 @@ class RNNBase(nn.Module):
             crypto_provider = x.child.child.child.crypto_provider
             owners = x.child.child.child.locations
 
-            h = torch.zeros(
-                self.num_layers * self.num_directions,
-                batch_size,
-                self.hidden_size,
-                dtype=x.dtype,
-                device=x.device,
-            ).fix_precision().share(*owners, crypto_provider=crypto_provider)
-
-            if self.is_lstm:
-                c = torch.zeros(
+            h = (
+                torch.zeros(
                     self.num_layers * self.num_directions,
                     batch_size,
                     self.hidden_size,
                     dtype=x.dtype,
                     device=x.device,
-                ).fix_precision().share(*owners, crypto_provider=crypto_provider)
-                
+                )
+                .fix_precision()
+                .share(*owners, crypto_provider=crypto_provider)
+            )
+
+            if self.is_lstm:
+                c = (
+                    torch.zeros(
+                        self.num_layers * self.num_directions,
+                        batch_size,
+                        self.hidden_size,
+                        dtype=x.dtype,
+                        device=x.device,
+                    )
+                    .fix_precision()
+                    .share(*owners, crypto_provider=crypto_provider)
+                )
+
         elif self.is_lstm:
             h, c = h
 
