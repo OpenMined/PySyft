@@ -270,7 +270,6 @@ class CRTTensor(AbstractTensor):
         res = res.astype(np.float32)
         return torch.from_numpy(res)
 
-
     @staticmethod
     @overloaded.module
     def torch(module):
@@ -326,12 +325,7 @@ class CRTTensor(AbstractTensor):
         if hasattr(tensor, "child"):
             chain = syft.serde._simplify(tensor.child)
 
-        return (
-            tensor.id,
-            tensor.base,
-            tensor.precision_fractional,
-            chain,
-        )
+        return (tensor.id, tensor.base, tensor.precision_fractional, chain)
 
     @staticmethod
     def detail(worker, tensor_tuple: tuple) -> "CRTTensor":
@@ -359,10 +353,7 @@ class CRTTensor(AbstractTensor):
         return tensor
 
     def get_class_attributes(self):
-        return {
-            "base": self.base,
-            "precision_fractional": self.precision_fractional,
-        }
+        return {"base": self.base, "precision_fractional": self.precision_fractional}
 
 
 _moduli_for_fields = {
