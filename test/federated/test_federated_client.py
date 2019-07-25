@@ -9,6 +9,13 @@ from syft.frameworks.torch.federated import utils
 
 PRINT_IN_UNITTESTS = True
 
+# To make execution deterministic to some extent
+# for more information - refer https://pytorch.org/docs/stable/notes/randomness.html
+torch.manual_seed(0)
+torch.cuda.manual_seed_all(0)
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
+
 
 def test_add_dataset():
     fed_client = federated.FederatedClient()
