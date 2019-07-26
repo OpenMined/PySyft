@@ -977,7 +977,6 @@ class TorchHook:
 
         def module_send_(nn_self, *dest, force_send=False, **kwargs):
             """Overloads torch.nn instances so that they could be sent to other workers"""
-            print(nn_self, dest, force_send, **kwargs)
 
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)

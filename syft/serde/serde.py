@@ -339,7 +339,7 @@ def _compress(decompressed_input_bin: bin) -> bin:
         return z
     except KeyError:
         raise CompressionNotFoundException(
-            "compression scheme not found for compression code:" + str(compress_scheme)
+            f"Compression scheme not found for compression code: {str(compress_scheme)}"
         )
 
 
@@ -369,7 +369,7 @@ def _decompress(binary: bin) -> bin:
         return binary
     else:
         raise CompressionNotFoundException(
-            "compression scheme not found for compression code:" + str(compress_scheme)
+            f"Compression scheme not found for compression code: {str(compress_scheme)}"
         )
 
 

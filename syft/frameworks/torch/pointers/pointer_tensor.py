@@ -1,19 +1,12 @@
 import syft
 import torch
 from syft.frameworks.torch.tensors.interpreters import abstract
-from syft.exceptions import CannotRequestObjectAttribute
 from syft.frameworks.torch import pointers
 
 from syft.workers import AbstractWorker
-from syft.workers import BaseWorker
 
 from typing import List
 from typing import Union
-from typing import TYPE_CHECKING
-
-# this if statement avoids circular imports between base.py and pointer.py
-if TYPE_CHECKING:
-    from syft.workers import AbstractWorker
 
 
 class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
@@ -31,7 +24,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
     on a different one. Note further that a PointerTensor does not know the
     nature how it sends messages to the tensor it points to (whether over
     socket, http, or some other protocol) as that functionality is abstracted
-    in the BaseWorker object in self.location.
+    in the AbstractWorker object in self.location.
 
     Example:
 
@@ -61,11 +54,11 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         """Initializes a PointerTensor.
 
         Args:
-            location: An optional BaseWorker object which points to the worker
+            location: An optional AbstractWorker object which points to the worker
                 on which this pointer's object can be found.
             id_at_location: An optional string or integer id of the object
                 being pointed to.
-            owner: An optional BaseWorker object to specify the worker on which
+            owner: An optional AbstractWorker object to specify the worker on which
                 the pointer is located. It is also where the pointer is
                 registered if register is set to True. Note that this is
                 different from the location parameter that specifies where the
@@ -148,10 +141,10 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
     @staticmethod
     def create_pointer(
         tensor,
-        location: BaseWorker = None,
+        location: AbstractWorker = None,
         id_at_location: (str or int) = None,
         register: bool = False,
-        owner: BaseWorker = None,
+        owner: AbstractWorker = None,
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
         shape=None,
@@ -166,7 +159,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         a pointer can be created with.
 
         Args:
-            location: The BaseWorker object which points to the worker on which
+            location: The AbstractWorker object which points to the worker on which
                 this pointer's object can be found. In nearly all cases, this
                 is self.owner and so this attribute can usually be left blank.
                 Very rarely you may know that you are about to move the Tensor
@@ -192,7 +185,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
                 probably a good idea to register it, especially if there is any
                 chance that someone else will initialize a pointer to your
                 pointer.
-            owner: A BaseWorker parameter to specify the worker on which the
+            owner: A AbstractWorker parameter to specify the worker on which the
                 pointer is located. It is also where the pointer is registered
                 if register is set to True.
             ptr_id: A string or integer parameter to specify the id of the pointer
