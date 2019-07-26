@@ -392,6 +392,11 @@ class FixedPrecisionTensor(AbstractTensor):
 
         module.addmm = addmm
 
+        def dot(self, other):
+            return self.__mul__(other).sum()
+
+        module.dot = dot
+
         def conv2d(
             input,
             weight,

@@ -638,6 +638,16 @@ def test_torch_mean(workers):
     assert (s_keepdim == torch.tensor([[1.75], [6.75]])).all()
 
 
+def test_torch_dot(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([3.0, 3.0, 3.0, 3.0, 3.0]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert torch.dot(x, y).get().float_prec() == 45
+
+
 def test_unbind(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 

@@ -590,6 +590,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.sum = sum
 
+        def dot(self, other):
+            """Overload torch.dot(x, y)"""
+            return self.mul(other).sum()
+
+        module.dot = dot
+
         def mean(self, *args, **kwargs):
             """Overload torch.mean(x)"""
             # We cannot directly use mean on Long tensors
