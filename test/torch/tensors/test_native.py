@@ -125,7 +125,7 @@ def test_size():
 
 
 # Compare local dim with the remote one
-def test_remote_dim(workers):
+def test_dim(workers):
     tensor_local = torch.randn(5, 3)
     tensor_remote = tensor_local.send(workers["alice"])
 
