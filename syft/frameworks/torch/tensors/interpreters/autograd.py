@@ -276,10 +276,7 @@ class AutogradTensor(AbstractTensor):
         Returns:
             tuple: a tuple holding the unique attributes of the AutogradTensor.
         """
-        chain = None
-        # send the child over
-        if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(tensor.child)
+        chain = syft.serde._simplify(tensor.child) if hasattr(tensor, "child") else None
 
         return (
             tensor.owner,
