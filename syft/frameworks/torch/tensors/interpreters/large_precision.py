@@ -92,6 +92,7 @@ class LargePrecisionTensor(AbstractTensor):
         Specify all the attributes need to build a wrapper correctly when returning a response.
         """
         return {
+            "field": self.field,
             "base": self.base,
             "internal_type": self.internal_type,
             "precision_fractional": self.precision_fractional,
