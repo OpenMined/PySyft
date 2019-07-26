@@ -104,7 +104,6 @@ class MultiPointerTensor(AbstractTensor):
         """This method fixes the error that the result of dim was a list of ints
         stored inside a multipointer tensor"""
         return len(self.shape)
-    
 
     def get(self, sum_results: bool = False) -> torch.Tensor:
 
