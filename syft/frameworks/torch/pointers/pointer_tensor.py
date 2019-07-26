@@ -235,14 +235,6 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         ptr.garbage_collect_data = False
         return ptr
 
-    def mid_get(self):
-        """This method calls .get() on a child pointer and correctly registers the results"""
-
-        child_id = self.id
-        tensor = self.get()
-        tensor.id = child_id
-        self.owner.register_obj(tensor)
-
     def remote_get(self):
         self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
         return self

@@ -124,14 +124,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return result
 
-    def mid_get(self):
-        """This method calls .get() on a child pointer and correctly registers the results"""
-
-        child_id = self.id
-        tensor = self.get()
-        tensor.id = child_id
-        self.owner.register_obj(tensor)
-
     def virtual_get(self):
         """Get the value of the tensor without calling get
          - Useful for debugging, only for VirtualWorkers"""

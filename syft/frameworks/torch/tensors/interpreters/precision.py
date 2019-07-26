@@ -585,18 +585,6 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return response
 
-    def get(self):
-        """Just a pass through. This is most commonly used when calling .get() on a
-        FixedPrecisionTensor which has also been shared."""
-        class_attributes = self.get_class_attributes()
-        return FixedPrecisionTensor(
-            **class_attributes,
-            owner=self.owner,
-            tags=self.tags,
-            description=self.description,
-            id=self.id,
-        ).on(self.child.get())
-
     def share(self, *owners, field=None, crypto_provider=None):
         if field is None:
             field = self.field
