@@ -3,6 +3,8 @@ import torch
 import syft
 from syft.workers import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.multi_pointer import MultiPointerTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
 
@@ -116,7 +118,7 @@ class FixedPrecisionTensor(AbstractTensor):
         # We need to make sure that values are truncated "towards 0"
         # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
         # at 97 (equivalent to -3), not 7
-        if self.child.is_wrapper:  # Handle FPT>(wrap)>AST
+        if isinstance(self.child, AdditiveSharingTensor):  # Handle FPT>(wrap)>AST
             self.child = self.child / truncation
             return self
         else:
@@ -134,17 +136,14 @@ class FixedPrecisionTensor(AbstractTensor):
             scaled_int = other * self.base ** self.precision_fractional
             return getattr(_self, "add")(scaled_int)
 
-        if _self.is_wrapper and not other.is_wrapper:
+        if isinstance(_self, AdditiveSharingTensor) and isinstance(other, torch.Tensor):
             # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor,
             # we want to perform AST + torch.tensor
-            _self = _self.child
             other = other.wrap()
-        elif other.is_wrapper and not _self.is_wrapper:
+        elif isinstance(other, AdditiveSharingTensor) and isinstance(_self, torch.Tensor):
             # If we try to add a FPT>torch.tensor and a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
-            tmp = _self.wrap()
-            _self = other.child
-            other = tmp
+            _self, other = other, _self.wrap()
 
         response = getattr(_self, "add")(other)
         response %= self.field  # Wrap around the field
@@ -177,17 +176,14 @@ class FixedPrecisionTensor(AbstractTensor):
             scaled_int = other * self.base ** self.precision_fractional
             return getattr(_self, "sub")(scaled_int)
 
-        if _self.is_wrapper and not other.is_wrapper:
+        if isinstance(_self, AdditiveSharingTensor) and isinstance(other, torch.Tensor):
             # If we try to subtract a FPT>(wrap)>AST and a FPT>torch.tensor,
             # we want to perform AST - torch.tensor
-            _self = _self.child
             other = other.wrap()
-        elif other.is_wrapper and not _self.is_wrapper:
+        elif isinstance(other, AdditiveSharingTensor) and isinstance(_self, torch.Tensor):
             # If we try to subtract a FPT>torch.tensor and a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
-            tmp = -(_self.wrap())
-            _self = -(other.child)
-            other = tmp
+            _self, other = -other, -_self.wrap()
 
         response = getattr(_self, "sub")(other)
         response %= self.field  # Wrap around the field
@@ -227,21 +223,22 @@ class FixedPrecisionTensor(AbstractTensor):
             assert (
                 self.precision_fractional == other.precision_fractional
             ), "In mul, all args should have the same precision_fractional"
-
         if isinstance(other, int):
             new_self = self.child
             new_other = other
-        elif self.child.is_wrapper and not other.child.is_wrapper:
+        elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
+            other.child, torch.Tensor
+        ):
             # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
             # we want to perform AST * torch.tensor
-            new_self = self.child
-            new_other = other.wrap()
+            new_self, new_other = self.child, other
 
-        elif other.child.is_wrapper and not self.child.is_wrapper:
+        elif isinstance(other.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
+            self.child, torch.Tensor
+        ):
             # If we try to multiply a FPT>torch.tensor with a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
-            new_self = other.child
-            new_other = self.wrap()
+            new_self, new_other = other.child, self
 
         else:
             # Replace all syft tensor with their child attribute
@@ -303,18 +300,20 @@ class FixedPrecisionTensor(AbstractTensor):
                 self.precision_fractional == other.precision_fractional
             ), "In matmul, all args should have the same precision_fractional"
 
-        if self.child.is_wrapper and not other.child.is_wrapper:
+        if isinstance(self.child, AdditiveSharingTensor) and isinstance(other.child, torch.Tensor):
             # If we try to matmul a FPT>(wrap)>AST with a FPT>torch.tensor,
             # we want to perform AST @ torch.tensor
             new_self = self.child
-            new_args = (other.wrap(),)
+            new_args = (other,)
             new_kwargs = kwargs
 
-        elif other.child.is_wrapper and not self.child.is_wrapper:
+        elif isinstance(other.child, AdditiveSharingTensor) and isinstance(
+            self.child, torch.Tensor
+        ):
             # If we try to matmul a FPT>torch.tensor with a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
             new_self = other.child
-            new_args = (self.wrap(),)
+            new_args = (self,)
             new_kwargs = kwargs
 
         else:
@@ -591,18 +590,6 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return response
 
-    def get(self):
-        """Just a pass through. This is most commonly used when calling .get() on a
-        FixedPrecisionTensor which has also been shared."""
-        class_attributes = self.get_class_attributes()
-        return FixedPrecisionTensor(
-            **class_attributes,
-            owner=self.owner,
-            tags=self.tags,
-            description=self.description,
-            id=self.id,
-        ).on(self.child.get())
-
     def share(self, *owners, field=None, crypto_provider=None):
         if field is None:
             field = self.field
@@ -611,7 +598,9 @@ class FixedPrecisionTensor(AbstractTensor):
                 field == self.field
             ), "When sharing a FixedPrecisionTensor, the field of the resulting AdditiveSharingTensor \
                 must be the same as the one of the original tensor"
-        self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
+        self.child = self.child.share(
+            *owners, field=field, crypto_provider=crypto_provider, no_wrap=True
+        )
         return self
 
     @staticmethod

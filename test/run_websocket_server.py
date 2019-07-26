@@ -13,10 +13,12 @@ KEEP_LABELS_DICT = {
     "bob": [4, 5, 6],
     "charlie": [7, 8, 9],
     "testing": list(range(10)),
-}
+}  # pragma: no cover
 
 
-def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=None, training=True):
+def start_websocket_server_worker(
+    id, host, port, hook, verbose, keep_labels=None, training=True
+):  # pragma: no cover
     """Helper function for spinning up a websocket server and setting up the local datasets."""
 
     server = WebsocketServerWorker(id=id, host=host, port=port, hook=hook, verbose=verbose)
@@ -56,6 +58,28 @@ def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=Non
 
     server.add_dataset(dataset, key=key)
 
+    # Setup toy data (vectors example)
+    data_vectors = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
+    target_vectors = torch.tensor([[1], [0], [1], [0]])
+
+    server.add_dataset(sy.BaseDataset(data_vectors, target_vectors), key="vectors")
+
+    # Setup toy data (xor example)
+    data_xor = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
+    target_xor = torch.tensor([1.0, 1.0, 0.0, 0.0], requires_grad=False)
+
+    server.add_dataset(sy.BaseDataset(data_xor, target_xor), key="xor")
+
+    # Setup gaussian mixture dataset
+    data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
+    server.add_dataset(sy.BaseDataset(data, target), key="gaussian_mixture")
+
+    # Setup partial iris dataset
+    data, target = utils.iris_data_partial()
+    dataset = sy.BaseDataset(data, target)
+    dataset_key = "iris"
+    server.add_dataset(dataset, key=dataset_key)
+
     logger.info("datasets: %s", server.datasets)
     if training:
         logger.info("len(datasets[mnist]): %s", len(server.datasets["mnist"]))
@@ -64,7 +88,7 @@ def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=Non
     return server
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     # Logging setup
     logger = logging.getLogger("run_websocket_server")
     FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
@@ -105,6 +129,6 @@ if __name__ == "__main__":
         port=args.port,
         hook=hook,
         verbose=args.verbose,
-        keep_labels=KEEP_LABELS_DICT[args.id],
+        keep_labels=KEEP_LABELS_DICT[args.id] if args.id in KEEP_LABELS_DICT else list(range(10)),
         training=not args.testing,
     )
