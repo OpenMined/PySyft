@@ -19,7 +19,7 @@ def test_xor_implementation(workers):
     x_bit_sh = decompose(th.tensor([23])).share(alice, bob, crypto_provider=james).child
     j0 = torch.zeros(x_bit_sh.shape).long().send(bob)
     j1 = torch.ones(x_bit_sh.shape).long().send(alice)
-    j = syft.MultiPointerTensor(children=[j0, j1])
+    j = syft.MultiPointerTensor(children=[j0.child, j1.child])
     w = (j * r) + x_bit_sh - (2 * x_bit_sh * r)
 
     r_real = r.virtual_get()[0]
