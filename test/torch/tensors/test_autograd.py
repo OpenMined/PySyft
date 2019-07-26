@@ -520,9 +520,7 @@ def test_serialize_deserialize_autograd_tensor(workers):
     remote_tensor = random_tensor.send(alice, local_autograd=True)
     local_tensor = remote_tensor.get()
     # check if the tensor sent is equal to the tensor got from the remote version
-    equal_tensors = torch.all(torch.eq(local_tensor, random_tensor))
-
-    assert equal_tensors == 1
+    assert(torch.all(torch.eq(local_tensor, random_tensor)))
 
 
 def test_train_remote_autograd_tensor(workers):
@@ -578,12 +576,5 @@ def test_train_remote_autograd_tensor(workers):
     loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote, remote=True)
 
     # let's check if the local version and the remote version have the same weigth
-    equal_weights = torch.all(
-        torch.eq(
-            model_local_trained.weight.copy().get().data, model_remote.weight.copy().get().data
-        )
-    )
-
-    assert equal_weights == 1
-
-    assert loss_remote.copy().get().item() < 500 and loss_local.item() < 500
+    assert(torch.all(torch.eq(model_local_trained.weight.copy().get().data, model_remote.weight.copy().get().data)))
+    
