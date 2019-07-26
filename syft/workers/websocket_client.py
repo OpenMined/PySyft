@@ -17,10 +17,7 @@ from syft.workers import BaseWorker
 
 logger = logging.getLogger(__name__)
 
-if os.name != "nt":
-    TIMEOUT_INTERVAL = 9_999_999
-else:
-    TIMEOUT_INTERVAL = 999_999
+TIMEOUT_INTERVAL = 999_999
 
 
 class WebsocketClientWorker(BaseWorker):
