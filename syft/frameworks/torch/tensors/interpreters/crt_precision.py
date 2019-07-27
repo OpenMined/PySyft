@@ -10,7 +10,7 @@ from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveS
 from syft.frameworks.torch.overload_torch import overloaded
 
 
-class CRTTensor(AbstractTensor):
+class CRTPrecisionTensor(AbstractTensor):
     """ A CRT tensor is a tensor whose values are represented as their remainders modulo several pairwise coprime numbers.
     The true tensor values lie in the Zq field where q is the product of all the moduli.
     A CRT tensor then represent a modular system of equations:
@@ -41,7 +41,7 @@ class CRTTensor(AbstractTensor):
             for pair in itertools.combinations(residues.keys(), r=2):
                 assert (
                     math.gcd(pair[0], pair[1]) == 1
-                ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTTensor with these as moduli"
+                ), f"{pair[0]} and {pair[1]} are not coprime, you cannot build a CRTPrecisionTensor with these as moduli"
 
         # Check that all the residues have the same precision and
         # check that all the shapes are the same
@@ -52,7 +52,7 @@ class CRTTensor(AbstractTensor):
             r = next(iter(residues.values()))  # Take one arbitrary residue
             assert isinstance(
                 r.child, FixedPrecisionTensor
-            ), "To build a CRTTensor directly, the residue argument should be a dictionary \
+            ), "To build a CRTPrecisionTensor directly, the residue argument should be a dictionary \
                 where keys are moduli and values are the residues under the form of FixedPrecisionTensor"
             b = r.child.base
             prec_frac = r.child.precision_fractional
@@ -62,18 +62,18 @@ class CRTTensor(AbstractTensor):
             for f, r in residues.items():
                 assert isinstance(
                     r.child, FixedPrecisionTensor
-                ), "To build a CRTTensor directly, the residue argument should be a dictionary \
+                ), "To build a CRTPrecisionTensor directly, the residue argument should be a dictionary \
                     where keys are moduli and values are the residues under the form of FixedPrecisionTensor"
-                assert r.child.base == b, "All residue tensors of CRTTensor must have the same base"
+                assert r.child.base == b, "All residue tensors of CRTPrecisionTensor must have the same base"
                 assert (
                     r.child.precision_fractional == prec_frac
-                ), "All residue tensors of CRTTensor must have the same precision_fractional"
+                ), "All residue tensors of CRTPrecisionTensor must have the same precision_fractional"
                 assert (
                     f == r.child.field
-                ), "All residue tensors of CRTTensor must have the same precision_fractional"
+                ), "All residue tensors of CRTPrecisionTensor must have the same precision_fractional"
                 assert (
                     r.shape == res_shape
-                ), "All residue tensors of CRTTensor must have the same shape"
+                ), "All residue tensors of CRTPrecisionTensor must have the same shape"
 
                 self.child[f] = r
                 prod_moduli *= f
@@ -313,11 +313,11 @@ class CRTTensor(AbstractTensor):
         return self.wrap()
 
     @staticmethod
-    def simplify(tensor: "CRTTensor") -> tuple:
+    def simplify(tensor: "CRTPrecisionTensor") -> tuple:
         """
-        This function takes the attributes of a CRTTensor and saves them in a tuple
+        This function takes the attributes of a CRTPrecisionTensor and saves them in a tuple
         Args:
-            crttensor: a CRTTensor
+            tensor: a CRTPrecisionTensor
         Returns:
             tuple: a tuple holding the unique attributes of the tensor
         """
@@ -328,18 +328,18 @@ class CRTTensor(AbstractTensor):
         return (tensor.id, tensor.base, tensor.precision_fractional, chain)
 
     @staticmethod
-    def detail(worker, tensor_tuple: tuple) -> "CRTTensor":
+    def detail(worker, tensor_tuple: tuple) -> "CRTPrecisionTensor":
         """
-        This function reconstructs a CRTTensor given its attributes in form of a tuple.
+        This function reconstructs a CRTPrecisionTensor given its attributes in form of a tuple.
         Args:
             worker: the worker doing the deserialization
-            tensor_tuple: a tuple holding the attributes of the CRTTensor
+            tensor_tuple: a tuple holding the attributes of the CRTPrecisionTensor
         Returns:
-            CRTTensor: a CRTTensor
+            CRTPrecisionTensor: a CRTPrecisionTensor
         """
         tensor_id, tensor_base, tensor_precision_fractional, chain = tensor_tuple
 
-        tensor = syft.CRTTensor(
+        tensor = syft.CRTPrecisionTensor(
             base=tensor_base,
             precision_fractional=tensor_precision_fractional,
             owner=worker,

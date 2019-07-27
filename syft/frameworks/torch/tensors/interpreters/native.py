@@ -11,7 +11,7 @@ from syft.exceptions import InvalidTensorForRemoteGet
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.pointers import PointerTensor
 from syft.workers import BaseWorker
-from syft.frameworks.torch.tensors.interpreters.chinese_remainder_theorem import _moduli_for_fields
+from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 
 from syft.exceptions import PureTorchTensorFoundError
 
@@ -691,7 +691,7 @@ class TorchTensor(AbstractTensor):
                     .wrap()
                 )
 
-            return syft.CRTTensor(residues, *args, **kwargs).wrap()
+            return syft.CRTPrecisionTensor(residues, *args, **kwargs).wrap()
 
         if need_large_prec or storage == "large":
             return (
