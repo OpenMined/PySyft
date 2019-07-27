@@ -318,7 +318,10 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __mul__ = mul
-    __imul__ = mul
+    
+    def __imul__(self, other):
+        self = self.mul(other)
+        return self
 
     def pow(self, power):
         """
