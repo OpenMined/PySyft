@@ -220,48 +220,41 @@ class FixedPrecisionTensor(AbstractTensor):
         Hook manually mul to add the truncation part which is inherent to multiplication
         in the fixed precision setting
         """
-        if not isinstance(other, FixedPrecisionTensor):
-            if isinstance(other, (int, torch.Tensor)):
-                new_self = self.child
-                new_other = other
+        if isinstance(other, (int, torch.Tensor)):
+            new_self = self.child
+            new_other = other
 
-            if isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
-                other.child, torch.Tensor
-            ):
-                # If we try to multiply a FPT>AST with a FPT>torch.tensor,
-                # we want to perform AST * torch.tensor
-                new_self, new_other = self.child, other
+        elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
+            other.child, torch.Tensor
+        ):
+            # If we try to multiply a FPT>AST with a FPT>torch.tensor,
+            # we want to perform AST * torch.tensor
+            new_self = self.child
+            new_other = other
 
-            elif isinstance(
-                other.child, (AdditiveSharingTensor, MultiPointerTensor)
-            ) and isinstance(self.child, torch.Tensor):
-                # If we try to multiply a FPT>torch.tensor with a FPT>AST,
-                # we swap operators so that we do the same operation as above
-                new_self, new_other = other.child, self
+        elif isinstance(other.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
+            self.child, torch.Tensor
+        ):
+            # If we try to multiply a FPT>torch.tensor with a FPT>AST,
+            # we swap operators so that we do the same operation as above
+            new_self = other.child
+            new_other = self
 
-            # Send it to the appropriate class and get the response
-            response = getattr(new_self, "mul")(new_other)
-
-            # Put back SyftTensor on the tensors found in the response
-            response = syft.frameworks.torch.hook_args.hook_response(
-                "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
-            )
-
-            if not isinstance(other, (int, torch.Tensor)):
-                response = response.truncate(self.precision_fractional)
-            response %= self.field  # Wrap around the field
-
-        else:  # Both operands are FPT
-            assert (
-                self.precision_fractional == other.precision_fractional
-            ), "In mul, all args should have the same precision_fractional"
-
-            # Replace all syft tensor with their child attribute
+        elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
+            other.child, (AdditiveSharingTensor, MultiPointerTensor)
+        ):
+            # If we try to multiply a FPT>torch.tensor with a FPT>AST,
+            # we swap operators so that we do the same operation as above
             new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
                 "mul", self, other, None
             )
 
-            # To avoid overflow due to multiplication of small negative numbers
+        elif isinstance(self.child, torch.Tensor) and isinstance(other.child, torch.Tensor):
+            new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
+                "mul", self, other, None
+            )
+
+            # To avoid problems when multiplying 2 negative numbers
             # we take absolute value of the operands
 
             # sgn_self is 1 when new_self is positive else it's 0
@@ -279,22 +272,26 @@ class FixedPrecisionTensor(AbstractTensor):
             # If both have the same sign, sgn is 1 else it's 0
             sgn = 1 - (sgn_self - sgn_other) ** 2
 
-            # Send it to the appropriate class and get the response
-            response = getattr(new_self, "mul")(new_other)
+        # Send it to the appropriate class and get the response
+        response = getattr(new_self, "mul")(new_other)
 
-            # Put back SyftTensor on the tensors found in the response
-            response = syft.frameworks.torch.hook_args.hook_response(
-                "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
-            )
+        # Put back SyftTensor on the tensors found in the response
+        response = syft.frameworks.torch.hook_args.hook_response(
+            "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
+        )
 
-            # With this sign trick, we don't need to consider negative numbers when truncating
+        if not isinstance(other, (int, torch.Tensor)):
             response = response.truncate(self.precision_fractional, check_sign=False)
             response %= self.field  # Wrap around the field
 
-            # Give back its sign to response
-            pos_res = response * sgn
-            neg_res = (self.field - response) * (1 - sgn)
-            response = neg_res + pos_res
+            if isinstance(self.child, torch.Tensor) and isinstance(other.child, torch.Tensor):
+                # Give back its sign to response
+                pos_res = response * sgn
+                neg_res = (self.field - response) * (1 - sgn)
+                response = neg_res + pos_res
+
+        else:
+            response %= self.field  # Wrap around the field
 
         return response
 
