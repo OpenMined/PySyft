@@ -231,10 +231,10 @@ class FixedPrecisionTensor(AbstractTensor):
                 # If we try to multiply a FPT>AST with a FPT>torch.tensor,
                 # we want to perform AST * torch.tensor
                 new_self, new_other = self.child, other
-            
-            elif isinstance(other.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
-                self.child, torch.Tensor
-            ):
+
+            elif isinstance(
+                other.child, (AdditiveSharingTensor, MultiPointerTensor)
+            ) and isinstance(self.child, torch.Tensor):
                 # If we try to multiply a FPT>torch.tensor with a FPT>AST,
                 # we swap operators so that we do the same operation as above
                 new_self, new_other = other.child, self
@@ -255,7 +255,7 @@ class FixedPrecisionTensor(AbstractTensor):
             assert (
                 self.precision_fractional == other.precision_fractional
             ), "In mul, all args should have the same precision_fractional"
-      
+
             # Replace all syft tensor with their child attribute
             new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
                 "mul", self, other, None
@@ -299,7 +299,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __mul__ = mul
-    
+
     def __imul__(self, other):
         self = self.mul(other)
         return self
