@@ -49,22 +49,20 @@ class CRTPrecisionTensor(AbstractTensor):
         self.base = base
         self.precision_fractional = precision_fractional
         if residues is not None:
-            r = next(iter(residues.values()))  # Take one arbitrary residue
-            assert isinstance(
-                r.child, FixedPrecisionTensor
+            assert all(
+                [isinstance(r.child, FixedPrecisionTensor) for r in residues.values()]
             ), "To build a CRTPrecisionTensor directly, the residue argument should be a dictionary \
                 where keys are moduli and values are the residues under the form of FixedPrecisionTensor"
+            r = next(iter(residues.values()))  # Take one arbitrary residue
             b = r.child.base
             prec_frac = r.child.precision_fractional
             res_shape = r.shape
             self.child = {}
             prod_moduli = 1
             for f, r in residues.items():
-                assert isinstance(
-                    r.child, FixedPrecisionTensor
-                ), "To build a CRTPrecisionTensor directly, the residue argument should be a dictionary \
-                    where keys are moduli and values are the residues under the form of FixedPrecisionTensor"
-                assert r.child.base == b, "All residue tensors of CRTPrecisionTensor must have the same base"
+                assert (
+                    r.child.base == b
+                ), "All residue tensors of CRTPrecisionTensor must have the same base"
                 assert (
                     r.child.precision_fractional == prec_frac
                 ), "All residue tensors of CRTPrecisionTensor must have the same precision_fractional"
