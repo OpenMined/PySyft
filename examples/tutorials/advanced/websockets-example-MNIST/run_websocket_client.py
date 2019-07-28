@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 LOG_INTERVAL = 25
 
-
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -68,7 +67,7 @@ def train_on_batches(worker, batches, model_in, device, lr):
         if batch_idx % LOG_INTERVAL == 0:
             loss = loss.get()  # <-- NEW: get the loss back
             loss_local = True
-            logger.debug(
+            print(
                 "Train Worker {}: [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                     worker.id,
                     batch_idx,
@@ -121,7 +120,7 @@ def train(model, device, federated_train_loader, lr, federate_after_n_batches):
     counter = 0
 
     while True:
-        logger.debug("Starting training round, batches [%s, %s]", counter, counter + nr_batches)
+        print("Starting training round, batches [{}, {}]".format( counter, counter + nr_batches))
         data_for_all_workers = True
         for worker in batches:
             curr_batches = batches[worker]
@@ -133,7 +132,7 @@ def train(model, device, federated_train_loader, lr, federate_after_n_batches):
                 data_for_all_workers = False
         counter += nr_batches
         if not data_for_all_workers:
-            logger.debug("At least one worker ran out of data, stopping.")
+            print("At least one worker ran out of data, stopping.")
             break
 
         model = utils.federated_avg(models)
@@ -155,9 +154,9 @@ def test(model, device, test_loader):
 
     test_loss /= len(test_loader.dataset)
 
-    logger.info("\n")
+    print("\n")
     accuracy = 100.0 * correct / len(test_loader.dataset)
-    logger.info(
+    print(
         "Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
             test_loss, correct, len(test_loader.dataset), accuracy
         )
