@@ -30,9 +30,8 @@ class PolynomialTensor(AbstractTensor):
         self.function_attr = {}
         # Stores fitted function
         self.func_approx = {}
-        self.default_functions()
 
-        def default_functions(self):
+        def default_functions():
             """Initializes default function approximations exp, log, sigmoid and tanh"""
 
             self.add_function(
@@ -54,6 +53,8 @@ class PolynomialTensor(AbstractTensor):
                 [[0, 10, 1000, 10, self.fit_function], [-10, 0, 1000, 10, self.fit_function]],
                 lambda x: np.tanh(x),
             )
+        
+        self.default_functions()
 
         def add_function(self, name, degree, piecewise, function):
             """Add function to function_attr dictionary.
