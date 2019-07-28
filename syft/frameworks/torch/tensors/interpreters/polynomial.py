@@ -54,7 +54,7 @@ class PolynomialTensor(AbstractTensor):
                 lambda x: np.tanh(x),
             )
 
-        self.default_functions()
+        default_functions()
 
         def add_function(self, name, degree, piecewise, function):
             """Add function to function_attr dictionary.
