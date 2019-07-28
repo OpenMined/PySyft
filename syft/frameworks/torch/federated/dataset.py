@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class BaseDataset:
     """
-    This is a base class to used for manipulating a dataset. This is composed
+    This is a base class to be used for manipulating a dataset. This is composed
     of a .data attribute for inputs and a .targets one for labels. It is to
     be used like the MNIST Dataset object, and is useful to avoid handling
     the two inputs and label tensors separately.
@@ -36,7 +36,7 @@ class BaseDataset:
         """
         Args:
 
-            index[integer]: index of item of to get
+            index[integer]: index of item to get
 
         Returns:
 
@@ -59,7 +59,7 @@ class BaseDataset:
             transform: The transform to be applied on the data
         """
 
-        # Transforms cannot be applied to Pointer  , Fixed Precision or Float Precision tensors.
+        # Transforms cannot be applied to Pointer, Fixed Precision or Float Precision tensors.
         if type(self.data) == torch.Tensor:
 
             self.data = transform(self.data)
