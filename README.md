@@ -57,6 +57,12 @@ $ docker container run openmined/pysyft-notebook
 
 You can use the provided link to access the jupyter notebook (the link is only accessible from your local machine).
 
+> **_NOTE:_**
+> If you are using Docker Desktop for Mac, the port needs to be forwarded to localhost. In that case run docker with:
+> ```bash $ docker container run -p 8888:8888 openmined/pysyft-notebook ```
+> to forward port 8888 from the container's interface to port 8888 on localhost and then access the notebook via http://127.0.0.1:8888/?token=... 
+
+
 You can also set the directory from which the server will serve notebooks (default is /workspace).
 
 ```bash
@@ -87,7 +93,7 @@ These tutorials cover how to perform techniques such as federated learning and d
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
 
-Also join the rapidly growing community of 3700+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
+Also join the rapidly growing community of 5000+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
 ## Troubleshooting
 

@@ -107,59 +107,54 @@ async def fit_model_on_worker(
         shuffle=True,
         max_nr_batches=max_nr_batches,
         epochs=1,
-        lr=lr,
+        optimizer="SGD",
+        optimizer_args={"lr": 0.1},
     )
     train_config.send(worker)
-    logger.info(
-        "Training round %s, calling fit on worker: %s, lr = %s",
-        curr_round,
-        worker.id,
-        "{:.3f}".format(train_config.lr),
-    )
+    logger.info("Training round %s, calling fit on worker: %s", curr_round, worker.id)
     loss = await worker.async_fit(dataset_key="mnist", return_ids=[0])
     logger.info("Training round: %s, worker: %s, avg_loss: %s", curr_round, worker.id, loss.mean())
     model = train_config.model_ptr.get().obj
     return worker.id, model, loss
 
 
-def evaluate_models_on_test_data(test_loader, results):
-    np.set_printoptions(formatter={"float": "{: .0f}".format})
-    for worker_id, worker_model, _ in results:
-        evaluate_model(worker_id, worker_model, "cpu", test_loader, print_target_hist=False)
-
-
-def evaluate_model(worker_id, model, device, test_loader, print_target_hist=False):
+def evaluate_model_on_worker(
+    model_identifier, worker, dataset_key, model, nr_bins, batch_size, print_target_hist=False
+):
     model.eval()
-    test_loss = 0.0
-    correct = 0
-    hist_target = np.zeros(10)
-    hist_pred = np.zeros(10)
 
-    with torch.no_grad():
-        for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
-            hist, _ = np.histogram(target, bins=10, range=(0, 10))
-            hist_target += hist
-            output = model(data)
-            test_loss += loss_fn(output, target).item()  # sum up batch loss
-            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-            hist, _ = np.histogram(pred, bins=10, range=(0, 10))
-            hist_pred += hist
-            correct += pred.eq(target.view_as(pred)).sum().item()
+    # Create and send train config
+    train_config = sy.TrainConfig(
+        batch_size=batch_size, model=model, loss_fn=loss_fn, optimizer_args=None, epochs=1
+    )
 
-    test_loss /= len(test_loader.dataset)
+    train_config.send(worker)
+
+    result = worker.evaluate(
+        dataset_key=dataset_key, return_histograms=True, nr_bins=nr_bins, return_loss=True
+    )
+    test_loss, correct, len_dataset, hist_pred, hist_target = result
 
     if print_target_hist:
         logger.info("Target histogram: %s", hist_target)
-    logger.info("Prediction hist.: %s", hist_pred)
+    logger.info("%s: Prediction hist.: %s", model_identifier, hist_pred)
+    logger.info(
+        "%s: Percentage numbers 0-3: %s", model_identifier, sum(hist_pred[0:4]) / len_dataset
+    )
+    logger.info(
+        "%s: Percentage numbers 4-6: %s", model_identifier, sum(hist_pred[4:7]) / len_dataset
+    )
+    logger.info(
+        "%s: Percentage numbers 7-9: %s", model_identifier, sum(hist_pred[7:10]) / len_dataset
+    )
 
     logger.info(
         "%s: Test set: Average loss: %s, Accuracy: %s/%s (%s)",
-        worker_id,
+        model_identifier,
         "{:.4f}".format(test_loss),
         correct,
-        len(test_loader.dataset),
-        "{:.2f}".format(100.0 * correct / len(test_loader.dataset)),
+        len_dataset,
+        "{:.2f}".format(100.0 * correct / len_dataset),
     )
 
 
@@ -168,10 +163,11 @@ async def main():
 
     hook = sy.TorchHook(torch)
 
-    kwargs_websocket = {"host": "localhost", "hook": hook, "verbose": args.verbose}
+    kwargs_websocket = {"hook": hook, "verbose": args.verbose, "host": "0.0.0.0"}
     alice = workers.WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
     bob = workers.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
     charlie = workers.WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
+    testing = workers.WebsocketClientWorker(id="testing", port=8780, **kwargs_websocket)
 
     worker_instances = [alice, bob, charlie]
 
@@ -224,7 +220,17 @@ async def main():
 
         test_models = curr_round % 10 == 1 or curr_round == args.training_rounds
         if test_models:
-            evaluate_models_on_test_data(test_loader, results)
+            np.set_printoptions(formatter={"float": "{: .0f}".format})
+            for worker_id, worker_model, _ in results:
+                evaluate_model_on_worker(
+                    model_identifier=worker_id,
+                    worker=testing,
+                    dataset_key="mnist_testing",
+                    model=worker_model,
+                    nr_bins=10,
+                    batch_size=128,
+                    print_target_hist=False,
+                )
 
         for worker_id, worker_model, worker_loss in results:
             if worker_model is not None:
@@ -233,8 +239,14 @@ async def main():
 
         traced_model = utils.federated_avg(models)
         if test_models:
-            evaluate_model(
-                "Federated model", traced_model, "cpu", test_loader, print_target_hist=True
+            evaluate_model_on_worker(
+                model_identifier="Federated model",
+                worker=testing,
+                dataset_key="mnist_testing",
+                model=traced_model,
+                nr_bins=10,
+                batch_size=128,
+                print_target_hist=True,
             )
 
         # decay learning rate

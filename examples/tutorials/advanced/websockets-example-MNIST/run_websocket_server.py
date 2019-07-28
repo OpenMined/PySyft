@@ -44,4 +44,3 @@ if os.name != "nt":
     server = start_proc(WebsocketServerWorker, kwargs)
 else:
     server = WebsocketServerWorker(**kwargs)
-    server.start()

@@ -1,10 +1,11 @@
 import subprocess
 
-call_alice = ['python', "run_websocket_server.py", "--port", "8777", "--id", "alice"]
 
-call_bob = ['python', "run_websocket_server.py", "--port", "8778", "--id", "bob"]
+call_alice = [python, "run_websocket_server.py", "--port", "8777", "--id", "alice"]
 
-call_charlie = ['python', "run_websocket_server.py", "--port", "8779", "--id", "charlie"]
+call_bob = [python, "run_websocket_server.py", "--port", "8778", "--id", "bob"]
+
+call_charlie = [python, "run_websocket_server.py", "--port", "8779", "--id", "charlie"]
 
 print("Starting server for Alice")
 subprocess.Popen(call_alice)
