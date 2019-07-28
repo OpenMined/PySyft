@@ -53,7 +53,7 @@ class PolynomialTensor(AbstractTensor):
                 [[0, 10, 1000, 10, self.fit_function], [-10, 0, 1000, 10, self.fit_function]],
                 lambda x: np.tanh(x),
             )
-        
+
         self.default_functions()
 
         def add_function(self, name, degree, piecewise, function):
