@@ -187,7 +187,7 @@ class WebsocketClientWorker(BaseWorker):
         dataset_key: str,
         return_histograms: bool = False,
         nr_bins: int = -1,
-        return_loss=True,
+        return_loss = True,
         return_raw_accuracy: bool = True,
     ):
         """Call the evaluate() method on the remote worker (WebsocketServerWorker instance).

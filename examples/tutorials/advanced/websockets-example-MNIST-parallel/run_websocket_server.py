@@ -13,6 +13,7 @@ KEEP_LABELS_DICT = {
     "bob": [4, 5, 6],
     "charlie": [7, 8, 9],
     "testing": list(range(10)),
+    None: list(range(10)),
 }
 
 
@@ -55,10 +56,17 @@ def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=Non
         key = "mnist_testing"
 
     server.add_dataset(dataset, key=key)
+    count = [0] * 10
+    logger.info(
+        "MNIST dataset (%s set), available numbers on %s: ", "train" if training else "test", id
+    )
+    for i in range(10):
+        count[i] = (dataset.targets == i).sum().item()
+        logger.info("      %s: %s", i, count[i])
 
     logger.info("datasets: %s", server.datasets)
     if training:
-        logger.info("len(datasets[mnist]): %s", len(server.datasets["mnist"]))
+        logger.info("len(datasets[mnist]): %s", len(server.datasets[key]))
 
     server.start()
     return server
@@ -67,7 +75,8 @@ def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=Non
 if __name__ == "__main__":
     # Logging setup
     logger = logging.getLogger("run_websocket_server")
-    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
+    # FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
+    FORMAT = "%(asctime)s %(message)s"
     logging.basicConfig(format=FORMAT)
     logger.setLevel(level=logging.DEBUG)
 
