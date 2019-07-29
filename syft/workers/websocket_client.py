@@ -81,9 +81,7 @@ class WebsocketClientWorker(BaseWorker):
 
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         self.ws.send(str(binascii.hexlify(message)))
-        # response = binascii.unhexlify(self.ws.recv()[2:-1])
-        raw_response = self.ws.recv()
-        response = binascii.unhexlify(raw_response[2:-1])
+        response = binascii.unhexlify(self.ws.recv()[2:-1])
         return response
 
     def _recv_msg(self, message: bin) -> bin:
