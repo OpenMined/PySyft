@@ -67,15 +67,15 @@ def train_on_batches(worker, batches, model_in, device, lr):
         if batch_idx % LOG_INTERVAL == 0:
             loss = loss.get()  # <-- NEW: get the loss back
             loss_local = True
-            print(
+            logger.debug(
                 "Train Worker {}: [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                     worker.id,
                     batch_idx,
                     len(batches),
                     100.0 * batch_idx / len(batches),
                     loss.item(),
-                )
-            )
+                ))
+
     if not loss_local:
         loss = loss.get()  # <-- NEW: get the loss back
     model.get()  # <-- NEW: get the model back
@@ -120,7 +120,7 @@ def train(model, device, federated_train_loader, lr, federate_after_n_batches):
     counter = 0
 
     while True:
-        print("Starting training round, batches [{}, {}]".format( counter, counter + nr_batches))
+        logger.debug("Starting training round, batches [{}, {}]".format(counter, counter + nr_batches))
         data_for_all_workers = True
         for worker in batches:
             curr_batches = batches[worker]
@@ -132,7 +132,7 @@ def train(model, device, federated_train_loader, lr, federate_after_n_batches):
                 data_for_all_workers = False
         counter += nr_batches
         if not data_for_all_workers:
-            print("At least one worker ran out of data, stopping.")
+            logger.debug("At least one worker ran out of data, stopping.")
             break
 
         model = utils.federated_avg(models)
@@ -154,13 +154,14 @@ def test(model, device, test_loader):
 
     test_loss /= len(test_loader.dataset)
 
-    print("\n")
+    logger.debug("\n")
     accuracy = 100.0 * correct / len(test_loader.dataset)
-    print(
+    logger.info(
         "Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
             test_loss, correct, len(test_loader.dataset), accuracy
         )
     )
+
 
 
 def define_and_get_arguments(args=sys.argv[1:]):

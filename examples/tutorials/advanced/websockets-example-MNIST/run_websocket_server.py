@@ -45,6 +45,3 @@ if os.name != "nt":
 else:
     server = WebsocketServerWorker(**kwargs)
     server.start()
-
-
-    
