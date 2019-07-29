@@ -2,22 +2,16 @@ import subprocess
 import sys
 import os
 
-python = "python" + sys.version[0:3]
-
-if os.name != "nt":
-
-    call_alice = [python, "run_websocket_server.py", "--port", "8777", "--id", "alice"]
-
-    call_bob = [python, "run_websocket_server.py", "--port", "8778", "--id", "bob"]
-
-    call_charlie = [python, "run_websocket_server.py", "--port", "8779", "--id", "charlie"]
+if os.name == "nt":
+    python = "python"
 else:
+    python = "python" + sys.version[0:3]
 
-    call_alice = ['python', "run_websocket_server.py", "--port", "8777", "--id", "alice"]
+call_alice = [python, "run_websocket_server.py", "--port", "8777", "--id", "alice"]
 
-    call_bob = ['python', "run_websocket_server.py", "--port", "8778", "--id", "bob"]
+call_bob = [python, "run_websocket_server.py", "--port", "8778", "--id", "bob"]
 
-    call_charlie = ['python', "run_websocket_server.py", "--port", "8779", "--id", "charlie"]
+call_charlie = [python, "run_websocket_server.py", "--port", "8779", "--id", "charlie"]
 
 
 print("Starting server for Alice")
