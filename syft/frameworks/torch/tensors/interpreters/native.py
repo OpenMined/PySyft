@@ -268,7 +268,7 @@ class TorchTensor(AbstractTensor):
 
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
-            new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
+            new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_with_args(
                 cmd, args, kwargs, return_args_type=True
             )
             # This handles case 3: it redirects the command to the appropriate class depending

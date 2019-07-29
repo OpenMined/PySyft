@@ -97,7 +97,7 @@ class ObjectPointer(abstract.AbstractObject):
         """
         try:
             cmd, _, args, kwargs = command
-            _ = syft.frameworks.torch.hook_args.hook_function_args(cmd, args, kwargs)
+            _ = syft.frameworks.torch.hook_args.hook_function_with_args(cmd, args, kwargs)
         except exceptions.RemoteObjectFoundError as err:
             pointer = err.pointer
             return pointer
