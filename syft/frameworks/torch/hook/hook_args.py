@@ -241,7 +241,9 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
         new_response = response_hook_function(response)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in cas of an error
-        response_hook_function = build_hook_for_response_with_function(response, wrap_type, wrap_args)
+        response_hook_function = build_hook_for_response_with_function(
+            response, wrap_type, wrap_args
+        )
         # Store this utility function in the registry
         hook_method_response_functions[attr_id] = response_hook_function
         # Run it
@@ -323,7 +325,9 @@ def build_hook_for_args_child_with_rules(args, rules, return_tuple=False):
     lambdas = [
         typed_identity(a)  # return the same obj with an identity fct with a type check if needed
         if not r  # if the rule is a number == 0.
-        else build_hook_for_args_child_with_rules(a, r, True)  # If not, call recursively build_args_hook
+        else build_hook_for_args_child_with_rules(
+            a, r, True
+        )  # If not, call recursively build_args_hook
         if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
         # Last if not, rule is probably == 1 so use type to return the right transformation.
         else lambda i: forward_func[type(i)](i)
@@ -731,7 +735,9 @@ def build_register_response(response: object, rules: Tuple, return_tuple: bool =
     lambdas = [
         (lambda i, **kwargs: i)  # return the same object
         if not r or not hasattr(a, "owner")  # if the rule is a number == 0.
-        else build_register_response(a, r, True)  # If not, call recursively build_response_hook_with_rule
+        else build_register_response(
+            a, r, True
+        )  # If not, call recursively build_response_hook_with_rule
         if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
         # Last if not, rule is probably == 1 so use type to return the right transformation.
         else lambda i, **kwargs: register_tensor(i, **kwargs)
