@@ -1,3 +1,5 @@
+import pytest
+
 import torch
 import torch.nn as nn
 import torch as th
@@ -116,6 +118,10 @@ def test_add(workers):
 
     assert (z == (t + t)).all()
 
+    z = (y + x).get().float_prec()
+
+    assert (z == (t + t)).all()
+
 
 def test_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -153,6 +159,10 @@ def test_sub(workers):
     z = (x - y).get().float_prec()
 
     assert (z == (t - u)).all()
+
+    z = (y - x).get().float_prec()
+
+    assert (z == (u - t)).all()
 
 
 def test_mul(workers):
@@ -358,6 +368,10 @@ def test_matmul(workers):
 
     assert (z == (m @ m)).all()
 
+    z = (y @ x).get().float_prec()
+
+    assert (z == (m @ m)).all()
+
 
 def test_torch_conv2d(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -457,8 +471,10 @@ def test_get_item(workers):
     x = th.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
     idx = torch.tensor([0]).send(alice, bob)
 
-    assert x.child.child[:, idx].get() == torch.tensor([[3100]])
+    # Operate directly AST[MPT]
+    assert x.child.child[:, idx.child].get() == torch.tensor([[3100]])
 
+    # With usual wrappers and FPT
     x = th.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
     idx = torch.tensor([0]).send(alice, bob)
     assert x[:, idx].get() == torch.tensor([[3]])
@@ -622,6 +638,16 @@ def test_torch_mean(workers):
     assert (s_keepdim == torch.tensor([[1.75], [6.75]])).all()
 
 
+def test_torch_dot(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([3.0, 3.0, 3.0, 3.0, 3.0]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert torch.dot(x, y).get().float_prec() == 45
+
+
 def test_unbind(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
@@ -650,3 +676,24 @@ def test_init_with_no_crypto_provider(workers):
     x = torch.tensor([21, 17]).share(bob, alice).child
 
     assert x.crypto_provider.id == syft.hook.local_worker.id
+
+
+def test_zero_refresh(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([2.2, -1.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+
+    x_sh = x.child.child
+    assert (x_sh.zero().get() == torch.zeros(*t.shape).long()).all()
+
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x_copy = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x_r = x.refresh()
+
+    assert (x_r.get().float_prec() == x_copy.get().float_prec()).all()
+
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x_r = x.refresh()
+
+    assert ((x_r / 2).get().float_prec() == t / 2).all()

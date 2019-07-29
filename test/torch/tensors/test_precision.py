@@ -272,6 +272,15 @@ def test_torch_addmm():
     assert (fp_result.float_precision() == torch.tensor([[10.0, 8.0]])).all()
 
 
+def test_torch_dot(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0]).fix_prec()
+    y = torch.tensor([3.0, 3.0, 3.0, 3.0, 3.0]).fix_prec()
+
+    assert torch.dot(x, y).float_prec() == 45
+
+
 def test_torch_conv2d(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     im = torch.Tensor(
