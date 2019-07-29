@@ -268,6 +268,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         ptr_id: Union[str, int] = None,
         local_autograd=False,
         preinitialize_grad=False,
+        garbage_collect_data=None,
     ) -> "pointers.ObjectPointer":
         """Sends tensor to the worker(s).
 
@@ -284,6 +285,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             local_autograd: Use autograd system on the local machine instead of PyTorch's
                 autograd on the workers.
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
+            garbage_collect_data: argument passed down to create_pointer()
 
         Example:
             >>> import torch
@@ -329,6 +331,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 ptr_id=ptr_id,
                 local_autograd=local_autograd,
                 preinitialize_grad=preinitialize_grad,
+                garbage_collect_data=garbage_collect_data,
             )
         else:
             pointer = obj
@@ -678,12 +681,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def __getitem__(self, idx):
         return self._objects[idx]
-
-    def clear_objects(self):
-        """Removes all objects from the worker."""
-
-        self._objects.clear()
-        return self
 
     @staticmethod
     def is_tensor_none(obj):

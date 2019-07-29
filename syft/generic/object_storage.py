@@ -123,3 +123,11 @@ class ObjectStorage:
             if hasattr(obj, "child"):
                 obj.child.garbage_collect_data = True
             del self._objects[remote_key]
+
+    def clear_objects(self):
+        """Removes all objects from the object storage."""
+        self._objects.clear()
+
+    def current_objects(self):
+        """Returns a copy of the objects in the object storage."""
+        return self._objects.copy()
