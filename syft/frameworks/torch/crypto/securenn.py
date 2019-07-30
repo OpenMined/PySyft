@@ -434,7 +434,7 @@ def relu(a_sh):
     return a_sh * relu_deriv(a_sh) + u
 
 
-def division(x_sh, y_sh, bit_len_max=Q_BITS):
+def division(x_sh, y_sh, bit_len_max=Q_BITS // 2):
     """ Performs division of encrypted numbers
     
     Args:

@@ -240,6 +240,27 @@ def test_public_mul(workers):
     assert (z == t_x * t_y).all()
 
 
+def test_div(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # With scalar
+    t = torch.tensor([[9.0, 12.0], [3.3, 0.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x / 3).get().float_prec()
+
+    assert (y == torch.tensor([[3.0, 4.0], [1.1, 0.0]])).all()
+
+    # With another encrypted tensor
+    t1 = torch.tensor([[25, 9], [10, 30]])
+    t2 = torch.tensor([[5, 12], [2, 7]])
+    x1 = t1.share(bob, alice, crypto_provider=james)
+    x2 = t2.share(bob, alice, crypto_provider=james)
+
+    y = (x1 / x2).get()
+
+    assert (y == torch.tensor([[5, 0], [5, 4]])).all()
+
+
 def test_pow(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 

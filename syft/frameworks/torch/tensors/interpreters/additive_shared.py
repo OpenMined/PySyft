@@ -529,11 +529,12 @@ class AdditiveSharingTensor(AbstractTensor):
         result = self.__truediv__(*args, **kwargs)
         self.child = result.child
 
-    @overloaded.method
-    def __truediv__(self, shares: dict, divisor):
-        # TODO: how to correctly handle division in Zq?
-        assert isinstance(divisor, int)
+    def _private_div(self, divisor):
+        return securenn.division(self, divisor)
 
+    @overloaded.method
+    def _public_div(self, shares: dict, divisor):
+        # TODO: how to correctly handle division in Zq?
         divided_shares = {}
         for i_worker, (location, pointer) in enumerate(shares.items()):
             # Still no solution to perform a real division on a additive shared tensor
@@ -548,7 +549,15 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return divided_shares
 
-    div = __truediv__
+    def div(self, divisor):
+        if isinstance(divisor, int):
+            return self._public_div(divisor)
+        elif isinstance(divisor, AdditiveSharingTensor):
+            return self._private_div(divisor)
+        else:
+            raise NotImplementedError("AdditiveSharingTensor division only supports ASTs and int")
+
+    __truediv__ = div
 
     @overloaded.method
     def mod(self, shares: dict, modulus: int):
