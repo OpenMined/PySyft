@@ -655,7 +655,7 @@ class Plan(ObjectStorage):
             id=id,
             arg_ids=arg_ids,
             result_ids=result_ids,
-            readable_plan=readable_plan, # We're not detailing, see simplify() for details
+            readable_plan=readable_plan,  # We're not detailing, see simplify() for details
             is_built=is_built,
         )
 
