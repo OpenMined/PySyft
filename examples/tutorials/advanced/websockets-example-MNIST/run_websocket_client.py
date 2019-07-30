@@ -40,7 +40,8 @@ def train_on_batches(worker, batches, model_in, device, lr):
     """Train the model on the worker on the provided batches
 
     Args:
-        worker(syft.workers.BaseWorker): worker on which the training will be executed
+        worker(syft.workers.BaseWorker): worker on which the
+        training will be executed
         batches: batches of data of this worker
         model_in: machine learning model, training will be done on a copy
         device (torch.device): where to run the training
@@ -87,10 +88,12 @@ def train_on_batches(worker, batches, model_in, device, lr):
 
 
 def get_next_batches(fdataloader: sy.FederatedDataLoader, nr_batches: int):
-    """retrieve next nr_batches of the federated data loader and group the batches by worker
+    """retrieve next nr_batches of the federated data loader and group
+    the batches by worker
 
     Args:
-        fdataloader (sy.FederatedDataLoader): federated data loader over which the function will iterate
+        fdataloader (sy.FederatedDataLoader): federated data loader
+        over which the function will iterate
         nr_batches (int): number of batches (per worker) to retrieve
 
     Returns:
@@ -111,7 +114,7 @@ def get_next_batches(fdataloader: sy.FederatedDataLoader, nr_batches: int):
     return batches
 
 
-def train(model, device, federated_train_loader, lr, federate_after_n_batches):
+def train(model,device,federated_train_loader,lr,federate_after_n_batches):
     model.train()
 
     nr_batches = federate_after_n_batches
@@ -180,7 +183,8 @@ def define_and_get_arguments(args=sys.argv[1:]):
         description="Run federated learning using websocket client workers."
     )
     parser.add_argument(
-        "--batch_size", type=int, default=64, help="batch size of the training"
+        "--batch_size", type=int, default=64,
+        help="batch size of the training"
     )
     parser.add_argument(
         "--test_batch_size",
@@ -195,21 +199,25 @@ def define_and_get_arguments(args=sys.argv[1:]):
         "--federate_after_n_batches",
         type=int,
         default=50,
-        help="number of training steps performed on each remote worker before averaging",
+        help="number of training steps performed on each remote worker "
+             "before averaging",
     )
-    parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
+    parser.add_argument("--lr", type=float, default=0.01,
+                        help="learning rate")
     parser.add_argument("--cuda", action="store_true", help="use cuda")
     parser.add_argument(
         "--seed", type=int, default=1, help="seed used for randomization"
     )
     parser.add_argument(
-        "--save_model", action="store_true", help="if set, model will be saved"
+        "--save_model", action="store_true",
+        help="if set, model will be saved"
     )
     parser.add_argument(
         "--verbose",
         "-v",
         action="store_true",
-        help="if set, websocket client workers will be started in verbose mode",
+        help="if set, websocket client workers will "
+             "be started in verbose mode",
     )
     parser.add_argument(
         "--use_virtual",
@@ -229,12 +237,17 @@ def main():
     if args.use_virtual:
         alice = VirtualWorker(id="alice", hook=hook, verbose=args.verbose)
         bob = VirtualWorker(id="bob", hook=hook, verbose=args.verbose)
-        charlie = VirtualWorker(id="charlie", hook=hook, verbose=args.verbose)
+        charlie = VirtualWorker(id="charlie", hook=hook,
+                                verbose=args.verbose)
     else:
-        kwargs_websocket = {"host": "localhost", "hook": hook, "verbose": args.verbose}
-        alice = WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
-        bob = WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
-        charlie = WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
+        kwargs_websocket = {"host": "localhost", "hook": hook,
+                            "verbose": args.verbose}
+        alice = WebsocketClientWorker(id="alice", port=8777,
+                                      **kwargs_websocket)
+        bob = WebsocketClientWorker(id="bob", port=8778,
+                                    **kwargs_websocket)
+        charlie = WebsocketClientWorker(id="charlie", port=8779,
+                                        **kwargs_websocket)
 
     workers = [alice, bob, charlie]
 
@@ -252,7 +265,8 @@ def main():
             train=True,
             download=True,
             transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+                [transforms.ToTensor(),
+                 transforms.Normalize((0.1307,), (0.3081,))]
             ),
         ).federate(tuple(workers)),
         batch_size=args.batch_size,
@@ -266,7 +280,8 @@ def main():
             "../data",
             train=False,
             transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+                [transforms.ToTensor(),
+                 transforms.Normalize((0.1307,), (0.3081,))]
             ),
         ),
         batch_size=args.test_batch_size,

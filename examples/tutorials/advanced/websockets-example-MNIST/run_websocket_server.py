@@ -31,7 +31,8 @@ parser.add_argument(
     "--host", type=str, default="localhost", help="host for the connection"
 )
 parser.add_argument(
-    "--id", type=str, help="name (id) of the websocket server worker, e.g. --id alice"
+    "--id", type=str,
+    help="name (id) of the websocket server worker, e.g. --id alice"
 )
 parser.add_argument(
     "--verbose",
