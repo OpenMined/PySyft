@@ -20,7 +20,7 @@ class PolynomialTensor(AbstractTensor):
         precision:
     """
 
-    def __init__(self,function=lambda x: x, precision=10):
+    def __init__(self, function=lambda x: x, precision=10):
         """
         Args:
             function[callable,Optional]: Function to applied to function approximation coefficients.
