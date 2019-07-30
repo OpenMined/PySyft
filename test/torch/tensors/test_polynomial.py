@@ -25,7 +25,8 @@ def test_sigmoid():
     _ = (expected - expected).max()
     print(_)
     assert True
-    
+
+
 """def test_fixed():
     
     poly_tensor = PolynomialTensor()
@@ -154,5 +155,6 @@ def test_sigmoid_taylor():
     result = poly_tensor.sigmoid(x)
     # allclose function to compare the expected values and approximations with fixed precision
     assert torch.allclose(expected, result, atol=1e-03)
+
 
 test_fixed()
