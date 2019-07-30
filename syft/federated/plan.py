@@ -624,9 +624,8 @@ class Plan(ObjectStorage):
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
-        readable_plan = sy.serde._simplify(plan.readable_plan)
         return (
-            readable_plan,
+            plan.readable_plan,  # We're not simplifying because readable_plan is already simplified
             sy.serde._simplify(plan.id),
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
@@ -656,7 +655,7 @@ class Plan(ObjectStorage):
             id=id,
             arg_ids=arg_ids,
             result_ids=result_ids,
-            readable_plan=sy.serde._detail(worker, readable_plan),
+            readable_plan=readable_plan, # We're not detailing, see simplify() for details
             is_built=is_built,
         )
 
