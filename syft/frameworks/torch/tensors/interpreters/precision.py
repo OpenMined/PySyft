@@ -220,6 +220,12 @@ class FixedPrecisionTensor(AbstractTensor):
         Hook manually mul to add the truncation part which is inherent to multiplication
         in the fixed precision setting
         """
+        if isinstance(other, FixedPrecisionTensor):
+            assert (
+                self.precision_fractional == other.precision_fractional
+            ), "In mul, all args should have the same precision_fractional"
+            assert self.base == other.base, "In mul, all args should have the same base"
+
         if isinstance(other, (int, torch.Tensor)):
             new_self = self.child
             new_other = other
@@ -299,6 +305,65 @@ class FixedPrecisionTensor(AbstractTensor):
 
     def __imul__(self, other):
         self = self.mul(other)
+        return self
+
+    mul_ = __imul__
+
+    # Should we try to refactor mul with div?
+    def div(self, other):
+        """
+        Hook manually div to add a rescaling part which is inherent to division
+        in the fixed precision setting
+        """
+
+        if isinstance(other, FixedPrecisionTensor):
+            assert (
+                self.precision_fractional == other.precision_fractional
+            ), "In div, all args should have the same precision_fractional"
+            assert self.base == other.base, "In div, all args should have the same base"
+
+        if isinstance(other, int):
+            new_self = self.child
+            new_other = other
+
+        elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
+            other.child, torch.Tensor
+        ):
+            # If we try to divide a FPT>AST by a FPT>torch.tensor),
+            # we want to perform AST / torch.tensor
+            new_self, new_other = self.child, other
+
+        elif isinstance(other.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
+            self.child, torch.Tensor
+        ):
+            # If we try to divide a FPT>torch.tensor by a FPT>AST,
+            # we swap operators so that we do the same operation as above
+            new_self, new_other = other.child, self
+
+        else:
+            # Replace all syft tensor with their child attribute
+            new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
+                "div", self, other, None
+            )
+
+        # Send it to the appropriate class and get the response
+        response = getattr(new_self, "div")(new_other)
+
+        # Put back SyftTensor on the tensors found in the response
+        response = syft.frameworks.torch.hook_args.hook_response(
+            "div", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
+        )
+
+        if not isinstance(other, int):
+            response *= self.base ** self.precision_fractional
+        response %= self.field  # Wrap around the field
+
+        return response
+
+    __truediv__ = div
+
+    def __itruediv__(self, other):
+        self.child = self.div(other).child
         return self
 
     def pow(self, power):
