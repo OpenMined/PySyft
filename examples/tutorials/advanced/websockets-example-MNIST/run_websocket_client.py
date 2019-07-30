@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 LOG_INTERVAL = 25
 
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -50,7 +51,9 @@ def train_on_batches(worker, batches, model_in, device, lr):
 
     """
     model = model_in.copy()
-    optimizer = optim.SGD(model.parameters(), lr=lr)  # TODO momentum is not supported at the moment
+    optimizer = optim.SGD(
+        model.parameters(), lr=lr
+    )  # TODO momentum is not supported at the moment
 
     model.train()
     model.send(worker)
@@ -74,7 +77,8 @@ def train_on_batches(worker, batches, model_in, device, lr):
                     len(batches),
                     100.0 * batch_idx / len(batches),
                     loss.item(),
-                ))
+                )
+            )
 
     if not loss_local:
         loss = loss.get()  # <-- NEW: get the loss back
@@ -120,7 +124,11 @@ def train(model, device, federated_train_loader, lr, federate_after_n_batches):
     counter = 0
 
     while True:
-        logger.debug("Starting training round, batches [{}, {}]".format(counter, counter + nr_batches))
+        logger.debug(
+            "Starting training round, batches [{}, {}]".format(
+                counter, counter + nr_batches
+            )
+        )
         data_for_all_workers = True
         for worker in batches:
             curr_batches = batches[worker]
@@ -148,8 +156,12 @@ def test(model, device, test_loader):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction="sum").item()  # sum up batch loss
-            pred = output.argmax(1, keepdim=True)  # get the index of the max log-probability
+            test_loss += F.nll_loss(
+                output, target, reduction="sum"
+            ).item()  # sum up batch loss
+            pred = output.argmax(
+                1, keepdim=True
+            )  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
@@ -163,16 +175,22 @@ def test(model, device, test_loader):
     )
 
 
-
 def define_and_get_arguments(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(
         description="Run federated learning using websocket client workers."
     )
-    parser.add_argument("--batch_size", type=int, default=64, help="batch size of the training")
     parser.add_argument(
-        "--test_batch_size", type=int, default=1000, help="batch size used for the test data"
+        "--batch_size", type=int, default=64, help="batch size of the training"
     )
-    parser.add_argument("--epochs", type=int, default=2, help="number of epochs to train")
+    parser.add_argument(
+        "--test_batch_size",
+        type=int,
+        default=1000,
+        help="batch size used for the test data",
+    )
+    parser.add_argument(
+        "--epochs", type=int, default=2, help="number of epochs to train"
+    )
     parser.add_argument(
         "--federate_after_n_batches",
         type=int,
@@ -181,8 +199,12 @@ def define_and_get_arguments(args=sys.argv[1:]):
     )
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
     parser.add_argument("--cuda", action="store_true", help="use cuda")
-    parser.add_argument("--seed", type=int, default=1, help="seed used for randomization")
-    parser.add_argument("--save_model", action="store_true", help="if set, model will be saved")
+    parser.add_argument(
+        "--seed", type=int, default=1, help="seed used for randomization"
+    )
+    parser.add_argument(
+        "--save_model", action="store_true", help="if set, model will be saved"
+    )
     parser.add_argument(
         "--verbose",
         "-v",
@@ -190,7 +212,9 @@ def define_and_get_arguments(args=sys.argv[1:]):
         help="if set, websocket client workers will be started in verbose mode",
     )
     parser.add_argument(
-        "--use_virtual", action="store_true", help="if set, virtual workers will be used"
+        "--use_virtual",
+        action="store_true",
+        help="if set, virtual workers will be used",
     )
 
     args = parser.parse_args(args=args)
@@ -254,7 +278,13 @@ def main():
 
     for epoch in range(1, args.epochs + 1):
         logger.info("Starting epoch %s/%s", epoch, args.epochs)
-        model = train(model, device, federated_train_loader, args.lr, args.federate_after_n_batches)
+        model = train(
+            model,
+            device,
+            federated_train_loader,
+            args.lr,
+            args.federate_after_n_batches,
+        )
         test(model, device, test_loader)
 
     if args.save_model:
