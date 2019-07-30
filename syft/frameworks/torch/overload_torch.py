@@ -19,7 +19,7 @@ class Overloaded:
 
         def hook_args(self, *args, **kwargs):
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_object_method_with_args(
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_with_method(
                 attr.__name__, self, args, kwargs
             )
 

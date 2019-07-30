@@ -346,12 +346,12 @@ rules = (0, [1, (0, 0), 0)
   return the first (and here unique) function
 
 
-#### syft.frameworks.torch.hook_args.build_hook_for_args_with_function(args, return_tuple=False)
+#### syft.frameworks.torch.hook_args.unwrap_args_with_function(args, return_tuple=False)
 Build the function f that hook the arguments:
 f(args) = new_args
 
 
-#### syft.frameworks.torch.hook_args.build_hook_for_response_with_function(response, wrap_type, wrap_args)
+#### syft.frameworks.torch.hook_args.build_wrap_reponse_with_function(response, wrap_type, wrap_args)
 Build the function that hook the response.
 
 ### Example
@@ -435,7 +435,7 @@ out: ([1, 1], 0)
 #### syft.frameworks.torch.hook_args.four_layers(idx1, \*ids)
 
 #### syft.frameworks.torch.hook_args.hook_function_with_args(attr, args, kwargs, return_args_type=False)
-See hook_object_method_with_args for details
+See unwrap_args_with_method for details
 
 
 * **Parameters**
@@ -464,7 +464,7 @@ See hook_object_method_with_args for details
 
 
 
-#### syft.frameworks.torch.hook_args.hook_object_method_with_args(attr, method_self, args, kwargs)
+#### syft.frameworks.torch.hook_args.unwrap_args_with_method(attr, method_self, args, kwargs)
 Method arguments are sometimes simple types (such as strings or ints) but
 sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LoggingTensor
 or some other tensor type. Complex types (which have a .child attribute) need to

@@ -133,7 +133,7 @@ class AutogradTensor(AbstractTensor):
         if grad_fn is not None:
 
             def method_with_grad(*args, **kwargs):
-                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_object_method_with_args(
+                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_with_method(
                     name, self, args, kwargs
                 )
 

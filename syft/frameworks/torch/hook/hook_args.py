@@ -89,7 +89,7 @@ ambiguous_methods = {"__getitem__", "_getitem_public", "view", "permute", "add_"
 ambiguous_functions = {"torch.unbind", "unbind", "torch.stack", "stack", "torch.mean", "torch.sum"}
 
 
-def hook_object_method_with_args(attr, method_self, args, kwargs):
+def unwrap_args_with_method(attr, method_self, args, kwargs):
     """Method arguments are sometimes simple types (such as strings or ints) but
     sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LoggingTensor
     or some other tensor type. Complex types (which have a .child attribute) need to
@@ -122,7 +122,7 @@ def hook_object_method_with_args(attr, method_self, args, kwargs):
         new_self, new_args = hook_args((method_self, args))
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
-        args_hook_function, _ = build_hook_for_args_with_function((method_self, args))
+        args_hook_function, _ = unwrap_args_with_function((method_self, args))
         # Store this utility function in the registry
         hook_method_args_functions[attr_id] = args_hook_function
         # Run it
@@ -132,7 +132,7 @@ def hook_object_method_with_args(attr, method_self, args, kwargs):
 
 
 def hook_function_with_args(attr, args, kwargs, return_args_type=False):
-    """See hook_object_method_with_args for details
+    """See unwrap_args_with_method for details
 
     Args:
         attr (str): the name of the function being called
@@ -157,7 +157,7 @@ def hook_function_with_args(attr, args, kwargs, return_args_type=False):
         new_args = hook_args(args)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
-        args_hook_function, get_tensor_type_function = build_hook_for_args_with_function(
+        args_hook_function, get_tensor_type_function = unwrap_args_with_function(
             args, return_tuple=True
         )
         # Store the utility functions in registries
@@ -174,7 +174,7 @@ def hook_function_with_args(attr, args, kwargs, return_args_type=False):
         return new_args, kwargs, new_type
 
 
-def build_hook_for_args_with_function(args, return_tuple=False):
+def unwrap_args_with_function(args, return_tuple=False):
     """
     Build the function f that hook the arguments:
     f(args) = new_args
@@ -241,9 +241,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
         new_response = response_hook_function(response)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in cas of an error
-        response_hook_function = build_hook_for_response_with_function(
-            response, wrap_type, wrap_args
-        )
+        response_hook_function = build_wrap_reponse_with_function(response, wrap_type, wrap_args)
         # Store this utility function in the registry
         hook_method_response_functions[attr_id] = response_hook_function
         # Run it
@@ -256,7 +254,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     return new_response
 
 
-def build_hook_for_response_with_function(response, wrap_type, wrap_args):
+def build_wrap_reponse_with_function(response, wrap_type, wrap_args):
     """
     Build the function that hook the response.
 
