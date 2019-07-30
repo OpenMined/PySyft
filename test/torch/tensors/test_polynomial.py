@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-
 from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
 
 
@@ -27,14 +26,14 @@ def test_sigmoid():
     assert True
 
 
-"""def test_fixed():
-    
+def test_fixed():
+
     poly_tensor = PolynomialTensor()
 
     x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
     x_tensor = torch.Tensor([1, 2, 3])
     x = FixedPrecisionTensor().on(x_tensor)
-    result = poly_tensor.get_val("tanh", x)"""
+    result = poly_tensor.get_val("tanh", x)
 
 
 def test_exp():
@@ -157,4 +156,4 @@ def test_sigmoid_taylor():
     assert torch.allclose(expected, result, atol=1e-03)
 
 
-# test_fixed()
+test_fixed()
