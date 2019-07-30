@@ -16,12 +16,11 @@ class PolynomialTensor(AbstractTensor):
     and fit over different intervals.
     
     Args:
-        child:
         function:
         precision:
     """
 
-    def __init__(self, child, function=lambda x: x, precision=10):
+    def __init__(self,function=lambda x: x, precision=10):
         """
         Args:
             function[callable,Optional]: Function to applied to function approximation coefficients.
@@ -31,7 +30,6 @@ class PolynomialTensor(AbstractTensor):
 
         self.function = function
         self.precision = precision
-        self.child = child
         # Stores parameters of function approximations such as precision, degree, piecewise functions and base function
         self.function_attr = {}
         # Stores fitted function
