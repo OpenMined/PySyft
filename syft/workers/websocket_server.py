@@ -9,6 +9,7 @@ import ssl
 import sys
 import tblib.pickling_support
 import socket
+import logging
 
 tblib.pickling_support.install()
 
@@ -170,7 +171,7 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
         try:
             asyncio.get_event_loop().run_forever()
         except KeyboardInterrupt:
-            print("Server is ready.")
+            logging.info("Websocket server stopped after key interruption.")
 
     def list_objects(self, *args):
         return str(self._objects)
