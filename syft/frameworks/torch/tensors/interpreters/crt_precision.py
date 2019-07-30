@@ -17,8 +17,8 @@ class CRTPrecisionTensor(AbstractTensor):
         x = a_0 mod f_0
         ...
         x = a_n mod f_n
-    The Chinese Remainder Theorem (that also gives his name to this tensor) assert that exactly one x in Zq with q = f_0 * ... * f_n
-    satisfies this system. This x is the real value represented by the tensor.
+    The Chinese Remainder Theorem (this is where CRT in CRTPrecisionTensor comes from) asserts that
+    exactly one x in Zq with q = f_0 * ... * f_n satisfies this system. This x is the real value represented by the tensor.
     This tensor makes it possible to represent big numbers and to avoid overflows while manipulating them.
     It also makes additions, subtractions, and multiplications of huge numbers quite efficient.
     """
