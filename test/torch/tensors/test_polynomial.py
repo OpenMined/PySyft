@@ -157,4 +157,4 @@ def test_sigmoid_taylor():
     assert torch.allclose(expected, result, atol=1e-03)
 
 
-test_fixed()
+#test_fixed()
