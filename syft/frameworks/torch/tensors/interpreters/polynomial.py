@@ -260,3 +260,16 @@ class PolynomialTensor(AbstractTensor):
             + (x ** 6) * (self.function(1 / (840)))
             + (x ** 7) * (self.function(1 / (6720)))
         )
+
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
+
+def test_fixed():
+
+    poly_tensor = PolynomialTensor()
+    
+    x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
+    x_tensor = torch.Tensor([1, 2, 3])
+    x = FixedPrecisionTensor().on(x_tensor)
+    result = poly_tensor.get_val("tanh", x)
+    
+test_fixed()

@@ -6,7 +6,6 @@ import torch.nn.functional as F
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
 
-
 def test_sigmoid():
 
     poly_tensor = PolynomialTensor()
@@ -154,6 +153,5 @@ def test_sigmoid_taylor():
     result = poly_tensor.sigmoid(x)
     # allclose function to compare the expected values and approximations with fixed precision
     assert torch.allclose(expected, result, atol=1e-03)
-
 
 test_fixed()
