@@ -146,7 +146,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
 
     tags = tensor.tags
     if tags is not None:
-        tags = tuple(tags)
+        tags = list(tags)
     return (tensor.id, tensor_bin, chain, grad_chain, tags, tensor.description)
 
 
@@ -185,6 +185,9 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     )
 
     if tags is not None:
+
+        tags = list(tags)
+
         for i in range(len(tags)):
             tag = tags[i]
             if isinstance(tag, bytes):
@@ -341,6 +344,7 @@ def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> tor
     script_module_stream = io.BytesIO(script_module_bin)
     loaded_module = torch.jit.load(script_module_stream)
     return loaded_module
+
 
 def _simplify_torch_size(size: torch.Size) -> Tuple[int]:
     return tuple(size)

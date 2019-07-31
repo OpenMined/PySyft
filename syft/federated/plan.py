@@ -42,7 +42,7 @@ class func2plan(object):
             id=sy.ID_PROVIDER.pop(),
             name=plan_blueprint.__name__,
             blueprint=plan_blueprint,
-            verbose=self.verbose
+            verbose=self.verbose,
         )
         if self.args_shape:
             plan._auto_build(args_shape=self.args_shape)
@@ -180,9 +180,7 @@ class Plan(ObjectStorage):
 
         if msg_type != MSGTYPE.OBJ:
             self.plan.append(bin_message)
-            print((some_type, (msg_type, contents)))
             self.readable_plan.append((some_type, (msg_type, contents)))
-            print(self.readable_plan[-1])
 
         # we can't receive the results of a plan without
         # executing it. So, execute the plan.
@@ -218,7 +216,6 @@ class Plan(ObjectStorage):
         """
         self._prepare_for_running_local_method()
         self._build(list(args))
-        print("Readable Plan After 2:" + str(self.readable_plan))
         self._after_running_local_method()
 
     def _build(self, args: List):
@@ -239,21 +236,13 @@ class Plan(ObjectStorage):
                 self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
-        print("Readable Plan Before:" + str(self.readable_plan))
         res_ptr = self.blueprint(*local_args)
-        print("Readable Plan After:" + str(self.readable_plan))
 
         res_ptr.child.garbage_collect_data = False
 
-        print("Readable Plan After 1.1:" + str(self.readable_plan))
-
         worker = self.find_location(args)
 
-        print("Readable Plan After 1.1:" + str(self.readable_plan))
-
         self.replace_worker_ids(worker.id, self.owner.id)
-
-        print("Readable Plan After 1.1:" + str(self.readable_plan))
 
         # The id where the result should be stored
         self.result_ids = tuple([res_ptr.id_at_location])
@@ -262,8 +251,6 @@ class Plan(ObjectStorage):
         self.owner_when_built = self.owner
 
         self.is_built = True
-
-
 
     def find_location(self, args):
         """
@@ -315,6 +302,8 @@ class Plan(ObjectStorage):
         if to_worker is None:
             to_worker = self.owner.id
 
+        self.readable_plan = list(self.readable_plan)
+
         # for every pair of id
         for i in range(len(from_ids)):
             # for every message of the plan
@@ -327,6 +316,7 @@ class Plan(ObjectStorage):
                     from_worker=from_worker,
                     to_worker=to_worker,
                 )
+
         return self
 
     def replace_worker_ids(self, from_worker_id: Union[str, int], to_worker_id: Union[str, int]):
@@ -645,7 +635,9 @@ class Plan(ObjectStorage):
 
         """
         return (
-            tuple(plan.readable_plan),  # We're not simplifying because readable_plan is already simplified
+            tuple(
+                plan.readable_plan
+            ),  # We're not simplifying because readable_plan is already simplified
             sy.serde._simplify(plan.id),
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),

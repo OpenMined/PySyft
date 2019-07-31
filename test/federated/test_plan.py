@@ -480,7 +480,7 @@ def test__replace_message_ids():
     )
 
     # note that tuples are converted to lists
-    expected = [100, ["worker", "another"], "you", 20, 100, b"you", [30, ["you", "another", "bla"]]]
+    expected = (100, ("worker", "another"), "you", 20, 100, b"you", (30, ("you", "another", "bla")))
 
     assert replaced == expected
 
