@@ -146,7 +146,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
 
     tags = tensor.tags
     if tags is not None:
-        tags = list(tags)
+        tags = tuple(tags)
     return (tensor.id, tensor_bin, chain, grad_chain, tags, tensor.description)
 
 
