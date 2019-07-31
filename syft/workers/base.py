@@ -420,7 +420,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A list of PointerTensors or a single PointerTensor if just one response is expected.
         """
         if return_ids is None:
-            return_ids = [sy.ID_PROVIDER.pop()]
+            return_ids = tuple([sy.ID_PROVIDER.pop()])
 
         message = (message, return_ids)
 

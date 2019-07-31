@@ -45,7 +45,7 @@ def test_list_simplify():
     input = ["hello", "world"]
     list_detail_index = serde.detailers.index(native_serde._detail_collection_list)
     str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (list_detail_index, [(str_detail_index, (b"hello",)), (str_detail_index, (b"world",))])
+    target = (list_detail_index, ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))))
     assert serde._simplify(input) == target
 
 
