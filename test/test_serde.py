@@ -158,26 +158,6 @@ def test_torch_tensor_simplify():
     assert type(output[1][1]) == bytes
 
 
-def test_ndarray_simplify():
-    """This tests our ability to simplify numpy.array objects
-
-    At the time of writing, arrays simplify to an object inside
-    of a tuple which specifies the ID for the np.array type (6) so
-    that the detailer knows to turn the simplifed form to a np.array
-    """
-
-    input = numpy.random.random((100, 100))
-    output = serde._simplify(input)
-
-    # make sure simplified type ID is correct
-    assert serde.detailers[output[0]] == torch_serde._detail_ndarray
-
-    # make sure serialized form is correct
-    assert type(output[1][0]) == bytes
-    assert output[1][1] == input.shape
-    assert output[1][2] == input.dtype.name
-
-
 def test_ellipsis_simplify():
     """Make sure ellipsis simplifies correctly."""
     assert serde.detailers[serde._simplify(Ellipsis)[0]] == native_serde._detail_ellipsis
@@ -285,20 +265,6 @@ def test_bytearray(compress):
     assert bytearr == bytearr_serialized_desirialized
 
 
-@pytest.mark.parametrize("compress", [True, False])
-def test_ndarray_serde(compress):
-    if compress:
-        serde._apply_compress_scheme = serde.apply_lz4_compression
-    else:
-        serde._apply_compress_scheme = serde.apply_no_compression
-    arr = numpy.random.random((100, 100))
-    arr_serialized = serde.serialize(arr)
-
-    arr_serialized_deserialized = serde.deserialize(arr_serialized)
-
-    assert numpy.array_equal(arr, arr_serialized_deserialized)
-
-
 @pytest.mark.parametrize("compress_scheme", [serde.LZ4, serde.ZSTD, serde.NO_COMPRESSION])
 def test_compress_decompress(compress_scheme):
     if compress_scheme == serde.LZ4:
@@ -313,24 +279,6 @@ def test_compress_decompress(compress_scheme):
     decompressed = serde._decompress(compressed)
     assert type(compressed) == bytes
     assert original == decompressed
-
-
-@pytest.mark.parametrize("compress_scheme", [serde.LZ4, serde.ZSTD, serde.NO_COMPRESSION])
-def test_compressed_serde(compress_scheme):
-    if compress_scheme == serde.LZ4:
-        serde._apply_compress_scheme = serde.apply_lz4_compression
-    elif compress_scheme == serde.ZSTD:
-        serde._apply_compress_scheme = serde.apply_zstd_compression
-    else:
-        serde._apply_compress_scheme = serde.apply_no_compression
-
-    # using numpy.ones because numpy.random.random is not compressed.
-    arr = numpy.ones((100, 100))
-
-    arr_serialized = serde.serialize(arr)
-
-    arr_serialized_deserialized = serde.deserialize(arr_serialized)
-    assert numpy.array_equal(arr, arr_serialized_deserialized)
 
 
 @pytest.mark.parametrize("compress", [True, False])
