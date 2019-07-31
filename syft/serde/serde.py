@@ -258,7 +258,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
     # 2) Deserialize
     # This function converts the binary into the appropriate python
     # object (or nested dict/collection of python objects)
-    simple_objects = msgpack.loads(binary)
+    simple_objects = msgpack.loads(binary, use_list=False)
 
     if details:
         # 3) Detail
