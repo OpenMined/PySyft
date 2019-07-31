@@ -32,8 +32,9 @@ class func2plan(object):
     This class should be used only as decorator.
     """
 
-    def __init__(self, args_shape=None):
+    def __init__(self, args_shape=None, verbose=False):
         self.args_shape = args_shape
+        self.verbose = verbose
 
     def __call__(self, plan_blueprint):
         plan = Plan(
@@ -41,6 +42,7 @@ class func2plan(object):
             id=sy.ID_PROVIDER.pop(),
             name=plan_blueprint.__name__,
             blueprint=plan_blueprint,
+            verbose=self.verbose
         )
         if self.args_shape:
             plan._auto_build(args_shape=self.args_shape)
@@ -105,6 +107,7 @@ class Plan(ObjectStorage):
         readable_plan: List = None,
         is_method: bool = False,
         is_built: bool = False,
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -114,6 +117,7 @@ class Plan(ObjectStorage):
         self.id = id
         self.name = name
         self.owner = owner
+        self.verbose = verbose
 
         # Info about the plan stored
         self.plan = list()
@@ -171,9 +175,14 @@ class Plan(ObjectStorage):
         """
         (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, details=False)
 
+        if self.verbose:
+            print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
+
         if msg_type != MSGTYPE.OBJ:
             self.plan.append(bin_message)
+            print((some_type, (msg_type, contents)))
             self.readable_plan.append((some_type, (msg_type, contents)))
+            print(self.readable_plan[-1])
 
         # we can't receive the results of a plan without
         # executing it. So, execute the plan.
@@ -209,11 +218,12 @@ class Plan(ObjectStorage):
         """
         self._prepare_for_running_local_method()
         self._build(list(args))
+        print("Readable Plan After 2:" + str(self.readable_plan))
         self._after_running_local_method()
 
     def _build(self, args: List):
         if self.is_method:
-            args = [self._self] + args
+            args = tuple([self._self] + args)
 
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
@@ -229,21 +239,31 @@ class Plan(ObjectStorage):
                 self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
+        print("Readable Plan Before:" + str(self.readable_plan))
         res_ptr = self.blueprint(*local_args)
+        print("Readable Plan After:" + str(self.readable_plan))
 
         res_ptr.child.garbage_collect_data = False
 
+        print("Readable Plan After 1.1:" + str(self.readable_plan))
+
         worker = self.find_location(args)
+
+        print("Readable Plan After 1.1:" + str(self.readable_plan))
 
         self.replace_worker_ids(worker.id, self.owner.id)
 
+        print("Readable Plan After 1.1:" + str(self.readable_plan))
+
         # The id where the result should be stored
-        self.result_ids = [res_ptr.id_at_location]
+        self.result_ids = tuple([res_ptr.id_at_location])
 
         # Store owner that built the plan
         self.owner_when_built = self.owner
 
         self.is_built = True
+
+
 
     def find_location(self, args):
         """
@@ -360,7 +380,7 @@ class Plan(ObjectStorage):
             else:
                 _obj.append(item)
 
-        return _obj
+        return tuple(_obj)
 
     def _execute_readable_plan(self, *args):
         # TODO: for now only one value is returned from a plan
@@ -625,7 +645,7 @@ class Plan(ObjectStorage):
 
         """
         return (
-            plan.readable_plan,  # We're not simplifying because readable_plan is already simplified
+            tuple(plan.readable_plan),  # We're not simplifying because readable_plan is already simplified
             sy.serde._simplify(plan.id),
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
