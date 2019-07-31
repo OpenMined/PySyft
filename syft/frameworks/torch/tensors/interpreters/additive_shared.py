@@ -550,12 +550,10 @@ class AdditiveSharingTensor(AbstractTensor):
         return divided_shares
 
     def div(self, divisor):
-        if isinstance(divisor, int):
-            return self._public_div(divisor)
-        elif isinstance(divisor, AdditiveSharingTensor):
+        if isinstance(divisor, AdditiveSharingTensor):
             return self._private_div(divisor)
         else:
-            raise NotImplementedError("AdditiveSharingTensor division only supports ASTs and int")
+            return self._public_div(divisor)
 
     __truediv__ = div
 
