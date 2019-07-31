@@ -190,8 +190,8 @@ class RNNBase(nn.Module):
         seq_len = x.shape[0]
 
         if h is None:
-            crypto_provider = x.child.child.child.crypto_provider
-            owners = x.child.child.child.locations
+            crypto_provider = x.child.child.crypto_provider
+            owners = x.child.child.locations
 
             h = (
                 torch.zeros(
