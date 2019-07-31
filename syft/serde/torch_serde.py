@@ -342,6 +342,7 @@ def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> tor
     loaded_module = torch.jit.load(script_module_stream)
     return loaded_module
 
+
 def _simplify_torch_size(size: torch.Size) -> Tuple[int]:
     return tuple(size)
 
