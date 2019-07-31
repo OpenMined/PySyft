@@ -13,7 +13,7 @@ def start_proc(participant, kwargs):  # pragma: no cover
 
     def target():
         server = participant(**kwargs)
-        private_data = torch.tensor([1,1,1,1,1])
+        private_data = torch.tensor([1, 1, 1, 1, 1])
         private_data.private = True
         server._objects[1] = private_data
         server.start()
