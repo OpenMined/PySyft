@@ -59,7 +59,7 @@ def execute(cmd):
 
 def launch_on_heroku(
     grid_name: str,
-    app_type: str = "rest_api",
+    app_type: str = "pg_rest_api",
     verbose=True,
     check_deps=True,
     dev_user=None,
@@ -124,11 +124,16 @@ def launch_on_heroku(
     logs = list()
     if verbose:
         print(
-            "\nStep 2: Making Sure Redis Database Can Be Spun Up on Heroku (this can take a couple seconds)..."
+            "\nStep 2: Making Sure Postgres  Database Can Be Spun Up on Heroku (this can take a couple seconds)..."
         )
     try:
         output = list(
-            execute(("heroku addons:create rediscloud -a " + grid_name).split(" "))
+            #            execute(("heroku addons:create heroku-postgresql:hobby-dev -a " + grid_name).split(" ")),
+            execute(
+                (
+                    "heroku addons:create heroku-postgresql:hobby-dev -a " + grid_name
+                ).split(" ")
+            )
         )
         if verbose:
             print("\t" + str(output))
@@ -151,10 +156,10 @@ def launch_on_heroku(
             )
 
         msg = (
-            """Creating rediscloud on ⬢ """
+            """Creating heroku-postgresql:hobby-dev on ⬢ """
             + grid_name
             + """... ⣾
-        ⣽⣻⢿⡿⣟⣯⣷⣾⣽Creating rediscloud on ⬢ """
+        ⣽⣻⢿⡿⣟⣯⣷⣾⣽Creating heroku-postgresql:hobby-dev on ⬢ """
             + grid_name
             + """... !
          ▸    Please verify your account to install this add-on plan (please enter a
@@ -169,7 +174,7 @@ def launch_on_heroku(
         raise Exception(msg)
 
     if verbose:
-        print("\nStep 3: Cleaning up heroku/redis checks...")
+        print("\nStep 3: Cleaning up heroku/postgres checks...")
     output = list(
         execute(("heroku destroy " + grid_name + " --confirm " + grid_name).split(" "))
     )
@@ -196,7 +201,7 @@ def launch_on_heroku(
         commands.append("git clone https://github.com/OpenMined/Grid")
 
     logs.append("Step 6: copying app code from cloned repo")
-    commands.append("cp Grid/app/{}/* ./".format(app_type))
+    commands.append("cp -r Grid/app/{}/* ./".format(app_type))
 
     logs.append("Step 7: removing the rest of the cloned code")
     commands.append("rm -rf Grid")
@@ -220,8 +225,8 @@ def launch_on_heroku(
     )
     commands.append("heroku create " + grid_name)
 
-    logs.append("Step 12: Creating Redis database... (this can take a few seconds)")
-    commands.append("heroku addons:create rediscloud -a " + grid_name)
+    logs.append("Step 12: Creating Postgres database... (this can take a few seconds)")
+    commands.append(f"heroku addons:create heroku-postgresql:hobby-dev -a {grid_name}")
 
     logs.append(
         "Step 13: Pushing code to Heroku (this can take take a few minutes"
@@ -230,7 +235,10 @@ def launch_on_heroku(
     )
     commands.append("git push heroku master")
 
-    logs.append("Step 14: Cleaning up!")
+    logs.append("Step 14: Create Database")
+    commands.append(f"heroku run -a {grid_name} flask db upgrade")
+
+    logs.append("Step 15: Cleaning up!")
     commands.append("rm -rf .git")
 
     run_commands_in(commands, logs, cleanup=True, verbose=verbose)

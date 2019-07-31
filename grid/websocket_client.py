@@ -3,7 +3,6 @@ import time
 from typing import List
 from typing import Union
 
-import socketio
 import torch
 
 import syft as sy
@@ -36,6 +35,11 @@ class WebsocketGridClient(BaseWorker):
             data : any initial tensors the server should be
                 initialized with (such as datasets)
         """
+
+        # Unfortunately, socketio will throw an exception on import if it's in a
+        # thread. This occurs when Flask is in development mode
+        import socketio
+
         self.uri = addr
         self.response_from_client = None
         self.wait_for_client_event = False

@@ -11,6 +11,7 @@ grid.egg-info/
 *.h5
 *.log
 *.lock
+.DS_Store
 .openmined
 nohup.out
 data
@@ -21,3 +22,4 @@ notebooks/ipfs.log
 .pytest_cache
 .idea/*
 venv/
+test_flask_grid_server.db

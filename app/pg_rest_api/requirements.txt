@@ -1,0 +1,16 @@
+Click==7.0
+Flask==1.0.2
+gunicorn==19.9.0
+itsdangerous==1.1.0
+Jinja2==2.10.1
+MarkupSafe==1.1.1
+redis==3.2.1
+Werkzeug==0.15.2
+git+git://github.com/OpenMined/PySyft@dev
+https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp36-cp36m-linux_x86_64.whl; sys_platform == "linux"
+https://download.pytorch.org/whl/cpu/torch-1.0.1-cp36-cp36m-win_amd64.whl; sys_platform == "windows"
+torch; sys_platform == "darwin"
+torchvision
+psycopg2
+flask_sqlalchemy
+flask_migrate

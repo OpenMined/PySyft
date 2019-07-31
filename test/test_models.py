@@ -1,37 +1,16 @@
-from grid.app.models import Worker
-from grid.app.models import WorkerObject
-from grid.app.config import db
-from grid.app.config import app
-import unittest
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from flask_migrate import Migrate
-
-TEST_DB_URI = "sqlite:///:memory:"
-
+from app.pg_rest_api.pg_app import create_app
+from app.pg_rest_api.lib.models import Worker, WorkerObject
+from app.pg_rest_api.lib.models import db
+from .flask_base_test import FlaskBaseTestCase
 import torch
 
-import syft as sy
-from grid.workers import WebsocketIOServerWorker
 
-hook = sy.TorchHook(torch)
+class ModelTestCase(FlaskBaseTestCase):
+    """
+    Testing that our models are successfully persisting
+    """
 
-
-class WorkerPersistanceTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(self):
-        app.config["TESTING"] = True
-        app.config["DEBUG"] = False
-        app.config["SQLALCHEMY_DATABASE_URI"] = TEST_DB_URI
-        self.engine = create_engine(app.config["SQLALCHEMY_DATABASE_URI"])
-        Worker.metadata.drop_all(self.engine)
-        db.create_all()
-
-    def tearDown(self):
-        Worker.metadata.drop_all(self.engine)
-
-    def test_worker_persistance(self):
+    def test_worker_persistence(self):
         w = Worker(public_id="test")
         db.session.add(w)
         db.session.commit()
