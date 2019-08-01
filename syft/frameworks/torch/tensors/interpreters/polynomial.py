@@ -239,7 +239,7 @@ class PolynomialTensor(AbstractTensor):
         return (1 / 2) + ((x) * 1 / 4) - ((x ** 3) * (1 / 48)) + ((x ** 5) * (1 / 480))
 
     @overloaded.method
-    def hrishi(self, x):
+    def test_tensor(self, x):
         """
          Method provides exponential function approximation interms of Taylor Series
 
