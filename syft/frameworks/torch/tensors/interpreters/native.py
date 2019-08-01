@@ -1,21 +1,21 @@
+import torch
+import numpy as np
 import math
+
 from typing import List
 from typing import Union
 import weakref
-
-import torch
 
 import syft
 from syft.exceptions import InvalidTensorForRemoteGet
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.frameworks.torch.pointers import PointerTensor
 from syft.workers import BaseWorker
+from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 
 from syft.exceptions import PureTorchTensorFoundError
 
 from syft.frameworks.torch.overload_torch import overloaded
-
-import numpy as np
 
 
 def _get_maximum_precision():
@@ -605,23 +605,48 @@ class TorchTensor(AbstractTensor):
 
     float_precision_ = float_prec_
 
-    def fix_prec(self, *args, **kwargs):
+    def fix_prec(self, *args, storage="auto", field_type="int100", **kwargs):
         if self.is_wrapper:
             self.child = self.child.fix_prec(*args, **kwargs)
             return self
-        else:
-            base = kwargs.get("base", 10)
-            prec_fractional = kwargs.get("precision_fractional", 3)
-            max_precision = _get_maximum_precision()
-            if self._requires_large_precision(max_precision, base, prec_fractional):
-                return (
-                    syft.LargePrecisionTensor(*args, **kwargs)
+
+        base = kwargs.get("base", 10)
+        prec_fractional = kwargs.get("precision_fractional", 3)
+
+        max_precision = _get_maximum_precision()
+        need_large_prec = self._requires_large_precision(max_precision, base, prec_fractional)
+
+        if storage == "crt":
+            assert (
+                "field" not in kwargs
+            ), 'When storage is set to "crt", choose the field size with the field_type argument'
+
+            possible_field_types = list(_moduli_for_fields.keys())
+            assert (
+                field_type in possible_field_types
+            ), f"Choose field_type in {possible_field_types} to build CRT tensors"
+
+            residues = {}
+            for mod in _moduli_for_fields[field_type]:
+                residues[mod] = (
+                    syft.FixedPrecisionTensor(*args, field=mod, **kwargs)
                     .on(self)
-                    .child.fix_large_precision()
+                    .child.fix_precision(check_range=False)
                     .wrap()
                 )
-            else:
-                return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
+
+            return syft.CRTPrecisionTensor(residues, *args, **kwargs).wrap()
+
+        if need_large_prec or storage == "large":
+            return (
+                syft.LargePrecisionTensor(*args, **kwargs)
+                .on(self)
+                .child.fix_large_precision()
+                .wrap()
+            )
+        else:
+            assert not need_large_prec, "This tensor needs large precision to be correctly stored"
+            return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
 
     fix_precision = fix_prec
 

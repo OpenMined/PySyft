@@ -125,3 +125,14 @@ def test_federated_dataloader_iter_per_worker(workers):
     ), "num_iterators should be equal to number or workers"
     for batch_idx, batches in enumerate(fdataloader):
         assert len(batches.keys()) == nr_workers, "return a batch for each worker"
+
+
+def test_federated_dataloader_one_worker(workers):
+    bob = workers["bob"]
+
+    datasets = [federated.BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6])).send(bob)]
+
+    fed_dataset = sy.FederatedDataset(datasets)
+    num_iterators = len(datasets)
+    fdataloader = sy.FederatedDataLoader(fed_dataset, batch_size=2, shuffle=True)
+    assert fdataloader.num_iterators == 1, f"{fdataloader.num_iterators} == {1}"

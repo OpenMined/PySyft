@@ -354,7 +354,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
             ptr.id_at_location,
             ptr.location.id,
             ptr.point_to_attr,
-            ptr._shape,
+            syft.serde._simplify(ptr._shape),
             ptr.garbage_collect_data,
         )
 
@@ -387,7 +387,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
             worker_id = worker_id.decode()
 
         if shape is not None:
-            shape = torch.Size(shape)
+            shape = torch.Size(syft.serde._detail(worker, shape))
 
         # If the pointer received is pointing at the current worker, we load the tensor instead
         if worker_id == worker.id:
