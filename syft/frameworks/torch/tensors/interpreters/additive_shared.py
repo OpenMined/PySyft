@@ -368,7 +368,7 @@ class AdditiveSharingTensor(AbstractTensor):
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
-                torch.Tensor([other])
+                torch.tensor([other])
                 .share(
                     *self.child.keys(),
                     field=self.field,
@@ -911,7 +911,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.hook_function_with_args(
+        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
 

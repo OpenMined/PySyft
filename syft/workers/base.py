@@ -462,6 +462,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if hasattr(obj, "child") and hasattr(obj.child, "set_garbage_collect_data"):
             obj.child.set_garbage_collect_data(value=False)
 
+        if hasattr(obj, "private") and obj.private:
+            return None
+
         return obj
 
     def respond_to_obj_req(self, obj_id: Union[str, int]):

@@ -133,7 +133,7 @@ class AutogradTensor(AbstractTensor):
         if grad_fn is not None:
 
             def method_with_grad(*args, **kwargs):
-                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_with_method(
+                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                     name, self, args, kwargs
                 )
 
@@ -241,7 +241,7 @@ class AutogradTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_with_args(
+        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
 
