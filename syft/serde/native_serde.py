@@ -46,7 +46,8 @@ def _simplify_collection(my_collection: Collection) -> Collection:
     # Step 2: convert back to original type and return serialization
     if my_type == set:
         return pieces
-    return my_type(pieces)
+
+    return tuple(pieces)
 
 
 def _detail_collection_list(worker: AbstractWorker, my_collection: Collection) -> Collection:
