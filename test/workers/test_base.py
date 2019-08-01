@@ -87,3 +87,13 @@ def test_execute_command_self(hook):
     assert response == "bob_mocked_function"
 
     bob.mocked_function.assert_called()
+
+def test_local_worker_in_known_workers(hook):
+    # Get local worker
+    local_worker = hook.local_worker
+    id = local_worker.id
+
+    # Get known workers dict
+    known_workers = local_worker._known_workers
+
+    assert id in known_workers and local_worker == known_workers[id]
