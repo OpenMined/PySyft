@@ -569,7 +569,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         for worker, share in shares.items():
             share_results = share.chunk(*args, **kwargs)
-            if isinstance(share_results, tuple):
+            if isinstance(share_results, (tuple, list)):
                 if results is None:
                     results = [{worker: share_result} for share_result in share_results]
                 else:
