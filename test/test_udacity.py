@@ -384,7 +384,7 @@ def test_section_2_federated_learning(hook):
 
         print(loss.get().data)
 
-    bob.clear_objects()
+    bob = bob.clear_objects()
 
     assert len(bob._objects) == 0
 
@@ -416,7 +416,7 @@ def test_section_2_federated_learning(hook):
 
     bob._objects
 
-    bob.clear_objects()
+    bob = bob.clear_objects()
     bob._objects
 
     for i in range(1000):
@@ -799,9 +799,9 @@ def test_section_3_securing_fl(hook):
     z = add(x, y)
     decode(decrypt(z))
 
-    bob.clear_objects()
-    alice.clear_objects()
-    secure_worker.clear_objects()
+    bob = bob.clear_objects()
+    alice = alice.clear_objects()
+    secure_worker = secure_worker.clear_objects()
 
     x = th.tensor([1, 2, 3, 4, 5])
 
