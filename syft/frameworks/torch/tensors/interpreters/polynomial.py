@@ -1,7 +1,10 @@
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.frameworks.torch.overload_torch import overloaded
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 import torch
 import numpy as np
 from typing import Callable, List, Union
+import syft as sy
 
 
 class PolynomialTensor(AbstractTensor):
@@ -20,7 +23,7 @@ class PolynomialTensor(AbstractTensor):
         precision:
     """
 
-    def __init__(self, function=lambda x: x, precision=10):
+    def __init__(self, function=lambda x: x, precision=10,child=None):
         """
         Args:
             function[callable,Optional]: Function to applied to function approximation coefficients.
@@ -34,6 +37,7 @@ class PolynomialTensor(AbstractTensor):
         self.function_attr = {}
         # Stores fitted function
         self.func_approx = {}
+        self.child=child
 
         def default_functions():
             """Initializes default function approximations exp, log, sigmoid and tanh"""
@@ -231,15 +235,11 @@ class PolynomialTensor(AbstractTensor):
          Returns:
              approximation of the sigmoid function as a torch tensor
          """
+         
+        return (1 / 2)+ ((x) * 1 / 4) - ((x ** 3)*(1 / 48)) + ((x ** 5) * (1 / 480))
 
-        return (
-            (self.function(1 / 2))
-            + ((x) * self.function(1 / 4))
-            - ((x ** 3) * self.function(1 / 48))
-            + ((x ** 5) * self.function((1 / 480)))
-        )
-
-    def exp(self, x):
+    @overloaded.method
+    def hrishi(self, x):
         """
          Method provides exponential function approximation interms of Taylor Series
 
@@ -250,26 +250,8 @@ class PolynomialTensor(AbstractTensor):
              approximation of the sigmoid function as a torch tensor
          """
 
-        return (
-            self.function(1)
-            + self.function(x)
-            + (x ** 2) * (self.function(1 / 2))
-            + (x ** 3) * (self.function(1 / 6))
-            + (x ** 4) * (self.function(1 / (24)))
-            + (x ** 5) * (self.function(1 / (120)))
-            + (x ** 6) * (self.function(1 / (840)))
-            + (x ** 7) * (self.function(1 / (6720)))
-        )
+        #self.child=self.function(1)+ self.function(x)+(x ** 2) * (self.function(1 / 2))+(x ** 3) * (self.function(1 / 6))+(x ** 4) * (self.function(1 / (24)))+(x ** 5) * (self.function(1 / (120)))
+        self.child=x.child+(x.child**2)+(1/2)+(x.child**3)
+        return self.child
 
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 
-def test_fixed():
-
-    poly_tensor = PolynomialTensor()
-    
-    x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
-    x_tensor = torch.Tensor([1, 2, 3])
-    x = FixedPrecisionTensor().on(x_tensor)
-    result = poly_tensor.get_val("tanh", x)
-    
-test_fixed()
