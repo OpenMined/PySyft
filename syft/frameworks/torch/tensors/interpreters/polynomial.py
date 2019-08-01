@@ -23,7 +23,7 @@ class PolynomialTensor(AbstractTensor):
         precision:
     """
 
-    def __init__(self, function=lambda x: x, precision=10,child=None):
+    def __init__(self, function=lambda x: x, precision=10, child=None):
         """
         Args:
             function[callable,Optional]: Function to applied to function approximation coefficients.
@@ -37,7 +37,7 @@ class PolynomialTensor(AbstractTensor):
         self.function_attr = {}
         # Stores fitted function
         self.func_approx = {}
-        self.child=child
+        self.child = child
 
         def default_functions():
             """Initializes default function approximations exp, log, sigmoid and tanh"""
@@ -235,8 +235,8 @@ class PolynomialTensor(AbstractTensor):
          Returns:
              approximation of the sigmoid function as a torch tensor
          """
-         
-        return (1 / 2)+ ((x) * 1 / 4) - ((x ** 3)*(1 / 48)) + ((x ** 5) * (1 / 480))
+
+        return (1 / 2) + ((x) * 1 / 4) - ((x ** 3) * (1 / 48)) + ((x ** 5) * (1 / 480))
 
     @overloaded.method
     def hrishi(self, x):
@@ -250,8 +250,6 @@ class PolynomialTensor(AbstractTensor):
              approximation of the sigmoid function as a torch tensor
          """
 
-        #self.child=self.function(1)+ self.function(x)+(x ** 2) * (self.function(1 / 2))+(x ** 3) * (self.function(1 / 6))+(x ** 4) * (self.function(1 / (24)))+(x ** 5) * (self.function(1 / (120)))
-        self.child=x.child+(x.child**2)+(1/2)+(x.child**3)
+        # self.child=self.function(1)+ self.function(x)+(x ** 2) * (self.function(1 / 2))+(x ** 3) * (self.function(1 / 6))+(x ** 4) * (self.function(1 / (24)))+(x ** 5) * (self.function(1 / (120)))
+        self.child = x.child + (x.child ** 2) + (1 / 2) + (x.child ** 3)
         return self.child
-
-
