@@ -546,7 +546,8 @@ def test_get_float_prec_on_autograd_tensor(workers):
 def test_serialize_deserialize_autograd_tensor(workers):
     # let's try to send an autogradTensor to a remote location and get it back
     alice = workers["alice"]
-    random_tensor = torch.randn(5, 3)
+    #random_tensor = torch.randn(5, 3) #previous code
+    random_tensor = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
     remote_tensor = random_tensor.send(alice, local_autograd=True)
     local_tensor = remote_tensor.get()
     # check if the tensor sent is equal to the tensor got from the remote version
@@ -589,7 +590,7 @@ def test_train_remote_autograd_tensor(workers):
     worker = workers["alice"]
 
     # Some Toy Data
-    data_local = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
+    data_local = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]], requires_grad=True) 
     target_local = torch.tensor([[0], [0], [1], [1.0]])
 
     # Toy local model
