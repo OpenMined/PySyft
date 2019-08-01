@@ -32,8 +32,9 @@ class func2plan(object):
     This class should be used only as decorator.
     """
 
-    def __init__(self, args_shape=None):
+    def __init__(self, args_shape=None, verbose=False):
         self.args_shape = args_shape
+        self.verbose = verbose
 
     def __call__(self, plan_blueprint):
         plan = Plan(
@@ -41,6 +42,7 @@ class func2plan(object):
             id=sy.ID_PROVIDER.pop(),
             name=plan_blueprint.__name__,
             blueprint=plan_blueprint,
+            verbose=self.verbose,
         )
         if self.args_shape:
             plan._auto_build(args_shape=self.args_shape)
@@ -105,6 +107,7 @@ class Plan(ObjectStorage):
         readable_plan: List = None,
         is_method: bool = False,
         is_built: bool = False,
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -114,6 +117,7 @@ class Plan(ObjectStorage):
         self.id = id
         self.name = name
         self.owner = owner
+        self.verbose = verbose
 
         # Info about the plan stored
         self.plan = list()
@@ -171,6 +175,9 @@ class Plan(ObjectStorage):
         """
         (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, details=False)
 
+        if self.verbose:
+            print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
+
         if msg_type != MSGTYPE.OBJ:
             self.plan.append(bin_message)
             self.readable_plan.append((some_type, (msg_type, contents)))
@@ -213,7 +220,7 @@ class Plan(ObjectStorage):
 
     def _build(self, args: List):
         if self.is_method:
-            args = [self._self] + args
+            args = tuple([self._self] + args)
 
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
@@ -238,7 +245,7 @@ class Plan(ObjectStorage):
         self.replace_worker_ids(worker.id, self.owner.id)
 
         # The id where the result should be stored
-        self.result_ids = [res_ptr.id_at_location]
+        self.result_ids = tuple([res_ptr.id_at_location])
 
         # Store owner that built the plan
         self.owner_when_built = self.owner
@@ -295,6 +302,8 @@ class Plan(ObjectStorage):
         if to_worker is None:
             to_worker = self.owner.id
 
+        self.readable_plan = list(self.readable_plan)
+
         # for every pair of id
         for i in range(len(from_ids)):
             # for every message of the plan
@@ -307,6 +316,7 @@ class Plan(ObjectStorage):
                     from_worker=from_worker,
                     to_worker=to_worker,
                 )
+
         return self
 
     def replace_worker_ids(self, from_worker_id: Union[str, int], to_worker_id: Union[str, int]):
@@ -360,7 +370,7 @@ class Plan(ObjectStorage):
             else:
                 _obj.append(item)
 
-        return _obj
+        return tuple(_obj)
 
     def _execute_readable_plan(self, *args):
         # TODO: for now only one value is returned from a plan
@@ -624,9 +634,10 @@ class Plan(ObjectStorage):
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
-        readable_plan = sy.serde._simplify(plan.readable_plan)
         return (
-            readable_plan,
+            tuple(
+                plan.readable_plan
+            ),  # We're not simplifying because readable_plan is already simplified
             sy.serde._simplify(plan.id),
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
@@ -656,7 +667,7 @@ class Plan(ObjectStorage):
             id=id,
             arg_ids=arg_ids,
             result_ids=result_ids,
-            readable_plan=sy.serde._detail(worker, readable_plan),
+            readable_plan=readable_plan,  # We're not detailing, see simplify() for details
             is_built=is_built,
         )
 
