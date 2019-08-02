@@ -121,6 +121,7 @@ def test_log_function():
     # allclose function to compare the expected values and approximations with fixed precision
     assert torch.allclose(expected, result, atol=1e-03)
 
+
 """
 def test_exp_taylor():
     expected = torch.tensor(
