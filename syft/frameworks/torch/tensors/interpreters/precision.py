@@ -411,7 +411,7 @@ class FixedPrecisionTensor(AbstractTensor):
             # initiate with term of degree 0 to avoid errors with tensor ** 0
             result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
             for w, d in zip(selected_weights, selected_degrees):
-                a = (tensor ** d) * torch.tensor(w).fix_precision().child
+                result += (tensor ** d) * torch.tensor(w).fix_precision().child
 
             return result
 
