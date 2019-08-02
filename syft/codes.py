@@ -10,7 +10,7 @@ class MSGTYPE(object):
     FORCE_OBJ_DEL = 9
 
 
-# Build automatically the reverse map from codes to msg types
+# Build automatically the reverse map from codes to messaging types
 code2MSGTYPE = {}
 for code in dir(MSGTYPE):
     if "__" not in code:

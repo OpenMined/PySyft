@@ -51,11 +51,11 @@ from syft.grid import VirtualGrid
 from syft.federated import TrainConfig
 
 # Import messaging objects
-from syft.msg.message import Message
-from syft.msg import Plan
-from syft.msg import func2plan
-from syft.msg import method2plan
-from syft.msg import make_plan
+from syft.messaging.message import Message
+from syft.messaging import Plan
+from syft.messaging import func2plan
+from syft.messaging import method2plan
+from syft.messaging import make_plan
 
 # Import Worker Types
 from syft.workers import VirtualWorker

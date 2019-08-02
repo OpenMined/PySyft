@@ -48,8 +48,8 @@ from syft.federated import TrainConfig
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
-from syft.msg import Plan
-from syft.msg import Message
+from syft.messaging import Plan
+from syft.messaging import Message
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
