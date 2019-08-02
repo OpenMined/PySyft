@@ -3,7 +3,7 @@ import syft as sy
 
 def test_message_serde(hook):
 
-    x = sy.Message(0, [1,2,3])
+    x = sy.Message(0, [1, 2, 3])
     x_bin = sy.serde.serialize(x)
     y = sy.serde.deserialize(x_bin, sy.local_worker)
 
