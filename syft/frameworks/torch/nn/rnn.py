@@ -3,6 +3,10 @@ import torch
 from torch import nn
 from torch.nn import init
 
+import syft
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+
 
 class RNNCellBase(nn.Module):
     """
@@ -46,13 +50,7 @@ class RNNCell(RNNCellBase):
     def forward(self, x, h=None):
 
         if h is None:
-            crypto_provider = x.child.child.crypto_provider
-            owners = x.child.child.locations
-            h = (
-                torch.zeros(x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
-                .fix_precision()
-                .share(*owners, crypto_provider=crypto_provider)
-            )
+            h = init_hidden(x, self.hidden_size)
         h_ = self.nonlinearity(self.fc_xh(x) + self.fc_hh(h))
 
         return h_
@@ -70,13 +68,7 @@ class GRUCell(RNNCellBase):
     def forward(self, x, h=None):
 
         if h is None:
-            crypto_provider = x.child.child.crypto_provider
-            owners = x.child.child.locations
-            h = (
-                torch.zeros(x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
-                .fix_precision()
-                .share(*owners, crypto_provider=crypto_provider)
-            )
+            h = init_hidden(x, self.hidden_size)
 
         gate_x = self.fc_xh(x)
         gate_h = self.fc_hh(h)
@@ -112,14 +104,7 @@ class LSTMCell(RNNCellBase):
     def forward(self, x, hc=None):
 
         if hc is None:
-            crypto_provider = x.child.child.crypto_provider
-            owners = x.child.child.locations
-            zeros = (
-                torch.zeros(x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
-                .fix_precision()
-                .share(*owners, crypto_provider=crypto_provider)
-            )
-            hc = (zeros, zeros)
+            hc = (init_hidden(x, self.hidden_size), init_hidden(x, self.hidden_size))
         h, c = hc
 
         gate_x = self.fc_xh(x)
@@ -208,33 +193,10 @@ class RNNBase(nn.Module):
         seq_len = x.shape[0]
 
         if h is None:
-            crypto_provider = x.child.child.crypto_provider
-            owners = x.child.child.locations
-
-            h = (
-                torch.zeros(
-                    self.num_layers * self.num_directions,
-                    batch_size,
-                    self.hidden_size,
-                    dtype=x.dtype,
-                    device=x.device,
-                )
-                .fix_precision()
-                .share(*owners, crypto_provider=crypto_provider)
-            )
+            h = init_hidden(x, self.hidden_size)
 
             if self.is_lstm:
-                c = (
-                    torch.zeros(
-                        self.num_layers * self.num_directions,
-                        batch_size,
-                        self.hidden_size,
-                        dtype=x.dtype,
-                        device=x.device,
-                    )
-                    .fix_precision()
-                    .share(*owners, crypto_provider=crypto_provider)
-                )
+                c = init_hidden(x, self.hidden_size)
 
         elif self.is_lstm:
             h, c = h
@@ -408,3 +370,15 @@ class LSTM(RNNBase):
         super(LSTM, self).__init__(
             input_size, hidden_size, num_layers, bias, batch_first, dropout, bidirectional, LSTMCell
         )
+
+
+def init_hidden(input, hidden_size):
+    h = torch.zeros(input.shape[0], hidden_size, dtype=input.dtype, device=input.device)
+    if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
+        h = h.fix_precision()
+        child = input.child
+        if isinstance(child.child, AdditiveSharingTensor):
+            crypto_provider = child.child.crypto_provider
+            owners = child.child.locations
+            h = h.share(*owners, crypto_provider=crypto_provider)
+    return h
