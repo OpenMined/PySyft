@@ -9,6 +9,7 @@ from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
+from syft import messaging
 from syft import codes
 from typing import Callable
 from typing import List
@@ -217,8 +218,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if self.verbose:
             print(f"worker {self} sending {msg_type} {message} to {location}")
+
         # Step 0: combine type and message
-        message = (msg_type, message)
+        message = messaging.Message(msg_type, message)
 
         # Step 1: serialize the message to simple python objects
         bin_message = sy.serde.serialize(message)
@@ -251,7 +253,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             self.msg_history.append(bin_message)
 
         # Step 0: deserialize message
-        (msg_type, contents) = sy.serde.deserialize(bin_message, worker=self)
+        msg = sy.serde.deserialize(bin_message, worker=self)
+
+        (msg_type, contents) = (msg.msg_type, msg.contents)
+
         if self.verbose:
             print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
         # Step 1: route message to appropriate function
@@ -860,4 +865,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return tuple([codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]])
+        return messaging.Message(
+            codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]
+        )
