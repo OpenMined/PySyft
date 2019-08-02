@@ -552,6 +552,19 @@ def test_serialize_deserialize_autograd_tensor(workers):
     local_tensor = remote_tensor.get()
     # check if the tensor sent is equal to the tensor got from the remote version
     assert torch.all(torch.eq(local_tensor, random_tensor))
+    
+    
+
+def test_types_auto_remote_tensors(workers):
+    alice = workers["alice"]
+    bob = workers["bob"]
+    #random_tensor = torch.randn(5, 3) #previous code
+    random_tensor = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    remote_tensor_auto = random_tensor.send(alice, local_autograd=True)
+    remote_tensor_remote = remote_tensor_auto.send(bob)
+
+    assert(type(remote_tensor_auto) == type(remote_tensor_remote))
+
 
 
 def test_train_remote_autograd_tensor(workers):
@@ -587,10 +600,11 @@ def test_train_remote_autograd_tensor(workers):
             opt.step()
         return (loss, model_input)
 
-    worker = workers["alice"]
+    alice = workers["alice"]
+
 
     # Some Toy Data
-    data_local = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]], requires_grad=True) 
+    data_local = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]]) 
     target_local = torch.tensor([[0], [0], [1], [1.0]])
 
     # Toy local model
@@ -600,9 +614,9 @@ def test_train_remote_autograd_tensor(workers):
     loss_local, model_local_trained = train(model_local, data_local, target_local, remote=False)
 
     # Remote training, setting autograd for the data and the targets
-    data_remote = data_local.send(worker, local_autograd=True)
-    target_remote = target_local.send(worker, local_autograd=True)
-    model_remote = model_local.send(worker, local_autograd=True)
+    data_remote = data_local.send(alice, local_autograd=True)
+    target_remote = target_local.send(alice, local_autograd=True)
+    model_remote = model_local.send(alice, local_autograd=True)
 
     loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote, remote=True)
 

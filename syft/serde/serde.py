@@ -60,6 +60,8 @@ from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+
 from syft.frameworks.torch import pointers
 
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
@@ -83,6 +85,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     pointers.ObjectWrapper,
     TrainConfig,
     VirtualWorker,
+    AutogradTensor,
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list
