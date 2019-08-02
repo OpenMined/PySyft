@@ -95,8 +95,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.IS_NONE: self.is_tensor_none,
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
-            codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
-            codes.MSGTYPE.PROMISE: self.save_promise,
+            codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj
         }
 
         self.load_data(data)
@@ -848,8 +847,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         c_shared = c.share(*locations, field=field, crypto_provider=self).child
         return a_shared, b_shared, c_shared
 
-    def save_promise(self):
-        ""
 
     @staticmethod
     def create_message_execute_command(
