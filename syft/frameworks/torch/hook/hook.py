@@ -540,7 +540,7 @@ class TorchHook:
             """
 
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -580,7 +580,7 @@ class TorchHook:
             """
 
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -616,7 +616,7 @@ class TorchHook:
             """
             # TODO: I can't manage the import issue, can you?
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -665,7 +665,7 @@ class TorchHook:
             else:  # means that there is a wrapper to remove
                 try:
                     # Replace all torch tensor with their child attribute
-                    new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                    new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                         method_name, self, args, kwargs
                     )
                 except BaseException as e:
