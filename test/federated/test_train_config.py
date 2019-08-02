@@ -141,47 +141,6 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     assert loss_after < loss_before
 
 
-def prepare_training(hook, alice):  # pragma: no cover
-
-    data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target = torch.tensor([[1], [0], [1], [0]])
-
-    dataset = sy.BaseDataset(data, target)
-    alice.add_dataset(dataset, key="vectors")
-
-    @hook.torch.jit.script
-    def loss_fn(real, pred):
-        return ((real.float() - pred.float()) ** 2).mean()
-
-    class Net(torch.nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
-            self.fc3 = nn.Linear(2, 1)
-
-            nn.init.xavier_uniform_(self.fc1.weight)
-            nn.init.xavier_uniform_(self.fc2.weight)
-            nn.init.xavier_uniform_(self.fc3.weight)
-
-        def forward(self, x):
-            x = F.relu(self.fc1(x))
-            x = F.relu(self.fc2(x))
-            x = self.fc3(x)
-            return x
-
-    model_untraced = Net()
-
-    model = torch.jit.trace(model_untraced, data)
-
-    pred = model(data)
-    loss_before = loss_fn(real=target, pred=pred)
-    if PRINT_IN_UNITTESTS:  # pragma: no cover:
-        print("Loss before training: {}".format(loss_before))
-
-    return model, loss_fn, data, target, loss_before
-
-
 @pytest.mark.skipif(
     torch.__version__ >= "1.1",
     reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
@@ -268,7 +227,9 @@ def test___str__():
     train_config = sy.TrainConfig(batch_size=2, id=99887766, model=None, loss_fn=None)
 
     train_config_str = str(train_config)
-    str_expected = "<TrainConfig id:99887766 owner:me epochs: 1 batch_size: 2 lr: 0.1>"
+    str_expected = (
+        "<TrainConfig id:99887766 owner:me epochs: 1 batch_size: 2 optimizer_args: {'lr': 0.1}>"
+    )
 
     assert str_expected == train_config_str
 
@@ -285,7 +246,7 @@ def test_send(workers):
     assert alice.train_config.batch_size == train_config.batch_size
     assert alice.train_config.epochs == train_config.epochs
     assert alice.train_config.optimizer == train_config.optimizer
-    assert alice.train_config.lr == train_config.lr
+    assert alice.train_config.optimizer_args == train_config.optimizer_args
     assert alice.train_config.location == train_config.location
 
 
@@ -312,7 +273,7 @@ def test_send_model_and_loss_fn(workers):
     assert alice.train_config.batch_size == train_config.batch_size
     assert alice.train_config.epochs == train_config.epochs
     assert alice.train_config.optimizer == train_config.optimizer
-    assert alice.train_config.lr == train_config.lr
+    assert alice.train_config.optimizer_args == train_config.optimizer_args
     assert alice.train_config.location == train_config.location
     assert alice.train_config._model_id == model_id
     assert alice.train_config._loss_fn_id == loss_fn_id
@@ -369,7 +330,9 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     loss_before = loss_fn(target=target, pred=pred)
 
     # Create and send train config
-    train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2, lr=0.1)
+    train_config = sy.TrainConfig(
+        model=model, loss_fn=loss_fn, batch_size=2, optimizer="SGD", optimizer_args={"lr": 0.1}
+    )
     train_config.send(local_worker)
 
     for epoch in range(5):
@@ -406,8 +369,6 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
 )
 def test_train_config_with_jit_trace_sync(hook, start_proc):  # pragma: no cover
     kwargs = {"id": "sync_fit", "host": "localhost", "port": 9000, "hook": hook}
-    # data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    # target = torch.tensor([[1], [0], [1], [0]])
 
     data, target = utils.create_gaussian_mixture_toy_data(100)
 
@@ -477,7 +438,6 @@ def test_train_config_with_jit_trace_sync(hook, start_proc):  # pragma: no cover
     local_worker.ws.shutdown()
     del local_worker
 
-    time.sleep(0.1)
     process_remote_worker.terminate()
 
     assert loss_after < loss_before

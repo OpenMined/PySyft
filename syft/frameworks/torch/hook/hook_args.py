@@ -11,12 +11,16 @@ from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
 from typing import Callable
 from typing import Union
 from typing import Tuple
 from typing import List
+
+import numpy as np
 
 
 hook_method_args_functions = {}
@@ -32,13 +36,16 @@ type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     dict: one,  # FIXME This is for additiveShareTensor.child, it can be confusing and AST.child
+    np.ndarray: one,
     # should perhaps be of type ShareDict extending dict or something like this
     LoggingTensor: one,
     FixedPrecisionTensor: one,
     AutogradTensor: one,
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
+    CRTPrecisionTensor: one,
     PointerTensor: one,
+    LargePrecisionTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
 }
@@ -57,6 +64,8 @@ forward_func = {
     AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
+    CRTPrecisionTensor: lambda i: i.child,
+    LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -68,15 +77,19 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
+    LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor(**kwargs).on(
+        LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
+    ),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
+    CRTPrecisionTensor: lambda i, **kwargs: CRTPrecisionTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
 # they have an arbitrary number of tensors in args which can trigger unexpected behaviour
-ambiguous_methods = {"__getitem__", "_getitem_public", "view", "permute"}
+ambiguous_methods = {"__getitem__", "_getitem_public", "view", "permute", "add_", "sub_"}
 ambiguous_functions = {"torch.unbind", "unbind", "torch.stack", "stack", "torch.mean", "torch.sum"}
 
 
@@ -721,7 +734,7 @@ def build_register_response(response: object, rules: Tuple, return_tuple: bool =
     # get the transformation lambda for each args
     lambdas = [
         (lambda i, **kwargs: i)  # return the same object
-        if not r  # if the rule is a number == 0.
+        if not r or not hasattr(a, "owner")  # if the rule is a number == 0.
         else build_register_response(a, r, True)  # If not, call recursively build_response_hook
         if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
         # Last if not, rule is probably == 1 so use type to return the right transformation.

@@ -20,6 +20,7 @@ from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
@@ -153,6 +154,9 @@ class TorchHook:
         # SyftTensor class file)
         self._hook_syft_tensor_methods(AdditiveSharingTensor)
 
+        # Add all hooked tensor methods to LargePrecisionTensor tensor
+        self._hook_syft_tensor_methods(LargePrecisionTensor)
+
         # Hook the tensor constructor function
         self._hook_tensor()
 
@@ -164,6 +168,9 @@ class TorchHook:
 
         # Hook torch.nn (containing Linear and Convolution layers)
         self._hook_module()
+
+        # Hook torch.optim (containing optim.SGD, Adam, etc)
+        self._hook_optim()
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
@@ -381,7 +388,7 @@ class TorchHook:
 
             if hasattr(self, "child"):
                 to_return = self.child.attr("grad")
-                if isinstance(to_return.child, syft.PointerTensor):
+                if to_return is not None and isinstance(to_return.child, syft.PointerTensor):
                     if to_return.child.is_none():
                         to_return = None
 
@@ -504,6 +511,10 @@ class TorchHook:
             command = (attr, self, args, kwargs)
 
             response = owner.send_command(location, command)
+
+            # For inplace methods, just directly return self
+            if syft.torch.is_inplace_method(attr):
+                return self
 
             return response
 
@@ -646,11 +657,7 @@ class TorchHook:
                 # Run the native function with the new args
 
                 try:
-                    if isinstance(args, tuple):
-                        response = method(*args, **kwargs)
-                    else:
-                        response = method(args, **kwargs)
-
+                    response = method(*args, **kwargs)
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
                     raise route_method_exception(e, self, args, kwargs)
@@ -700,14 +707,29 @@ class TorchHook:
         if attr.__module__ is None:
             attr.__module__ = "torch"
 
+        cmd_name = f"{attr.__module__}.{attr.__name__}"
+
         @wraps(attr)
         def overloaded_func(*args, **kwargs):
             """
             Operate the hooking
             """
-            cmd_name = f"{attr.__module__}.{attr.__name__}"
+            try:
+                tensor_type = (
+                    type(args[0]) if not isinstance(args[0], (tuple, list)) else type(args[0][0])
+                )
+            except IndexError:
+                tensor_type = TorchTensor
+
             command = (cmd_name, None, args, kwargs)
-            response = TorchTensor.handle_func_command(command)
+
+            try:
+                handle_func_command = tensor_type.handle_func_command
+            except AttributeError:
+                handle_func_command = TorchTensor.handle_func_command
+
+            response = handle_func_command(command)
+
             return response
 
         return overloaded_func
@@ -953,17 +975,17 @@ class TorchHook:
                 o.backward()
                 p.grad -= p.grad
 
-        def module_send_(nn_self, dest, force_send=False, **kwargs):
+        def module_send_(nn_self, *dest, force_send=False, **kwargs):
             """Overloads torch.nn instances so that they could be sent to other workers"""
 
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
             for p in nn_self.parameters():
-                p.send_(dest)
+                p.send_(*dest)
 
             if isinstance(nn_self.forward, Plan):
-                nn_self.forward.send(dest, force=force_send)
+                nn_self.forward.send(*dest, force=force_send)
 
             return nn_self
 
@@ -973,7 +995,7 @@ class TorchHook:
 
             params = list(nn_self.parameters())
             for p in params:
-                p.child.wrap().move(destination)
+                p.move(destination)
 
         self.torch.nn.Module.move = module_move_
 
@@ -1030,6 +1052,7 @@ class TorchHook:
             return nn_self
 
         self.torch.nn.Module.fix_precision = module_fix_precision_
+        self.torch.nn.Module.fix_prec = module_fix_precision_
 
         def module_float_precision_(nn_self):
             """Overloads float_precision for torch.nn.Module, convert fix_precision
@@ -1079,3 +1102,35 @@ class TorchHook:
         # Override _VF.LSTM_Cell and _VF.GRU_Cell with torch.LSTM_Cell and torch.GRU_Cell
         # With the pytorch-based version
         self.torch.nn.modules.rnn._VF = self.torch
+
+    def _hook_optim(self):
+        """Overloading torch.optim.Optimizer with PySyft functionality. Optimizer
+           hyper-parameters should indeed be converted to fixed precision to interact
+           with fixed precision or additive shared tensors.
+           It is important to note that all the operations are actually in-place.
+        """
+
+        def optim_fix_precision_(optim_self, *args, **kwargs):
+            """Overloads fix_precision for torch.optim.Optimizer"""
+
+            for param_group in optim_self.param_groups:
+                for key, param in param_group.items():
+                    if isinstance(param, (float, int, bool)) and param != 0 and key != "params":
+                        param_group[key] = torch.tensor(param).fix_precision(*args, **kwargs).child
+
+            return optim_self
+
+        self.torch.optim.Optimizer.fix_precision = optim_fix_precision_
+
+        def optim_float_precision_(optim_self):
+            """Overloads float_precision for torch.optim.Optimizer, convert fix_precision
+            hyper-parameters to normal float values"""
+
+            for param_group in optim_self.param_groups:
+                for key, param in param_group.items():
+                    if isinstance(param, syft.FixedPrecisionTensor) and key != "params":
+                        param_group[key] = param.float_precision().item()
+
+            return optim_self
+
+        self.torch.optim.Optimizer.float_precision = optim_float_precision_

@@ -4,7 +4,6 @@ from typing import Union
 
 import syft as sy
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.workers import BaseWorker
 from syft.frameworks.torch.overload_torch import overloaded
 
@@ -12,30 +11,46 @@ from syft.workers import AbstractWorker
 
 
 class MultiPointerTensor(AbstractTensor):
-    ""
+    """
+    The MultiPointerTensor gathers together several pointers to different locations which can
+    be operated all at once. The pointers can be referencing the same value or a different one
+    depending on the usage.
+
+    The MultiPointerTensor has the same structure that the AdditiveSharedTensor: its child
+    attribute is a dictionary {worker.id: Pointer}
+
+    MultiPointerTensor can be directly instantiated using x.send(worker1, worker2, etc) where
+    x is a syft or torch tensor. In that case, the value of x will be sent and replicated to
+    each workers.
+    """
 
     def __init__(
         self,
-        location: BaseWorker = None,
-        id_at_location: Union[str, int] = None,
-        register: bool = False,
         owner: BaseWorker = None,
         id: Union[str, int] = None,
-        garbage_collect_data: bool = True,
-        point_to_attr: str = None,
         tags: List[str] = None,
         description: str = None,
         children: List[AbstractTensor] = [],
     ):
+        """Initializes an Multi Pointer Tensor, whose behaviour is to keep references
+        to several pointers and to distribute computations to all of them in an easy
+        way.
+
+        Args:
+            owner: an optional BaseWorker object to specify the worker on which
+                the tensor is located.
+            id: An optional string or integer id of the MultiPointerTensor.
+            tags: an optional set of hashtags corresponding to this tensor
+                which this tensor should be searchable for
+            description: an optional string describing the purpose of the
+                tensor
+            children: an optional list of children which are PointerTensors
+        """
 
         super().__init__(tags, description)
 
-        self.location = location
-        self.id_at_location = id_at_location
         self.owner = owner
         self.id = id
-        self.garbage_collect_data = garbage_collect_data
-        self.point_to_attr = point_to_attr
 
         self.child = {}
         for c in children:
@@ -49,6 +64,22 @@ class MultiPointerTensor(AbstractTensor):
             out += "\n\t-> " + str(v)
         return out
 
+    @property
+    @overloaded.method
+    def grad(self, self_):
+        results = {}
+        all_none = True
+        for worker, pointer in self_.items():
+            pointer_grad = pointer.grad
+
+            if pointer_grad is None:
+                results[worker] = None
+            else:
+                results[worker] = pointer_grad
+                all_none = False
+
+        return results if not all_none else None
+
     def __eq__(self, other):
         return torch.eq(self, other)
 
@@ -60,7 +91,7 @@ class MultiPointerTensor(AbstractTensor):
 
         Else, we just redirect to .add which works well
         """
-        if isinstance(other, AdditiveSharingTensor):
+        if isinstance(other, sy.AdditiveSharingTensor):
             return other.__add__(self)
         else:
             return self.add(other)
@@ -69,7 +100,7 @@ class MultiPointerTensor(AbstractTensor):
         """
         See __add__ for details but, MPT * AST should return AST
         """
-        if isinstance(other, AdditiveSharingTensor):
+        if isinstance(other, sy.AdditiveSharingTensor):
             return other.__mul__(self)
         else:
             return self.mul(other)

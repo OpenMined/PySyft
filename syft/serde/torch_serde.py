@@ -59,7 +59,7 @@ def _deserialize_tensor(tensor_bin) -> torch.Tensor:
 
 def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
     """Strategy to serialize a tensor using numpy npy format.
-    If tensor requires to calculate gradients, it will detached.
+    If tensor requires to calculate gradients, it will be detached.
     """
     if tensor.requires_grad:
         warnings.warn(
@@ -185,6 +185,9 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     )
 
     if tags is not None:
+
+        tags = list(tags)
+
         for i in range(len(tags)):
             tag = tags[i]
             if isinstance(tag, bytes):
@@ -343,6 +346,14 @@ def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> tor
     return loaded_module
 
 
+def _simplify_torch_size(size: torch.Size) -> Tuple[int]:
+    return tuple(size)
+
+
+def _detail_torch_size(worker: AbstractWorker, size: Tuple[int]) -> torch.Size:
+    return torch.Size(size)
+
+
 # Maps a type to a tuple containing its simplifier and detailer function
 # IMPORTANT: keep this structure sorted A-Z (by type name)
 MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
@@ -353,5 +364,6 @@ MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
         torch.nn.Parameter: (_simplify_torch_parameter, _detail_torch_parameter),
         torch.Tensor: (_simplify_torch_tensor, _detail_torch_tensor),
+        torch.Size: (_simplify_torch_size, _detail_torch_size),
     }
 )
