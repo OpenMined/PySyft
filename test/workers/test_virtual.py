@@ -82,8 +82,8 @@ def test_recv_msg():
     obj = torch.Tensor([100, 100])
 
     # create/serialize message
-    msg = msg.Message(MSGTYPE.OBJ, obj)
-    bin_msg = serde.serialize(msg)
+    message = msg.Message(MSGTYPE.OBJ, obj)
+    bin_msg = serde.serialize(message)
 
     # have alice receive message
     alice.recv_msg(bin_msg)
@@ -94,10 +94,10 @@ def test_recv_msg():
     # Test 2: get tensor back from alice
 
     # Create message: Get tensor from alice
-    msg = msg.Message(MSGTYPE.OBJ_REQ, obj.id)
+    message = msg.Message(MSGTYPE.OBJ_REQ, obj.id)
 
     # serialize message
-    bin_msg = serde.serialize(msg)
+    bin_msg = serde.serialize(message)
 
     # call receive message on alice
     resp = alice.recv_msg(bin_msg)
