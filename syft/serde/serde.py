@@ -48,7 +48,7 @@ from syft.federated import TrainConfig
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
-from syft.msg import Plan
+from syft.msg import Plan, Message
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -83,6 +83,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     pointers.ObjectWrapper,
     TrainConfig,
     VirtualWorker,
+    Message,
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list

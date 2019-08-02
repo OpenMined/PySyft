@@ -67,7 +67,7 @@ class WebsocketClientWorker(BaseWorker):
 
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
-        message = (MSGTYPE.SEARCH, query)
+        message = sy.Message(MSGTYPE.SEARCH, query)
         serialized_message = sy.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)

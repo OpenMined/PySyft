@@ -98,7 +98,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
-            codes.MSGTYPE.PROMISE: self.save_promise
+            codes.MSGTYPE.PROMISE: self.save_promise,
         }
 
         self.load_data(data)
@@ -222,7 +222,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             print(f"worker {self} sending {msg_type} {message} to {location}")
 
         # Step 0: combine type and message
-        message = (msg_type, message)
+        message = sy.msg.Message(msg_type, message)
 
         # Step 1: serialize the message to simple python objects
         bin_message = sy.serde.serialize(message)
@@ -255,7 +255,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             self.msg_history.append(bin_message)
 
         # Step 0: deserialize message
-        (msg_type, contents) = sy.serde.deserialize(bin_message, worker=self)
+        msg = sy.serde.deserialize(bin_message, worker=self)
+
+        (msg_type, contents) = (msg.msg_type, msg.contents)
+
         if self.verbose:
             print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
         # Step 1: route message to appropriate function
@@ -868,4 +871,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return tuple([codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]])
+        return sy.Message(
+            codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]
+        )
