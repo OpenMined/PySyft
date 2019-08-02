@@ -193,7 +193,7 @@ class MultiPointerTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all LoggingTensor with their child attribute
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.hook_function_args(
+        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
 

@@ -122,6 +122,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                             self.add_worker(worker)
                         if self.id not in worker._known_workers:
                             worker.add_worker(self)
+            else:
+                # Make the local worker aware of itself
+                # self is the to-be-created local worker
+                self.add_worker(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -355,7 +359,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Handle methods
         if _self is not None:
             if type(_self) == int:
-                _self = self._objects[_self]
+                _self = self.get_obj(_self)
+                if _self is None:
+                    return
             if type(_self) == str and _self == "self":
                 _self = self
             if sy.torch.is_inplace_method(command_name):
