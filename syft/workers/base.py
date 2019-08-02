@@ -122,6 +122,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                             self.add_worker(worker)
                         if self.id not in worker._known_workers:
                             worker.add_worker(self)
+            else:
+                # Make the local worker aware of itself
+                # self is the to-be-created local worker
+                self.add_worker(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
