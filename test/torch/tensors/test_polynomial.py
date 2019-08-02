@@ -8,7 +8,14 @@ from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
 import syft as sy
 
 
-# test_wrap()
+def test_wrap():
+
+    hook = sy.TorchHook(torch)
+    x_tensor = torch.Tensor([1, 2, 3])
+    x = PolynomialTensor().on(x_tensor)
+    assert isinstance(x, torch.Tensor)
+    assert isinstance(x.child, PolynomialTensor)
+    assert isinstance(x.child.child, torch.Tensor)
 
 
 def test_sigmoid():

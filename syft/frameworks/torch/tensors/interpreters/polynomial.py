@@ -227,7 +227,7 @@ class PolynomialTensor(AbstractTensor):
 
         return np.poly1d(fitted_function)
 
-    def sigmoid(self, x):
+    def sigmoid(self):
         """Method provides Sigmoid function approximation interms of Taylor Series
 
          Args:
@@ -237,11 +237,19 @@ class PolynomialTensor(AbstractTensor):
              approximation of the sigmoid function as a torch tensor
          """
 
-        return (1 / 2) + ((x) * 1 / 4) - ((x ** 3) * (1 / 48)) + ((x ** 5) * (1 / 480))
+        self.child = (
+            (1 / 2)
+            + ((self.child) * 1 / 4)
+            - ((self.child ** 3) * (1 / 48))
+            + ((self.child ** 5) * (1 / 480))
+        )
 
-    def test_tensor(self, x):
-        """
-         Method provides exponential function approximation interms of Taylor Series
+        return self.child
+
+    __sigmoid__ = sigmoid
+
+    def tanh(self):
+        """Method provides Sigmoid function approximation interms of Taylor Series
 
          Args:
              x: Torch tensor
@@ -249,13 +257,47 @@ class PolynomialTensor(AbstractTensor):
          Returns:
              approximation of the sigmoid function as a torch tensor
          """
-        # The below approximations are inaccurate and only for verifying if polynomialTensor is part of chain.
-        # self.child=self.function(1)+ self.function(x)+(x ** 2) * (self.function(1 / 2))+(x ** 3) * (self.function(1 / 6))+(x ** 4) * (self.function(1 / (24)))+(x ** 5) * (self.function(1 / (120)))
-        self.child = x.child + (x.child ** 2) + (1 / 2) + (x.child ** 3)
+
+        self.child = (self.exp(self.child) - self.exp(-self.child)) / 2
+
         return self.child
+
+    __tanh__ = tanh
 
     def exp(self):
 
-        # The below approximations are inaccurate and only for verifying if polynomialTensor is part of chain.
-        self.child = self.child + (self.child ** 2) + (1 / 2) + (self.child ** 3)
+        self.child = (
+            1
+            + self.child
+            + (self.child ** 2) * (1 / 2)
+            + (self.child ** 3) * (1 / 6)
+            + (self.child ** 4) * (1 / (24))
+            + (self.child ** 5) * ((1 / (120)))
+            + (self.child ** 6) * (self.child * (1 / (840)))
+            + (self.child ** 7) * (self.child * (1 / (6720)))
+        )
         return self.child
+
+    __exp__ = exp
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        def exp(self, x):
+            return self.__exp__(x)
+
+        # Just register it using the module variable
+        module.exp = exp
+
+        @overloaded.function
+        def sigmoid(self, x):
+            return self.__sigmoid__(x)
+
+        module.sigmoid = sigmoid
+
+        @overloaded.function
+        def tanh(self, x):
+            return self.__tanh__(x)
+
+        # Just register it using the module variable
+        module.tanh = tanh
