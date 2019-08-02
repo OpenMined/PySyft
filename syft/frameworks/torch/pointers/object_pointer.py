@@ -97,7 +97,7 @@ class ObjectPointer(abstract.AbstractObject):
         """
         try:
             cmd, _, args, kwargs = command
-            _ = syft.frameworks.torch.hook_args.hook_function_args(cmd, args, kwargs)
+            _ = syft.frameworks.torch.hook_args.unwrap_args_from_function(cmd, args, kwargs)
         except exceptions.RemoteObjectFoundError as err:
             pointer = err.pointer
             return pointer
@@ -217,33 +217,6 @@ class ObjectPointer(abstract.AbstractObject):
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
                 self.owner.send_msg(MSGTYPE.FORCE_OBJ_DEL, self.id_at_location, self.location)
-
-    @property
-    def grad(self):
-        if not hasattr(self, "_grad"):
-            self._grad = self.attr("grad")
-
-        if self._grad.child.is_none():
-            return None
-
-        return self._grad
-
-    @grad.setter
-    def grad(self, new_grad):
-        self._grad = new_grad
-
-    @property
-    def data(self):
-        if not hasattr(self, "_data"):
-            self._data = self.attr("data")
-        return self._data
-
-    @data.setter
-    def data(self, new_data):
-        self._data = new_data
-
-    def is_none(self):
-        return self.owner.request_is_remote_tensor_none(self)
 
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:

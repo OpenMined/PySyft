@@ -66,6 +66,10 @@ class AbstractObject(ABC):
         except IndexError:
             return 0
 
+    @property
+    def shape(self):
+        return self.child.shape
+
     def serialize(self):  # check serde.py to see how to provide compression schemes
         """Serializes the tensor on which it's called.
 
@@ -85,9 +89,26 @@ class AbstractObject(ABC):
     def ser(self, *args, **kwargs):
         return self.serialize(*args, **kwargs)
 
-    @property
-    def shape(self):
-        return self.child.shape
+    def get(self):
+        """Just a pass through. This is most commonly used when calling .get() on a
+        Syft tensor which has a child which is a pointer, an additive shared tensor,
+        a multi-pointer, etc."""
+        class_attributes = self.get_class_attributes()
+        return type(self)(
+            **class_attributes,
+            owner=self.owner,
+            tags=self.tags,
+            description=self.description,
+            id=self.id,
+        ).on(self.child.get())
+
+    def mid_get(self):
+        """This method calls .get() on a child pointer and correctly registers the results"""
+
+        child_id = self.id
+        tensor = self.get()
+        tensor.id = child_id
+        self.owner.register_obj(tensor)
 
     def get_class_attributes(self):
         """
@@ -136,7 +157,7 @@ class AbstractObject(ABC):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all LoggingTensor with their child attribute
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.hook_function_args(
+        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
 
@@ -153,9 +174,6 @@ class AbstractObject(ABC):
         response = sy.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
-
-    def setattr(self, name, value):
-        self.child.setattr(name, value.child)
 
     @classmethod
     def rgetattr(cls, obj, attr, *args):
@@ -244,6 +262,27 @@ class AbstractTensor(AbstractObject):
             self.id = sy.ID_PROVIDER.pop()
 
         return wrapper
+
+    def copy(self):
+        return self + 0
+
+    def refresh(self):
+        """
+        Forward to Additive Shared Tensor the call to refresh shares
+        """
+        if hasattr(self, "child"):
+            self.child = self.child.refresh()
+            return self
+        else:
+            raise AttributeError("Refresh should only be called on AdditiveSharedTensors")
+
+    @property
+    def grad(self):
+        child_grad = self.child.grad
+        if child_grad is None:
+            return None
+        else:
+            return child_grad.wrap()
 
 
 def initialize_tensor(

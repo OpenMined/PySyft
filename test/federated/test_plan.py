@@ -3,6 +3,7 @@ import syft as sy
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
@@ -31,7 +32,7 @@ def test_plan_built_automatically(hook):
     hook.local_worker.is_client_worker = True
 
 
-def test_plan_without_args_shape(hook):
+def test_plan_build(hook):
     hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=())
@@ -41,7 +42,7 @@ def test_plan_without_args_shape(hook):
     assert not plan_abs.is_built
     assert not len(plan_abs.readable_plan)
 
-    plan_abs(th.tensor([-1]))
+    plan_abs.build(th.tensor([-1]))
 
     assert len(plan_abs.readable_plan)
     assert plan_abs.is_built
@@ -187,8 +188,8 @@ def test_plan_built_on_method(hook):
 
     net = Net()
 
-    # Force build
-    assert isinstance(net(th.tensor([1, 2.0])), th.Tensor)
+    # build
+    net.forward.build(th.tensor([1, 2.0]))
 
     net.send(device_1)
     pointer_to_data = device_1.search("input_data")[0]
@@ -321,10 +322,84 @@ def test_execute_plan_module_remotely(hook, start_proc):
             return F.log_softmax(x, dim=0)
 
     net = Net()
+
     x = th.tensor([-1, 2.0])
     local_res = net(x)
+    assert not net.forward.is_built
+
+    net.forward.build(x)
 
     kwargs = {"id": "test_plan_worker_2", "host": "localhost", "port": 8799, "hook": hook}
+    server = start_proc(WebsocketServerWorker, **kwargs)
+
+    time.sleep(0.1)
+    socket_pipe = WebsocketClientWorker(**kwargs)
+
+    plan_ptr = net.send(socket_pipe)
+    x_ptr = x.send(socket_pipe)
+    remote_res = plan_ptr(x_ptr).get()
+
+    assert (remote_res == local_res).all()
+
+    # delete remote object before websocket connection termination
+    del x_ptr
+
+    server.terminate()
+    hook.local_worker.is_client_worker = True
+
+
+def test_train_plan_locally_and_then_send_it(hook, start_proc):
+    """Test training a plan locally and then executing it remotely."""
+    hook.local_worker.is_client_worker = False
+
+    # Create toy model
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+
+        @sy.method2plan
+        def forward(self, x):
+            x = F.relu(self.fc1(x))
+            x = self.fc2(x)
+            return F.log_softmax(x, dim=0)
+
+    net = Net()
+
+    # Create toy data
+    x = th.tensor([-1, 2.0])
+    y = th.tensor([1.0])
+
+    # Train Model
+    opt = optim.SGD(params=net.parameters(), lr=0.01)
+    previous_loss = None
+
+    for _ in range(5):
+        # 1) erase previous gradients (if they exist)
+        opt.zero_grad()
+
+        # 2) make a prediction
+        pred = net(x)
+
+        # 3) calculate how much we missed
+        loss = ((pred - y) ** 2).sum()
+
+        # 4) figure out which weights caused us to miss
+        loss.backward()
+
+        # 5) change those weights
+        opt.step()
+
+        if previous_loss is not None:
+            assert loss < previous_loss
+
+        previous_loss = loss
+
+    local_res = net(x)
+    net.forward.build(x)
+
+    kwargs = {"id": "test_plan_worker_3", "host": "localhost", "port": 8800, "hook": hook}
     server = start_proc(WebsocketServerWorker, **kwargs)
 
     time.sleep(0.1)
@@ -405,7 +480,7 @@ def test__replace_message_ids():
     )
 
     # note that tuples are converted to lists
-    expected = [100, ["worker", "another"], "you", 20, 100, b"you", [30, ["you", "another", "bla"]]]
+    expected = (100, ("worker", "another"), "you", 20, 100, b"you", (30, ("you", "another", "bla")))
 
     assert replaced == expected
 
@@ -457,7 +532,7 @@ def test__call__for_method(hook):
     arg_list = (100, 200, 356)
     ret_val = plan(*arg_list)
 
-    expected_args = [self_value] + list(arg_list)
+    expected_args = tuple([self_value] + list(arg_list))
     plan.execute_plan.assert_called_with(expected_args, [result_id])
 
     assert ret_val == return_value

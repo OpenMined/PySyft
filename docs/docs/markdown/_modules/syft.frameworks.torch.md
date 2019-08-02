@@ -268,7 +268,7 @@ get response and “rebuild” the syft tensor wrapper upon all tensors found
 ## syft.frameworks.torch.hook_args module
 
 
-#### syft.frameworks.torch.hook_args.build_args_hook(args, rules, return_tuple=False)
+#### syft.frameworks.torch.hook_args.build_unwrap_args_with_rules(args, rules, return_tuple=False)
 Build a function given some rules to efficiently replace in the args object
 syft tensors with their child (but not pointer as they don’t have .child),
 and do nothing for other type of object including torch tensors, str,
@@ -346,12 +346,12 @@ rules = (0, [1, (0, 0), 0)
   return the first (and here unique) function
 
 
-#### syft.frameworks.torch.hook_args.build_hook_args_function(args, return_tuple=False)
+#### syft.frameworks.torch.hook_args.build_unwrap_args_from_function(args, return_tuple=False)
 Build the function f that hook the arguments:
 f(args) = new_args
 
 
-#### syft.frameworks.torch.hook_args.build_hook_response_function(response, wrap_type, wrap_args)
+#### syft.frameworks.torch.hook_args.build_wrap_reponse_from_function(response, wrap_type, wrap_args)
 Build the function that hook the response.
 
 ### Example
@@ -393,7 +393,7 @@ f is the register_response_function
 then f(p) = (1, (Wrapper)>Pointer)
 
 
-#### syft.frameworks.torch.hook_args.build_response_hook(response, rules, wrap_type, wrap_args, return_tuple=False)
+#### syft.frameworks.torch.hook_args.build_response_hook_with_rule(response, rules, wrap_type, wrap_args, return_tuple=False)
 Build a function given some rules to efficiently replace in the response object
 syft or torch tensors with a wrapper, and do nothing for other types of object
 including , str, numbers, bool, etc.
@@ -434,8 +434,8 @@ out: ([1, 1], 0)
 
 #### syft.frameworks.torch.hook_args.four_layers(idx1, \*ids)
 
-#### syft.frameworks.torch.hook_args.hook_function_args(attr, args, kwargs, return_args_type=False)
-See hook_method_args for details
+#### syft.frameworks.torch.hook_args.unwrap_args_from_function(attr, args, kwargs, return_args_type=False)
+See unwrap_args_from_method for details
 
 
 * **Parameters**
@@ -464,7 +464,7 @@ See hook_method_args for details
 
 
 
-#### syft.frameworks.torch.hook_args.hook_method_args(attr, method_self, args, kwargs)
+#### syft.frameworks.torch.hook_args.unwrap_args_from_method(attr, method_self, args, kwargs)
 Method arguments are sometimes simple types (such as strings or ints) but
 sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LoggingTensor
 or some other tensor type. Complex types (which have a .child attribute) need to

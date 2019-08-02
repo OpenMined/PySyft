@@ -159,7 +159,7 @@ def test_properties():
 def test_signature_cache_change():
     """Tests that calls to the same method using a different
     signature works correctly. We cache signatures in the
-    hook.build_hook_args_function dictionary but sometimes they
+    hook.build_unwrap_args_from_function dictionary but sometimes they
     are incorrect if we use the same method with different
     parameter types. So, we need to test to make sure that
     this cache missing fails gracefully. This test tests

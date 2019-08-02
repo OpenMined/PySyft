@@ -1,3 +1,4 @@
+import functools
 import inspect
 import re
 
@@ -11,6 +12,7 @@ def add_constructor_registration(layer_cls):
     layer_cls._native_keras_constructor = layer_cls.__init__
     sig = inspect.signature(layer_cls.__init__)
 
+    @functools.wraps(layer_cls.__init__)
     def syft_keras_constructor(self, *args, **kwargs):
         self._constructor_parameters_store = sig.bind(self, *args, **kwargs)
         self._native_keras_constructor(*args, **kwargs)

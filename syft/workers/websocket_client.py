@@ -8,6 +8,7 @@ import websockets
 import logging
 import ssl
 import time
+import os
 
 import syft as sy
 from syft.codes import MSGTYPE
@@ -16,8 +17,7 @@ from syft.workers import BaseWorker
 
 logger = logging.getLogger(__name__)
 
-
-TIMEOUT_INTERVAL = 9_999_999
+TIMEOUT_INTERVAL = 999_999
 
 
 class WebsocketClientWorker(BaseWorker):
@@ -183,6 +183,39 @@ class WebsocketClientWorker(BaseWorker):
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
+
+    def evaluate(
+        self,
+        dataset_key: str,
+        calculate_histograms: bool = False,
+        nr_bins: int = -1,
+        calculate_loss=True,
+    ):
+        """Call the evaluate() method on the remote worker (WebsocketServerWorker instance).
+
+        Args:
+            dataset_key: Identifier of the local dataset that shall be used for training.
+            return_histograms: If True, calculate the histograms of predicted classes.
+            nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
+            return_loss: If True, loss is calculated additionally.
+            return_raw_accuracy: If True, return nr_correct_predictions and nr_predictions
+
+        Returns:
+            Dictionary containing depending on the provided flags:
+                * loss: avg loss on data set, None if not calculated.
+                * nr_correct_predictions: number of correct predictions.
+                * nr_predictions: total number of predictions.
+                * histogram_predictions: histogram of predictions.
+                * histogram_target: histogram of target values in the dataset.
+        """
+
+        return self._send_msg_and_deserialize(
+            "evaluate",
+            dataset_key=dataset_key,
+            histograms=calculate_histograms,
+            nr_bins=nr_bins,
+            calculate_loss=calculate_loss,
+        )
 
     def __str__(self):
         """Returns the string representation of a Websocket worker.
