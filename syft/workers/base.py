@@ -85,8 +85,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.verbose = verbose
         self.auto_add = auto_add
         self.msg_history = list()
-        self.promises = {}
-        self.tensor2promise_id = {}
 
         # For performance, we cache each
         self._message_router = {
