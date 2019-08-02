@@ -181,8 +181,28 @@ def test_objects_count_remote(hook, start_proc):
     process_remote_worker.terminate()
 
 
+def test_clear_objects_remote(hook, start_proc):
+    kwargs = {"id": "fed", "host": "localhost", "port": 8769, "hook": hook}
+    process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
+
+    x = torch.tensor([1, 2, 3]).send(local_worker, garbage_collect_data=False)
+    y = torch.tensor(4).send(local_worker, garbage_collect_data=False)
+
+    nr_objects = local_worker.objects_count_remote()
+    assert nr_objects == 2
+
+    local_worker.clear_objects_remote()
+    nr_objects = local_worker.objects_count_remote()
+    assert nr_objects == 0
+
+    local_worker.close()
+    local_worker.remove_worker_from_local_worker_registry()
+    process_remote_worker.terminate()
+
+
 def test_connect_close(hook, start_proc):
-    kwargs = {"id": "fed", "host": "localhost", "port": 8763, "hook": hook}
+    kwargs = {"id": "fed", "host": "localhost", "port": 8765, "hook": hook}
     process_remote_worker = start_proc(WebsocketServerWorker, **kwargs)
     local_worker = instantiate_websocket_client_worker(**kwargs)
 
