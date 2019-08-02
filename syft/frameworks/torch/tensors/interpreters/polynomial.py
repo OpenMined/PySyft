@@ -258,6 +258,3 @@ class PolynomialTensor(AbstractTensor):
         # The below approximations are inaccurate and only for verifying if polynomialTensor is part of chain.
         self.child = self.child + (self.child ** 2) + (1 / 2) + (self.child ** 3)
         return self.child
-
-
-test_fixed()
