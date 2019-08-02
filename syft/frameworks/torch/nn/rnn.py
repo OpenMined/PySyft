@@ -46,7 +46,13 @@ class RNNCell(RNNCellBase):
     def forward(self, x, h=None):
 
         if h is None:
-            h = torch.zeros(x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
+            crypto_provider = x.child.child.crypto_provider
+            owners = x.child.child.locations
+            h = (
+                torch.zeros(x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
+                .fix_precision()
+                .share(*owners, crypto_provider=crypto_provider)
+            )
         h_ = self.nonlinearity(self.fc_xh(x) + self.fc_hh(h))
 
         return h_
@@ -64,7 +70,13 @@ class GRUCell(RNNCellBase):
     def forward(self, x, h=None):
 
         if h is None:
-            h = torch.zeros(x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
+            crypto_provider = x.child.child.crypto_provider
+            owners = x.child.child.locations
+            h = (
+                torch.zeros(x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
+                .fix_precision()
+                .share(*owners, crypto_provider=crypto_provider)
+            )
 
         gate_x = self.fc_xh(x)
         gate_h = self.fc_hh(h)
@@ -93,14 +105,20 @@ class LSTMCell(RNNCellBase):
         super(LSTMCell, self).reset_parameters()
 
         # Bias of forget gate should be initialize with 1 or 2
-        # See: http://proceedings.mlr.press/v37/jozefowicz15.pdf
+        # Ref: http://proceedings.mlr.press/v37/jozefowicz15.pdf
         self.fc_xh.bias[self.hidden_size : 2 * self.hidden_size] = 1.0 / self.hidden_size
         self.fc_hh.bias[self.hidden_size : 2 * self.hidden_size] = 1.0 / self.hidden_size
 
     def forward(self, x, hc=None):
 
         if hc is None:
-            zeros = torch.zeros(x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
+            crypto_provider = x.child.child.crypto_provider
+            owners = x.child.child.locations
+            zeros = (
+                torch.zeros(x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
+                .fix_precision()
+                .share(*owners, crypto_provider=crypto_provider)
+            )
             hc = (zeros, zeros)
         h, c = hc
 
