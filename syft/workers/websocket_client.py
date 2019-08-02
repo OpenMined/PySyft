@@ -120,7 +120,7 @@ class WebsocketClientWorker(BaseWorker):
         return self._send_msg_and_deserialize("objects_count")
 
     def clear_objects_remote(self):
-        return self._send_msg_and_deserialize("clear_objects")
+        return self._send_msg_and_deserialize("clear_objects", return_self=False)
 
     async def async_fit(self, dataset_key: str, return_ids: List[int] = None):
         """Asynchronous call to fit function on the remote location.
