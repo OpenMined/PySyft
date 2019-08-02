@@ -293,6 +293,7 @@ class AutogradTensor(AbstractTensor):
             tensor.requires_grad,
             tensor.preinitialize_grad,
             tensor.grad_fn,
+            # tensor.local_autograd,
             syft.serde._simplify(tensor.tags),
             syft.serde._simplify(tensor.description),
         )
@@ -319,9 +320,10 @@ class AutogradTensor(AbstractTensor):
         tensor = AutogradTensor(
             owner=owner,
             id=syft.serde._detail(worker, tensor_id),
-            requires_grad=requires_grad, #ADDED!
+            requires_grad=requires_grad,  # ADDED!
             preinitialize_grad=preinitialize_grad,
             grad_fn=grad_fn,
+            # local_autograd=local_autograd,
             data=chain,  # pass the de-serialized data
             tags=syft.serde._detail(worker, tags),
             description=syft.serde._detail(worker, description),
