@@ -650,6 +650,12 @@ class TorchTensor(AbstractTensor):
 
     fix_precision = fix_prec
 
+    def polynomial(self, *args, **kwargs):
+
+        pass
+
+    poly = polynomial
+
     def fix_prec_(self, *args, **kwargs):
         tensor = self.fix_prec(*args, **kwargs)
         self.child = tensor.child
