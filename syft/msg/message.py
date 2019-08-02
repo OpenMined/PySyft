@@ -25,14 +25,6 @@ class Message:
 
         return (ptr.msg_type, sy.serde._simplify(ptr.contents))
 
-        # a more general but slower/more verbose option
-
-        # data = vars(ptr).copy()
-        # for k, v in data.items():
-        #     if isinstance(v, AbstractWorker):
-        #         data[k] = v.id
-        # return _simplify_dictionary(data)
-
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
         return Message(tensor_tuple[0], sy.serde._detail(worker, tensor_tuple[1]))
