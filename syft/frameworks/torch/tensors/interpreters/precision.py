@@ -6,7 +6,6 @@ from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.multi_pointer import MultiPointerTensor
 from syft.frameworks.torch.overload_torch import overloaded
-from syft.frameworks.torch.nn import rnn
 
 
 class FixedPrecisionTensor(AbstractTensor):
@@ -616,42 +615,6 @@ class FixedPrecisionTensor(AbstractTensor):
                 module.linear = linear
 
             module.functional = functional
-
-            @overloaded.module
-            def RNNCell(module):
-                return rnn.RNNCell
-
-            module.RNNCell = RNNCell
-
-            @overloaded.module
-            def GRUCell(module):
-                return rnn.GRUCell
-
-            module.GRUCell = GRUCell
-
-            @overloaded.module
-            def LSTMCell(module):
-                return rnn.LSTMCell
-
-            module.LSTMCell = LSTMCell
-
-            @overloaded.module
-            def RNN(module):
-                return rnn.RNN
-
-            module.RNN = RNN
-
-            @overloaded.module
-            def GRU(module):
-                return rnn.GRU
-
-            module.GRU = GRU
-
-            @overloaded.module
-            def LSTM(module):
-                return rnn.LSTM
-
-            module.LSTM = LSTM
 
         # Modules should be registered just like functions
         module.nn = nn
