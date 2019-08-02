@@ -85,6 +85,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.verbose = verbose
         self.auto_add = auto_add
         self.msg_history = list()
+        self.promises = {}
+        self.tensor2promise_id = {}
 
         # For performance, we cache each
         self._message_router = {
@@ -96,6 +98,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
+            codes.MSGTYPE.PROMISE: self.save_promise
         }
 
         self.load_data(data)
@@ -217,6 +220,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if self.verbose:
             print(f"worker {self} sending {msg_type} {message} to {location}")
+
         # Step 0: combine type and message
         message = (msg_type, message)
 
@@ -840,6 +844,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         b_shared = b.share(*locations, field=field, crypto_provider=self).child
         c_shared = c.share(*locations, field=field, crypto_provider=self).child
         return a_shared, b_shared, c_shared
+
+    def save_promise(self):
+        ""
 
     @staticmethod
     def create_message_execute_command(

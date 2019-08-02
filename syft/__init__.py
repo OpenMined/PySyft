@@ -48,11 +48,14 @@ from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoade
 from syft.grid import VirtualGrid
 
 # Import federate learning objects
-from syft.federated import Plan
 from syft.federated import TrainConfig
-from syft.federated import func2plan
-from syft.federated import method2plan
-from syft.federated import make_plan
+
+# Import messaging objects
+from syft.msg.message import Message
+from syft.msg import Plan
+from syft.msg import func2plan
+from syft.msg import method2plan
+from syft.msg import make_plan
 
 # Import Worker Types
 from syft.workers import VirtualWorker
