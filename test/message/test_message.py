@@ -9,3 +9,4 @@ def test_message_serde(hook):
 
     assert x.contents == y.contents
     assert x.msg_type == y.msg_type
+    
