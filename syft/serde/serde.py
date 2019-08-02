@@ -58,6 +58,7 @@ from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch import pointers
 
@@ -74,6 +75,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
+    CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
     Plan,
@@ -256,7 +258,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
     # 2) Deserialize
     # This function converts the binary into the appropriate python
     # object (or nested dict/collection of python objects)
-    simple_objects = msgpack.loads(binary)
+    simple_objects = msgpack.loads(binary, use_list=False)
 
     if details:
         # 3) Detail

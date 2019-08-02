@@ -11,6 +11,7 @@ from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
@@ -42,6 +43,7 @@ type_rule = {
     AutogradTensor: one,
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
+    CRTPrecisionTensor: one,
     PointerTensor: one,
     LargePrecisionTensor: one,
     torch.Tensor: one,
@@ -62,6 +64,7 @@ forward_func = {
     AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
+    CRTPrecisionTensor: lambda i: i.child,
     LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
     "my_syft_tensor_type": lambda i: i.child,
 }
@@ -80,6 +83,7 @@ backward_func = {
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
+    CRTPrecisionTensor: lambda i, **kwargs: CRTPrecisionTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 

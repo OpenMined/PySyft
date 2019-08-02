@@ -368,7 +368,7 @@ class AdditiveSharingTensor(AbstractTensor):
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
-                torch.Tensor([other])
+                torch.tensor([other])
                 .share(
                     *self.child.keys(),
                     field=self.field,

@@ -122,6 +122,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                             self.add_worker(worker)
                         if self.id not in worker._known_workers:
                             worker.add_worker(self)
+            else:
+                # Make the local worker aware of itself
+                # self is the to-be-created local worker
+                self.add_worker(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -355,7 +359,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Handle methods
         if _self is not None:
             if type(_self) == int:
-                _self = self._objects[_self]
+                _self = self.get_obj(_self)
+                if _self is None:
+                    return
             if type(_self) == str and _self == "self":
                 _self = self
             if sy.torch.is_inplace_method(command_name):
@@ -420,7 +426,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A list of PointerTensors or a single PointerTensor if just one response is expected.
         """
         if return_ids is None:
-            return_ids = [sy.ID_PROVIDER.pop()]
+            return_ids = tuple([sy.ID_PROVIDER.pop()])
 
         message = (message, return_ids)
 
@@ -461,6 +467,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # deleted
         if hasattr(obj, "child") and hasattr(obj.child, "set_garbage_collect_data"):
             obj.child.set_garbage_collect_data(value=False)
+
+        if hasattr(obj, "private") and obj.private:
+            return None
 
         return obj
 

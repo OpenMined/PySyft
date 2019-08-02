@@ -185,6 +185,9 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     )
 
     if tags is not None:
+
+        tags = list(tags)
+
         for i in range(len(tags)):
             tag = tags[i]
             if isinstance(tag, bytes):

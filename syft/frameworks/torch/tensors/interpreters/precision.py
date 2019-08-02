@@ -82,17 +82,19 @@ class FixedPrecisionTensor(AbstractTensor):
     def attr(self, attr_name):
         return self.__getattribute__(attr_name)
 
-    def fix_precision(self):
+    def fix_precision(self, check_range=True):
         """This method encodes the .child object using fixed precision"""
 
         rational = self.child
 
         upscaled = (rational * self.base ** self.precision_fractional).long()
-        assert (
-            upscaled.abs() < (self.field / 2)
-        ).all(), (
-            f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
-        )
+
+        if check_range:
+            assert (
+                upscaled.abs() < (self.field / 2)
+            ).all(), (
+                f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
+            )
 
         field_element = upscaled % self.field
         field_element.owner = rational.owner
@@ -113,13 +115,13 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return result
 
-    def truncate(self, precision_fractional):
+    def truncate(self, precision_fractional, check_sign=True):
         truncation = self.base ** precision_fractional
 
         # We need to make sure that values are truncated "towards 0"
         # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
         # at 97 (equivalent to -3), not 7
-        if isinstance(self.child, AdditiveSharingTensor):  # Handle FPT>(wrap)>AST
+        if isinstance(self.child, AdditiveSharingTensor) or not check_sign:  # Handle FPT>(wrap)>AST
             self.child = self.child / truncation
             return self
         else:
@@ -219,33 +221,57 @@ class FixedPrecisionTensor(AbstractTensor):
         Hook manually mul to add the truncation part which is inherent to multiplication
         in the fixed precision setting
         """
-
-        if isinstance(other, FixedPrecisionTensor):
-            assert (
-                self.precision_fractional == other.precision_fractional
-            ), "In mul, all args should have the same precision_fractional"
-        if isinstance(other, int):
+        if isinstance(other, (int, torch.Tensor)):
             new_self = self.child
             new_other = other
+
         elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
             other.child, torch.Tensor
         ):
-            # If we try to multiply a FPT>(wrap)>AST with a FPT>torch.tensor),
+            # If we try to multiply a FPT>AST with a FPT>torch.tensor,
             # we want to perform AST * torch.tensor
-            new_self, new_other = self.child, other
+            new_self = self.child
+            new_other = other
 
         elif isinstance(other.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
             self.child, torch.Tensor
         ):
-            # If we try to multiply a FPT>torch.tensor with a FPT>(wrap)>AST,
+            # If we try to multiply a FPT>torch.tensor with a FPT>AST,
             # we swap operators so that we do the same operation as above
-            new_self, new_other = other.child, self
+            new_self = other.child
+            new_other = self
 
-        else:
-            # Replace all syft tensor with their child attribute
+        elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
+            other.child, (AdditiveSharingTensor, MultiPointerTensor)
+        ):
+            # If we try to multiply a FPT>torch.tensor with a FPT>AST,
+            # we swap operators so that we do the same operation as above
             new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
                 "mul", self, other, None
             )
+
+        elif isinstance(self.child, torch.Tensor) and isinstance(other.child, torch.Tensor):
+            new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
+                "mul", self, other, None
+            )
+
+            # To avoid problems when multiplying 2 negative numbers
+            # we take absolute value of the operands
+
+            # sgn_self is 1 when new_self is positive else it's 0
+            sgn_self = (new_self < self.field // 2).long()
+            pos_self = new_self * sgn_self
+            neg_self = (self.field - new_self) * (1 - sgn_self)
+            new_self = neg_self + pos_self
+
+            # sgn_other is 1 when new_other is positive else it's 0
+            sgn_other = (new_other < self.field // 2).long()
+            pos_other = new_other * sgn_other
+            neg_other = (self.field - new_other) * (1 - sgn_other)
+            new_other = neg_other + pos_other
+
+            # If both have the same sign, sgn is 1 else it's 0
+            sgn = 1 - (sgn_self - sgn_other) ** 2
 
         # Send it to the appropriate class and get the response
         response = getattr(new_self, "mul")(new_other)
@@ -255,13 +281,26 @@ class FixedPrecisionTensor(AbstractTensor):
             "mul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        response %= self.field  # Wrap around the field
-        if not isinstance(other, int):
-            response = response.truncate(self.precision_fractional)
+        if not isinstance(other, (int, torch.Tensor)):
+            response = response.truncate(self.precision_fractional, check_sign=False)
+            response %= self.field  # Wrap around the field
+
+            if isinstance(self.child, torch.Tensor) and isinstance(other.child, torch.Tensor):
+                # Give back its sign to response
+                pos_res = response * sgn
+                neg_res = (self.field - response) * (1 - sgn)
+                response = neg_res + pos_res
+
+        else:
+            response %= self.field  # Wrap around the field
 
         return response
 
     __mul__ = mul
+
+    def __imul__(self, other):
+        self = self.mul(other)
+        return self
 
     def pow(self, power):
         """
