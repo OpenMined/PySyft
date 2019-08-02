@@ -359,7 +359,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Handle methods
         if _self is not None:
             if type(_self) == int:
-                _self = self.get_obj(_self)
+                _self = BaseWorker.get_obj(self, _self)
                 if _self is None:
                     return
             if type(_self) == str and _self == "self":
