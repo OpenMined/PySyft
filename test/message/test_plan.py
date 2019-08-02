@@ -1,5 +1,4 @@
 import syft as sy
-import syft
 
 import torch as th
 import torch.nn as nn
@@ -477,7 +476,7 @@ def test_replace_worker_ids_two_ints(hook):
 def test__replace_message_ids():
     messages = [10, ("worker", "me"), "you", 20, 10, b"you", (30, ["you", "me", "bla"])]
 
-    replaced = syft.msg.plan.Plan._replace_message_ids(
+    replaced = msg.Plan._replace_message_ids(
         obj=messages, change_id=10, to_id=100, from_worker="me", to_worker="another"
     )
 
