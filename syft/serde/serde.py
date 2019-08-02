@@ -48,7 +48,8 @@ from syft.federated import TrainConfig
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
-from syft.federated import Plan
+from syft.messaging import Plan
+from syft.messaging import Message
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -86,6 +87,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     TrainConfig,
     VirtualWorker,
     AutogradTensor,
+    Message,
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list

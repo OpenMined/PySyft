@@ -123,3 +123,22 @@ class ObjectStorage:
             if hasattr(obj, "child"):
                 obj.child.garbage_collect_data = True
             del self._objects[remote_key]
+
+    def clear_objects(self, return_self: bool = True):
+        """Removes all objects from the object storage.
+
+        Note: the "return self" statement is kept in order to avoid modifying the code shown in the udacity course.
+
+        Args:
+            return_self: flag, whether to return self as return value
+
+        Returns:
+            self, if return_self if True, else None
+
+        """
+        self._objects.clear()
+        return self if return_self else None
+
+    def current_objects(self):
+        """Returns a copy of the objects in the object storage."""
+        return self._objects.copy()

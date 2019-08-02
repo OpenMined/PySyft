@@ -8,7 +8,6 @@ import websockets
 import logging
 import ssl
 import time
-import os
 
 import syft as sy
 from syft.codes import MSGTYPE
@@ -67,7 +66,7 @@ class WebsocketClientWorker(BaseWorker):
 
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
-        message = (MSGTYPE.SEARCH, query)
+        message = sy.Message(MSGTYPE.SEARCH, query)
         serialized_message = sy.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)
@@ -80,7 +79,7 @@ class WebsocketClientWorker(BaseWorker):
             "make hook.local_worker a WebsocketClientWorker?",
         )
 
-    def _receive_action(self, message: bin) -> bin:
+    def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         self.ws.send(str(binascii.hexlify(message)))
         response = binascii.unhexlify(self.ws.recv()[2:-1])
         return response
@@ -88,7 +87,7 @@ class WebsocketClientWorker(BaseWorker):
     def _recv_msg(self, message: bin) -> bin:
         """Forwards a message to the WebsocketServerWorker"""
 
-        response = self._receive_action(message)
+        response = self._forward_to_websocket_server_worker(message)
         if not self.ws.connected:
             logger.warning("Websocket connection closed (worker: %s)", self.id)
             self.ws.shutdown()
@@ -97,7 +96,7 @@ class WebsocketClientWorker(BaseWorker):
             self.ws = websocket.create_connection(self.url, max_size=None, timeout=TIMEOUT_INTERVAL)
             logger.warning("Created new websocket connection")
             time.sleep(0.1)
-            response = self._receive_action(message)
+            response = self._forward_to_websocket_server_worker(message)
             if not self.ws.connected:
                 raise RuntimeError(
                     "Websocket connection closed and creation of new connection failed."
@@ -119,6 +118,9 @@ class WebsocketClientWorker(BaseWorker):
 
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
+
+    def clear_objects_remote(self):
+        return self._send_msg_and_deserialize("clear_objects", return_self=False)
 
     async def async_fit(self, dataset_key: str, return_ids: List[int] = None):
         """Asynchronous call to fit function on the remote location.
