@@ -9,7 +9,7 @@ from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
-from syft.msg import Message
+from syft import msg
 from syft import codes
 from typing import Callable
 from typing import List
@@ -220,7 +220,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             print(f"worker {self} sending {msg_type} {message} to {location}")
 
         # Step 0: combine type and message
-        message = Message(msg_type, message)
+        message = msg.Message(msg_type, message)
 
         # Step 1: serialize the message to simple python objects
         bin_message = sy.serde.serialize(message)
@@ -868,6 +868,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Message(
+        return msg.Message(
             codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]
         )
